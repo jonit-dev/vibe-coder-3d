@@ -18,7 +18,7 @@ interface EngineState {
   setShowFps: (enabled: boolean) => void;
 }
 
-export const useEngineStore = create<EngineState>((set) => ({
+export const useEngineStore = create<EngineState>(set => ({
   // Default settings
   fps: 60,
   shadows: true,
@@ -27,9 +27,9 @@ export const useEngineStore = create<EngineState>((set) => ({
   showFps: false,
 
   // Methods
-  setFps: (fps) => set({ fps }),
-  setShadows: (shadows) => set({ shadows }),
-  setQuality: (quality) => set({ quality }),
-  setDebug: (debug) => set({ debug }),
-  setShowFps: (showFps) => set({ showFps }),
+  setFps: fps => set({ fps }),
+  setShadows: shadows => set({ shadows }),
+  setQuality: quality => set({ quality }),
+  setDebug: debug => set({ debug }),
+  setShowFps: showFps => set({ showFps }),
 }));

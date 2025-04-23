@@ -1,9 +1,10 @@
 // GameEngine Component
 // The main component that sets up the R3F Canvas with the game engine
-import { EngineLoop } from '@core/components/EngineLoop';
-import { useGameEngine } from '@core/hooks/useGameEngine';
 import { Canvas } from '@react-three/fiber';
 import { useEffect } from 'react';
+
+import { EngineLoop } from '@core/components/EngineLoop';
+import { useGameEngine } from '@core/hooks/useGameEngine';
 
 // Props for the GameEngine component
 interface GameEngineProps {
@@ -21,11 +22,7 @@ interface GameEngineProps {
  * Main GameEngine component
  * Wraps the R3F Canvas and manages the game engine lifecycle
  */
-export function GameEngine({
-  autoStart = true,
-  canvasProps,
-  children,
-}: GameEngineProps) {
+export function GameEngine({ autoStart = true, canvasProps, children }: GameEngineProps) {
   // Get controls from the hook
   const { startEngine, stopEngine } = useGameEngine();
 
@@ -52,4 +49,4 @@ export function GameEngine({
       {children}
     </Canvas>
   );
-} 
+}

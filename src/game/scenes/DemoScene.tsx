@@ -1,25 +1,29 @@
 // Demo Scene
 // A simple demo scene to test the game engine
+import { OrbitControls } from '@react-three/drei';
+
 import { EntityMesh, GameEngine } from '@core/index';
 import { useGameLoop } from '@core/lib/gameLoop';
-import { OrbitControls } from '@react-three/drei';
 
 // Debug UI to show game loop state
 function DebugUI() {
   const { isRunning, isPaused, fps, frameCount } = useGameLoop();
 
   return (
-    <div className="debug-ui" style={{
-      position: 'absolute',
-      top: '10px',
-      left: '10px',
-      background: 'rgba(0,0,0,0.7)',
-      color: 'white',
-      padding: '10px',
-      borderRadius: '5px',
-      fontFamily: 'monospace',
-      zIndex: 1000,
-    }}>
+    <div
+      className="debug-ui"
+      style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        background: 'rgba(0,0,0,0.7)',
+        color: 'white',
+        padding: '10px',
+        borderRadius: '5px',
+        fontFamily: 'monospace',
+        zIndex: 1000,
+      }}
+    >
       <h3>Engine Stats</h3>
       <div>Status: {isRunning ? (isPaused ? 'Paused' : 'Running') : 'Stopped'}</div>
       <div>FPS: {fps}</div>
@@ -31,9 +35,7 @@ function DebugUI() {
 // A simple rotating cube component
 function RotatingCube({ position = [0, 0, 0], color = 'red' }) {
   return (
-    <EntityMesh
-      position={position as [number, number, number]}
-    >
+    <EntityMesh position={position as [number, number, number]}>
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial color={color} />
     </EntityMesh>
@@ -50,7 +52,7 @@ export function DemoScene() {
       <GameEngine
         canvasProps={{
           style: { background: '#222' },
-          camera: { position: [0, 5, 10], fov: 50 }
+          camera: { position: [0, 5, 10], fov: 50 },
         }}
       >
         {/* Camera controls */}
@@ -78,4 +80,4 @@ export function DemoScene() {
       </GameEngine>
     </>
   );
-} 
+}

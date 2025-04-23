@@ -1,8 +1,15 @@
 // EntityMesh Component
 // Connects a Three.js mesh with an ECS entity
-import { createEntity, destroyEntity, entityToObject, objectToEntity, Transform } from '@core/lib/ecs';
 import React, { useEffect, useRef } from 'react';
 import { Object3D } from 'three';
+
+import {
+  createEntity,
+  destroyEntity,
+  entityToObject,
+  objectToEntity,
+  Transform,
+} from '@core/lib/ecs';
 
 // Props for the EntityMesh component
 interface EntityMeshProps {
@@ -127,12 +134,7 @@ export function EntityMesh({
   }, [position, rotation, scale]); // Update when transform props change
 
   return (
-    <mesh
-      ref={handleMeshRef}
-      castShadow={castShadow}
-      receiveShadow={receiveShadow}
-      {...props}
-    >
+    <mesh ref={handleMeshRef} castShadow={castShadow} receiveShadow={receiveShadow} {...props}>
       {/* Default geometry if none provided */}
       {!geometry && <boxGeometry />}
       {geometry}
@@ -144,4 +146,4 @@ export function EntityMesh({
       {children}
     </mesh>
   );
-} 
+}

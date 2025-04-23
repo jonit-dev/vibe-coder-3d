@@ -1,24 +1,26 @@
-import { DemoSelector } from '@/components/DemoSelector'
-import { MenuBackground } from '@/components/MenuBackground'
-import { CameraDemo } from '@/game/scenes/CameraDemo'
-import { GameLoopDemo } from '@/game/scenes/GameLoopDemo'
-import { useDemo } from '@/game/stores/demoStore'
-import { OrbitControls } from '@react-three/drei'
-import { Canvas } from '@react-three/fiber'
-import { Suspense } from 'react'
+import { OrbitControls } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import { Suspense } from 'react';
 
+import { DemoSelector } from '@/components/DemoSelector';
+import { MenuBackground } from '@/components/MenuBackground';
+import { CameraDemo } from '@/game/scenes/CameraDemo';
+import { GameLoopDemo } from '@/game/scenes/GameLoopDemo';
+import { useDemo } from '@/game/stores/demoStore';
 
 export const MainScene = () => {
-  const { currentCategory, currentDemo } = useDemo()
+  const { currentCategory, currentDemo } = useDemo();
 
   return (
-    <div style={{
-      width: '100vw',
-      height: '100vh',
-      background: '#000000',
-      overflow: 'hidden',
-      position: 'relative'
-    }}>
+    <div
+      style={{
+        width: '100vw',
+        height: '100vh',
+        background: '#000000',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
       <Canvas
         camera={{ position: [-21.56, 3.02, 17.68], fov: 40 }}
         style={{ background: '#000000' }}
@@ -57,5 +59,5 @@ export const MainScene = () => {
       </Canvas>
       <DemoSelector />
     </div>
-  )
-} 
+  );
+};

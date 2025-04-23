@@ -1,8 +1,9 @@
 // useGameEngine Hook
 // Provides control functions for the game engine using the game loop store
+import { useCallback } from 'react';
+
 import { resetWorld } from '@core/lib/ecs';
 import { useGameLoop } from '@core/lib/gameLoop';
-import { useCallback } from 'react';
 
 // The controls returned by the hook
 export interface GameEngineControls {

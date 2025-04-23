@@ -1,11 +1,12 @@
 // Game Loop Demo Scene - Solar System
 // Demonstrates the game engine loop with controls
-import { useGameEngine } from '@core/hooks/useGameEngine';
-import { EntityMesh } from '@core/index';
 import { OrbitControls, Stars } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+
+import { useGameEngine } from '@core/hooks/useGameEngine';
+import { EntityMesh } from '@core/index';
 
 // Planet component with rotation
 function Planet(props: {
@@ -55,26 +56,13 @@ function Planet(props: {
 
   return (
     <>
-      <EntityMesh
-        ref={ref}
-        position={position}
-        castShadow
-        receiveShadow
-      >
+      <EntityMesh ref={ref} position={position} castShadow receiveShadow>
         <sphereGeometry args={[size, 32, 32]} />
-        <meshStandardMaterial
-          color={color}
-          roughness={0.7}
-          metalness={0.1}
-        />
+        <meshStandardMaterial color={color} roughness={0.7} metalness={0.1} />
       </EntityMesh>
 
       {hasMoon && (
-        <EntityMesh
-          ref={moonRef}
-          position={[position[0] + 2, position[1], position[2]]}
-          castShadow
-        >
+        <EntityMesh ref={moonRef} position={[position[0] + 2, position[1], position[2]]} castShadow>
           <sphereGeometry args={[size * 0.3, 16, 16]} />
           <meshStandardMaterial color="#AAAAAA" roughness={0.8} />
         </EntityMesh>
@@ -98,12 +86,7 @@ export function GameLoopDemo() {
   return (
     <>
       {/* Camera controls */}
-      <OrbitControls
-        minDistance={10}
-        maxDistance={100}
-        enableDamping
-        dampingFactor={0.05}
-      />
+      <OrbitControls minDistance={10} maxDistance={100} enableDamping dampingFactor={0.05} />
 
       {/* Background stars */}
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade />
@@ -177,4 +160,4 @@ export function GameLoopDemo() {
       />
     </>
   );
-} 
+}

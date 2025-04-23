@@ -1,31 +1,40 @@
-import { Environment, MeshTransmissionMaterial, Sparkles } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
-import { useRef } from 'react'
-import { EllipseCurve, MathUtils, Mesh, MeshBasicMaterial, Vector3Tuple } from 'three'
+import { Environment, MeshTransmissionMaterial, Sparkles } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
+import { useRef } from 'react';
+import { EllipseCurve, MathUtils, Mesh, MeshBasicMaterial, Vector3Tuple } from 'three';
 
 interface OrbitingParticleProps {
-  radius: number
-  rotationAxis?: Vector3Tuple
-  speed?: number
-  offset?: number
-  color?: string
+  radius: number;
+  rotationAxis?: Vector3Tuple;
+  speed?: number;
+  offset?: number;
+  color?: string;
 }
 
-const OrbitingParticle = ({ radius, rotationAxis = [0, 0, 0], speed = 0.3, offset = 0, color = '#88ccff' }: OrbitingParticleProps) => {
-  const meshRef = useRef<Mesh>(null)
-  const glowRef = useRef<Mesh>(null)
+const OrbitingParticle = ({
+  radius,
+  rotationAxis = [0, 0, 0],
+  speed = 0.3,
+  offset = 0,
+  color = '#88ccff',
+}: OrbitingParticleProps) => {
+  const meshRef = useRef<Mesh>(null);
+  const glowRef = useRef<Mesh>(null);
 
   // Define the elliptical path matching the torus major radius
   const curve = new EllipseCurve(
-    0, 0,                  // ax, aY
-    radius * 1.5, radius,  // xRadius, yRadius
-    0, 2 * Math.PI,        // aStartAngle, aEndAngle
-    false,                 // aClockwise
-    0                      // aRotation
+    0,
+    0, // ax, aY
+    radius * 1.5,
+    radius, // xRadius, yRadius
+    0,
+    2 * Math.PI, // aStartAngle, aEndAngle
+    false, // aClockwise
+    0 // aRotation
   );
 
-  useFrame((state) => {
-    if (!meshRef.current || !glowRef.current) return
+  useFrame(state => {
+    if (!meshRef.current || !glowRef.current) return;
     const time = (state.clock.getElapsedTime() * speed + offset) % 1;
     const point = curve.getPoint(time);
     meshRef.current.position.set(point.x, point.y, 0);
@@ -34,7 +43,7 @@ const OrbitingParticle = ({ radius, rotationAxis = [0, 0, 0], speed = 0.3, offse
     // Pulse the glow effect
     const pulse = Math.sin(state.clock.getElapsedTime() * 3) * 0.1 + 0.9;
     glowRef.current.scale.set(pulse * 2, pulse * 2, pulse * 2);
-  })
+  });
 
   return (
     <group rotation={rotationAxis}>
@@ -64,59 +73,49 @@ const OrbitingParticle = ({ radius, rotationAxis = [0, 0, 0], speed = 0.3, offse
       {/* Glow effect */}
       <mesh ref={glowRef} scale={2}>
         <sphereGeometry args={[0.3, 16, 16]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.4}
-          toneMapped={false}
-        />
+        <meshBasicMaterial color={color} transparent opacity={0.4} toneMapped={false} />
       </mesh>
     </group>
-  )
-}
+  );
+};
 
 interface OrbitRingProps {
-  radius: number
-  rotationAxis?: Vector3Tuple
-  color?: string
+  radius: number;
+  rotationAxis?: Vector3Tuple;
+  color?: string;
 }
 
 const OrbitRing = ({ radius, rotationAxis = [0, 0, 0], color = '#345' }: OrbitRingProps) => {
-  const ref = useRef<Mesh>(null)
+  const ref = useRef<Mesh>(null);
 
-  useFrame((state) => {
-    if (!ref.current) return
-    const t = state.clock.getElapsedTime() / 10
+  useFrame(state => {
+    if (!ref.current) return;
+    const t = state.clock.getElapsedTime() / 10;
     // Type assertion for material
-    const material = ref.current.material as MeshBasicMaterial
-    material.opacity = 0.3 + Math.sin(t) * 0.1
-  })
+    const material = ref.current.material as MeshBasicMaterial;
+    material.opacity = 0.3 + Math.sin(t) * 0.1;
+  });
 
   return (
     <group rotation={rotationAxis}>
       <mesh ref={ref}>
         <torusGeometry args={[radius * 1.5, 0.015, 16, 100]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.3}
-          toneMapped={false}
-        />
+        <meshBasicMaterial color={color} transparent opacity={0.3} toneMapped={false} />
       </mesh>
     </group>
-  )
-}
+  );
+};
 
 const Nucleus = () => {
-  const nucleusRef = useRef<Mesh>(null)
-  const glowRef = useRef<Mesh>(null)
+  const nucleusRef = useRef<Mesh>(null);
+  const glowRef = useRef<Mesh>(null);
 
-  useFrame((state) => {
-    if (!glowRef.current) return
+  useFrame(state => {
+    if (!glowRef.current) return;
     // Pulsing glow effect
     const pulse = Math.sin(state.clock.getElapsedTime() * 1.5) * 0.1 + 1.1;
     glowRef.current.scale.set(pulse, pulse, pulse);
-  })
+  });
 
   return (
     <group>
@@ -146,33 +145,29 @@ const Nucleus = () => {
       {/* Glow effect */}
       <mesh ref={glowRef} scale={1.2}>
         <sphereGeometry args={[1, 32, 32]} />
-        <meshBasicMaterial
-          color="#ff4444"
-          transparent
-          opacity={0.4}
-          toneMapped={false}
-        />
+        <meshBasicMaterial color="#ff4444" transparent opacity={0.4} toneMapped={false} />
       </mesh>
 
       {/* Inner sparkles */}
-      <Sparkles
-        count={20}
-        scale={[2, 2, 2]}
-        size={0.2}
-        speed={0.2}
-        opacity={0.8}
-        color="#ffaaaa"
-      />
+      <Sparkles count={20} scale={[2, 2, 2]} size={0.2} speed={0.2} opacity={0.8} color="#ffaaaa" />
     </group>
-  )
-}
+  );
+};
 
 export const MenuBackground = () => {
   const orbits = [
     { radius: 4, axis: [0, 0, MathUtils.degToRad(90)] as Vector3Tuple, color: '#5599ff' },
-    { radius: 4, axis: [MathUtils.degToRad(60), 0, MathUtils.degToRad(90)] as Vector3Tuple, color: '#55aaff' },
-    { radius: 4, axis: [MathUtils.degToRad(-60), 0, MathUtils.degToRad(90)] as Vector3Tuple, color: '#55ccff' },
-  ]
+    {
+      radius: 4,
+      axis: [MathUtils.degToRad(60), 0, MathUtils.degToRad(90)] as Vector3Tuple,
+      color: '#55aaff',
+    },
+    {
+      radius: 4,
+      axis: [MathUtils.degToRad(-60), 0, MathUtils.degToRad(90)] as Vector3Tuple,
+      color: '#55ccff',
+    },
+  ];
 
   return (
     <group rotation={[MathUtils.degToRad(-15), MathUtils.degToRad(30), 0]}>
@@ -185,11 +180,7 @@ export const MenuBackground = () => {
       {/* Orbits */}
       {orbits.map((orbit, i) => (
         <group key={i}>
-          <OrbitRing
-            radius={orbit.radius}
-            rotationAxis={orbit.axis}
-            color={orbit.color}
-          />
+          <OrbitRing radius={orbit.radius} rotationAxis={orbit.axis} color={orbit.color} />
           <OrbitingParticle
             radius={orbit.radius}
             rotationAxis={orbit.axis}
@@ -235,5 +226,5 @@ export const MenuBackground = () => {
       {/* Rim light */}
       <pointLight position={[-10, 2, 5]} intensity={0.3} color="#ff5555" />
     </group>
-  )
-} 
+  );
+};

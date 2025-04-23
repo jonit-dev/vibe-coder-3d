@@ -1,30 +1,32 @@
-import { OrbitControls } from '@react-three/drei'
-import { Canvas } from '@react-three/fiber'
-import { Suspense } from 'react'
-import { DemoSelector } from '../../components/DemoSelector'
-import { MenuBackground } from '../../components/MenuBackground'
-import { useDemo } from '../stores/demoStore'
-import { CameraDemo } from './CameraDemo'
-import { GameLoopDemo } from './GameLoopDemo'
+import { OrbitControls } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import { Suspense } from 'react';
+
+import { DemoSelector } from '../../components/DemoSelector';
+import { MenuBackground } from '../../components/MenuBackground';
+import { useDemo } from '../stores/demoStore';
+
+import { CameraDemo } from './CameraDemo';
+import { GameLoopDemo } from './GameLoopDemo';
 
 export const MainScene = () => {
-  const { currentCategory, currentDemo } = useDemo()
+  const { currentCategory, currentDemo } = useDemo();
 
   return (
-    <div style={{
-      width: '100vw',
-      height: '100vh',
-      background: '#000000',
-      overflow: 'hidden',
-      position: 'relative'
-    }}>
-
+    <div
+      style={{
+        width: '100vw',
+        height: '100vh',
+        background: '#000000',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
       <Canvas
         camera={{ position: [-21.56, 3.02, 17.68], fov: 40 }}
         style={{ background: '#000000' }}
       >
         <Suspense fallback={null}>
-
           {currentCategory === 'cameras' ? (
             <>
               {currentDemo === 'orbit' && <CameraDemo type="orbit" />}
@@ -58,5 +60,5 @@ export const MainScene = () => {
       </Canvas>
       <DemoSelector />
     </div>
-  )
-} 
+  );
+};

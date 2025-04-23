@@ -1,24 +1,40 @@
-import { useDemo } from '../game/stores/demoStore'
+import { useDemo } from '../game/stores/demoStore';
 
 const categories = [
-  { id: 'cameras', name: 'Camera System', description: 'Explore different camera types and behaviors' },
+  {
+    id: 'cameras',
+    name: 'Camera System',
+    description: 'Explore different camera types and behaviors',
+  },
   { id: 'gameLoop', name: 'Game Loop', description: 'Explore the game engine loop system' },
-] as const
+] as const;
 
 const cameraTypes = [
-  { id: 'orbit', name: 'Orbit Camera', description: 'Standard orbit controls for debugging and model viewing' },
-  { id: 'thirdPerson', name: 'Third Person', description: 'Follow camera with configurable offset' },
+  {
+    id: 'orbit',
+    name: 'Orbit Camera',
+    description: 'Standard orbit controls for debugging and model viewing',
+  },
+  {
+    id: 'thirdPerson',
+    name: 'Third Person',
+    description: 'Follow camera with configurable offset',
+  },
   { id: 'firstPerson', name: 'First Person', description: 'View from character perspective' },
   { id: 'fixed', name: 'Fixed Camera', description: 'Static camera with optional target tracking' },
   { id: 'cinematic', name: 'Cinematic', description: 'Scripted camera movements and sequences' },
-] as const
+] as const;
 
 const gameLoopTypes = [
-  { id: 'basic', name: 'Basic Game Loop', description: 'Demonstration of the core game engine loop' },
-] as const
+  {
+    id: 'basic',
+    name: 'Basic Game Loop',
+    description: 'Demonstration of the core game engine loop',
+  },
+] as const;
 
 export const DemoSelector = () => {
-  const { currentCategory, currentDemo, setCategory, setDemo, goBack } = useDemo()
+  const { currentCategory, currentDemo, setCategory, setDemo, goBack } = useDemo();
 
   const containerStyle = {
     position: 'absolute' as const,
@@ -29,7 +45,7 @@ export const DemoSelector = () => {
     borderRadius: 8,
     color: 'white',
     fontFamily: 'sans-serif',
-  }
+  };
 
   const buttonStyle = (isActive: boolean) => ({
     padding: '12px 20px',
@@ -40,21 +56,21 @@ export const DemoSelector = () => {
     cursor: 'pointer',
     textAlign: 'left' as const,
     width: '100%',
-  })
+  });
 
   const headerStyle = {
     display: 'flex',
     alignItems: 'center',
     marginBottom: 16,
     gap: 12,
-  }
+  };
 
   if (!currentCategory) {
     return (
       <div style={containerStyle}>
         <h2 style={{ margin: '0 0 16px 0' }}>Vibe Coder 3D Demos</h2>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-          {categories.map((category) => (
+          {categories.map(category => (
             <button
               key={category.id}
               onClick={() => setCategory(category.id)}
@@ -66,32 +82,32 @@ export const DemoSelector = () => {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   // Get demos based on current category
   const getDemosForCategory = () => {
     switch (currentCategory) {
       case 'cameras':
-        return cameraTypes
+        return cameraTypes;
       case 'gameLoop':
-        return gameLoopTypes
+        return gameLoopTypes;
       default:
-        return []
+        return [];
     }
-  }
+  };
 
   // Get title based on current category
   const getCategoryTitle = () => {
     switch (currentCategory) {
       case 'cameras':
-        return 'Camera System Demo'
+        return 'Camera System Demo';
       case 'gameLoop':
-        return 'Game Loop Demo'
+        return 'Game Loop Demo';
       default:
-        return 'Demo'
+        return 'Demo';
     }
-  }
+  };
 
   return (
     <div style={containerStyle}>
@@ -112,7 +128,7 @@ export const DemoSelector = () => {
         <h2 style={{ margin: 0 }}>{getCategoryTitle()}</h2>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-        {getDemosForCategory().map((demo) => (
+        {getDemosForCategory().map(demo => (
           <button
             key={demo.id}
             onClick={() => setDemo(demo.id)}
@@ -124,5 +140,5 @@ export const DemoSelector = () => {
         ))}
       </div>
     </div>
-  )
-} 
+  );
+};

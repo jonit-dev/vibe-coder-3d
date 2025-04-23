@@ -7,10 +7,7 @@ interface HelloCubeProps {
   color?: string;
 }
 
-export default function HelloCube({
-  position = [0, 0, 0],
-  color = '#ff6700',
-}: HelloCubeProps) {
+export default function HelloCube({ position = [0, 0, 0], color = '#ff6700' }: HelloCubeProps) {
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
@@ -36,4 +33,4 @@ export default function HelloCube({
       <meshStandardMaterial color={hovered ? '#6366f1' : color} />
     </mesh>
   );
-} 
+}

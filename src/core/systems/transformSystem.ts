@@ -1,12 +1,8 @@
 // Transform System
 // Synchronizes Transform components with Three.js objects
-import {
-  entityToObject,
-  Transform,
-  transformQuery,
-  world,
-} from '@core/lib/ecs';
 import { Quaternion, Vector3 } from 'three';
+
+import { entityToObject, Transform, transformQuery, world } from '@core/lib/ecs';
 
 // Reusable objects to avoid garbage collection
 const position = new Vector3();
@@ -23,7 +19,7 @@ export function transformSystem(): number {
   let updatedCount = 0;
 
   // Update Three.js objects from ECS data
-  entities.forEach((eid) => {
+  entities.forEach(eid => {
     // Skip if no corresponding object or doesn't need update
     const object = entityToObject.get(eid);
     if (!object || !Transform.needsUpdate[eid]) return;
@@ -42,11 +38,7 @@ export function transformSystem(): number {
       Transform.rotation[eid][3]
     );
 
-    scale.set(
-      Transform.scale[eid][0],
-      Transform.scale[eid][1],
-      Transform.scale[eid][2]
-    );
+    scale.set(Transform.scale[eid][0], Transform.scale[eid][1], Transform.scale[eid][2]);
 
     // Apply to Three.js object
     object.position.copy(position);
@@ -68,7 +60,7 @@ export function transformSystem(): number {
 export function markAllTransformsForUpdate(): number {
   const entities = transformQuery(world);
 
-  entities.forEach((eid) => {
+  entities.forEach(eid => {
     Transform.needsUpdate[eid] = 1;
   });
 

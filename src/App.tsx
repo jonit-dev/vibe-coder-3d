@@ -1,7 +1,5 @@
 import { MainScene } from './game/scenes/MainScene';
 
-
-
 /**
  * Main App component
  */
@@ -11,4 +9,4 @@ export default function App() {
       <MainScene />
     </div>
   );
-} 
+}
