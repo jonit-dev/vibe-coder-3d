@@ -2,10 +2,12 @@
 // Demonstrates the game engine loop with controls
 import { OrbitControls, Stars } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
+import { Physics } from '@react-three/rapier';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
 // Import our new core abstractions instead of the old hooks
+import { PhysicsSystem } from '@/core/components/physics/PhysicsSystem';
 import { EngineLoop } from '@core/components/EngineLoop';
 import { useECS } from '@core/hooks/useECS';
 import { EntityMesh } from '@core/index';
@@ -92,8 +94,6 @@ function Planet(props: {
 
 // Main Game Loop demo scene component - Solar System
 export function GameLoopDemo() {
-  // We don't need the game engine hooks anymore since EngineLoop handles this
-
   return (
     <EngineLoop autoStart={true} debug={false}>
       {/* Camera controls */}
@@ -107,68 +107,74 @@ export function GameLoopDemo() {
       <pointLight position={[0, 0, 0]} intensity={2} color="#FDF4DC" castShadow />
       <pointLight position={[10, 20, 10]} intensity={0.5} />
 
-      {/* Sun (center) */}
-      <EntityMesh position={[0, 0, 0]}>
-        <sphereGeometry args={[3, 32, 32]} />
-        <meshBasicMaterial color="#FDB813" />
-      </EntityMesh>
+      {/* Physics world - even though we don't use physics in this demo,
+          it allows us to use our core systems without errors */}
+      <Physics>
+        <PhysicsSystem />
 
-      {/* Sun glow */}
-      <EntityMesh position={[0, 0, 0]}>
-        <sphereGeometry args={[3.2, 32, 32]} />
-        <meshBasicMaterial color="#FDF4DC" transparent opacity={0.3} />
-      </EntityMesh>
+        {/* Sun (center) */}
+        <EntityMesh position={[0, 0, 0]}>
+          <sphereGeometry args={[3, 32, 32]} />
+          <meshBasicMaterial color="#FDB813" />
+        </EntityMesh>
 
-      {/* Planets */}
-      <Planet
-        position={[6, 0, 0]}
-        size={0.8}
-        color="#E17B35"
-        orbitRadius={6}
-        orbitSpeed={0.2}
-        rotationSpeed={0.5}
-        hasMoon={false}
-      />
+        {/* Sun glow */}
+        <EntityMesh position={[0, 0, 0]}>
+          <sphereGeometry args={[3.2, 32, 32]} />
+          <meshBasicMaterial color="#FDF4DC" transparent opacity={0.3} />
+        </EntityMesh>
 
-      <Planet
-        position={[10, 0, 0]}
-        size={1.2}
-        color="#3498db"
-        orbitRadius={10}
-        orbitSpeed={0.15}
-        rotationSpeed={0.4}
-        hasMoon={true}
-      />
+        {/* Planets */}
+        <Planet
+          position={[6, 0, 0]}
+          size={0.8}
+          color="#E17B35"
+          orbitRadius={6}
+          orbitSpeed={0.2}
+          rotationSpeed={0.5}
+          hasMoon={false}
+        />
 
-      <Planet
-        position={[14, 0, 0]}
-        size={0.9}
-        color="#E55B13"
-        orbitRadius={14}
-        orbitSpeed={0.1}
-        rotationSpeed={0.3}
-        hasMoon={false}
-      />
+        <Planet
+          position={[10, 0, 0]}
+          size={1.2}
+          color="#3498db"
+          orbitRadius={10}
+          orbitSpeed={0.15}
+          rotationSpeed={0.4}
+          hasMoon={true}
+        />
 
-      <Planet
-        position={[19, 0, 0]}
-        size={1.6}
-        color="#F7CA18"
-        orbitRadius={19}
-        orbitSpeed={0.08}
-        rotationSpeed={0.6}
-        hasMoon={false}
-      />
+        <Planet
+          position={[14, 0, 0]}
+          size={0.9}
+          color="#E55B13"
+          orbitRadius={14}
+          orbitSpeed={0.1}
+          rotationSpeed={0.3}
+          hasMoon={false}
+        />
 
-      <Planet
-        position={[26, 0, 0]}
-        size={0.7}
-        color="#C3272B"
-        orbitRadius={26}
-        orbitSpeed={0.06}
-        rotationSpeed={0.5}
-        hasMoon={false}
-      />
+        <Planet
+          position={[19, 0, 0]}
+          size={1.6}
+          color="#F7CA18"
+          orbitRadius={19}
+          orbitSpeed={0.08}
+          rotationSpeed={0.6}
+          hasMoon={false}
+        />
+
+        <Planet
+          position={[26, 0, 0]}
+          size={0.7}
+          color="#C3272B"
+          orbitRadius={26}
+          orbitSpeed={0.06}
+          rotationSpeed={0.5}
+          hasMoon={false}
+        />
+      </Physics>
     </EngineLoop>
   );
 }

@@ -3,6 +3,7 @@ import { CuboidCollider, Physics, RigidBody } from '@react-three/rapier';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 
 // Import our new core abstractions
+import { PhysicsSystem } from '@/core/components/physics/PhysicsSystem';
 import { EngineLoop } from '@core/components/EngineLoop';
 import { useECS } from '@core/hooks/useECS';
 import { Transform } from '@core/lib/ecs';
@@ -246,6 +247,9 @@ export const PhysicsDemo = () => {
       <OrbitControls enableDamping dampingFactor={0.05} minDistance={5} maxDistance={20} />
 
       <Physics gravity={[0, -9.81, 0]}>
+        {/* Initialize physics system with our new component */}
+        <PhysicsSystem />
+
         <Floor />
 
         {/* Add walls to contain objects */}
