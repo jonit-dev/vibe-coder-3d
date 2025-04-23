@@ -81,6 +81,8 @@ _Goal: Integrate Rapier physics and bitecs ECS into the core framework._
 _Goal: Implement foundational gameplay mechanics in the core and build a simple playable example._
 
 - **Tasks:**
+  - Define and implement core camera types (e.g., First Person, Third Person, Fixed, Cinematic) and switching mechanisms (`src/core/lib/camera.ts`, `src/core/components/CameraRig.tsx`).
+  - Create a main demo showcase scene (`/`) with interactive examples for each camera type.
   - Integrate `three-mesh-ui` for basic in-world UI elements (`src/core/components/ui`).
   - Integrate `howler.js` for basic audio playback (`src/core/lib/audio.ts`).
   - Develop core input handling system/hook (`src/core/hooks/useInput.ts`).
