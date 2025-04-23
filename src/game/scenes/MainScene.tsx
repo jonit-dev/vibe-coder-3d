@@ -6,6 +6,7 @@ import { DemoSelector } from '../../components/DemoSelector';
 import { MenuBackground } from '../../components/MenuBackground';
 import { useDemo } from '../stores/demoStore';
 
+import { AdvancedPhysicsDemo } from './AdvancedPhysicsDemo';
 import { CameraDemo } from './CameraDemo';
 import { GameLoopDemo } from './GameLoopDemo';
 import { PhysicsDemo } from './PhysicsDemo';
@@ -45,7 +46,10 @@ export const MainScene = () => {
           ) : currentCategory === 'gameLoop' && currentDemo === 'basic' ? (
             <GameLoopDemo />
           ) : currentCategory === 'physics' ? (
-            <PhysicsDemo />
+            <>
+              {currentDemo === 'basic' && <PhysicsDemo />}
+              {currentDemo === 'advanced' && <AdvancedPhysicsDemo />}
+            </>
           ) : (
             <>
               <MenuBackground />

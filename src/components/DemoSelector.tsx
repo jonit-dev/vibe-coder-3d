@@ -44,6 +44,11 @@ const physicsTypes = [
     name: 'Basic Physics Demo',
     description: 'Interactive physics with boxes, spheres and colliders',
   },
+  {
+    id: 'advanced',
+    name: 'Advanced Physics Demo',
+    description: 'Joints, pendulums, seesaws, and interactive physics',
+  },
 ] as const;
 
 export const DemoSelector = () => {

@@ -4,7 +4,7 @@ type DemoCategory = 'cameras' | 'gameLoop' | 'physics' | null;
 type CameraType = 'orbit' | 'thirdPerson' | 'firstPerson' | 'fixed' | 'cinematic' | null;
 
 type GameLoopType = 'basic' | null;
-type PhysicsType = 'basic' | null;
+type PhysicsType = 'basic' | 'advanced' | null;
 
 type DemoType = CameraType | GameLoopType | PhysicsType;
 
