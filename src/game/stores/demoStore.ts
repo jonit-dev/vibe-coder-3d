@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type DemoCategory = 'cameras' | null;
+type DemoCategory = 'cameras' | 'gameLoop' | null;
 type CameraType =
   | 'orbit'
   | 'thirdPerson'
@@ -9,11 +9,15 @@ type CameraType =
   | 'cinematic'
   | null;
 
+type GameLoopType = 'basic' | null;
+
+type DemoType = CameraType | GameLoopType;
+
 interface DemoStore {
   currentCategory: DemoCategory;
-  currentDemo: CameraType;
+  currentDemo: DemoType;
   setCategory: (category: DemoCategory) => void;
-  setDemo: (demo: CameraType) => void;
+  setDemo: (demo: DemoType) => void;
   goBack: () => void;
 }
 

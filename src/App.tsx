@@ -1,5 +1,14 @@
-import { MainScene } from './scenes/MainScene'
+import { MainScene } from './game/scenes/MainScene';
 
+
+
+/**
+ * Main App component
+ */
 export default function App() {
-  return <MainScene />
+  return (
+    <div className="app">
+      <MainScene />
+    </div>
+  );
 } 

@@ -12,10 +12,11 @@
     "@react-three/drei": "^10.0.6",
     "@react-three/fiber": "^9.1.2",
     "@tailwindcss/postcss": "^4.1.4",
+    "bitecs": "^0.3.40",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "three": "^0.175.0",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.2",
