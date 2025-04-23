@@ -131,7 +131,6 @@ const DynamicEntities: React.FC = () => {
  * Example of an entity with custom update logic
  */
 const RotatingEntity: React.FC = () => {
-  const speedRef = useRef(0.5);
   const meshRef = useRef<Mesh>(null);
 
   // Animate the object using regular R3F useFrame instead of ECS
@@ -169,7 +168,6 @@ const VelocityEntity: React.FC = () => {
       // Example of how to change velocity dynamically
       // This creates a circular-like motion by changing velocity direction
       const speed = 2;
-      const circleRadius = 3;
 
       // Calculate velocity based on position in circle
       const angle = time.current * 0.5; // Rotate slower than time
