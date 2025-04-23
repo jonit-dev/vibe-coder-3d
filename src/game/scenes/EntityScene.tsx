@@ -4,7 +4,7 @@ import { Physics, RigidBody } from '@react-three/rapier';
 import React, { useEffect, useRef, useState } from 'react';
 import { Mesh } from 'three';
 
-import { Entity, PhysicsBox, PhysicsSphere } from '@/core';
+import { Entity, PhysicsBox, PhysicsSphere, addVelocity } from '@/core';
 
 /**
  * Entity Scene Component
@@ -61,6 +61,9 @@ export const EntityScene: React.FC = () => {
 
             {/* Custom entity with update logic */}
             <RotatingEntity />
+
+            {/* Entity using velocity component */}
+            <VelocityEntity />
           </>
         )}
       </Physics>
@@ -145,6 +148,64 @@ const RotatingEntity: React.FC = () => {
       <mesh ref={meshRef} castShadow>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#9900ff" />
+      </mesh>
+    </Entity>
+  );
+};
+
+/**
+ * Entity that uses the Velocity component to move in a circular pattern
+ */
+const VelocityEntity: React.FC = () => {
+  const entityRef = useRef<number | null>(null);
+  const time = useRef(0);
+
+  // Setup and update velocity for circular movement
+  useFrame((_, delta) => {
+    time.current += delta;
+
+    // Calculate velocity for circular movement
+    if (entityRef.current !== null) {
+      // Example of how to change velocity dynamically
+      // This creates a circular-like motion by changing velocity direction
+      const speed = 2;
+      const circleRadius = 3;
+
+      // Calculate velocity based on position in circle
+      const angle = time.current * 0.5; // Rotate slower than time
+      const vx = Math.cos(angle) * speed;
+      const vz = Math.sin(angle) * speed;
+
+      // Update the velocity - normally we'd use ECS component access but
+      // for demo purposes and to avoid race conditions, we're calling addVelocity
+      addVelocity(entityRef.current, {
+        linear: [vx, 0, vz],
+        linearDamping: 0.1, // Add some damping to smooth movement
+      });
+    }
+  });
+
+  return (
+    <Entity
+      position={[-3, 0.5, 0]}
+      onUpdate={(entityId) => {
+        // Store the entity ID on first update
+        if (entityRef.current === null) {
+          entityRef.current = entityId;
+
+          // Initialize velocity with zero to add the component
+          addVelocity(entityId, {
+            linear: [0, 0, 0],
+            angular: [0, 0.5, 0], // Add some spin too
+            linearDamping: 0.1,
+            angularDamping: 0.01,
+          });
+        }
+      }}
+    >
+      <mesh castShadow>
+        <dodecahedronGeometry args={[0.7]} />
+        <meshStandardMaterial color="#00ffcc" />
       </mesh>
     </Entity>
   );

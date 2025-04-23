@@ -30,8 +30,21 @@ export const Transform = defineComponent({
   needsUpdate: Types.ui8,
 });
 
+// Velocity component for movement
+export const Velocity = defineComponent({
+  // Linear velocity (x, y, z)
+  linear: [Types.f32, 3],
+  // Angular velocity (around x, y, z axes)
+  angular: [Types.f32, 3],
+  // Damping factor for linear velocity (0-1)
+  linearDamping: Types.f32,
+  // Damping factor for angular velocity (0-1)
+  angularDamping: Types.f32,
+});
+
 // Define queries
 export const transformQuery = defineQuery([Transform]);
+export const velocityQuery = defineQuery([Transform, Velocity]);
 
 // Core entity functions
 export function createEntity() {
@@ -55,6 +68,35 @@ export function createEntity() {
   Transform.scale[entity][2] = 1;
 
   Transform.needsUpdate[entity] = 1; // Mark for update
+
+  return entity;
+}
+
+// Add velocity to an entity with default values
+export function addVelocity(
+  entity: number,
+  options?: {
+    linear?: [number, number, number];
+    angular?: [number, number, number];
+    linearDamping?: number;
+    angularDamping?: number;
+  },
+) {
+  addComponent(world, Velocity, entity);
+
+  // Set default or provided values
+  Velocity.linear[entity][0] = options?.linear?.[0] || 0;
+  Velocity.linear[entity][1] = options?.linear?.[1] || 0;
+  Velocity.linear[entity][2] = options?.linear?.[2] || 0;
+
+  Velocity.angular[entity][0] = options?.angular?.[0] || 0;
+  Velocity.angular[entity][1] = options?.angular?.[1] || 0;
+  Velocity.angular[entity][2] = options?.angular?.[2] || 0;
+
+  Velocity.linearDamping[entity] =
+    options?.linearDamping !== undefined ? options.linearDamping : 0.01;
+  Velocity.angularDamping[entity] =
+    options?.angularDamping !== undefined ? options.angularDamping : 0.01;
 
   return entity;
 }

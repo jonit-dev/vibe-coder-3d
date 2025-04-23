@@ -4,6 +4,7 @@ import { ReactNode, useEffect } from 'react';
 
 import { useGameLoop } from '../lib/gameLoop';
 import { runPhysicsSyncSystem } from '../systems/PhysicsSyncSystem';
+import { runVelocitySystem } from '../systems/VelocitySystem';
 
 // Types for component props
 interface EngineLoopProps {
@@ -82,6 +83,9 @@ export const EngineLoop = ({
  * This would be expanded as more systems are added
  */
 function runECSSystems(deltaTime: number) {
+  // Run velocity system first - updates positions based on velocity
+  const velocityCount = runVelocitySystem(deltaTime);
+
   // Run physics sync system - syncs physics bodies with Transform components
   const physicsSyncCount = runPhysicsSyncSystem(deltaTime);
 
@@ -89,8 +93,8 @@ function runECSSystems(deltaTime: number) {
   // e.g., movementSystem(ecsWorld, deltaTime);
 
   // Debug info
-  if (physicsSyncCount > 0) {
+  if (physicsSyncCount > 0 || velocityCount > 0) {
     // Uncomment for debugging:
-    // console.log(`Updated ${physicsSyncCount} physics entities`);
+    // console.log(`Updated ${velocityCount} velocity entities and ${physicsSyncCount} physics entities`);
   }
 }

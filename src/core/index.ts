@@ -27,6 +27,7 @@ export { useGameLoop } from './lib/gameLoop';
 
 // ECS
 export {
+  addVelocity,
   createEntity,
   destroyEntity,
   entityToObject,
@@ -35,6 +36,8 @@ export {
   resetWorld,
   Transform,
   transformQuery,
+  Velocity,
+  velocityQuery,
   world,
 } from './lib/ecs';
 
@@ -45,3 +48,4 @@ export {
   unregisterPhysicsBody,
 } from './systems/PhysicsSyncSystem';
 export { transformSystem } from './systems/transformSystem';
+export { runVelocitySystem } from './systems/VelocitySystem';
