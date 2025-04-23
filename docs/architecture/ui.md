@@ -33,12 +33,25 @@ sequenceDiagram
     end
 ```
 
-## DOM UI (React)
+## DOM UI
 
 - **Purpose:** Used for overlays, menus, debug panels, or interfaces that don't need to be part of the 3D world.
-- **Implementation:** Standard React components rendered outside the R3F Canvas.
-- **State Interaction:** Explain how DOM UI components interact with game state (via Zustand stores).
-- **Styling:** Mention the chosen styling solution (e.g., CSS Modules, Tailwind CSS, Styled Components).
+- **Implementation:** Standard React components styled with Tailwind CSS, rendered outside the R3F Canvas (typically in `App.tsx`).
+- **State Management:** The engine is agnostic about UI state; game-specific UI should use game-specific state stores.
+
+### Reference Implementation
+
+The engine provides a reference implementation to demonstrate patterns:
+
+- **`<Hud>`** (`src/core/components/ui/Hud.tsx`): A basic Heads-Up Display component showing how game UI might be structured with Tailwind CSS. This is intended as an example only - games should implement their own UI components that connect to their specific game state.
+
+### Game-Specific UI
+
+Games should implement their own UI components in their game code (e.g., `src/game/components/ui/`), which would:
+
+- Connect to game-specific state (e.g., `useGameState` from `src/game/state/gameState.ts`)
+- Implement game-specific UI/UX requirements
+- Follow the game's visual design language
 
 ## Integration
 

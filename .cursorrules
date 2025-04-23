@@ -1,3 +1,5 @@
 - When importing components, please prefer using ts alias paths (check tsconfig.json)
 - we use yarn as package manager
 - we use tailwindcss for styling
+- Promote Single Responsibility Principle, DRY, KISS principles.
+- Prefix interfaces with I

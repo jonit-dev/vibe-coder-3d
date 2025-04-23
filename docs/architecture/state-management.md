@@ -52,3 +52,28 @@ flowchart TD
     Action -- Updates state --> Store
 
 ```
+
+## Core Stores
+
+The application uses Zustand's minimalist approach for store creation, with strict separation of engine and game concerns:
+
+- **`useEngineStore`** (`src/core/state/engineStore.ts`): Manages engine configuration and rendering settings:
+  - Rendering settings (FPS, shadows, quality)
+  - Debug visualization flags
+  - Engine lifecycle controls
+
+Engine stores should be completely agnostic about game concepts (score, health, levels, etc.), maintaining a clean separation of concerns.
+
+## Game-Specific Stores
+
+Game-specific stores should be implemented at the game layer (`src/game/state/`) for state that relates to gameplay concepts.
+
+An example game state (as in `src/game/state/gameState.ts`) might include:
+
+- Score and health systems
+- Inventory management
+- Level progression
+- Character stats
+- Game phase management (menu, playing, paused)
+
+This separation follows the Single Responsibility Principle, making the engine reusable across many different types of games.

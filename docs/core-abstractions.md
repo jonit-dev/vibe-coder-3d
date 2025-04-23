@@ -131,19 +131,19 @@ Based on the existing structure (`src/core/lib/ecs.ts`, `src/core/lib/gameLoop.t
 4.  **Physics Sync System (`src/core/ecs/systems/PhysicsSyncSystem.ts`):** Implement the system to sync Rapier physics state with ECS `Transform` components. ✅ (Also added `VelocitySystem.ts`)
 5.  **Hook: `useEntity(entityId)`:** Develop the hook to access/subscribe to ECS data within React components. ✅ (Implemented `useEntity` and `useEntityQuery`)
 
-**Sprint 3: Input, Assets & Debugging**
+**Sprint 3: Input, Assets & Debugging** ✅
 
-1.  **Input System (`src/core/hooks/useInput.ts`, `src/core/lib/input.ts`):** Implement the `useInput` hook and the action mapping system.
-2.  **Asset Loading (`src/core/hooks/useAsset.ts`, `src/core/lib/assets.ts`):** Implement the `useAsset` hook and potentially a simple asset preloading mechanism.
-3.  **Debug Layer (`src/core/components/debug/DebugLayer.tsx`):** Create the `<DebugLayer>` component to toggle Rapier debug rendering and potentially other visualizations.
-4.  **Hook: `useCollisionEvents()`:** Implement the hook for handling physics collision events.
+1.  **Input System (`src/core/hooks/useInput.ts`, `src/core/lib/input.ts`):** Implement the `useInput` hook and the action mapping system. ✅
+2.  **Asset Loading (`src/core/hooks/useAsset.ts`, `src/core/lib/assets.ts`):** Implement the `useAsset` hook and potentially a simple asset preloading mechanism. ✅
+3.  **Debug Layer (`src/core/components/debug/DebugLayer.tsx`):** Create the `<DebugLayer>` component to toggle Rapier debug rendering and potentially other visualizations. ✅
+4.  **Hook: `useCollisionEvents()`:** Implement the hook for handling physics collision events. ✅
 
-**Sprint 4+: Gameplay Components, UI, Audio, Events**
+**Sprint 4+: Gameplay Components, UI, Audio, Events** ✅
 
-1.  **Gameplay Components (`src/core/components`):** Start implementing higher-level components like `<CharacterController>`. (Depends on specific game needs)
-2.  **UI Abstractions (`src/core/components/ui`):** Develop wrappers for in-world UI or helpers for DOM UI integration.
-3.  **Audio System (`src/core/lib/audio.ts`, `src/core/hooks/useAudio.ts`):** Implement the `AudioManager` and related hooks.
-4.  **Event Bus (`src/core/lib/events.ts`, `src/core/hooks/useEvent.ts`):** Set up the event bus and `useEvent` hook.
+1.  **Gameplay Components (`src/core/components`):** Start implementing higher-level components like `<CharacterController>`. ✅ (`CharacterController` implemented)
+2.  **UI Abstractions (`src/core/components/ui`):** Develop wrappers for in-world UI or helpers for DOM UI integration. ✅ (`Hud` component implemented for DOM UI)
+3.  **Audio System (`src/core/lib/audio.ts`, `src/core/hooks/useAudio.ts`):** Implement the `AudioManager` and related hooks. ✅ (`useAudio` hook for global controls implemented)
+4.  **Event Bus (`src/core/lib/events.ts`, `src/core/hooks/useEvent.ts`):** Set up the event bus and `useEvent` hook. ✅ (`useEvent` hook implemented)
 
 **Ongoing:**
 

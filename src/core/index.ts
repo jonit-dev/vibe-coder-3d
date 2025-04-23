@@ -24,9 +24,12 @@ export type { GameEngineControls } from './hooks/useGameEngine';
 
 // State
 export { useGameLoop } from './lib/gameLoop';
+export { useEngineStore } from './state/engineStore';
 
 // ECS
 export {
+  Transform,
+  Velocity,
   addVelocity,
   createEntity,
   destroyEntity,
@@ -34,9 +37,7 @@ export {
   markAllTransformsForUpdate,
   objectToEntity,
   resetWorld,
-  Transform,
   transformQuery,
-  Velocity,
   velocityQuery,
   world,
 } from './lib/ecs';
@@ -49,3 +50,9 @@ export {
 } from './systems/PhysicsSyncSystem';
 export { transformSystem } from './systems/transformSystem';
 export { runVelocitySystem } from './systems/VelocitySystem';
+
+// New Sprint 4 core abstractions
+export { CharacterController } from '@/core/components/CharacterController';
+export { Hud } from '@/core/components/ui';
+export { useAudio } from '@/core/hooks/useAudio';
+export { useEvent } from '@/core/hooks/useEvent';

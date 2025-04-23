@@ -22,6 +22,10 @@ This document details the primary libraries and technologies that form the found
 - **Howler.js:** Manages all audio playback, including background music, sound effects, and spatial audio linked to object positions within the scene.
 - **Colyseus:** Handles the real-time networking aspects for multiplayer functionality. It manages game rooms, synchronizes player states between clients and the server, and handles communication protocols.
 
+## Gameplay Components
+
+- **`<CharacterController>`:** A reusable component (`src/core/components/CharacterController.tsx`) providing basic first-person style movement (WASD) and jumping. It integrates with the `useInput` hook for action mapping and applies forces or velocity changes to an associated ECS entity's physics body.
+
 ## Development Tooling
 
 - **Vite:** Our build tool and development server. It provides extremely fast Hot Module Replacement (HMR) for instant feedback during development and optimizes the final build for production.
