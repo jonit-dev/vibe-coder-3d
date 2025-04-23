@@ -2,11 +2,25 @@
 
 This document outlines the plan for creating high-level abstractions in `src/core` to facilitate game development, drawing parallels to concepts found in engines like Unity and Godot.
 
+## TypeScript Path Aliases
+
+For better code organization and to avoid excessive relative imports, the project uses TypeScript path aliases:
+
+- `@core/` - Points to the `src/core` directory
+- All imports from the core library should use these aliases instead of relative paths
+  - Example: `import { useECS } from '@core/hooks/useECS'` instead of `import { useECS } from '../../hooks/useECS'`
+
 ## Goal
 
-Provide ergonomic and reusable components, hooks, and systems that abstract away the complexities of the underlying libraries (`@react-three/fiber`, `@react-three/rapier`, `bitecs`, `zustand`, etc.), offering a developer experience closer to a traditional game engine.
+The goal is to create a set of well-documented, type-safe abstractions that simplify common game development tasks while providing flexibility for different game types.
 
-These abstractions should remain agnostic about gameplay mechanics and game-specific concepts, focusing only on providing the technical foundation that any game might need. Game-specific functionality should be built on top of these abstractions in game-specific code.
+Each abstraction should:
+
+- Encapsulate a specific concern
+- Have a clear, concise API
+- Be documented with examples
+- Support TypeScript type checking
+- Be as performant as possible while remaining developer-friendly
 
 ## Core Concepts & Proposed Abstractions
 
@@ -114,31 +128,24 @@ These abstractions should remain agnostic about gameplay mechanics and game-spec
 
 ## Implementation Plan
 
-Based on the existing structure (`src/core/lib/ecs.ts`, `src/core/lib/gameLoop.ts`) and the roadmap, the implementation will proceed as follows:
+**Sprint 1: Core Abstractions** ✅
 
-**Sprint 1: Core Loop & Physics Integration** ✅
+1.  **ECS (Entity Component System):** (`src/core/lib/ecs.ts`, `src/core/hooks/useECS.ts`) The foundation for game objects and systems. ✅
+2.  **Physics Abstractions:** (`src/core/components/physics/`, `src/core/hooks/usePhysics.ts`) Wrappers and hooks for Rapier physics. ✅
+3.  **Input System:** (`src/core/lib/input.ts`, `src/core/hooks/useInput.ts`) Abstractions for keyboard, mouse, and gamepad input. ✅
+4.  **Camera Controls:** (`src/core/components/camera/`) Set of camera components for different game types. ✅
 
-1.  **Game Loop Component:** Create a core React component (e.g., `<EngineLoop>`) that uses `useFrame` and integrates with `useGameLoop` state. ✅
-2.  **Physics Setup (`src/core/lib/physics.ts`):** Initialize the Rapier world within the R3F context (`<Physics>` component from `@react-three/rapier`). ✅
-3.  **ECS System Execution:** Integrate ECS system execution (starting with a basic `PhysicsSyncSystem`) into the `<EngineLoop>` component's `useFrame` callback. ✅
-4.  **Basic State Store (`src/core/state/useCoreStore.ts`):** Set up a minimal Zustand store for essential core state (e.g., references to ECS/Physics worlds if needed centrally). ✅
-5.  **Core Hooks (`src/core/hooks`):** Implement `useECS()` and `usePhysics()` hooks to provide easy access to the world instances. ✅
-6.  **Physics Abstractions (`src/core/components/physics`):** Create components for physics objects, triggers, and joints that integrate with ECS. ✅
+**Sprint 2: Advanced Rendering** ✅
 
-**Sprint 2: Entity Abstraction & Basic Components** ✅
+1.  **Asset Loading:** (`src/core/hooks/useAssetLoader.ts`) Utilities for loading models, textures, etc. ✅
+2.  **Post-Processing:** (`src/core/components/rendering/PostProcessing.tsx`) Set up easy-to-use post-processing effects. ✅
+3.  **Environment:** (`src/core/components/rendering/Environment.tsx`) Helpers for skyboxes, lighting presets, etc. ✅
 
-1.  **`<Entity>` Component (`src/core/components/Entity.tsx`):** Develop the base `<Entity>` component that manages ECS entity creation/destruction and potentially links to a Three.js `Object3D`. ✅
-2.  **ECS Components (`src/core/ecs/components`):** Define more core ECS components (e.g., `Velocity`, `Renderable`, `PhysicsBodyRef`). ✅ (`Transform`, `PhysicsBodyRef`, `Velocity` implemented)
-3.  **`<RigidBody>`/`<Collider>` Wrappers (`src/core/components/physics`):** Create wrappers around Rapier components for simplified usage, potentially integrating them with the `<Entity>` component. ✅ (Covered by `PhysicsObject`, `PhysicsBox`, `PhysicsSphere` etc.)
-4.  **Physics Sync System (`src/core/ecs/systems/PhysicsSyncSystem.ts`):** Implement the system to sync Rapier physics state with ECS `Transform` components. ✅ (Also added `VelocitySystem.ts`)
-5.  **Hook: `useEntity(entityId)`:** Develop the hook to access/subscribe to ECS data within React components. ✅ (Implemented `useEntity` and `useEntityQuery`)
+**Sprint 3: Game Loop and State Management** ✅
 
-**Sprint 3: Input, Assets & Debugging** ✅
-
-1.  **Input System (`src/core/hooks/useInput.ts`, `src/core/lib/input.ts`):** Implement the `useInput` hook and the action mapping system. ✅
-2.  **Asset Loading (`src/core/hooks/useAsset.ts`, `src/core/lib/assets.ts`):** Implement the `useAsset` hook and potentially a simple asset preloading mechanism. ✅
-3.  **Debug Layer (`src/core/components/debug/DebugLayer.tsx`):** Create the `<DebugLayer>` component to toggle Rapier debug rendering and potentially other visualizations. ✅
-4.  **Hook: `useCollisionEvents()`:** Implement the hook for handling physics collision events. ✅
+1.  **Game Loop:** (`src/core/hooks/useGameLoop.ts`) Game loop abstraction with fixed timestep. ✅
+2.  **State Management:** (`src/core/lib/state.ts`, `src/core/hooks/useState.ts`) Game state management with Zustand. ✅
+3.  **Game Modes:** (`src/core/hooks/useGameMode.ts`) Managing different game modes/screens. ✅
 
 **Sprint 4+: Gameplay Components, UI, Audio, Events** ✅
 

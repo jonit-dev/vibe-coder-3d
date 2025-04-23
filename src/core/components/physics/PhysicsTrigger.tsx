@@ -2,9 +2,9 @@
 import { CuboidCollider, RapierRigidBody, RigidBody } from '@react-three/rapier';
 import { ReactNode, useEffect, useRef } from 'react';
 
-import { useECS } from '../../hooks/useECS';
-import { Transform } from '../../lib/ecs';
-import { registerPhysicsBody } from '../../systems/PhysicsSyncSystem';
+import { useECS } from '@core/hooks/useECS';
+import { Transform } from '@core/lib/ecs';
+import { registerPhysicsBody } from '@core/systems/PhysicsSyncSystem';
 
 // Props for the PhysicsTrigger component
 export interface IPhysicsTriggerProps {
@@ -52,22 +52,42 @@ export const PhysicsTrigger = ({
       // Register the physics body with ECS
       registerPhysicsBody(entity, rigidBodyRef.current as any);
     }
+
+    // Cleanup when component unmounts
+    return () => {
+      if (entityRef.current !== null) {
+        // Clean up the entity when the component unmounts
+        // This would be implemented in a real system
+      }
+    };
   }, [createEntity, position]);
 
   // Handle collision events if provided
   const handleCollisionEnter = (payload: any) => {
     if (onEnter && payload.other.rigidBodyObject) {
-      // Call the onEnter callback with the entity ID
-      // In a real implementation, you'd get the actual entity ID
-      onEnter(0);
+      // Extract the actual entity ID from the colliding object's userData
+      // This approach assumes the entity ID is stored in userData.entityId
+      const otherBody = payload.other.rigidBodyObject;
+      const otherEntity = otherBody.userData?.entityId || 0;
+
+      // Only call onEnter if we have a valid entity ID
+      if (otherEntity !== 0) {
+        onEnter(otherEntity);
+      }
     }
   };
 
   const handleCollisionExit = (payload: any) => {
     if (onExit && payload.other.rigidBodyObject) {
-      // Call the onExit callback with the entity ID
-      // In a real implementation, you'd get the actual entity ID
-      onExit(0);
+      // Extract the actual entity ID from the colliding object's userData
+      // This approach assumes the entity ID is stored in userData.entityId
+      const otherBody = payload.other.rigidBodyObject;
+      const otherEntity = otherBody.userData?.entityId || 0;
+
+      // Only call onExit if we have a valid entity ID
+      if (otherEntity !== 0) {
+        onExit(otherEntity);
+      }
     }
   };
 
