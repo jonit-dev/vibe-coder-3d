@@ -6,7 +6,6 @@ import {
   useSphericalJoint,
 } from '@react-three/rapier';
 import { RefObject } from 'react';
-import { Vector3 } from 'three';
 
 // Type for the joint type
 export type JointType = 'revolute' | 'fixed' | 'spherical';
@@ -41,11 +40,6 @@ export const PhysicsJoint = ({
   },
   axis = [0, 1, 0],
 }: PhysicsJointProps) => {
-  // Convert anchor points to Vector3 if needed
-  const anchorA = new Vector3(...anchor.pointA);
-  const anchorB = new Vector3(...anchor.pointB);
-  const axisVec = new Vector3(...axis);
-
   // Use the appropriate joint hook based on the joint type
   switch (type) {
     case 'revolute':
