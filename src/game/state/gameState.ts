@@ -4,7 +4,7 @@ import { create } from 'zustand';
  * Example game-specific state
  * This is NOT part of the engine, but rather an example of how a game would implement its own state
  */
-interface GameState {
+interface IGameState {
   // Game-specific state
   score: number;
   health: number;
@@ -29,7 +29,7 @@ interface GameState {
 /**
  * Example implementation - actual games would customize this based on their needs
  */
-export const useGameState = create<GameState>((set) => ({
+export const useGameState = create<IGameState>((set) => ({
   // Default values
   score: 0,
   health: 100,

@@ -3,7 +3,7 @@ import { Physics } from '@react-three/rapier';
 import { useControls } from 'leva';
 import { ReactNode, useMemo } from 'react';
 
-interface DebugLayerProps {
+interface IDebugLayerProps {
   children: ReactNode;
   defaultPhysics?: boolean;
   defaultStats?: boolean;
@@ -18,7 +18,7 @@ export function DebugLayer({
   defaultPhysics = false,
   defaultStats = false,
   defaultWireframe = false,
-}: DebugLayerProps) {
+}: IDebugLayerProps) {
   // Debug controls with leva
   const { showPhysics, showStats, showWireframe } = useControls('Debug', {
     showPhysics: { value: defaultPhysics, label: 'Physics' },

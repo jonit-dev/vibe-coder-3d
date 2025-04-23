@@ -10,7 +10,7 @@ import {
   Transform,
 } from '@core/lib/ecs';
 
-export interface EntityProps {
+export interface IEntityProps {
   position?: [number, number, number];
   rotation?: [number, number, number, number];
   scale?: [number, number, number];
@@ -24,7 +24,7 @@ export interface EntityProps {
  *
  * Manages the lifecycle of an ECS entity and connects it to the Three.js scene graph
  */
-export const Entity: React.FC<EntityProps> = ({
+export const Entity: React.FC<IEntityProps> = ({
   position = [0, 0, 0],
   rotation = [0, 0, 0, 1],
   scale = [1, 1, 1],

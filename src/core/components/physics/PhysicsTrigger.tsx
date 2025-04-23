@@ -7,7 +7,7 @@ import { Transform } from '../../lib/ecs';
 import { registerPhysicsBody } from '../../systems/PhysicsSyncSystem';
 
 // Props for the PhysicsTrigger component
-export interface PhysicsTriggerProps {
+export interface IPhysicsTriggerProps {
   position?: [number, number, number];
   size?: [number, number, number]; // half-width, half-height, half-depth
   visible?: boolean;
@@ -30,7 +30,7 @@ export const PhysicsTrigger = ({
   onEnter,
   onExit,
   children,
-}: PhysicsTriggerProps) => {
+}: IPhysicsTriggerProps) => {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const { createEntity } = useECS();
 

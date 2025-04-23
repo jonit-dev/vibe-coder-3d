@@ -29,12 +29,12 @@ const inputMap: Record<string, InputAction> = {
 };
 
 // Zustand store for input state
-interface InputState {
+interface IInputState {
   actions: Partial<Record<InputAction, boolean>>;
   setAction: (action: InputAction, state: boolean) => void;
 }
 
-const useInputStore = create<InputState>((set) => ({
+const useInputStore = create<IInputState>((set) => ({
   actions: {},
   setAction: (action, state) =>
     set((s) => ({

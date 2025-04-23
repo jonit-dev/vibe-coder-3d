@@ -6,7 +6,7 @@ import { resetWorld } from '@core/lib/ecs';
 import { useGameLoop } from '@core/lib/gameLoop';
 
 // The controls returned by the hook
-export interface GameEngineControls {
+export interface IGameEngineControls {
   startEngine: () => void;
   stopEngine: () => void;
   pauseEngine: () => void;
@@ -18,7 +18,7 @@ export interface GameEngineControls {
  * Hook to control the game engine
  * Provides memoized functions to start, stop, pause, resume, and reset the engine
  */
-export function useGameEngine(): GameEngineControls {
+export function useGameEngine(): IGameEngineControls {
   // Start the engine
   const startEngine = useCallback(() => {
     useGameLoop.getState().startLoop();

@@ -12,7 +12,7 @@ import {
 } from '@core/lib/ecs';
 
 // Props for the EntityMesh component
-interface EntityMeshProps {
+interface IEntityMeshProps {
   // Initial transform properties
   position?: [number, number, number];
   rotation?: [number, number, number, number]; // Quaternion
@@ -51,7 +51,7 @@ export function EntityMesh({
 
   // Rest will be passed to the mesh
   ...props
-}: EntityMeshProps) {
+}: IEntityMeshProps) {
   // Reference to the mesh object and entity ID
   const meshRef = useRef<Object3D | null>(null);
   const entityRef = useRef<number>(-1);

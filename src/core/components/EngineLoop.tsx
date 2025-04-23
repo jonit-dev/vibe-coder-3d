@@ -7,7 +7,7 @@ import { runPhysicsSyncSystem } from '../systems/PhysicsSyncSystem';
 import { runVelocitySystem } from '../systems/VelocitySystem';
 
 // Types for component props
-interface EngineLoopProps {
+interface IEngineLoopProps {
   children?: ReactNode;
   autoStart?: boolean;
   paused?: boolean;
@@ -23,7 +23,7 @@ export const EngineLoop = ({
   autoStart = true,
   paused = false,
   debug = false,
-}: EngineLoopProps) => {
+}: IEngineLoopProps) => {
   // Get access to the game loop state
   const gameLoop = useGameLoop();
 

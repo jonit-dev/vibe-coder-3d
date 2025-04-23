@@ -4,10 +4,10 @@
 // Components
 export { EngineLoop } from './components/EngineLoop';
 export { Entity } from './components/Entity';
-export type { EntityProps } from './components/Entity';
+export type { IEntityProps as EntityProps } from './components/Entity';
 export { EntityMesh } from './components/EntityMesh';
 export { GameEngine } from './components/GameEngine';
-export type { GameEngineProps } from './components/GameEngine';
+export type { IGameEngineProps as GameEngineProps } from './components/GameEngine';
 
 // Physics Components
 export { PhysicsBox } from './components/physics/PhysicsBox';
@@ -20,7 +20,7 @@ export { PhysicsTrigger } from './components/physics/PhysicsTrigger';
 // Hooks
 export { useEntity, useEntityQuery } from './hooks/useEntity';
 export { useGameEngine } from './hooks/useGameEngine';
-export type { GameEngineControls } from './hooks/useGameEngine';
+export type { IGameEngineControls as GameEngineControls } from './hooks/useGameEngine';
 
 // State
 export { useGameLoop } from './lib/gameLoop';

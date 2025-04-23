@@ -6,13 +6,13 @@ export type CollisionCallback = (entityA: number, entityB: number, started: bool
 export type SensorCallback = (entityA: number, entityB: number, overlapping: boolean) => void;
 
 // Define types for Rapier events based on observation
-interface RapierEventPair {
+interface IRapierEventPair {
   collider1: { userData?: { entityId?: number } };
   collider2: { userData?: { entityId?: number } };
 }
 
-interface RapierEvent {
-  pairs: RapierEventPair[];
+interface IRapierEvent {
+  pairs: IRapierEventPair[];
 }
 
 /**
@@ -33,10 +33,10 @@ export function useCollisionEvents(options: {
     // Setup event listeners for the Rapier physics world
     // Using any type temporarily since Rapier's TypeScript types might not fully expose event system
     // @ts-expect-error - Rapier's world.on might not be in types but exists at runtime
-    const unsubscribeCollisionEnter = world.on('collisionStart', (event: RapierEvent) => {
+    const unsubscribeCollisionEnter = world.on('collisionStart', (event: IRapierEvent) => {
       if (!options.onCollisionEnter) return;
 
-      event.pairs.forEach((pair: RapierEventPair) => {
+      event.pairs.forEach((pair: IRapierEventPair) => {
         // Get entity IDs from Rapier colliders (assuming they're stored in userData)
         const entityA = pair.collider1.userData?.entityId ?? -1;
         const entityB = pair.collider2.userData?.entityId ?? -1;
@@ -46,10 +46,10 @@ export function useCollisionEvents(options: {
     });
 
     // @ts-expect-error - Rapier's world.on might not be in types but exists at runtime
-    const unsubscribeCollisionExit = world.on('collisionEnd', (event: RapierEvent) => {
+    const unsubscribeCollisionExit = world.on('collisionEnd', (event: IRapierEvent) => {
       if (!options.onCollisionExit) return;
 
-      event.pairs.forEach((pair: RapierEventPair) => {
+      event.pairs.forEach((pair: IRapierEventPair) => {
         const entityA = pair.collider1.userData?.entityId ?? -1;
         const entityB = pair.collider2.userData?.entityId ?? -1;
 
@@ -58,10 +58,10 @@ export function useCollisionEvents(options: {
     });
 
     // @ts-expect-error - Rapier's world.on might not be in types but exists at runtime
-    const unsubscribeSensorEnter = world.on('sensorStart', (event: RapierEvent) => {
+    const unsubscribeSensorEnter = world.on('sensorStart', (event: IRapierEvent) => {
       if (!options.onSensorEnter) return;
 
-      event.pairs.forEach((pair: RapierEventPair) => {
+      event.pairs.forEach((pair: IRapierEventPair) => {
         const entityA = pair.collider1.userData?.entityId ?? -1;
         const entityB = pair.collider2.userData?.entityId ?? -1;
 
@@ -70,10 +70,10 @@ export function useCollisionEvents(options: {
     });
 
     // @ts-expect-error - Rapier's world.on might not be in types but exists at runtime
-    const unsubscribeSensorExit = world.on('sensorEnd', (event: RapierEvent) => {
+    const unsubscribeSensorExit = world.on('sensorEnd', (event: IRapierEvent) => {
       if (!options.onSensorExit) return;
 
-      event.pairs.forEach((pair: RapierEventPair) => {
+      event.pairs.forEach((pair: IRapierEventPair) => {
         const entityA = pair.collider1.userData?.entityId ?? -1;
         const entityB = pair.collider2.userData?.entityId ?? -1;
 

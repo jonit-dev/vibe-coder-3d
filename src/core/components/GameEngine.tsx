@@ -7,7 +7,7 @@ import { EngineLoop } from '@core/components/EngineLoop';
 import { useGameEngine } from '@core/hooks/useGameEngine';
 
 // Props for the GameEngine component
-export interface GameEngineProps {
+export interface IGameEngineProps {
   /** Whether to auto-start the engine on mount (default: true) */
   autoStart?: boolean;
 
@@ -30,7 +30,7 @@ export function GameEngine({
   canvasProps,
   noCanvas = false,
   children,
-}: GameEngineProps) {
+}: IGameEngineProps) {
   // Get controls from the hook
   const { startEngine, stopEngine } = useGameEngine();
 

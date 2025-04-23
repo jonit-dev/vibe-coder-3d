@@ -2,12 +2,12 @@ import { useFrame } from '@react-three/fiber';
 import { useRef, useState } from 'react';
 import { Mesh } from 'three';
 
-interface HelloCubeProps {
+interface IHelloCubeProps {
   position?: [number, number, number];
   color?: string;
 }
 
-export default function HelloCube({ position = [0, 0, 0], color = '#ff6700' }: HelloCubeProps) {
+export default function HelloCube({ position = [0, 0, 0], color = '#ff6700' }: IHelloCubeProps) {
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);

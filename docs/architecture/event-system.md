@@ -75,16 +75,13 @@ export type CoreEvents = {
     export const emitter: Emitter<CoreEvents> = mitt<CoreEvents>();
 
     // Optional: Export helper functions for type-safe emitting/listening
-    export function emit<Key extends keyof CoreEvents>(
-      type: Key,
-      event: CoreEvents[Key]
-    ) {
+    export function emit<Key extends keyof CoreEvents>(type: Key, event: CoreEvents[Key]) {
       emitter.emit(type, event);
     }
 
     export function on<Key extends keyof CoreEvents>(
       type: Key,
-      handler: (event: CoreEvents[Key]) => void
+      handler: (event: CoreEvents[Key]) => void,
     ) {
       emitter.on(type, handler);
       // Return an unsubscribe function for easier cleanup
@@ -93,7 +90,7 @@ export type CoreEvents = {
 
     export function off<Key extends keyof CoreEvents>(
       type: Key,
-      handler: (event: CoreEvents[Key]) => void
+      handler: (event: CoreEvents[Key]) => void,
     ) {
       emitter.off(type, handler);
     }
@@ -161,6 +158,52 @@ export type CoreEvents = {
 
 4.  **Unsubscribing (`off`)**:
     Crucial to prevent memory leaks. Listeners **must** be removed when the listening entity/system/component is no longer active. The helper function `on` shown above returns an `unsubscribe` function to make this easier, especially within `useEffect` hooks.
+
+## React Integration Hook: useEvent
+
+The engine provides a convenient React hook to safely subscribe to events:
+
+```typescript
+// src/core/hooks/useEvent.ts
+import { useEffect } from 'react';
+import { on, CoreEvents } from '@/core/lib/events';
+
+export function useEvent<K extends keyof CoreEvents>(
+  eventName: K,
+  handler: (event: CoreEvents[K]) => void,
+) {
+  useEffect(() => {
+    const unsubscribe = on(eventName, handler);
+    return () => {
+      unsubscribe();
+    };
+  }, [eventName, handler]);
+}
+```
+
+This hook:
+
+- Safely subscribes to events when the component mounts
+- Properly cleans up subscriptions when the component unmounts
+- Is fully typed for event payloads
+- Automatically handles dependency tracking
+
+Example usage:
+
+```tsx
+import { useEvent } from '@/core';
+
+function ScoreDisplay() {
+  const [score, setScore] = useState(0);
+
+  // Subscribe to score change events
+  useEvent('game:scoreChanged', (event) => {
+    setScore(event.newScore);
+  });
+
+  return <div>Score: {score}</div>;
+}
+```
 
 ## Visualization
 

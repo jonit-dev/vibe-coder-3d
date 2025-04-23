@@ -1,10 +1,10 @@
 // PhysicsSphere.tsx - A sphere with physics that integrates with our ECS
 import { ReactNode } from 'react';
 
-import { PhysicsObject, PhysicsObjectProps } from './PhysicsObject';
+import { IPhysicsObjectProps, PhysicsObject } from './PhysicsObject';
 
 // Props for the PhysicsSphere component
-export interface PhysicsSphereProps extends Omit<PhysicsObjectProps, 'children'> {
+export interface IPhysicsSphereProps extends Omit<IPhysicsObjectProps, 'children'> {
   radius?: number;
   widthSegments?: number;
   heightSegments?: number;
@@ -24,7 +24,7 @@ export const PhysicsSphere = ({
   wireframe = false,
   children,
   ...physicsProps
-}: PhysicsSphereProps) => {
+}: IPhysicsSphereProps) => {
   // Default to ball collider if not specified
   const colliders = physicsProps.colliders || 'ball';
 

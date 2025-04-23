@@ -11,7 +11,7 @@ import { RefObject } from 'react';
 export type JointType = 'revolute' | 'fixed' | 'spherical';
 
 // Props for the PhysicsJoint component
-export interface PhysicsJointProps {
+export interface IPhysicsJointProps {
   bodyA: RefObject<RapierRigidBody>;
   bodyB: RefObject<RapierRigidBody>;
   type: JointType;
@@ -39,7 +39,7 @@ export const PhysicsJoint = ({
     pointB: [0, 0, 0],
   },
   axis = [0, 1, 0],
-}: PhysicsJointProps) => {
+}: IPhysicsJointProps) => {
   // Use the appropriate joint hook based on the joint type
   switch (type) {
     case 'revolute':

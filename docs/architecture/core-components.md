@@ -24,7 +24,19 @@ This document details the primary libraries and technologies that form the found
 
 ## Gameplay Components
 
-- **`<CharacterController>`:** A reusable component (`src/core/components/CharacterController.tsx`) providing basic first-person style movement (WASD) and jumping. It integrates with the `useInput` hook for action mapping and applies forces or velocity changes to an associated ECS entity's physics body.
+The engine provides minimal reference implementations of gameplay components that developers can use as a starting point:
+
+- **`<CharacterController>`** (`src/core/components/CharacterController.tsx`): A reference implementation of a basic character controller:
+  - Provides WASD-style movement using the input system
+  - Implements jumping via the physics system
+  - Integrates with ECS via entity references
+  - Serves as example of how game code can combine core systems (input, physics, ECS)
+
+Note that these components are intentionally minimal. Game developers are expected to:
+
+- Create their own game-specific controllers in their game code
+- Extend or replace these components based on their specific gameplay needs
+- Implement more advanced features (e.g., character abilities, animations) in their game code
 
 ## Development Tooling
 

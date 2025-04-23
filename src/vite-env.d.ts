@@ -3,6 +3,7 @@
 // This file contains type declarations for Vite-specific environment variables
 // and other Vite-specific globals that may be used in the project.
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 interface ImportMeta {
   readonly env: {
     readonly MODE: string;

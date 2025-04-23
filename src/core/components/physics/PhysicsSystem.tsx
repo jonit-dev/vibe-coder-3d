@@ -3,7 +3,7 @@ import { ReactNode } from 'react';
 
 import { usePhysicsSystem } from '../../lib/physics';
 
-interface PhysicsSystemProps {
+interface IPhysicsSystemProps {
   children?: ReactNode;
 }
 
@@ -13,7 +13,7 @@ interface PhysicsSystemProps {
  * This component must be used inside a <Physics> component from @react-three/rapier.
  * It initializes the physics system and makes it available to the rest of the application.
  */
-export const PhysicsSystem = ({ children }: PhysicsSystemProps) => {
+export const PhysicsSystem = ({ children }: IPhysicsSystemProps) => {
   // Initialize the physics system - this hook will access Rapier world
   usePhysicsSystem();
 

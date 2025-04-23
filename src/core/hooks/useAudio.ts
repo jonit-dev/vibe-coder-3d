@@ -2,14 +2,14 @@ import { Howler } from 'howler';
 import { useEffect } from 'react';
 import { create } from 'zustand';
 
-interface AudioState {
+interface IAudioState {
   muted: boolean;
   volume: number; // 0-1
   setMuted: (muted: boolean) => void;
   setVolume: (volume: number) => void;
 }
 
-export const useAudioStore = create<AudioState>((set) => ({
+export const useAudioStore = create<IAudioState>((set) => ({
   muted: false,
   volume: 1,
   setMuted: (muted) => set({ muted }),

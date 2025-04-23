@@ -9,7 +9,7 @@ type EcsType = 'entity' | null;
 
 type DemoType = CameraType | GameLoopType | PhysicsType | EcsType;
 
-interface DemoStore {
+interface IDemoStore {
   currentCategory: DemoCategory;
   currentDemo: DemoType;
   setCategory: (category: DemoCategory) => void;
@@ -17,7 +17,7 @@ interface DemoStore {
   goBack: () => void;
 }
 
-export const useDemo = create<DemoStore>((set) => ({
+export const useDemo = create<IDemoStore>((set) => ({
   currentCategory: null,
   currentDemo: null,
   setCategory: (category) => set({ currentCategory: category, currentDemo: null }),

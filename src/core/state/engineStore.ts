@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface EngineState {
+interface IEngineState {
   // Rendering settings
   fps: number;
   shadows: boolean;
@@ -18,7 +18,7 @@ interface EngineState {
   setShowFps: (enabled: boolean) => void;
 }
 
-export const useEngineStore = create<EngineState>((set) => ({
+export const useEngineStore = create<IEngineState>((set) => ({
   // Default settings
   fps: 60,
   shadows: true,

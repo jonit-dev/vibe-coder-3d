@@ -1,10 +1,10 @@
 // PhysicsBox.tsx - A box with physics that integrates with our ECS
 import { ReactNode } from 'react';
 
-import { PhysicsObject, PhysicsObjectProps } from './PhysicsObject';
+import { IPhysicsObjectProps, PhysicsObject } from './PhysicsObject';
 
 // Props for the PhysicsBox component
-export interface PhysicsBoxProps extends Omit<PhysicsObjectProps, 'children'> {
+export interface IPhysicsBoxProps extends Omit<IPhysicsObjectProps, 'children'> {
   size?: [number, number, number]; // width, height, depth
   color?: string;
   wireframe?: boolean;
@@ -20,7 +20,7 @@ export const PhysicsBox = ({
   wireframe = false,
   children,
   ...physicsProps
-}: PhysicsBoxProps) => {
+}: IPhysicsBoxProps) => {
   // Default to cuboid collider if not specified
   const colliders = physicsProps.colliders || 'cuboid';
 

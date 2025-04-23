@@ -6,6 +6,8 @@ This document outlines the plan for creating high-level abstractions in `src/cor
 
 Provide ergonomic and reusable components, hooks, and systems that abstract away the complexities of the underlying libraries (`@react-three/fiber`, `@react-three/rapier`, `bitecs`, `zustand`, etc.), offering a developer experience closer to a traditional game engine.
 
+These abstractions should remain agnostic about gameplay mechanics and game-specific concepts, focusing only on providing the technical foundation that any game might need. Game-specific functionality should be built on top of these abstractions in game-specific code.
+
 ## Core Concepts & Proposed Abstractions
 
 ### 1. Scene Graph & Entities (Unity: GameObject/Prefab, Godot: Node/Scene)
@@ -140,10 +142,12 @@ Based on the existing structure (`src/core/lib/ecs.ts`, `src/core/lib/gameLoop.t
 
 **Sprint 4+: Gameplay Components, UI, Audio, Events** ✅
 
-1.  **Gameplay Components (`src/core/components`):** Start implementing higher-level components like `<CharacterController>`. ✅ (`CharacterController` implemented)
-2.  **UI Abstractions (`src/core/components/ui`):** Develop wrappers for in-world UI or helpers for DOM UI integration. ✅ (`Hud` component implemented for DOM UI)
+1.  **Gameplay Components (`src/core/components`):** Start implementing higher-level components like `<CharacterController>`. ✅ (`CharacterController` implemented as a reference implementation)
+2.  **UI Abstractions (`src/core/components/ui`):** Develop wrappers for in-world UI or helpers for DOM UI integration. ✅ (`Hud` component implemented as a reference implementation)
 3.  **Audio System (`src/core/lib/audio.ts`, `src/core/hooks/useAudio.ts`):** Implement the `AudioManager` and related hooks. ✅ (`useAudio` hook for global controls implemented)
 4.  **Event Bus (`src/core/lib/events.ts`, `src/core/hooks/useEvent.ts`):** Set up the event bus and `useEvent` hook. ✅ (`useEvent` hook implemented)
+
+Note: The components and hooks in Sprint 4 are intentionally designed as minimal reference implementations. They show how to use the engine's core abstractions but remain agnostic of game-specific concepts. Game developers should create their own gameplay components, UI, audio logic, and event handlers tailored to their specific game.
 
 **Ongoing:**
 

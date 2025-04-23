@@ -7,7 +7,7 @@ import { Transform } from '../../lib/ecs';
 import { registerPhysicsBody, unregisterPhysicsBody } from '../../systems/PhysicsSyncSystem';
 
 // Extend RigidBodyProps to include additional options
-export interface PhysicsObjectProps extends RigidBodyProps {
+export interface IPhysicsObjectProps extends RigidBodyProps {
   children: ReactNode;
   onCollide?: (otherEntity: number) => void;
   autoRegister?: boolean; // Whether to automatically register with ECS
@@ -29,7 +29,7 @@ export const PhysicsObject = ({
   autoRegister = true,
   debug = false,
   ...rigidBodyProps
-}: PhysicsObjectProps) => {
+}: IPhysicsObjectProps) => {
   // Reference to the rapier rigid body
   const rigidBodyRef = useRef<RapierRigidBody>(null);
 

@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import { EllipseCurve, MathUtils, Mesh, MeshBasicMaterial, Vector3Tuple } from 'three';
 
-interface OrbitingParticleProps {
+interface IOrbitingParticleProps {
   radius: number;
   rotationAxis?: Vector3Tuple;
   speed?: number;
@@ -17,7 +17,7 @@ const OrbitingParticle = ({
   speed = 0.3,
   offset = 0,
   color = '#88ccff',
-}: OrbitingParticleProps) => {
+}: IOrbitingParticleProps) => {
   const meshRef = useRef<Mesh>(null);
   const glowRef = useRef<Mesh>(null);
 
@@ -79,13 +79,13 @@ const OrbitingParticle = ({
   );
 };
 
-interface OrbitRingProps {
+interface IOrbitRingProps {
   radius: number;
   rotationAxis?: Vector3Tuple;
   color?: string;
 }
 
-const OrbitRing = ({ radius, rotationAxis = [0, 0, 0], color = '#345' }: OrbitRingProps) => {
+const OrbitRing = ({ radius, rotationAxis = [0, 0, 0], color = '#345' }: IOrbitRingProps) => {
   const ref = useRef<Mesh>(null);
 
   useFrame((state) => {
