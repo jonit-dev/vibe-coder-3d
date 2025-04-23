@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 
-type DemoCategory = 'cameras' | 'gameLoop' | 'physics' | null;
+type DemoCategory = 'cameras' | 'gameLoop' | 'physics' | 'ecs' | null;
 type CameraType = 'orbit' | 'thirdPerson' | 'firstPerson' | 'fixed' | 'cinematic' | null;
 
 type GameLoopType = 'basic' | null;
 type PhysicsType = 'basic' | 'advanced' | null;
+type EcsType = 'entity' | null;
 
-type DemoType = CameraType | GameLoopType | PhysicsType;
+type DemoType = CameraType | GameLoopType | PhysicsType | EcsType;
 
 interface DemoStore {
   currentCategory: DemoCategory;

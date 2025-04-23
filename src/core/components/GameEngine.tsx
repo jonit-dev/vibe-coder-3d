@@ -7,12 +7,15 @@ import { EngineLoop } from '@core/components/EngineLoop';
 import { useGameEngine } from '@core/hooks/useGameEngine';
 
 // Props for the GameEngine component
-interface GameEngineProps {
+export interface GameEngineProps {
   /** Whether to auto-start the engine on mount (default: true) */
   autoStart?: boolean;
 
   /** Canvas props to pass to the R3F Canvas */
   canvasProps?: React.ComponentProps<typeof Canvas>;
+
+  /** Skip Canvas wrapping when used inside an existing Canvas (default: false) */
+  noCanvas?: boolean;
 
   /** Scene content */
   children?: React.ReactNode;
@@ -22,7 +25,12 @@ interface GameEngineProps {
  * Main GameEngine component
  * Wraps the R3F Canvas and manages the game engine lifecycle
  */
-export function GameEngine({ autoStart = true, canvasProps, children }: GameEngineProps) {
+export function GameEngine({
+  autoStart = true,
+  canvasProps,
+  noCanvas = false,
+  children,
+}: GameEngineProps) {
   // Get controls from the hook
   const { startEngine, stopEngine } = useGameEngine();
 
@@ -40,6 +48,20 @@ export function GameEngine({ autoStart = true, canvasProps, children }: GameEngi
     };
   }, [autoStart, startEngine, stopEngine]);
 
+  // If noCanvas is true, skip Canvas wrapping
+  if (noCanvas) {
+    return (
+      <>
+        {/* Core engine loop component */}
+        <EngineLoop />
+
+        {/* Scene content */}
+        {children}
+      </>
+    );
+  }
+
+  // Default: wrap with Canvas
   return (
     <Canvas {...canvasProps}>
       {/* Core engine loop component - must be inside Canvas */}

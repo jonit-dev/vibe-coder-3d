@@ -12,6 +12,11 @@ const categories = [
     name: 'Physics System',
     description: 'Explore physics interactions with Rapier',
   },
+  {
+    id: 'ecs',
+    name: 'Entity Component System',
+    description: 'Explore the Entity abstraction and ECS foundation',
+  },
 ] as const;
 
 const cameraTypes = [
@@ -48,6 +53,14 @@ const physicsTypes = [
     id: 'advanced',
     name: 'Advanced Physics Demo',
     description: 'Joints, pendulums, seesaws, and interactive physics',
+  },
+] as const;
+
+const ecsTypes = [
+  {
+    id: 'entity',
+    name: 'Entity Demo',
+    description: 'Demonstration of the Entity abstraction with ECS and Physics integration',
   },
 ] as const;
 
@@ -112,6 +125,8 @@ export const DemoSelector = () => {
         return gameLoopTypes;
       case 'physics':
         return physicsTypes;
+      case 'ecs':
+        return ecsTypes;
       default:
         return [];
     }
@@ -126,6 +141,8 @@ export const DemoSelector = () => {
         return 'Game Loop Demo';
       case 'physics':
         return 'Physics System Demo';
+      case 'ecs':
+        return 'Entity Component System Demo';
       default:
         return 'Demo';
     }
