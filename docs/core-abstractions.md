@@ -114,13 +114,14 @@ Provide ergonomic and reusable components, hooks, and systems that abstract away
 
 Based on the existing structure (`src/core/lib/ecs.ts`, `src/core/lib/gameLoop.ts`) and the roadmap, the implementation will proceed as follows:
 
-**Sprint 1: Core Loop & Physics Integration**
+**Sprint 1: Core Loop & Physics Integration** ✅
 
-1.  **Game Loop Component:** Create a core React component (e.g., `<EngineLoop>`) that uses `useFrame` and integrates with `useGameLoop` state.
-2.  **Physics Setup (`src/core/lib/physics.ts`):** Initialize the Rapier world within the R3F context (`<Physics>` component from `@react-three/rapier`).
-3.  **ECS System Execution:** Integrate ECS system execution (starting with a basic `PhysicsSyncSystem`) into the `<EngineLoop>` component's `useFrame` callback.
-4.  **Basic State Store (`src/core/state/useCoreStore.ts`):** Set up a minimal Zustand store for essential core state (e.g., references to ECS/Physics worlds if needed centrally). ✅ (Partially - `useGameLoop` exists in `lib`)
-5.  **Core Hooks (`src/core/hooks`):** Implement `useECS()` and `usePhysics()` hooks to provide easy access to the world instances.
+1.  **Game Loop Component:** Create a core React component (e.g., `<EngineLoop>`) that uses `useFrame` and integrates with `useGameLoop` state. ✅
+2.  **Physics Setup (`src/core/lib/physics.ts`):** Initialize the Rapier world within the R3F context (`<Physics>` component from `@react-three/rapier`). ✅
+3.  **ECS System Execution:** Integrate ECS system execution (starting with a basic `PhysicsSyncSystem`) into the `<EngineLoop>` component's `useFrame` callback. ✅
+4.  **Basic State Store (`src/core/state/useCoreStore.ts`):** Set up a minimal Zustand store for essential core state (e.g., references to ECS/Physics worlds if needed centrally). ✅
+5.  **Core Hooks (`src/core/hooks`):** Implement `useECS()` and `usePhysics()` hooks to provide easy access to the world instances. ✅
+6.  **Physics Abstractions (`src/core/components/physics`):** Create components for physics objects, triggers, and joints that integrate with ECS. ✅
 
 **Sprint 2: Entity Abstraction & Basic Components**
 

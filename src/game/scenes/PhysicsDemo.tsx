@@ -1,8 +1,9 @@
 import { OrbitControls, Text } from '@react-three/drei';
-import { CuboidCollider, Physics, RigidBody } from '@react-three/rapier';
+import { CuboidCollider, Physics, RapierRigidBody, RigidBody } from '@react-three/rapier';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 
 // Import our new core abstractions
+import { PhysicsJoint } from '@/core/components/physics/PhysicsJoint';
 import { PhysicsSystem } from '@/core/components/physics/PhysicsSystem';
 import { EngineLoop } from '@core/components/EngineLoop';
 import { useECS } from '@core/hooks/useECS';
@@ -101,6 +102,107 @@ const PhysicsSphere = ({
         <meshStandardMaterial color={color} />
       </mesh>
     </RigidBody>
+  );
+};
+
+/**
+ * Chain of objects connected by joints
+ */
+const JointChain = ({ position = [0, 8, 0] }: { position?: [number, number, number] }) => {
+  // Create refs for all the chain elements
+  const anchorRef = useRef<RapierRigidBody>(null);
+  const link1Ref = useRef<RapierRigidBody>(null);
+  const link2Ref = useRef<RapierRigidBody>(null);
+  const link3Ref = useRef<RapierRigidBody>(null);
+  const ballRef = useRef<RapierRigidBody>(null);
+
+  return (
+    <group position={position}>
+      {/* Anchor - fixed at the top */}
+      <RigidBody ref={anchorRef} type="fixed">
+        <mesh castShadow>
+          <boxGeometry args={[0.8, 0.4, 0.8]} />
+          <meshStandardMaterial color="#545454" />
+        </mesh>
+      </RigidBody>
+
+      {/* Link 1 */}
+      <RigidBody ref={link1Ref} position={[0, -1, 0]} colliders="cuboid">
+        <mesh castShadow>
+          <boxGeometry args={[0.4, 1, 0.4]} />
+          <meshStandardMaterial color="#898989" />
+        </mesh>
+      </RigidBody>
+
+      {/* Link 2 */}
+      <RigidBody ref={link2Ref} position={[0, -2.5, 0]} colliders="cuboid">
+        <mesh castShadow>
+          <boxGeometry args={[0.4, 1, 0.4]} />
+          <meshStandardMaterial color="#898989" />
+        </mesh>
+      </RigidBody>
+
+      {/* Link 3 */}
+      <RigidBody ref={link3Ref} position={[0, -4, 0]} colliders="cuboid">
+        <mesh castShadow>
+          <boxGeometry args={[0.4, 1, 0.4]} />
+          <meshStandardMaterial color="#898989" />
+        </mesh>
+      </RigidBody>
+
+      {/* Ball at the end */}
+      <RigidBody ref={ballRef} position={[0, -5.5, 0]} colliders="ball">
+        <mesh castShadow>
+          <sphereGeometry args={[0.6, 32, 32]} />
+          <meshStandardMaterial color="#4e598c" />
+        </mesh>
+      </RigidBody>
+
+      {/* Joints connecting the chain elements */}
+      {/* Anchor to Link 1 - Fixed joint */}
+      <PhysicsJoint
+        bodyA={anchorRef as any}
+        bodyB={link1Ref as any}
+        type="fixed"
+        anchor={{
+          pointA: [0, -0.2, 0],
+          pointB: [0, 0.5, 0],
+        }}
+      />
+
+      {/* Link 1 to Link 2 - Spherical joint */}
+      <PhysicsJoint
+        bodyA={link1Ref as any}
+        bodyB={link2Ref as any}
+        type="spherical"
+        anchor={{
+          pointA: [0, -0.5, 0],
+          pointB: [0, 0.5, 0],
+        }}
+      />
+
+      {/* Link 2 to Link 3 - Spherical joint */}
+      <PhysicsJoint
+        bodyA={link2Ref as any}
+        bodyB={link3Ref as any}
+        type="spherical"
+        anchor={{
+          pointA: [0, -0.5, 0],
+          pointB: [0, 0.5, 0],
+        }}
+      />
+
+      {/* Link 3 to Ball - Spherical joint */}
+      <PhysicsJoint
+        bodyA={link3Ref as any}
+        bodyB={ballRef as any}
+        type="spherical"
+        anchor={{
+          pointA: [0, -0.5, 0],
+          pointB: [0, 0, 0],
+        }}
+      />
+    </group>
   );
 };
 
@@ -257,6 +359,9 @@ export const PhysicsDemo = () => {
         <CuboidCollider args={[15, 10, 0.5]} position={[0, 10, 15]} sensor={false} />
         <CuboidCollider args={[0.5, 10, 15]} position={[-15, 10, 0]} sensor={false} />
         <CuboidCollider args={[0.5, 10, 15]} position={[15, 10, 0]} sensor={false} />
+
+        {/* Add the joint chain */}
+        <JointChain position={[0, 12, 0]} />
 
         {objects}
 

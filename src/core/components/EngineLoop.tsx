@@ -11,11 +11,6 @@ interface EngineLoopProps {
   autoStart?: boolean;
   paused?: boolean;
   debug?: boolean;
-  /**
-   * Whether this component is rendered inside a Physics context
-   * If true, physics systems will be executed
-   */
-  hasPhysics?: boolean;
 }
 
 /**
@@ -27,7 +22,6 @@ export const EngineLoop = ({
   autoStart = true,
   paused = false,
   debug = false,
-  hasPhysics = false,
 }: EngineLoopProps) => {
   // Get access to the game loop state
   const gameLoop = useGameLoop();

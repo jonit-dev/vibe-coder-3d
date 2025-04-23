@@ -5,9 +5,10 @@ import {
   Physics,
   RapierRigidBody,
   RigidBody,
-  useRevoluteJoint,
 } from '@react-three/rapier';
 import { useEffect, useRef, useState } from 'react';
+
+import { PhysicsJoint } from '@/core/components/physics/PhysicsJoint';
 
 /**
  * A simple box with physics
@@ -53,22 +54,6 @@ const Pendulum = ({ position = [0, 8, 0] }: { position?: [number, number, number
   const anchor = useRef<RapierRigidBody>(null);
   const pendulum = useRef<RapierRigidBody>(null);
 
-  // Create a revolute joint between the anchor and pendulum
-  const jointAxis: [number, number, number] = [0, 0, 1];
-
-  useRevoluteJoint(
-    anchor as React.RefObject<RapierRigidBody>,
-    pendulum as React.RefObject<RapierRigidBody>,
-    [
-      // Position in anchor's local space
-      [0, -2, 0] as [number, number, number],
-      // Position in pendulum's local space
-      [0, 2, 0] as [number, number, number],
-      // Axis of rotation
-      jointAxis,
-    ],
-  );
-
   return (
     <group position={position}>
       {/* Anchor */}
@@ -91,6 +76,18 @@ const Pendulum = ({ position = [0, 8, 0] }: { position?: [number, number, number
           <meshStandardMaterial color="#4e598c" />
         </mesh>
       </RigidBody>
+
+      {/* Joint connecting anchor and pendulum */}
+      <PhysicsJoint
+        bodyA={anchor as any}
+        bodyB={pendulum as any}
+        type="revolute"
+        anchor={{
+          pointA: [0, -2, 0],
+          pointB: [0, 2, 0],
+        }}
+        axis={[0, 0, 1]}
+      />
     </group>
   );
 };
@@ -101,22 +98,6 @@ const Pendulum = ({ position = [0, 8, 0] }: { position?: [number, number, number
 const Seesaw = ({ position = [0, 1, 0] }: { position?: [number, number, number] }) => {
   const base = useRef<RapierRigidBody>(null);
   const plank = useRef<RapierRigidBody>(null);
-
-  // Create a revolute joint for the seesaw
-  const jointAxis: [number, number, number] = [0, 0, 1];
-
-  useRevoluteJoint(
-    base as React.RefObject<RapierRigidBody>,
-    plank as React.RefObject<RapierRigidBody>,
-    [
-      // Position in base's local space
-      [0, 1, 0] as [number, number, number],
-      // Position in plank's local space
-      [0, 0, 0] as [number, number, number],
-      // Axis of rotation
-      jointAxis,
-    ],
-  );
 
   return (
     <group position={position}>
@@ -136,6 +117,18 @@ const Seesaw = ({ position = [0, 1, 0] }: { position?: [number, number, number] 
           <meshStandardMaterial color="#d5ac4e" />
         </mesh>
       </RigidBody>
+
+      {/* Joint connecting base and plank */}
+      <PhysicsJoint
+        bodyA={base as any}
+        bodyB={plank as any}
+        type="revolute"
+        anchor={{
+          pointA: [0, 1, 0],
+          pointB: [0, 0, 0],
+        }}
+        axis={[0, 0, 1]}
+      />
     </group>
   );
 };
