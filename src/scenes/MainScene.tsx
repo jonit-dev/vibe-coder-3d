@@ -1,4 +1,4 @@
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Suspense } from 'react'
 import { DemoSelector } from '../components/DemoSelector'
@@ -10,9 +10,22 @@ export const MainScene = () => {
   const { currentCategory, currentDemo } = useDemo()
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#1a1a1a' }}>
-      <Canvas>
+    <div style={{
+      width: '100vw',
+      height: '100vh',
+      background: '#000000',
+      overflow: 'hidden',
+      position: 'relative'
+    }}>
+
+
+      <Canvas
+        camera={{ position: [-21.56, 3.02, 17.68], fov: 40 }}
+        style={{ background: '#000000' }}
+      >
         <Suspense fallback={null}>
+
+
           {currentCategory === 'cameras' ? (
             <>
               {currentDemo === 'orbit' && <CameraDemo type="orbit" />}
@@ -29,17 +42,14 @@ export const MainScene = () => {
             </>
           ) : (
             <>
-              <PerspectiveCamera
-                makeDefault
-                position={[0, 0, 15]}
-                fov={50}
-              />
               <MenuBackground />
               <OrbitControls
-                enableZoom={false}
-                enablePan={false}
-                autoRotate
-                autoRotateSpeed={0.5}
+                minDistance={15}
+                maxDistance={50}
+                enableDamping
+                dampingFactor={0.05}
+                minPolarAngle={Math.PI / 6}
+                maxPolarAngle={Math.PI - Math.PI / 6}
               />
             </>
           )}

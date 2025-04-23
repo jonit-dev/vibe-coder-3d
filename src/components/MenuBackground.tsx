@@ -1,40 +1,76 @@
-import { Environment, Float, MeshDistortMaterial, Trail } from '@react-three/drei'
+import { Environment, MeshTransmissionMaterial, Sparkles } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
-import { Group, MathUtils, Mesh, Vector3Tuple } from 'three'
+import { useRef } from 'react'
+import { EllipseCurve, MathUtils, Mesh, MeshBasicMaterial, Vector3Tuple } from 'three'
 
 interface OrbitingParticleProps {
   radius: number
-  speed: number
   rotationAxis?: Vector3Tuple
+  speed?: number
+  offset?: number
   color?: string
-  size?: number
 }
 
-const OrbitingParticle = ({ radius, speed, rotationAxis = [0, 1, 0], color = '#4a9eff', size = 0.2 }: OrbitingParticleProps) => {
+const OrbitingParticle = ({ radius, rotationAxis = [0, 0, 0], speed = 0.3, offset = 0, color = '#88ccff' }: OrbitingParticleProps) => {
   const meshRef = useRef<Mesh>(null)
-  const initialPosition: Vector3Tuple = [radius, 0, 0]
+  const glowRef = useRef<Mesh>(null)
+
+  // Define the elliptical path matching the torus major radius
+  const curve = new EllipseCurve(
+    0, 0,                  // ax, aY
+    radius * 1.5, radius,  // xRadius, yRadius
+    0, 2 * Math.PI,        // aStartAngle, aEndAngle
+    false,                 // aClockwise
+    0                      // aRotation
+  );
 
   useFrame((state) => {
-    if (!meshRef.current) return
-    const time = state.clock.getElapsedTime() * speed
-    meshRef.current.position.x = Math.cos(time) * radius
-    meshRef.current.position.z = Math.sin(time) * radius
+    if (!meshRef.current || !glowRef.current) return
+    const time = (state.clock.getElapsedTime() * speed + offset) % 1;
+    const point = curve.getPoint(time);
+    meshRef.current.position.set(point.x, point.y, 0);
+    glowRef.current.position.set(point.x, point.y, 0);
+
+    // Pulse the glow effect
+    const pulse = Math.sin(state.clock.getElapsedTime() * 3) * 0.1 + 0.9;
+    glowRef.current.scale.set(pulse * 2, pulse * 2, pulse * 2);
   })
 
   return (
     <group rotation={rotationAxis}>
-      <Trail
-        width={0.2}
-        length={4}
-        color={color}
-        attenuation={(t) => t * t}
-      >
-        <mesh ref={meshRef} position={initialPosition}>
-          <sphereGeometry args={[size, 16, 16]} />
-          <meshBasicMaterial color={color} />
-        </mesh>
-      </Trail>
+      {/* Core electron */}
+      <mesh ref={meshRef}>
+        <sphereGeometry args={[0.3, 32, 32]} />
+        <MeshTransmissionMaterial
+          color={color}
+          thickness={0.2}
+          chromaticAberration={0.05}
+          transmission={1}
+          roughness={0.1}
+          metalness={0.9}
+          emissive={color}
+          emissiveIntensity={0.8}
+          distortion={0.1}
+          distortionScale={0.2}
+          temporalDistortion={0.1}
+          reflectivity={1}
+          clearcoat={1}
+          attenuationDistance={0.5}
+          attenuationColor="white"
+          backside
+        />
+      </mesh>
+
+      {/* Glow effect */}
+      <mesh ref={glowRef} scale={2}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.4}
+          toneMapped={false}
+        />
+      </mesh>
     </group>
   )
 }
@@ -45,55 +81,104 @@ interface OrbitRingProps {
   color?: string
 }
 
-const OrbitRing = ({ radius, rotationAxis = [0, 0, 0], color = '#4a9eff33' }: OrbitRingProps) => {
+const OrbitRing = ({ radius, rotationAxis = [0, 0, 0], color = '#345' }: OrbitRingProps) => {
+  const ref = useRef<Mesh>(null)
+
+  useFrame((state) => {
+    if (!ref.current) return
+    const t = state.clock.getElapsedTime() / 10
+    // Type assertion for material
+    const material = ref.current.material as MeshBasicMaterial
+    material.opacity = 0.3 + Math.sin(t) * 0.1
+  })
+
   return (
     <group rotation={rotationAxis}>
-      <mesh>
-        <ringGeometry args={[radius - 0.1, radius + 0.1, 64]} />
-        <meshBasicMaterial color={color} transparent opacity={0.2} />
+      <mesh ref={ref}>
+        <torusGeometry args={[radius * 1.5, 0.015, 16, 100]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.3}
+          toneMapped={false}
+        />
       </mesh>
     </group>
   )
 }
 
 const Nucleus = () => {
-  const groupRef = useRef<Group>(null)
+  const nucleusRef = useRef<Mesh>(null)
+  const glowRef = useRef<Mesh>(null)
 
   useFrame((state) => {
-    if (!groupRef.current) return
-    groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.2
+    if (!glowRef.current) return
+    // Pulsing glow effect
+    const pulse = Math.sin(state.clock.getElapsedTime() * 1.5) * 0.1 + 1.1;
+    glowRef.current.scale.set(pulse, pulse, pulse);
   })
 
   return (
-    <Float
-      speed={2}
-      rotationIntensity={0.5}
-      floatIntensity={0.2}
-    >
-      <group ref={groupRef}>
-        <mesh>
-          <sphereGeometry args={[1, 32, 32]} />
-          <MeshDistortMaterial
-            color="#4a9eff"
-            speed={2}
-            distort={0.4}
-            radius={1}
-          />
-        </mesh>
-      </group>
-    </Float>
+    <group>
+      {/* Core nucleus */}
+      <mesh ref={nucleusRef}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <MeshTransmissionMaterial
+          color="#ff3333"
+          thickness={0.6}
+          roughness={0}
+          metalness={1}
+          transmission={0.1}
+          emissive="#ff0000"
+          emissiveIntensity={0.8}
+          chromaticAberration={0.06}
+          distortion={0.2}
+          temporalDistortion={0.2}
+          distortionScale={0.5}
+          reflectivity={1}
+          clearcoat={1}
+          attenuationDistance={0.2}
+          attenuationColor="#ff8888"
+          backside
+        />
+      </mesh>
+
+      {/* Glow effect */}
+      <mesh ref={glowRef} scale={1.2}>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshBasicMaterial
+          color="#ff4444"
+          transparent
+          opacity={0.4}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* Inner sparkles */}
+      <Sparkles
+        count={20}
+        scale={[2, 2, 2]}
+        size={0.2}
+        speed={0.2}
+        opacity={0.8}
+        color="#ffaaaa"
+      />
+    </group>
   )
 }
 
 export const MenuBackground = () => {
-  const orbits = useMemo(() => [
-    { radius: 3, axis: [0, 0, 0] as Vector3Tuple, speed: 0.5 },
-    { radius: 4, axis: [0, 0, MathUtils.degToRad(60)] as Vector3Tuple, speed: 0.3 },
-    { radius: 5, axis: [0, 0, MathUtils.degToRad(-45)] as Vector3Tuple, speed: 0.2 },
-  ], [])
+  const orbits = [
+    { radius: 4, axis: [0, 0, MathUtils.degToRad(90)] as Vector3Tuple, color: '#5599ff' },
+    { radius: 4, axis: [MathUtils.degToRad(60), 0, MathUtils.degToRad(90)] as Vector3Tuple, color: '#55aaff' },
+    { radius: 4, axis: [MathUtils.degToRad(-60), 0, MathUtils.degToRad(90)] as Vector3Tuple, color: '#55ccff' },
+  ]
 
   return (
-    <group>
+    <group rotation={[MathUtils.degToRad(-15), MathUtils.degToRad(30), 0]}>
+      {/* Environment lighting for reflections */}
+      <Environment preset="studio" />
+
       {/* Nucleus */}
       <Nucleus />
 
@@ -103,44 +188,52 @@ export const MenuBackground = () => {
           <OrbitRing
             radius={orbit.radius}
             rotationAxis={orbit.axis}
-            color={`hsl(${i * 120}, 70%, 60%)`}
+            color={orbit.color}
           />
           <OrbitingParticle
             radius={orbit.radius}
-            speed={orbit.speed}
             rotationAxis={orbit.axis}
-            color={`hsl(${i * 120}, 70%, 60%)`}
+            speed={0.25}
+            offset={0}
+            color={orbit.color}
           />
           <OrbitingParticle
             radius={orbit.radius}
-            speed={-orbit.speed}
             rotationAxis={orbit.axis}
-            color={`hsl(${i * 120}, 70%, 60%)`}
-            size={0.15}
+            speed={0.25}
+            offset={0.5}
+            color={orbit.color}
           />
         </group>
       ))}
 
-      {/* Environment and lighting */}
-      <Environment preset="sunset" />
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} intensity={1} />
-      <pointLight position={[-10, -10, -10]} intensity={0.5} />
+      {/* Ambient sparkles for atmosphere */}
+      <Sparkles
+        count={100}
+        scale={[20, 20, 20]}
+        size={0.2}
+        speed={0.3}
+        opacity={0.2}
+        color="white"
+      />
 
-      {/* Background particles */}
-      {Array.from({ length: 50 }).map((_, i) => (
-        <mesh
-          key={i}
-          position={[
-            MathUtils.randFloat(-20, 20),
-            MathUtils.randFloat(-20, 20),
-            MathUtils.randFloat(-20, 20)
-          ] as Vector3Tuple}
-        >
-          <sphereGeometry args={[0.05, 8, 8]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.5} />
-        </mesh>
-      ))}
+      {/* Lighting */}
+      <ambientLight intensity={0.15} />
+      <pointLight position={[5, 5, 8]} intensity={1} color="#ffffff" />
+      <pointLight position={[-8, -5, -10]} intensity={0.4} color="#8888ff" />
+
+      {/* Key lighting for dramatic effect */}
+      <spotLight
+        position={[15, 15, 15]}
+        angle={0.3}
+        penumbra={0.8}
+        intensity={2}
+        color="#ffffff"
+        castShadow
+      />
+
+      {/* Rim light */}
+      <pointLight position={[-10, 2, 5]} intensity={0.3} color="#ff5555" />
     </group>
   )
 } 
