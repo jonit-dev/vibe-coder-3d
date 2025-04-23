@@ -28,14 +28,14 @@ export function transformSystem(): number {
     position.set(
       Transform.position[eid][0],
       Transform.position[eid][1],
-      Transform.position[eid][2]
+      Transform.position[eid][2],
     );
 
     quaternion.set(
       Transform.rotation[eid][0],
       Transform.rotation[eid][1],
       Transform.rotation[eid][2],
-      Transform.rotation[eid][3]
+      Transform.rotation[eid][3],
     );
 
     scale.set(Transform.scale[eid][0], Transform.scale[eid][1], Transform.scale[eid][2]);

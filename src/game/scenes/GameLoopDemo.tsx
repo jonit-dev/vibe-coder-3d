@@ -5,8 +5,11 @@ import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
-import { useGameEngine } from '@core/hooks/useGameEngine';
+// Import our new core abstractions instead of the old hooks
+import { EngineLoop } from '@core/components/EngineLoop';
+import { useECS } from '@core/hooks/useECS';
 import { EntityMesh } from '@core/index';
+import { Transform } from '@core/lib/ecs';
 
 // Planet component with rotation
 function Planet(props: {
@@ -22,6 +25,23 @@ function Planet(props: {
   const ref = useRef<THREE.Mesh>(null);
   const moonRef = useRef<THREE.Mesh>(null);
   const orbitRef = useRef({ angle: Math.random() * Math.PI * 2 });
+  const { createEntity } = useECS();
+
+  // Create an ECS entity for the planet when the component mounts
+  useEffect(() => {
+    if (ref.current) {
+      // Create a new ECS entity
+      const entity = createEntity();
+
+      // Set the initial position
+      Transform.position[entity][0] = position[0];
+      Transform.position[entity][1] = position[1];
+      Transform.position[entity][2] = position[2];
+
+      // Mark it for update
+      Transform.needsUpdate[entity] = 1;
+    }
+  }, [createEntity, position]);
 
   useFrame((_, delta) => {
     // Self rotation
@@ -42,7 +62,6 @@ function Planet(props: {
 
       // Moon orbit
       if (hasMoon && moonRef.current) {
-        const moonOrbitSpeed = 0.8;
         const moonAngle = orbitRef.current.angle * 3; // faster than planet
         const moonOrbitRadius = size * 2;
         const moonX = x + Math.sin(moonAngle) * moonOrbitRadius;
@@ -73,18 +92,10 @@ function Planet(props: {
 
 // Main Game Loop demo scene component - Solar System
 export function GameLoopDemo() {
-  // Auto-start is false so we can control via UI
-  const { startEngine, stopEngine } = useGameEngine();
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      stopEngine();
-    };
-  }, [stopEngine]);
+  // We don't need the game engine hooks anymore since EngineLoop handles this
 
   return (
-    <>
+    <EngineLoop autoStart={true} debug={false}>
       {/* Camera controls */}
       <OrbitControls minDistance={10} maxDistance={100} enableDamping dampingFactor={0.05} />
 
@@ -158,6 +169,6 @@ export function GameLoopDemo() {
         rotationSpeed={0.5}
         hasMoon={false}
       />
-    </>
+    </EngineLoop>
   );
 }

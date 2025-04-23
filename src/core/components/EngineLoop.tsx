@@ -1,51 +1,102 @@
-// EngineLoop Component
-// Runs inside a R3F Canvas and executes the ECS systems on each frame
-import { useFrame, useThree } from '@react-three/fiber';
-import { useCallback, useEffect } from 'react';
+// EngineLoop component - Manages the core game loop and systems
+import { useFrame } from '@react-three/fiber';
+import { ReactNode, useEffect } from 'react';
 
-import { markAllTransformsForUpdate } from '@core/lib/ecs';
-import { useGameLoop } from '@core/lib/gameLoop';
+import { useGameLoop } from '../lib/gameLoop';
+import { runPhysicsSyncSystem } from '../systems/PhysicsSyncSystem';
+
+// Types for component props
+interface EngineLoopProps {
+  children?: ReactNode;
+  autoStart?: boolean;
+  paused?: boolean;
+  debug?: boolean;
+  /**
+   * Whether this component is rendered inside a Physics context
+   * If true, physics systems will be executed
+   */
+  hasPhysics?: boolean;
+}
 
 /**
- * Main game loop component that runs inside the R3F Canvas
- * Executes ECS systems and updates the game state on each frame
+ * The EngineLoop component is responsible for managing the core game loop
+ * and orchestrating the execution of systems (physics, ECS, etc.)
  */
-export function EngineLoop() {
-  const { clock } = useThree();
+export const EngineLoop = ({
+  children,
+  autoStart = true,
+  paused = false,
+  debug = false,
+  hasPhysics = false,
+}: EngineLoopProps) => {
+  // Get access to the game loop state
+  const gameLoop = useGameLoop();
 
-  // Get state from the game loop store
-  const isRunning = useGameLoop((state: { isRunning: boolean }) => state.isRunning);
-  const isPaused = useGameLoop((state: { isPaused: boolean }) => state.isPaused);
-  const update = useGameLoop((state: { update: (delta: number) => void }) => state.update);
-
-  // Called on component mount
+  // Auto-start or pause the game loop based on props
   useEffect(() => {
-    // Start time for delta calculation
-    clock.start();
+    if (autoStart && !gameLoop.isRunning) {
+      gameLoop.startLoop();
+    }
 
+    // Handle paused state
+    if (paused && !gameLoop.isPaused && gameLoop.isRunning) {
+      gameLoop.pauseLoop();
+    } else if (!paused && gameLoop.isPaused && gameLoop.isRunning) {
+      gameLoop.resumeLoop();
+    }
+
+    // Clean up when component unmounts
     return () => {
-      // Stop the clock when component unmounts
-      clock.stop();
-    };
-  }, [clock]);
-
-  // Create a stable frame callback that won't recreate on every render
-  const frameCallback = useCallback(
-    (_: any, delta: number) => {
-      // Only run systems if the engine is running and not paused
-      if (isRunning && !isPaused) {
-        // Mark all transforms for update (simplest approach for now)
-        markAllTransformsForUpdate();
-        // Update the game loop store with the latest frame time
-        update(delta);
+      if (gameLoop.isRunning) {
+        gameLoop.stopLoop();
       }
-    },
-    [isRunning, isPaused, update]
-  );
+    };
+  }, [autoStart, paused, gameLoop]);
 
-  // Register the frame callback with R3F
-  useFrame(frameCallback);
+  // Main game loop
+  useFrame((_, deltaTime) => {
+    // Skip if not running or paused
+    if (!gameLoop.isRunning || gameLoop.isPaused) return;
 
-  // This component doesn't render anything
-  return null;
+    // Update the game loop state
+    gameLoop.update(deltaTime);
+
+    // Run ECS systems
+    runECSSystems(deltaTime);
+  });
+
+  // Optional debug output
+  useEffect(() => {
+    if (debug) {
+      // Set up a periodic log of performance
+      const interval = setInterval(() => {
+        if (gameLoop.isRunning && !gameLoop.isPaused) {
+          console.log(`FPS: ${gameLoop.fps}, Frame: ${gameLoop.frameCount}`);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [debug, gameLoop]);
+
+  // Render children - typically the actual game scene
+  return <>{children}</>;
+};
+
+/**
+ * Function to run all ECS systems
+ * This would be expanded as more systems are added
+ */
+function runECSSystems(deltaTime: number) {
+  // Run physics sync system - syncs physics bodies with Transform components
+  const physicsSyncCount = runPhysicsSyncSystem(deltaTime);
+
+  // For future systems, add them here in the appropriate order
+  // e.g., movementSystem(ecsWorld, deltaTime);
+
+  // Debug info
+  if (physicsSyncCount > 0) {
+    // Uncomment for debugging:
+    // console.log(`Updated ${physicsSyncCount} physics entities`);
+  }
 }

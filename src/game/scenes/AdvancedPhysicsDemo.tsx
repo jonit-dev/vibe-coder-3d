@@ -66,7 +66,7 @@ const Pendulum = ({ position = [0, 8, 0] }: { position?: [number, number, number
       [0, 2, 0] as [number, number, number],
       // Axis of rotation
       jointAxis,
-    ]
+    ],
   );
 
   return (
@@ -115,7 +115,7 @@ const Seesaw = ({ position = [0, 1, 0] }: { position?: [number, number, number] 
       [0, 0, 0] as [number, number, number],
       // Axis of rotation
       jointAxis,
-    ]
+    ],
   );
 
   return (
