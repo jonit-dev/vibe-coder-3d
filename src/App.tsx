@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import HelloWorld from './components/HelloWorld';
+import HelloWorld from './core/components/HelloWorld';
 
 export default function App() {
   return (
