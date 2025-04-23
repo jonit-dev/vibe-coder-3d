@@ -44,6 +44,7 @@ function RotatingCube({ position = [0, 0, 0], color = 'red' }) {
 export function DemoScene() {
   return (
     <>
+      {/* Debug UI is outside the Canvas/GameEngine */}
       <DebugUI />
 
       <GameEngine
