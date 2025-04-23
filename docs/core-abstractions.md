@@ -123,13 +123,13 @@ Based on the existing structure (`src/core/lib/ecs.ts`, `src/core/lib/gameLoop.t
 5.  **Core Hooks (`src/core/hooks`):** Implement `useECS()` and `usePhysics()` hooks to provide easy access to the world instances. ✅
 6.  **Physics Abstractions (`src/core/components/physics`):** Create components for physics objects, triggers, and joints that integrate with ECS. ✅
 
-**Sprint 2: Entity Abstraction & Basic Components**
+**Sprint 2: Entity Abstraction & Basic Components** ✅
 
-1.  **`<Entity>` Component (`src/core/components/Entity.tsx`):** Develop the base `<Entity>` component that manages ECS entity creation/destruction and potentially links to a Three.js `Object3D`.
-2.  **ECS Components (`src/core/ecs/components`):** Define more core ECS components (e.g., `Velocity`, `Renderable`, `PhysicsBodyRef`). ✅ (Partially - `Transform` defined, basic world setup done in `lib/ecs.ts`)
-3.  **`<RigidBody>`/`<Collider>` Wrappers (`src/core/components/physics`):** Create wrappers around Rapier components for simplified usage, potentially integrating them with the `<Entity>` component.
-4.  **Physics Sync System (`src/core/ecs/systems/PhysicsSyncSystem.ts`):** Implement the system to sync Rapier physics state with ECS `Transform` components.
-5.  **Hook: `useEntity(entityId)`:** Develop the hook to access/subscribe to ECS data within React components.
+1.  **`<Entity>` Component (`src/core/components/Entity.tsx`):** Develop the base `<Entity>` component that manages ECS entity creation/destruction and potentially links to a Three.js `Object3D`. ✅
+2.  **ECS Components (`src/core/ecs/components`):** Define more core ECS components (e.g., `Velocity`, `Renderable`, `PhysicsBodyRef`). ✅ (`Transform`, `PhysicsBodyRef`, `Velocity` implemented)
+3.  **`<RigidBody>`/`<Collider>` Wrappers (`src/core/components/physics`):** Create wrappers around Rapier components for simplified usage, potentially integrating them with the `<Entity>` component. ✅ (Covered by `PhysicsObject`, `PhysicsBox`, `PhysicsSphere` etc.)
+4.  **Physics Sync System (`src/core/ecs/systems/PhysicsSyncSystem.ts`):** Implement the system to sync Rapier physics state with ECS `Transform` components. ✅ (Also added `VelocitySystem.ts`)
+5.  **Hook: `useEntity(entityId)`:** Develop the hook to access/subscribe to ECS data within React components. ✅ (Implemented `useEntity` and `useEntityQuery`)
 
 **Sprint 3: Input, Assets & Debugging**
 
