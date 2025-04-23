@@ -30,7 +30,7 @@ const OrbitingParticle = ({
     0,
     2 * Math.PI, // aStartAngle, aEndAngle
     false, // aClockwise
-    0 // aRotation
+    0, // aRotation
   );
 
   useFrame((state) => {
