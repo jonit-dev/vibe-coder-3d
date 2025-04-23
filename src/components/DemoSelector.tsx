@@ -7,6 +7,11 @@ const categories = [
     description: 'Explore different camera types and behaviors',
   },
   { id: 'gameLoop', name: 'Game Loop', description: 'Explore the game engine loop system' },
+  {
+    id: 'physics',
+    name: 'Physics System',
+    description: 'Explore physics interactions with Rapier',
+  },
 ] as const;
 
 const cameraTypes = [
@@ -30,6 +35,14 @@ const gameLoopTypes = [
     id: 'basic',
     name: 'Basic Game Loop',
     description: 'Demonstration of the core game engine loop',
+  },
+] as const;
+
+const physicsTypes = [
+  {
+    id: 'basic',
+    name: 'Basic Physics Demo',
+    description: 'Interactive physics with boxes, spheres and colliders',
   },
 ] as const;
 
@@ -70,7 +83,7 @@ export const DemoSelector = () => {
       <div style={containerStyle}>
         <h2 style={{ margin: '0 0 16px 0' }}>Vibe Coder 3D Demos</h2>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-          {categories.map(category => (
+          {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => setCategory(category.id)}
@@ -92,6 +105,8 @@ export const DemoSelector = () => {
         return cameraTypes;
       case 'gameLoop':
         return gameLoopTypes;
+      case 'physics':
+        return physicsTypes;
       default:
         return [];
     }
@@ -104,6 +119,8 @@ export const DemoSelector = () => {
         return 'Camera System Demo';
       case 'gameLoop':
         return 'Game Loop Demo';
+      case 'physics':
+        return 'Physics System Demo';
       default:
         return 'Demo';
     }
@@ -128,7 +145,7 @@ export const DemoSelector = () => {
         <h2 style={{ margin: 0 }}>{getCategoryTitle()}</h2>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-        {getDemosForCategory().map(demo => (
+        {getDemosForCategory().map((demo) => (
           <button
             key={demo.id}
             onClick={() => setDemo(demo.id)}

@@ -33,7 +33,7 @@ const OrbitingParticle = ({
     0 // aRotation
   );
 
-  useFrame(state => {
+  useFrame((state) => {
     if (!meshRef.current || !glowRef.current) return;
     const time = (state.clock.getElapsedTime() * speed + offset) % 1;
     const point = curve.getPoint(time);
@@ -88,7 +88,7 @@ interface OrbitRingProps {
 const OrbitRing = ({ radius, rotationAxis = [0, 0, 0], color = '#345' }: OrbitRingProps) => {
   const ref = useRef<Mesh>(null);
 
-  useFrame(state => {
+  useFrame((state) => {
     if (!ref.current) return;
     const t = state.clock.getElapsedTime() / 10;
     // Type assertion for material
@@ -110,7 +110,7 @@ const Nucleus = () => {
   const nucleusRef = useRef<Mesh>(null);
   const glowRef = useRef<Mesh>(null);
 
-  useFrame(state => {
+  useFrame((state) => {
     if (!glowRef.current) return;
     // Pulsing glow effect
     const pulse = Math.sin(state.clock.getElapsedTime() * 1.5) * 0.1 + 1.1;

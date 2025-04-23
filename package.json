@@ -15,6 +15,7 @@
   "dependencies": {
     "@react-three/drei": "^10.0.6",
     "@react-three/fiber": "^9.1.2",
+    "@react-three/rapier": "^2.1.0",
     "@tailwindcss/postcss": "^4.1.4",
     "bitecs": "^0.3.40",
     "react": "^19.1.0",

@@ -25,7 +25,7 @@ export default function DebugMenu() {
             <input
               type="checkbox"
               checked={debug}
-              onChange={e => setDebug(e.target.checked)}
+              onChange={(e) => setDebug(e.target.checked)}
               className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 mr-2"
             />
             <span>Debug Mode</span>
@@ -37,7 +37,7 @@ export default function DebugMenu() {
             <input
               type="checkbox"
               checked={showFps}
-              onChange={e => setShowFps(e.target.checked)}
+              onChange={(e) => setShowFps(e.target.checked)}
               className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 mr-2"
             />
             <span>Show FPS</span>
@@ -49,7 +49,7 @@ export default function DebugMenu() {
             <input
               type="checkbox"
               checked={shadows}
-              onChange={e => setShadows(e.target.checked)}
+              onChange={(e) => setShadows(e.target.checked)}
               className="form-checkbox h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 mr-2"
             />
             <span>Shadows</span>
@@ -60,7 +60,7 @@ export default function DebugMenu() {
           <label className="mb-1">Quality:</label>
           <select
             value={quality}
-            onChange={e => setQuality(e.target.value as 'low' | 'medium' | 'high')}
+            onChange={(e) => setQuality(e.target.value as 'low' | 'medium' | 'high')}
             className="bg-gray-700 text-white rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="low">Low</option>

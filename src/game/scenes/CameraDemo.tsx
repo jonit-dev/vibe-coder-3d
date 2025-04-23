@@ -19,7 +19,7 @@ export const CameraDemo = ({ type }: CameraDemoProps) => {
     </mesh>
   );
 
-  useFrame(state => {
+  useFrame((state) => {
     if (!targetRef.current || !cameraRef.current) return;
 
     switch (type) {

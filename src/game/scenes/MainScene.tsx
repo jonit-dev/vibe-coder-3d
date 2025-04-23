@@ -8,6 +8,7 @@ import { useDemo } from '../stores/demoStore';
 
 import { CameraDemo } from './CameraDemo';
 import { GameLoopDemo } from './GameLoopDemo';
+import { PhysicsDemo } from './PhysicsDemo';
 
 export const MainScene = () => {
   const { currentCategory, currentDemo } = useDemo();
@@ -43,6 +44,8 @@ export const MainScene = () => {
             </>
           ) : currentCategory === 'gameLoop' && currentDemo === 'basic' ? (
             <GameLoopDemo />
+          ) : currentCategory === 'physics' ? (
+            <PhysicsDemo />
           ) : (
             <>
               <MenuBackground />
