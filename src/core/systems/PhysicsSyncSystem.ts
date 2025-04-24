@@ -65,7 +65,7 @@ let frameCount = 0;
  *
  * @param deltaTime Time since last frame in seconds
  */
-export function runPhysicsSyncSystem(deltaTime: number) {
+export function runPhysicsSyncSystem(_deltaTime: number) {
   try {
     frameCount++;
     const entities = physicsQuery(world);

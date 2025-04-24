@@ -197,8 +197,11 @@ function runECSSystems(deltaTime: number) {
   }
 }
 
-// Helper function for performance tracking
-function trackPerformance(system: 'velocity' | 'physics' | 'overall', startTime: number) {
-  // Implementation is in the component to access the metricsRef
-  // This is just a placeholder function to avoid typescript errors
+// Track performance metrics
+function trackPerformance(_system: 'velocity' | 'physics' | 'overall', _startTime: number) {
+  // const endTime = performance.now();
+  // const duration = endTime - startTime;
+  // Record the duration for the specific system
+  // This logic can be expanded to store/average metrics
+  // console.log(`Performance [${system}]: ${duration.toFixed(2)}ms`);
 }

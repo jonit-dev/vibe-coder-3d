@@ -56,9 +56,6 @@ export const EntityMesh = forwardRef<Mesh, IEntityMeshProps>(
       onUpdate,
       performance = 'medium',
       lodLevels = [],
-      instanced = false,
-      instanceCount = 1,
-      instanceMatrix,
     },
     ref,
   ) => {

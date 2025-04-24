@@ -1,7 +1,6 @@
 import { useFrame } from '@react-three/fiber';
 import { RapierRigidBody } from '@react-three/rapier';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Vector3 } from 'three';
 
 import { IPhysicsBallRef } from '@/core/components/physics/PhysicsBall';
 import { getNodes } from '@/core/lib/tags';
@@ -32,9 +31,6 @@ type GameState = 'ready' | 'rolling' | 'scoring' | 'resetting';
 const BowlingGameManager = ({ children }: IBowlingGameProps) => {
   const [gameState, setGameState] = useState<GameState>('ready');
   const [score, setScore] = useState(0);
-  const [frame, setFrame] = useState(1);
-  const [roll, setRoll] = useState(1);
-  const [ballReturnTimer, setBallReturnTimer] = useState<number | null>(null);
   const [activeBall, setActiveBall] = useState(true);
   const [currentBall, setCurrentBall] = useState<{
     position: [number, number, number];
@@ -46,7 +42,7 @@ const BowlingGameManager = ({ children }: IBowlingGameProps) => {
   const ballRef = useRef<IPhysicsBallRef | null>(null);
 
   // Get UI store functions
-  const { setScore: uiSetScore, showInstructions, score: uiScore } = useUIStore();
+  const { setScore: uiSetScore, showInstructions, score: _uiScore } = useUIStore();
 
   // Setup game instructions
   useEffect(() => {
@@ -139,55 +135,6 @@ const BowlingGameManager = ({ children }: IBowlingGameProps) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleReset]);
-
-  // Demo: Reset pins for next play using tags
-  const resetPins = useCallback(() => {
-    // Get fallen pins
-    const fallenPins = getNodes<RapierRigidBody>(PIN_TAGS.FALLEN);
-
-    // Option 1: Reset pin positions manually
-    fallenPins.forEach((pinRef) => {
-      if (pinRef.current) {
-        // Reset position and rotation
-        pinRef.current.setTranslation(new Vector3(0, 0.3, 0), true);
-        // Reset angular and linear velocity
-        pinRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
-        pinRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
-      }
-    });
-
-    // Option 2: For a real game, you might want to entirely replace the pins
-    // This would be done by unmounting/remounting the BowlingPinSetup component
-
-    console.log('Pins reset for next frame');
-  }, []);
-
-  // Demo: Function to reset game state for next frame
-  const prepareNextFrame = useCallback(() => {
-    resetPins();
-    setScore(0);
-    setRoll(1);
-    setFrame((prev) => Math.min(10, prev + 1));
-    updateGameState('ready');
-  }, [resetPins, updateGameState]);
-
-  // Transition to scoring state when ball is rolled
-  const handleBallRolled = useCallback(() => {
-    updateGameState('scoring');
-
-    // After 5 seconds, reset for next frame (demo only)
-    const timer = window.setTimeout(() => {
-      prepareNextFrame();
-    }, 5000);
-
-    setBallReturnTimer(timer);
-
-    return () => {
-      if (ballReturnTimer) {
-        clearTimeout(ballReturnTimer);
-      }
-    };
-  }, [updateGameState, prepareNextFrame, ballReturnTimer]);
 
   // Demo: Advanced query examples using the tags system
   const showTagDemos = useCallback(() => {
