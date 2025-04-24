@@ -63,7 +63,7 @@ export function GameEngine({
 
   // Default: wrap with Canvas
   return (
-    <Canvas {...canvasProps}>
+    <Canvas {...canvasProps} frameloop="demand">
       {/* Core engine loop component - must be inside Canvas */}
       <EngineLoop />
 

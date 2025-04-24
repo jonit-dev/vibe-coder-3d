@@ -3,7 +3,7 @@ import { RapierRigidBody, RigidBody } from '@react-three/rapier';
 import { useRef, useState } from 'react';
 import { Quaternion, Vector3 } from 'three';
 
-import { OptimizedEntityMesh } from '@core/components/OptimizedEntityMesh';
+import { EntityMesh } from '@/core/components/EntityMesh';
 
 const CYLINDER_COLLIDER = 'cuboid';
 
@@ -53,7 +53,7 @@ const BowlingPin = ({
         restitution={0.2}
         mass={1.2}
       >
-        <OptimizedEntityMesh
+        <EntityMesh
           performance={getPerformanceLevel()}
           frustumCulled={true}
           castShadow={true}
@@ -85,7 +85,7 @@ const BowlingPin = ({
               <meshStandardMaterial color="#ff0000" />
             </mesh>
           </group>
-        </OptimizedEntityMesh>
+        </EntityMesh>
       </RigidBody>
     </group>
   );

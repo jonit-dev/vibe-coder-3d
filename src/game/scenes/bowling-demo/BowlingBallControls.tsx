@@ -145,7 +145,14 @@ const BowlingBallControls = ({
     <group position={position}>
       <mesh castShadow>
         <sphereGeometry args={[0.3, 32, 32]} />
-        <meshStandardMaterial color="#ff5733" emissive="#ff3300" emissiveIntensity={0.3} />
+        <meshStandardMaterial
+          color="#fe4a49"
+          emissive="#fe4a49"
+          emissiveIntensity={0.1}
+          roughness={0.1}
+          metalness={0.8}
+          envMapIntensity={1.2}
+        />
       </mesh>
     </group>
   ) : null;

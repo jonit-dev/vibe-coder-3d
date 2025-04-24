@@ -1,3 +1,4 @@
+import { Environment } from '@react-three/drei';
 import { useEffect } from 'react';
 
 import { PhysicsBall } from '@/core/components/physics/PhysicsBall';
@@ -8,6 +9,7 @@ import BowlingBallControls from './bowling-demo/BowlingBallControls';
 import BowlingGameManager from './bowling-demo/BowlingGameManager';
 import BowlingLane from './bowling-demo/BowlingLane';
 import BowlingPinSetup from './bowling-demo/BowlingPinSetup';
+import BowlingRoom from './bowling-demo/BowlingRoom';
 
 interface IBowlsDemoProps {
   onResetHandler?: (resetFn: () => void) => void;
@@ -47,32 +49,53 @@ export const BowlsDemo = ({
         return (
           <PhysicsWorld
             lights={{
-              ambientIntensity: 0.4,
+              ambientIntensity: 0.3,
               directionalLightProps: {
-                position: [2, 10, 5],
-                intensity: 0.8,
+                position: [3, 12, 6],
+                intensity: 0.7,
                 castShadow: true,
+                shadowMapSize: 2048,
+                shadowCameraDistance: 50,
               },
               pointLights: [
-                { position: [0, 2, -8], intensity: 0.5 },
-                { position: [0, 2, 0], intensity: 0.5 },
-                { position: [0, 2, 8], intensity: 0.5 },
+                { position: [0, 5, -8], intensity: 0.4 },
+                { position: [0, 5, 2], intensity: 0.3 },
+                { position: [0, 5, 8], intensity: 0.4 },
               ],
             }}
             interpolate={true}
             maxSubSteps={maxSubSteps}
             shadowQuality={shadowQuality}
           >
-            <CameraController
-              initialPosition={[0, 3, -12]}
-              lookAt={[0, 0, 0]}
-              minDistance={2}
-              maxDistance={20}
-              minPolarAngle={0.2}
-              maxPolarAngle={Math.PI / 2.2}
+            {/* Environment map for reflections */}
+            <Environment preset="studio" />
+
+            {/* Spotlight for pins */}
+            <spotLight
+              position={[0, 8, 0]}
+              angle={0.4}
+              penumbra={0.5}
+              intensity={0.8}
+              distance={25}
+              castShadow={shadowQuality !== 'low'}
             />
 
-            <BowlingLane />
+            <CameraController
+              initialPosition={[0, 4, -15]}
+              lookAt={[0, 0, 0]}
+              minDistance={3}
+              maxDistance={25}
+              minPolarAngle={0.2}
+              maxPolarAngle={Math.PI / 2.5}
+            />
+
+            {/* Room environment - must come before lane so it doesn't overlap */}
+            <BowlingRoom shadowQuality={shadowQuality} />
+
+            {/* Individual lane */}
+            <group position={[0, 0, 0]}>
+              <BowlingLane />
+            </group>
 
             <BowlingPinSetup
               key={pinsKey}

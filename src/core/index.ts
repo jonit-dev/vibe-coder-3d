@@ -2,14 +2,16 @@
 // This file exports all the core components, hooks, and utilities from the engine
 
 // Components
+export { EntityMesh, EntityMesh as OptimizedEntityMesh } from '@/core/components/EntityMesh';
+export type {
+  IEntityMeshProps as EntityMeshProps,
+  IEntityMeshProps as OptimizedEntityMeshProps,
+} from '@/core/components/EntityMesh';
 export { EngineLoop } from './components/EngineLoop';
 export { Entity } from './components/Entity';
 export type { IEntityProps as EntityProps } from './components/Entity';
-export { EntityMesh } from './components/EntityMesh';
 export { GameEngine } from './components/GameEngine';
 export type { IGameEngineProps as GameEngineProps } from './components/GameEngine';
-export { OptimizedEntityMesh } from './components/OptimizedEntityMesh';
-export type { IOptimizedEntityMeshProps as OptimizedEntityMeshProps } from './components/OptimizedEntityMesh';
 
 // Physics Components
 export { PhysicsBox } from './components/physics/PhysicsBox';
