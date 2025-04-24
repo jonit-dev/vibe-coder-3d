@@ -11,13 +11,19 @@ import BowlingPinSetup from './bowling-demo/BowlingPinSetup';
 
 interface IBowlsDemoProps {
   onResetHandler?: (resetFn: () => void) => void;
+  shadowQuality?: 'low' | 'medium' | 'high';
+  maxSubSteps?: number;
 }
 
 /**
  * Main Bowling Demo component
  * Only contains 3D scene elements
  */
-export const BowlsDemo = ({ onResetHandler }: IBowlsDemoProps = {}) => {
+export const BowlsDemo = ({
+  onResetHandler,
+  shadowQuality = 'medium',
+  maxSubSteps = 5,
+}: IBowlsDemoProps = {}) => {
   return (
     <BowlingGameManager>
       {({
@@ -46,8 +52,6 @@ export const BowlsDemo = ({ onResetHandler }: IBowlsDemoProps = {}) => {
                 position: [2, 10, 5],
                 intensity: 0.8,
                 castShadow: true,
-                shadowMapSize: 2048,
-                shadowCameraDistance: 50,
               },
               pointLights: [
                 { position: [0, 2, -8], intensity: 0.5 },
@@ -55,6 +59,9 @@ export const BowlsDemo = ({ onResetHandler }: IBowlsDemoProps = {}) => {
                 { position: [0, 2, 8], intensity: 0.5 },
               ],
             }}
+            interpolate={true}
+            maxSubSteps={maxSubSteps}
+            shadowQuality={shadowQuality}
           >
             <CameraController
               initialPosition={[0, 3, -12]}

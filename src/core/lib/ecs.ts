@@ -40,6 +40,8 @@ export const Velocity = defineComponent({
   linearDamping: Types.f32,
   // Damping factor for angular velocity (0-1)
   angularDamping: Types.f32,
+  // Priority for velocity updates (higher values update more frequently)
+  priority: Types.ui8,
 });
 
 // Define queries
@@ -80,6 +82,7 @@ export function addVelocity(
     angular?: [number, number, number];
     linearDamping?: number;
     angularDamping?: number;
+    priority?: number;
   },
 ) {
   addComponent(world, Velocity, entity);
@@ -97,6 +100,9 @@ export function addVelocity(
     options?.linearDamping !== undefined ? options.linearDamping : 0.01;
   Velocity.angularDamping[entity] =
     options?.angularDamping !== undefined ? options.angularDamping : 0.01;
+
+  // Set update priority (higher = more frequent updates)
+  Velocity.priority[entity] = options?.priority !== undefined ? options.priority : 1;
 
   return entity;
 }

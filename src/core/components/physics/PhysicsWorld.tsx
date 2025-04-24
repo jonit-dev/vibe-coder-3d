@@ -23,16 +23,35 @@ interface IPhysicsWorldProps {
   children: ReactNode;
   gravity?: [number, number, number];
   lights?: ILightProps;
+  interpolate?: boolean;
+  maxSubSteps?: number;
+  shadowQuality?: 'low' | 'medium' | 'high';
 }
 
-export const PhysicsWorld = ({ children, gravity = [0, -9.81, 0], lights }: IPhysicsWorldProps) => {
+export const PhysicsWorld = ({
+  children,
+  gravity = [0, -9.81, 0],
+  lights,
+  interpolate = true,
+  maxSubSteps = 5,
+  shadowQuality = 'medium',
+}: IPhysicsWorldProps) => {
+  // Map shadow quality to actual shadow map size
+  const shadowMapSizes = {
+    low: 1024,
+    medium: 1536,
+    high: 2048,
+  };
+
+  const shadowMapSize = shadowMapSizes[shadowQuality];
+
   const {
     ambientIntensity = 0.4,
     directionalLightProps = {
       position: [2, 10, 5],
       intensity: 0.8,
       castShadow: true,
-      shadowMapSize: 2048,
+      shadowMapSize: shadowMapSize,
       shadowCameraDistance: 50,
     },
     pointLights = [],
@@ -70,8 +89,8 @@ export const PhysicsWorld = ({ children, gravity = [0, -9.81, 0], lights }: IPhy
         />
       ))}
 
-      {/* Physics system */}
-      <Physics gravity={gravity}>
+      {/* Physics system with proper props forwarding */}
+      <Physics gravity={gravity} interpolate={interpolate} maxCcdSubsteps={maxSubSteps}>
         <PhysicsSystem>{children}</PhysicsSystem>
       </Physics>
     </>

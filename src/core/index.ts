@@ -8,6 +8,8 @@ export type { IEntityProps as EntityProps } from './components/Entity';
 export { EntityMesh } from './components/EntityMesh';
 export { GameEngine } from './components/GameEngine';
 export type { IGameEngineProps as GameEngineProps } from './components/GameEngine';
+export { OptimizedEntityMesh } from './components/OptimizedEntityMesh';
+export type { IOptimizedEntityMeshProps as OptimizedEntityMeshProps } from './components/OptimizedEntityMesh';
 
 // Physics Components
 export { PhysicsBox } from './components/physics/PhysicsBox';
@@ -16,6 +18,9 @@ export { PhysicsObject } from './components/physics/PhysicsObject';
 export { PhysicsSphere } from './components/physics/PhysicsSphere';
 export { PhysicsSystem } from './components/physics/PhysicsSystem';
 export { PhysicsTrigger } from './components/physics/PhysicsTrigger';
+export { PhysicsWorld } from './components/physics/PhysicsWorld';
+
+// Debug Components
 
 // Hooks
 export { useEntity, useEntityQuery } from './hooks/useEntity';
@@ -28,8 +33,6 @@ export { useEngineStore } from './state/engineStore';
 
 // ECS
 export {
-  Transform,
-  Velocity,
   addVelocity,
   createEntity,
   destroyEntity,
@@ -37,15 +40,28 @@ export {
   markAllTransformsForUpdate,
   objectToEntity,
   resetWorld,
+  Transform,
   transformQuery,
+  Velocity,
   velocityQuery,
   world,
 } from './lib/ecs';
+
+// Rendering Utilities
+export {
+  computeCullingVolume,
+  createLODManager,
+  isCulled,
+  optimizeMaterials,
+  prepareForInstancing,
+  textureUtils,
+} from './lib/rendering';
 
 // Systems
 export {
   PhysicsBodyRef,
   registerPhysicsBody,
+  setPhysicsBodyActive,
   unregisterPhysicsBody,
 } from './systems/PhysicsSyncSystem';
 export { transformSystem } from './systems/transformSystem';
