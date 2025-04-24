@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 import { GameEngine } from '@/core';
 
@@ -14,9 +14,11 @@ import { CameraDemo } from './CameraDemo';
 import { EntityScene } from './EntityScene';
 import { GameLoopDemo } from './GameLoopDemo';
 import { PhysicsDemo } from './PhysicsDemo';
+import BowlingUI from './bowling-demo/BowlingUI';
 
 export const MainScene = () => {
   const { currentCategory, currentDemo } = useDemo();
+  const [handleReset, setHandleReset] = useState<(() => void) | undefined>(undefined);
 
   // Set camera based on the current demo
   const getCameraProps = () => {
@@ -35,6 +37,19 @@ export const MainScene = () => {
   // Check if we need to use the core GameEngine for this scene
   const needsGameEngine = currentCategory === 'ecs';
 
+  // Reset handler callback for bowling
+  const onResetCallback = (resetFn: () => void) => {
+    setHandleReset(() => resetFn);
+  };
+
+  // Clear reset handler when demo changes
+  useEffect(() => {
+    setHandleReset(undefined);
+  }, [currentCategory, currentDemo]);
+
+  // Check if bowling demo is active
+  const isBowlingActive = currentCategory === 'physics' && currentDemo === 'bowls';
+
   return (
     <div
       style={{
@@ -46,7 +61,7 @@ export const MainScene = () => {
       }}
     >
       <Canvas
-        shadows={currentCategory === 'ecs'}
+        shadows={currentCategory === 'ecs' || isBowlingActive}
         camera={getCameraProps()}
         style={{ background: '#000000' }}
       >
@@ -77,7 +92,7 @@ export const MainScene = () => {
                 <>
                   {currentDemo === 'basic' && <PhysicsDemo />}
                   {currentDemo === 'advanced' && <AdvancedPhysicsDemo />}
-                  {currentDemo === 'bowls' && <BowlingDemo />}
+                  {currentDemo === 'bowls' && <BowlingDemo onResetHandler={onResetCallback} />}
                 </>
               ) : (
                 <>
@@ -96,6 +111,10 @@ export const MainScene = () => {
           )}
         </Suspense>
       </Canvas>
+
+      {/* 2D UI Overlay for Bowling Game */}
+      {isBowlingActive && <BowlingUI onReset={handleReset} />}
+
       <DemoSelector />
     </div>
   );

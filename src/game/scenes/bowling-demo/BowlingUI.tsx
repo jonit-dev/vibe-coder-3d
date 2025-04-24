@@ -20,7 +20,7 @@ export const BowlingUI: React.FC<IBowlingUIProps> = ({ onReset }) => {
     <div className="absolute inset-0 pointer-events-none">
       {/* Instructions Panel */}
       {instructionsVisible && (
-        <div className="absolute top-4 left-4 bg-black/80 text-white p-4 rounded-lg max-w-md">
+        <div className="absolute top-20 right-4 bg-black/80 text-white p-4 rounded-lg max-w-md">
           <h2 className="text-xl font-bold mb-3">{instructionsTitle}</h2>
           <ul className="space-y-2">
             {instructions.map((instruction) => (
@@ -34,7 +34,7 @@ export const BowlingUI: React.FC<IBowlingUIProps> = ({ onReset }) => {
       )}
 
       {/* Score Display */}
-      <div className="absolute top-4 right-4 bg-black/80 text-white px-4 py-2 rounded-lg">
+      <div className="absolute top-4 right-20 bg-black/80 text-white px-4 py-2 rounded-lg">
         <div className="text-xl font-bold">Score: {score}</div>
       </div>
 

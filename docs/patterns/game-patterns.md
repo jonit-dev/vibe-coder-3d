@@ -23,6 +23,47 @@ A "Blueprint" is analogous to a _Scene_ in Godot or a _Prefab_ in Unity. It repr
 | **Build Slices**       | Unity Assembly Definitions (.asmdef)           | Improve build times and code organization.        | Utilize Monorepo workspaces (e.g., Yarn/PNPM workspaces) + bundler features (Vite/Turbopack) for incremental builds.            |
 | **Editor Tools**       | Godot `@tool` scripts, Unity Custom Inspectors | Automate tasks, provide in-game debugging.        | Leverage tools like Storybook or create custom in-browser editors that import game Blueprints directly. Hot-reloading via Vite. |
 
+## Pattern Impact Ratings (1-5 stars)
+
+Based on their potential impact and usefulness for this project:
+
+1.  **Node Composition** - ★★★★★
+    - Foundation of component-based architecture
+    - Enables reusable, maintainable code structure
+2.  **Blueprint Variant** - ★★★★★
+    - Critical for entity variants without code duplication
+    - Immense time-saver for content creation
+3.  **Signals / Events** - ★★★★★
+    - Essential for decoupled system communication
+    - Prevents spaghetti code as complexity grows
+4.  **Data Assets** - ★★★★★
+    - Enables non-programmers to create/edit game content
+    - Critical for rapid iteration and content pipeline
+5.  **Groups / Tags** - ★★★★☆
+    - Powerful for AI, collision handling, and bulk operations
+    - More efficient than manual reference tracking
+6.  **Editor Tools** - ★★★★☆
+    - Dramatically accelerates content creation workflow
+    - Reduces friction between code and design
+7.  **Input Map** - ★★★★☆
+    - Essential for cross-platform/device support
+    - Simplifies control scheme changes
+8.  **Addressables** - ★★★★☆
+    - Critical for performance in larger games
+    - Enables dynamic loading strategies
+9.  **Singleton / Global** - ★★★☆☆
+    - Useful but already well-covered by React Context
+    - Implementation is straightforward
+10. **Scene Loading** - ★★★☆☆
+    - Important for larger worlds/levels
+    - Less critical for smaller experiences
+11. **Build Slices** - ★★☆☆☆
+    - Benefits mainly seen in larger codebases
+    - Can be implemented later when needed
+12. **ECS (Optional)** - ★★☆☆☆
+    - Specialized use case for performance-critical scenarios
+    - Complexity may not justify benefits initially
+
 ## Workflow Recommendations
 
 1.  **Grey-box First:** Start development using simple geometric shapes for Blueprints. Art assets can be swapped in later without significant code changes.
@@ -32,6 +73,40 @@ A "Blueprint" is analogous to a _Scene_ in Godot or a _Prefab_ in Unity. It repr
 5.  **Data is King:** Treat external JSON data files as the source of truth for configuration, stats, levels, etc. This allows non-programmers to tweak game balance and content.
 6.  **Version Assets:** Use version control for all assets, including models (GLTF) and data (JSON). Consider text-based formats where possible for better diffing (e.g., `gltf-pipeline -t` for GLTF).
 7.  **Profile Early:** Use browser developer tools and libraries like Spector.js to monitor rendering performance (draw calls, geometry). Only introduce optimizations like ECS when necessary.
+
+## Implementation Phase Plan
+
+This plan outlines a potential order for implementing these patterns:
+
+### Phase 1: Core Foundation (Est. Weeks 1-3)
+
+- **Goal:** Establish the fundamental building blocks.
+- **Patterns:**
+  - `Node Composition`: Define core component structure and conventions.
+  - `Blueprint Pattern`: Implement the base `Blueprint` factory/component logic.
+  - `Signals / Events`: Set up `mitt` event bus and `useSignal` hook. Integrate into core systems.
+  - `Singleton / Global`: Define initial React Contexts for essential global state/services (e.g., Input, Game State).
+
+### Phase 2: Content & Interaction (Est. Weeks 4-6)
+
+- **Goal:** Enable content creation and basic interactions.
+- **Patterns:**
+  - `Blueprint Variant`: Refine and utilize the variant pattern for creating diverse entities.
+  - `Data Assets`: Implement `useAsset` hook, Zod validation, and establish the JSON data structure for items, characters, etc.
+  - `Input Map`: Implement the `useInput` hook and define the initial action map.
+  - `Groups / Tags`: Implement `useTag` and `getNodes` for basic entity querying (e.g., finding all "enemies").
+
+### Phase 3: Scaling & Workflow (Est. Weeks 7-9+)
+
+- **Goal:** Enhance performance, developer workflow, and prepare for larger scale.
+- **Patterns:**
+  - `Addressables`: Implement the asset manifest and async loading logic.
+  - `Editor Tools`: Set up Storybook or a basic custom editor for Blueprint visualization and tweaking.
+  - `Scene Loading` (If Needed): Implement strategies for loading/unloading parts of the world.
+  - `Build Slices` (If Needed): Explore monorepo structure or bundler optimizations if build times become problematic.
+  - `ECS` (If Needed): Evaluate and potentially integrate `bitecs` if profiling reveals performance bottlenecks unsolved by other means.
+
+**Note:** This is a flexible plan. Priorities may shift based on project needs and discoveries during development.
 
 ## Consistency Check with `docs/architecture`
 

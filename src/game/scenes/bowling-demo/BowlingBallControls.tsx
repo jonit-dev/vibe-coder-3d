@@ -20,11 +20,19 @@ const BowlingBallControls = ({
   minPower = 10,
   maxPower = 40,
 }: IBowlingBallControllerProps) => {
-  const [position, setPosition] = useState<[number, number, number]>([0, 0.5, -8]);
+  // Ball radius is 0.3, so y position should be 0.3 to rest on lane at Y=0
+  const [position, setPosition] = useState<[number, number, number]>([0, 0.3, -8]);
   const [power, setPower] = useState(20);
   const { isPressed } = useInput();
   const alreadyShot = useRef(false);
   const { showActionMessage, hideActionMessage } = useUIStore();
+
+  // Update the power message without causing render loop
+  useEffect(() => {
+    if (active) {
+      showActionMessage(`PRESS SPACE TO SHOOT (Power: ${power.toFixed(1)})`);
+    }
+  }, [active, power, showActionMessage]);
 
   useEffect(() => {
     const preventDefaultForArrows = (e: KeyboardEvent) => {
@@ -42,10 +50,8 @@ const BowlingBallControls = ({
   useEffect(() => {
     if (active) {
       alreadyShot.current = false;
-      setPosition([0, 0.5, -8]);
-
-      // Update UI with current power via action message
-      showActionMessage(`PRESS SPACE TO SHOOT (Power: ${power.toFixed(1)})`);
+      setPosition([0, 0.3, -8]); // Also update the reset position
+      // Message is handled in the power effect above
     } else {
       hideActionMessage();
     }
@@ -53,7 +59,7 @@ const BowlingBallControls = ({
     return () => {
       hideActionMessage();
     };
-  }, [active, power, showActionMessage, hideActionMessage]);
+  }, [active, hideActionMessage]);
 
   // Handle user input
   useEffect(() => {
@@ -88,8 +94,6 @@ const BowlingBallControls = ({
         setPower((prev) => {
           const newPower = Math.min(prev + 0.5, maxPower);
           moved = true;
-          // Update UI with new power
-          showActionMessage(`PRESS SPACE TO SHOOT (Power: ${newPower.toFixed(1)})`);
           return newPower;
         });
       }
@@ -98,8 +102,6 @@ const BowlingBallControls = ({
         setPower((prev) => {
           const newPower = Math.max(prev - 0.5, minPower);
           moved = true;
-          // Update UI with new power
-          showActionMessage(`PRESS SPACE TO SHOOT (Power: ${newPower.toFixed(1)})`);
           return newPower;
         });
       }
@@ -133,9 +135,9 @@ const BowlingBallControls = ({
     maxX,
     minPower,
     maxPower,
-    showActionMessage,
     hideActionMessage,
     power,
+    position,
   ]);
 
   // Visual representation only (no HTML)
