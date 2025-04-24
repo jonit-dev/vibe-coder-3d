@@ -1,0 +1,71 @@
+---
+description: Guidelines for iterative refactoring to improve code quality and reliability
+globs: ["**/*.ts", "**/*.js"]
+alwaysApply: false
+---
+
+# Critical
+
+Whenever this rule is loaded, say first:
+`🧠 Refactoring guidelines rule loaded!`
+
+# Iterative Refactoring Approach
+
+This rule outlines a methodical approach to refactoring code for improved reliability, maintainability, and readability.
+
+## Core Principles
+
+1. **Make incremental changes**: Refactor step by step, testing after each meaningful change.
+2. **Preserve behavior**: Ensure refactoring doesn't alter the functionality of the code.
+3. **Improve reliability**: Focus on making the code more robust against failures.
+4. **Use meaningful commits**: Each commit should represent a specific improvement.
+5. **Run related tests after each refactor**: Make sure to run tests and they pass before you commit. 
+6. **Fix all type issues**: Fix type issues once you spot them.
+
+## Refactoring Techniques
+
+### 1. Method Extraction
+- Extract repeated or complex logic into separate, well-named methods
+- Aim for methods that do one thing and do it well
+- Keep method signatures clear and consistent
+
+### 2. Error Handling
+- Catch errors at appropriate levels
+- Provide meaningful error messages
+- Log detailed error context (IDs, timestamps, relevant state)
+- Ensure clean resource cleanup in finally blocks
+- Handle edge cases explicitly
+
+### 3. Code Simplification
+- Replace complex conditionals with simpler expressions
+- Remove redundant code
+- Use early returns to reduce nesting
+- Extract helper methods for clarity
+
+### 4. Atomic Updates
+- Prefer atomic operations where possible
+- Minimize the chance of leaving data in inconsistent states
+- Use transactions or locking when necessary
+
+### 5. Testing Approach
+- Run tests after each significant change
+- Don't proceed with further changes if tests are failing
+- Add tests for edge cases discovered during refactoring
+
+## Implementation Process
+
+1. **Analyze**: Understand the code before changing it
+2. **Plan**: Identify specific areas for improvement
+3. **Refactor**: Make small, focused changes
+4. **Test**: Verify behavior is preserved
+5. **Commit**: Save the working state with descriptive messages
+6. **Repeat**: Continue with the next improvement
+
+## Example Refactorings
+
+- Extracting validation logic
+- Improving error handling and recovery
+- Adding robust null/undefined checks
+- Creating helper methods for repeated operations
+- Enhancing logging for better debugging
+- Simplifying complex conditional flows 

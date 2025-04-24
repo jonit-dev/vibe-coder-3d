@@ -1,0 +1,70 @@
+---
+description: Template
+globs: 
+alwaysApply: false
+---
+# Critical
+
+Whenever this rule is loaded, say first:
+`🧠 Bug Template rule loaded!`
+
+## 🐞 Bug Template
+
+**IMPORTANT:** When using this template, the text should be output formatted in chat with proper Markdown.
+
+---
+
+### Summary  
+> _Provide a brief summary of the bug_
+
+---
+
+### Potentially Related Files  
+> _List files related to the issue_
+
+---
+
+### Hypothesis / Proposed Solution  
+> _What do you think is happening and how to fix it_
+
+---
+
+### Severity  
+> _Critical / Major / Minor / Trivial_
+
+---
+
+### Environment  
+> _Detail the environment where the bug was found (OS, browser, etc.)_
+
+---
+
+### Steps to Reproduce  
+1. First step  
+2. Second step  
+3. Additional steps as needed
+
+---
+
+### Expected Result  
+> _Describe what you expected to happen_
+
+---
+
+### Actual Result  
+> _Describe what actually happened_
+
+---
+
+### Attachments  
+> _Add screenshots or logs if available_
+
+---
+
+### 🔍 Debugging Tips  
+- Always verify the bug can be reproduced using the steps provided  
+- Add `console.log` statements to trace execution flow  
+- Check related error handling and edge cases  
+- Consider race conditions or timing issues  
+- Test your fix thoroughly to ensure it doesn't introduce new problems
+
