@@ -24,3 +24,6 @@ yarn-error.log*
 
 # OS
 Thumbs.db
+
+# Temporary directories
+/temp_model_processing

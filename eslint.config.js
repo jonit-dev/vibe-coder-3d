@@ -16,6 +16,7 @@ export default [
       '.DS_Store',
       'coverage/**',
       '*.log',
+      'scripts/**',
     ],
   },
   js.configs.recommended,
