@@ -54,6 +54,11 @@ const physicsTypes = [
     name: 'Advanced Physics Demo',
     description: 'Joints, pendulums, seesaws, and interactive physics',
   },
+  {
+    id: 'bowls',
+    name: 'Ten-Pin Bowling Demo',
+    description: 'Knock down pins with physics-based bowling simulation',
+  },
 ] as const;
 
 const ecsTypes = [

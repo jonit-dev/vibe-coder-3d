@@ -9,6 +9,7 @@ import { MenuBackground } from '../../components/MenuBackground';
 import { useDemo } from '../stores/demoStore';
 
 import { AdvancedPhysicsDemo } from './AdvancedPhysicsDemo';
+import { BowlingDemo } from './BowlsDemo';
 import { CameraDemo } from './CameraDemo';
 import { EntityScene } from './EntityScene';
 import { GameLoopDemo } from './GameLoopDemo';
@@ -76,6 +77,7 @@ export const MainScene = () => {
                 <>
                   {currentDemo === 'basic' && <PhysicsDemo />}
                   {currentDemo === 'advanced' && <AdvancedPhysicsDemo />}
+                  {currentDemo === 'bowls' && <BowlingDemo />}
                 </>
               ) : (
                 <>

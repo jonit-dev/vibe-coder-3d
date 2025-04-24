@@ -15,6 +15,11 @@ interface IRapierEvent {
   pairs: IRapierEventPair[];
 }
 
+// Extended world type to include events which are not in the TypeScript definitions
+interface IEventedRapierWorld {
+  on: (event: string, callback: (event: IRapierEvent) => void) => () => void;
+}
+
 /**
  * Hook for subscribing to physics collision events
  */
@@ -24,72 +29,90 @@ export function useCollisionEvents(options: {
   onSensorEnter?: SensorCallback;
   onSensorExit?: SensorCallback;
 }) {
-  const { world } = useRapier();
+  const { world, rapier } = useRapier();
   const initialized = useRef(false);
 
   useEffect(() => {
     if (!world || initialized.current) return;
 
+    // Some versions of Rapier may not have the event system initialized yet
+    // or may use a different approach to event handling
+    if (typeof (world as any).on !== 'function') {
+      console.warn('Rapier world.on event function not available. Collision events will not work.');
+      return;
+    }
+
+    // Cast world to our extended interface that includes the event methods
+    const eventWorld = world as unknown as IEventedRapierWorld;
+
     // Setup event listeners for the Rapier physics world
-    // Using any type temporarily since Rapier's TypeScript types might not fully expose event system
-    // @ts-expect-error - Rapier's world.on might not be in types but exists at runtime
-    const unsubscribeCollisionEnter = world.on('collisionStart', (event: IRapierEvent) => {
-      if (!options.onCollisionEnter) return;
+    let unsubscribeCollisionEnter: (() => void) | null = null;
+    let unsubscribeCollisionExit: (() => void) | null = null;
+    let unsubscribeSensorEnter: (() => void) | null = null;
+    let unsubscribeSensorExit: (() => void) | null = null;
 
-      event.pairs.forEach((pair: IRapierEventPair) => {
-        // Get entity IDs from Rapier colliders (assuming they're stored in userData)
-        const entityA = pair.collider1.userData?.entityId ?? -1;
-        const entityB = pair.collider2.userData?.entityId ?? -1;
+    try {
+      if (options.onCollisionEnter) {
+        unsubscribeCollisionEnter = eventWorld.on('collisionStart', (event: IRapierEvent) => {
+          event.pairs.forEach((pair: IRapierEventPair) => {
+            // Get entity IDs from Rapier colliders (assuming they're stored in userData)
+            const entityA = pair.collider1?.userData?.entityId ?? -1;
+            const entityB = pair.collider2?.userData?.entityId ?? -1;
 
-        options.onCollisionEnter?.(entityA, entityB, true);
-      });
-    });
+            options.onCollisionEnter?.(entityA, entityB, true);
+          });
+        });
+      }
 
-    // @ts-expect-error - Rapier's world.on might not be in types but exists at runtime
-    const unsubscribeCollisionExit = world.on('collisionEnd', (event: IRapierEvent) => {
-      if (!options.onCollisionExit) return;
+      if (options.onCollisionExit) {
+        unsubscribeCollisionExit = eventWorld.on('collisionEnd', (event: IRapierEvent) => {
+          event.pairs.forEach((pair: IRapierEventPair) => {
+            const entityA = pair.collider1?.userData?.entityId ?? -1;
+            const entityB = pair.collider2?.userData?.entityId ?? -1;
 
-      event.pairs.forEach((pair: IRapierEventPair) => {
-        const entityA = pair.collider1.userData?.entityId ?? -1;
-        const entityB = pair.collider2.userData?.entityId ?? -1;
+            options.onCollisionExit?.(entityA, entityB, false);
+          });
+        });
+      }
 
-        options.onCollisionExit?.(entityA, entityB, false);
-      });
-    });
+      if (options.onSensorEnter) {
+        unsubscribeSensorEnter = eventWorld.on('sensorStart', (event: IRapierEvent) => {
+          event.pairs.forEach((pair: IRapierEventPair) => {
+            const entityA = pair.collider1?.userData?.entityId ?? -1;
+            const entityB = pair.collider2?.userData?.entityId ?? -1;
 
-    // @ts-expect-error - Rapier's world.on might not be in types but exists at runtime
-    const unsubscribeSensorEnter = world.on('sensorStart', (event: IRapierEvent) => {
-      if (!options.onSensorEnter) return;
+            options.onSensorEnter?.(entityA, entityB, true);
+          });
+        });
+      }
 
-      event.pairs.forEach((pair: IRapierEventPair) => {
-        const entityA = pair.collider1.userData?.entityId ?? -1;
-        const entityB = pair.collider2.userData?.entityId ?? -1;
+      if (options.onSensorExit) {
+        unsubscribeSensorExit = eventWorld.on('sensorEnd', (event: IRapierEvent) => {
+          event.pairs.forEach((pair: IRapierEventPair) => {
+            const entityA = pair.collider1?.userData?.entityId ?? -1;
+            const entityB = pair.collider2?.userData?.entityId ?? -1;
 
-        options.onSensorEnter?.(entityA, entityB, true);
-      });
-    });
+            options.onSensorExit?.(entityA, entityB, false);
+          });
+        });
+      }
 
-    // @ts-expect-error - Rapier's world.on might not be in types but exists at runtime
-    const unsubscribeSensorExit = world.on('sensorEnd', (event: IRapierEvent) => {
-      if (!options.onSensorExit) return;
-
-      event.pairs.forEach((pair: IRapierEventPair) => {
-        const entityA = pair.collider1.userData?.entityId ?? -1;
-        const entityB = pair.collider2.userData?.entityId ?? -1;
-
-        options.onSensorExit?.(entityA, entityB, false);
-      });
-    });
-
-    initialized.current = true;
+      initialized.current = true;
+    } catch (error) {
+      console.error('Error setting up Rapier collision events:', error);
+    }
 
     // Clean up event listeners when component unmounts
     return () => {
-      if (unsubscribeCollisionEnter) unsubscribeCollisionEnter();
-      if (unsubscribeCollisionExit) unsubscribeCollisionExit();
-      if (unsubscribeSensorEnter) unsubscribeSensorEnter();
-      if (unsubscribeSensorExit) unsubscribeSensorExit();
+      try {
+        if (unsubscribeCollisionEnter) unsubscribeCollisionEnter();
+        if (unsubscribeCollisionExit) unsubscribeCollisionExit();
+        if (unsubscribeSensorEnter) unsubscribeSensorEnter();
+        if (unsubscribeSensorExit) unsubscribeSensorExit();
+      } catch (error) {
+        console.error('Error cleaning up Rapier collision events:', error);
+      }
       initialized.current = false;
     };
-  }, [world, options]); // Re-run if options change
+  }, [world, options, rapier]); // Re-run if options or rapier world change
 }
