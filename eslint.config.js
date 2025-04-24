@@ -54,7 +54,7 @@ export default [
     rules: {
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
-      'prettier/prettier': 'error',
+      'prettier/prettier': 'off',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
