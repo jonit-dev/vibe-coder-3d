@@ -27,25 +27,25 @@ A "Blueprint" is analogous to a _Scene_ in Godot or a _Prefab_ in Unity. It repr
 
 Based on their potential impact and usefulness for this project:
 
-1.  **Node Composition** - ★★★★★
+1.  **Node Composition** - ★★★★★ ✅
     - Foundation of component-based architecture
     - Enables reusable, maintainable code structure
-2.  **Blueprint Variant** - ★★★★★
+2.  **Blueprint Variant** - ★★★★★ ✅
     - Critical for entity variants without code duplication
     - Immense time-saver for content creation
-3.  **Signals / Events** - ★★★★★
+3.  **Signals / Events** - ★★★★★ ✅
     - Essential for decoupled system communication
     - Prevents spaghetti code as complexity grows
 4.  **Data Assets** - ★★★★★
     - Enables non-programmers to create/edit game content
     - Critical for rapid iteration and content pipeline
-5.  **Groups / Tags** - ★★★★☆
+5.  **Groups / Tags** - ★★★★☆ ✅
     - Powerful for AI, collision handling, and bulk operations
     - More efficient than manual reference tracking
 6.  **Editor Tools** - ★★★★☆
     - Dramatically accelerates content creation workflow
     - Reduces friction between code and design
-7.  **Input Map** - ★★★★☆
+7.  **Input Map** - ★★★★☆ ✅
     - Essential for cross-platform/device support
     - Simplifies control scheme changes
 8.  **Addressables** - ★★★★☆
@@ -60,7 +60,7 @@ Based on their potential impact and usefulness for this project:
 11. **Build Slices** - ★★☆☆☆
     - Benefits mainly seen in larger codebases
     - Can be implemented later when needed
-12. **ECS (Optional)** - ★★☆☆☆
+12. **ECS (Optional)** - ★★☆☆☆ ✅
     - Specialized use case for performance-critical scenarios
     - Complexity may not justify benefits initially
 

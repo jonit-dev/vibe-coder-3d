@@ -1,7 +1,13 @@
+import { useFrame } from '@react-three/fiber';
+import { RapierRigidBody } from '@react-three/rapier';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Vector3 } from 'three';
 
 import { IPhysicsBallRef } from '@/core/components/physics/PhysicsBall';
+import { getNodes } from '@/core/lib/tags';
 import { useUIStore } from '@core/stores/uiStore';
+
+import { PIN_TAGS } from './BowlingPin';
 
 export interface IBowlingGameProps {
   children: (props: {
@@ -21,7 +27,14 @@ export interface IBowlingGameProps {
   }) => React.ReactNode;
 }
 
-export const BowlingGameManager = ({ children }: IBowlingGameProps) => {
+type GameState = 'ready' | 'rolling' | 'scoring' | 'resetting';
+
+const BowlingGameManager = ({ children }: IBowlingGameProps) => {
+  const [gameState, setGameState] = useState<GameState>('ready');
+  const [score, setScore] = useState(0);
+  const [frame, setFrame] = useState(1);
+  const [roll, setRoll] = useState(1);
+  const [ballReturnTimer, setBallReturnTimer] = useState<number | null>(null);
   const [activeBall, setActiveBall] = useState(true);
   const [currentBall, setCurrentBall] = useState<{
     position: [number, number, number];
@@ -33,7 +46,7 @@ export const BowlingGameManager = ({ children }: IBowlingGameProps) => {
   const ballRef = useRef<IPhysicsBallRef | null>(null);
 
   // Get UI store functions
-  const { setScore, showInstructions, score } = useUIStore();
+  const { setScore: uiSetScore, showInstructions, score: uiScore } = useUIStore();
 
   // Setup game instructions
   useEffect(() => {
@@ -45,14 +58,48 @@ export const BowlingGameManager = ({ children }: IBowlingGameProps) => {
     ]);
   }, [showInstructions]);
 
+  // Update game state with callback
+  const updateGameState = useCallback((newState: GameState) => {
+    setGameState(newState);
+  }, []);
+
+  // Main game update logic
+  useFrame(() => {
+    // Only check for fallen pins if we're in the scoring state
+    if (gameState === 'scoring') {
+      // Get all pins via tags - this is the key functionality from our tags system
+      const fallenPins = getNodes<RapierRigidBody>(PIN_TAGS.FALLEN);
+      const totalPins = getNodes<RapierRigidBody>(PIN_TAGS.ALL);
+
+      // Calculate current score based on fallen pins
+      const currentScore = fallenPins.length;
+
+      // Update score
+      if (currentScore !== score) {
+        setScore(currentScore);
+        uiSetScore(currentScore);
+      }
+
+      // Check if ball has left play area and all pins have settled
+      // This would be a good time to end the frame or prepare for the next roll
+
+      // For demo purposes, let's just check if all pins are fallen
+      if (fallenPins.length === totalPins.length) {
+        console.log('Strike! All pins down.');
+        updateGameState('resetting');
+      }
+    }
+  });
+
   const handlePinHit = useCallback(
     (pinId: number) => {
       if (!pinsHit.current.has(pinId)) {
         pinsHit.current.add(pinId);
         setScore(score + 10);
+        uiSetScore(score + 10);
       }
     },
-    [setScore, score],
+    [setScore, score, uiSetScore],
   );
 
   const handleFirstPinFallen = useCallback(() => {
@@ -80,7 +127,8 @@ export const BowlingGameManager = ({ children }: IBowlingGameProps) => {
     setActiveBall(true);
     setCurrentBall(null);
     setPinsKey((k) => k + 1);
-  }, [setScore]);
+    updateGameState('ready');
+  }, [setScore, updateGameState]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -91,6 +139,94 @@ export const BowlingGameManager = ({ children }: IBowlingGameProps) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleReset]);
+
+  // Demo: Reset pins for next play using tags
+  const resetPins = useCallback(() => {
+    // Get fallen pins
+    const fallenPins = getNodes<RapierRigidBody>(PIN_TAGS.FALLEN);
+
+    // Option 1: Reset pin positions manually
+    fallenPins.forEach((pinRef) => {
+      if (pinRef.current) {
+        // Reset position and rotation
+        pinRef.current.setTranslation(new Vector3(0, 0.3, 0), true);
+        // Reset angular and linear velocity
+        pinRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        pinRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      }
+    });
+
+    // Option 2: For a real game, you might want to entirely replace the pins
+    // This would be done by unmounting/remounting the BowlingPinSetup component
+
+    console.log('Pins reset for next frame');
+  }, []);
+
+  // Demo: Function to reset game state for next frame
+  const prepareNextFrame = useCallback(() => {
+    resetPins();
+    setScore(0);
+    setRoll(1);
+    setFrame((prev) => Math.min(10, prev + 1));
+    updateGameState('ready');
+  }, [resetPins, updateGameState]);
+
+  // Transition to scoring state when ball is rolled
+  const handleBallRolled = useCallback(() => {
+    updateGameState('scoring');
+
+    // After 5 seconds, reset for next frame (demo only)
+    const timer = window.setTimeout(() => {
+      prepareNextFrame();
+    }, 5000);
+
+    setBallReturnTimer(timer);
+
+    return () => {
+      if (ballReturnTimer) {
+        clearTimeout(ballReturnTimer);
+      }
+    };
+  }, [updateGameState, prepareNextFrame, ballReturnTimer]);
+
+  // Demo: Advanced query examples using the tags system
+  const showTagDemos = useCallback(() => {
+    // Get pins in the front row
+    const frontRowPins = getNodes<RapierRigidBody>(PIN_TAGS.ROW_FRONT);
+    console.log(`Front row pins: ${frontRowPins.length}`);
+
+    // Check if the headpin is still standing
+    const headpins = getNodes<RapierRigidBody>(PIN_TAGS.HEAD);
+    const standingHeadpins = headpins.filter((pin) => {
+      // The pin needs to be both tagged as HEAD and as STANDING
+      return getNodes<RapierRigidBody>(PIN_TAGS.STANDING).includes(pin);
+    });
+    console.log(`Headpin standing: ${standingHeadpins.length > 0}`);
+
+    // Check for a split (pins on both sides with middle pins knocked down)
+    const leftCornerStanding = getNodes<RapierRigidBody>(PIN_TAGS.LEFT_CORNER).some((pin) =>
+      getNodes<RapierRigidBody>(PIN_TAGS.STANDING).includes(pin),
+    );
+
+    const rightCornerStanding = getNodes<RapierRigidBody>(PIN_TAGS.RIGHT_CORNER).some((pin) =>
+      getNodes<RapierRigidBody>(PIN_TAGS.STANDING).includes(pin),
+    );
+
+    const middleRowPins = getNodes<RapierRigidBody>(PIN_TAGS.ROW_MIDDLE);
+    const middleRowFallen = middleRowPins.every((pin) =>
+      getNodes<RapierRigidBody>(PIN_TAGS.FALLEN).includes(pin),
+    );
+
+    const isSplit = leftCornerStanding && rightCornerStanding && middleRowFallen;
+    console.log(`Split detected: ${isSplit}`);
+  }, []);
+
+  // For demo purposes, run tag demos when component mounts
+  useEffect(() => {
+    // Small delay to ensure pins are registered
+    const timer = setTimeout(showTagDemos, 1000);
+    return () => clearTimeout(timer);
+  }, [showTagDemos]);
 
   return children({
     handleShoot,
