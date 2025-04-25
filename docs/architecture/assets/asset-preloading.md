@@ -264,3 +264,292 @@ export function AssetPreloader({ group, onComplete, children }: IAssetPreloaderP
 - **Error Handling:** The `useProgress` hook provides an `errors` array. Implement logic to handle failed asset preloads gracefully (e.g., retry, show error message, use fallback assets).
 
 This system provides a structured way to manage preloading by extending the existing manifest and leveraging `@react-three/drei` utilities.
+
+## Dedicated Preloading Scene
+
+For a more polished user experience common in 3D games, we can implement a dedicated preloading scene with a visual background and progress bar.
+
+### Overview
+
+The dedicated preloading scene will:
+
+- Display a 3D background within an R3F Canvas
+- Show a progress bar UI overlay
+- Handle preloading of specified asset groups
+- Transition to the target scene when loading completes
+
+### Components Structure
+
+```mermaid
+graph TD
+    A[App Component] --> B{Loading State}
+    B -->|Initial Load| C[PreloadingScene]
+    B -->|Loading Complete| D[Main Game/Scene]
+    C --> E[3D Background Elements]
+    C --> F[PreloadingUI]
+    C --> G[Asset Preloading Logic]
+    G --> H[Manifest Filtering]
+    G --> I[drei.preload]
+    G --> J[drei.useProgress]
+    J --> F
+```
+
+### 1. PreloadingScene Component
+
+This component serves as the central loading screen, combining the 3D background and UI overlay.
+
+```typescript
+// src/core/scenes/PreloadingScene.tsx
+import { Canvas } from '@react-three/fiber';
+import { useEffect } from 'react';
+import { useProgress, preload } from '@react-three/drei';
+import { assets as assetManifest } from '@/config/assets';
+import { PreloadingUI } from '@/core/components/ui/PreloadingUI';
+import { PreloadBackground } from '@/core/components/PreloadBackground';
+
+interface IPreloadingSceneProps {
+  groupsToLoad: string | string[];
+  onPreloadComplete: () => void;
+  backgroundImage?: string; // Optional custom background image
+}
+
+export function PreloadingScene({
+  groupsToLoad,
+  onPreloadComplete,
+  backgroundImage = '/assets/ui/loading-background.jpg' // Default image
+}: IPreloadingSceneProps) {
+  const groupsArray = Array.isArray(groupsToLoad) ? groupsToLoad : [groupsToLoad];
+
+  // Get URLs for the groups to preload
+  const urlsToPreload = Object.values(assetManifest)
+    .filter(metadata =>
+      metadata.preloadGroup &&
+      (Array.isArray(metadata.preloadGroup)
+        ? metadata.preloadGroup.some(g => groupsArray.includes(g))
+        : groupsArray.includes(metadata.preloadGroup))
+    )
+    .map(metadata => metadata.url);
+
+  // Trigger preloading
+  useEffect(() => {
+    if (urlsToPreload.length > 0) {
+      urlsToPreload.forEach(url => preload(url));
+    }
+  }, [urlsToPreload]);
+
+  // Track loading progress
+  const { active, progress, loaded, total } = useProgress();
+
+  // Call onPreloadComplete when loading is done
+  useEffect(() => {
+    if (!active && progress === 100 && loaded === total && total > 0) {
+      console.log(`Preloading complete for groups: ${groupsArray.join(', ')}`);
+      onPreloadComplete();
+    }
+  }, [active, progress, loaded, total, onPreloadComplete, groupsArray]);
+
+  return (
+    <div className="w-full h-full relative">
+      {/* 3D Canvas for background elements */}
+      <Canvas gl={{ alpha: false }}>
+        <PreloadBackground imageUrl={backgroundImage} />
+      </Canvas>
+
+      {/* Progress UI Overlay */}
+      <PreloadingUI progress={progress} />
+    </div>
+  );
+}
+```
+
+### 2. PreloadBackground Component
+
+A simple component to display a background image or minimal 3D elements.
+
+```typescript
+// src/core/components/PreloadBackground.tsx
+import { useThree } from '@react-three/fiber';
+import { Image, useTexture } from '@react-three/drei';
+
+interface IPreloadBackgroundProps {
+  imageUrl: string;
+}
+
+export function PreloadBackground({ imageUrl }: IPreloadBackgroundProps) {
+  const { viewport } = useThree();
+
+  // Option 1: Image background (ensure this image itself is very small or preloaded in "core")
+  return (
+    <>
+      <color attach="background" args={['#16161a']} />
+      <Image
+        url={imageUrl}
+        scale={[viewport.width, viewport.height, 1]}
+        position={[0, 0, -10]}
+      />
+
+      {/* Optional: Add minimalist animation like a spinning logo */}
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[10, 10, 5]} intensity={1} />
+      <mesh position={[0, 0, 0]} rotation={[0, Math.PI / 4, 0]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#4361ee" />
+      </mesh>
+    </>
+  );
+}
+```
+
+### 3. PreloadingUI Component
+
+The HTML overlay displaying the progress bar.
+
+```typescript
+// src/core/components/ui/PreloadingUI.tsx
+import { useEffect, useState } from 'react';
+
+interface IPreloadingUIProps {
+  progress: number;
+}
+
+export function PreloadingUI({ progress }: IPreloadingUIProps) {
+  // Smooth progress value for better visual transition
+  const [smoothProgress, setSmoothProgress] = useState(0);
+
+  useEffect(() => {
+    // Simple easing for smoother progress bar
+    const interval = setInterval(() => {
+      setSmoothProgress(prev => {
+        if (Math.abs(prev - progress) < 0.5) return progress;
+        return prev + (progress - prev) * 0.1;
+      });
+    }, 16);
+
+    return () => clearInterval(interval);
+  }, [progress]);
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
+      {/* App Logo/Title */}
+      <div className="text-white text-4xl font-bold mb-8">Vibe Coder 3D</div>
+
+      {/* Progress Bar */}
+      <div className="w-1/3 h-2 bg-gray-800 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-100 ease-out"
+          style={{ width: `${smoothProgress}%` }}
+        />
+      </div>
+
+      {/* Progress Text */}
+      <div className="text-white text-sm mt-2">{Math.round(smoothProgress)}%</div>
+
+      {/* Optional Loading Message */}
+      <div className="text-gray-400 text-xs mt-4">
+        {progress < 25 ? 'Initializing...' :
+         progress < 50 ? 'Loading assets...' :
+         progress < 75 ? 'Preparing models...' :
+         progress < 100 ? 'Almost ready...' : 'Complete!'}
+      </div>
+    </div>
+  );
+}
+```
+
+### 4. Integration in Main App Flow
+
+```typescript
+// Example App.tsx integration
+import { useState } from 'react';
+import { GameScene } from '@/game/scenes/GameScene';
+import { PreloadingScene } from '@/core/scenes/PreloadingScene';
+
+export function App() {
+  const [gameState, setGameState] = useState<'LOADING_CORE' | 'MAIN_MENU' | 'LOADING_LEVEL' | 'IN_GAME'>('LOADING_CORE');
+  const [targetLevel, setTargetLevel] = useState<string | null>(null);
+
+  // Handlers for scene transitions
+  const handleCoreAssetsLoaded = () => {
+    setGameState('MAIN_MENU');
+  };
+
+  const handleStartGame = (levelId: string) => {
+    setTargetLevel(levelId);
+    setGameState('LOADING_LEVEL');
+  };
+
+  const handleLevelAssetsLoaded = () => {
+    setGameState('IN_GAME');
+  };
+
+  // Render appropriate component based on game state
+  return (
+    <div className="w-screen h-screen">
+      {gameState === 'LOADING_CORE' && (
+        <PreloadingScene
+          groupsToLoad="core"
+          onPreloadComplete={handleCoreAssetsLoaded}
+        />
+      )}
+
+      {gameState === 'MAIN_MENU' && (
+        <MainMenu onStartGame={handleStartGame} />
+      )}
+
+      {gameState === 'LOADING_LEVEL' && targetLevel && (
+        <PreloadingScene
+          groupsToLoad={`scene:${targetLevel}`}
+          onPreloadComplete={handleLevelAssetsLoaded}
+          backgroundImage="/assets/ui/level-loading-bg.jpg"
+        />
+      )}
+
+      {gameState === 'IN_GAME' && targetLevel && (
+        <GameScene levelId={targetLevel} />
+      )}
+    </div>
+  );
+}
+```
+
+### 5. Scene Transition Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant InitLoad as Initial Preloading Scene
+    participant MainMenu as Main Menu Scene
+    participant LevelLoad as Level Preloading Scene
+    participant GameLevel as Game Level Scene
+
+    Note over App: App Starts
+    App->>InitLoad: Mount core preloading scene
+    InitLoad->>InitLoad: Preload "core" assets
+    InitLoad-->>App: onPreloadComplete()
+    App->>MainMenu: Mount main menu
+    MainMenu-->>App: User selects level
+    App->>LevelLoad: Mount level preloading scene
+    LevelLoad->>LevelLoad: Preload level-specific assets
+    LevelLoad-->>App: onPreloadComplete()
+    App->>GameLevel: Mount game level scene
+    Note over GameLevel: Game begins
+```
+
+### Considerations for Dedicated Preloading Scene
+
+1. **Asset Bundling Strategy:**
+   - Keep initial loading assets (core group) as small as possible for faster startup.
+   - Consider having a dedicated `"preload-ui"` asset group for the loading screen visuals themselves.
+2. **UI Design:**
+   - The loading UI should align with your game's visual identity.
+   - Consider adding subtle animations to the progress bar/UI to increase perceived performance.
+   - For longer loads, consider adding loading tips or lore snippets that change as loading progresses.
+3. **Performance:**
+   - The loading scene itself must be lightweight to avoid performance issues during loading.
+   - Use compressed textures and minimal 3D elements in the loading scene.
+4. **Error Handling:**
+   - Implement a timeout and retry mechanism for failed asset loads.
+   - Provide clear error messaging if loading persistently fails.
+5. **Initial Impression:**
+   - The loading screen is often the player's first impression of your game.
+   - Invest in making it visually appealing and reflective of your game's quality and style.
