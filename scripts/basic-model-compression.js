@@ -2,9 +2,29 @@
 
 import { NodeIO } from '@gltf-transform/core';
 import { center, draco, prune } from '@gltf-transform/functions';
+import { execSync, spawn } from 'child_process';
 import draco3d from 'draco3dgltf';
 import fsExtra from 'fs-extra';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Blender availability check
+function checkBlenderAvailable() {
+  try {
+    execSync('blender --version', { stdio: 'ignore' });
+  } catch (err) {
+    console.error('\u274C ERROR: Blender is not installed or not available in your PATH.');
+    console.error(
+      'Please install Blender and ensure it is available as "blender" in your system PATH.',
+    );
+    process.exit(1);
+  }
+}
+
+checkBlenderAvailable();
 
 import {
   cleanupTempDir,
@@ -34,7 +54,7 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 
-async function optimizeGlb(filePath) {
+async function optimizeGlb(filePath, options = {}) {
   console.log(`${EMOJI.COMPRESSION} Optimizing GLB file: ${filePath}`);
   try {
     const io = new NodeIO().registerDependencies({
@@ -42,6 +62,14 @@ async function optimizeGlb(filePath) {
       'draco3d.encoder': await draco3d.createEncoderModule(),
     });
     const document = await io.read(filePath);
+
+    // Remove all animations to ensure T-pose is default, unless keepAnimations is true
+    if (!options.keepAnimations) {
+      document
+        .getRoot()
+        .listAnimations()
+        .forEach((anim) => anim.dispose());
+    }
     await document.transform(prune());
 
     // Set model origin to the foot (bottom) of the model if centerModel option is enabled
@@ -79,6 +107,29 @@ async function optimizeGlb(filePath) {
   }
 }
 
+async function runBlenderPrepareTPose(fbxPath, outputGlbPath, preserveAnimations = false) {
+  const blenderScript = path.resolve(__dirname, 'blender_prepare_tpose.py');
+  const args = [
+    '--background',
+    '--python',
+    blenderScript,
+    '--',
+    fbxPath,
+    outputGlbPath,
+    preserveAnimations ? '--preserve-animations' : '',
+  ].filter(Boolean);
+  console.log(`${EMOJI.PROCESSING} Running Blender with preserveAnimations=${preserveAnimations}`);
+  return new Promise((resolve, reject) => {
+    const blender = spawn('blender', args);
+    blender.stdout.on('data', (data) => process.stdout.write(`[Blender] ${data}`));
+    blender.stderr.on('data', (data) => process.stderr.write(`[Blender ERROR] ${data}`));
+    blender.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Blender exited with code ${code}`));
+    });
+  });
+}
+
 async function processAnimations(sourceModelDir, destModelDir, modelName) {
   const animationsDir = path.join(sourceModelDir, 'animations');
   if (await fsExtra.pathExists(animationsDir)) {
@@ -86,37 +137,29 @@ async function processAnimations(sourceModelDir, destModelDir, modelName) {
     const animationsDestDir = path.join(destModelDir, 'animations');
     await fsExtra.ensureDir(animationsDestDir);
     const { fbxFiles, glbFiles } = await findModelFiles(animationsDir);
-    if (fbxFiles.length > 0) {
-      console.log(`${EMOJI.PROCESSING} Found ${fbxFiles.length} FBX animation file(s) to convert`);
-      for (const animPath of fbxFiles) {
-        const fileName = path.basename(animPath);
-        const normalizedBaseName = normalizeFileName(path.basename(fileName, '.fbx'), modelName);
-        const outputGlbPath = path.join(animationsDestDir, `${normalizedBaseName}.glb`);
-        try {
-          await convertFbxToGlb(animPath, animationsDestDir, normalizedBaseName, FBX2GLTF_PATH);
-          if (await fsExtra.pathExists(outputGlbPath)) {
-            await optimizeGlb(outputGlbPath);
-          }
-        } catch (error) {
-          console.warn(
-            `${EMOJI.WARNING} Failed to convert animation ${animPath} to GLB: ${error.message}`,
-          );
+    for (const animPath of fbxFiles) {
+      const fileName = path.basename(animPath, '.fbx');
+      // Normalize to NightStalker_Standing_Idle.glb for asset metadata
+      const normalizedBaseName = normalizeFileName(fileName, modelName);
+      const outputGlbPath = path.join(animationsDestDir, `${normalizedBaseName}.glb`);
+      try {
+        await convertFbxToGlb(animPath, animationsDestDir, normalizedBaseName, FBX2GLTF_PATH);
+        if (await fsExtra.pathExists(outputGlbPath)) {
+          // No Blender/transform step for animation GLBs
+          console.log(`${EMOJI.SUCCESS} Animation converted and copied: ${outputGlbPath}`);
         }
+      } catch (error) {
+        console.warn(
+          `${EMOJI.WARNING} Failed to convert animation ${animPath} to GLB: ${error.message}`,
+        );
       }
     }
-    if (glbFiles.length > 0) {
-      console.log(`${EMOJI.PROCESSING} Found ${glbFiles.length} GLB animation file(s)`);
-      for (const animPath of glbFiles) {
-        const fileName = path.basename(animPath);
-        const normalizedName = normalizeFileName(fileName, modelName);
-        const destPath = path.join(animationsDestDir, normalizedName);
-        await fsExtra.copy(animPath, destPath);
-        console.log(`${EMOJI.SUCCESS} Copied animation: ${fileName} → ${normalizedName}`);
-        await optimizeGlb(destPath);
-      }
-    }
-    if (fbxFiles.length === 0 && glbFiles.length === 0) {
-      console.log(`${EMOJI.WARNING} No animation files found`);
+    for (const animPath of glbFiles) {
+      const fileName = path.basename(animPath);
+      const normalizedName = normalizeFileName(fileName, modelName);
+      const destPath = path.join(animationsDestDir, normalizedName);
+      await fsExtra.copy(animPath, destPath);
+      console.log(`${EMOJI.SUCCESS} Animation copied: ${fileName} → ${normalizedName}`);
     }
   } else {
     console.log(`${EMOJI.WARNING} No animations directory found`);
@@ -126,35 +169,33 @@ async function processAnimations(sourceModelDir, destModelDir, modelName) {
 async function processModelFiles(sourceDir, destModelDir, modelName, excludeDirs = []) {
   const glbDestDir = path.join(destModelDir, 'glb');
   await fsExtra.ensureDir(glbDestDir);
-  const { fbxFiles, glbFiles } = await findModelFiles(sourceDir, excludeDirs);
-  if (fbxFiles.length > 0) {
-    console.log(`${EMOJI.PROCESSING} Found ${fbxFiles.length} FBX file(s) to convert`);
-    for (const fbxPath of fbxFiles) {
-      const fileName = path.basename(fbxPath);
-      const normalizedBaseName = normalizeFileName(path.basename(fileName, '.fbx'), modelName);
-      const outputGlbPath = path.join(glbDestDir, `${normalizedBaseName}.glb`);
-      try {
-        await convertFbxToGlb(fbxPath, glbDestDir, normalizedBaseName, FBX2GLTF_PATH);
-        if (await fsExtra.pathExists(outputGlbPath)) {
-          await optimizeGlb(outputGlbPath);
-        }
-      } catch (error) {
-        console.warn(`${EMOJI.WARNING} Failed to convert ${fbxPath} to GLB: ${error.message}`);
+  // Only process the T-Pose FBX for the main model
+  const tPoseFbx = path.join(sourceDir, `${modelName}_T-Pose.fbx`);
+  if (await fsExtra.pathExists(tPoseFbx)) {
+    const normalizedBaseName = normalizeFileName(`${modelName}_Night_Stalker`, modelName);
+    const tempGlbPath = path.join(glbDestDir, `${normalizedBaseName}_raw.glb`);
+    const outputGlbPath = path.join(glbDestDir, `${normalizedBaseName}.glb`);
+    try {
+      await convertFbxToGlb(tPoseFbx, glbDestDir, `${normalizedBaseName}_raw`, FBX2GLTF_PATH);
+      if (await fsExtra.pathExists(tempGlbPath)) {
+        await optimizeGlb(tempGlbPath);
+        await runBlenderPrepareTPose(tempGlbPath, outputGlbPath, true);
+        await fsExtra.remove(tempGlbPath);
       }
+    } catch (error) {
+      console.warn(`${EMOJI.WARNING} Failed to convert ${tPoseFbx} to GLB: ${error.message}`);
     }
   } else {
-    console.log(`${EMOJI.WARNING} No FBX files found to convert in ${sourceDir}`);
+    console.log(`${EMOJI.WARNING} No T-Pose FBX found for model: ${modelName}`);
   }
-  if (glbFiles.length > 0) {
-    console.log(`${EMOJI.PROCESSING} Found ${glbFiles.length} existing GLB file(s)`);
-    for (const glbPath of glbFiles) {
-      const fileName = path.basename(glbPath);
-      const normalizedName = normalizeFileName(fileName, modelName);
-      const destPath = path.join(glbDestDir, normalizedName);
-      await fsExtra.copy(glbPath, destPath);
-      console.log(`${EMOJI.SUCCESS} Copied GLB file: ${fileName} → ${normalizedName}`);
-      await optimizeGlb(destPath);
-    }
+  // Copy any existing GLBs in the root (shouldn't be any, but for completeness)
+  const { glbFiles } = await findModelFiles(sourceDir, excludeDirs);
+  for (const glbPath of glbFiles) {
+    const fileName = path.basename(glbPath);
+    const normalizedName = normalizeFileName(fileName, modelName);
+    const destPath = path.join(glbDestDir, normalizedName);
+    await fsExtra.copy(glbPath, destPath);
+    await optimizeGlb(destPath);
   }
 }
 

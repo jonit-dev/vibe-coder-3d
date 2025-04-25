@@ -3,7 +3,7 @@ import { AssetKeys, IModelAssetMetadata, IModelConfig } from '@/core/types/asset
 export const nightStalkerModelMetadata: IModelAssetMetadata = {
   key: AssetKeys.NightStalkerModel,
   type: 'gltf',
-  url: '/assets/models/NightStalker/glb/NightStalker_T_Pose.glb',
+  url: '/assets/models/NightStalker/glb/NightStalker_Night_Stalker.glb',
   config: {
     scale: 1.0,
     position: [0, 0, 0],
@@ -17,7 +17,7 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
       clampWhenFinished: false,
       blendDuration: 0.5,
       crossFadeEnabled: true,
-      disableAnimations: true,
+      disableAnimations: false,
     },
     collision: {
       enabled: true,
@@ -37,7 +37,7 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
       showSkeleton: false,
       showPhysicsForces: false,
       showVelocity: false,
-      showObjectPivot: false,
+      showObjectPivot: true,
       debugColor: [0, 1, 0],
       logToConsole: false,
     },

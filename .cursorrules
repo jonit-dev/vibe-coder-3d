@@ -3,3 +3,8 @@
 - we use tailwindcss for styling
 - Promote Single Responsibility Principle, DRY, KISS principles.
 - Prefix interfaces with I
+- Use cursor running command tools when needed.
+
+
+## CRITICAL RULES
+- Stop asking to do changes. DO IT, I trust you. I'll review later.

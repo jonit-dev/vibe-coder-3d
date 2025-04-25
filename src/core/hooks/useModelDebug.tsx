@@ -204,8 +204,33 @@ export function useModelDebug({ model, config, debug = false }: IUseModelDebugOp
         {debugSettings?.showSkeleton && model && (
           <group>
             {(() => {
-              // Just a placeholder - actual bone drawing would be here
-              return null;
+              // Create skeleton helpers for all skinned meshes in the model
+              const skeletonHelpers: THREE.SkeletonHelper[] = [];
+
+              model.traverse((obj: THREE.Object3D) => {
+                // Check if object is a skinned mesh
+                if ((obj as THREE.SkinnedMesh).isSkinnedMesh) {
+                  const skinnedMesh = obj as THREE.SkinnedMesh;
+
+                  // Only create helper if the mesh has a skeleton with bones
+                  if (skinnedMesh.skeleton && skinnedMesh.skeleton.bones.length > 0) {
+                    // Create a new skeleton helper using the first bone as root
+                    const rootBone = skinnedMesh.skeleton.bones[0];
+                    const helper = new THREE.SkeletonHelper(rootBone);
+
+                    // Set the material color
+                    (helper.material as THREE.LineBasicMaterial).color = debugColor;
+
+                    // Add to our list of helpers
+                    skeletonHelpers.push(helper);
+                  }
+                }
+              });
+
+              // Return all skeleton helpers
+              return skeletonHelpers.map((helper, index) => (
+                <primitive key={`skeleton-helper-${index}`} object={helper} />
+              ));
             })()}
           </group>
         )}
