@@ -62,6 +62,18 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
         { distance: 30, detail: 'low' },
       ],
     },
+    debugMode: {
+      enabled: true,
+      showBoundingBox: true,
+      showColliders: true,
+      showSkeleton: false,
+      showWireframe: false,
+      showPhysicsForces: true,
+      showVelocity: true,
+      showObjectPivot: true,
+      debugColor: [0, 1, 0], // Green debug visualization
+      logToConsole: false,
+    },
   } as IModelConfig,
 };
 

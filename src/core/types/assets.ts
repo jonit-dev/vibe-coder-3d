@@ -65,6 +65,20 @@ export interface IGameObjectConfig {
   LODLevels?: ILODLevel[]; // Level of detail configuration
 }
 
+// Debug mode configuration
+export interface IDebugConfig {
+  enabled: boolean;
+  showBoundingBox: boolean;
+  showColliders: boolean;
+  showSkeleton: boolean;
+  showWireframe: boolean;
+  showPhysicsForces: boolean;
+  showVelocity: boolean;
+  showObjectPivot: boolean;
+  debugColor: [number, number, number]; // RGB color for debug visualizations
+  logToConsole: boolean;
+}
+
 // Model configuration with expanded options
 export interface IModelConfig {
   scale: number | [number, number, number]; // Uniform or XYZ scale
@@ -81,6 +95,7 @@ export interface IModelConfig {
   physics?: IPhysicsConfig;
   collision?: ICollisionConfig;
   gameObject?: IGameObjectConfig;
+  debugMode?: IDebugConfig;
 }
 
 // Texture configuration with expanded options
