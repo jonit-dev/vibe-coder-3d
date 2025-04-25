@@ -14,7 +14,7 @@
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md}\"",
     "prepare": "husky",
-    "prepare-models": "node scripts/prepare-model-assets.js"
+    "prepare-models": "node scripts/basic-model-compression.js"
   },
   "dependencies": {
     "@gltf-transform/cli": "^4.1.3",

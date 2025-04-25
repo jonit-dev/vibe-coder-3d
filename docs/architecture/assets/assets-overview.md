@@ -146,6 +146,49 @@ sequenceDiagram
     Hook-->>Comp: Return { asset: loadedAssetData, config: metadata.config }
 ```
 
+## Phased Implementation Plan
+
+The development of this asset management system can be broken down into the following phases:
+
+### Phase 1: Core Setup & Types
+
+- Define core asset type interfaces (`IBaseAssetMetadata`, `IModelAssetMetadata`, etc.) in `src/core/types/assets.ts`.
+- Define asset configuration interfaces (`IModelConfig`, `ITextureConfig`, etc.) in `src/core/types/assets.ts`.
+- Define main manifest types (`IAssetMetadata`, `AssetManifest`) in `src/core/types/assets.ts`.
+- Create `AssetKeys` enum in `src/config/assets.ts`.
+- Create `assets: AssetManifest` object in `src/config/assets.ts`.
+- Create `getAssetMetadata` helper function in `src/config/assets.ts`.
+- Create basic `useAsset` hook signature and structure in `src/core/hooks/useAsset.ts` (returning placeholder data initially).
+- Establish asset file organization structure in `public/assets/*`.
+
+### Phase 2: Basic Asset Loading
+
+- Implement GLTF model loading within `useAsset` using `useGLTF`.
+- Implement standard texture loading (JPG, PNG, WebP) within `useAsset` using `useTexture`.
+- Document basic usage of `useAsset` hook with `<Suspense>`.
+
+### Phase 3: Configuration Application
+
+- Implement applying model configuration (`scale`, `position`, `rotation`) in consuming components using the `config` object returned by `useAsset`.
+- Implement applying texture configuration (`wrapS`, `wrapT`, `repeat`, filters) in consuming components.
+
+### Phase 4: Advanced Loading & Features
+
+- Implement KTX2 texture loading/decoding within `useAsset`.
+- Integrate KTX2 loader setup if necessary.
+- Implement audio asset loading (potentially via a separate hook like `useSound`).
+
+### Phase 5: DX Improvements & Enhancements
+
+- Implement generic `useAsset` hook for improved type safety (using `AssetTypeMap`, `ConfigTypeMap`).
+- Create specialized wrapper hooks (`useConfiguredModel`, `useConfiguredTexture`) to auto-apply configurations, simplifying component usage.
+- Create asset registration helper functions (`registerModel`, `registerTexture`).
+- Implement asset groups for organized preloading (`AssetGroup` enum, `AssetPreloader` component).
+- Enhance `useAsset` hook with error handling, fallbacks, and timeouts.
+- Add backward compatibility to `useAsset` for direct URL loading.
+- Develop `AssetExplorer` component for debugging.
+- Create `validateAssetManifest` utility for build-time or development checks.
+
 ## Advanced Features & Developer Experience
 
 These enhancements streamline development and improve type safety when working with assets.
