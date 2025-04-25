@@ -29,8 +29,12 @@ vibe-coder-3d/
 │   └── assets/
 │       └── models/
 │           └── ModelName/  # Each model in its own directory
-│               └── textures/   # Textures for this model
-│                   └── texture_0.png
+│               ├── glb/        # Processed GLB model file(s)
+│               │   └── ModelName.glb
+│               ├── textures/   # Copied textures for this model
+│               │   └── texture_0.png
+│               └── animations/ # Optional animation files (e.g., GLB)
+│                   └── AnimationName.glb
 ```
 
 ## Workflow Steps
