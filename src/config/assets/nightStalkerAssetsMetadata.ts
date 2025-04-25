@@ -1,10 +1,4 @@
-import {
-  AssetKeys,
-  IModelAssetMetadata,
-  IModelConfig,
-  ITextureAssetMetadata,
-  ITextureConfig,
-} from '@/core/types/assets';
+import { AssetKeys, IModelAssetMetadata, IModelConfig } from '@/core/types/assets';
 
 export const nightStalkerModelMetadata: IModelAssetMetadata = {
   key: AssetKeys.NightStalkerModel,
@@ -15,9 +9,6 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
     position: [0, 0, 0],
     rotation: [0, 0, 0],
     offset: [0, 0, 0],
-
-    // Animation settings
-    initialAnimation: 'Standing_Idle',
     animations: ['/assets/models/NightStalker/animations/NightStalker_Standing_Idle.glb'],
     animationConfig: {
       isStatic: false,
@@ -28,71 +19,27 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
       crossFadeEnabled: true,
       disableAnimations: true,
     },
-
-    // Game engine related properties
-    physics: {
-      enabled: true,
-      mass: 80,
-      friction: 0.5,
-      restitution: 0.1,
-      linearDamping: 0.1,
-      angularDamping: 0.1,
-      useGravity: true,
-    },
     collision: {
       enabled: true,
       type: 'characterController',
       shape: 'capsule',
       height: 1.8,
       radius: 0.3,
-      offset: [0, 0.9, 0],
+      offset: [0, 0, 0],
       isTrigger: false,
       layer: 'character',
-    },
-    gameObject: {
-      tag: 'player',
-      layer: 'character',
-      isInteractive: true,
-      isSelectable: true,
-      castShadows: true,
-      receiveShadows: true,
-      cullingEnabled: true,
-      LODLevels: [
-        { distance: 0, detail: 'high' },
-        { distance: 10, detail: 'medium' },
-        { distance: 30, detail: 'low' },
-      ],
     },
     debugMode: {
       enabled: true,
       showBoundingBox: true,
       showColliders: true,
-      showSkeleton: false,
+      showSkeleton: true,
       showWireframe: false,
       showPhysicsForces: true,
       showVelocity: true,
       showObjectPivot: true,
-      debugColor: [0, 1, 0], // Green debug visualization
+      debugColor: [0, 1, 0],
       logToConsole: false,
     },
   } as IModelConfig,
-};
-
-export const nightStalkerTextureMetadata: ITextureAssetMetadata = {
-  key: AssetKeys.NightStalkerTexture,
-  type: 'texture',
-  url: '/assets/models/NightStalker/textures/NightStalker.png',
-  config: {
-    repeat: [1, 1],
-    filter: 'linear',
-    mipmap: true,
-    anisotropy: 16,
-    encoding: 'sRGB',
-    flipY: true,
-    premultiplyAlpha: false,
-    wrapS: 'repeat',
-    wrapT: 'repeat',
-    generateMipmaps: true,
-    compression: 'default',
-  } as ITextureConfig,
 };

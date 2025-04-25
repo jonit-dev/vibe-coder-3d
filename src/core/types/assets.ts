@@ -1,7 +1,6 @@
 // Core asset metadata interfaces
 export enum AssetKeys {
   NightStalkerModel = 'NightStalkerModel',
-  NightStalkerTexture = 'NightStalkerTexture',
   // Add other asset keys as needed
 }
 
