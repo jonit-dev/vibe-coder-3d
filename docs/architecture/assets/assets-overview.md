@@ -10,7 +10,7 @@ This document outlines the approach for loading and managing game assets using a
 ## Supported Formats
 
 - **Models:** GLTF (`.gltf`, `.glb`) is the preferred format, loadable via `useAsset` when defined in the manifest with type `'gltf'`.
-- **Textures:** Standard web formats (JPG, PNG, WebP), loadable via `useAsset` when defined in the manifest with type `'texture'`.
+- **Textures:** Standard web formats (JPG, PNG, WebP) and compressed formats like KTX2 (`.ktx2`). Loadable via `useAsset` when defined in the manifest with type `'texture'`. The underlying `useTexture` hook from `@react-three/drei` handles KTX2 decoding (requires necessary loaders to be configured, often implicitly handled by `@react-three/fiber`).
 - **Audio:** Formats supported by `howler.js` (MP3, OGG, WAV, etc.). Defined in the manifest with type `'audio'`, but loading might require a separate hook (e.g., `useSound`) – `useAsset` may not directly load audio.
 - **Other:** JSON, etc. Requires custom loading logic and manifest type definitions.
 
@@ -19,7 +19,7 @@ This document outlines the approach for loading and managing game assets using a
 - **Primary Mechanism: `useAsset` Hook:**
   - The standard way to load assets is by calling `useAsset(key: AssetKeys)`, passing an enum member from `AssetKeys` defined in `src/config/assets.ts`.
   - The hook retrieves the asset's metadata (URL, type, configuration) from the central manifest.
-  - Based on the `type` in the metadata, it calls the appropriate underlying loader (`useGLTF`, `useTexture`) from `@react-three/drei`.
+  - Based on the `type` in the metadata, it calls the appropriate underlying loader (`useGLTF`, `useTexture`) from `@react-three/drei`. These loaders handle various formats, including GLTF for models and standard image formats as well as KTX2 for textures.
   - **Return Value:** The hook returns an object containing both the loaded `asset` (e.g., GLTF scene, Texture) and its `config` object from the manifest: `{ asset, config }`.
   - **Responsibility:** The consuming component is responsible for applying any relevant `config` properties (e.g., setting texture wrapping, applying transforms to models) to the loaded `asset`.
   - **Important:** Components using `useAsset` must be wrapped in a `<Suspense fallback={...}>` component to handle the loading state propagated from the underlying `drei` hooks.
