@@ -476,7 +476,7 @@ export const NightStalkerDemo = () => {
         overflow: 'hidden',
       }}
     >
-      <Canvas camera={{ position: [0, 2, 8], fov: 60 }} shadows gl={{ alpha: false }}>
+      <Canvas camera={{ position: [4, 2, 8], fov: 60 }} shadows gl={{ alpha: false }}>
         {/* Environment */}
         <Environment preset="night" />
 

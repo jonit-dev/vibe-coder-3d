@@ -23,7 +23,7 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
 export const nightStalkerTextureMetadata: ITextureAssetMetadata = {
   key: AssetKeys.NightStalkerTexture,
   type: 'texture',
-  url: '/assets/models/NightStalker/textures/NightStalker.ktx2',
+  url: '/assets/models/NightStalker/textures/NightStalker.png',
   config: {
     repeat: [1, 1],
   } as ITextureConfig,
