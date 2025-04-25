@@ -45,21 +45,34 @@ export function NightStalkerModel({ onAnimationsReady, debug = false }: INightSt
     logObject3DHierarchy(model);
     // Log all meshes and skinned meshes
     model.traverse((obj: THREE.Object3D) => {
-      // @ts-expect-error isSkinnedMesh is not standard on Object3D, but present on SkinnedMesh
+      // @ts-expect-error isSkinnedMesh and isMesh are not standard on Object3D, but present on Mesh/SkinnedMesh
       if (obj.isSkinnedMesh) {
         console.log('NightStalkerModel: Found SkinnedMesh:', obj.name, obj);
-        // @ts-expect-error skeleton is not standard on Object3D, but present on SkinnedMesh
-        if (obj.skeleton) {
-          // @ts-expect-error skeleton is not standard on Object3D, but present on SkinnedMesh
+        // Use proper type assertion for SkinnedMesh
+        const skinnedMesh = obj as THREE.SkinnedMesh;
+        if (skinnedMesh.skeleton) {
           console.log(
             'NightStalkerModel: SkinnedMesh bones:',
-            obj.skeleton.bones.map((b: any) => b.name),
+            skinnedMesh.skeleton.bones.map((b: any) => b.name),
           );
         }
       } else if ((obj as any).isMesh) {
         console.log('NightStalkerModel: Found Mesh:', obj.name, obj);
       }
     });
+
+    // Log bounding box to understand model dimensions and center point
+    if (model) {
+      const box = new THREE.Box3().setFromObject(model);
+      const center = new THREE.Vector3();
+      const size = new THREE.Vector3();
+      box.getCenter(center);
+      box.getSize(size);
+      console.log('NightStalkerModel: Bounding box center:', center);
+      console.log('NightStalkerModel: Bounding box size:', size);
+      console.log('NightStalkerModel: Bounding box min:', box.min);
+      console.log('NightStalkerModel: Bounding box max:', box.max);
+    }
   }, [model, gltf, debug]);
 
   // Create a map of mixamo bones to actual model bones

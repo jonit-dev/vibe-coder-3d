@@ -4,8 +4,15 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 import { NightStalkerModel } from '@/game/models/NightStalkerModel';
+import { useDemo } from '@/game/stores/demoStore';
 
-import { useDemo } from '../game/stores/demoStore';
+// Custom hooks
+const useDebugLogger = (componentName: string) => {
+  useEffect(() => {
+    console.log(`${componentName} mounted`);
+    return () => console.log(`${componentName} unmounted`);
+  }, [componentName]);
+};
 
 // Type definitions for component props
 interface IPositionProps {
@@ -459,10 +466,7 @@ const AlienLab = () => {
 
 export const NightStalkerDemo = () => {
   const { goBack } = useDemo();
-
-  useEffect(() => {
-    console.log('NightStalkerDemo mounted');
-  }, []);
+  useDebugLogger('NightStalkerDemo');
 
   return (
     <div
