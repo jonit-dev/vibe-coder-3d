@@ -1,29 +1,42 @@
-import { useGLTF, useTexture } from '@react-three/drei';
+import { useEffect, useRef } from 'react';
 
-// Supported asset types
-export type AssetType = 'gltf' | 'texture';
+import { AssetKeys, IModelConfig } from '@/core/types/assets';
 
-function getAssetType(url: string): AssetType | undefined {
-  if (url.endsWith('.glb') || url.endsWith('.gltf')) return 'gltf';
-  if (
-    url.endsWith('.jpg') ||
-    url.endsWith('.jpeg') ||
-    url.endsWith('.png') ||
-    url.endsWith('.webp')
-  )
-    return 'texture';
-  return undefined;
-}
+import { useAssetResource } from './useAssetResource';
 
-export function useAsset(url: string): any {
-  const type = getAssetType(url);
-  if (type === 'gltf') {
-    return useGLTF(url);
-  }
-  if (type === 'texture') {
-    return useTexture(url);
-  }
-  throw new Error(`Unsupported asset type for url: ${url}`);
+type UseAssetProps = Partial<IModelConfig>;
+
+export function useAsset(key: AssetKeys, overrides?: UseAssetProps) {
+  const { asset, config } = useAssetResource(key);
+  const ref = useRef<any>(null);
+
+  useEffect(() => {
+    if (asset && ref.current) {
+      const mergedConfig = { ...config, ...overrides } as IModelConfig;
+      let [x, y, z] = mergedConfig.position ?? [0, 0, 0];
+      if (mergedConfig.offset) {
+        x += mergedConfig.offset[0];
+        y += mergedConfig.offset[1];
+        z += mergedConfig.offset[2];
+      }
+      ref.current.position.set(x, y, z);
+      if (mergedConfig.scale !== undefined) {
+        if (typeof mergedConfig.scale === 'number') {
+          ref.current.scale.set(mergedConfig.scale, mergedConfig.scale, mergedConfig.scale);
+        } else {
+          ref.current.scale.set(...mergedConfig.scale);
+        }
+      }
+      if (mergedConfig.rotation) {
+        ref.current.rotation.set(...mergedConfig.rotation);
+      }
+    }
+  }, [asset, config, overrides]);
+
+  // Only return .scene if asset has it (GLTF), otherwise undefined
+  const model = asset && 'scene' in asset ? (asset as any).scene : undefined;
+
+  return { gltf: asset, model, ref, config };
 }
 
 // Usage: Wrap component in <Suspense fallback={...}> to handle loading state.

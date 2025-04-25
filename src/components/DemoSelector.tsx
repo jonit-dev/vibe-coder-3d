@@ -1,4 +1,7 @@
+// import React from 'react';
 import { useDemo } from '../game/stores/demoStore';
+
+import { NightStalkerDemo } from './NightStalkerDemo';
 
 const categories = [
   {
@@ -16,6 +19,11 @@ const categories = [
     id: 'ecs',
     name: 'Entity Component System',
     description: 'Explore the Entity abstraction and ECS foundation',
+  },
+  {
+    id: 'assets',
+    name: 'Asset System',
+    description: 'Demo of asset manifest and loader',
   },
 ] as const;
 
@@ -69,8 +77,19 @@ const ecsTypes = [
   },
 ] as const;
 
+const assetsTypes = [
+  {
+    id: 'nightstalker',
+    name: 'NightStalker Asset Demo',
+    description: 'GLB loaded via asset manifest system',
+  },
+] as const;
+
 export const DemoSelector = () => {
   const { currentCategory, currentDemo, setCategory, setDemo, goBack } = useDemo();
+
+  // Debug logs
+  console.log('DemoSelector rendering:', { currentCategory, currentDemo });
 
   const containerStyle = {
     position: 'absolute' as const,
@@ -132,6 +151,8 @@ export const DemoSelector = () => {
         return physicsTypes;
       case 'ecs':
         return ecsTypes;
+      case 'assets':
+        return assetsTypes;
       default:
         return [];
     }
@@ -148,10 +169,18 @@ export const DemoSelector = () => {
         return 'Physics System Demo';
       case 'ecs':
         return 'Entity Component System Demo';
+      case 'assets':
+        return 'Asset System Demo';
       default:
         return 'Demo';
     }
   };
+
+  // Render demo scene if selected
+  if (currentCategory === 'assets' && currentDemo === 'nightstalker') {
+    console.log('Rendering NightStalker demo');
+    return <NightStalkerDemo />;
+  }
 
   return (
     <div style={containerStyle}>
@@ -175,7 +204,10 @@ export const DemoSelector = () => {
         {getDemosForCategory().map((demo) => (
           <button
             key={demo.id}
-            onClick={() => setDemo(demo.id)}
+            onClick={() => {
+              console.log('Clicked demo:', demo.id);
+              setDemo(demo.id);
+            }}
             style={buttonStyle(currentDemo === demo.id)}
           >
             <div style={{ fontWeight: 'bold', marginBottom: 4 }}>{demo.name}</div>

@@ -20,20 +20,6 @@ export const MainScene = () => {
   const { currentCategory, currentDemo } = useDemo();
   const [handleReset, setHandleReset] = useState<(() => void) | undefined>(undefined);
 
-  // Set camera based on the current demo
-  const getCameraProps = () => {
-    if (currentCategory === 'ecs' && currentDemo === 'entity') {
-      return {
-        position: [0, 2, 5] as [number, number, number],
-        fov: 75,
-      };
-    }
-    return {
-      position: [-21.56, 3.02, 17.68] as [number, number, number],
-      fov: 40,
-    };
-  };
-
   // Check if we need to use the core GameEngine for this scene
   const needsGameEngine = currentCategory === 'ecs';
 
@@ -49,6 +35,27 @@ export const MainScene = () => {
 
   // Check if bowling demo is active
   const isBowlingActive = currentCategory === 'physics' && currentDemo === 'bowls';
+
+  // Set camera based on the current demo
+  const getCameraProps = () => {
+    if (currentCategory === 'ecs' && currentDemo === 'entity') {
+      return {
+        position: [0, 2, 5] as [number, number, number],
+        fov: 75,
+      };
+    }
+    return {
+      position: [-21.56, 3.02, 17.68] as [number, number, number],
+      fov: 40,
+    };
+  };
+
+  // For asset demos, let the DemoSelector handle them directly
+  // IMPORTANT: This must be after all hooks are called
+  if (currentCategory === 'assets') {
+    console.log('MainScene: Detected assets category, letting DemoSelector handle rendering');
+    return <DemoSelector />;
+  }
 
   return (
     <div

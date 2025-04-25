@@ -231,7 +231,7 @@ async function processModel(modelName) {
   } else {
     // No zip files found, process the directory directly
     console.log(
-      `${EMOJI.WARNING} No zip files found for model: ${modelName}. Processing directory directly.`,
+      `${EMOJI.PROCESSING} No zip files found for model: ${modelName}. Processing directory directly.`,
     );
 
     // Handle model files (FBX, GLB, GLTF)
@@ -256,17 +256,30 @@ async function processModelFiles(sourceDir, destModelDir, modelName, excludeDirs
   const glbDestDir = path.join(destModelDir, 'glb');
   await fsExtra.ensureDir(glbDestDir);
 
-  // Build the pattern to exclude directories
-  let excludePattern = '';
+  // Find FBX files in the root directory first (like T_Pose models)
+  const rootFbxFiles = await glob.glob(path.join(sourceDir, '*.fbx'));
+
+  // Find FBX files in subdirectories, excluding specified directories
+  let subDirFbxFiles = [];
   if (excludeDirs.length > 0) {
-    excludePattern = `!(${excludeDirs.join('|')})`;
+    // Build pattern to exclude directories
+    const excludePattern = `!(${excludeDirs.join('|')})`;
+    const fbxPattern = path.join(sourceDir, excludePattern, '**', '*.fbx');
+    subDirFbxFiles = await glob.glob(fbxPattern);
   } else {
-    excludePattern = '*';
+    // If no exclusions, search all subdirectories
+    const fbxPattern = path.join(sourceDir, '**', '*.fbx');
+    subDirFbxFiles = await glob.glob(fbxPattern);
+
+    // Filter out any files that are directly in the root (to avoid duplicates)
+    subDirFbxFiles = subDirFbxFiles.filter((file) => {
+      const relPath = path.relative(sourceDir, file);
+      return relPath.includes(path.sep); // Has directory separator
+    });
   }
 
-  // Find FBX files to convert
-  const fbxPattern = path.join(sourceDir, excludePattern, '**', '*.fbx');
-  const fbxFiles = await glob.glob(fbxPattern);
+  // Combine both sets of files
+  const fbxFiles = [...rootFbxFiles, ...subDirFbxFiles];
 
   if (fbxFiles.length > 0) {
     console.log(`${EMOJI.PROCESSING} Found ${fbxFiles.length} FBX file(s) to convert`);
@@ -285,16 +298,33 @@ async function processModelFiles(sourceDir, destModelDir, modelName, excludeDirs
           await optimizeGlb(outputGlbPath);
         }
       } catch (error) {
-        console.warn(`${EMOJI.WARNING} Failed to convert ${fbxPath} to GLB.`);
+        console.warn(`${EMOJI.WARNING} Failed to convert ${fbxPath} to GLB: ${error.message}`);
       }
     }
   } else {
-    console.log(`${EMOJI.WARNING} No FBX files found to convert`);
+    console.log(`${EMOJI.WARNING} No FBX files found to convert in ${sourceDir}`);
   }
 
-  // Copy any existing GLB files directly
-  const glbPattern = path.join(sourceDir, excludePattern, '**', '*.glb');
-  const glbFiles = await glob.glob(glbPattern);
+  // Copy any existing GLB files directly - using the same pattern approach as above
+  const rootGlbFiles = await glob.glob(path.join(sourceDir, '*.glb'));
+
+  let subDirGlbFiles = [];
+  if (excludeDirs.length > 0) {
+    const excludePattern = `!(${excludeDirs.join('|')})`;
+    const glbPattern = path.join(sourceDir, excludePattern, '**', '*.glb');
+    subDirGlbFiles = await glob.glob(glbPattern);
+  } else {
+    const glbPattern = path.join(sourceDir, '**', '*.glb');
+    subDirGlbFiles = await glob.glob(glbPattern);
+
+    // Filter out any files that are directly in the root
+    subDirGlbFiles = subDirGlbFiles.filter((file) => {
+      const relPath = path.relative(sourceDir, file);
+      return relPath.includes(path.sep);
+    });
+  }
+
+  const glbFiles = [...rootGlbFiles, ...subDirGlbFiles];
 
   if (glbFiles.length > 0) {
     console.log(`${EMOJI.PROCESSING} Found ${glbFiles.length} existing GLB file(s)`);
@@ -350,7 +380,9 @@ async function processAnimations(sourceModelDir, destModelDir, modelName) {
             await optimizeGlb(outputGlbPath);
           }
         } catch (error) {
-          console.warn(`${EMOJI.WARNING} Failed to convert animation ${animPath} to GLB.`);
+          console.warn(
+            `${EMOJI.WARNING} Failed to convert animation ${animPath} to GLB: ${error.message}`,
+          );
         }
       }
     }
@@ -418,6 +450,23 @@ async function handleTextures(sourceDir, modelName, texturesDestDir) {
       );
     } else {
       console.log(`${EMOJI.WARNING} No texture files found in ${fbmDir}`);
+    }
+  }
+
+  // Also look for textures directory (non-fbm)
+  const texturesDir = path.join(sourceDir, 'textures');
+  if (await fsExtra.pathExists(texturesDir)) {
+    console.log(`${EMOJI.PROCESSING} Found standard textures directory: ${texturesDir}`);
+
+    // Use glob to find all texture files
+    for (const extension of TEXTURE_EXTENSIONS) {
+      const pattern = path.join(texturesDir, '**', `*${extension}`);
+      const files = await glob.glob(pattern);
+      textureFiles = [...textureFiles, ...files];
+    }
+
+    if (textureFiles.length > 0 && !mainTextureFile) {
+      mainTextureFile = textureFiles[0];
     }
   }
 
