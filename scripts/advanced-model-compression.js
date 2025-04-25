@@ -2,7 +2,7 @@
 
 import { NodeIO } from '@gltf-transform/core';
 import { KHRDracoMeshCompression, KHRTextureBasisu } from '@gltf-transform/extensions';
-import { draco, prune } from '@gltf-transform/functions';
+import { center, draco, prune } from '@gltf-transform/functions';
 import { exec } from 'child_process';
 import draco3d from 'draco3dgltf';
 import fsExtra from 'fs-extra';
@@ -26,6 +26,19 @@ import { findModelTextures, processTexture } from './asset-compression/texture-p
 const execAsync = promisify(exec);
 const { SOURCE_DIR, DESTINATION_BASE_DIR, TEMP_DIR, FBX2GLTF_PATH } = getDefaultPaths();
 
+// Parse command line arguments
+const args = process.argv.slice(2);
+const options = {
+  centerModel: true, // Enabled by default
+};
+
+// Process command line arguments
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--no-center') {
+    options.centerModel = false;
+  }
+}
+
 async function optimizeGlb(filePath) {
   console.log(`${EMOJI.COMPRESSION} Optimizing GLB file: ${filePath}`);
   try {
@@ -33,6 +46,25 @@ async function optimizeGlb(filePath) {
     if (await checkTextureToolsAvailable()) {
       try {
         const tempFilePath = `${filePath}.temp.glb`;
+
+        // First center the model if the option is enabled
+        if (options.centerModel) {
+          console.log(`${EMOJI.PROCESSING} Setting model origin to foot (Y close to 0)`);
+          try {
+            await execAsync(
+              `npx gltf-transform center "${filePath}" "${tempFilePath}" --pivot bottom`,
+            );
+            await fsExtra.copy(tempFilePath, filePath);
+            console.log(`${EMOJI.SUCCESS} Model origin set to bottom (foot) with Y close to 0`);
+          } catch (centerError) {
+            console.warn(`${EMOJI.WARNING} Center operation failed: ${centerError.message}`);
+            // If the tempFile wasn't created, we need to make a copy for the next operations
+            if (!(await fsExtra.pathExists(tempFilePath))) {
+              await fsExtra.copy(filePath, tempFilePath);
+            }
+          }
+        }
+
         await execAsync(
           `npx gltf-transform uastc "${filePath}" "${tempFilePath}" --level 2 --rdo --zstd 18 --verbose`,
         );
@@ -66,6 +98,22 @@ async function optimizeGlb(filePath) {
       });
     const document = await io.read(filePath);
     await document.transform(prune());
+
+    // Set model origin to the foot (bottom) of the model if centerModel option is enabled
+    if (options.centerModel) {
+      console.log(`${EMOJI.PROCESSING} Setting model origin to foot (Y close to 0)`);
+      try {
+        await document.transform(
+          center({
+            pivot: 'bottom', // Places the bottom of the model at Y=0
+          }),
+        );
+        console.log(`${EMOJI.SUCCESS} Model origin set to bottom (foot) with Y close to 0`);
+      } catch (error) {
+        console.error(`${EMOJI.ERROR} Error fixing model origin: ${error.message}`);
+      }
+    }
+
     try {
       await document.transform(
         draco({
@@ -223,6 +271,10 @@ async function main() {
     console.log('\n=== Advanced Model Asset Preparation Tool ===');
     console.log(`Source directory: ${SOURCE_DIR}`);
     console.log(`Destination directory: ${DESTINATION_BASE_DIR}`);
+    console.log(`Center models at origin: ${options.centerModel ? 'Yes' : 'No'}`);
+    console.log('=========================================\n');
+    console.log('Available options:');
+    console.log('  --no-center : Disable automatic centering of models at the origin');
     console.log('=========================================\n');
     if (!(await fsExtra.pathExists(FBX2GLTF_PATH))) {
       console.error(`${EMOJI.ERROR} FBX2glTF tool not found at ${FBX2GLTF_PATH}`);

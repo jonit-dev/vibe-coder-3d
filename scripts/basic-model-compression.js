@@ -21,6 +21,19 @@ import { findModelTextures, processTexture } from './asset-compression/texture-p
 
 const { SOURCE_DIR, DESTINATION_BASE_DIR, TEMP_DIR, FBX2GLTF_PATH } = getDefaultPaths();
 
+// Parse command line arguments
+const args = process.argv.slice(2);
+const options = {
+  centerModel: true, // Enabled by default
+};
+
+// Process command line arguments
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--no-center') {
+    options.centerModel = false;
+  }
+}
+
 async function optimizeGlb(filePath) {
   console.log(`${EMOJI.COMPRESSION} Optimizing GLB file: ${filePath}`);
   try {
@@ -31,17 +44,19 @@ async function optimizeGlb(filePath) {
     const document = await io.read(filePath);
     await document.transform(prune());
 
-    // Set model origin to the foot (bottom) of the model
-    console.log(`${EMOJI.PROCESSING} Setting model origin to foot (Y close to 0)`);
-    try {
-      await document.transform(
-        center({
-          pivot: 'bottom', // Places the bottom of the model at Y=0
-        }),
-      );
-      console.log(`${EMOJI.SUCCESS} Model origin set to bottom (foot) with Y close to 0`);
-    } catch (error) {
-      console.error(`${EMOJI.ERROR} Error fixing model origin: ${error.message}`);
+    // Set model origin to the foot (bottom) of the model if centerModel option is enabled
+    if (options.centerModel) {
+      console.log(`${EMOJI.PROCESSING} Setting model origin to foot (Y close to 0)`);
+      try {
+        await document.transform(
+          center({
+            pivot: 'bottom', // Places the bottom of the model at Y=0
+          }),
+        );
+        console.log(`${EMOJI.SUCCESS} Model origin set to bottom (foot) with Y close to 0`);
+      } catch (error) {
+        console.error(`${EMOJI.ERROR} Error fixing model origin: ${error.message}`);
+      }
     }
 
     try {
@@ -200,6 +215,10 @@ async function main() {
     console.log('\n=== Basic Model Asset Preparation Tool ===');
     console.log(`Source directory: ${SOURCE_DIR}`);
     console.log(`Destination directory: ${DESTINATION_BASE_DIR}`);
+    console.log(`Center models at origin: ${options.centerModel ? 'Yes' : 'No'}`);
+    console.log('=========================================\n');
+    console.log('Available options:');
+    console.log('  --no-center : Disable automatic centering of models at the origin');
     console.log('=========================================\n');
     if (!(await fsExtra.pathExists(FBX2GLTF_PATH))) {
       console.error(`${EMOJI.ERROR} FBX2glTF tool not found at ${FBX2GLTF_PATH}`);
