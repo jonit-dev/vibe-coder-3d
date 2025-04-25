@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 import { IAnimationControls, useModelAnimations } from '@/core/hooks/useModelAnimations';
@@ -111,12 +111,18 @@ export function useMixamoAnimations({
     return clips;
   }, [model, animationGLTFs, boneMap, debug]);
 
-  // Create reference for the model object
-  const ref = useMemo(() => ({ current: model }), [model]);
+  // Create a proper reference for the model object
+  const modelRef = useRef<THREE.Object3D | null>(null);
 
-  // Use the animation hook and capture results
-  const animationControls = useModelAnimations(allClips, ref, {
+  // Update the ref when model changes
+  useEffect(() => {
+    modelRef.current = model;
+  }, [model]);
+
+  // Use the animation hook with the proper ref
+  const animationControls = useModelAnimations(allClips, modelRef, {
     initialAnimation: modelConfig?.initialAnimation,
+    animationConfig: modelConfig?.animationConfig,
     onReady: (actions, names) => {
       if (debug) {
         console.log('Model: Available animation actions:', names);

@@ -2,9 +2,20 @@ import { useAnimations } from '@react-three/drei';
 import { RefObject, useEffect } from 'react';
 import * as THREE from 'three';
 
+export interface IAnimationConfig {
+  isStatic?: boolean;
+  loop?: boolean;
+  timeScale?: number;
+  clampWhenFinished?: boolean;
+  blendDuration?: number;
+  crossFadeEnabled?: boolean;
+  disableAnimations?: boolean;
+}
+
 export interface IUseModelAnimationsOptions {
   initialAnimation?: string;
   onReady?: (actions: Record<string, THREE.AnimationAction>, names: string[]) => void;
+  animationConfig?: IAnimationConfig;
 }
 
 export interface IAnimationControls {
@@ -33,10 +44,43 @@ export function useModelAnimations(
     }
     if (options?.onReady) options.onReady(filteredActions, names);
 
+    // Skip playing animations if disableAnimations is true
+    if (options?.animationConfig?.disableAnimations) return;
+
     if (options?.initialAnimation && actions && actions[options.initialAnimation]) {
-      actions[options.initialAnimation]?.reset().fadeIn(0.2).play();
+      const action = actions[options.initialAnimation];
+      if (action) {
+        action.reset();
+
+        // Apply animation config if provided
+        if (options.animationConfig) {
+          if (options.animationConfig.loop !== undefined)
+            action.loop = options.animationConfig.loop ? THREE.LoopRepeat : THREE.LoopOnce;
+          if (options.animationConfig.timeScale !== undefined)
+            action.timeScale = options.animationConfig.timeScale;
+          if (options.animationConfig.clampWhenFinished !== undefined)
+            action.clampWhenFinished = options.animationConfig.clampWhenFinished;
+        }
+
+        action.fadeIn(options.animationConfig?.blendDuration || 0.2).play();
+      }
     } else if (actions && names.length > 0 && actions[names[0]]) {
-      actions[names[0]]?.reset().fadeIn(0.2).play();
+      const action = actions[names[0]];
+      if (action) {
+        action.reset();
+
+        // Apply animation config if provided
+        if (options?.animationConfig) {
+          if (options.animationConfig.loop !== undefined)
+            action.loop = options.animationConfig.loop ? THREE.LoopRepeat : THREE.LoopOnce;
+          if (options.animationConfig.timeScale !== undefined)
+            action.timeScale = options.animationConfig.timeScale;
+          if (options.animationConfig.clampWhenFinished !== undefined)
+            action.clampWhenFinished = options.animationConfig.clampWhenFinished;
+        }
+
+        action.fadeIn(options?.animationConfig?.blendDuration || 0.2).play();
+      }
     }
   }, [actions, names, options, ref]);
 
@@ -46,29 +90,44 @@ export function useModelAnimations(
     names,
 
     play: (name: string, fadeInDuration: number = 0.2) => {
+      if (options?.animationConfig?.disableAnimations) return;
       if (!actions[name]) {
         console.warn(`Animation not found or null: ${name}`);
         return;
       }
 
-      // We can optionally stop all other animations when playing a new one
-      // Object.values(actions).forEach(action => action?.fadeOut?.(0.2));
+      const action = actions[name];
+      if (action) {
+        action.reset();
 
-      actions[name]?.reset().fadeIn(fadeInDuration).play();
+        // Apply animation config if provided
+        if (options?.animationConfig) {
+          if (options.animationConfig.loop !== undefined)
+            action.loop = options.animationConfig.loop ? THREE.LoopRepeat : THREE.LoopOnce;
+          if (options.animationConfig.timeScale !== undefined)
+            action.timeScale = options.animationConfig.timeScale;
+          if (options.animationConfig.clampWhenFinished !== undefined)
+            action.clampWhenFinished = options.animationConfig.clampWhenFinished;
+        }
+
+        action.fadeIn(options?.animationConfig?.blendDuration || fadeInDuration).play();
+      }
     },
 
     stop: (name?: string, fadeOutDuration: number = 0.2) => {
+      const blendDuration = options?.animationConfig?.blendDuration || fadeOutDuration;
+
       if (name) {
         // Stop specific animation
         if (!actions[name]) {
           console.warn(`Animation not found or null: ${name}`);
           return;
         }
-        actions[name]?.fadeOut(fadeOutDuration);
+        actions[name]?.fadeOut(blendDuration);
       } else {
         // Stop all animations
         Object.values(actions).forEach((action) => {
-          if (action) action.fadeOut(fadeOutDuration);
+          if (action) action.fadeOut(blendDuration);
         });
       }
     },
@@ -82,11 +141,12 @@ export function useModelAnimations(
     },
 
     fadeIn: (name: string, duration: number = 0.2) => {
+      if (options?.animationConfig?.disableAnimations) return;
       if (!actions[name]) {
         console.warn(`Animation not found or null: ${name}`);
         return;
       }
-      actions[name]?.fadeIn(duration);
+      actions[name]?.fadeIn(options?.animationConfig?.blendDuration || duration);
     },
 
     fadeOut: (name: string, duration: number = 0.2) => {
@@ -94,7 +154,7 @@ export function useModelAnimations(
         console.warn(`Animation not found or null: ${name}`);
         return;
       }
-      actions[name]?.fadeOut(duration);
+      actions[name]?.fadeOut(options?.animationConfig?.blendDuration || duration);
     },
   };
 

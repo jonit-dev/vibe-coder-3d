@@ -26,6 +26,7 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
       clampWhenFinished: false,
       blendDuration: 0.5,
       crossFadeEnabled: true,
+      disableAnimations: true,
     },
 
     // Game engine related properties
