@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { NodeIO } from '@gltf-transform/core';
-import { draco, prune } from '@gltf-transform/functions';
+import { center, draco, prune } from '@gltf-transform/functions';
 import draco3d from 'draco3dgltf';
 import fsExtra from 'fs-extra';
 import path from 'path';
@@ -30,6 +30,20 @@ async function optimizeGlb(filePath) {
     });
     const document = await io.read(filePath);
     await document.transform(prune());
+
+    // Set model origin to the foot (bottom) of the model
+    console.log(`${EMOJI.PROCESSING} Setting model origin to foot (Y close to 0)`);
+    try {
+      await document.transform(
+        center({
+          pivot: 'bottom', // Places the bottom of the model at Y=0
+        }),
+      );
+      console.log(`${EMOJI.SUCCESS} Model origin set to bottom (foot) with Y close to 0`);
+    } catch (error) {
+      console.error(`${EMOJI.ERROR} Error fixing model origin: ${error.message}`);
+    }
+
     try {
       await document.transform(
         draco({
