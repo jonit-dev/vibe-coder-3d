@@ -25,7 +25,7 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
       shape: 'capsule',
       height: 1.8,
       radius: 0.3,
-      offset: [0, 0, 0],
+      offset: [0, 0.9, 0],
       isTrigger: false,
       layer: 'character',
     },
