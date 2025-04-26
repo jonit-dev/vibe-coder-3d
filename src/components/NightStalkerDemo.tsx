@@ -1,4 +1,4 @@
-import { ContactShadows, Environment, OrbitControls, Text } from '@react-three/drei';
+import { ContactShadows, Environment, OrbitControls, Sparkles, Text } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -399,6 +399,183 @@ const ModelLighting = () => {
   );
 };
 
+// Animated Hologram Screen
+const HologramScreen = ({
+  position,
+  rotation,
+  width = 2,
+  height = 1,
+  text = 'XENO DATA',
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  width?: number;
+  height?: number;
+  text?: string;
+}) => {
+  const [glow, setGlow] = useState(0.7);
+  useFrame((state) => {
+    setGlow(0.7 + Math.sin(state.clock.getElapsedTime() * 2) * 0.2);
+  });
+  return (
+    <group position={position} rotation={rotation}>
+      <mesh>
+        <planeGeometry args={[width, height]} />
+        <meshBasicMaterial color="#00e5ff" transparent opacity={0.18 + glow * 0.1} />
+      </mesh>
+      <Text
+        position={[0, 0, 0.01]}
+        fontSize={0.18}
+        color="#00e5ff"
+        anchorX="center"
+        anchorY="middle"
+        outlineColor="#18ffff"
+        outlineWidth={0.01}
+      >
+        {text}
+      </Text>
+      {/* Animated scan lines */}
+      <mesh position={[0, 0, 0.012]}>
+        <planeGeometry args={[width, height]} />
+        <meshBasicMaterial color="#00e5ff" transparent opacity={0.08} />
+      </mesh>
+    </group>
+  );
+};
+
+// Blinking Warning Light
+const BlinkingLight = ({
+  position,
+  color = '#ff1744',
+  intensity = 2,
+  blinkSpeed = 2,
+}: {
+  position: [number, number, number];
+  color?: string;
+  intensity?: number;
+  blinkSpeed?: number;
+}) => {
+  const lightRef = useRef<THREE.PointLight>(null);
+  useFrame((state) => {
+    if (lightRef.current) {
+      lightRef.current.intensity =
+        intensity * (0.5 + 0.5 * Math.abs(Math.sin(state.clock.getElapsedTime() * blinkSpeed)));
+    }
+  });
+  return (
+    <pointLight
+      ref={lightRef}
+      position={position}
+      color={color}
+      intensity={intensity}
+      distance={5}
+    />
+  );
+};
+
+// Subtle Steam/Fog VFX
+const SteamVFX = ({
+  position,
+  count = 8,
+  area = 2,
+}: {
+  position: [number, number, number];
+  count?: number;
+  area?: number;
+}) => {
+  // Use Sparkles for a subtle floating effect
+  return (
+    <Sparkles
+      count={count}
+      scale={[area, 0.5, area]}
+      size={8}
+      color="#b3e5fc"
+      opacity={0.18}
+      speed={0.2}
+      position={position}
+    />
+  );
+};
+
+// Server Rack
+const ServerRack = ({
+  position,
+  rotation = [0, 0, 0],
+  height = 3,
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  height?: number;
+}) => (
+  <group position={position} rotation={rotation}>
+    {/* Main rack body */}
+    <mesh castShadow receiveShadow>
+      <boxGeometry args={[1, height, 1]} />
+      <meshStandardMaterial color="#23272e" metalness={0.7} roughness={0.3} />
+    </mesh>
+    {/* Blinking lights */}
+    {Array.from({ length: Math.floor(height * 3) }).map((_, i) => (
+      <mesh key={i} position={[0.4, -height / 2 + 0.3 + i * 0.3, 0.51]}>
+        <boxGeometry args={[0.08, 0.08, 0.02]} />
+        <meshStandardMaterial
+          color={i % 3 === 0 ? '#00e5ff' : i % 3 === 1 ? '#ff1744' : '#ffea00'}
+          emissiveIntensity={1}
+          emissive={i % 3 === 0 ? '#00e5ff' : i % 3 === 1 ? '#ff1744' : '#ffea00'}
+        />
+      </mesh>
+    ))}
+  </group>
+);
+
+// Computer Terminal
+const ComputerTerminal = ({
+  position,
+  rotation = [0, 0, 0],
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+}) => (
+  <group position={position} rotation={rotation}>
+    {/* Base */}
+    <mesh castShadow receiveShadow>
+      <boxGeometry args={[0.7, 0.4, 0.5]} />
+      <meshStandardMaterial color="#263238" metalness={0.6} roughness={0.4} />
+    </mesh>
+    {/* Screen */}
+    <mesh position={[0, 0.25, 0.18]} rotation={[-0.3, 0, 0]}>
+      <boxGeometry args={[0.6, 0.35, 0.05]} />
+      <meshStandardMaterial
+        color="#00e5ff"
+        emissive="#00e5ff"
+        emissiveIntensity={0.7}
+        metalness={0.2}
+        roughness={0.1}
+      />
+    </mesh>
+    {/* Keyboard */}
+    <mesh position={[0, 0.05, 0.32]}>
+      <boxGeometry args={[0.5, 0.05, 0.18]} />
+      <meshStandardMaterial color="#37474f" />
+    </mesh>
+  </group>
+);
+
+// Scattered Lab Tools
+const LabTool = ({
+  position,
+  rotation = [0, 0, 0],
+  color = '#bdbdbd',
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  color?: string;
+}) => (
+  <mesh position={position} rotation={rotation}>
+    <boxGeometry args={[0.18, 0.03, 0.04]} />
+    <meshStandardMaterial color={color} metalness={0.8} roughness={0.2} />
+  </mesh>
+);
+
 const AlienLab = () => {
   return (
     <group>
@@ -460,6 +637,55 @@ const AlienLab = () => {
       {/* Scene specific lighting */}
       <fog attach="fog" args={['#04121d', 15, 50]} />
       <ambientLight intensity={0.3} color="#b3e5fc" />
+
+      {/* Hologram screens */}
+      <HologramScreen position={[-10, 3.5, -13.5]} width={2.5} height={1.2} text="DNA SEQUENCE" />
+      <HologramScreen position={[10, 3.5, -13.5]} width={2.5} height={1.2} text="VITALS" />
+      <HologramScreen
+        position={[0, 4.5, 0]}
+        width={3.5}
+        height={1.5}
+        text="CONTAINMENT STATUS: STABLE"
+      />
+
+      {/* Blinking warning lights */}
+      <BlinkingLight position={[-4, 5.2, -4]} color="#ff1744" intensity={3} blinkSpeed={2.5} />
+      <BlinkingLight position={[4, 5.2, -4]} color="#ffea00" intensity={2.5} blinkSpeed={1.7} />
+      <BlinkingLight position={[0, 5.2, 4]} color="#00e5ff" intensity={2.5} blinkSpeed={2.1} />
+
+      {/* Subtle steam/fog VFX near floor and chambers */}
+      <SteamVFX position={[-4, 0.2, -4]} area={1.5} />
+      <SteamVFX position={[4, 0.2, -4]} area={1.5} />
+      <SteamVFX position={[0, 0.2, 4]} area={1.5} />
+      <SteamVFX position={[0, 0.1, 0]} area={2.5} count={16} />
+
+      {/* Sparkling containment field effect */}
+      <Sparkles
+        count={30}
+        scale={[2, 3, 2]}
+        size={6}
+        color="#00e5ff"
+        opacity={0.12}
+        speed={0.5}
+        position={[0, 1.5, 0]}
+      />
+
+      {/* Server racks */}
+      <ServerRack position={[-12, 1.5, -10]} height={3.2} />
+      <ServerRack position={[-13, 1.5, -8]} height={2.8} rotation={[0, Math.PI / 6, 0]} />
+      <ServerRack position={[12, 1.5, 10]} height={3.5} />
+
+      {/* Computer terminals */}
+      <ComputerTerminal position={[-10, 0.25, -13.2]} />
+      <ComputerTerminal position={[10, 0.25, -13.2]} rotation={[0, Math.PI, 0]} />
+      <ComputerTerminal position={[0, 0.25, 13.2]} rotation={[0, Math.PI, 0]} />
+
+      {/* Scattered lab tools */}
+      <LabTool position={[-9.8, 0.05, -13.1]} rotation={[0, 0.2, 0]} />
+      <LabTool position={[9.8, 0.05, -13.1]} rotation={[0, -0.3, 0]} color="#90caf9" />
+      <LabTool position={[0.2, 0.05, 13.1]} rotation={[0, 0.1, 0]} color="#ff1744" />
+      <LabTool position={[-8, 0.05, -6.2]} rotation={[0, 0.5, 0]} />
+      <LabTool position={[8, 0.05, 6.2]} rotation={[0, -0.4, 0]} />
     </group>
   );
 };
