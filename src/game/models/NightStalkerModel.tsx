@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { nightStalkerModelMetadata } from '@/config/assets/nightStalkerAssetsMetadata';
-import { useAnimationFromGlb } from '@/core/hooks/useAnimationFromGlb';
+import { useAnimationFromAsset } from '@/core/hooks/useAnimationFromAsset';
 import { useAsset } from '@/core/hooks/useAsset';
 import { useModelDebug } from '@/core/hooks/useModelDebug';
 import { AssetKeys, IModelConfig } from '@/core/types/assets';
@@ -29,9 +29,10 @@ export function NightStalkerModel({ debug = true, onAnimationsReady }: INightSta
   const modelConfig = config as IModelConfig;
 
   // Memoize animationUrls array to prevent re-renders
-  const animationUrls = useMemo(() => {
+  const animationSources = useMemo(() => {
     if (!modelConfig?.animations) return [];
-    return modelConfig.animations.map((anim: string) => anim);
+    // Default to 'gltf' type for all animations; adjust if you support more types
+    return modelConfig.animations.map((anim: string) => ({ url: anim, type: 'gltf' as const }));
   }, [modelConfig?.animations]);
 
   // Check if model is loaded
@@ -40,15 +41,15 @@ export function NightStalkerModel({ debug = true, onAnimationsReady }: INightSta
       console.log('🔴 NightStalker model loaded:', !!model);
       console.log('🔴 NightStalker config:', {
         animations: modelConfig?.animations,
-        urls: animationUrls,
+        urls: animationSources.map((source) => source.url),
       });
     }
-  }, [model, animationUrls, modelConfig, debug]);
+  }, [model, animationSources, modelConfig, debug]);
 
   // Load animations
-  const animControls = useAnimationFromGlb({
+  const animControls = useAnimationFromAsset({
     model,
-    animationUrls,
+    animationSources,
     debug,
   });
 
