@@ -1,46 +1,61 @@
-# Bowling Demo Performance Report
+# Performance Report: NightStalkerDemo CPU Usage
 
-This report outlines potential areas contributing to high CPU usage in the `bowling-demo` scene and suggests areas for investigation and optimization.
+This report details the investigation into the high CPU usage observed in the `NightStalkerDemo` component.
 
-## Initial Observations & Fixes
+## Summary of Findings (Updated)
 
-1.  **Incorrect Prop Usage:**
-    - `PhysicsWorld` component was incorrectly passed `interpolate` and `maxSubSteps` props.
-      - **Fix:** Modified `PhysicsWorld` to accept these props and pass them correctly to the underlying `<Physics>` component from `@react-three/rapier` (using `maxCcdSubsteps` for `maxSubSteps`).
-    - `PhysicsBall` component was incorrectly passed a `segments` prop.
-      - **Fix:** Removed the `segments` prop from the `<PhysicsBall>` usage in `BowlsDemo.tsx`. The sphere geometry segments are fixed internally within `PhysicsBall`.
+**Recent profiling with Chrome DevTools reveals that the primary CPU bottleneck is in WebGL rendering and the animation loop, not in React or JS logic.**
 
-## Potential Performance Bottlenecks
+- **Call Tree Analysis:**
+  - The majority of time is spent in the animation frame loop and WebGL draw calls (`drawElements`, `bindVertexArray`, etc.).
+  - React/JS overhead is minor compared to rendering.
+  - The main animation loop (`loop(timestamp)`) spends significant time updating all objects every frame.
+- **Root Cause:**
+  - Too many draw calls and/or too many objects/components being updated every frame.
+  - Excessive use of `useFrame` or per-frame updates in components.
+  - High number of unique meshes/materials and dynamic lights.
 
-While the incorrect props have been fixed, high CPU usage often stems from the physics simulation and rendering complexity. Here are areas to investigate further:
+## Potential Causes (Ranked by Certainty)
 
-1.  **Physics Simulation (`@react-three/rapier`):**
+1. **High Number of Draw Calls (Environment Complexity):**
+   - **Certainty:** ⭐️⭐️⭐️⭐️⭐️
+   - **Evidence:** WebGL `drawElements` and related calls dominate the call tree. Many individual meshes and materials in the scene.
+2. **Multiple Shadow-Casting Lights & Other Lights:**
+   - **Certainty:** ⭐️⭐️⭐️⭐️⭐️
+   - **Evidence:** Dynamic lights increase shader and draw call complexity.
+3. **Excessive useFrame Hooks / Per-Frame Updates:**
+   - **Certainty:** ⭐️⭐️⭐️⭐️
+   - **Evidence:** Main animation loop spends significant time updating all objects every frame.
+4. **Complex Geometry or Materials:**
+   - **Certainty:** ⭐️⭐️⭐️⭐️
+   - **Evidence:** High time in WebGL calls suggests complex or numerous geometries/materials.
+5. **Physics/Velocity System Overhead:**
+   - **Certainty:** ⭐️⭐️
+   - **Evidence:** Throttling these systems has little effect on overall CPU usage.
 
-    - **Number of Rigid Bodies:** Each pin (`BowlingPin`) and the ball (`PhysicsBall`) are dynamic rigid bodies. Frequent collisions and interactions, especially with many pins, can be computationally expensive.
-    - **Collision Detection:** Complex geometries or a high number of potential collision pairs increase the cost of collision detection.
-    - **Physics Steps:** The frequency and sub-stepping (`maxCcdSubsteps`) of the physics simulation directly impact CPU load. While `maxCcdSubsteps` helps with tunneling, high values increase computation. The current default is `10`. Tuning this might be necessary.
-    - **Interpolation:** Render interpolation (`interpolate={true}`) smooths visuals but adds a slight overhead.
+## Recommendations (Actionable)
 
-2.  **Rendering (`react-three-fiber` / `three.js`):**
+1. **Reduce Draw Calls:**
+   - Batch static geometry using `THREE.InstancedMesh` or geometry merging.
+   - Group similar objects/materials to minimize state changes.
+2. **Limit Per-Frame Updates:**
+   - Remove unnecessary `useFrame` hooks.
+   - Throttle or debounce non-critical updates.
+3. **Reduce Number of Lights and Materials:**
+   - Limit dynamic/shadow-casting lights.
+   - Use baked lighting for static scenes.
+4. **Profile and Optimize Scene Complexity:**
+   - Log or visualize the number of meshes/entities in the scene.
+   - Use three.js inspector or similar tools to analyze draw calls.
+5. **Use LOD (Level of Detail):**
+   - Use simpler geometry or hide distant objects.
 
-    - **Shadows:** Real-time shadows, especially with a high `shadowMapSize` (currently `2048`), are demanding. The directional light casts shadows. Consider if shadows are needed from all sources or if the quality/resolution can be reduced.
-    - **Draw Calls:** While seemingly simple, the number of individual objects (pins, ball, lane components, room elements) contributes to draw calls. Investigate if geometries can be merged or instanced (though pins need to be individual for physics).
-    - **Component Re-renders:** Frequent state updates in `BowlingGameManager` could trigger re-renders of components down the tree. Analyze the state updates (`score`, `activeBall`, `currentBall`, `pinsKey`) and ensure components only re-render when necessary (e.g., using `React.memo`). The `pinsKey` change likely forces a full re-render of the `BowlingPinSetup`, which might be intensive if it happens often.
+## Next Steps
 
-3.  **Environment/Scene Complexity:**
-    - `BowlingRoom` adds geometry and potentially more lights/objects. Evaluate its complexity.
-    - Multiple Point Lights: Three point lights are used in addition to the directional and ambient light. Assess their necessity and performance impact.
+- Refactor scene components to use instancing and batch static geometry.
+- Audit and minimize per-frame updates in all components.
+- Profile again after changes to confirm improvement.
 
-## Recommendations & Next Steps
+---
 
-1.  **Profiling:** Use browser developer tools (Performance tab) and React DevTools Profiler to pinpoint exact bottlenecks during gameplay.
-2.  **Physics Optimization:**
-    - Experiment with `maxCcdSubsteps` in `PhysicsWorld`. Try lower values (e.g., 4, 8) and observe the impact on stability and performance.
-    - Consider simplifying pin collider shapes if possible (e.g., using capsule or convex hull colliders if accuracy allows). Check `BowlingPin.tsx`.
-    - Ensure pins are put to sleep (`canSleep={true}`) by Rapier when not moving to reduce active body count.
-3.  **Rendering Optimization:**
-    - Reduce `shadowMapSize` for the directional light (e.g., 1024) and evaluate the visual difference.
-    - Disable shadows entirely (`castShadow={false}`) temporarily to gauge their performance cost.
-    - Optimize `BowlingGameManager` state updates and component rendering using `React.memo` or other memoization techniques where appropriate (e.g., for `ScoreboardDisplay`, potentially parts of the `BowlingLane` if static).
-    - Analyze the frequency of `pinsKey` changes and its impact. Could the reset logic be optimized?
-4.  **Benchmarking:** Test performance on target hardware after each significant optimization.
+**If you want targeted help, specify which scene or component to optimize first (e.g., NightStalkerDemo, BowlingRoom, etc.).**
