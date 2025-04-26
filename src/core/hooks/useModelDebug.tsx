@@ -15,7 +15,7 @@ export function useModelDebug({ model, config, debug = false }: IUseModelDebugOp
   const boxRef = useRef<THREE.Box3>(new THREE.Box3());
 
   // Check if debugMode is enabled
-  const debugMode = config?.debugMode?.enabled || debug;
+  const debugMode = config?.debugMode ? config.debugMode.enabled : debug;
   const debugSettings = config?.debugMode;
   const debugColor = debugSettings?.debugColor
     ? new THREE.Color(

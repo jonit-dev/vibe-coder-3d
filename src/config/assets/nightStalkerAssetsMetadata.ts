@@ -1,5 +1,18 @@
 import { AssetKeys, IModelAssetMetadata, IModelConfig } from '@/core/types/assets';
 
+// Animation keys for NightStalker
+export enum NightStalkerAnimationKeys {
+  StandingIdle = 'StandingIdle',
+  // Add more animation keys as needed
+}
+
+// Animation key-value mapping for NightStalker
+export const nightStalkerAnimationMap: Record<NightStalkerAnimationKeys, string> = {
+  [NightStalkerAnimationKeys.StandingIdle]:
+    '/assets/models/NightStalker/animations/NightStalker_Standing_Idle.glb',
+  // Add more mappings as needed
+};
+
 export const nightStalkerModelMetadata: IModelAssetMetadata = {
   key: AssetKeys.NightStalkerModel,
   type: 'gltf',
@@ -9,15 +22,13 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
     position: [0, 0, 0],
     rotation: [0, 0, 0],
     offset: [0, 0, 0],
-    animations: ['/assets/models/NightStalker/animations/NightStalker_Standing_Idle.glb'],
+    animations: [NightStalkerAnimationKeys.StandingIdle],
     animationConfig: {
-      isStatic: false,
       loop: true,
       timeScale: 1.0,
       clampWhenFinished: false,
       blendDuration: 0.5,
       crossFadeEnabled: true,
-      disableAnimations: false,
     },
     collision: {
       enabled: true,
@@ -30,7 +41,7 @@ export const nightStalkerModelMetadata: IModelAssetMetadata = {
       layer: 'character',
     },
     debugMode: {
-      enabled: true,
+      enabled: false,
       showBoundingBox: true,
       showColliders: true,
       showWireframe: false,

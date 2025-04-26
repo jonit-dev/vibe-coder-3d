@@ -13,7 +13,6 @@ export const exampleCharacterConfig: IModelConfig = {
   initialAnimation: 'Idle',
   animations: ['Idle', 'Walk', 'Run', 'Jump'],
   animationConfig: {
-    isStatic: false,
     loop: true,
     timeScale: 1.0,
     clampWhenFinished: false,

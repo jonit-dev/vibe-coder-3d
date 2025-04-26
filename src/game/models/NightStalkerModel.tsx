@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
-import { nightStalkerModelMetadata } from '@/config/assets/nightStalkerAssetsMetadata';
+import {
+  NightStalkerAnimationKeys,
+  nightStalkerAnimationMap,
+  nightStalkerModelMetadata,
+} from '@/config/assets/nightStalkerAssetsMetadata';
 import { useAnimationFromAsset } from '@/core/hooks/useAnimationFromAsset';
 import { useAsset } from '@/core/hooks/useAsset';
 import { useModelDebug } from '@/core/hooks/useModelDebug';
@@ -31,8 +35,11 @@ export function NightStalkerModel({ debug = true, onAnimationsReady }: INightSta
   // Memoize animationUrls array to prevent re-renders
   const animationSources = useMemo(() => {
     if (!modelConfig?.animations) return [];
-    // Default to 'gltf' type for all animations; adjust if you support more types
-    return modelConfig.animations.map((anim: string) => ({ url: anim, type: 'gltf' as const }));
+    // Map animation keys to URLs using the animation map
+    return modelConfig.animations.map((animKey) => ({
+      url: nightStalkerAnimationMap[animKey as NightStalkerAnimationKeys],
+      type: 'gltf' as const,
+    }));
   }, [modelConfig?.animations]);
 
   // Check if model is loaded

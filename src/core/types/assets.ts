@@ -15,7 +15,6 @@ export interface IBaseAssetMetadata {
 
 // Animation configuration
 export interface IAnimationConfig {
-  isStatic: boolean; // Whether the model has animations
   loop: boolean; // Whether to loop the animation
   timeScale: number; // Playback speed (1.0 = normal, 0.5 = half speed, etc.)
   clampWhenFinished: boolean; // Hold the last frame when animation completes
