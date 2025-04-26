@@ -14,7 +14,8 @@
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md}\"",
     "prepare": "husky",
-    "prepare-models": "node scripts/basic-model-compression.js"
+    "prepare-models": "node scripts/basic-model-compression.js",
+    "convert-low-poly": "blender --background --python scripts/convert-low-poly.py --"
   },
   "dependencies": {
     "@gltf-transform/cli": "^4.1.3",
