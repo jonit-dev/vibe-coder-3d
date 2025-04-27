@@ -6,6 +6,7 @@ import { Transform } from '@/core/lib/ecs';
 import { getEntityMeshType } from '@core/helpers/meshUtils';
 
 import { GizmoControls } from './GizmoControls';
+import { SelectionOutline } from './SelectionOutline';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -29,6 +30,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   const meshType = getEntityMeshType(entityId);
   const meshRef = useRef<Object3D>(null);
   const [isTransformingLocal, setIsTransformingLocal] = useState(false);
+  const [dragTick, setDragTick] = useState(0);
   useThree();
 
   // Handle keyboard shortcuts for gizmo mode switching
@@ -62,6 +64,9 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
 
   // Sync mesh transform from ECS
   useFrame(() => {
+    if (isTransformingLocal) {
+      setDragTick((tick) => tick + 1);
+    }
     if (meshRef.current && !isTransformingLocal) {
       meshRef.current.position.set(position[0], position[1], position[2]);
       meshRef.current.rotation.set(
@@ -79,8 +84,13 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     geometry = <sphereGeometry args={[0.5, 32, 32]} />;
   }
 
-  // Compute outline position/scale: live during drag, ECS otherwise
+  // Compute outline transform: live during drag, ECS otherwise
   let outlinePosition: [number, number, number] = position;
+  let outlineRotation: [number, number, number] = [
+    rotation[0] * (Math.PI / 180),
+    rotation[1] * (Math.PI / 180),
+    rotation[2] * (Math.PI / 180),
+  ];
   let outlineScale: [number, number, number] = scale.map((s) => s + 0.05) as [
     number,
     number,
@@ -91,6 +101,11 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
       meshRef.current.position.x,
       meshRef.current.position.y,
       meshRef.current.position.z,
+    ];
+    outlineRotation = [
+      meshRef.current.rotation.x,
+      meshRef.current.rotation.y,
+      meshRef.current.rotation.z,
     ];
     outlineScale = [
       meshRef.current.scale.x + 0.05,
@@ -121,10 +136,13 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
 
       {/* Selection outline when selected */}
       {selected && (
-        <mesh position={outlinePosition} scale={outlineScale}>
-          {geometry}
-          <meshBasicMaterial color="#4488ff" wireframe transparent opacity={0.5} />
-        </mesh>
+        <SelectionOutline
+          geometry={geometry}
+          position={outlinePosition}
+          rotation={outlineRotation}
+          scale={outlineScale}
+          key={dragTick}
+        />
       )}
     </group>
   );
