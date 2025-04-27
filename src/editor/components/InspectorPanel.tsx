@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import type { ISceneObject } from '../Editor';
 
@@ -11,10 +11,35 @@ export interface IInspectorPanelProps {
   }) => void;
 }
 
+const Section: React.FC<{
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}> = ({ title, children, defaultOpen = true }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-[#333]">
+      <button
+        className="w-full flex items-center gap-2 px-2 py-1 bg-[#23272e] hover:bg-[#292d33] text-xs font-bold text-gray-200 uppercase tracking-wider select-none"
+        onClick={() => setOpen((v) => !v)}
+        type="button"
+      >
+        <span className={`transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
+        <span>{title}</span>
+      </button>
+      {open && <div className="px-3 py-2">{children}</div>}
+    </div>
+  );
+};
+
+const label = 'text-xs text-gray-300 w-20';
+const input =
+  'bg-[#181a1b] border border-[#333] rounded px-2 py-1 text-xs text-white w-16 focus:outline-none focus:ring-2 focus:ring-blue-600';
+
 const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTransformChange }) => {
   if (!selectedObject) {
     return (
-      <aside className="w-80 unity-panel flex-shrink-0 flex flex-col items-center justify-center text-gray-400">
+      <aside className="w-80 bg-[#23272e] flex-shrink-0 flex flex-col items-center justify-center text-gray-400">
         <div className="text-sm opacity-70">No object selected</div>
       </aside>
     );
@@ -40,17 +65,17 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTran
   };
 
   return (
-    <aside className="w-80 unity-panel flex-shrink-0 flex flex-col h-full">
+    <aside className="w-80 bg-[#23272e] flex-shrink-0 flex flex-col h-full border-l border-[#181a1b]">
       {/* Inspector Header */}
-      <div className="unity-header flex justify-between items-center py-2">
-        <div className="text-xs uppercase tracking-wider font-bold">Inspector</div>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#333] bg-[#23272e]">
+        <div className="text-xs uppercase tracking-wider font-bold text-gray-300">Inspector</div>
         <div className="flex gap-1">
           <button className="text-xs opacity-70 hover:opacity-100 px-1">⚙️</button>
         </div>
       </div>
 
       {/* Object Header */}
-      <div className="px-3 py-2 border-b border-[#3f3f3f] flex items-center bg-[#2d2d2d]">
+      <div className="px-3 py-2 border-b border-[#333] flex items-center bg-[#2d2d2d]">
         <div className="flex-1">
           <div className="font-bold text-sm text-white">{selectedObject.name}</div>
           <div className="text-xs opacity-50">ID: {selectedObject.id.substring(0, 8)}</div>
@@ -62,24 +87,16 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTran
       </div>
 
       {/* Properties */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Transform Component */}
-        <div className="p-2 border-b border-[#3f3f3f]">
-          <div className="unity-header mb-2 flex items-center">
-            <span className="flex-1">Transform</span>
-            <button className="text-xs opacity-70 hover:opacity-100">▼</button>
-          </div>
-
+      <div className="flex-1 overflow-y-auto bg-[#23272e]">
+        <Section title="Transform">
           <div className="space-y-2">
             {(['position', 'rotation', 'scale'] as const).map((type) => (
               <div className="flex items-center gap-2" key={type}>
-                <span className="unity-label w-20">
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </span>
+                <span className={label}>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
                 <div className="flex gap-1 items-center">
                   <span className="w-2 text-xs text-[#ff5555]">X</span>
                   <input
-                    className="unity-input"
+                    className={input}
                     type="number"
                     step={type === 'scale' ? 0.1 : 0.01}
                     value={selectedObject.components.Transform[type][0]}
@@ -89,7 +106,7 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTran
                 <div className="flex gap-1 items-center">
                   <span className="w-2 text-xs text-[#55ff55]">Y</span>
                   <input
-                    className="unity-input"
+                    className={input}
                     type="number"
                     step={type === 'scale' ? 0.1 : 0.01}
                     value={selectedObject.components.Transform[type][1]}
@@ -99,7 +116,7 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTran
                 <div className="flex gap-1 items-center">
                   <span className="w-2 text-xs text-[#5555ff]">Z</span>
                   <input
-                    className="unity-input"
+                    className={input}
                     type="number"
                     step={type === 'scale' ? 0.1 : 0.01}
                     value={selectedObject.components.Transform[type][2]}
@@ -109,83 +126,71 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTran
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Mesh Component */}
-        <div className="p-2 border-b border-[#3f3f3f]">
-          <div className="unity-header mb-2 flex items-center">
-            <span className="flex-1">Mesh Renderer</span>
-            <button className="text-xs opacity-70 hover:opacity-100">▼</button>
-          </div>
-          <div className="px-2">
-            <div className="flex justify-between items-center mb-1">
-              <span className="unity-label">Mesh</span>
+        </Section>
+        <Section title="Mesh Renderer">
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <span className={label}>Mesh</span>
               <span className="text-xs opacity-80 font-mono">{selectedObject.components.Mesh}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="unity-label">Cast Shadows</span>
-              <select className="unity-input w-24 text-xs">
+              <span className={label}>Cast Shadows</span>
+              <select className="bg-[#181a1b] border border-[#333] rounded px-2 py-1 text-xs text-white w-24">
                 <option>On</option>
                 <option>Off</option>
               </select>
             </div>
           </div>
-        </div>
-
-        {/* Material Component */}
-        <div className="p-2 border-b border-[#3f3f3f]">
-          <div className="unity-header mb-2 flex items-center">
-            <span className="flex-1">Material</span>
-            <button className="text-xs opacity-70 hover:opacity-100">▼</button>
-          </div>
-          <div className="px-2">
-            <div className="flex justify-between items-center mb-1">
-              <span className="unity-label">Type</span>
+        </Section>
+        <Section title="Material">
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <span className={label}>Type</span>
               <span className="text-xs opacity-80 font-mono">
                 {selectedObject.components.Material}
               </span>
             </div>
-            <div className="flex justify-between items-center mb-1">
-              <span className="unity-label">Color</span>
+            <div className="flex justify-between items-center">
+              <span className={label}>Color</span>
               <div className="flex items-center gap-1">
                 <div className="w-4 h-4 bg-red-500 rounded"></div>
                 <span className="text-xs opacity-80">#FF0000</span>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Surface Options */}
-        <div className="p-2">
-          <div className="unity-header mb-2 flex items-center">
-            <span className="flex-1">Surface Options</span>
-            <button className="text-xs opacity-70 hover:opacity-100">▼</button>
-          </div>
-          <div className="px-2 space-y-1">
+        </Section>
+        <Section title="Surface Options">
+          <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
-              <span className="unity-label">Workflow</span>
-              <select className="unity-input w-24 text-xs">
+              <span className={label}>Workflow</span>
+              <select className="bg-[#181a1b] border border-[#333] rounded px-2 py-1 text-xs text-white w-24">
                 <option>Metallic</option>
                 <option>Specular</option>
               </select>
             </div>
             <div className="flex justify-between items-center">
-              <span className="unity-label">Surface Type</span>
-              <select className="unity-input w-24 text-xs">
+              <span className={label}>Surface Type</span>
+              <select className="bg-[#181a1b] border border-[#333] rounded px-2 py-1 text-xs text-white w-24">
                 <option>Opaque</option>
                 <option>Transparent</option>
               </select>
             </div>
             <div className="flex justify-between items-center">
-              <span className="unity-label">Render Face</span>
-              <select className="unity-input w-24 text-xs">
+              <span className={label}>Render Face</span>
+              <select className="bg-[#181a1b] border border-[#333] rounded px-2 py-1 text-xs text-white w-24">
                 <option>Front</option>
                 <option>Back</option>
                 <option>Both</option>
               </select>
             </div>
           </div>
-        </div>
+        </Section>
+      </div>
+      {/* Add Component Button */}
+      <div className="p-3 border-t border-[#333] bg-[#23272e] flex justify-center">
+        <button className="bg-[#444] hover:bg-[#666] text-xs text-white font-bold px-4 py-2 rounded shadow">
+          Add Component
+        </button>
       </div>
     </aside>
   );
