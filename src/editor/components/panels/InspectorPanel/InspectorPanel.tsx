@@ -86,30 +86,16 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
   const [meshRenderer, setMeshRenderer] = useState<IMeshRendererSettings>(meshRendererDefaults);
   const [activeTab, setActiveTab] = useState<TabType>('materials');
 
-  const position =
-    selectedEntity != null && Transform.position[selectedEntity]
-      ? [
-        Transform.position[selectedEntity][0],
-        Transform.position[selectedEntity][1],
-        Transform.position[selectedEntity][2],
-      ]
-      : [0, 0, 0];
-  const rotation =
-    selectedEntity != null && Transform.rotation[selectedEntity]
-      ? [
-        Transform.rotation[selectedEntity][0],
-        Transform.rotation[selectedEntity][1],
-        Transform.rotation[selectedEntity][2],
-      ]
-      : [0, 0, 0];
-  const scale =
-    selectedEntity != null && Transform.scale[selectedEntity]
-      ? [
-        Transform.scale[selectedEntity][0],
-        Transform.scale[selectedEntity][1],
-        Transform.scale[selectedEntity][2],
-      ]
-      : [1, 1, 1];
+  // Always derive transform values from ECS
+  const getVec3 = (arr: Float32Array | undefined): [number, number, number] =>
+    arr && arr.length >= 3 ? [arr[0], arr[1], arr[2]] : [0, 0, 0];
+
+  const position: [number, number, number] =
+    selectedEntity != null ? getVec3(Transform.position[selectedEntity]) : [0, 0, 0];
+  const rotation: [number, number, number] =
+    selectedEntity != null ? getVec3(Transform.rotation[selectedEntity]) : [0, 0, 0];
+  const scale: [number, number, number] =
+    selectedEntity != null ? getVec3(Transform.scale[selectedEntity]) : [1, 1, 1];
 
   useEffect(() => {
     if (
