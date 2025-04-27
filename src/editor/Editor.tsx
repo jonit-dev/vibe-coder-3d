@@ -13,6 +13,8 @@ import { AddObjectMenu } from './AddObjectMenu';
 import { HierarchyPanel } from './components/panels/HierarchyPanel/HierarchyPanel';
 import { InspectorPanel } from './components/panels/InspectorPanel/InspectorPanel';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
+import { useLocalStorage } from './hooks/useLocalStorage';
+import { ISerializedScene, useSceneSerialization } from './hooks/useSceneSerialization';
 import { useEditorStore } from './store/editorStore';
 
 export interface ITransform {
@@ -43,6 +45,31 @@ const Editor: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState<string>('Ready');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addButtonRef = useRef<HTMLButtonElement>(null);
+  const { exportScene, importScene } = useSceneSerialization();
+  // Store the last scene in localStorage with the correct type
+  const [savedScene, setSavedScene] = useLocalStorage<ISerializedScene>('lastScene', {
+    version: 1,
+    entities: [],
+  });
+  // Track if initial load is complete
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Auto-load the last saved scene when the editor opens
+  useEffect(() => {
+    // Only load on first mount and if there's a saved scene with entities
+    if (!isInitialized && savedScene && savedScene.entities) {
+      try {
+        importScene(savedScene);
+        if (savedScene.entities.length > 0) {
+          setStatusMessage('Loaded last saved scene from localStorage.');
+        }
+      } catch (err) {
+        console.error('Failed to load scene from localStorage:', err);
+        setStatusMessage('Failed to load last scene. Starting with empty scene.');
+      }
+      setIsInitialized(true);
+    }
+  }, [isInitialized, importScene, savedScene, setStatusMessage]);
 
   useEffect(() => {
     if ((selectedId === null || !entityIds.includes(selectedId)) && entityIds.length > 0) {
@@ -93,9 +120,59 @@ const Editor: React.FC = () => {
     [selectedId],
   );
 
-  const handleSave = () => setStatusMessage('Save not implemented (ECS)');
-  const handleLoad = () => setStatusMessage('Load not implemented (ECS)');
-  const handleClear = () => setStatusMessage('Clear not implemented (ECS)');
+  // Helper to trigger download
+  const downloadJSON = (data: object, filename: string) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSave = () => {
+    try {
+      const scene = exportScene();
+      // Save to file
+      downloadJSON(scene, 'scene.json');
+      // Also save to localStorage
+      setSavedScene(scene);
+      setStatusMessage('Scene saved to file and localStorage.');
+    } catch (e) {
+      setStatusMessage('Failed to save scene.');
+      console.error('Save error:', e);
+    }
+  };
+
+  const handleLoad = (e?: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e?.target?.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        importScene(json);
+        // Update localStorage with the loaded scene
+        setSavedScene(json);
+        setStatusMessage('Scene loaded from file and saved to localStorage.');
+      } catch (err) {
+        setStatusMessage('Failed to load scene.');
+        console.error('Load error:', err);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleClear = () => {
+    // Clear the ECS world
+    const emptyScene = { version: 1, entities: [] };
+    importScene(emptyScene);
+    // Also clear localStorage
+    setSavedScene(emptyScene);
+    setSelectedId(null);
+    setStatusMessage('Scene cleared and localStorage reset.');
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
