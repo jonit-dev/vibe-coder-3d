@@ -57,10 +57,7 @@ const Editor: React.FC = () => {
     // Logging for debugging
     console.log('[AddObject] Added entity', { entity, type });
     // Log current entity IDs
-    setTimeout(() => {
-      const currentIds = useECSQuery([Transform]);
-      console.log('[AddObject] Current entity IDs after add:', currentIds);
-    }, 100);
+    console.log('[AddObject] Current entity IDs before update:', entityIds);
   };
 
   // Update transform (for now, just position)

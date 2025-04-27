@@ -5,7 +5,6 @@ export interface ISelectionOutlineProps {
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
-  key?: React.Key;
 }
 
 export const SelectionOutline: React.FC<ISelectionOutlineProps> = ({
@@ -13,9 +12,8 @@ export const SelectionOutline: React.FC<ISelectionOutlineProps> = ({
   position,
   rotation,
   scale,
-  key,
 }) => (
-  <mesh position={position} rotation={rotation} scale={scale} key={key}>
+  <mesh position={position} rotation={rotation} scale={scale}>
     {geometry}
     <meshBasicMaterial color="#4488ff" wireframe transparent opacity={0.5} />
   </mesh>

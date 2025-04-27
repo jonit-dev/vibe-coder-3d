@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 
-import { Card } from '@/editor/components/common/Card';
-import { Collapsible } from '@/editor/components/common/Collapsible';
+import { Collapsible } from '@/editor/components/ui/Collapsible';
 import { MeshType, MeshTypeEnum, Transform, updateMeshType } from '@core/lib/ecs';
+
+import { Card } from '../../common/Card';
 
 import { TransformFields } from './TransformFields/TransformFields';
 
