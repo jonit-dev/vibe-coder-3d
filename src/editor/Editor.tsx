@@ -9,6 +9,7 @@ import {
   updateMeshType,
 } from '@core/lib/ecs';
 
+import { AddObjectMenu } from './AddObjectMenu';
 import { HierarchyPanel } from './components/panels/HierarchyPanel/HierarchyPanel';
 import { InspectorPanel } from './components/panels/InspectorPanel/InspectorPanel';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
@@ -54,6 +55,7 @@ const Editor: React.FC = () => {
     updateMeshType(entity, type === 'Cube' ? MeshTypeEnum.Cube : MeshTypeEnum.Sphere);
     setSelectedId(entity);
     setStatusMessage(`Added new ${type}: ${entity}`);
+    setShowAddMenu(false); // Close the menu after adding
     // Logging for debugging
     console.log('[AddObject] Added entity', { entity, type });
     // Log current entity IDs
@@ -122,21 +124,6 @@ const Editor: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedId, handleAddObject, handleSave]);
 
-  // Add a useEffect to close the menu on outside click
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (addButtonRef.current && !addButtonRef.current.contains(event.target as Node)) {
-        setShowAddMenu(false);
-      }
-    }
-    if (showAddMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAddMenu]);
-
   return (
     <div className="w-full h-screen flex flex-col bg-[#232323] text-white">
       <header className="p-2 bg-[#1a1a1a] border-b border-[#222] flex items-center shadow-sm justify-between">
@@ -150,12 +137,18 @@ const Editor: React.FC = () => {
           <button
             ref={addButtonRef}
             className="btn btn-success btn-sm font-semibold normal-case"
-            onClick={() => handleAddObject('Cube')}
+            onClick={() => setShowAddMenu(!showAddMenu)}
             title="Add Object (Ctrl+N)"
             type="button"
           >
             + Add Object
           </button>
+          <AddObjectMenu
+            anchorRef={addButtonRef as React.RefObject<HTMLElement>}
+            open={showAddMenu}
+            onAdd={handleAddObject}
+            onClose={() => setShowAddMenu(false)}
+          />
           <button
             className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-800 text-xs font-semibold"
             onClick={handleSave}
