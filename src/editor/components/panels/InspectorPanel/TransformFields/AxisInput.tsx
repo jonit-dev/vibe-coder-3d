@@ -39,11 +39,17 @@ export const AxisInput: React.FC<IAxisInputProps> = ({
           onChange={(e) => onChange(parseFloat(e.target.value))}
         />
         <div
-          className="w-4 h-4 ml-1 bg-[#444] hover:bg-[#555] rounded cursor-ew-resize flex items-center justify-center"
+          className="w-6 h-6 ml-2 flex items-center justify-center bg-blue-600 hover:bg-blue-700 rounded-full cursor-ew-resize select-none transition-colors duration-150 relative group"
           onMouseDown={onDragStart}
-          style={{ cursor: dragActive ? 'ew-resize' : 'pointer' }}
+          tabIndex={0}
+          role="button"
+          aria-label={`Drag to change ${axis} value`}
+          style={{ outline: dragActive ? '2px solid #3b82f6' : 'none' }}
         >
-          <span className="text-[8px]">⋮</span>
+          <span className="text-white text-lg font-bold select-none">⋮</span>
+          <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 text-xs bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-10 shadow-lg transition-opacity duration-150">
+            Drag to change {axis} value
+          </span>
         </div>
         <button
           className="w-4 h-4 ml-1 text-[10px] text-gray-400 hover:text-white"

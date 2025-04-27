@@ -9,7 +9,7 @@ export interface IDropdownMenuProps {
   children: React.ReactNode;
 }
 
-const MenuContainer = styled.div<{ $left: number; $top: number }>`
+const MenuContainer = styled.div<{ $left: number; $top: number; $invisible?: boolean }>`
   position: absolute;
   left: ${(props) => `${props.$left}px`};
   top: ${(props) => `${props.$top}px`};
@@ -23,6 +23,7 @@ const MenuContainer = styled.div<{ $left: number; $top: number }>`
     0 20px 25px -5px rgb(0 0 0 / 0.1),
     0 8px 10px -6px rgb(0 0 0 / 0.1);
   overflow: hidden;
+  ${(props) => (props.$invisible ? 'opacity:0;pointer-events:none;left:-9999px;top:-9999px;' : '')}
 `;
 
 export const DropdownMenu: React.FC<IDropdownMenuProps> = ({
@@ -33,17 +34,21 @@ export const DropdownMenu: React.FC<IDropdownMenuProps> = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: 0, top: 0 });
+  const [ready, setReady] = useState(false);
 
+  // Phase 1: Render offscreen, then measure and position
   useEffect(() => {
-    if (open && anchorRef.current && menuRef.current) {
+    if (open && anchorRef.current && menuRef.current && !ready) {
       const rect = anchorRef.current.getBoundingClientRect();
       setPosition({
         left: rect.left,
         top: rect.bottom + window.scrollY,
       });
-      console.log('[DropdownMenu] Opened and positioned', rect);
+      setReady(true);
+    } else if (!open) {
+      setReady(false);
     }
-  }, [anchorRef, open]);
+  }, [anchorRef, open, ready]);
 
   useEffect(() => {
     if (!open) return;
@@ -55,18 +60,22 @@ export const DropdownMenu: React.FC<IDropdownMenuProps> = ({
     }
 
     document.addEventListener('mousedown', handleClick);
-    console.log('[DropdownMenu] Mounted and click outside handler attached');
-
-    return () => {
-      document.removeEventListener('mousedown', handleClick);
-      console.log('[DropdownMenu] Unmounted and click outside handler removed');
-    };
+    return () => document.removeEventListener('mousedown', handleClick);
   }, [open, onClose]);
 
   if (!open) return null;
 
-  console.log('[DropdownMenu] Rendering menu');
+  // Phase 1: invisible, offscreen for measurement
+  if (!ready) {
+    return ReactDOM.createPortal(
+      <MenuContainer ref={menuRef} $left={-9999} $top={-9999} $invisible>
+        {children}
+      </MenuContainer>,
+      document.body,
+    );
+  }
 
+  // Phase 2: visible, correctly positioned
   return ReactDOM.createPortal(
     <MenuContainer ref={menuRef} $left={position.left} $top={position.top}>
       {children}

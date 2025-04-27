@@ -1,44 +1,52 @@
 import React from 'react';
+import { TbCircle, TbCone, TbCube, TbCylinder, TbSquare } from 'react-icons/tb';
 
 import { DropdownMenu } from './components/common/DropdownMenu';
+import { useEditorStore } from './store/editorStore';
 
 export interface IAddObjectMenuProps {
   anchorRef: React.RefObject<HTMLElement>;
-  open: boolean;
-  onAdd: (type: 'Cube' | 'Sphere') => void;
-  onClose: () => void;
+  onAdd: (type: 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane') => void;
 }
 
 const OBJECTS = [
   {
     type: 'Cube',
     label: 'Cube',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-        <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
-      </svg>
-    ),
+    icon: <TbCube size={18} />,
   },
   {
     type: 'Sphere',
     label: 'Sphere',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="2" />
-      </svg>
-    ),
+    icon: <TbCircle size={18} />,
   },
-  // Add more objects as needed
+  {
+    type: 'Cylinder',
+    label: 'Cylinder',
+    icon: <TbCylinder size={18} />,
+  },
+  {
+    type: 'Cone',
+    label: 'Cone',
+    icon: <TbCone size={18} />,
+  },
+  {
+    type: 'Torus',
+    label: 'Torus',
+    icon: <TbCircle size={18} style={{ border: '2px solid currentColor', borderRadius: '50%' }} />,
+  },
+  {
+    type: 'Plane',
+    label: 'Plane',
+    icon: <TbSquare size={18} />,
+  },
 ];
 
-export const AddObjectMenu: React.FC<IAddObjectMenuProps> = ({
-  anchorRef,
-  open,
-  onAdd,
-  onClose,
-}) => {
+export const AddObjectMenu: React.FC<IAddObjectMenuProps> = ({ anchorRef, onAdd }) => {
+  const open = useEditorStore((s) => s.showAddMenu);
+  const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
   return (
-    <DropdownMenu anchorRef={anchorRef} open={open} onClose={onClose}>
+    <DropdownMenu anchorRef={anchorRef} open={open} onClose={() => setShowAddMenu(false)}>
       <ul className="menu bg-base-200 rounded-box w-full">
         {OBJECTS.map((obj) => (
           <li key={obj.type}>
@@ -46,8 +54,7 @@ export const AddObjectMenu: React.FC<IAddObjectMenuProps> = ({
               className="flex items-center gap-2 text-base-content text-sm font-medium px-2 py-2 hover:bg-base-300 rounded-box transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
-                console.log('[AddObjectMenu] Clicked', obj.type);
-                onAdd(obj.type as 'Cube' | 'Sphere');
+                onAdd(obj.type as any);
               }}
             >
               <span className="w-5 h-5 flex items-center justify-center">{obj.icon}</span>

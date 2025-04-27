@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { transformSystem } from '@core/systems/transformSystem';
+
 export interface IUseDragAxis {
   dragActive: boolean;
   onDragStart: (e: React.MouseEvent) => void;
@@ -14,20 +16,36 @@ export function useDragAxis(
   const [dragActive, setDragActive] = useState(false);
   const dragStartValueRef = useRef(value);
   const dragStartXRef = useRef(0);
+  const latestOnChange = useRef(onChange);
+  const latestSensitivity = useRef(sensitivity);
 
-  const handleDragMove = useCallback(
-    (e: MouseEvent) => {
-      const delta = (e.clientX - dragStartXRef.current) * sensitivity;
-      const next = Number((dragStartValueRef.current + delta).toFixed(2));
-      onChange(next);
-    },
-    [onChange, sensitivity],
-  );
+  useEffect(() => {
+    latestOnChange.current = onChange;
+    latestSensitivity.current = sensitivity;
+  }, [onChange, sensitivity]);
+
+  const handleDragMove = useCallback((e: MouseEvent) => {
+    const delta = (e.clientX - dragStartXRef.current) * latestSensitivity.current;
+    const next = Number((dragStartValueRef.current + delta).toFixed(2));
+    // Debug log
+
+    console.log('[useDragAxis] Drag move', { delta, next });
+    latestOnChange.current(next);
+
+    // Run transform system to update the 3D view
+    transformSystem();
+  }, []);
 
   const handleDragEnd = useCallback(() => {
     setDragActive(false);
     document.removeEventListener('mousemove', handleDragMove);
     document.removeEventListener('mouseup', handleDragEnd);
+    document.body.style.userSelect = '';
+
+    console.log('[useDragAxis] Drag end');
+
+    // Ensure final transform update is applied
+    transformSystem();
   }, [handleDragMove]);
 
   const onDragStart = useCallback(
@@ -37,6 +55,9 @@ export function useDragAxis(
       dragStartXRef.current = e.clientX;
       document.addEventListener('mousemove', handleDragMove);
       document.addEventListener('mouseup', handleDragEnd);
+      document.body.style.userSelect = 'none';
+
+      console.log('[useDragAxis] Drag start', { value, x: e.clientX });
     },
     [value, handleDragMove, handleDragEnd],
   );
@@ -46,6 +67,7 @@ export function useDragAxis(
     return () => {
       document.removeEventListener('mousemove', handleDragMove);
       document.removeEventListener('mouseup', handleDragEnd);
+      document.body.style.userSelect = '';
     };
   }, [handleDragMove, handleDragEnd]);
 

@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 
 import { Collapsible } from '@/editor/components/ui/Collapsible';
-import { MeshType, MeshTypeEnum, Transform, updateMeshType } from '@core/lib/ecs';
+import { useEditorStore } from '@/editor/store/editorStore';
+import { getEntityName, MeshType, MeshTypeEnum, Transform, updateMeshType } from '@core/lib/ecs';
 
 import { Card } from '../../common/Card';
 
 import { TransformFields } from './TransformFields/TransformFields';
 
 export interface IInspectorPanelProps {
-  selectedEntity: number | null;
-  onTransformChange: (transform: {
+  onTransformChange?: (transform: {
     position: [number, number, number];
     rotation: [number, number, number];
     scale: [number, number, number];
@@ -79,41 +79,57 @@ function meshTypeStringToEnum(type: string): MeshTypeEnum | undefined {
 
 type TabType = 'materials' | 'lighting' | 'probes' | 'ray-tracing' | 'additional';
 
-export const InspectorPanel: React.FC<IInspectorPanelProps> = ({
-  selectedEntity,
-  onTransformChange,
-}) => {
+export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChange }) => {
+  const selectedEntity = useEditorStore((s) => s.selectedId);
+  const [, forceUpdate] = useState(0);
   const [meshType, setMeshType] = useState<string>('unknown');
-  const [entityName, setEntityName] = useState<string>('');
-  const [position, setPosition] = useState<[number, number, number]>([0, 0, 0]);
-  const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]);
-  const [scale, setScale] = useState<[number, number, number]>([1, 1, 1]);
   const [meshRenderer, setMeshRenderer] = useState<IMeshRendererSettings>(meshRendererDefaults);
   const [activeTab, setActiveTab] = useState<TabType>('materials');
 
+  const position =
+    selectedEntity != null && Transform.position[selectedEntity]
+      ? [
+        Transform.position[selectedEntity][0],
+        Transform.position[selectedEntity][1],
+        Transform.position[selectedEntity][2],
+      ]
+      : [0, 0, 0];
+  const rotation =
+    selectedEntity != null && Transform.rotation[selectedEntity]
+      ? [
+        Transform.rotation[selectedEntity][0],
+        Transform.rotation[selectedEntity][1],
+        Transform.rotation[selectedEntity][2],
+      ]
+      : [0, 0, 0];
+  const scale =
+    selectedEntity != null && Transform.scale[selectedEntity]
+      ? [
+        Transform.scale[selectedEntity][0],
+        Transform.scale[selectedEntity][1],
+        Transform.scale[selectedEntity][2],
+      ]
+      : [1, 1, 1];
+
   useEffect(() => {
-    if (selectedEntity === null) return;
+    if (
+      selectedEntity == null ||
+      !Transform.position[selectedEntity] ||
+      !Transform.rotation[selectedEntity] ||
+      !Transform.scale[selectedEntity]
+    ) {
+      return;
+    }
     const entityMeshType = meshTypeEnumToString(MeshType.type[selectedEntity]);
     setMeshType(entityMeshType);
-    setEntityName(`Entity ${selectedEntity}`);
-    setPosition([
-      Transform.position[selectedEntity][0],
-      Transform.position[selectedEntity][1],
-      Transform.position[selectedEntity][2],
-    ]);
-    setRotation([
-      Transform.rotation[selectedEntity][0],
-      Transform.rotation[selectedEntity][1],
-      Transform.rotation[selectedEntity][2],
-    ]);
-    setScale([
-      Transform.scale[selectedEntity][0],
-      Transform.scale[selectedEntity][1],
-      Transform.scale[selectedEntity][2],
-    ]);
   }, [selectedEntity]);
 
-  if (selectedEntity === null) {
+  if (
+    selectedEntity == null ||
+    !Transform.position[selectedEntity] ||
+    !Transform.rotation[selectedEntity] ||
+    !Transform.scale[selectedEntity]
+  ) {
     return (
       <Card title="Inspector" className="max-w-md w-full mx-auto shadow-none">
         <div className="text-base-content text-opacity-50">No entity selected</div>
@@ -127,30 +143,34 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({
     if (meshTypeEnum === undefined) return;
     updateMeshType(selectedEntity, meshTypeEnum);
     setMeshType(newType);
+    forceUpdate((v) => v + 1);
   };
 
   const handlePositionChange = (next: [number, number, number]) => {
-    setPosition(next);
     Transform.position[selectedEntity][0] = next[0];
     Transform.position[selectedEntity][1] = next[1];
     Transform.position[selectedEntity][2] = next[2];
     Transform.needsUpdate[selectedEntity] = 1;
+    forceUpdate((v) => v + 1);
+    if (onTransformChange) onTransformChange({ position: next, rotation, scale });
   };
 
   const handleRotationChange = (next: [number, number, number]) => {
-    setRotation(next);
     Transform.rotation[selectedEntity][0] = next[0];
     Transform.rotation[selectedEntity][1] = next[1];
     Transform.rotation[selectedEntity][2] = next[2];
     Transform.needsUpdate[selectedEntity] = 1;
+    forceUpdate((v) => v + 1);
+    if (onTransformChange) onTransformChange({ position, rotation: next, scale });
   };
 
   const handleScaleChange = (next: [number, number, number]) => {
-    setScale(next);
     Transform.scale[selectedEntity][0] = next[0];
     Transform.scale[selectedEntity][1] = next[1];
     Transform.scale[selectedEntity][2] = next[2];
     Transform.needsUpdate[selectedEntity] = 1;
+    forceUpdate((v) => v + 1);
+    if (onTransformChange) onTransformChange({ position, rotation, scale: next });
   };
 
   return (
@@ -167,7 +187,7 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({
           <div className="flex items-center mb-1">
             <span className="label-text text-xs font-medium mr-2">Name:</span>
             <span className="bg-base-300 rounded px-2 py-1 text-xs text-base-content/80">
-              {entityName}
+              {getEntityName(selectedEntity) || `Entity ${selectedEntity}`}
             </span>
           </div>
           <div className="form-control mb-1">

@@ -61,6 +61,11 @@ export const MeshType = defineComponent({
   type: Types.ui8, // 0=Cube, 1=Sphere
 });
 
+// Name component for entity naming
+export const Name = defineComponent({
+  value: [Types.ui8, 32], // 32 chars max, UTF-8 bytes
+});
+
 // Define queries
 export const transformQuery = defineQuery([Transform]);
 export const velocityQuery = defineQuery([Transform, Velocity]);
@@ -197,4 +202,29 @@ export function updateMeshType(entity: number, meshType: MeshTypeEnum) {
 
   incrementWorldVersion();
   return entity;
+}
+
+// Helper to set/get name as string
+export function setEntityName(entity: number, name: string) {
+  // Ensure Name component exists
+  if (!hasComponent(world, Name, entity)) {
+    addComponent(world, Name, entity);
+  }
+  // Encode string to UTF-8 bytes, truncate to 32
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(name.slice(0, 32));
+  Name.value[entity].fill(0);
+  for (let i = 0; i < bytes.length; i++) {
+    Name.value[entity][i] = bytes[i];
+  }
+  incrementWorldVersion();
+}
+
+export function getEntityName(entity: number): string {
+  if (!hasComponent(world, Name, entity)) return '';
+  // Decode UTF-8 bytes to string
+  const bytes = Name.value[entity];
+  const end = bytes.findIndex((b) => b === 0);
+  const slice = end === -1 ? bytes : bytes.slice(0, end);
+  return new TextDecoder().decode(slice);
 }
