@@ -19,6 +19,14 @@ export const EntityMesh = forwardRef<any, IEntityMeshProps>(
         <boxGeometry args={[1, 1, 1]} />
       ) : meshType === MeshTypeEnum.Sphere ? (
         <sphereGeometry args={[0.5, 32, 32]} />
+      ) : meshType === MeshTypeEnum.Cylinder ? (
+        <cylinderGeometry args={[0.5, 0.5, 1, 32]} />
+      ) : meshType === MeshTypeEnum.Cone ? (
+        <coneGeometry args={[0.5, 1, 32]} />
+      ) : meshType === MeshTypeEnum.Torus ? (
+        <torusGeometry args={[0.5, 0.2, 16, 100]} />
+      ) : meshType === MeshTypeEnum.Plane ? (
+        <planeGeometry args={[1, 1]} />
       ) : (
         <boxGeometry args={[1, 1, 1]} />
       )}

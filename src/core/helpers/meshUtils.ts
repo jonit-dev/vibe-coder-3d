@@ -15,6 +15,14 @@ export function getEntityMeshType(entityId: number): string {
       return 'Cube';
     case MeshTypeEnum.Sphere:
       return 'Sphere';
+    case MeshTypeEnum.Cylinder:
+      return 'Cylinder';
+    case MeshTypeEnum.Cone:
+      return 'Cone';
+    case MeshTypeEnum.Torus:
+      return 'Torus';
+    case MeshTypeEnum.Plane:
+      return 'Plane';
     default:
       return 'unknown';
   }

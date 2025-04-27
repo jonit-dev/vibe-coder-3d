@@ -23,6 +23,7 @@ export const TransformFields: React.FC<ITransformFieldsProps> = ({ label, value,
       const next: [number, number, number] = [...localValues];
       next[idx] = val;
       setLocalValues(next);
+      console.log('[TransformFields] label:', label, 'idx:', idx, 'val:', val, 'next:', next);
       onChange(next);
     },
     [localValues, onChange],

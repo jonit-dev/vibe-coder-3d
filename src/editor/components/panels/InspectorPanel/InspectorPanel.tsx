@@ -61,6 +61,14 @@ function meshTypeEnumToString(type: MeshTypeEnum | undefined): string {
       return 'Cube';
     case MeshTypeEnum.Sphere:
       return 'Sphere';
+    case MeshTypeEnum.Cylinder:
+      return 'Cylinder';
+    case MeshTypeEnum.Cone:
+      return 'Cone';
+    case MeshTypeEnum.Torus:
+      return 'Torus';
+    case MeshTypeEnum.Plane:
+      return 'Plane';
     default:
       return 'unknown';
   }
@@ -72,6 +80,14 @@ function meshTypeStringToEnum(type: string): MeshTypeEnum | undefined {
       return MeshTypeEnum.Cube;
     case 'Sphere':
       return MeshTypeEnum.Sphere;
+    case 'Cylinder':
+      return MeshTypeEnum.Cylinder;
+    case 'Cone':
+      return MeshTypeEnum.Cone;
+    case 'Torus':
+      return MeshTypeEnum.Torus;
+    case 'Plane':
+      return MeshTypeEnum.Plane;
     default:
       return undefined;
   }
@@ -194,6 +210,10 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
               </option>
               <option value="Cube">Cube</option>
               <option value="Sphere">Sphere</option>
+              <option value="Cylinder">Cylinder</option>
+              <option value="Cone">Cone</option>
+              <option value="Torus">Torus</option>
+              <option value="Plane">Plane</option>
             </select>
           </div>
         </Collapsible>

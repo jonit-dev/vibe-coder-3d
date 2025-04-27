@@ -100,13 +100,16 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedEntity 
     Transform.position[selectedEntity][2] = next[2];
     Transform.needsUpdate[selectedEntity] = 1;
   };
+
   const handleRotationChange = (next: [number, number, number]) => {
     setRotation(next);
+    // Store rotation in degrees in the ECS system
     Transform.rotation[selectedEntity][0] = next[0];
     Transform.rotation[selectedEntity][1] = next[1];
     Transform.rotation[selectedEntity][2] = next[2];
     Transform.needsUpdate[selectedEntity] = 1;
   };
+
   const handleScaleChange = (next: [number, number, number]) => {
     setScale(next);
     Transform.scale[selectedEntity][0] = next[0];

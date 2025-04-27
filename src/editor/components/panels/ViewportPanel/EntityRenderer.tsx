@@ -82,6 +82,14 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   let geometry = <boxGeometry args={[1, 1, 1]} />;
   if (meshType === 'Sphere') {
     geometry = <sphereGeometry args={[0.5, 32, 32]} />;
+  } else if (meshType === 'Cylinder') {
+    geometry = <cylinderGeometry args={[0.5, 0.5, 1, 32]} />;
+  } else if (meshType === 'Cone') {
+    geometry = <coneGeometry args={[0.5, 1, 32]} />;
+  } else if (meshType === 'Torus') {
+    geometry = <torusGeometry args={[0.5, 0.2, 16, 100]} />;
+  } else if (meshType === 'Plane') {
+    geometry = <planeGeometry args={[1, 1]} />;
   }
 
   // Compute outline transform: live during drag, ECS otherwise

@@ -1,13 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useECSQuery } from '@core/hooks/useECS';
-import {
-  MeshTypeEnum,
-  Transform,
-  createEntity,
-  destroyEntity,
-  updateMeshType,
-} from '@core/lib/ecs';
+import { MeshTypeEnum, Transform, createEntity, destroyEntity } from '@core/lib/ecs';
 
 import { AddObjectMenu } from './AddObjectMenu';
 import { HierarchyPanel } from './components/panels/HierarchyPanel/HierarchyPanel';
@@ -78,7 +72,6 @@ const Editor: React.FC = () => {
   }, [selectedId, entityIds, setSelectedId]);
 
   const handleAddObject = (type: 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane') => {
-    const entity = createEntity();
     let meshType: MeshTypeEnum;
     switch (type) {
       case 'Cube':
@@ -87,10 +80,22 @@ const Editor: React.FC = () => {
       case 'Sphere':
         meshType = MeshTypeEnum.Sphere;
         break;
+      case 'Cylinder':
+        meshType = MeshTypeEnum.Cylinder;
+        break;
+      case 'Cone':
+        meshType = MeshTypeEnum.Cone;
+        break;
+      case 'Torus':
+        meshType = MeshTypeEnum.Torus;
+        break;
+      case 'Plane':
+        meshType = MeshTypeEnum.Plane;
+        break;
       default:
         meshType = MeshTypeEnum.Cube;
     }
-    updateMeshType(entity, meshType);
+    const entity = createEntity(meshType);
     setSelectedId(entity);
     setStatusMessage(`Added new ${type}: ${entity}`);
     setShowAddMenu(false);

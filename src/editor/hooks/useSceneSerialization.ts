@@ -132,8 +132,7 @@ export function useSceneSerialization() {
     const { entities } = result.data;
     resetWorld();
     for (const entity of entities) {
-      const eid = createEntity();
-      MeshType.type[eid] = entity.meshType;
+      const eid = createEntity(entity.meshType);
       Transform.position[eid][0] = entity.transform.position[0];
       Transform.position[eid][1] = entity.transform.position[1];
       Transform.position[eid][2] = entity.transform.position[2];

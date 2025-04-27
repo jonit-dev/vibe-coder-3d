@@ -56,9 +56,13 @@ export const Velocity = defineComponent({
 export enum MeshTypeEnum {
   Cube = 0,
   Sphere = 1,
+  Cylinder = 2,
+  Cone = 3,
+  Torus = 4,
+  Plane = 5,
 }
 export const MeshType = defineComponent({
-  type: Types.ui8, // 0=Cube, 1=Sphere
+  type: Types.ui8, // 0=Cube, 1=Sphere, 2=Cylinder, 3=Cone, 4=Torus, 5=Plane
 });
 
 // Name component for entity naming
@@ -71,13 +75,13 @@ export const transformQuery = defineQuery([Transform]);
 export const velocityQuery = defineQuery([Transform, Velocity]);
 
 // Core entity functions
-export function createEntity() {
+export function createEntity(meshType: MeshTypeEnum = MeshTypeEnum.Cube) {
   const entity = addEntity(world);
 
   // Initialize default transform values
   addComponent(world, Transform, entity);
   addComponent(world, MeshType, entity);
-  MeshType.type[entity] = MeshTypeEnum.Cube;
+  MeshType.type[entity] = meshType;
 
   // Set default values
   Transform.position[entity][0] = 0;
