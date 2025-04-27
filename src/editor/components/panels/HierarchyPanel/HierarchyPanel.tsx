@@ -1,10 +1,16 @@
 import React from 'react';
+import { TbCube } from 'react-icons/tb';
 
 export interface IHierarchyPanelProps {
   entityIds: number[];
   selectedId: number | null;
   setSelectedId: (id: number) => void;
 }
+
+// Cube icon component (Unity-style, reused from AddObjectMenu)
+export const CubeIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <TbCube className={className} size={16} />
+);
 
 export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({
   entityIds,
@@ -21,10 +27,11 @@ export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({
           {entityIds.map((id) => (
             <li
               key={id}
-              className={`px-2 py-1 rounded cursor-pointer text-sm ${selectedId === id ? 'bg-blue-700 text-white' : 'hover:bg-[#333] text-gray-300'}`}
+              className={`px-2 py-1 rounded cursor-pointer text-sm flex items-center gap-2 ${selectedId === id ? 'bg-blue-700 text-white' : 'hover:bg-[#333] text-gray-300'}`}
               onClick={() => setSelectedId(id)}
             >
-              Entity {id}
+              <CubeIcon className="text-gray-400" />
+              <span>Entity {id}</span>
             </li>
           ))}
         </ul>

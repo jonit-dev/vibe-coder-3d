@@ -5,7 +5,7 @@ import { MeshType, MeshTypeEnum } from '@/core/lib/ecs';
  */
 export function getEntityMeshType(entityId: number): string {
   // Check if the entity exists and has a mesh component
-  if (!MeshType.type[entityId]) {
+  if (MeshType.type[entityId] === undefined) {
     return 'unknown';
   }
 

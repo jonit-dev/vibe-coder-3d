@@ -38,6 +38,8 @@ const Editor: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('Ready');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
 
   // Select first entity if nothing is selected and entities exist
   useEffect(() => {
@@ -46,13 +48,19 @@ const Editor: React.FC = () => {
     }
   }, [selectedId, entityIds]);
 
-  // Add new entity (Cube by default)
-  const handleAddObject = () => {
+  // Add new entity (with type)
+  const handleAddObject = (type: ShapeType = 'Cube') => {
     const entity = createEntity();
-    // Ensure the mesh type is set to cube explicitly
-    updateMeshType(entity, MeshTypeEnum.Cube);
+    updateMeshType(entity, type === 'Cube' ? MeshTypeEnum.Cube : MeshTypeEnum.Sphere);
     setSelectedId(entity);
-    setStatusMessage(`Added new entity: ${entity}`);
+    setStatusMessage(`Added new ${type}: ${entity}`);
+    // Logging for debugging
+    console.log('[AddObject] Added entity', { entity, type });
+    // Log current entity IDs
+    setTimeout(() => {
+      const currentIds = useECSQuery([Transform]);
+      console.log('[AddObject] Current entity IDs after add:', currentIds);
+    }, 100);
   };
 
   // Update transform (for now, just position)
@@ -117,6 +125,21 @@ const Editor: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedId, handleAddObject, handleSave]);
 
+  // Add a useEffect to close the menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (addButtonRef.current && !addButtonRef.current.contains(event.target as Node)) {
+        setShowAddMenu(false);
+      }
+    }
+    if (showAddMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAddMenu]);
+
   return (
     <div className="w-full h-screen flex flex-col bg-[#232323] text-white">
       <header className="p-2 bg-[#1a1a1a] border-b border-[#222] flex items-center shadow-sm justify-between">
@@ -128,9 +151,11 @@ const Editor: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <button
-            className="px-3 py-1 rounded bg-green-700 hover:bg-green-800 text-xs font-semibold"
-            onClick={handleAddObject}
+            ref={addButtonRef}
+            className="btn btn-success btn-sm font-semibold normal-case"
+            onClick={() => handleAddObject('Cube')}
             title="Add Object (Ctrl+N)"
+            type="button"
           >
             + Add Object
           </button>
@@ -173,7 +198,7 @@ const Editor: React.FC = () => {
         {selectedId != null ? (
           <>
             <ViewportPanel entityId={selectedId} />
-            <InspectorPanel entityId={selectedId} onTransformChange={handleTransformChange} />
+            <InspectorPanel selectedEntity={selectedId} onTransformChange={handleTransformChange} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-400 text-lg">
@@ -181,7 +206,7 @@ const Editor: React.FC = () => {
               <div className="mb-2">No entity selected or scene is empty.</div>
               <button
                 className="px-3 py-1 rounded bg-green-700 hover:bg-green-800 text-sm mt-2"
-                onClick={handleAddObject}
+                onClick={() => handleAddObject('Cube')}
               >
                 Add Object
               </button>

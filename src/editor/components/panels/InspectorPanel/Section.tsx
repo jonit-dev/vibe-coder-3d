@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-interface ISectionProps {
+export interface ISectionProps {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
@@ -15,7 +15,13 @@ export const Section: React.FC<ISectionProps> = ({ title, children, defaultOpen 
         onClick={() => setOpen((v) => !v)}
         type="button"
       >
-        <span className={`transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
+        <span className={`transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+          style={{ display: 'flex', alignItems: 'center' }}>
+          {/* Chevron SVG icon */}
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7 6L13 10L7 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
         <span>{title}</span>
       </button>
       {open && <div className="px-3 py-2">{children}</div>}
