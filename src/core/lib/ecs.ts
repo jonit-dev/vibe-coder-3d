@@ -5,6 +5,7 @@ import {
   createWorld,
   defineComponent,
   defineQuery,
+  hasComponent,
   removeComponent,
   removeEntity,
   Types,
@@ -18,12 +19,19 @@ export const world = createWorld();
 export const entityToObject = new Map<number, Object3D>();
 export const objectToEntity = new Map<Object3D, number>();
 
+// Force update flag to help components detect changes
+export let worldVersion = 0;
+export function incrementWorldVersion() {
+  worldVersion++;
+  return worldVersion;
+}
+
 // Basic component definitions
 export const Transform = defineComponent({
   // Position
   position: [Types.f32, 3],
-  // Rotation (as quaternion)
-  rotation: [Types.f32, 4],
+  // Rotation (as Euler angles)
+  rotation: [Types.f32, 3],
   // Scale
   scale: [Types.f32, 3],
   // Flag to mark when the transform needs to be applied to the Three.js object
@@ -44,6 +52,15 @@ export const Velocity = defineComponent({
   priority: Types.ui8,
 });
 
+// Mesh type enum and ECS component
+export enum MeshTypeEnum {
+  Cube = 0,
+  Sphere = 1,
+}
+export const MeshType = defineComponent({
+  type: Types.ui8, // 0=Cube, 1=Sphere
+});
+
 // Define queries
 export const transformQuery = defineQuery([Transform]);
 export const velocityQuery = defineQuery([Transform, Velocity]);
@@ -54,6 +71,8 @@ export function createEntity() {
 
   // Initialize default transform values
   addComponent(world, Transform, entity);
+  addComponent(world, MeshType, entity);
+  MeshType.type[entity] = MeshTypeEnum.Cube;
 
   // Set default values
   Transform.position[entity][0] = 0;
@@ -63,13 +82,15 @@ export function createEntity() {
   Transform.rotation[entity][0] = 0;
   Transform.rotation[entity][1] = 0;
   Transform.rotation[entity][2] = 0;
-  Transform.rotation[entity][3] = 1; // w component of quaternion
 
   Transform.scale[entity][0] = 1;
   Transform.scale[entity][1] = 1;
   Transform.scale[entity][2] = 1;
 
   Transform.needsUpdate[entity] = 1; // Mark for update
+
+  // Force world version update to notify queries
+  incrementWorldVersion();
 
   return entity;
 }
@@ -104,6 +125,7 @@ export function addVelocity(
   // Set update priority (higher = more frequent updates)
   Velocity.priority[entity] = options?.priority !== undefined ? options.priority : 1;
 
+  incrementWorldVersion();
   return entity;
 }
 
@@ -115,9 +137,22 @@ export function destroyEntity(entity: number) {
     objectToEntity.delete(object);
   }
 
-  // Remove from ECS world
-  removeComponent(world, Transform, entity);
+  // Remove all components but keep entity in the world
+  if (hasComponent(world, Transform, entity)) {
+    removeComponent(world, Transform, entity);
+  }
+
+  if (hasComponent(world, MeshType, entity)) {
+    removeComponent(world, MeshType, entity);
+  }
+
+  if (hasComponent(world, Velocity, entity)) {
+    removeComponent(world, Velocity, entity);
+  }
+
+  // Finally remove the entity
   removeEntity(world, entity);
+  incrementWorldVersion();
 }
 
 export function resetWorld() {
@@ -128,6 +163,7 @@ export function resetWorld() {
   // Create a new world (bitECS doesn't have a built-in reset)
   const newWorld = createWorld();
   Object.assign(world, newWorld);
+  incrementWorldVersion();
 }
 
 // Helper to mark all transforms for update
@@ -140,5 +176,25 @@ export function markAllTransformsForUpdate() {
     Transform.needsUpdate[entity] = 1;
   });
 
+  incrementWorldVersion();
   return entities.length;
+}
+
+// Add this new function to safely update mesh type
+export function updateMeshType(entity: number, meshType: MeshTypeEnum) {
+  // Ensure entity has MeshType component
+  if (!hasComponent(world, MeshType, entity)) {
+    addComponent(world, MeshType, entity);
+  }
+
+  // Update the mesh type
+  MeshType.type[entity] = meshType;
+
+  // If there's a transform, mark it for update
+  if (hasComponent(world, Transform, entity)) {
+    Transform.needsUpdate[entity] = 1;
+  }
+
+  incrementWorldVersion();
+  return entity;
 }

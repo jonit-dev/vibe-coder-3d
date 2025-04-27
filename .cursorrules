@@ -9,3 +9,5 @@
 ## CRITICAL RULES
 
 - Stop asking to do changes. DO IT, I trust you. I'll review later.
+- When uncertain about how something works, call Context7 tool, which will pull related docs.
+- Favor named exports over default exports.

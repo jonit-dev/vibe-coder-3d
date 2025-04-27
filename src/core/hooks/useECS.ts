@@ -1,8 +1,8 @@
 // Hook for accessing the ECS world and functionality
 import { addComponent, defineQuery, hasComponent, IWorld, removeComponent } from 'bitecs';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { createEntity, destroyEntity, world } from '../lib/ecs';
+import { createEntity, destroyEntity, world, worldVersion } from '../lib/ecs';
 
 /**
  * Hook that provides access to the ECS world and helper functions
@@ -56,8 +56,26 @@ export function useECS() {
  * @returns Array of entity IDs matching the query
  */
 export function useECSQuery(components: any[]) {
+  // Add a state to force re-render when needed
+  const [forceUpdate, setForceUpdate] = useState(0);
+  // Track world version to detect changes
+  const [lastWorldVersion, setLastWorldVersion] = useState(worldVersion);
+
   // Create a memoized query function
   const query = useMemo(() => defineQuery(components), [components]);
+
+  // Set up an interval to refresh the query periodically
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Check if world version has changed
+      if (lastWorldVersion !== worldVersion) {
+        setLastWorldVersion(worldVersion);
+        setForceUpdate((prev) => prev + 1);
+      }
+    }, 100); // Refresh 10 times per second
+
+    return () => clearInterval(intervalId);
+  }, [lastWorldVersion]);
 
   // Return the result of running the query against the world
   return query(world);
