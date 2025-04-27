@@ -13,4 +13,4 @@ export const Card: React.FC<ICardProps> = ({ title, children, className }) => (
       {children}
     </div>
   </div>
-); 
+);

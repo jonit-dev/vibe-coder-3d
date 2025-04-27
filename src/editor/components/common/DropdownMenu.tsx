@@ -8,9 +8,17 @@ export interface IDropdownMenuProps {
   children: React.ReactNode;
 }
 
-export const DropdownMenu: React.FC<IDropdownMenuProps> = ({ anchorRef, open, onClose, children }) => {
+export const DropdownMenu: React.FC<IDropdownMenuProps> = ({
+  anchorRef,
+  open,
+  onClose,
+  children,
+}) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [style, setStyle] = React.useState<React.CSSProperties>({ visibility: 'hidden', pointerEvents: 'none' });
+  const [style, setStyle] = React.useState<React.CSSProperties>({
+    visibility: 'hidden',
+    pointerEvents: 'none',
+  });
 
   useEffect(() => {
     if (open && anchorRef.current && menuRef.current) {
@@ -62,6 +70,6 @@ export const DropdownMenu: React.FC<IDropdownMenuProps> = ({ anchorRef, open, on
     >
       {children}
     </div>,
-    document.body
+    document.body,
   );
-}; 
+};
