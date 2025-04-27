@@ -63,7 +63,7 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedEntity 
         Transform.scale[selectedEntity][1],
         Transform.scale[selectedEntity][2],
       ]);
-    }, 100);
+    }, 16);
 
     return () => clearInterval(intervalId);
   }, [selectedEntity, meshType]);
