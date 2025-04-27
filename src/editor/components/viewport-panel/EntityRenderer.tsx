@@ -1,17 +1,21 @@
-import { Edges, TransformControls } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
-import React, { useEffect, useRef, useState } from 'react';
+import { TransformControls } from '@react-three/drei';
+import { useFrame, useThree } from '@react-three/fiber';
+import React, { useEffect, useRef } from 'react';
+import { Object3D } from 'three';
 
-import { MeshType, MeshTypeEnum, Transform } from '@core/lib/ecs';
+import { Transform } from '@/core/lib/ecs';
+
+import { getEntityMeshType } from '../../../core/helpers/meshUtils';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
-interface IEntityRendererProps {
+export interface IEntityRendererProps {
   entityId: number;
   selected: boolean;
   mode: GizmoMode;
   onTransformChange?: (values: [number, number, number]) => void;
-  setIsTransforming?: (dragging: boolean) => void;
+  setIsTransforming?: (isTransforming: boolean) => void;
+  setGizmoMode?: (mode: GizmoMode) => void;
 }
 
 const EntityRenderer: React.FC<IEntityRendererProps> = ({
@@ -20,118 +24,148 @@ const EntityRenderer: React.FC<IEntityRendererProps> = ({
   mode,
   onTransformChange,
   setIsTransforming,
+  setGizmoMode,
 }) => {
-  const [version, setVersion] = useState(0);
-  const meshRef = useRef<any>(null);
+  const meshType = getEntityMeshType(entityId);
+  const meshRef = useRef<Object3D>(null);
   const transformRef = useRef<any>(null);
+  useThree(); // just to ensure we are inside Canvas
 
-  // Listen for dragging-changed event
+  // Handle keyboard shortcuts for gizmo mode switching
   useEffect(() => {
-    if (!selected || !setIsTransforming) return;
-    const controls = transformRef.current;
-    if (!controls) return;
-    const callback = (event: any) => setIsTransforming(event.value);
-    controls.addEventListener('dragging-changed', callback);
-    return () => controls.removeEventListener('dragging-changed', callback);
-  }, [selected, setIsTransforming]);
+    if (!selected || !setGizmoMode) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'w' || e.key === 'W') setGizmoMode('translate');
+      else if (e.key === 'e' || e.key === 'E') setGizmoMode('rotate');
+      else if (e.key === 'r' || e.key === 'R') setGizmoMode('scale');
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selected, setGizmoMode]);
 
-  // Force re-render on every frame to reflect ECS changes
-  useFrame(() => {
-    setVersion((v) => v + 1);
-  });
-
-  // Safety check - if position/rotation/scale arrays are undefined, return null
-  if (
-    !Transform.position[entityId] ||
-    !Transform.rotation[entityId] ||
-    !Transform.scale[entityId]
-  ) {
-    return null;
-  }
-
-  // Extract transform from ECS
-  const position = [
+  // Read transform from ECS
+  const position: [number, number, number] = [
     Transform.position[entityId][0],
     Transform.position[entityId][1],
     Transform.position[entityId][2],
   ];
-
-  const rotation = [
+  const rotation: [number, number, number] = [
     Transform.rotation[entityId][0],
     Transform.rotation[entityId][1],
     Transform.rotation[entityId][2],
   ];
-
-  const scale = [
+  const scale: [number, number, number] = [
     Transform.scale[entityId][0],
     Transform.scale[entityId][1],
     Transform.scale[entityId][2],
   ];
 
-  // Safety check - if MeshType is undefined, default to cube
-  const meshType =
-    MeshType.type[entityId] !== undefined ? MeshType.type[entityId] : MeshTypeEnum.Cube;
+  // Sync mesh transform from ECS
+  useFrame(() => {
+    if (meshRef.current) {
+      meshRef.current.position.set(...position);
+      meshRef.current.rotation.set(
+        rotation[0] * (Math.PI / 180),
+        rotation[1] * (Math.PI / 180),
+        rotation[2] * (Math.PI / 180),
+      );
+      meshRef.current.scale.set(...scale);
+    }
+  });
 
-  // Handler for transform changes from TransformControls
+  // Handle gizmo transform changes
   const handleObjectChange = () => {
-    if (meshRef.current && onTransformChange) {
+    if (!meshRef.current) return;
+    if (mode === 'translate') {
+      Transform.position[entityId][0] = meshRef.current.position.x;
+      Transform.position[entityId][1] = meshRef.current.position.y;
+      Transform.position[entityId][2] = meshRef.current.position.z;
+    } else if (mode === 'rotate') {
+      // Convert radians to degrees
+      Transform.rotation[entityId][0] = meshRef.current.rotation.x * (180 / Math.PI);
+      Transform.rotation[entityId][1] = meshRef.current.rotation.y * (180 / Math.PI);
+      Transform.rotation[entityId][2] = meshRef.current.rotation.z * (180 / Math.PI);
+    } else if (mode === 'scale') {
+      Transform.scale[entityId][0] = meshRef.current.scale.x;
+      Transform.scale[entityId][1] = meshRef.current.scale.y;
+      Transform.scale[entityId][2] = meshRef.current.scale.z;
+    }
+    Transform.needsUpdate[entityId] = 1;
+    if (onTransformChange) {
       if (mode === 'translate') {
-        const pos = meshRef.current.position;
-        onTransformChange([pos.x, pos.y, pos.z]);
+        onTransformChange([
+          meshRef.current.position.x,
+          meshRef.current.position.y,
+          meshRef.current.position.z,
+        ]);
       } else if (mode === 'rotate') {
-        const rot = meshRef.current.rotation;
-        onTransformChange([rot.x, rot.y, rot.z]);
+        onTransformChange([
+          meshRef.current.rotation.x * (180 / Math.PI),
+          meshRef.current.rotation.y * (180 / Math.PI),
+          meshRef.current.rotation.z * (180 / Math.PI),
+        ]);
       } else if (mode === 'scale') {
-        const scl = meshRef.current.scale;
-        onTransformChange([scl.x, scl.y, scl.z]);
+        onTransformChange([
+          meshRef.current.scale.x,
+          meshRef.current.scale.y,
+          meshRef.current.scale.z,
+        ]);
       }
     }
   };
 
-  const mesh = (
-    <mesh
-      ref={meshRef}
-      position={position as [number, number, number]}
-      rotation={rotation as [number, number, number]}
-      scale={scale as [number, number, number]}
-      castShadow
-    >
-      {meshType === MeshTypeEnum.Cube ? (
-        <>
-          <boxGeometry args={[1, 1, 1]} />
-          {selected && <Edges scale={1.05} color="orange" threshold={15} />}
-        </>
-      ) : meshType === MeshTypeEnum.Sphere ? (
-        <>
-          <sphereGeometry args={[0.5, 32, 32]} />
-          {selected && <Edges scale={1.05} color="orange" threshold={15} />}
-        </>
-      ) : (
-        <>
-          <boxGeometry args={[1, 1, 1]} />
-          {selected && <Edges scale={1.05} color="orange" threshold={15} />}
-        </>
-      )}
-      <meshStandardMaterial color="#3399ff" />
-    </mesh>
-  );
-
-  // Only wrap in TransformControls if selected
-  if (selected) {
-    return (
-      <TransformControls
-        ref={transformRef}
-        mode={mode}
-        showX
-        showY
-        showZ
-        onObjectChange={handleObjectChange}
-      >
-        {mesh}
-      </TransformControls>
-    );
+  // Geometry selection
+  let geometry = <boxGeometry args={[1, 1, 1]} />;
+  if (meshType === 'Sphere') {
+    geometry = <sphereGeometry args={[0.5, 32, 32]} />;
   }
-  return mesh;
+
+  return (
+    <group>
+      <mesh ref={meshRef} castShadow receiveShadow userData={{ entityId }}>
+        {geometry}
+        <meshStandardMaterial color="#ffffff" />
+      </mesh>
+      {selected && meshRef.current && (
+        <TransformControls
+          ref={transformRef}
+          object={meshRef.current}
+          mode={mode}
+          size={0.75}
+          showX={true}
+          showY={true}
+          showZ={true}
+          translationSnap={0.25}
+          rotationSnap={Math.PI / 24}
+          scaleSnap={0.1}
+          onObjectChange={handleObjectChange}
+          onMouseDown={() => setIsTransforming && setIsTransforming(true)}
+          onMouseUp={() => setIsTransforming && setIsTransforming(false)}
+          onUpdate={() => {
+            // Force the gizmo to render above other objects
+            const control = transformRef.current as any;
+            if (control && control.children) {
+              control.children.forEach((child: any) => {
+                if (child.isTransformControlsGizmo) {
+                  child.renderOrder = 999;
+                  child.children.forEach((gizmoPart: any) => {
+                    gizmoPart.renderOrder = 1000;
+                  });
+                }
+              });
+            }
+          }}
+        />
+      )}
+      {/* Selection outline when selected */}
+      {selected && (
+        <mesh position={position} scale={scale.map((s) => s + 0.05) as [number, number, number]}>
+          {geometry}
+          <meshBasicMaterial color="#4488ff" wireframe transparent opacity={0.5} />
+        </mesh>
+      )}
+    </group>
+  );
 };
 
 export default EntityRenderer;
