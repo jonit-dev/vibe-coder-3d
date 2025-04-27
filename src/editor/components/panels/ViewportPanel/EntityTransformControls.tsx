@@ -11,7 +11,7 @@ interface IEntityTransformControlsProps {
   children: React.ReactNode;
 }
 
-const EntityTransformControls: React.FC<IEntityTransformControlsProps> = ({
+export const EntityTransformControls: React.FC<IEntityTransformControlsProps> = ({
   selected,
   mode,
   onObjectChange,
@@ -45,5 +45,3 @@ const EntityTransformControls: React.FC<IEntityTransformControlsProps> = ({
     </TransformControls>
   );
 };
-
-export default EntityTransformControls;

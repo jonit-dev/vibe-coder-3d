@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useECSQuery } from '@core/hooks/useECS';
 import { Transform } from '@core/lib/ecs';
 
-import EntityRenderer from './EntityRenderer';
+import { EntityRenderer } from './EntityRenderer';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -13,7 +13,7 @@ export interface IViewportPanelProps {
   entityId: number; // selected entity
 }
 
-const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
+export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
   // Get all entities with a Transform
   const entityIds = useECSQuery([Transform]);
 
@@ -132,5 +132,3 @@ const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
     </section>
   );
 };
-
-export default ViewportPanel;

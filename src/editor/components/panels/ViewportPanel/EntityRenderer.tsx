@@ -3,8 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Object3D } from 'three';
 
 import { Transform } from '@/core/lib/ecs';
-
-import { getEntityMeshType } from '../../../core/helpers/meshUtils';
+import { getEntityMeshType } from '@core/helpers/meshUtils';
 
 import { GizmoControls } from './GizmoControls';
 
@@ -19,7 +18,7 @@ export interface IEntityRendererProps {
   setIsTransforming?: (isTransforming: boolean) => void;
 }
 
-const EntityRenderer: React.FC<IEntityRendererProps> = ({
+export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   entityId,
   selected,
   mode,
@@ -130,5 +129,3 @@ const EntityRenderer: React.FC<IEntityRendererProps> = ({
     </group>
   );
 };
-
-export default EntityRenderer;

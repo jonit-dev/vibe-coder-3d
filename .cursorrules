@@ -11,3 +11,5 @@
 - Stop asking to do changes. DO IT, I trust you. I'll review later.
 - When uncertain about how something works, call Context7 tool, which will pull related docs.
 - Favor named exports over default exports.
+- Do not create index.ts files solely to export components. Use named exports instead.
+- export at the beginning of component, like `export const MyComponentHere`

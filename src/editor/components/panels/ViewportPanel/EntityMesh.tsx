@@ -12,7 +12,7 @@ interface IEntityMeshProps {
   children?: React.ReactNode; // for edges
 }
 
-const EntityMesh = forwardRef<any, IEntityMeshProps>(
+export const EntityMesh = forwardRef<any, IEntityMeshProps>(
   ({ meshType, meshRef, position, rotation, scale, children }, _ref) => (
     <mesh ref={meshRef} position={position} rotation={rotation} scale={scale} castShadow>
       {meshType === MeshTypeEnum.Cube ? (
@@ -27,5 +27,3 @@ const EntityMesh = forwardRef<any, IEntityMeshProps>(
     </mesh>
   ),
 );
-
-export default EntityMesh;

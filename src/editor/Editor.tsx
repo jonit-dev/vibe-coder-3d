@@ -9,9 +9,9 @@ import {
   updateMeshType,
 } from '@core/lib/ecs';
 
-import HierarchyPanel from './components/hierarchy-panel/HierarchyPanel';
-import InspectorPanel from './components/inspector/InspectorPanel';
-import ViewportPanel from './components/viewport-panel/ViewportPanel';
+import { HierarchyPanel } from './components/panels/HierarchyPanel/HierarchyPanel';
+import { InspectorPanel } from './components/panels/InspectorPanel/InspectorPanel';
+import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 
 export interface ITransform {
   position: [number, number, number];

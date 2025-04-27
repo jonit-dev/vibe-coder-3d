@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { getEntityMeshType } from '@/core/helpers/meshUtils';
 import { MeshTypeEnum, Transform, updateMeshType } from '@/core/lib/ecs';
 
-import TransformFields from './inspector/TransformFields';
+import { TransformFields } from './panels/InspectorPanel/TransformFields/TransformFields';
 
 interface IInspectorPanelProps {
   selectedEntity: number | null;

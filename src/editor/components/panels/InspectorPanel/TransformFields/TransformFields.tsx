@@ -1,0 +1,83 @@
+import React, { useCallback, useEffect, useState } from 'react';
+
+import { AxisInput } from './AxisInput';
+import { axisColors } from './axisColors';
+import { useDragAxis } from './useDragAxis';
+
+export interface ITransformFieldsProps {
+  label: string;
+  value: [number, number, number];
+  onChange: (next: [number, number, number]) => void;
+}
+
+export const TransformFields: React.FC<ITransformFieldsProps> = ({ label, value, onChange }) => {
+  const [localValues, setLocalValues] = useState<[number, number, number]>([...value]);
+
+  useEffect(() => {
+    setLocalValues([...value]);
+  }, [value]);
+
+  const handleInputChange = useCallback(
+    (idx: number, val: number) => {
+      if (isNaN(val)) return;
+      const next: [number, number, number] = [...localValues];
+      next[idx] = val;
+      setLocalValues(next);
+      onChange(next);
+    },
+    [localValues, onChange],
+  );
+
+  const handleReset = useCallback(
+    (idx: number) => {
+      const defaultVal = label === 'Scale' ? 1 : 0;
+      const next: [number, number, number] = [...localValues];
+      next[idx] = defaultVal;
+      setLocalValues(next);
+      onChange(next);
+    },
+    [label, localValues, onChange],
+  );
+
+  // Sensitivity for drag
+  const sensitivity = label === 'Scale' ? 0.01 : 0.1;
+
+  return (
+    <div className="mb-3">
+      {/* Label */}
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-xs text-gray-300 font-medium">{label}</span>
+        <button
+          className="text-[10px] text-gray-400 hover:text-white bg-[#444] hover:bg-[#555] rounded px-1"
+          onClick={() => {
+            const defaultVals: [number, number, number] = label === 'Scale' ? [1, 1, 1] : [0, 0, 0];
+            setLocalValues(defaultVals);
+            onChange(defaultVals);
+          }}
+        >
+          Reset
+        </button>
+      </div>
+      {(['x', 'y', 'z'] as const).map((axis, idx) => {
+        const { dragActive, onDragStart } = useDragAxis(
+          localValues[idx],
+          (val) => handleInputChange(idx, val),
+          sensitivity,
+        );
+        return (
+          <AxisInput
+            key={axis}
+            axis={axis.toUpperCase()}
+            color={axisColors[axis]}
+            value={localValues[idx]}
+            onChange={(val) => handleInputChange(idx, val)}
+            onDragStart={onDragStart}
+            onReset={() => handleReset(idx)}
+            step={label === 'Scale' ? 0.1 : 0.01}
+            dragActive={dragActive}
+          />
+        );
+      })}
+    </div>
+  );
+};

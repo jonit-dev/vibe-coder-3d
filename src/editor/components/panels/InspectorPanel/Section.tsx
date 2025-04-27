@@ -6,7 +6,7 @@ interface ISectionProps {
   defaultOpen?: boolean;
 }
 
-const Section: React.FC<ISectionProps> = ({ title, children, defaultOpen = true }) => {
+export const Section: React.FC<ISectionProps> = ({ title, children, defaultOpen = true }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border-b border-[#333]">
@@ -22,5 +22,3 @@ const Section: React.FC<ISectionProps> = ({ title, children, defaultOpen = true 
     </div>
   );
 };
-
-export default Section;

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { MeshType, MeshTypeEnum, Transform, updateMeshType } from '@core/lib/ecs';
 
-import TransformFields from './TransformFields';
+import { TransformFields } from './TransformFields/TransformFields';
 
 export interface IInspectorPanelProps {
   entityId: number;
@@ -17,7 +17,7 @@ const sectionTitle =
   'text-xs uppercase text-gray-400 font-semibold pb-1 mb-3 border-b border-gray-700';
 const fieldLabel = 'text-xs text-gray-300 w-20 mb-1';
 
-const InspectorPanel: React.FC<IInspectorPanelProps> = ({ entityId, onTransformChange }) => {
+export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ entityId, onTransformChange }) => {
   // Store local copies of ECS data to detect changes
   const [localState, setLocalState] = useState({
     position: [0, 0, 0] as [number, number, number],
@@ -121,7 +121,7 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ entityId, onTransformC
           <TransformFields
             label="Position"
             value={localState.position}
-            onChange={(next) => {
+            onChange={(next: [number, number, number]) => {
               onTransformChange({
                 position: next,
                 rotation: localState.rotation,
@@ -133,7 +133,7 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ entityId, onTransformC
           <TransformFields
             label="Rotation"
             value={localState.rotation}
-            onChange={(next) => {
+            onChange={(next: [number, number, number]) => {
               onTransformChange({
                 position: localState.position,
                 rotation: next,
@@ -145,7 +145,7 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ entityId, onTransformC
           <TransformFields
             label="Scale"
             value={localState.scale}
-            onChange={(next) => {
+            onChange={(next: [number, number, number]) => {
               onTransformChange({
                 position: localState.position,
                 rotation: localState.rotation,
@@ -168,5 +168,3 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ entityId, onTransformC
     </aside>
   );
 };
-
-export default InspectorPanel;
