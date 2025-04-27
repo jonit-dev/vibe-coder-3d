@@ -13,7 +13,7 @@ interface IEntityMeshProps {
 }
 
 const EntityMesh = forwardRef<any, IEntityMeshProps>(
-  ({ meshType, selected, meshRef, position, rotation, scale, children }, ref) => (
+  ({ meshType, meshRef, position, rotation, scale, children }, _ref) => (
     <mesh ref={meshRef} position={position} rotation={rotation} scale={scale} castShadow>
       {meshType === MeshTypeEnum.Cube ? (
         <boxGeometry args={[1, 1, 1]} />

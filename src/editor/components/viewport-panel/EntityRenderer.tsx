@@ -1,5 +1,5 @@
 import { useFrame, useThree } from '@react-three/fiber';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Object3D } from 'three';
 
 import { Transform } from '@/core/lib/ecs';
@@ -15,8 +15,8 @@ export interface IEntityRendererProps {
   selected: boolean;
   mode: GizmoMode;
   onTransformChange?: (values: [number, number, number]) => void;
-  setIsTransforming?: (isTransforming: boolean) => void;
   setGizmoMode?: (mode: GizmoMode) => void;
+  setIsTransforming?: (isTransforming: boolean) => void;
 }
 
 const EntityRenderer: React.FC<IEntityRendererProps> = ({
@@ -24,12 +24,12 @@ const EntityRenderer: React.FC<IEntityRendererProps> = ({
   selected,
   mode,
   onTransformChange,
-  setIsTransforming,
   setGizmoMode,
+  setIsTransforming,
 }) => {
   const meshType = getEntityMeshType(entityId);
   const meshRef = useRef<Object3D>(null);
-  const transformRef = useRef<any>(null);
+  const [isTransformingLocal, setIsTransformingLocal] = useState(false);
   useThree();
 
   // Handle keyboard shortcuts for gizmo mode switching
@@ -63,7 +63,7 @@ const EntityRenderer: React.FC<IEntityRendererProps> = ({
 
   // Sync mesh transform from ECS
   useFrame(() => {
-    if (meshRef.current) {
+    if (meshRef.current && !isTransformingLocal) {
       meshRef.current.position.set(position[0], position[1], position[2]);
       meshRef.current.rotation.set(
         rotation[0] * (Math.PI / 180),
@@ -80,6 +80,26 @@ const EntityRenderer: React.FC<IEntityRendererProps> = ({
     geometry = <sphereGeometry args={[0.5, 32, 32]} />;
   }
 
+  // Compute outline position/scale: live during drag, ECS otherwise
+  let outlinePosition: [number, number, number] = position;
+  let outlineScale: [number, number, number] = scale.map((s) => s + 0.05) as [
+    number,
+    number,
+    number,
+  ];
+  if (isTransformingLocal && meshRef.current) {
+    outlinePosition = [
+      meshRef.current.position.x,
+      meshRef.current.position.y,
+      meshRef.current.position.z,
+    ];
+    outlineScale = [
+      meshRef.current.scale.x + 0.05,
+      meshRef.current.scale.y + 0.05,
+      meshRef.current.scale.z + 0.05,
+    ];
+  }
+
   return (
     <group>
       <mesh ref={meshRef} castShadow receiveShadow userData={{ entityId }}>
@@ -87,19 +107,22 @@ const EntityRenderer: React.FC<IEntityRendererProps> = ({
         <meshStandardMaterial color="#ffffff" />
       </mesh>
 
-      {selected && meshRef.current && (
+      {selected && (
         <GizmoControls
           meshRef={meshRef}
           mode={mode}
           entityId={entityId}
           onTransformChange={onTransformChange}
-          setIsTransforming={setIsTransforming}
+          setIsTransforming={(val) => {
+            setIsTransformingLocal(val);
+            if (setIsTransforming) setIsTransforming(val);
+          }}
         />
       )}
 
       {/* Selection outline when selected */}
       {selected && (
-        <mesh position={position} scale={scale.map((s) => s + 0.05) as [number, number, number]}>
+        <mesh position={outlinePosition} scale={outlineScale}>
           {geometry}
           <meshBasicMaterial color="#4488ff" wireframe transparent opacity={0.5} />
         </mesh>

@@ -14,6 +14,40 @@ export interface IGizmoControlsProps {
   setIsTransforming?: (isTransforming: boolean) => void;
 }
 
+function updateEcsFromMesh(
+  mesh: Object3D,
+  mode: GizmoMode,
+  entityId: number,
+  onTransformChange?: (values: [number, number, number]) => void,
+) {
+  if (mode === 'translate') {
+    Transform.position[entityId][0] = mesh.position.x;
+    Transform.position[entityId][1] = mesh.position.y;
+    Transform.position[entityId][2] = mesh.position.z;
+    if (onTransformChange) {
+      onTransformChange([mesh.position.x, mesh.position.y, mesh.position.z]);
+    }
+  } else if (mode === 'rotate') {
+    const xDeg = mesh.rotation.x * (180 / Math.PI);
+    const yDeg = mesh.rotation.y * (180 / Math.PI);
+    const zDeg = mesh.rotation.z * (180 / Math.PI);
+    Transform.rotation[entityId][0] = xDeg;
+    Transform.rotation[entityId][1] = yDeg;
+    Transform.rotation[entityId][2] = zDeg;
+    if (onTransformChange) {
+      onTransformChange([xDeg, yDeg, zDeg]);
+    }
+  } else if (mode === 'scale') {
+    Transform.scale[entityId][0] = mesh.scale.x;
+    Transform.scale[entityId][1] = mesh.scale.y;
+    Transform.scale[entityId][2] = mesh.scale.z;
+    if (onTransformChange) {
+      onTransformChange([mesh.scale.x, mesh.scale.y, mesh.scale.z]);
+    }
+  }
+  Transform.needsUpdate[entityId] = 1;
+}
+
 export const GizmoControls: React.FC<IGizmoControlsProps> = ({
   meshRef,
   mode,
@@ -36,40 +70,11 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = ({
           scaleSnap={0.1}
           onObjectChange={() => {
             if (!meshRef.current) return;
-            if (mode === 'translate') {
-              Transform.position[entityId][0] = meshRef.current.position.x;
-              Transform.position[entityId][1] = meshRef.current.position.y;
-              Transform.position[entityId][2] = meshRef.current.position.z;
-              if (onTransformChange) {
-                onTransformChange([
-                  meshRef.current.position.x,
-                  meshRef.current.position.y,
-                  meshRef.current.position.z,
-                ]);
-              }
-            } else if (mode === 'rotate') {
-              const xDeg = meshRef.current.rotation.x * (180 / Math.PI);
-              const yDeg = meshRef.current.rotation.y * (180 / Math.PI);
-              const zDeg = meshRef.current.rotation.z * (180 / Math.PI);
-              Transform.rotation[entityId][0] = xDeg;
-              Transform.rotation[entityId][1] = yDeg;
-              Transform.rotation[entityId][2] = zDeg;
-              if (onTransformChange) {
-                onTransformChange([xDeg, yDeg, zDeg]);
-              }
-            } else if (mode === 'scale') {
-              Transform.scale[entityId][0] = meshRef.current.scale.x;
-              Transform.scale[entityId][1] = meshRef.current.scale.y;
-              Transform.scale[entityId][2] = meshRef.current.scale.z;
-              if (onTransformChange) {
-                onTransformChange([
-                  meshRef.current.scale.x,
-                  meshRef.current.scale.y,
-                  meshRef.current.scale.z,
-                ]);
-              }
-            }
-            Transform.needsUpdate[entityId] = 1;
+            updateEcsFromMesh(meshRef.current, mode, entityId, onTransformChange);
+          }}
+          onChange={() => {
+            if (!meshRef.current) return;
+            updateEcsFromMesh(meshRef.current, mode, entityId, onTransformChange);
           }}
           onMouseDown={() => setIsTransforming && setIsTransforming(true)}
           onMouseUp={() => setIsTransforming && setIsTransforming(false)}

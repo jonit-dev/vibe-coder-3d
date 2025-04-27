@@ -56,8 +56,6 @@ export function useECS() {
  * @returns Array of entity IDs matching the query
  */
 export function useECSQuery(components: any[]) {
-  // Add a state to force re-render when needed
-  const [forceUpdate, setForceUpdate] = useState(0);
   // Track world version to detect changes
   const [lastWorldVersion, setLastWorldVersion] = useState(worldVersion);
 
@@ -70,7 +68,6 @@ export function useECSQuery(components: any[]) {
       // Check if world version has changed
       if (lastWorldVersion !== worldVersion) {
         setLastWorldVersion(worldVersion);
-        setForceUpdate((prev) => prev + 1);
       }
     }, 100); // Refresh 10 times per second
 

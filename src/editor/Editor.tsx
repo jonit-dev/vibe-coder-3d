@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useECS, useECSQuery } from '@core/hooks/useECS';
+import { useECSQuery } from '@core/hooks/useECS';
 import {
   MeshTypeEnum,
   Transform,
@@ -33,7 +33,6 @@ export interface ISceneObject {
 }
 
 const Editor: React.FC = () => {
-  const { world } = useECS();
   // Query for all entities with a Transform (could extend to Name, etc.)
   const entityIds = useECSQuery([Transform]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
