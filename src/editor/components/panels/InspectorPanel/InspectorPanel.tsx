@@ -176,6 +176,10 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
               {getEntityName(selectedEntity) || `Entity ${selectedEntity}`}
             </span>
           </div>
+        </div>
+
+        {/* Mesh Type Section */}
+        <Collapsible title="Mesh Type" defaultOpen>
           <div className="form-control mb-1">
             <label className="label py-1">
               <span className="label-text text-xs font-medium">Mesh Type</span>
@@ -192,7 +196,7 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
               <option value="Sphere">Sphere</option>
             </select>
           </div>
-        </div>
+        </Collapsible>
 
         {/* Transform Section */}
         <Collapsible title="Transform" defaultOpen>
