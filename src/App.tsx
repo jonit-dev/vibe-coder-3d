@@ -1,6 +1,6 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
-import Editor from '@/components/Editor';
+import Editor from '@/editor/Editor';
 import { MainScene } from '@/game/scenes/MainScene';
 
 /**

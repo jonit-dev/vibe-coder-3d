@@ -4,7 +4,8 @@
 - Promote Single Responsibility Principle, DRY, KISS principles.
 - Prefix interfaces with I
 - Use cursor running command tools when needed.
-
+- Dont dump a lot of code into a single, favor small components in separate files to promote SRP
 
 ## CRITICAL RULES
+
 - Stop asking to do changes. DO IT, I trust you. I'll review later.
