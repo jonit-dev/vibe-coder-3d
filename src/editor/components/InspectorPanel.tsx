@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import type { ISceneObject } from '../Editor';
+
+import Section from './inspector/Section';
+import TransformFields from './inspector/TransformFields';
 
 export interface IInspectorPanelProps {
   selectedObject: ISceneObject | undefined;
@@ -11,30 +14,7 @@ export interface IInspectorPanelProps {
   }) => void;
 }
 
-const Section: React.FC<{
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}> = ({ title, children, defaultOpen = true }) => {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="border-b border-[#333]">
-      <button
-        className="w-full flex items-center gap-2 px-2 py-1 bg-[#23272e] hover:bg-[#292d33] text-xs font-bold text-gray-200 uppercase tracking-wider select-none"
-        onClick={() => setOpen((v) => !v)}
-        type="button"
-      >
-        <span className={`transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
-        <span>{title}</span>
-      </button>
-      {open && <div className="px-3 py-2">{children}</div>}
-    </div>
-  );
-};
-
 const label = 'text-xs text-gray-300 w-20';
-const input =
-  'bg-[#181a1b] border border-[#333] rounded px-2 py-1 text-xs text-white w-16 focus:outline-none focus:ring-2 focus:ring-blue-600';
 
 const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTransformChange }) => {
   if (!selectedObject) {
@@ -47,23 +27,6 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTran
 
   const { position, rotation, scale } = selectedObject.components.Transform;
 
-  // Handle transform input changes
-  const handleTransformInput = (
-    type: 'position' | 'rotation' | 'scale',
-    idx: number,
-    value: string,
-  ) => {
-    const parsed = parseFloat(value);
-    if (isNaN(parsed)) return;
-    const next = {
-      position: [...position] as [number, number, number],
-      rotation: [...rotation] as [number, number, number],
-      scale: [...scale] as [number, number, number],
-    };
-    next[type][idx] = parsed;
-    onTransformChange(next);
-  };
-
   return (
     <aside className="w-80 bg-[#23272e] flex-shrink-0 flex flex-col h-full border-l border-[#181a1b]">
       {/* Inspector Header */}
@@ -73,7 +36,6 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTran
           <button className="text-xs opacity-70 hover:opacity-100 px-1">⚙️</button>
         </div>
       </div>
-
       {/* Object Header */}
       <div className="px-3 py-2 border-b border-[#333] flex items-center bg-[#2d2d2d]">
         <div className="flex-1">
@@ -85,47 +47,24 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTran
           <span className="text-xs opacity-70">Active</span>
         </div>
       </div>
-
       {/* Properties */}
       <div className="flex-1 overflow-y-auto bg-[#23272e]">
         <Section title="Transform">
-          <div className="space-y-2">
-            {(['position', 'rotation', 'scale'] as const).map((type) => (
-              <div className="flex items-center gap-2" key={type}>
-                <span className={label}>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                <div className="flex gap-1 items-center">
-                  <span className="w-2 text-xs text-[#ff5555]">X</span>
-                  <input
-                    className={input}
-                    type="number"
-                    step={type === 'scale' ? 0.1 : 0.01}
-                    value={selectedObject.components.Transform[type][0]}
-                    onChange={(e) => handleTransformInput(type, 0, e.target.value)}
-                  />
-                </div>
-                <div className="flex gap-1 items-center">
-                  <span className="w-2 text-xs text-[#55ff55]">Y</span>
-                  <input
-                    className={input}
-                    type="number"
-                    step={type === 'scale' ? 0.1 : 0.01}
-                    value={selectedObject.components.Transform[type][1]}
-                    onChange={(e) => handleTransformInput(type, 1, e.target.value)}
-                  />
-                </div>
-                <div className="flex gap-1 items-center">
-                  <span className="w-2 text-xs text-[#5555ff]">Z</span>
-                  <input
-                    className={input}
-                    type="number"
-                    step={type === 'scale' ? 0.1 : 0.01}
-                    value={selectedObject.components.Transform[type][2]}
-                    onChange={(e) => handleTransformInput(type, 2, e.target.value)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <TransformFields
+            label="Position"
+            value={position}
+            onChange={(next) => onTransformChange({ position: next, rotation, scale })}
+          />
+          <TransformFields
+            label="Rotation"
+            value={rotation}
+            onChange={(next) => onTransformChange({ position, rotation: next, scale })}
+          />
+          <TransformFields
+            label="Scale"
+            value={scale}
+            onChange={(next) => onTransformChange({ position, rotation, scale: next })}
+          />
         </Section>
         <Section title="Mesh Renderer">
           <div className="flex flex-col gap-2">
@@ -185,6 +124,7 @@ const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedObject, onTran
             </div>
           </div>
         </Section>
+        {/* Add more sections as needed */}
       </div>
       {/* Add Component Button */}
       <div className="p-3 border-t border-[#333] bg-[#23272e] flex justify-center">
