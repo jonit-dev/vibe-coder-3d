@@ -1,4 +1,5 @@
 import React from 'react';
+import { MdDragIndicator } from 'react-icons/md';
 
 export interface IAxisInputProps {
   axis: string;
@@ -39,14 +40,14 @@ export const AxisInput: React.FC<IAxisInputProps> = ({
           onChange={(e) => onChange(parseFloat(e.target.value))}
         />
         <div
-          className="w-6 h-6 ml-2 flex items-center justify-center bg-blue-600 hover:bg-blue-700 rounded-full cursor-ew-resize select-none transition-colors duration-150 relative group"
+          className="w-5 h-5 ml-2 flex items-center justify-center bg-[#23272e] hover:bg-[#353942] border border-[#444] rounded-full cursor-ew-resize select-none transition-colors duration-150 relative group shadow-sm p-0"
           onMouseDown={onDragStart}
           tabIndex={0}
           role="button"
           aria-label={`Drag to change ${axis} value`}
-          style={{ outline: dragActive ? '2px solid #3b82f6' : 'none' }}
+          style={{ outline: dragActive ? '2px solid #6c7a89' : 'none' }}
         >
-          <span className="text-white text-lg font-bold select-none">⋮</span>
+          <MdDragIndicator className="text-gray-300" size={16} />
           <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 text-xs bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-10 shadow-lg transition-opacity duration-150">
             Drag to change {axis} value
           </span>
