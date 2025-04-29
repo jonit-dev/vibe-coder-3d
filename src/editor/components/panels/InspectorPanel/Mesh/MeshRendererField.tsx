@@ -7,7 +7,6 @@ interface IMeshRendererFieldProps {
   type?: 'select' | 'checkbox' | 'text';
   options?: { value: string; label: string }[];
   disabled?: boolean;
-  readOnly?: boolean;
 }
 
 export const MeshRendererField: React.FC<IMeshRendererFieldProps> = ({
@@ -17,7 +16,6 @@ export const MeshRendererField: React.FC<IMeshRendererFieldProps> = ({
   type = 'select',
   options = [],
   disabled = false,
-  readOnly = false,
 }) => {
   const fieldWrapper = 'flex items-center justify-between mb-1';
   const fieldLabel = 'text-xs';

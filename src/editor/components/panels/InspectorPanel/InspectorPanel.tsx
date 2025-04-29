@@ -14,17 +14,7 @@ import { useEditorStore } from '@/editor/store/editorStore';
 
 import { Card } from '../../common/Card';
 
-type TabType = 'materials' | 'lighting' | 'probes' | 'ray-tracing' | 'additional';
-
-interface IInspectorPanelProps {
-  onTransformChange?: (transform: {
-    position: [number, number, number];
-    rotation: [number, number, number];
-    scale: [number, number, number];
-  }) => void;
-}
-
-export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChange }) => {
+export const InspectorPanel: React.FC = () => {
   const selectedEntity = useEditorStore((s: { selectedId: number | null }) => s.selectedId);
   const { meshType, setMeshType } = useMesh(selectedEntity);
   const { position, rotation, scale, setPosition, setRotation, setScale } =

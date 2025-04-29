@@ -41,7 +41,7 @@ export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({ entityIds }) =>
     }
   });
 
-  const handleContextMenu = (e: React.MouseEvent, id: number) => {
+  const handleContextMenu = (_: React.MouseEvent, id: number) => {
     setContextMenu({ open: true, entityId: id, anchorRef: itemRefs.current[id] });
   };
 

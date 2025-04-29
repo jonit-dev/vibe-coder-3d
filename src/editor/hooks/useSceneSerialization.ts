@@ -36,6 +36,7 @@ export interface ISerializedEntity {
   };
   velocity?: IVelocityComponent;
   // Add more component fields as needed
+  [key: string]: any;
 }
 
 export interface ISerializedScene {
@@ -147,7 +148,7 @@ export function useSceneSerialization() {
     const entities: any[] = [];
     const validEntities = transformQuery(world);
     for (const eid of validEntities) {
-      const entityData: any = { id: eid };
+      const entityData: { [key: string]: any } = { id: eid };
       // Serialize all registered components
       for (const { name, component, serialize } of componentRegistry) {
         if (hasComponent(world, component, eid)) {
@@ -171,7 +172,7 @@ export function useSceneSerialization() {
     }
     const { entities } = result.data;
     resetWorld();
-    for (const entity of entities) {
+    for (const entity of entities as ISerializedEntity[]) {
       // Always create entity with meshType if present, else default
       const eid = createEntity(entity.meshType ?? MeshTypeEnum.Cube);
       for (const { name, deserialize } of componentRegistry) {

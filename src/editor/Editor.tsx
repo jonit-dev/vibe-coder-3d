@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { useECSQuery } from '@core/hooks/useECS';
 import { MeshTypeEnum, Transform, createEntity, destroyEntity } from '@core/lib/ecs';
@@ -102,28 +102,6 @@ const Editor: React.FC = () => {
     console.log('[AddObject] Added entity', { entity, type });
     console.log('[AddObject] Current entity IDs before update:', entityIds);
   };
-
-  const handleTransformChange = useCallback(
-    (transform: {
-      position: [number, number, number];
-      rotation: [number, number, number];
-      scale: [number, number, number];
-    }) => {
-      if (selectedId == null) return;
-      Transform.position[selectedId][0] = transform.position[0];
-      Transform.position[selectedId][1] = transform.position[1];
-      Transform.position[selectedId][2] = transform.position[2];
-      Transform.rotation[selectedId][0] = transform.rotation[0];
-      Transform.rotation[selectedId][1] = transform.rotation[1];
-      Transform.rotation[selectedId][2] = transform.rotation[2];
-      Transform.scale[selectedId][0] = transform.scale[0];
-      Transform.scale[selectedId][1] = transform.scale[1];
-      Transform.scale[selectedId][2] = transform.scale[2];
-      Transform.needsUpdate[selectedId] = 1;
-      setStatusMessage(`Transform updated: [${transform.position.join(', ')}]`);
-    },
-    [selectedId],
-  );
 
   // Helper to trigger download
   const downloadJSON = (data: object, filename: string) => {
@@ -262,7 +240,7 @@ const Editor: React.FC = () => {
         {selectedId != null ? (
           <>
             <ViewportPanel entityId={selectedId} />
-            <InspectorPanel onTransformChange={handleTransformChange} />
+            <InspectorPanel />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-400 text-lg">
