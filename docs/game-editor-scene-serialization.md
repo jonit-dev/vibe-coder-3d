@@ -10,8 +10,10 @@ The primary goal is to allow users to save the current state of the scene (entit
 
 Scene serialization is handled by the `useSceneSerialization` hook located at `src/editor/hooks/useSceneSerialization.ts`. This hook provides two core functions:
 
-- `exportScene(): ISerializedScene`: Iterates through all entities in the `bitecs` world that have a `Transform` component. For each valid entity, it extracts its `Transform` and `MeshType` component data and packages it into an `ISerializedEntity` object. It returns an `ISerializedScene` object containing an array of these entities.
-- `importScene(scene: ISerializedScene)`: Takes an `ISerializedScene` object as input. It first calls `resetWorld()` from `@core/lib/ecs` to clear the current ECS state. Then, it iterates through the `entities` array in the input scene object. For each serialized entity, it calls `createEntity()` to create a new entity in the world and sets its `MeshType` and `Transform` component data based on the loaded information. It also marks the transform for update (`Transform.needsUpdate[eid] = 1`).
+- `exportScene(): ISerializedScene`: Iterates through all entities in the `bitecs` world that have a `Transform` component. For each valid entity, it extracts all registered component data (see the component registry) and packages it into an `ISerializedEntity` object. It returns an `ISerializedScene` object containing an array of these entities.
+- `importScene(scene: ISerializedScene)`: Takes an `ISerializedScene` object as input. It first calls `resetWorld()` from `@core/lib/ecs` to clear the current ECS state. Then, it iterates through the `entities` array in the input scene object. For each serialized entity, it calls `createEntity()` to create a new entity in the world and sets all registered component data based on the loaded information. It also marks the transform for update (`Transform.needsUpdate[eid] = 1`).
+- ✅ **Component registry:** All serializable components are registered in one place. To add a new component, just add it to the registry and (optionally) the Zod schema for validation.
+- ✅ **Zod schema validation:** Scene files are validated against a Zod schema before import, providing clear error messages for invalid files.
 
 ### Integration in Editor.tsx
 
@@ -37,7 +39,7 @@ sequenceDiagram
     EditorUI->>Handlers: handleSave()
     Handlers->>SerializationHook: exportScene()
     activate SerializationHook
-    SerializationHook->>ECS: Read Transform & MeshType data
+    SerializationHook->>ECS: Read all registered component data
     ECS-->>SerializationHook: Component data
     SerializationHook-->>Handlers: ISerializedScene object
     deactivate SerializationHook
@@ -79,9 +81,7 @@ sequenceDiagram
     loop For each entity in parsedJson.entities
         SerializationHook->>ECS: createEntity()
         ECS-->>SerializationHook: new entity ID (eid)
-        SerializationHook->>ECS: Set Transform[eid]
-        SerializationHook->>ECS: Set MeshType[eid]
-        SerializationHook->>ECS: Set needsUpdate[eid] = 1
+        SerializationHook->>ECS: Set all registered component data
         opt If entity.name exists
             SerializationHook->>ECS: setEntityName(eid, entity.name)
         end
@@ -114,39 +114,42 @@ sequenceDiagram
 
 ## Data Format
 
-The serialization format is defined by TypeScript interfaces within `useSceneSerialization.ts`:
+The serialization format is defined by TypeScript interfaces within `useSceneSerialization.ts` and validated by Zod:
 
 ```typescript
 export interface ISerializedEntity {
   id: number; // Note: This ID is informational during export, not strictly used during import
-  name?: string; // Currently not exported, but supported during import
-  meshType: MeshTypeEnum;
+  name?: string;
+  meshType?: MeshTypeEnum;
   transform: {
     position: [number, number, number];
     rotation: [number, number, number, number]; // Quaternion (x, y, z, w)
     scale: [number, number, number];
   };
-  // Future components can be added here
+  velocity?: IVelocityComponent;
+  // Future components can be added here via the registry
 }
 
 export interface ISerializedScene {
+  version: number;
   entities: ISerializedEntity[];
 }
 ```
 
-## Limitations & Future Improvements
+## ✅ Limitations & Future Improvements
 
-- **Limited Component Support:** Currently, only `Transform` and `MeshType` are serialized. Other components like `Velocity`, `Name` (partially), physics properties, materials, or custom game components are ignored.
-- **Basic Error Handling:** File reading/parsing has basic `try...catch` blocks, but there's no validation of the JSON structure against the `ISerializedScene` interface. Invalid files might cause runtime errors or unexpected behavior.
-- **No Versioning:** The format doesn't have a version number. If the format changes in the future, loading older scene files might fail.
-- **Entity ID Handling:** The exported `id` isn't used during import; entities are recreated sequentially. This is generally fine but prevents maintaining specific entity relationships if needed later.
-- **Name Component:** The `ISerializedEntity` interface includes an optional `name`, and `importScene` supports setting it via `setEntityName`, but `exportScene` currently doesn't export the name.
+- ✅ **Component registry:** All serializable components are registered in one place. To add a new component, just add it to the registry and (optionally) the Zod schema for validation.
+- ✅ **Zod schema validation:** Scene files are validated against a Zod schema before import, providing clear error messages for invalid files.
+- ✅ **Versioning:** The format includes a version number for future compatibility.
+- ✅ **Name support:** The entity's name is exported and imported if present.
+- ✅ **Extensible:** Adding new components is as simple as adding them to the registry and schema.
+- ✅ **Entity ID handling:** Exported IDs are informational; new IDs are created on import.
+- ❌ **Serializing entity relationships/hierarchy:** Not present, but can be added if needed in the future.
+- ❌ **Serializing materials, physics settings, or custom game components:** Add to the registry and schema as needed.
+- ❌ **UI feedback: loading indicators, more specific error/success messages:** Currently only status messages are shown.
 
-**Potential Enhancements:**
+**To add new components:**
 
-- Add support for serializing more components (e.g., `Velocity`, `Name`, materials, physics settings).
-- Implement schema validation (e.g., using Zod or Ajv) during `importScene` to provide better error messages for invalid files.
-- Introduce a version number to the `ISerializedScene` format for backward compatibility.
-- Enhance the `exportScene` function to include the entity's name using `getEntityName`.
-- Consider serializing entity relationships or hierarchy if the editor evolves to support it.
-- Improve UI feedback during save/load operations (e.g., loading indicators, more specific success/error messages).
+- Add your component to the `componentRegistry` in `useSceneSerialization.ts` with `serialize` and `deserialize` logic.
+- (Optionally) Add a Zod schema for validation.
+- That's it! No need to change the core serialization logic.

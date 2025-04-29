@@ -1,4 +1,5 @@
 import { hasComponent } from 'bitecs';
+import { z } from 'zod';
 
 import {
   MeshType,
@@ -41,6 +42,32 @@ export interface ISerializedScene {
   version: number;
   entities: ISerializedEntity[];
 }
+
+// --- Zod Schema for Scene Validation ---
+const TransformSchema = z.object({
+  position: z.tuple([z.number(), z.number(), z.number()]),
+  rotation: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+  scale: z.tuple([z.number(), z.number(), z.number()]),
+});
+const VelocitySchema = z.object({
+  linear: z.tuple([z.number(), z.number(), z.number()]),
+  angular: z.tuple([z.number(), z.number(), z.number()]),
+  linearDamping: z.number(),
+  angularDamping: z.number(),
+  priority: z.number(),
+});
+const EntitySchema = z.object({
+  id: z.number(),
+  name: z.string().optional(),
+  meshType: z.nativeEnum(MeshTypeEnum).optional(),
+  transform: TransformSchema,
+  velocity: VelocitySchema.optional(),
+  // TODO: Add more component schemas here as you add to the registry
+});
+const SceneSchema = z.object({
+  version: z.number(),
+  entities: z.array(EntitySchema),
+});
 
 // --- Component Registry for Generic Serialization ---
 const componentRegistry = [
@@ -111,7 +138,7 @@ const componentRegistry = [
       });
     },
   },
-  // Add more components here as needed
+  // TODO: Add more components here as needed (e.g., materials, physics, custom components)
 ];
 
 export function useSceneSerialization() {
@@ -138,9 +165,13 @@ export function useSceneSerialization() {
 
   // Import a scene from a serialized object
   function importScene(scene: any) {
-    if (!scene || !Array.isArray(scene.entities)) throw new Error('Invalid scene file');
+    const result = SceneSchema.safeParse(scene);
+    if (!result.success) {
+      throw new Error('Invalid scene file: ' + JSON.stringify(result.error.format(), null, 2));
+    }
+    const { entities } = result.data;
     resetWorld();
-    for (const entity of scene.entities) {
+    for (const entity of entities) {
       // Always create entity with meshType if present, else default
       const eid = createEntity(entity.meshType ?? MeshTypeEnum.Cube);
       for (const { name, deserialize } of componentRegistry) {
