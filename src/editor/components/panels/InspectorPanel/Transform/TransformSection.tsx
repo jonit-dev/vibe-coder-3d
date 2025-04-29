@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Collapsible } from '@/editor/components/common/Collapsible';
-import { TransformFields } from '@/editor/components/panels/InspectorPanel/TransformFields/TransformFields';
+import { TransformFields } from '@/editor/components/panels/InspectorPanel/Transform/TransformFields/TransformFields';
 
 export interface ITransformSectionProps {
   position: [number, number, number];

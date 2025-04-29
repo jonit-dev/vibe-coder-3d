@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Collapsible } from '@/editor/components/common/Collapsible';
-import { MeshRendererField } from '@/editor/components/panels/InspectorPanel/MeshRendererField';
+import { MeshRendererField } from '@/editor/components/panels/InspectorPanel/Mesh/MeshRendererField';
 
 export interface IMeshRendererSettings {
   castShadows: boolean;

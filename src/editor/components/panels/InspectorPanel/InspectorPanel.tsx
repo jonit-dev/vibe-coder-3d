@@ -4,9 +4,9 @@ import {
   IMeshRendererSettings,
   meshRendererDefaults,
   MeshRendererSection,
-} from '@/editor/components/panels/InspectorPanel/MeshRendererSection';
-import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/MeshTypeSection';
-import { TransformSection } from '@/editor/components/panels/InspectorPanel/TransformSection';
+} from '@/editor/components/panels/InspectorPanel/Mesh/MeshRendererSection';
+import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
+import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 import { useEntityInfo } from '@/editor/hooks/useEntityInfo';
 import { useMesh } from '@/editor/hooks/useMesh';
 import { useTransform } from '@/editor/hooks/useTransform';
