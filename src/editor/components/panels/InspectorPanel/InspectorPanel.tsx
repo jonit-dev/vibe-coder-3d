@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-import { Collapsible } from '@/editor/components/ui/Collapsible';
 import { useEditorStore } from '@/editor/store/editorStore';
 import {
   getEntityName,
@@ -13,24 +12,10 @@ import {
 import { transformSystem } from '@core/systems/transformSystem';
 
 import { Card } from '../../common/Card';
+import { Collapsible } from '../../common/Collapsible';
 
+import { MeshRendererField } from './MeshRendererField';
 import { TransformFields } from './TransformFields/TransformFields';
-
-export interface IInspectorPanelProps {
-  onTransformChange?: (transform: {
-    position: [number, number, number];
-    rotation: [number, number, number];
-    scale: [number, number, number];
-  }) => void;
-}
-
-const sectionTitle =
-  'text-xs uppercase text-gray-400 font-semibold pb-1 mb-3 border-b border-gray-700';
-const fieldWrapper = 'flex items-center justify-between mb-1';
-const fieldLabel = 'text-xs';
-const fieldValue = 'text-xs';
-const fieldSelect = 'select select-xs select-bordered min-h-0 h-6 py-0';
-const fieldCheckbox = 'checkbox checkbox-xs';
 
 // MeshRenderer settings interface
 interface IMeshRendererSettings {
@@ -103,8 +88,16 @@ function meshTypeStringToEnum(type: string): MeshTypeEnum | undefined {
 
 type TabType = 'materials' | 'lighting' | 'probes' | 'ray-tracing' | 'additional';
 
+interface IInspectorPanelProps {
+  onTransformChange?: (transform: {
+    position: [number, number, number];
+    rotation: [number, number, number];
+    scale: [number, number, number];
+  }) => void;
+}
+
 export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChange }) => {
-  const selectedEntity = useEditorStore((s) => s.selectedId);
+  const selectedEntity = useEditorStore((s: { selectedId: number | null }) => s.selectedId);
   const [, forceUpdate] = useState(0);
   const [meshType, setMeshType] = useState<string>('unknown');
   const [meshRenderer, setMeshRenderer] = useState<IMeshRendererSettings>(meshRendererDefaults);
@@ -242,8 +235,8 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
           {/* Materials subsection */}
           <Collapsible title="Materials" defaultOpen>
             <div className="py-1">
-              <div className={fieldWrapper}>
-                <span className={fieldLabel}>Materials</span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs">Materials</span>
                 <div className="badge badge-neutral badge-xs">1</div>
               </div>
             </div>
@@ -251,49 +244,36 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
 
           {/* Lighting subsection */}
           <Collapsible title="Lighting" defaultOpen>
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Cast Shadows</span>
-              <select
-                className={fieldSelect}
-                value={meshRenderer.castShadows ? 'On' : 'Off'}
-                onChange={(e) =>
-                  setMeshRenderer((m) => ({ ...m, castShadows: e.target.value === 'On' }))
-                }
-              >
-                <option value="On">On</option>
-                <option value="Off">Off</option>
-              </select>
-            </div>
+            <MeshRendererField
+              label="Cast Shadows"
+              value={meshRenderer.castShadows ? 'On' : 'Off'}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, castShadows: value === 'On' }))}
+              type="select"
+              options={[
+                { value: 'On', label: 'On' },
+                { value: 'Off', label: 'Off' },
+              ]}
+            />
 
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Static Shadow Caster</span>
+            <MeshRendererField
+              label="Static Shadow Caster"
+              value={meshRenderer.staticShadowCaster}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, staticShadowCaster: value }))}
+              type="checkbox"
+            />
+
+            <MeshRendererField
+              label="Contribute Global Illum"
+              value={meshRenderer.contributeGlobalIllum}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, contributeGlobalIllum: value }))}
+              type="checkbox"
+            />
+
+            <div className="flex items-center justify-between mb-1 opacity-50">
+              <span className="text-xs">Receive Global Illum</span>
               <input
                 type="checkbox"
-                className={fieldCheckbox}
-                checked={meshRenderer.staticShadowCaster}
-                onChange={(e) =>
-                  setMeshRenderer((m) => ({ ...m, staticShadowCaster: e.target.checked }))
-                }
-              />
-            </div>
-
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Contribute Global Illum</span>
-              <input
-                type="checkbox"
-                className={fieldCheckbox}
-                checked={meshRenderer.contributeGlobalIllum}
-                onChange={(e) =>
-                  setMeshRenderer((m) => ({ ...m, contributeGlobalIllum: e.target.checked }))
-                }
-              />
-            </div>
-
-            <div className={`${fieldWrapper} opacity-50`}>
-              <span className={fieldLabel}>Receive Global Illum</span>
-              <input
-                type="checkbox"
-                className={fieldCheckbox}
+                className="checkbox checkbox-xs"
                 checked={meshRenderer.receiveGlobalIllum}
                 disabled
                 readOnly
@@ -303,115 +283,84 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
 
           {/* Probes subsection */}
           <Collapsible title="Probes">
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Light Probes</span>
-              <select
-                className={fieldSelect}
-                value={meshRenderer.lightProbes}
-                onChange={(e) =>
-                  setMeshRenderer((m) => ({ ...m, lightProbes: e.target.value as any }))
-                }
-              >
-                <option value="Off">Off</option>
-                <option value="Blend Probes">Blend Probes</option>
-                <option value="Use Proxy Volume">Use Proxy Volume</option>
-              </select>
-            </div>
+            <MeshRendererField
+              label="Light Probes"
+              value={meshRenderer.lightProbes}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, lightProbes: value as any }))}
+              type="select"
+              options={[
+                { value: 'Off', label: 'Off' },
+                { value: 'Blend Probes', label: 'Blend Probes' },
+                { value: 'Use Proxy Volume', label: 'Use Proxy Volume' },
+              ]}
+            />
 
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Anchor Override</span>
-              <input
-                className="input input-bordered input-xs w-24 h-6 py-0"
-                type="text"
-                value={meshRenderer.anchorOverride || ''}
-                onChange={(e) => setMeshRenderer((m) => ({ ...m, anchorOverride: e.target.value }))}
-                placeholder="None (Transform)"
-              />
-            </div>
+            <MeshRendererField
+              label="Anchor Override"
+              value={meshRenderer.anchorOverride || ''}
+              onChange={(value) =>
+                setMeshRenderer((m) => ({ ...m, anchorOverride: value || null }))
+              }
+              type="text"
+            />
           </Collapsible>
 
           {/* Ray Tracing subsection */}
           <Collapsible title="Ray Tracing">
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Ray Tracing Mode</span>
-              <select
-                className={fieldSelect}
-                value={meshRenderer.rayTracingMode}
-                onChange={(e) =>
-                  setMeshRenderer((m) => ({ ...m, rayTracingMode: e.target.value as any }))
-                }
-              >
-                <option value="Off">Off</option>
-                <option value="Dynamic Transform">Dynamic Transform</option>
-                <option value="Static">Static</option>
-              </select>
-            </div>
+            <MeshRendererField
+              label="Ray Tracing Mode"
+              value={meshRenderer.rayTracingMode}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, rayTracingMode: value as any }))}
+              type="select"
+              options={[
+                { value: 'Off', label: 'Off' },
+                { value: 'Dynamic Transform', label: 'Dynamic Transform' },
+                { value: 'Static', label: 'Static' },
+              ]}
+            />
 
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Procedural Geometry</span>
-              <input
-                type="checkbox"
-                className={fieldCheckbox}
-                checked={meshRenderer.proceduralGeometry}
-                onChange={(e) =>
-                  setMeshRenderer((m) => ({ ...m, proceduralGeometry: e.target.checked }))
-                }
-              />
-            </div>
+            <MeshRendererField
+              label="Procedural Geometry"
+              value={meshRenderer.proceduralGeometry}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, proceduralGeometry: value }))}
+              type="checkbox"
+            />
 
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Prefer Fast Trace</span>
-              <input
-                type="checkbox"
-                className={fieldCheckbox}
-                checked={meshRenderer.preferFastTrace}
-                onChange={(e) =>
-                  setMeshRenderer((m) => ({ ...m, preferFastTrace: e.target.checked }))
-                }
-              />
-            </div>
+            <MeshRendererField
+              label="Prefer Fast Trace"
+              value={meshRenderer.preferFastTrace}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, preferFastTrace: value }))}
+              type="checkbox"
+            />
           </Collapsible>
 
-          {/* Additional Settings subsection */}
-          <Collapsible title="Additional Settings">
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Motion Vectors</span>
-              <select
-                className={fieldSelect}
-                value={meshRenderer.motionVectors}
-                onChange={(e) =>
-                  setMeshRenderer((m) => ({ ...m, motionVectors: e.target.value as any }))
-                }
-              >
-                <option value="Camera Motion">Camera Motion</option>
-                <option value="Per Object Motion">Per Object Motion</option>
-                <option value="Force No Motion">Force No Motion</option>
-              </select>
-            </div>
+          {/* Additional subsection */}
+          <Collapsible title="Additional">
+            <MeshRendererField
+              label="Motion Vectors"
+              value={meshRenderer.motionVectors}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, motionVectors: value as any }))}
+              type="select"
+              options={[
+                { value: 'Camera Motion', label: 'Camera Motion' },
+                { value: 'Per Object Motion', label: 'Per Object Motion' },
+                { value: 'Force No Motion', label: 'Force No Motion' },
+              ]}
+            />
 
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Dynamic Occlusion</span>
-              <input
-                type="checkbox"
-                className={fieldCheckbox}
-                checked={meshRenderer.dynamicOcclusion}
-                onChange={(e) =>
-                  setMeshRenderer((m) => ({ ...m, dynamicOcclusion: e.target.checked }))
-                }
-              />
-            </div>
+            <MeshRendererField
+              label="Dynamic Occlusion"
+              value={meshRenderer.dynamicOcclusion}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, dynamicOcclusion: value }))}
+              type="checkbox"
+            />
 
-            <div className={fieldWrapper}>
-              <span className={fieldLabel}>Rendering Layer</span>
-              <select
-                className={fieldSelect}
-                value={meshRenderer.renderingLayer}
-                onChange={(e) => setMeshRenderer((m) => ({ ...m, renderingLayer: e.target.value }))}
-              >
-                <option value="Default">Default</option>
-                {/* Add more layers as needed */}
-              </select>
-            </div>
+            <MeshRendererField
+              label="Rendering Layer"
+              value={meshRenderer.renderingLayer}
+              onChange={(value) => setMeshRenderer((m) => ({ ...m, renderingLayer: value }))}
+              type="text"
+            />
           </Collapsible>
         </Collapsible>
       </div>
