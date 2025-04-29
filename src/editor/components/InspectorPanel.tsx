@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { getEntityMeshType } from '@/core/helpers/meshUtils';
 import { MeshTypeEnum, Transform, updateMeshType } from '@/core/lib/ecs';
+import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
 
 import { TransformFields } from './panels/InspectorPanel/Transform/TransformFields/TransformFields';
 
@@ -130,20 +131,36 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedEntity 
         <label className="block text-sm font-medium">Name</label>
         <div className="px-2 py-1 bg-base-300 rounded-box text-base-content">{entityName}</div>
       </div>
-      <div className="space-y-2">
-        <label className="block text-sm font-medium">Mesh Type</label>
-        <select
-          value={meshType}
-          onChange={handleMeshTypeChange}
-          className="select select-bordered w-full bg-base-300 text-base-content"
-        >
-          <option value="unknown" disabled>
-            Select mesh type
-          </option>
-          <option value="Cube">Cube</option>
-          <option value="Sphere">Sphere</option>
-        </select>
-      </div>
+      <MeshTypeSection
+        meshType={meshType}
+        setMeshType={(type) => {
+          let meshTypeEnum: MeshTypeEnum;
+          switch (type) {
+            case 'Cube':
+              meshTypeEnum = MeshTypeEnum.Cube;
+              break;
+            case 'Sphere':
+              meshTypeEnum = MeshTypeEnum.Sphere;
+              break;
+            case 'Cylinder':
+              meshTypeEnum = MeshTypeEnum.Cylinder;
+              break;
+            case 'Cone':
+              meshTypeEnum = MeshTypeEnum.Cone;
+              break;
+            case 'Torus':
+              meshTypeEnum = MeshTypeEnum.Torus;
+              break;
+            case 'Plane':
+              meshTypeEnum = MeshTypeEnum.Plane;
+              break;
+            default:
+              return;
+          }
+          updateMeshType(selectedEntity, meshTypeEnum);
+          setMeshType(type);
+        }}
+      />
       <TransformFields label="Position" value={position} onChange={handlePositionChange} />
       <TransformFields label="Rotation" value={rotation} onChange={handleRotationChange} />
       <TransformFields label="Scale" value={scale} onChange={handleScaleChange} />
