@@ -2,7 +2,15 @@ import React, { useEffect, useState } from 'react';
 
 import { Collapsible } from '@/editor/components/ui/Collapsible';
 import { useEditorStore } from '@/editor/store/editorStore';
-import { getEntityName, MeshType, MeshTypeEnum, Transform, updateMeshType } from '@core/lib/ecs';
+import {
+  getEntityName,
+  incrementWorldVersion,
+  MeshType,
+  MeshTypeEnum,
+  Transform,
+  updateMeshType,
+} from '@core/lib/ecs';
+import { transformSystem } from '@core/systems/transformSystem';
 
 import { Card } from '../../common/Card';
 
@@ -153,6 +161,7 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
     Transform.position[selectedEntity][1] = next[1];
     Transform.position[selectedEntity][2] = next[2];
     Transform.needsUpdate[selectedEntity] = 1;
+    incrementWorldVersion();
     forceUpdate((v) => v + 1);
     if (onTransformChange) onTransformChange({ position: next, rotation, scale });
   };
@@ -162,6 +171,7 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
     Transform.rotation[selectedEntity][1] = next[1];
     Transform.rotation[selectedEntity][2] = next[2];
     Transform.needsUpdate[selectedEntity] = 1;
+    incrementWorldVersion();
     forceUpdate((v) => v + 1);
     if (onTransformChange) onTransformChange({ position, rotation: next, scale });
   };
@@ -171,8 +181,10 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ onTransformChan
     Transform.scale[selectedEntity][1] = next[1];
     Transform.scale[selectedEntity][2] = next[2];
     Transform.needsUpdate[selectedEntity] = 1;
+    incrementWorldVersion();
     forceUpdate((v) => v + 1);
     if (onTransformChange) onTransformChange({ position, rotation, scale: next });
+    transformSystem();
   };
 
   return (
