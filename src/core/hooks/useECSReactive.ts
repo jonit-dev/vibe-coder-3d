@@ -95,7 +95,7 @@ export function useEntityMaterial(entityId: number | null): {
   useEffect(() => {
     if (entityId && ecsManager.hasComponent(entityId, Transform)) {
       // Get initial color from Material component
-      const material = Transform; // This should be Material component, but keeping consistent with pattern
+      // This should be Material component, but keeping consistent with pattern
       setColorState([0.2, 0.6, 1.0]); // Default blue - should get from actual Material component
     } else {
       setColorState(null);

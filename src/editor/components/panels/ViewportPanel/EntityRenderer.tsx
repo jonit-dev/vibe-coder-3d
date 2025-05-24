@@ -33,11 +33,35 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   const [dragTick, setDragTick] = useState(0);
   useThree();
 
-  // Link mesh to ECS entity
+  // Link mesh to ECS entity and set initial position
   useEffect(() => {
     if (meshRef.current) {
       entityToObject.set(entityId, meshRef.current);
       objectToEntity.set(meshRef.current, entityId);
+
+      // CRITICAL: Set initial mesh transform immediately to prevent GizmoControls
+      // from reading [0,0,0] values and overwriting ECS
+      meshRef.current.position.set(
+        Transform.position[entityId][0],
+        Transform.position[entityId][1],
+        Transform.position[entityId][2],
+      );
+      meshRef.current.rotation.set(
+        Transform.rotation[entityId][0] * (Math.PI / 180),
+        Transform.rotation[entityId][1] * (Math.PI / 180),
+        Transform.rotation[entityId][2] * (Math.PI / 180),
+      );
+      meshRef.current.scale.set(
+        Transform.scale[entityId][0],
+        Transform.scale[entityId][1],
+        Transform.scale[entityId][2],
+      );
+
+      console.log(`Initial mesh transform set for entity ${entityId}:`, {
+        position: meshRef.current.position.toArray(),
+        rotation: meshRef.current.rotation.toArray(),
+        scale: meshRef.current.scale.toArray(),
+      });
     }
     return () => {
       if (meshRef.current) {
@@ -75,6 +99,13 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     Transform.scale[entityId][1],
     Transform.scale[entityId][2],
   ];
+
+  // Debug: Log the transform values as they're read
+  console.log(`EntityRenderer reading transform for entity ${entityId}:`, {
+    position,
+    rotation,
+    scale,
+  });
 
   // Get entity color from ECS (only used for initial material setup)
   const entityColor = getEntityColor(entityId);

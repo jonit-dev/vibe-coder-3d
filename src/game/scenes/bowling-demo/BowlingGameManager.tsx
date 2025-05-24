@@ -42,7 +42,7 @@ const BowlingGameManager = ({ children }: IBowlingGameProps) => {
   const ballRef = useRef<IPhysicsBallRef | null>(null);
 
   // Get UI store functions
-  const { setScore: uiSetScore, showInstructions, score: _uiScore } = useUIStore();
+  const { setScore: uiSetScore, showInstructions } = useUIStore();
 
   // Setup game instructions
   useEffect(() => {

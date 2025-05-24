@@ -152,7 +152,7 @@ export const useScoringStore = create<IScoringState>((set, get) => ({
 
   // Reset score only
   resetScore: () => {
-    set((_state) => ({
+    set(() => ({
       score: 0,
       scoreHistory: [],
     }));

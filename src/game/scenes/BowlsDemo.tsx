@@ -34,7 +34,6 @@ export const BowlsDemo = ({
         currentBall,
         pinsKey,
         ballRef,
-        score: _score,
         handlePinHit,
         handleFirstPinFallen,
         handleReset,

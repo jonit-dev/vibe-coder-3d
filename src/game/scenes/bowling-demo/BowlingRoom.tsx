@@ -73,7 +73,6 @@ const NeonSign = ({ position }: { position: [number, number, number] }) => (
 );
 
 const BowlingRoom = ({
-  width: _width = 20,
   length = 40,
   height = 6,
   laneWidth = 2,

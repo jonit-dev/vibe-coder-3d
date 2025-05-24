@@ -24,16 +24,16 @@ export type ECSEventData<T extends ECSEventName> = IECSEvents[T];
 
 // Simple browser-compatible event emitter
 class SimpleEventEmitter {
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners: Map<string, Array<(data?: any) => void>> = new Map();
 
-  on(event: string, listener: Function) {
+  on(event: string, listener: (data?: any) => void) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(listener);
   }
 
-  off(event: string, listener: Function) {
+  off(event: string, listener: (data?: any) => void) {
     const eventListeners = this.listeners.get(event);
     if (eventListeners) {
       const index = eventListeners.indexOf(listener);
