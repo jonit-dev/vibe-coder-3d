@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { useECSQuery } from '@core/hooks/useECS';
-import { MeshTypeEnum, Transform, createEntity, destroyEntity } from '@core/lib/ecs';
+import { MeshTypeEnum, Transform, destroyEntity } from '@core/lib/ecs';
+import { ecsManager } from '@core/lib/ecs-manager';
 
 import { AddObjectMenu } from './AddObjectMenu';
 import { HierarchyPanel } from './components/panels/HierarchyPanel/HierarchyPanel';
@@ -42,7 +43,7 @@ const Editor: React.FC = () => {
   const { exportScene, importScene } = useSceneSerialization();
   // Store the last scene in localStorage with the correct type
   const [savedScene, setSavedScene] = useLocalStorage<ISerializedScene>('lastScene', {
-    version: 1,
+    version: 2,
     entities: [],
   });
   // Track if initial load is complete
@@ -53,14 +54,18 @@ const Editor: React.FC = () => {
     // Only load on first mount and if there's a saved scene with entities
     if (!isInitialized && savedScene && savedScene.entities) {
       try {
+        console.log('Loading scene from localStorage:', savedScene);
         importScene(savedScene);
         if (savedScene.entities.length > 0) {
-          setStatusMessage('Loaded last saved scene from localStorage.');
+          setStatusMessage(`Loaded last saved scene from localStorage (version ${savedScene.version}).`);
         }
       } catch (err) {
         console.error('Failed to load scene from localStorage:', err);
         setStatusMessage('Failed to load last scene. Starting with empty scene.');
       }
+      setIsInitialized(true);
+    } else if (!isInitialized) {
+      console.log('No saved scene found or scene is empty');
       setIsInitialized(true);
     }
   }, [isInitialized, importScene, savedScene, setStatusMessage]);
@@ -95,7 +100,7 @@ const Editor: React.FC = () => {
       default:
         meshType = MeshTypeEnum.Cube;
     }
-    const entity = createEntity(meshType);
+    const entity = ecsManager.createEntity({ meshType });
     setSelectedId(entity);
     setStatusMessage(`Added new ${type}: ${entity}`);
     setShowAddMenu(false);
@@ -149,7 +154,7 @@ const Editor: React.FC = () => {
 
   const handleClear = () => {
     // Clear the ECS world
-    const emptyScene = { version: 1, entities: [] };
+    const emptyScene = { version: 2, entities: [] };
     importScene(emptyScene);
     // Also clear localStorage
     setSavedScene(emptyScene);

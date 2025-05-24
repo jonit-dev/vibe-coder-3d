@@ -2,7 +2,8 @@ import { TransformControls } from '@react-three/drei';
 import React, { MutableRefObject, useRef } from 'react';
 import { Object3D } from 'three';
 
-import { Transform, incrementWorldVersion } from '@/core/lib/ecs';
+import { ecsManager } from '@/core/lib/ecs-manager';
+import { frameEventBatch } from '@core/lib/ecs-events';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -21,32 +22,30 @@ function updateEcsFromMesh(
   onTransformChange?: (values: [number, number, number]) => void,
 ) {
   if (mode === 'translate') {
-    Transform.position[entityId][0] = mesh.position.x;
-    Transform.position[entityId][1] = mesh.position.y;
-    Transform.position[entityId][2] = mesh.position.z;
+    const position: [number, number, number] = [mesh.position.x, mesh.position.y, mesh.position.z];
+    ecsManager.updateTransform(entityId, { position });
     if (onTransformChange) {
-      onTransformChange([mesh.position.x, mesh.position.y, mesh.position.z]);
+      onTransformChange(position);
     }
   } else if (mode === 'rotate') {
     const xDeg = mesh.rotation.x * (180 / Math.PI);
     const yDeg = mesh.rotation.y * (180 / Math.PI);
     const zDeg = mesh.rotation.z * (180 / Math.PI);
-    Transform.rotation[entityId][0] = xDeg;
-    Transform.rotation[entityId][1] = yDeg;
-    Transform.rotation[entityId][2] = zDeg;
+    const rotation: [number, number, number] = [xDeg, yDeg, zDeg];
+    ecsManager.updateTransform(entityId, { rotation });
     if (onTransformChange) {
-      onTransformChange([xDeg, yDeg, zDeg]);
+      onTransformChange(rotation);
     }
   } else if (mode === 'scale') {
-    Transform.scale[entityId][0] = mesh.scale.x;
-    Transform.scale[entityId][1] = mesh.scale.y;
-    Transform.scale[entityId][2] = mesh.scale.z;
+    const scale: [number, number, number] = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
+    ecsManager.updateTransform(entityId, { scale });
     if (onTransformChange) {
-      onTransformChange([mesh.scale.x, mesh.scale.y, mesh.scale.z]);
+      onTransformChange(scale);
     }
   }
-  Transform.needsUpdate[entityId] = 1;
-  incrementWorldVersion();
+
+  // Immediately emit events to ensure inspector panel updates
+  frameEventBatch.emit();
 }
 
 export const GizmoControls: React.FC<IGizmoControlsProps> = ({

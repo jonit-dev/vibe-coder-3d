@@ -23,21 +23,10 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
   const [isTransforming, setIsTransforming] = useState(false);
 
   // Handler to update ECS transform when gizmo is used
+  // This is now handled by GizmoControls which properly emits events
   const handleTransformChange = (id: number) => (values: [number, number, number]) => {
-    if (mode === 'translate') {
-      Transform.position[id][0] = values[0];
-      Transform.position[id][1] = values[1];
-      Transform.position[id][2] = values[2];
-    } else if (mode === 'rotate') {
-      Transform.rotation[id][0] = values[0];
-      Transform.rotation[id][1] = values[1];
-      Transform.rotation[id][2] = values[2];
-    } else if (mode === 'scale') {
-      Transform.scale[id][0] = values[0];
-      Transform.scale[id][1] = values[1];
-      Transform.scale[id][2] = values[2];
-    }
-    Transform.needsUpdate[id] = 1;
+    // This callback is no longer used as GizmoControls handles transform updates
+    console.log(`Transform updated for entity ${id}:`, values);
   };
 
   return (
@@ -49,11 +38,10 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
       {/* Gizmo mode switcher - Unity style with keyboard shortcuts */}
       <div className="absolute top-2 right-2 z-10 flex gap-2">
         <button
-          className={`px-2 py-1 rounded text-xs font-bold flex items-center ${
-            mode === 'translate'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
+          className={`px-2 py-1 rounded text-xs font-bold flex items-center ${mode === 'translate'
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
           onClick={() => setMode('translate')}
           title="Switch to Move Tool (W)"
         >
@@ -61,11 +49,10 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
           <span className="ml-1 bg-black/30 px-1 rounded text-[10px]">W</span>
         </button>
         <button
-          className={`px-2 py-1 rounded text-xs font-bold flex items-center ${
-            mode === 'rotate'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
+          className={`px-2 py-1 rounded text-xs font-bold flex items-center ${mode === 'rotate'
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
           onClick={() => setMode('rotate')}
           title="Switch to Rotate Tool (E)"
         >
@@ -73,11 +60,10 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
           <span className="ml-1 bg-black/30 px-1 rounded text-[10px]">E</span>
         </button>
         <button
-          className={`px-2 py-1 rounded text-xs font-bold flex items-center ${
-            mode === 'scale'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
+          className={`px-2 py-1 rounded text-xs font-bold flex items-center ${mode === 'scale'
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
           onClick={() => setMode('scale')}
           title="Switch to Scale Tool (R)"
         >
