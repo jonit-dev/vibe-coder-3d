@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
 import { registerBuiltInArchetypes, registerBuiltInComponentGroups } from '@/core';
+import { registerBuiltInComponents } from '@/core/dynamic-components/components/BuiltInComponents';
+import { componentRegistry } from '@/core/lib/dynamic-components';
 import Editor from '@/editor/Editor';
 import { MainScene } from '@/game/scenes/MainScene';
 
@@ -9,7 +11,7 @@ import { MainScene } from '@/game/scenes/MainScene';
  * Main App component
  */
 export default function App() {
-  // Initialize component system globally
+  // Initialize component system globally with proper order
   useEffect(() => {
     console.log('🚀 Initializing Global Component System...');
 
@@ -21,15 +23,20 @@ export default function App() {
     }
 
     try {
-      console.log('✅ Built-in components loaded automatically');
+      // Step 1: Ensure built-in components are registered first
+      console.log('Step 1: Registering built-in components...');
+      registerBuiltInComponents(componentRegistry);
+      console.log('✅ Built-in components registered');
 
-      console.log('Registering built-in archetypes...');
-      registerBuiltInArchetypes();
-      console.log('✅ Archetypes registered');
-
-      console.log('Registering built-in component groups...');
+      // Step 2: Register component groups
+      console.log('Step 2: Registering built-in component groups...');
       registerBuiltInComponentGroups();
       console.log('✅ Component groups registered');
+
+      // Step 3: Now register archetypes (they depend on components being available)
+      console.log('Step 3: Registering built-in archetypes...');
+      registerBuiltInArchetypes();
+      console.log('✅ Archetypes registered');
 
       console.log('✅ Global Component System initialized successfully');
       (window as any).__componentSystemInitialized = true;

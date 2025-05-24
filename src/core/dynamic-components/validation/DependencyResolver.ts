@@ -1,4 +1,4 @@
-import { IComponentDescriptor, IValidationResult } from '../types';
+import { IComponentDescriptor, IValidationResult } from '@/core/types/component-registry';
 
 export class DependencyResolver {
   static resolveDependencies(

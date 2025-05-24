@@ -1,6 +1,8 @@
 import React from 'react';
 import { FiInfo } from 'react-icons/fi';
 
+console.log('🔥🔥🔥 INSPECTOR PANEL CONTENT IS LOADING - THIS IS A TEST 🔥🔥🔥');
+
 import { useEntityComponents, useHasComponent } from '@/core/hooks/useComponent';
 import { componentRegistry } from '@/core/lib/component-registry';
 import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
@@ -41,11 +43,52 @@ export const InspectorPanelContent: React.FC = () => {
     return component?.removable !== false; // Default to true if not explicitly false
   };
 
+  // Component registry debugging with reactive updates
+  React.useEffect(() => {
+    const registeredComponents = componentRegistry.getAllComponents();
+    console.log(`[Inspector] 🔍 Registry Status Check:`);
+    console.log(
+      `[Inspector] - Registry has ${registeredComponents.length} components:`,
+      registeredComponents.map((c: any) => c.id),
+    );
+
+    if (selectedEntity != null) {
+      console.log(`[Inspector] - Selected entity: ${selectedEntity}`);
+      console.log(`[Inspector] - Entity components detected:`, entityComponents);
+
+      const expectedCoreComponents = ['transform', 'meshType', 'material'];
+      const missingCoreComponents = expectedCoreComponents.filter(
+        (id) => !registeredComponents.find((c: any) => c.id === id),
+      );
+      if (missingCoreComponents.length > 0) {
+        console.error(`[Inspector] ❌ Missing core components in registry:`, missingCoreComponents);
+      } else {
+        console.log(`[Inspector] ✅ All core components found in registry`);
+      }
+    }
+  }, [selectedEntity, entityComponents]);
+
   if (selectedEntity == null) {
     return (
       <div className="p-3 text-gray-400 text-center">
         <div className="text-xs">No entity selected</div>
         <div className="text-xs text-gray-500 mt-1">Select an object from the hierarchy</div>
+      </div>
+    );
+  }
+
+  // Wait for core components to be detected before showing inspector content
+  const coreComponents = ['transform', 'meshType', 'material'];
+  const hasCoreComponents = coreComponents.every((comp) => entityComponents.includes(comp));
+
+  if (!hasCoreComponents) {
+    return (
+      <div className="p-3 text-gray-400 text-center">
+        <div className="text-xs">Loading entity components...</div>
+        <div className="text-xs text-gray-500 mt-1">Entity {selectedEntity}</div>
+        <div className="text-xs text-gray-500 mt-1">
+          Detected: {entityComponents.join(', ') || 'None'}
+        </div>
       </div>
     );
   }
@@ -96,12 +139,22 @@ export const InspectorPanelContent: React.FC = () => {
         />
       )}
 
-      {/* Debug Info */}
+      {/* Enhanced Debug Info */}
       {process.env.NODE_ENV === 'development' && (
         <div className="mt-4 p-2 bg-gray-900 rounded border border-gray-600">
-          <div className="text-xs text-gray-400 mb-1">Debug - Entity Components:</div>
-          <div className="text-xs text-gray-300">
+          <div className="text-xs text-gray-400 mb-1">Debug - Entity {selectedEntity}:</div>
+          <div className="text-xs text-gray-300 mb-2">
+            <strong>Dynamic Components:</strong>{' '}
             {entityComponents.length > 0 ? entityComponents.join(', ') : 'None'}
+          </div>
+          <div className="text-xs text-gray-300 mb-2">
+            <strong>Legacy Hooks:</strong> meshType={meshType ? 'loaded' : 'null'}, position=
+            {position ? 'loaded' : 'null'}
+          </div>
+          <div className="text-xs text-gray-300 mb-2">
+            <strong>Component Checks:</strong> velocity={hasVelocity ? 'yes' : 'no'}, rigidBody=
+            {hasRigidBodyComponent ? 'yes' : 'no'}, meshRenderer=
+            {hasMeshRendererComponent ? 'yes' : 'no'}
           </div>
           <div className="text-xs text-gray-400 mt-1">Component Removability:</div>
           <div className="text-xs text-gray-300">

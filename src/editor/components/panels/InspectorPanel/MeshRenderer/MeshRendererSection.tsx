@@ -22,19 +22,6 @@ export interface IMeshRendererSectionProps {
   isPlaying: boolean;
 }
 
-const DEFAULT_MESH_RENDERER: IMeshRendererData = {
-  enabled: true,
-  castShadows: true,
-  receiveShadows: true,
-  material: {
-    color: '#ffffff',
-    metalness: 0,
-    roughness: 0.5,
-    emissive: '#000000',
-    emissiveIntensity: 0,
-  },
-};
-
 export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   meshRenderer,
   setMeshRenderer,

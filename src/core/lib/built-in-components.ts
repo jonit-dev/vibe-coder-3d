@@ -137,6 +137,7 @@ const velocityDescriptor: IComponentDescriptor = {
   name: 'Velocity',
   category: ComponentCategory.Physics,
   component: Velocity,
+  removable: true, // Optional physics component - can be added/removed
   dependencies: ['transform'],
   schema: VelocityComponentSchema,
   serialize: (entityId: number) => ({
@@ -180,6 +181,7 @@ const rigidBodyDescriptor: IComponentDescriptor = {
   name: 'Rigid Body',
   category: ComponentCategory.Physics,
   component: null, // This is managed by the editor store, not bitECS
+  removable: true, // Optional physics component - can be added/removed
   dependencies: ['transform'], // Remove meshCollider dependency to avoid circular deps
   conflicts: [], // Could conflict with kinematic controllers later
   schema: z.object({
@@ -217,6 +219,7 @@ const meshColliderDescriptor: IComponentDescriptor = {
   name: 'Mesh Collider',
   category: ComponentCategory.Physics,
   component: null, // This is managed by the editor store, not bitECS
+  removable: true, // Optional physics component - can be added/removed
   dependencies: ['transform', 'meshType'],
   schema: z.object({
     enabled: z.boolean().default(true),
@@ -257,6 +260,7 @@ const meshRendererDescriptor: IComponentDescriptor = {
   name: 'Mesh Renderer',
   category: ComponentCategory.Rendering,
   component: null, // This is managed by the editor store, not bitECS
+  removable: true, // Optional rendering component - can be added/removed
   dependencies: ['transform', 'meshType', 'material'],
   schema: z.object({
     enabled: z.boolean().default(true),

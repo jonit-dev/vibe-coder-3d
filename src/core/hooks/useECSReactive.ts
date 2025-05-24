@@ -1,7 +1,7 @@
 // Reactive ECS Hooks - Event-driven instead of polling
 import { useCallback, useEffect, useState } from 'react';
 
-import { Transform } from '@core/lib/ecs';
+import { Transform, Velocity } from '@core/lib/ecs';
 import { onECSEvent } from '@core/lib/ecs-events';
 import { ecsManager, ITransformData } from '@core/lib/ecs-manager';
 
@@ -241,8 +241,14 @@ export function useEntityComponent(
   // Check initial component state
   useEffect(() => {
     if (entityId) {
-      // This would need to be expanded to check different component types
-      setHasComponent(ecsManager.hasComponent(entityId, Transform));
+      if (componentName === 'Velocity') {
+        setHasComponent(ecsManager.hasComponent(entityId, Velocity));
+      } else if (componentName === 'Transform') {
+        setHasComponent(ecsManager.hasComponent(entityId, Transform));
+      } else {
+        // For other components, default to false for now
+        setHasComponent(false);
+      }
     } else {
       setHasComponent(false);
     }
@@ -278,8 +284,10 @@ export function useEntityComponent(
   }, [entityId, componentName]);
 
   const removeComponent = useCallback(() => {
-    // Implementation would depend on component type
-    console.log(`Remove component ${componentName} from entity ${entityId}`);
+    if (entityId && componentName === 'Velocity') {
+      ecsManager.removeVelocity(entityId);
+    }
+    // Add more component types as needed
   }, [entityId, componentName]);
 
   return { hasComponent, addComponent, removeComponent };

@@ -1,4 +1,4 @@
-import { ComponentCategory, IComponentGroup } from '../types';
+import { ComponentCategory, IComponentGroup } from '@/core/types/component-registry';
 
 import { ComponentGroupManager } from './ComponentGroupManager';
 

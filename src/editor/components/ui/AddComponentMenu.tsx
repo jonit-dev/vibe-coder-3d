@@ -19,9 +19,9 @@ import {
 } from 'react-icons/fi';
 
 import { ComponentGroupManager } from '@/core/dynamic-components/groups/ComponentGroupManager';
+import { componentRegistry, dynamicComponentManager } from '@/core/dynamic-components/init';
 import type { IComponentGroup } from '@/core/dynamic-components/types';
 import { useEntityComponents } from '@/core/hooks/useComponent';
-import { componentRegistry, dynamicComponentManager } from '@/core/lib/dynamic-components';
 import { ComponentCategory } from '@/core/types/component-registry';
 
 interface IAddComponentMenuProps {

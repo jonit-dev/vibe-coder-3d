@@ -4,7 +4,7 @@ import { ComponentCategory } from '../types/component-registry';
 
 import { componentRegistry } from './component-registry';
 import { dynamicComponentManager } from './dynamic-components';
-import { createEntity as createEntityLegacy, MeshTypeEnum } from './ecs';
+import { createEntity as createEntityLegacy, incrementWorldVersion, MeshTypeEnum } from './ecs';
 
 // Entity archetype interface
 export interface IEntityArchetype {
@@ -119,6 +119,9 @@ export class ArchetypeManager {
         }
       }
     }
+
+    // Force world version update to ensure entity is immediately visible to queries
+    incrementWorldVersion();
 
     console.log(`✅ Created entity ${entityId} from archetype '${archetype.name}'`);
     return entityId;
@@ -379,15 +382,55 @@ export const BUILT_IN_ARCHETYPES: IEntityArchetype[] = [
   },
 ];
 
-// Register built-in archetypes
+// Register built-in archetypes with retry mechanism
 export function registerBuiltInArchetypes(): void {
   try {
+    let successCount = 0;
+    const failedArchetypes: string[] = [];
+
     for (const archetype of BUILT_IN_ARCHETYPES) {
-      ArchetypeManager.registerArchetype(archetype);
+      try {
+        ArchetypeManager.registerArchetype(archetype);
+        successCount++;
+      } catch (error) {
+        console.warn(`Failed to register archetype '${archetype.id}':`, error);
+        failedArchetypes.push(archetype.id);
+      }
     }
-    console.log('✅ All built-in archetypes registered successfully');
+
+    if (failedArchetypes.length > 0) {
+      console.warn(`Failed to register ${failedArchetypes.length} archetypes:`, failedArchetypes);
+
+      // Retry failed archetypes after a short delay
+      setTimeout(() => {
+        console.log('Retrying failed archetype registrations...');
+        let retrySuccessCount = 0;
+
+        for (const archetypeId of failedArchetypes) {
+          const archetype = BUILT_IN_ARCHETYPES.find((a) => a.id === archetypeId);
+          if (archetype) {
+            try {
+              ArchetypeManager.registerArchetype(archetype);
+              retrySuccessCount++;
+              console.log(`✅ Retry successful for archetype '${archetypeId}'`);
+            } catch (retryError) {
+              console.error(`❌ Retry failed for archetype '${archetypeId}':`, retryError);
+            }
+          }
+        }
+
+        if (retrySuccessCount > 0) {
+          console.log(`✅ Successfully registered ${retrySuccessCount} archetypes on retry`);
+        }
+      }, 100);
+    }
+
+    console.log(
+      `✅ Initially registered ${successCount}/${BUILT_IN_ARCHETYPES.length} built-in archetypes`,
+    );
   } catch (error) {
     console.error('❌ Failed to register built-in archetypes:', error);
+    throw error;
   }
 }
 

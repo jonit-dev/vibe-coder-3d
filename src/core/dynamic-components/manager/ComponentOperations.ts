@@ -1,7 +1,6 @@
 import { addComponent, removeComponent } from 'bitecs';
 
 import { incrementWorldVersion, world } from '@/core/lib/ecs';
-
 import {
   IComponentBatch,
   IComponentChangeEvent,
@@ -9,8 +8,10 @@ import {
   IComponentOperation,
   IComponentOperationResult,
   IValidationResult,
-} from '../types';
-import { ComponentValidator, DependencyResolver } from '../validation';
+} from '@/core/types/component-registry';
+
+import { ComponentValidator } from '../validation/ComponentValidator';
+import { DependencyResolver } from '../validation/DependencyResolver';
 
 export class ComponentOperations {
   constructor(

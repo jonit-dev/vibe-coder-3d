@@ -9,14 +9,13 @@ import {
   Transform,
   Velocity,
 } from '@/core/lib/ecs';
+import { ComponentCategory, IComponentDescriptor } from '@/core/types/component-registry';
 import {
   MaterialComponentSchema,
   MeshTypeEnumSchema,
   TransformComponentSchema,
   VelocityComponentSchema,
 } from '@/core/types/ecs';
-
-import { ComponentCategory, IComponentDescriptor } from '../types';
 
 // Core Components - These are required for entity functionality and cannot be removed
 export const transformDescriptor: IComponentDescriptor = {
@@ -295,17 +294,18 @@ export const meshRendererDescriptor: IComponentDescriptor = {
  */
 export function registerBuiltInComponents(registry: any): void {
   try {
-    registry.register(transformDescriptor);
-    registry.register(meshTypeDescriptor);
-    registry.register(materialDescriptor);
-    registry.register(nameDescriptor);
-    registry.register(velocityDescriptor);
-    registry.register(rigidBodyDescriptor);
-    registry.register(meshColliderDescriptor);
-    registry.register(meshRendererDescriptor);
+    registry.registerComponent(transformDescriptor);
+    registry.registerComponent(meshTypeDescriptor);
+    registry.registerComponent(materialDescriptor);
+    registry.registerComponent(nameDescriptor);
+    registry.registerComponent(velocityDescriptor);
+    registry.registerComponent(rigidBodyDescriptor);
+    registry.registerComponent(meshColliderDescriptor);
+    registry.registerComponent(meshRendererDescriptor);
 
     console.log('✅ All built-in components registered successfully');
   } catch (error) {
     console.error('❌ Failed to register built-in components:', error);
+    throw error;
   }
 }

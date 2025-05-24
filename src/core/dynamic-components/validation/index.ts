@@ -1,2 +1,2 @@
-export * from './ComponentValidator';
-export * from './DependencyResolver';
+export { ComponentValidator } from './ComponentValidator';
+export { DependencyResolver } from './DependencyResolver';

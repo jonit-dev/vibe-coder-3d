@@ -1,14 +1,14 @@
 import { hasComponent } from 'bitecs';
 
 import { world } from '@/core/lib/ecs';
-
 import {
   ComponentCategory,
   IComponentChangeEvent,
   IComponentDescriptor,
   IValidationResult,
-} from '../types';
-import { DependencyResolver } from '../validation';
+} from '@/core/types/component-registry';
+
+import { DependencyResolver } from '../validation/DependencyResolver';
 
 import { ComponentMap } from './ComponentMap';
 

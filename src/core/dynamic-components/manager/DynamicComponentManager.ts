@@ -1,4 +1,8 @@
-import { IComponentBatch, IComponentOperationResult, IValidationResult } from '../types';
+import {
+  IComponentBatch,
+  IComponentOperationResult,
+  IValidationResult,
+} from '@/core/types/component-registry';
 
 import { ComponentOperations } from './ComponentOperations';
 import { EditorStoreIntegration } from './EditorStoreIntegration';

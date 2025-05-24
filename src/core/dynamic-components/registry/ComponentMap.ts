@@ -1,4 +1,4 @@
-import { ComponentCategory, IComponentDescriptor } from '../types';
+import { ComponentCategory, IComponentDescriptor } from '@/core/types/component-registry';
 
 /**
  * Efficient component mapping and indexing system

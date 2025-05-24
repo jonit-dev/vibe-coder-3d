@@ -1,8 +1,7 @@
 import { hasComponent } from 'bitecs';
 
 import { world } from '@/core/lib/ecs';
-
-import { IComponentDescriptor, IValidationResult } from '../types';
+import { IComponentDescriptor, IValidationResult } from '@/core/types/component-registry';
 
 export class ComponentValidator {
   static validateComponentAddition(

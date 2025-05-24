@@ -250,6 +250,21 @@ export class ECSManager {
   }
 
   /**
+   * Remove velocity component from entity
+   */
+  removeVelocity(entity: number): void {
+    if (!hasComponent(world, Velocity, entity)) {
+      console.warn(`Entity ${entity} does not have Velocity component`);
+      return;
+    }
+
+    removeComponent(world, Velocity, entity);
+    incrementWorldVersion();
+
+    frameEventBatch.add('component:removed', { entityId: entity, componentName: 'Velocity' });
+  }
+
+  /**
    * Update entity material color
    */
   updateMaterialColor(entity: number, color: [number, number, number]): void {

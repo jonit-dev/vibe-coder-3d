@@ -58,6 +58,10 @@ export {
   world,
 } from './lib/ecs';
 
+// ECS Manager
+export { ecsManager } from './lib/ecs-manager';
+export type { IVelocityOptions } from './lib/ecs-manager';
+
 // Rendering Utilities
 export {
   computeCullingVolume,

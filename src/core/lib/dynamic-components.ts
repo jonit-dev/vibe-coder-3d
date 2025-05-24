@@ -1,4 +1,4 @@
-// Backward compatibility exports for the refactored dynamic components system
+// Re-exports from dynamic-components directory
 export { ComponentGroupManager } from '../dynamic-components/groups/ComponentGroupManager';
 export { DynamicComponentManager } from '../dynamic-components/manager/DynamicComponentManager';
 export { ComponentRegistry } from '../dynamic-components/registry/ComponentRegistry';
@@ -6,17 +6,20 @@ export { ComponentRegistry } from '../dynamic-components/registry/ComponentRegis
 // Re-export types
 export type {
   ComponentCategory,
+  IComponentBatch,
   IComponentChangeEvent,
   IComponentDescriptor,
+  IComponentGroup,
+  IComponentGroupResult,
+  IComponentOperation,
+  IComponentOperationResult,
   IValidationResult,
-} from '../dynamic-components/types';
-
-export type { IComponentGroup, IComponentGroupResult } from '../dynamic-components/types';
+} from '../types/component-registry';
 
 // Export singleton instances for backward compatibility
 import { initializeDynamicComponents } from '../dynamic-components/init';
 
-// Initialize the new system
+// Initialize the system
 const { registry, manager } = initializeDynamicComponents();
 export const componentRegistry = registry;
 export const dynamicComponentManager = manager;
