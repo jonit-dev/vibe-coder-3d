@@ -80,14 +80,7 @@ export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({ entityIds }) =>
   };
 
   const handleRename = () => {
-    if (contextMenu.entityId != null) {
-      const currentName = getEntityName(contextMenu.entityId) || `Entity ${contextMenu.entityId}`;
-      const newName = window.prompt('Enter new name for entity', currentName);
-      if (newName && newName.trim()) {
-        setEntityName(contextMenu.entityId, newName.trim());
-        forceUpdate((n) => n + 1); // force re-render
-      }
-    }
+    // No longer using prompt - users can double-click to edit inline
     handleCloseMenu();
   };
 

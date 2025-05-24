@@ -13,6 +13,8 @@ import { AddComponentMenu } from '@/editor/components/ui/AddComponentMenu';
 import { useEntityInfo } from '@/editor/hooks/useEntityInfo';
 import { useEditorStore } from '@/editor/store/editorStore';
 
+import { EditableEntityName } from './EditableEntityName';
+
 export interface IStackedLeftPanelProps {
   hierarchyContent: ReactNode;
   inspectorContent: ReactNode;
@@ -172,8 +174,12 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
                         <span className="text-[10px] font-medium text-gray-400 flex-shrink-0">
                           Name:
                         </span>
-                        <div className="bg-black/30 border border-gray-600/30 rounded px-1.5 py-0.5 min-w-0">
-                          <span className="text-[10px] text-gray-200 truncate">{entityName}</span>
+                        <div className="bg-black/30 border border-gray-600/30 rounded px-1.5 py-0.5 min-w-0 hover:bg-black/50 hover:border-blue-500/30 transition-all duration-200">
+                          <EditableEntityName
+                            entityId={selectedEntity}
+                            enableClickToEdit={true}
+                            className="text-[10px] text-gray-200 truncate"
+                          />
                         </div>
                       </div>
                     </div>
@@ -191,7 +197,7 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
                       <FiPlus
                         className={`w-3 h-3 ${showAddComponent ? 'text-blue-200' : 'text-blue-400'}`}
                       />
-                      <span>+ Add Component</span>
+                      <span>Add Component</span>
                     </button>
                   </div>
                 )}
