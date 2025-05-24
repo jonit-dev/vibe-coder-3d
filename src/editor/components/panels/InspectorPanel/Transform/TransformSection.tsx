@@ -1,7 +1,8 @@
 import React from 'react';
+import { FiMove } from 'react-icons/fi';
 
-import { Collapsible } from '@/editor/components/common/Collapsible';
 import { TransformFields } from '@/editor/components/panels/InspectorPanel/Transform/TransformFields/TransformFields';
+import { InspectorSection } from '@/editor/components/ui/InspectorSection';
 
 export interface ITransformSectionProps {
   position: [number, number, number];
@@ -20,9 +21,17 @@ export const TransformSection: React.FC<ITransformSectionProps> = ({
   setRotation,
   setScale,
 }) => (
-  <Collapsible title="Transform" defaultOpen>
-    <TransformFields label="Position" value={position} onChange={setPosition} />
-    <TransformFields label="Rotation" value={rotation} onChange={setRotation} />
-    <TransformFields label="Scale" value={scale} onChange={setScale} />
-  </Collapsible>
+  <InspectorSection
+    title="Transform"
+    icon={<FiMove />}
+    headerColor="green"
+    collapsible
+    defaultCollapsed={false}
+  >
+    <div className="space-y-2">
+      <TransformFields label="Position" value={position} onChange={setPosition} />
+      <TransformFields label="Rotation" value={rotation} onChange={setRotation} />
+      <TransformFields label="Scale" value={scale} onChange={setScale} />
+    </div>
+  </InspectorSection>
 );

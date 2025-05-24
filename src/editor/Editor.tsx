@@ -8,6 +8,8 @@ import { AddObjectMenu } from './AddObjectMenu';
 import { HierarchyPanel } from './components/panels/HierarchyPanel/HierarchyPanel';
 import { InspectorPanel } from './components/panels/InspectorPanel/InspectorPanel';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
+import { StatusBar } from './components/ui/StatusBar';
+import { TopBar } from './components/ui/TopBar';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { ISerializedScene, useSceneSerialization } from './hooks/useSceneSerialization';
 import { useEditorStore } from './store/editorStore';
@@ -39,7 +41,7 @@ const Editor: React.FC = () => {
   const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
   const [statusMessage, setStatusMessage] = useState<string>('Ready');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const addButtonRef = useRef<HTMLDivElement>(null);
   const { exportScene, importScene } = useSceneSerialization();
   // Store the last scene in localStorage with the correct type
   const [savedScene, setSavedScene] = useLocalStorage<ISerializedScene>('lastScene', {
@@ -57,7 +59,9 @@ const Editor: React.FC = () => {
         console.log('Loading scene from localStorage:', savedScene);
         importScene(savedScene);
         if (savedScene.entities.length > 0) {
-          setStatusMessage(`Loaded last saved scene from localStorage (version ${savedScene.version}).`);
+          setStatusMessage(
+            `Loaded last saved scene from localStorage (version ${savedScene.version}).`,
+          );
         }
       } catch (err) {
         console.error('Failed to load scene from localStorage:', err);
@@ -186,60 +190,30 @@ const Editor: React.FC = () => {
 
   return (
     <div
-      className="w-full h-screen flex flex-col bg-[#232323] text-white"
+      className="w-full h-screen flex flex-col bg-gradient-to-br from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] text-white"
       onContextMenu={(e) => e.preventDefault()}
     >
-      <header className="p-2 bg-[#1a1a1a] border-b border-[#222] flex items-center shadow-sm justify-between">
-        <div className="flex items-center">
-          <h1 className="text-lg font-bold tracking-wide mr-4">Game Editor</h1>
-          <div className="text-xs bg-blue-900/30 px-2 py-1 rounded text-blue-200">
-            {entityIds.length} object{entityIds.length !== 1 ? 's' : ''}
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            ref={addButtonRef}
-            className="btn btn-success btn-sm font-semibold normal-case"
-            onClick={() => setShowAddMenu(!showAddMenu)}
-            title="Add Object (Ctrl+N)"
-            type="button"
-          >
-            + Add Object
-          </button>
-          <AddObjectMenu
-            anchorRef={addButtonRef as React.RefObject<HTMLElement>}
-            onAdd={handleAddObject}
-          />
-          <button
-            className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-800 text-xs font-semibold"
-            onClick={handleSave}
-            title="Save Scene (Ctrl+S)"
-          >
-            Save Scene
-          </button>
-          <button
-            className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-800 text-xs font-semibold"
-            onClick={() => fileInputRef.current?.click()}
-            title="Load Scene"
-          >
-            Load Scene
-          </button>
-          <button
-            className="px-3 py-1 rounded bg-red-700 hover:bg-red-800 text-xs font-semibold"
-            onClick={handleClear}
-            title="Clear Scene"
-          >
-            Clear
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json"
-            className="hidden"
-            onChange={handleLoad}
-          />
-        </div>
-      </header>
+      <TopBar
+        entityCount={entityIds.length}
+        onSave={handleSave}
+        onLoad={() => fileInputRef.current?.click()}
+        onClear={handleClear}
+        onAddObject={() => setShowAddMenu(!showAddMenu)}
+      />
+
+      <div ref={addButtonRef} className="hidden" />
+      <AddObjectMenu
+        anchorRef={addButtonRef as React.RefObject<HTMLElement>}
+        onAdd={handleAddObject}
+      />
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json"
+        className="hidden"
+        onChange={handleLoad}
+      />
       <main className="flex-1 flex overflow-hidden">
         <HierarchyPanel entityIds={entityIds} />
         {selectedId != null ? (
@@ -261,20 +235,14 @@ const Editor: React.FC = () => {
           </div>
         )}
       </main>
-      <footer className="h-6 bg-[#1a1a1a] border-t border-[#222] flex items-center text-xs px-3 justify-between text-gray-400">
-        <div>{statusMessage}</div>
-        <div className="flex gap-3">
-          <div title="Add Object" className="opacity-70">
-            Ctrl+N
-          </div>
-          <div title="Save Scene" className="opacity-70">
-            Ctrl+S
-          </div>
-          <div title="Delete Object" className="opacity-70">
-            Delete
-          </div>
-        </div>
-      </footer>
+      <StatusBar
+        statusMessage={statusMessage}
+        stats={{
+          entities: entityIds.length,
+          fps: 60, // placeholder
+          memory: '128MB', // placeholder
+        }}
+      />
     </div>
   );
 };

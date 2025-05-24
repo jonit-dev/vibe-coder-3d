@@ -88,10 +88,10 @@ export const ColorPicker: React.FC<IColorPickerProps> = ({ value, onChange, labe
   }, []);
 
   return (
-    <div className="py-1">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs">{label}</span>
-        <div className="flex items-center gap-2">
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-gray-300">{label}</span>
+        <div className="flex items-center space-x-2">
           <input
             ref={colorInputRef}
             type="color"
@@ -101,13 +101,13 @@ export const ColorPicker: React.FC<IColorPickerProps> = ({ value, onChange, labe
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseMove={handleMouseMove}
-            className="h-6 w-12 rounded border-none p-0 cursor-pointer"
+            className="w-8 h-6 rounded bg-black/30 border border-gray-600/30 cursor-pointer"
           />
           <input
             type="text"
             value={localValue}
             onChange={(e) => handleColorChange(e.target.value)}
-            className="input input-xs input-bordered w-16"
+            className="bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-cyan-500/50 focus:bg-black/50 transition-all duration-200 w-20"
             placeholder="#FFFFFF"
           />
         </div>

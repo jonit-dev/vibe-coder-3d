@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
+import { FiLayers } from 'react-icons/fi';
 import { TbCube } from 'react-icons/tb';
 
+import { SidePanel } from '@/editor/components/ui/SidePanel';
 import { useEditorStore } from '@/editor/store/editorStore';
 import {
   createEntity,
@@ -90,13 +92,16 @@ export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({ entityIds }) =>
   };
 
   return (
-    <aside className="w-64 bg-[#23272e] flex-shrink-0 flex flex-col h-full border-r border-[#181a1b]">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[#333] bg-[#23272e]">
-        <div className="text-xs uppercase tracking-wider font-bold text-gray-300">Hierarchy</div>
-      </div>
-      <div className="flex-1 overflow-y-auto bg-[#23272e]">
+    <SidePanel
+      title="Hierarchy"
+      subtitle={`${entityIds.length} objects`}
+      width="w-80"
+      position="left"
+      icon={<FiLayers />}
+    >
+      <div className="p-4">
         <ul
-          className="p-4 space-y-2"
+          className="space-y-1"
           onContextMenu={(e) => {
             e.preventDefault();
           }}
@@ -122,6 +127,6 @@ export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({ entityIds }) =>
           onDelete={handleDelete}
         />
       </div>
-    </aside>
+    </SidePanel>
   );
 };

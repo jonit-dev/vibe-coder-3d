@@ -1,6 +1,7 @@
 import React from 'react';
+import { FiBox } from 'react-icons/fi';
 
-import { Collapsible } from '@/editor/components/common/Collapsible';
+import { InspectorSection } from '@/editor/components/ui/InspectorSection';
 
 export interface IMeshTypeSectionProps {
   meshType: string;
@@ -8,15 +9,19 @@ export interface IMeshTypeSectionProps {
 }
 
 export const MeshTypeSection: React.FC<IMeshTypeSectionProps> = ({ meshType, setMeshType }) => (
-  <Collapsible title="Mesh Type" defaultOpen>
-    <div className="form-control mb-1">
-      <label className="label py-1">
-        <span className="label-text text-xs font-medium">Mesh Type</span>
-      </label>
+  <InspectorSection
+    title="Mesh Type"
+    icon={<FiBox />}
+    headerColor="purple"
+    collapsible
+    defaultCollapsed={false}
+  >
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-gray-300">Type</label>
       <select
         value={meshType}
         onChange={(e) => setMeshType(e.target.value)}
-        className="select select-bordered select-sm w-full"
+        className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-cyan-500/50 focus:bg-black/50 transition-all duration-200"
       >
         <option value="unknown" disabled>
           Select mesh type
@@ -29,5 +34,5 @@ export const MeshTypeSection: React.FC<IMeshTypeSectionProps> = ({ meshType, set
         <option value="Plane">Plane</option>
       </select>
     </div>
-  </Collapsible>
+  </InspectorSection>
 );

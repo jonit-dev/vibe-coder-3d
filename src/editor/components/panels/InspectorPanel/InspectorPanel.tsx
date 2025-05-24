@@ -1,19 +1,16 @@
 import React from 'react';
+import { FiInfo, FiSettings } from 'react-icons/fi';
 
-import {
-  IMeshRendererSettings,
-  meshRendererDefaults,
-  MeshRendererSection,
-} from '@/editor/components/panels/InspectorPanel/Mesh/MeshRendererSection';
+import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshRendererSection';
 import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
+import { InspectorSection } from '@/editor/components/ui/InspectorSection';
+import { SidePanel } from '@/editor/components/ui/SidePanel';
 import { useEntityInfo } from '@/editor/hooks/useEntityInfo';
 import { useMaterial } from '@/editor/hooks/useMaterial';
 import { useMesh } from '@/editor/hooks/useMesh';
 import { useTransform } from '@/editor/hooks/useTransform';
 import { useEditorStore } from '@/editor/store/editorStore';
-
-import { Card } from '../../common/Card';
 
 export const InspectorPanel: React.FC = () => {
   const selectedEntity = useEditorStore((s: { selectedId: number | null }) => s.selectedId);
@@ -22,20 +19,24 @@ export const InspectorPanel: React.FC = () => {
     useTransform(selectedEntity);
   const { entityId, entityName } = useEntityInfo(selectedEntity);
   const { color, setColor } = useMaterial(selectedEntity);
-  const [meshRenderer, setMeshRenderer] =
-    React.useState<IMeshRendererSettings>(meshRendererDefaults);
 
   if (selectedEntity == null) {
     return (
-      <Card title="Inspector" className="max-w-md w-full mx-auto shadow-none">
-        <div className="text-base-content text-opacity-50">No entity selected</div>
-      </Card>
+      <SidePanel title="Inspector" width="w-96" position="right" icon={<FiSettings />}>
+        <div className="p-4 text-gray-400 text-center">No entity selected</div>
+      </SidePanel>
     );
   }
 
   return (
-    <Card title="Inspector" className="max-w-md w-[380px] mx-auto shadow-none">
-      <div className="h-[calc(100vh-120px)] overflow-y-auto pr-2">
+    <SidePanel
+      title="Inspector"
+      subtitle={`Entity ${selectedEntity}`}
+      width="w-96"
+      position="right"
+      icon={<FiSettings />}
+    >
+      <div className="flex-1 overflow-y-auto space-y-2 p-2">
         <EntityInfoSection entityId={entityId} entityName={entityName} />
         <MeshTypeSection meshType={meshType} setMeshType={setMeshType} />
         <TransformSection
@@ -46,14 +47,9 @@ export const InspectorPanel: React.FC = () => {
           setRotation={setRotation}
           setScale={setScale}
         />
-        <MeshRendererSection
-          meshRenderer={meshRenderer}
-          setMeshRenderer={setMeshRenderer}
-          color={color}
-          setColor={setColor}
-        />
+        <MeshRendererSection color={color} setColor={setColor} />
       </div>
-    </Card>
+    </SidePanel>
   );
 };
 
@@ -62,18 +58,21 @@ export const EntityInfoSection: React.FC<{ entityId: number | null; entityName: 
   entityId,
   entityName,
 }) => (
-  <div className="mb-2">
-    <div className="flex items-center mb-1">
-      <span className="label-text text-xs font-medium mr-2">Entity ID:</span>
-      <span className="bg-base-300 rounded px-2 py-1 text-xs font-mono text-base-content/80">
-        {entityId}
-      </span>
+  <InspectorSection title="Entity Info" icon={<FiInfo />} headerColor="cyan">
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-gray-400">ID:</span>
+        <div className="bg-black/30 border border-gray-600/30 rounded px-2 py-0.5">
+          <span className="text-xs font-mono text-cyan-300">{entityId}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-gray-400">Name:</span>
+        <div className="bg-black/30 border border-gray-600/30 rounded px-2 py-0.5">
+          <span className="text-xs text-gray-200">{entityName}</span>
+        </div>
+      </div>
     </div>
-    <div className="flex items-center mb-1">
-      <span className="label-text text-xs font-medium mr-2">Name:</span>
-      <span className="bg-base-300 rounded px-2 py-1 text-xs text-base-content/80">
-        {entityName}
-      </span>
-    </div>
-  </div>
+  </InspectorSection>
 );
