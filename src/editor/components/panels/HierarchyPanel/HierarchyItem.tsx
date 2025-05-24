@@ -13,7 +13,7 @@ export interface IHierarchyItemProps {
 }
 
 export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
-  ({ id, selected, onSelect, onContextMenu, name }, ref) => {
+  ({ id, selected, onSelect, onContextMenu }, ref) => {
     const handleClick = (e: React.MouseEvent) => {
       // Only select if not editing the name
       if (!(e.target as HTMLElement).matches('input')) {

@@ -4,7 +4,6 @@ import { FiShield } from 'react-icons/fi';
 import { InspectorSection } from '@/editor/components/ui/InspectorSection';
 
 import { ColliderFields } from './ColliderFields';
-import { ColliderScalarField } from './ColliderScalarField';
 
 export type ColliderType = 'box' | 'sphere' | 'capsule' | 'mesh' | 'convex';
 
@@ -82,6 +81,10 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const handleRemoveMeshCollider = () => {
+    setMeshCollider(null);
+  };
+
   const handleToggleMeshCollider = () => {
     if (meshCollider) {
       setMeshCollider(null);
@@ -118,7 +121,10 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
     }
   };
 
-  // Center updates are handled directly through ColliderFields component
+  // Don't render the section if meshCollider is null
+  if (!meshCollider) {
+    return null;
+  }
 
   return (
     <InspectorSection
@@ -127,6 +133,8 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
       headerColor="green"
       collapsible
       defaultCollapsed={false}
+      removable={true}
+      onRemove={handleRemoveMeshCollider}
     >
       <div className="space-y-3">
         {/* Enable/Disable Toggle */}
@@ -150,241 +158,182 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
           </button>
         </div>
 
-        {meshCollider && (
-          <>
-            {/* Collider Type */}
+        {/* Collider Type */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-400">Collider Type</label>
+          <select
+            value={meshCollider.colliderType}
+            onChange={(e) => updateMeshCollider({ colliderType: e.target.value as ColliderType })}
+            disabled={isPlaying}
+            className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
+          >
+            <option value="box">Box Collider</option>
+            <option value="sphere">Sphere Collider</option>
+            <option value="capsule">Capsule Collider</option>
+            <option value="convex">Convex Hull</option>
+            <option value="mesh">Mesh Collider</option>
+          </select>
+        </div>
+
+        {/* Collider Center */}
+        <ColliderFields
+          label="Center"
+          value={meshCollider.center}
+          onChange={(center: [number, number, number]) => updateMeshCollider({ center })}
+          step={0.01}
+          sensitivity={0.1}
+        />
+
+        {/* Collider Size - varies by type */}
+        {meshCollider.colliderType === 'box' && (
+          <ColliderFields
+            label="Size"
+            value={[meshCollider.size.width, meshCollider.size.height, meshCollider.size.depth]}
+            onChange={(size: [number, number, number]) =>
+              updateSize({ width: size[0], height: size[1], depth: size[2] })
+            }
+            step={0.01}
+            sensitivity={0.1}
+          />
+        )}
+
+        {meshCollider.colliderType === 'sphere' && (
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-gray-400">Size</div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-400">Collider Type</label>
-              <select
-                value={meshCollider.colliderType}
-                onChange={(e) =>
-                  updateMeshCollider({ colliderType: e.target.value as ColliderType })
-                }
-                disabled={isPlaying}
-                className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-              >
-                <option value="box">Box Collider</option>
-                <option value="sphere">Sphere Collider</option>
-                <option value="capsule">Capsule Collider</option>
-                <option value="convex">Convex Hull</option>
-                <option value="mesh">Mesh Collider</option>
-              </select>
-            </div>
-
-            {/* Collider Center */}
-            <ColliderFields
-              label="Center"
-              value={meshCollider.center}
-              onChange={(center: [number, number, number]) => updateMeshCollider({ center })}
-              step={0.01}
-              sensitivity={0.1}
-            />
-
-            {/* Collider Size - varies by type */}
-            {meshCollider.colliderType === 'box' && (
-              <ColliderFields
-                label="Size"
-                value={[meshCollider.size.width, meshCollider.size.height, meshCollider.size.depth]}
-                onChange={(size: [number, number, number]) =>
-                  updateSize({ width: size[0], height: size[1], depth: size[2] })
-                }
-                step={0.01}
-                sensitivity={0.1}
-              />
-            )}
-
-            {meshCollider.colliderType === 'sphere' && (
-              <div className="space-y-2">
-                <div className="text-xs font-medium text-gray-400">Size</div>
-                <div className="space-y-1">
-                  <label className="text-xs text-gray-500">Radius</label>
-                  <input
-                    type="number"
-                    value={meshCollider.size.radius}
-                    onChange={(e) => updateSize({ radius: parseFloat(e.target.value) || 0 })}
-                    disabled={isPlaying}
-                    step={0.1}
-                    min={0.01}
-                    className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-                  />
-                </div>
-              </div>
-            )}
-
-            {meshCollider.colliderType === 'capsule' && (
-              <div className="space-y-2">
-                <div className="text-xs font-medium text-gray-400">Size</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <label className="text-xs text-gray-500">Radius</label>
-                    <input
-                      type="number"
-                      value={meshCollider.size.capsuleRadius}
-                      onChange={(e) =>
-                        updateSize({ capsuleRadius: parseFloat(e.target.value) || 0 })
-                      }
-                      disabled={isPlaying}
-                      step={0.1}
-                      min={0.01}
-                      className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs text-gray-500">Height</label>
-                    <input
-                      type="number"
-                      value={meshCollider.size.capsuleHeight}
-                      onChange={(e) =>
-                        updateSize({ capsuleHeight: parseFloat(e.target.value) || 0 })
-                      }
-                      disabled={isPlaying}
-                      step={0.1}
-                      min={0.01}
-                      className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {(meshCollider.colliderType === 'convex' || meshCollider.colliderType === 'mesh') && (
-              <div className="space-y-1">
-                <div className="text-xs text-gray-500 bg-blue-500/10 border border-blue-500/20 rounded px-2 py-1">
-                  ℹ️ {meshCollider.colliderType === 'convex' ? 'Convex Hull' : 'Mesh'} colliders use
-                  the original mesh geometry. Only center offset can be adjusted.
-                </div>
-              </div>
-            )}
-
-            {meshCollider.colliderType === 'sphere' && (
-              <ColliderScalarField
-                label="Radius"
-                value={meshCollider.size.radius}
-                onChange={(radius: number) => updateSize({ radius })}
-                step={0.01}
-                sensitivity={0.1}
-                min={0.01}
-                defaultValue={0.5}
-              />
-            )}
-
-            {meshCollider.colliderType === 'capsule' && (
-              <>
-                <ColliderScalarField
-                  label="Radius"
-                  value={meshCollider.size.capsuleRadius}
-                  onChange={(capsuleRadius: number) => updateSize({ capsuleRadius })}
-                  step={0.01}
-                  sensitivity={0.1}
-                  min={0.01}
-                  defaultValue={0.5}
-                />
-                <ColliderScalarField
-                  label="Height"
-                  value={meshCollider.size.capsuleHeight}
-                  onChange={(capsuleHeight: number) => updateSize({ capsuleHeight })}
-                  step={0.01}
-                  sensitivity={0.1}
-                  min={0.01}
-                  defaultValue={2}
-                />
-              </>
-            )}
-
-            {(meshCollider.colliderType === 'convex' || meshCollider.colliderType === 'mesh') && (
-              <div className="space-y-1">
-                <div className="text-xs text-gray-500 bg-blue-500/10 border border-blue-500/20 rounded px-2 py-1">
-                  ℹ️ {meshCollider.colliderType === 'convex' ? 'Convex Hull' : 'Mesh'} colliders use
-                  the original mesh geometry. Only center offset can be adjusted.
-                </div>
-              </div>
-            )}
-
-            {/* Is Trigger */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-400">Is Trigger</span>
+              <label className="text-xs text-gray-500">Radius</label>
               <input
-                type="checkbox"
-                checked={meshCollider.isTrigger}
-                onChange={(e) => updateMeshCollider({ isTrigger: e.target.checked })}
+                type="number"
+                value={meshCollider.size.radius}
+                onChange={(e) => updateSize({ radius: parseFloat(e.target.value) || 0.01 })}
                 disabled={isPlaying}
-                className="rounded border-gray-600 bg-black/30 text-green-500 focus:ring-green-500 disabled:opacity-50"
+                step={0.01}
+                min={0.01}
+                className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
               />
             </div>
+          </div>
+        )}
 
-            {/* Advanced Settings Toggle */}
-            <button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full text-xs text-green-400 hover:text-green-300 text-left"
-            >
-              {showAdvanced ? '▼' : '▶'} Physics Material
-            </button>
+        {meshCollider.colliderType === 'capsule' && (
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-gray-400">Size</div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Radius</label>
+              <input
+                type="number"
+                value={meshCollider.size.capsuleRadius}
+                onChange={(e) => updateSize({ capsuleRadius: parseFloat(e.target.value) || 0.01 })}
+                disabled={isPlaying}
+                step={0.01}
+                min={0.01}
+                className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Height</label>
+              <input
+                type="number"
+                value={meshCollider.size.capsuleHeight}
+                onChange={(e) => updateSize({ capsuleHeight: parseFloat(e.target.value) || 0.01 })}
+                disabled={isPlaying}
+                step={0.01}
+                min={0.01}
+                className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
+              />
+            </div>
+          </div>
+        )}
 
-            {showAdvanced && (
-              <div className="space-y-3 pl-2 border-l border-gray-600/30">
-                {/* Physics Material Properties */}
-                <div className="space-y-2">
-                  <div className="text-xs font-medium text-gray-400">Physics Material</div>
+        {(meshCollider.colliderType === 'mesh' || meshCollider.colliderType === 'convex') && (
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2">
+            <div className="text-xs text-blue-300">
+              💡 {meshCollider.colliderType === 'mesh' ? 'Mesh' : 'Convex'} colliders use the
+              entity's mesh geometry
+            </div>
+          </div>
+        )}
 
-                  <div className="space-y-1">
-                    <label className="text-xs text-gray-500">Friction</label>
-                    <input
-                      type="number"
-                      value={meshCollider.physicsMaterial.friction}
-                      onChange={(e) =>
-                        updatePhysicsMaterial({ friction: parseFloat(e.target.value) || 0 })
-                      }
-                      disabled={isPlaying}
-                      step={0.1}
-                      min={0}
-                      max={2}
-                      className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-                    />
-                    <div className="text-xs text-gray-500">How much friction this surface has</div>
-                  </div>
+        {/* Is Trigger */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-gray-400">Is Trigger</span>
+          <input
+            type="checkbox"
+            checked={meshCollider.isTrigger}
+            onChange={(e) => updateMeshCollider({ isTrigger: e.target.checked })}
+            disabled={isPlaying}
+            className="rounded border-gray-600 bg-black/30 text-green-500 focus:ring-green-500 disabled:opacity-50"
+          />
+        </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs text-gray-500">Bounciness</label>
-                    <input
-                      type="number"
-                      value={meshCollider.physicsMaterial.restitution}
-                      onChange={(e) =>
-                        updatePhysicsMaterial({ restitution: parseFloat(e.target.value) || 0 })
-                      }
-                      disabled={isPlaying}
-                      step={0.1}
-                      min={0}
-                      max={1}
-                      className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-                    />
-                    <div className="text-xs text-gray-500">How bouncy this surface is</div>
-                  </div>
+        {/* Advanced Settings Toggle */}
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full text-xs text-green-400 hover:text-green-300 text-left"
+        >
+          {showAdvanced ? '▼' : '▶'} Advanced Settings
+        </button>
 
-                  <div className="space-y-1">
-                    <label className="text-xs text-gray-500">Density</label>
-                    <input
-                      type="number"
-                      value={meshCollider.physicsMaterial.density}
-                      onChange={(e) =>
-                        updatePhysicsMaterial({ density: parseFloat(e.target.value) || 0 })
-                      }
-                      disabled={isPlaying}
-                      step={0.1}
-                      min={0.01}
-                      className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-                    />
-                    <div className="text-xs text-gray-500">Mass per unit volume</div>
-                  </div>
-                </div>
+        {showAdvanced && (
+          <div className="space-y-3 pl-2 border-l border-gray-600/30">
+            {/* Physics Material Properties */}
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-400">Physics Material</div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Friction</label>
+                <input
+                  type="number"
+                  value={meshCollider.physicsMaterial.friction}
+                  onChange={(e) =>
+                    updatePhysicsMaterial({ friction: parseFloat(e.target.value) || 0 })
+                  }
+                  disabled={isPlaying}
+                  step={0.1}
+                  min={0}
+                  max={2}
+                  className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
+                />
               </div>
-            )}
 
-            {isPlaying && (
-              <div className="text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded px-2 py-1">
-                ⚠️ Collider settings cannot be modified during play mode
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Restitution (Bounce)</label>
+                <input
+                  type="number"
+                  value={meshCollider.physicsMaterial.restitution}
+                  onChange={(e) =>
+                    updatePhysicsMaterial({ restitution: parseFloat(e.target.value) || 0 })
+                  }
+                  disabled={isPlaying}
+                  step={0.1}
+                  min={0}
+                  max={1}
+                  className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
+                />
               </div>
-            )}
-          </>
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Density</label>
+                <input
+                  type="number"
+                  value={meshCollider.physicsMaterial.density}
+                  onChange={(e) =>
+                    updatePhysicsMaterial({ density: parseFloat(e.target.value) || 0 })
+                  }
+                  disabled={isPlaying}
+                  step={0.1}
+                  min={0.01}
+                  className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isPlaying && (
+          <div className="text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded px-2 py-1">
+            ⚠️ Physics settings cannot be modified during play mode
+          </div>
         )}
       </div>
     </InspectorSection>

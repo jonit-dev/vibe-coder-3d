@@ -25,7 +25,6 @@ export const HierarchyPanelContent: React.FC<IHierarchyPanelContentProps> = ({ e
     entityId: number | null;
     anchorRef: React.RefObject<HTMLLIElement> | null;
   }>({ open: false, entityId: null, anchorRef: null });
-  const [, forceUpdate] = useState(0); // for re-render on rename
 
   // Store refs for each item for context menu positioning
   const itemRefs = useRef<Record<number, React.RefObject<HTMLLIElement>>>({});

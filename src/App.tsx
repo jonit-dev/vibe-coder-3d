@@ -1,11 +1,7 @@
 import { useEffect } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
-import {
-  registerBuiltInArchetypes,
-  registerBuiltInComponentGroups,
-  registerBuiltInComponents,
-} from '@/core';
+import { registerBuiltInArchetypes, registerBuiltInComponentGroups } from '@/core';
 import Editor from '@/editor/Editor';
 import { MainScene } from '@/game/scenes/MainScene';
 
@@ -25,9 +21,7 @@ export default function App() {
     }
 
     try {
-      console.log('Registering built-in components...');
-      registerBuiltInComponents();
-      console.log('✅ Components registered');
+      console.log('✅ Built-in components loaded automatically');
 
       console.log('Registering built-in archetypes...');
       registerBuiltInArchetypes();

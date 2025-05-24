@@ -133,7 +133,7 @@ export function useComponentManager(entityId: number | null, componentId: string
   }, [entityId, componentId]);
 
   const updateData = useCallback(
-    (newData: any): IValidationResult => {
+    async (newData: any): Promise<IValidationResult> => {
       if (entityId === null) {
         const errorResult = {
           valid: false,
@@ -144,7 +144,7 @@ export function useComponentManager(entityId: number | null, componentId: string
         return errorResult;
       }
 
-      const result = dynamicComponentManager.setComponentData(entityId, componentId, newData);
+      const result = await dynamicComponentManager.setComponentData(entityId, componentId, newData);
       setLastResult(result);
       return result;
     },

@@ -26,10 +26,12 @@ export interface IComponentDescriptor<T = any> {
   onAdd?: (entityId: number) => void;
   onRemove?: (entityId: number) => void;
   required?: boolean;
+  removable?: boolean; // Whether this component can be removed from entities (default: true for optional components)
   metadata?: {
     description?: string;
     version?: string;
     author?: string;
+    tags?: string[];
   };
 }
 
@@ -46,7 +48,7 @@ export interface IValidationResult {
 export interface IComponentChangeEvent {
   entityId: number;
   componentId: string;
-  action: 'add' | 'remove';
+  action: 'add' | 'remove' | 'update';
   data?: any;
   timestamp: number;
 }
@@ -61,11 +63,13 @@ export const ComponentDescriptorSchema = z.object({
   dependencies: z.array(z.string()).optional(),
   conflicts: z.array(z.string()).optional(),
   required: z.boolean().default(false),
+  removable: z.boolean().default(true),
   metadata: z
     .object({
       description: z.string().optional(),
       version: z.string().optional(),
       author: z.string().optional(),
+      tags: z.array(z.string()).optional(),
     })
     .optional(),
 });
@@ -81,7 +85,7 @@ export const ValidationResultSchema = z.object({
 export const ComponentChangeEventSchema = z.object({
   entityId: z.number().int().nonnegative(),
   componentId: z.string().min(1),
-  action: z.literal('add').or(z.literal('remove')),
+  action: z.literal('add').or(z.literal('remove')).or(z.literal('update')),
   data: z.any().optional(),
   timestamp: z.number().int().nonnegative(),
 });

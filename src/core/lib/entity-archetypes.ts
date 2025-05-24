@@ -101,12 +101,20 @@ export class ArchetypeManager {
     if (overrides) {
       for (const [componentId, data] of Object.entries(overrides)) {
         if (coreComponents.includes(componentId) && data) {
-          const result = dynamicComponentManager.setComponentData(entityId, componentId, data);
-          if (!result.valid) {
-            console.warn(
-              `Failed to set component data for '${componentId}' on entity ${entityId}:`,
-              result.errors,
+          try {
+            const result = await dynamicComponentManager.setComponentData(
+              entityId,
+              componentId,
+              data,
             );
+            if (!result.valid) {
+              console.warn(
+                `Failed to set component data for '${componentId}' on entity ${entityId}:`,
+                result.errors,
+              );
+            }
+          } catch (error) {
+            console.warn(`Error setting component data for '${componentId}':`, error);
           }
         }
       }

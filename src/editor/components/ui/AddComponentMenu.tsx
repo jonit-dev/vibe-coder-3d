@@ -18,10 +18,10 @@ import {
   FiZap,
 } from 'react-icons/fi';
 
+import { ComponentGroupManager } from '@/core/dynamic-components/groups/ComponentGroupManager';
+import type { IComponentGroup } from '@/core/dynamic-components/types';
 import { useEntityComponents } from '@/core/hooks/useComponent';
-import { ComponentGroupManager, IComponentGroup } from '@/core/lib/component-groups';
-import { componentRegistry } from '@/core/lib/component-registry';
-import { dynamicComponentManager } from '@/core/lib/dynamic-components';
+import { componentRegistry, dynamicComponentManager } from '@/core/lib/dynamic-components';
 import { ComponentCategory } from '@/core/types/component-registry';
 
 interface IAddComponentMenuProps {
@@ -107,14 +107,6 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
 
   const entityComponents = useEntityComponents(entityId);
 
-  // Debug logging
-  console.log('AddComponentMenu Debug:', {
-    entityId,
-    isOpen,
-    entityComponents,
-    entityComponentsLength: entityComponents.length,
-  });
-
   // Get available components
   const availableComponents = useMemo(() => {
     if (!entityId) return [];
@@ -132,6 +124,46 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
       ComponentGroupManager.canAddGroupToEntity(entityId, group.id),
     );
   }, [entityId, entityComponents]);
+
+  // Debug logging
+  console.log('AddComponentMenu Debug:', {
+    entityId,
+    isOpen,
+    entityComponents,
+    entityComponentsLength: entityComponents.length,
+    allComponents: componentRegistry.getAllComponents().map((c) => c.id),
+    allComponentsLength: componentRegistry.getAllComponents().length,
+    availableComponentsLength: availableComponents.length,
+    availableGroupsLength: availableGroups.length,
+    filteredOut: componentRegistry
+      .getAllComponents()
+      .filter((component) => entityComponents.includes(component.id))
+      .map((c) => c.id),
+    availableComponents: availableComponents.map((c) => ({
+      id: c.id,
+      name: c.name,
+      required: c.required,
+    })),
+    availableGroups: availableGroups.map((g) => ({ id: g.id, name: g.name })),
+  });
+
+  // Special debug for Ground entity
+  if (entityId && entityComponents.length > 0) {
+    console.log('🔍 Ground Entity Debug:', {
+      entityId,
+      entityComponents,
+      allRegisteredComponents: componentRegistry.getAllComponents().map((c) => ({
+        id: c.id,
+        name: c.name,
+        required: c.required,
+        removable: c.removable,
+      })),
+      shouldBeAvailable: componentRegistry
+        .getAllComponents()
+        .filter((c) => !entityComponents.includes(c.id) && !c.required && c.id !== 'name')
+        .map((c) => c.id),
+    });
+  }
 
   // Filter components based on search and category
   const filteredComponents = useMemo(() => {
@@ -378,22 +410,24 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
                   <button
                     key={category}
                     onClick={() => setSelectedCategory(categoryEnum)}
-                    className="w-full flex items-center justify-between p-3 hover:bg-gray-700 rounded text-left group transition-all duration-200 border border-transparent hover:border-gray-600"
+                    className="w-full flex items-center justify-between p-2 hover:bg-gray-700 rounded text-left group transition-all duration-200 border border-transparent hover:border-gray-600"
                     title={`Browse ${info.name} components`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="text-blue-400 p-1 bg-blue-400/10 rounded">{info.icon}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-blue-400 p-1 bg-blue-400/10 rounded text-sm">
+                        {info.icon}
+                      </div>
                       <div>
-                        <div className="text-white text-sm font-medium">{info.name}</div>
-                        <div className="text-gray-400 text-xs">{info.description}</div>
+                        <div className="text-white text-xs font-medium">{info.name}</div>
+                        <div className="text-gray-400 text-[10px]">{info.description}</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col items-end text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="flex flex-col items-end text-[10px]">
                         <span className="text-gray-300 font-medium">{totalCount}</span>
                         <span className="text-gray-500">available</span>
                       </div>
-                      <FiChevronRight className="text-gray-400 group-hover:text-white w-3 h-3" />
+                      <FiChevronRight className="text-gray-400 group-hover:text-white w-2.5 h-2.5" />
                     </div>
                   </button>
                 );
@@ -414,33 +448,33 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
                       key={group.id}
                       onClick={() => handleAddGroup(group)}
                       disabled={isAddingGroup === group.id}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-gray-700 rounded text-left group disabled:opacity-50 transition-all duration-200 border border-transparent hover:border-gray-600"
+                      className="w-full flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-left group disabled:opacity-50 transition-all duration-200 border border-transparent hover:border-gray-600"
                       title={`Add ${group.name} component group`}
                     >
-                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded flex items-center justify-center">
+                      <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-blue-600 to-blue-700 rounded flex items-center justify-center">
                         {getGroupIcon(group.icon)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="text-white font-medium text-sm">{group.name}</div>
-                          <div className="px-1.5 py-0.5 bg-blue-600/20 border border-blue-500/30 rounded text-[10px] text-blue-300">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <div className="text-white font-medium text-xs">{group.name}</div>
+                          <div className="px-1 py-0.5 bg-blue-600/20 border border-blue-500/30 rounded text-[9px] text-blue-300">
                             GROUP
                           </div>
                         </div>
-                        <div className="text-gray-400 text-xs mb-1">{group.description}</div>
-                        <div className="text-xs text-blue-400 flex items-center gap-1">
+                        <div className="text-gray-400 text-[10px] mb-0.5">{group.description}</div>
+                        <div className="text-[10px] text-blue-400 flex items-center gap-1">
                           <span>📦</span>
                           <span>
-                            Includes: {group.components.slice(0, 3).join(', ')}
-                            {group.components.length > 3 ? '...' : ''}
+                            {group.components.slice(0, 2).join(', ')}
+                            {group.components.length > 2 ? '...' : ''}
                           </span>
                         </div>
                       </div>
                       <div className="flex-shrink-0">
                         {isAddingGroup === group.id ? (
-                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                         ) : (
-                          <FiPlus className="text-gray-400 group-hover:text-green-400 w-4 h-4 transition-colors" />
+                          <FiPlus className="text-gray-400 group-hover:text-green-400 w-3 h-3 transition-colors" />
                         )}
                       </div>
                     </button>
@@ -460,41 +494,44 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
                       <button
                         key={component.id}
                         onClick={() => handleAddComponent(component.id)}
-                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-700 rounded text-left group transition-all duration-200 border border-transparent hover:border-gray-600"
+                        className="w-full flex items-center gap-2 p-2 hover:bg-gray-700 rounded text-left group transition-all duration-200 border border-transparent hover:border-gray-600"
                         title={`Add ${component.name} component`}
                       >
-                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-700 rounded flex items-center justify-center">
-                          <span className="text-xs text-white font-semibold">
+                        <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-gray-600 to-gray-700 rounded flex items-center justify-center">
+                          <span className="text-[10px] text-white font-semibold">
                             {component.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="text-white font-medium text-sm">{component.name}</div>
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <div className="text-white font-medium text-xs">{component.name}</div>
+                            <div className="flex items-center gap-1 text-[10px] text-gray-500">
                               {categoryInfo?.icon && (
-                                <span className="w-3 h-3">{categoryInfo.icon}</span>
+                                <span className="w-2.5 h-2.5">{categoryInfo.icon}</span>
                               )}
                               <span>{categoryInfo?.name}</span>
                             </div>
                           </div>
-                          <div className="text-gray-400 text-xs mb-1">
+                          <div className="text-gray-400 text-[10px] mb-0.5 line-clamp-1">
                             {component.metadata?.description || 'No description available'}
                           </div>
                           {component.dependencies && component.dependencies.length > 0 && (
-                            <div className="text-xs text-orange-400 flex items-center gap-1">
+                            <div className="text-[9px] text-orange-400 flex items-center gap-1">
                               <span>⚠️</span>
-                              <span>Requires: {component.dependencies.join(', ')}</span>
+                              <span>
+                                Requires: {component.dependencies.slice(0, 2).join(', ')}
+                                {component.dependencies.length > 2 ? '...' : ''}
+                              </span>
                             </div>
                           )}
                           {component.required && (
-                            <div className="text-xs text-blue-400 flex items-center gap-1">
+                            <div className="text-[9px] text-blue-400 flex items-center gap-1">
                               <span>🔒</span>
                               <span>Core component</span>
                             </div>
                           )}
                         </div>
-                        <FiPlus className="text-gray-400 group-hover:text-green-400 w-4 h-4 transition-colors" />
+                        <FiPlus className="text-gray-400 group-hover:text-green-400 w-3 h-3 transition-colors" />
                       </button>
                     );
                   })}

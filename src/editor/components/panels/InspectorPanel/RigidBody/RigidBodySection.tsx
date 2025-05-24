@@ -31,23 +31,6 @@ export interface IRigidBodySectionProps {
   isPlaying: boolean;
 }
 
-const DEFAULT_RIGID_BODY: IRigidBodyData = {
-  enabled: true,
-  bodyType: 'dynamic',
-  mass: 1,
-  gravityScale: 1,
-  canSleep: true,
-  linearDamping: 0.01,
-  angularDamping: 0.05,
-  initialVelocity: [0, 0, 0],
-  initialAngularVelocity: [0, 0, 0],
-  material: {
-    friction: 0.3,
-    restitution: 0.3,
-    density: 1,
-  },
-};
-
 export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
   rigidBody,
   setRigidBody,
@@ -58,50 +41,48 @@ export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const handleToggleRigidBody = () => {
-    if (rigidBody) {
-      setRigidBody(null);
-    } else {
-      setRigidBody(DEFAULT_RIGID_BODY);
+  // Handle removal of rigid body and auto-create mesh collider when needed
+  const handleRemoveRigidBody = () => {
+    setRigidBody(null);
+  };
 
-      // Auto-create mesh collider when enabling rigid body (Unity-like behavior)
-      if (!meshCollider) {
-        const getDefaultColliderType = (meshType?: string) => {
-          switch (meshType) {
-            case 'Sphere':
-              return 'sphere' as const;
-            case 'Capsule':
-              return 'capsule' as const;
-            case 'Cylinder':
-            case 'Cone':
-            case 'Torus':
-              return 'convex' as const;
-            default:
-              return 'box' as const;
-          }
-        };
+  const handleAutoCreateMeshCollider = () => {
+    if (!meshCollider) {
+      const getDefaultColliderType = (meshType?: string) => {
+        switch (meshType) {
+          case 'Sphere':
+            return 'sphere' as const;
+          case 'Capsule':
+            return 'capsule' as const;
+          case 'Cylinder':
+          case 'Cone':
+          case 'Torus':
+            return 'convex' as const;
+          default:
+            return 'box' as const;
+        }
+      };
 
-        const defaultMeshCollider: IMeshColliderData = {
-          enabled: true,
-          colliderType: getDefaultColliderType(meshType),
-          isTrigger: false,
-          center: [0, 0, 0],
-          size: {
-            width: 1,
-            height: 1,
-            depth: 1,
-            radius: 0.5,
-            capsuleRadius: 0.5,
-            capsuleHeight: 2,
-          },
-          physicsMaterial: {
-            friction: 0.3,
-            restitution: 0.3,
-            density: 1,
-          },
-        };
-        setMeshCollider(defaultMeshCollider);
-      }
+      const defaultMeshCollider: IMeshColliderData = {
+        enabled: true,
+        colliderType: getDefaultColliderType(meshType),
+        isTrigger: false,
+        center: [0, 0, 0],
+        size: {
+          width: 1,
+          height: 1,
+          depth: 1,
+          radius: 0.5,
+          capsuleRadius: 0.5,
+          capsuleHeight: 2,
+        },
+        physicsMaterial: {
+          friction: 0.3,
+          restitution: 0.3,
+          density: 1,
+        },
+      };
+      setMeshCollider(defaultMeshCollider);
     }
   };
 
@@ -136,6 +117,11 @@ export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
     }
   };
 
+  // Don't render the section if rigidBody is null
+  if (!rigidBody) {
+    return null;
+  }
+
   return (
     <InspectorSection
       title="Rigid Body"
@@ -143,30 +129,27 @@ export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
       headerColor="orange"
       collapsible
       defaultCollapsed={false}
+      removable={true}
+      onRemove={handleRemoveRigidBody}
     >
       <div className="space-y-3">
-        {/* Enable/Disable Toggle */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-400">Enable Physics</span>
-          <button
-            onClick={handleToggleRigidBody}
-            disabled={isPlaying}
-            className={`
-              relative inline-flex h-5 w-8 items-center rounded-full transition-colors
-              ${rigidBody ? 'bg-orange-500' : 'bg-gray-600'}
-              ${isPlaying ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            `}
-          >
-            <span
-              className={`
-                inline-block h-3 w-3 transform rounded-full bg-white transition-transform
-                ${rigidBody ? 'translate-x-4' : 'translate-x-1'}
-              `}
-            />
-          </button>
-        </div>
+        {/* Helper for mesh collider */}
+        {!meshCollider && (
+          <div className="bg-orange-500/10 border border-orange-500/30 rounded p-2">
+            <div className="text-xs text-orange-300 mb-2">
+              💡 Rigid bodies work best with a collider
+            </div>
+            <button
+              onClick={handleAutoCreateMeshCollider}
+              disabled={isPlaying}
+              className="text-xs bg-orange-600 hover:bg-orange-700 px-2 py-1 rounded text-white disabled:opacity-50"
+            >
+              Add Mesh Collider
+            </button>
+          </div>
+        )}
 
-        {rigidBody && (
+        {
           <>
             {/* Body Type */}
             <div className="space-y-1">
@@ -335,7 +318,7 @@ export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
               </div>
             )}
           </>
-        )}
+        }
       </div>
     </InspectorSection>
   );

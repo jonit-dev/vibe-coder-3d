@@ -1,5 +1,5 @@
 import React, { ReactNode, useState } from 'react';
-import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
+import { FiChevronDown, FiChevronRight, FiTrash2 } from 'react-icons/fi';
 
 export interface IInspectorSectionProps {
   title: string;
@@ -8,6 +8,8 @@ export interface IInspectorSectionProps {
   collapsible?: boolean;
   defaultCollapsed?: boolean;
   headerColor?: 'cyan' | 'purple' | 'green' | 'orange' | 'red';
+  onRemove?: () => void;
+  removable?: boolean;
 }
 
 export const InspectorSection: React.FC<IInspectorSectionProps> = ({
@@ -17,6 +19,8 @@ export const InspectorSection: React.FC<IInspectorSectionProps> = ({
   collapsible = false,
   defaultCollapsed = false,
   headerColor = 'cyan',
+  onRemove,
+  removable = false,
 }) => {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
@@ -59,19 +63,30 @@ export const InspectorSection: React.FC<IInspectorSectionProps> = ({
             </h3>
           </div>
 
-          {collapsible && (
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className={`w-4 h-4 ${colorClasses[headerColor].split(' ')[0]} hover:bg-gray-600/30 rounded-sm transition-all duration-200 flex items-center justify-center flex-shrink-0`}
-              title={collapsed ? 'Expand section' : 'Collapse section'}
-            >
-              {collapsed ? (
-                <FiChevronRight className="w-2.5 h-2.5" />
-              ) : (
-                <FiChevronDown className="w-2.5 h-2.5" />
-              )}
-            </button>
-          )}
+          <div className="flex items-center space-x-1">
+            {removable && onRemove && (
+              <button
+                onClick={onRemove}
+                className={`w-4 h-4 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-sm transition-all duration-200 flex items-center justify-center flex-shrink-0`}
+                title="Remove component"
+              >
+                <FiTrash2 className="w-2.5 h-2.5" />
+              </button>
+            )}
+            {collapsible && (
+              <button
+                onClick={() => setCollapsed(!collapsed)}
+                className={`w-4 h-4 ${colorClasses[headerColor].split(' ')[0]} hover:bg-gray-600/30 rounded-sm transition-all duration-200 flex items-center justify-center flex-shrink-0`}
+                title={collapsed ? 'Expand section' : 'Collapse section'}
+              >
+                {collapsed ? (
+                  <FiChevronRight className="w-2.5 h-2.5" />
+                ) : (
+                  <FiChevronDown className="w-2.5 h-2.5" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

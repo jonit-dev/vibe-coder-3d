@@ -33,7 +33,7 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
   const [showAddComponent, setShowAddComponent] = useState(false);
 
   const selectedEntity = useEditorStore((s) => s.selectedId);
-  const { entityId, entityName } = useEntityInfo(selectedEntity);
+  const { entityId } = useEntityInfo(selectedEntity);
 
   return (
     <aside

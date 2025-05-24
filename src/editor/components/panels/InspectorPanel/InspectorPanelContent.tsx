@@ -2,6 +2,7 @@ import React from 'react';
 import { FiInfo } from 'react-icons/fi';
 
 import { useEntityComponents, useHasComponent } from '@/core/hooks/useComponent';
+import { componentRegistry } from '@/core/lib/component-registry';
 import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
 import { MeshColliderSection } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
@@ -34,6 +35,12 @@ export const InspectorPanelContent: React.FC = () => {
   const hasMeshColliderComponent = useHasComponent(selectedEntity, 'meshCollider');
   const hasMeshRendererComponent = useHasComponent(selectedEntity, 'meshRenderer');
 
+  // Helper function to check if a component is removable
+  const isComponentRemovable = (componentId: string): boolean => {
+    const component = componentRegistry.getComponent(componentId);
+    return component?.removable !== false; // Default to true if not explicitly false
+  };
+
   if (selectedEntity == null) {
     return (
       <div className="p-3 text-gray-400 text-center">
@@ -45,7 +52,7 @@ export const InspectorPanelContent: React.FC = () => {
 
   return (
     <div className="space-y-2 p-2 pb-4">
-      {/* Core Components - Always present */}
+      {/* Core Components - Always present but removability depends on component descriptor */}
       <MeshTypeSection meshType={meshType} setMeshType={setMeshType} />
       <TransformSection
         position={position}
@@ -56,7 +63,7 @@ export const InspectorPanelContent: React.FC = () => {
         setScale={setScale}
       />
 
-      {/* Dynamic Components - Only show if present */}
+      {/* Dynamic Components - Only show if present, removability depends on component descriptor */}
       {(hasMeshRendererComponent || meshRenderer) && (
         <MeshRendererSection
           meshRenderer={meshRenderer}
@@ -65,7 +72,9 @@ export const InspectorPanelContent: React.FC = () => {
         />
       )}
 
-      {hasVelocity && <VelocitySection entityId={selectedEntity} />}
+      {hasVelocity && (
+        <VelocitySection entityId={selectedEntity} removable={isComponentRemovable('velocity')} />
+      )}
 
       {(hasRigidBodyComponent || rigidBody) && (
         <RigidBodySection
@@ -94,18 +103,39 @@ export const InspectorPanelContent: React.FC = () => {
           <div className="text-xs text-gray-300">
             {entityComponents.length > 0 ? entityComponents.join(', ') : 'None'}
           </div>
+          <div className="text-xs text-gray-400 mt-1">Component Removability:</div>
+          <div className="text-xs text-gray-300">
+            {entityComponents
+              .map((id) => {
+                const removable = isComponentRemovable(id);
+                return `${id}: ${removable ? 'removable' : 'required'}`;
+              })
+              .join(', ')}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-// Velocity Section Component
-const VelocitySection: React.FC<{ entityId: number }> = ({ entityId: _entityId }) => {
-  // This would be implemented using the dynamic component system
-  // For now, just a placeholder
+// Velocity Section Component with removability support
+const VelocitySection: React.FC<{ entityId: number; removable?: boolean }> = ({
+  entityId: _entityId,
+  removable = true,
+}) => {
+  const handleRemoveVelocity = () => {
+    // TODO: Implement velocity component removal via dynamic component manager
+    console.log('Remove velocity component');
+  };
+
   return (
-    <InspectorSection title="Velocity" icon={<FiInfo />} headerColor="orange">
+    <InspectorSection
+      title="Velocity"
+      icon={<FiInfo />}
+      headerColor="orange"
+      removable={removable}
+      onRemove={removable ? handleRemoveVelocity : undefined}
+    >
       <div className="text-xs text-gray-400">Velocity component detected</div>
       <div className="text-xs text-yellow-400">TODO: Implement velocity component UI</div>
     </InspectorSection>
