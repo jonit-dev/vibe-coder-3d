@@ -50,11 +50,6 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
         label: 'Cone',
         icon: <TbCone size={18} />,
       },
-      {
-        type: 'Plane',
-        label: 'Plane',
-        icon: <TbSquare size={18} />,
-      },
     ],
   },
   {
@@ -92,6 +87,11 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
     label: 'Structural',
     icon: <TbBuildingBridge size={18} />,
     items: [
+      {
+        type: 'Plane',
+        label: 'Plane',
+        icon: <TbSquare size={18} />,
+      },
       // Placeholder for future structural objects
       {
         type: 'Wall',

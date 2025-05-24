@@ -1,9 +1,12 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
+import { Physics } from '@react-three/rapier';
 import React, { useState } from 'react';
 
 import { useECSQuery } from '@core/hooks/useECS';
 import { Transform } from '@core/lib/ecs';
+
+import { useEditorStore } from '../../../store/editorStore';
 
 import { EntityRenderer } from './EntityRenderer';
 
@@ -16,6 +19,7 @@ export interface IViewportPanelProps {
 export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
   // Get all entities with a Transform
   const entityIds = useECSQuery([Transform]);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
 
   // Gizmo mode state
   const [mode, setMode] = useState<GizmoMode>('translate');
@@ -107,27 +111,24 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
           <ambientLight intensity={0.5} />
           <directionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
 
-          {/* Grid - Unity style */}
-          <gridHelper args={[20, 20, '#444444', '#222222']} />
+          {/* Physics wrapper - only enabled when playing */}
+          <Physics paused={!isPlaying} gravity={[0, -9.81, 0]}>
+            {/* Grid - Unity style */}
+            <gridHelper args={[20, 20, '#444444', '#222222']} />
 
-          {/* Ground */}
-          <mesh position={[0, -0.05, 0]} receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[20, 20]} />
-            <meshStandardMaterial color="#333333" />
-          </mesh>
-
-          {/* Render all entities */}
-          {entityIds.map((id) => (
-            <EntityRenderer
-              key={id}
-              entityId={id}
-              selected={id === entityId}
-              mode={mode}
-              onTransformChange={id === entityId ? handleTransformChange(id) : undefined}
-              setIsTransforming={id === entityId ? setIsTransforming : undefined}
-              setGizmoMode={id === entityId ? setMode : undefined}
-            />
-          ))}
+            {/* Render all entities */}
+            {entityIds.map((id) => (
+              <EntityRenderer
+                key={id}
+                entityId={id}
+                selected={id === entityId}
+                mode={mode}
+                onTransformChange={id === entityId ? handleTransformChange(id) : undefined}
+                setIsTransforming={id === entityId ? setIsTransforming : undefined}
+                setGizmoMode={id === entityId ? setMode : undefined}
+              />
+            ))}
+          </Physics>
 
           <OrbitControls enabled={!isTransforming} />
         </Canvas>

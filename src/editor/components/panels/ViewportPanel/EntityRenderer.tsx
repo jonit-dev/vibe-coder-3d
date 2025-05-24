@@ -1,9 +1,13 @@
-import { useFrame, useThree } from '@react-three/fiber';
-import React, { useEffect, useRef, useState } from 'react';
-import { Mesh } from 'three';
+import { useThree } from '@react-three/fiber';
+import { RigidBody } from '@react-three/rapier';
+import React, { useEffect, useState } from 'react';
 
-import { entityToObject, getEntityColor, objectToEntity, Transform } from '@/core/lib/ecs';
-import { getEntityMeshType } from '@core/helpers/meshUtils';
+import { useEntityMesh } from '@/editor/hooks/useEntityMesh';
+import { useEntitySelection } from '@/editor/hooks/useEntitySelection';
+import { useEntityTransform } from '@/editor/hooks/useEntityTransform';
+import { useEntityTransformSync } from '@/editor/hooks/useEntityTransformSync';
+import { useRigidBody } from '@/editor/hooks/useRigidBody';
+import { useEditorStore } from '@/editor/store/editorStore';
 
 import { GizmoControls } from './GizmoControls';
 import { SelectionOutline } from './SelectionOutline';
@@ -27,49 +31,40 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   setGizmoMode,
   setIsTransforming,
 }) => {
-  const meshType = getEntityMeshType(entityId);
-  const meshRef = useRef<Mesh>(null);
   const [isTransformingLocal, setIsTransformingLocal] = useState(false);
   const [dragTick, setDragTick] = useState(0);
-  useThree();
 
-  // Link mesh to ECS entity and set initial position
-  useEffect(() => {
-    if (meshRef.current) {
-      entityToObject.set(entityId, meshRef.current);
-      objectToEntity.set(meshRef.current, entityId);
+  // Custom hooks for clean separation of concerns
+  const { position, rotation, scale, rotationRadians } = useEntityTransform(entityId);
+  const { meshRef, meshType, entityColor } = useEntityMesh(entityId);
+  const { rigidBody } = useRigidBody(entityId);
+  const isPlaying = useEditorStore((s) => s.isPlaying);
 
-      // CRITICAL: Set initial mesh transform immediately to prevent GizmoControls
-      // from reading [0,0,0] values and overwriting ECS
-      meshRef.current.position.set(
-        Transform.position[entityId][0],
-        Transform.position[entityId][1],
-        Transform.position[entityId][2],
-      );
-      meshRef.current.rotation.set(
-        Transform.rotation[entityId][0] * (Math.PI / 180),
-        Transform.rotation[entityId][1] * (Math.PI / 180),
-        Transform.rotation[entityId][2] * (Math.PI / 180),
-      );
-      meshRef.current.scale.set(
-        Transform.scale[entityId][0],
-        Transform.scale[entityId][1],
-        Transform.scale[entityId][2],
-      );
+  useThree(); // Required for some R3F functionality
 
-      console.log(`Initial mesh transform set for entity ${entityId}:`, {
-        position: meshRef.current.position.toArray(),
-        rotation: meshRef.current.rotation.toArray(),
-        scale: meshRef.current.scale.toArray(),
-      });
-    }
-    return () => {
-      if (meshRef.current) {
-        entityToObject.delete(entityId);
-        objectToEntity.delete(meshRef.current);
-      }
-    };
-  }, [entityId]);
+  // Check if this entity should have physics
+  const shouldHavePhysics = isPlaying && rigidBody && rigidBody.enabled;
+
+  // Sync transform between ECS and mesh
+  useEntityTransformSync({
+    meshRef,
+    position,
+    rotation,
+    scale,
+    isTransforming: isTransformingLocal,
+    hasPhysics: Boolean(shouldHavePhysics),
+    setDragTick,
+  });
+
+  // Get selection outline position (tracks physics correctly)
+  const { outlinePosition, outlineRotation, outlineScale } = useEntitySelection({
+    meshRef,
+    position,
+    rotation,
+    scale,
+    isTransforming: isTransformingLocal,
+    hasPhysics: Boolean(shouldHavePhysics),
+  });
 
   // Handle keyboard shortcuts for gizmo mode switching
   useEffect(() => {
@@ -83,104 +78,55 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selected, setGizmoMode]);
 
-  // Read transform from ECS
-  const position: [number, number, number] = [
-    Transform.position[entityId][0],
-    Transform.position[entityId][1],
-    Transform.position[entityId][2],
-  ];
-  const rotation: [number, number, number] = [
-    Transform.rotation[entityId][0],
-    Transform.rotation[entityId][1],
-    Transform.rotation[entityId][2],
-  ];
-  const scale: [number, number, number] = [
-    Transform.scale[entityId][0],
-    Transform.scale[entityId][1],
-    Transform.scale[entityId][2],
-  ];
-
-  // Debug: Log the transform values as they're read
-  console.log(`EntityRenderer reading transform for entity ${entityId}:`, {
-    position,
-    rotation,
-    scale,
-  });
-
-  // Get entity color from ECS (only used for initial material setup)
-  const entityColor = getEntityColor(entityId);
-
-  // Sync mesh transform from ECS (but NOT material - let MaterialSystem handle that)
-  useFrame(() => {
-    if (isTransformingLocal) {
-      setDragTick((tick) => tick + 1);
+  // Geometry selection based on mesh type
+  const getGeometry = () => {
+    switch (meshType) {
+      case 'Sphere':
+        return <sphereGeometry args={[0.5, 32, 32]} />;
+      case 'Cylinder':
+        return <cylinderGeometry args={[0.5, 0.5, 1, 32]} />;
+      case 'Cone':
+        return <coneGeometry args={[0.5, 1, 32]} />;
+      case 'Torus':
+        return <torusGeometry args={[0.5, 0.2, 16, 100]} />;
+      case 'Plane':
+        return <planeGeometry args={[1, 1]} />;
+      default:
+        return <boxGeometry args={[1, 1, 1]} />;
     }
-    if (meshRef.current && !isTransformingLocal) {
-      meshRef.current.position.set(position[0], position[1], position[2]);
-      meshRef.current.rotation.set(
-        rotation[0] * (Math.PI / 180),
-        rotation[1] * (Math.PI / 180),
-        rotation[2] * (Math.PI / 180),
-      );
-      meshRef.current.scale.set(scale[0], scale[1], scale[2]);
-    }
+  };
 
-    // Note: Material updates are now handled by MaterialSystem in EngineLoop
-    // This reduces redundant work and improves performance
-  });
-
-  // Geometry selection
-  let geometry = <boxGeometry args={[1, 1, 1]} />;
-  if (meshType === 'Sphere') {
-    geometry = <sphereGeometry args={[0.5, 32, 32]} />;
-  } else if (meshType === 'Cylinder') {
-    geometry = <cylinderGeometry args={[0.5, 0.5, 1, 32]} />;
-  } else if (meshType === 'Cone') {
-    geometry = <coneGeometry args={[0.5, 1, 32]} />;
-  } else if (meshType === 'Torus') {
-    geometry = <torusGeometry args={[0.5, 0.2, 16, 100]} />;
-  } else if (meshType === 'Plane') {
-    geometry = <planeGeometry args={[1, 1]} />;
-  }
-
-  // Compute outline transform: live during drag, ECS otherwise
-  let outlinePosition: [number, number, number] = position;
-  let outlineRotation: [number, number, number] = [
-    rotation[0] * (Math.PI / 180),
-    rotation[1] * (Math.PI / 180),
-    rotation[2] * (Math.PI / 180),
-  ];
-  let outlineScale: [number, number, number] = scale.map((s) => s + 0.05) as [
-    number,
-    number,
-    number,
-  ];
-  if (isTransformingLocal && meshRef.current) {
-    outlinePosition = [
-      meshRef.current.position.x,
-      meshRef.current.position.y,
-      meshRef.current.position.z,
-    ];
-    outlineRotation = [
-      meshRef.current.rotation.x,
-      meshRef.current.rotation.y,
-      meshRef.current.rotation.z,
-    ];
-    outlineScale = [
-      meshRef.current.scale.x + 0.05,
-      meshRef.current.scale.y + 0.05,
-      meshRef.current.scale.z + 0.05,
-    ];
-  }
+  // Create the mesh content that will be either wrapped with physics or not
+  const meshContent = (
+    <mesh ref={meshRef} castShadow receiveShadow userData={{ entityId }}>
+      {getGeometry()}
+      <meshStandardMaterial color={entityColor} />
+    </mesh>
+  );
 
   return (
     <group>
-      <mesh ref={meshRef} castShadow receiveShadow userData={{ entityId }}>
-        {geometry}
-        <meshStandardMaterial color={entityColor} />
-      </mesh>
+      {shouldHavePhysics ? (
+        <RigidBody
+          type={rigidBody.bodyType}
+          mass={rigidBody.mass}
+          friction={rigidBody.material.friction}
+          restitution={rigidBody.material.restitution}
+          density={rigidBody.material.density}
+          gravityScale={rigidBody.gravityScale}
+          canSleep={rigidBody.canSleep}
+          position={position}
+          rotation={rotationRadians}
+          scale={scale}
+        >
+          {meshContent}
+        </RigidBody>
+      ) : (
+        meshContent
+      )}
 
-      {selected && (
+      {/* Gizmo controls (disabled during physics) */}
+      {selected && !shouldHavePhysics && (
         <GizmoControls
           meshRef={meshRef}
           mode={mode}
@@ -193,10 +139,10 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
         />
       )}
 
-      {/* Selection outline when selected */}
+      {/* Selection outline (tracks physics correctly) */}
       {selected && (
         <SelectionOutline
-          geometry={geometry}
+          geometry={getGeometry()}
           position={outlinePosition}
           rotation={outlineRotation}
           scale={outlineScale}

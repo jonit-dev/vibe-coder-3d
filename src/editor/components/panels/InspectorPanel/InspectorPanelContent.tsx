@@ -3,21 +3,25 @@ import { FiInfo } from 'react-icons/fi';
 
 import { MaterialSection } from '@/editor/components/panels/InspectorPanel/Material/MaterialSection';
 import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
+import { RigidBodySection } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 import { InspectorSection } from '@/editor/components/ui/InspectorSection';
 import { useEntityInfo } from '@/editor/hooks/useEntityInfo';
 import { useMaterial } from '@/editor/hooks/useMaterial';
 import { useMesh } from '@/editor/hooks/useMesh';
+import { useRigidBody } from '@/editor/hooks/useRigidBody';
 import { useTransform } from '@/editor/hooks/useTransform';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 export const InspectorPanelContent: React.FC = () => {
-  const selectedEntity = useEditorStore((s: { selectedId: number | null }) => s.selectedId);
+  const selectedEntity = useEditorStore((s) => s.selectedId);
+  const isPlaying = useEditorStore((s) => s.isPlaying);
   const { meshType, setMeshType } = useMesh(selectedEntity);
   const { position, rotation, scale, setPosition, setRotation, setScale } =
     useTransform(selectedEntity);
   const { entityId, entityName } = useEntityInfo(selectedEntity);
   const { color, setColor } = useMaterial(selectedEntity);
+  const { rigidBody, setRigidBody } = useRigidBody(selectedEntity);
 
   if (selectedEntity == null) {
     return (
@@ -40,6 +44,7 @@ export const InspectorPanelContent: React.FC = () => {
         setRotation={setRotation}
         setScale={setScale}
       />
+      <RigidBodySection rigidBody={rigidBody} setRigidBody={setRigidBody} isPlaying={isPlaying} />
       <MaterialSection color={color} setColor={setColor} />
     </div>
   );

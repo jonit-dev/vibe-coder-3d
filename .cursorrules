@@ -13,3 +13,4 @@
 - Favor named exports over default exports.
 - Do not create index.ts files solely to export components. Use named exports instead.
 - export at the beginning of component, like `export const MyComponentHere`
+- Stop trying to run yarn dev. Just ask me to do it for you.

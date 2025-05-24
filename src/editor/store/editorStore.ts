@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { IRigidBodyData } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
+
 interface IContextMenuState {
   open: boolean;
   entityId: number | null;
@@ -13,6 +15,10 @@ interface IEditorStore {
   setContextMenu: (state: IContextMenuState) => void;
   showAddMenu: boolean;
   setShowAddMenu: (show: boolean) => void;
+  rigidBodies: Record<number, IRigidBodyData>;
+  setEntityRigidBody: (entityId: number, data: IRigidBodyData | null) => void;
+  isPlaying: boolean;
+  setIsPlaying: (playing: boolean) => void;
 }
 
 export const useEditorStore = create<IEditorStore>((set) => ({
@@ -22,4 +28,16 @@ export const useEditorStore = create<IEditorStore>((set) => ({
   setContextMenu: (state) => set({ contextMenu: state }),
   showAddMenu: false,
   setShowAddMenu: (show) => set({ showAddMenu: show }),
+  rigidBodies: {},
+  setEntityRigidBody: (entityId, data) =>
+    set((state) => {
+      if (data) {
+        return { rigidBodies: { ...state.rigidBodies, [entityId]: data } };
+      } else {
+        const { [entityId]: removed, ...rest } = state.rigidBodies;
+        return { rigidBodies: rest };
+      }
+    }),
+  isPlaying: false,
+  setIsPlaying: (playing) => set({ isPlaying: playing }),
 }));

@@ -8,6 +8,7 @@ import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
 import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
+import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
 import { RightSidebarChat } from './components/ui/RightSidebarChat';
 import { StackedLeftPanel } from './components/ui/StackedLeftPanel';
 import { StatusBar } from './components/ui/StatusBar';
@@ -41,8 +42,10 @@ const Editor: React.FC = () => {
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
   const showAddMenu = useEditorStore((s) => s.showAddMenu);
   const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
+  const isPlaying = useEditorStore((s) => s.isPlaying);
+  const setIsPlaying = useEditorStore((s) => s.setIsPlaying);
   const [statusMessage, setStatusMessage] = useState<string>('Ready');
-  const [isChatExpanded, setIsChatExpanded] = useState(true);
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addButtonRef = useRef<HTMLButtonElement>(null);
@@ -55,28 +58,76 @@ const Editor: React.FC = () => {
   // Track if initial load is complete
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Helper function to create a default scene with a plane
+  const createDefaultScene = () => {
+    console.log('Creating default scene with plane - current entities:', entityIds.length);
+
+    // Prevent creating multiple grounds if entities already exist
+    if (entityIds.length > 0) {
+      console.log('Scene already has entities, skipping default scene creation');
+      return;
+    }
+
+    const planeEntity = ecsManager.createEntity({
+      meshType: MeshTypeEnum.Plane,
+      position: [0, 0, 0], // Position at origin
+      rotation: [-90, 0, 0], // Rotate to be horizontal (planes are vertical by default)
+      scale: [10, 10, 10], // Proportional scale for all dimensions
+      color: [0.8, 0.8, 0.8], // White/light gray color
+      name: 'Ground',
+    });
+
+    // Set up default physics for the ground plane
+    const setEntityRigidBody = useEditorStore.getState().setEntityRigidBody;
+    setEntityRigidBody(planeEntity, {
+      enabled: true,
+      bodyType: 'fixed',
+      mass: 1,
+      gravityScale: 1,
+      canSleep: true,
+      initialVelocity: [0, 0, 0],
+      initialAngularVelocity: [0, 0, 0],
+      material: {
+        friction: 0.7,
+        restitution: 0.1,
+        density: 1,
+      },
+    });
+
+    setSelectedId(planeEntity);
+    setStatusMessage('Created new scene with default ground plane.');
+  };
+
   // Auto-load the last saved scene when the editor opens
   useEffect(() => {
+    if (isInitialized) return;
+
+    console.log(
+      'Initialization effect running - entityIds:',
+      entityIds.length,
+      'savedScene:',
+      savedScene,
+    );
+
     // Only load on first mount and if there's a saved scene with entities
-    if (!isInitialized && savedScene && savedScene.entities) {
+    if (savedScene && savedScene.entities && savedScene.entities.length > 0) {
       try {
         console.log('Loading scene from localStorage:', savedScene);
         importScene(savedScene);
-        if (savedScene.entities.length > 0) {
-          setStatusMessage(
-            `Loaded last saved scene from localStorage (version ${savedScene.version}).`,
-          );
-        }
+        setStatusMessage(
+          `Loaded last saved scene from localStorage (version ${savedScene.version}).`,
+        );
       } catch (err) {
         console.error('Failed to load scene from localStorage:', err);
-        setStatusMessage('Failed to load last scene. Starting with empty scene.');
+        setStatusMessage('Failed to load last scene. Starting with default scene.');
+        createDefaultScene();
       }
-      setIsInitialized(true);
-    } else if (!isInitialized) {
-      console.log('No saved scene found or scene is empty');
-      setIsInitialized(true);
+    } else {
+      console.log('No saved scene found or scene is empty, creating default scene');
+      createDefaultScene();
     }
-  }, [isInitialized, importScene, savedScene, setStatusMessage]);
+    setIsInitialized(true);
+  }, [isInitialized, importScene, savedScene]);
 
   useEffect(() => {
     if ((selectedId === null || !entityIds.includes(selectedId)) && entityIds.length > 0) {
@@ -166,8 +217,23 @@ const Editor: React.FC = () => {
     importScene(emptyScene);
     // Also clear localStorage
     setSavedScene(emptyScene);
-    setSelectedId(null);
-    setStatusMessage('Scene cleared and localStorage reset.');
+    // Create default scene with plane
+    createDefaultScene();
+  };
+
+  const handlePlay = () => {
+    setIsPlaying(true);
+    setStatusMessage('Physics simulation started');
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+    setStatusMessage('Physics simulation paused');
+  };
+
+  const handleStop = () => {
+    setIsPlaying(false);
+    setStatusMessage('Physics simulation stopped');
   };
 
   useEffect(() => {
@@ -201,6 +267,9 @@ const Editor: React.FC = () => {
       className="w-full h-screen flex flex-col bg-gradient-to-br from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] text-white"
       onContextMenu={(e) => e.preventDefault()}
     >
+      {/* Physics Integration - handles play/pause physics state */}
+      <EditorPhysicsIntegration />
+
       <TopBar
         entityCount={entityIds.length}
         onSave={handleSave}
@@ -208,6 +277,10 @@ const Editor: React.FC = () => {
         onClear={handleClear}
         onAddObject={() => setShowAddMenu(!showAddMenu)}
         addButtonRef={addButtonRef}
+        isPlaying={isPlaying}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onStop={handleStop}
         onToggleChat={() => setIsChatExpanded(!isChatExpanded)}
         isChatOpen={isChatExpanded}
       />
