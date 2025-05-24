@@ -6,6 +6,8 @@ import { useEntityMesh } from '@/editor/hooks/useEntityMesh';
 import { useEntitySelection } from '@/editor/hooks/useEntitySelection';
 import { useEntityTransform } from '@/editor/hooks/useEntityTransform';
 import { useEntityTransformSync } from '@/editor/hooks/useEntityTransformSync';
+import { useMeshCollider } from '@/editor/hooks/useMeshCollider';
+import { useMeshRenderer } from '@/editor/hooks/useMeshRenderer';
 import { useRigidBody } from '@/editor/hooks/useRigidBody';
 import { useEditorStore } from '@/editor/store/editorStore';
 
@@ -38,6 +40,8 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   const { position, rotation, scale, rotationRadians } = useEntityTransform(entityId);
   const { meshRef, meshType, entityColor } = useEntityMesh(entityId);
   const { rigidBody } = useRigidBody(entityId);
+  const { meshCollider } = useMeshCollider(entityId);
+  const { meshRenderer } = useMeshRenderer(entityId);
   const isPlaying = useEditorStore((s) => s.isPlaying);
 
   useThree(); // Required for some R3F functionality
@@ -96,11 +100,60 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     }
   };
 
+  // Get appropriate collider type - use meshCollider setting or auto-detect from mesh type
+  const getColliderType = () => {
+    if (meshCollider && meshCollider.enabled) {
+      // Convert our ColliderType to react-three-rapier collider string
+      switch (meshCollider.colliderType) {
+        case 'box':
+          return 'cuboid';
+        case 'sphere':
+          return 'ball';
+        case 'capsule':
+          return 'hull'; // Capsule might not be directly supported
+        case 'convex':
+          return 'hull';
+        case 'mesh':
+          return 'trimesh';
+        default:
+          return 'cuboid';
+      }
+    }
+
+    // Fallback to auto-detection based on mesh type
+    switch (meshType) {
+      case 'Sphere':
+        return 'ball';
+      case 'Cylinder':
+        return 'hull';
+      case 'Cone':
+        return 'hull';
+      case 'Torus':
+        return 'hull';
+      case 'Plane':
+        return 'cuboid';
+      default:
+        return 'cuboid';
+    }
+  };
+
   // Create the mesh content that will be either wrapped with physics or not
   const meshContent = (
-    <mesh ref={meshRef} castShadow receiveShadow userData={{ entityId }}>
+    <mesh
+      ref={meshRef}
+      castShadow={meshRenderer?.castShadows ?? true}
+      receiveShadow={meshRenderer?.receiveShadows ?? true}
+      userData={{ entityId }}
+      visible={meshRenderer?.enabled ?? true}
+    >
       {getGeometry()}
-      <meshStandardMaterial color={entityColor} />
+      <meshStandardMaterial
+        color={meshRenderer?.material.color ?? entityColor}
+        metalness={meshRenderer?.material.metalness ?? 0}
+        roughness={meshRenderer?.material.roughness ?? 0.5}
+        emissive={meshRenderer?.material.emissive ?? '#000000'}
+        emissiveIntensity={meshRenderer?.material.emissiveIntensity ?? 0}
+      />
     </mesh>
   );
 
@@ -110,14 +163,15 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
         <RigidBody
           type={rigidBody.bodyType}
           mass={rigidBody.mass}
-          friction={rigidBody.material.friction}
-          restitution={rigidBody.material.restitution}
-          density={rigidBody.material.density}
+          friction={meshCollider?.physicsMaterial.friction ?? rigidBody.material.friction}
+          restitution={meshCollider?.physicsMaterial.restitution ?? rigidBody.material.restitution}
+          density={meshCollider?.physicsMaterial.density ?? rigidBody.material.density}
           gravityScale={rigidBody.gravityScale}
           canSleep={rigidBody.canSleep}
           position={position}
           rotation={rotationRadians}
           scale={scale}
+          colliders={getColliderType()}
         >
           {meshContent}
         </RigidBody>

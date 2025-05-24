@@ -10,6 +10,8 @@ export interface IRigidBodyData {
   mass: number;
   gravityScale: number;
   canSleep: boolean;
+  linearDamping: number;
+  angularDamping: number;
   initialVelocity: [number, number, number];
   initialAngularVelocity: [number, number, number];
   material: {
@@ -31,11 +33,13 @@ const DEFAULT_RIGID_BODY: IRigidBodyData = {
   mass: 1,
   gravityScale: 1,
   canSleep: true,
+  linearDamping: 0.01,
+  angularDamping: 0.05,
   initialVelocity: [0, 0, 0],
   initialAngularVelocity: [0, 0, 0],
   material: {
-    friction: 0.5,
-    restitution: 0.1,
+    friction: 0.3,
+    restitution: 0.3,
     density: 1,
   },
 };

@@ -1,14 +1,16 @@
 import React from 'react';
 import { FiInfo } from 'react-icons/fi';
 
-import { MaterialSection } from '@/editor/components/panels/InspectorPanel/Material/MaterialSection';
 import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
+import { MeshColliderSection } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
+import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
 import { RigidBodySection } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 import { InspectorSection } from '@/editor/components/ui/InspectorSection';
 import { useEntityInfo } from '@/editor/hooks/useEntityInfo';
-import { useMaterial } from '@/editor/hooks/useMaterial';
 import { useMesh } from '@/editor/hooks/useMesh';
+import { useMeshCollider } from '@/editor/hooks/useMeshCollider';
+import { useMeshRenderer } from '@/editor/hooks/useMeshRenderer';
 import { useRigidBody } from '@/editor/hooks/useRigidBody';
 import { useTransform } from '@/editor/hooks/useTransform';
 import { useEditorStore } from '@/editor/store/editorStore';
@@ -20,8 +22,9 @@ export const InspectorPanelContent: React.FC = () => {
   const { position, rotation, scale, setPosition, setRotation, setScale } =
     useTransform(selectedEntity);
   const { entityId, entityName } = useEntityInfo(selectedEntity);
-  const { color, setColor } = useMaterial(selectedEntity);
   const { rigidBody, setRigidBody } = useRigidBody(selectedEntity);
+  const { meshCollider, setMeshCollider } = useMeshCollider(selectedEntity);
+  const { meshRenderer, setMeshRenderer } = useMeshRenderer(selectedEntity);
 
   if (selectedEntity == null) {
     return (
@@ -44,8 +47,18 @@ export const InspectorPanelContent: React.FC = () => {
         setRotation={setRotation}
         setScale={setScale}
       />
+      <MeshRendererSection
+        meshRenderer={meshRenderer}
+        setMeshRenderer={setMeshRenderer}
+        isPlaying={isPlaying}
+      />
       <RigidBodySection rigidBody={rigidBody} setRigidBody={setRigidBody} isPlaying={isPlaying} />
-      <MaterialSection color={color} setColor={setColor} />
+      <MeshColliderSection
+        meshCollider={meshCollider}
+        setMeshCollider={setMeshCollider}
+        meshType={meshType}
+        isPlaying={isPlaying}
+      />
     </div>
   );
 };
