@@ -2,7 +2,7 @@ import { TransformControls } from '@react-three/drei';
 import React, { MutableRefObject, useRef } from 'react';
 import { Object3D } from 'three';
 
-import { Transform } from '@/core/lib/ecs';
+import { Transform, incrementWorldVersion } from '@/core/lib/ecs';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -46,6 +46,7 @@ function updateEcsFromMesh(
     }
   }
   Transform.needsUpdate[entityId] = 1;
+  incrementWorldVersion();
 }
 
 export const GizmoControls: React.FC<IGizmoControlsProps> = ({

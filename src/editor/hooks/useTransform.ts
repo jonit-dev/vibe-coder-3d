@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { Transform, incrementWorldVersion } from '@core/lib/ecs';
+import { Transform, incrementWorldVersion, worldVersion } from '@core/lib/ecs';
 import { transformSystem } from '@core/systems/transformSystem';
 
 export interface IUseTransform {
@@ -25,6 +25,32 @@ export const useTransform = (selectedEntity: number | null): IUseTransform => {
   const [scale, setScaleState] = useState<[number, number, number]>(
     selectedEntity != null ? getVec3(Transform.scale[selectedEntity]) : [1, 1, 1],
   );
+
+  // Subscribe to ECS worldVersion changes to keep React state in sync
+  useEffect(() => {
+    if (selectedEntity == null) return;
+
+    // Update local state when ECS data changes
+    const updateStateFromECS = () => {
+      setPositionState(getVec3(Transform.position[selectedEntity]));
+      setRotationState(getVec3(Transform.rotation[selectedEntity]));
+      setScaleState(getVec3(Transform.scale[selectedEntity]));
+    };
+
+    // Initial sync
+    updateStateFromECS();
+
+    // Set up interval to check for worldVersion changes
+    let lastVersion = worldVersion;
+    const interval = setInterval(() => {
+      if (worldVersion !== lastVersion) {
+        lastVersion = worldVersion;
+        updateStateFromECS();
+      }
+    }, 50); // Check for changes 20 times per second
+
+    return () => clearInterval(interval);
+  }, [selectedEntity]);
 
   const setPosition = useCallback(
     (next: [number, number, number]) => {
