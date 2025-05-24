@@ -56,7 +56,7 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
       )}
 
       {!isCollapsed && (
-        <>
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Hierarchy Section */}
           <div
             className={`flex flex-col ${isHierarchyExpanded ? 'flex-shrink-0 max-h-[40vh]' : 'flex-shrink-0'} border-b border-gray-700/50`}
@@ -140,7 +140,7 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
               </div>
             )}
           </div>
-        </>
+        </div>
       )}
 
       {/* Resize handle */}

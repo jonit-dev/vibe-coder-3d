@@ -60,7 +60,7 @@ Our AI-first architecture combines cutting-edge AI technologies with proven game
 - **UI Framework:** React DOM for editor interface, three-mesh-ui for in-world interfaces
 - **Networking:** Colyseus for multiplayer capabilities and real-time collaboration
 
-For detailed technical specifications, see the [Technical Stack](./architecture/technical-stack.md) and [AI Copilot Architecture](./architecture/ai-copilot-architecture.md) documentation.
+For detailed technical specifications, see the [Technical Stack](../architecture/technical-stack.md) and [AI Copilot Architecture](../architecture/ai-copilot-architecture.md) documentation.
 
 ## Architecture
 
@@ -80,7 +80,7 @@ The engine follows an AI-first architecture where intelligent assistance is deep
 - **Intelligent Asset Management:** AI-powered discovery, generation, and optimization of game assets
 - **Code Generation:** Automated creation of components, systems, and game logic with full ECS integration
 
-This architecture ensures AI capabilities enhance rather than replace traditional development workflows. See the [AI-First Implementation Plan](./ai-first-engine-implementation-plan.md) for detailed planning and the [Project Structure](./architecture/project-structure.md) for technical organization.
+This architecture ensures AI capabilities enhance rather than replace traditional development workflows. See the [AI-First Implementation Plan](../implementation/ai-first-engine-implementation-plan.md) for detailed planning and the [Project Structure](../architecture/project-structure.md) for technical organization.
 
 ## Current Status
 
@@ -114,9 +114,28 @@ yarn dev
 
 **For Contributors:**
 
-- Review the [AI-First Implementation Plan](./ai-first-engine-implementation-plan.md) for development roadmap
-- Check [Core Abstractions](./core-abstractions.md) for engine architecture
-- See [Game Editor Tasks](../game-editor-tasks.md) for current development focus
+- Review the [AI-First Implementation Plan](../implementation/ai-first-engine-implementation-plan.md) for development roadmap
+- Check [Core Abstractions](../architecture/core-abstractions.md) for engine architecture
+- See [Game Editor Tasks](../../game-editor-tasks.md) for current development focus
 
 **For Early Adopters:**
 The engine is currently in active development. Follow our progress and provide feedback as we build the first AI-native game development platform. Documentation and tutorials will be available as core AI features are implemented.
+
+## 🔗 Related Documentation
+
+### Next Steps
+
+- **[AI-First Vision Summary](./ai-first-vision-summary.md)** - Understand the core innovation
+- **[Roadmap](./roadmap.md)** - See the development timeline
+- **[Technical Stack](../architecture/technical-stack.md)** - Learn about our technology choices
+
+### Deep Dive
+
+- **[AI Copilot Architecture](../architecture/ai-copilot-architecture.md)** - AI system design
+- **[Core Abstractions](../architecture/core-abstractions.md)** - Engine foundation
+- **[AI-First Implementation Plan](../implementation/ai-first-engine-implementation-plan.md)** - Development roadmap
+
+### Getting Started
+
+- **[Simple Scene](../getting-started/simple-scene.md)** - Create your first scene
+- **[Documentation Navigation](../NAVIGATION.md)** - Find your way around the docs

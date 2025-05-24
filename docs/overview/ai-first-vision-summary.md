@@ -101,10 +101,29 @@ Built on proven technologies enhanced with AI capabilities:
 This vision is supported by comprehensive planning:
 
 1. **[Project Overview](./project-overview.md)** - Complete vision and goals
-2. **[AI-First Implementation Plan](./ai-first-engine-implementation-plan.md)** - Detailed technical roadmap
-3. **[AI Copilot Architecture](./architecture/ai-copilot-architecture.md)** - System design and workflow
-4. **[Core Abstractions](./core-abstractions.md)** - Engine foundation
+2. **[AI-First Implementation Plan](../implementation/ai-first-engine-implementation-plan.md)** - Detailed technical roadmap
+3. **[AI Copilot Architecture](../architecture/ai-copilot-architecture.md)** - System design and workflow
+4. **[Core Abstractions](../architecture/core-abstractions.md)** - Engine foundation
 5. **[Roadmap](./roadmap.md)** - Development timeline and milestones
+
+## 🔗 Related Documentation
+
+### Implementation Details
+
+- **[AI-First Implementation Plan](../implementation/ai-first-engine-implementation-plan.md)** - Complete 12-week development roadmap
+- **[AI Copilot Architecture](../architecture/ai-copilot-architecture.md)** - Technical AI system design
+- **[Unity-Like Script System](../implementation/unity-like-script-system.md)** - AI-enhanced scripting
+
+### Technical Foundation
+
+- **[Technical Stack](../architecture/technical-stack.md)** - Technology choices and rationale
+- **[Core Abstractions](../architecture/core-abstractions.md)** - Engine architecture
+- **[ECS](../architecture/ecs.md)** - Entity Component System design
+
+### Getting Started
+
+- **[Simple Scene](../getting-started/simple-scene.md)** - Create your first AI-assisted scene
+- **[Documentation Navigation](../NAVIGATION.md)** - Find your way through all docs
 
 ## 🔮 The Future
 
