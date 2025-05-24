@@ -19,10 +19,16 @@ export const ColliderFields: React.FC<IColliderFieldsProps> = ({
   step = 0.1,
   sensitivity = 0.1,
 }) => {
-  const [localValues, setLocalValues] = useState<[number, number, number]>([...value]);
+  // Ensure value is always a valid array to prevent "not iterable" errors
+  const safeValue: [number, number, number] =
+    Array.isArray(value) && value.length === 3 ? value : [0, 0, 0];
+
+  const [localValues, setLocalValues] = useState<[number, number, number]>([...safeValue]);
 
   useEffect(() => {
-    setLocalValues([...value]);
+    const newSafeValue: [number, number, number] =
+      Array.isArray(value) && value.length === 3 ? value : [0, 0, 0];
+    setLocalValues([...newSafeValue]);
   }, [value]);
 
   const handleInputChange = useCallback(

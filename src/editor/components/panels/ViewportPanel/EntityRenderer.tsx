@@ -1,14 +1,13 @@
 import { useThree } from '@react-three/fiber';
 import { BallCollider, CuboidCollider, RigidBody } from '@react-three/rapier';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Mesh } from 'three';
 
-import { useEntityMesh } from '@/editor/hooks/useEntityMesh';
-import { useEntitySelection } from '@/editor/hooks/useEntitySelection';
-import { useEntityTransform } from '@/editor/hooks/useEntityTransform';
-import { useEntityTransformSync } from '@/editor/hooks/useEntityTransformSync';
+import { componentManager } from '@/core/dynamic-components/init';
 import { useMeshCollider } from '@/editor/hooks/useMeshCollider';
 import { useMeshRenderer } from '@/editor/hooks/useMeshRenderer';
 import { useRigidBody } from '@/editor/hooks/useRigidBody';
+import { useTransform } from '@/editor/hooks/useTransform';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 import { ColliderVisualization } from './ColliderVisualization';
@@ -37,40 +36,57 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   const [isTransformingLocal, setIsTransformingLocal] = useState(false);
   const [dragTick, setDragTick] = useState(0);
 
-  // Custom hooks for clean separation of concerns
-  const { position, rotation, scale, rotationRadians } = useEntityTransform(entityId);
-  const { meshRef, meshType, entityColor } = useEntityMesh(entityId);
+  // Single source of truth - ComponentManager only
+  const { position, rotation, scale } = useTransform(entityId);
   const { rigidBody } = useRigidBody(entityId);
   const { meshCollider } = useMeshCollider(entityId);
   const { meshRenderer } = useMeshRenderer(entityId);
   const isPlaying = useEditorStore((s) => s.isPlaying);
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
 
+  // Mesh ref and properties
+  const meshRef = useRef<Mesh>(null);
+  const [meshType, setMeshType] = useState<string>('Cube');
+  const [entityColor, setEntityColor] = useState<string>('#3388ff');
+
   useThree(); // Required for some R3F functionality
+
+  // Get mesh type and color from ComponentManager
+  useEffect(() => {
+    const meshData = componentManager.getComponentData(entityId, 'mesh');
+    const materialData = componentManager.getComponentData(entityId, 'material');
+
+    if (meshData) {
+      setMeshType(meshData.meshType || 'Cube');
+    }
+    if (materialData) {
+      setEntityColor(materialData.color || '#3388ff');
+    }
+  }, [entityId]);
+
+  // Sync mesh transform from ComponentManager (single source of truth)
+  useEffect(() => {
+    if (meshRef.current && !isTransformingLocal && !isPlaying) {
+      // Only sync when NOT transforming and NOT in physics mode
+      meshRef.current.position.set(position[0], position[1], position[2]);
+      meshRef.current.rotation.set(
+        rotation[0] * (Math.PI / 180),
+        rotation[1] * (Math.PI / 180),
+        rotation[2] * (Math.PI / 180),
+      );
+      meshRef.current.scale.set(scale[0], scale[1], scale[2]);
+    }
+  }, [position, rotation, scale, isTransformingLocal, isPlaying]);
+
+  // Calculate rotations in radians for physics system
+  const rotationRadians: [number, number, number] = [
+    rotation[0] * (Math.PI / 180),
+    rotation[1] * (Math.PI / 180),
+    rotation[2] * (Math.PI / 180),
+  ];
 
   // Check if this entity should have physics
   const shouldHavePhysics = isPlaying && rigidBody && rigidBody.enabled;
-
-  // Sync transform between ECS and mesh
-  useEntityTransformSync({
-    meshRef,
-    position,
-    rotation,
-    scale,
-    isTransforming: isTransformingLocal,
-    hasPhysics: Boolean(shouldHavePhysics),
-    setDragTick,
-  });
-
-  // Get selection outline position (tracks physics correctly)
-  const { outlinePosition, outlineRotation, outlineScale } = useEntitySelection({
-    meshRef,
-    position,
-    rotation,
-    scale,
-    isTransforming: isTransformingLocal,
-    hasPhysics: Boolean(shouldHavePhysics),
-  });
 
   // Handle keyboard shortcuts for gizmo mode switching
   useEffect(() => {
@@ -102,17 +118,16 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     }
   };
 
-  // Get appropriate collider type - use meshCollider setting or auto-detect from mesh type
+  // Get appropriate collider type
   const getColliderType = () => {
     if (meshCollider && meshCollider.enabled) {
-      // Convert our ColliderType to react-three-rapier collider string
       switch (meshCollider.colliderType) {
         case 'box':
           return 'cuboid';
         case 'sphere':
           return 'ball';
         case 'capsule':
-          return 'hull'; // Capsule might not be directly supported
+          return 'hull';
         case 'convex':
           return 'hull';
         case 'mesh':
@@ -138,6 +153,26 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
         return 'cuboid';
     }
   };
+
+  // Calculate outline position (for selection) based on current transform
+  const outlinePosition: [number, number, number] =
+    isTransformingLocal && meshRef.current
+      ? [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z]
+      : position;
+
+  const outlineRotation: [number, number, number] =
+    isTransformingLocal && meshRef.current
+      ? [meshRef.current.rotation.x, meshRef.current.rotation.y, meshRef.current.rotation.z]
+      : rotationRadians;
+
+  const outlineScale: [number, number, number] =
+    isTransformingLocal && meshRef.current
+      ? [
+          meshRef.current.scale.x + 0.05,
+          meshRef.current.scale.y + 0.05,
+          meshRef.current.scale.z + 0.05,
+        ]
+      : [scale[0] + 0.05, scale[1] + 0.05, scale[2] + 0.05];
 
   // Create the mesh content that will be either wrapped with physics or not
   const meshContent = (
@@ -177,7 +212,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
           position={position}
           rotation={rotationRadians}
           scale={scale}
-          colliders={meshCollider ? false : getColliderType()} // Disable auto colliders if we have custom ones
+          colliders={meshCollider ? false : getColliderType()}
         >
           {/* Custom Colliders based on MeshCollider settings */}
           {meshCollider && meshCollider.enabled && (
@@ -213,7 +248,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
               )}
               {(meshCollider.colliderType === 'convex' || meshCollider.colliderType === 'mesh') && (
                 <CuboidCollider
-                  args={[0.5, 0.5, 0.5]} // Default size for convex/mesh - should use hull/trimesh
+                  args={[0.5, 0.5, 0.5]}
                   position={meshCollider.center}
                   sensor={meshCollider.isTrigger}
                 />
@@ -236,11 +271,12 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
           setIsTransforming={(val) => {
             setIsTransformingLocal(val);
             if (setIsTransforming) setIsTransforming(val);
+            if (val) setDragTick((prev) => prev + 1);
           }}
         />
       )}
 
-      {/* Selection outline (tracks physics correctly) */}
+      {/* Selection outline (uses ComponentManager data) */}
       {selected && (
         <SelectionOutline
           geometry={getGeometry()}
@@ -254,10 +290,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
       {/* Collider Visualization (Unity-style wireframes) */}
       {selected && (
         <group position={position} rotation={rotationRadians} scale={scale}>
-          <ColliderVisualization
-            meshCollider={meshCollider}
-            visible={!shouldHavePhysics} // Show collider bounds in edit mode
-          />
+          <ColliderVisualization meshCollider={meshCollider} visible={!shouldHavePhysics} />
         </group>
       )}
     </group>

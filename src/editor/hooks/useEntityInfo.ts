@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { getEntityName } from '@core/lib/ecs';
+import { componentManager } from '@/core/dynamic-components/init';
 
 export interface IUseEntityInfo {
   entityId: number | null;
@@ -15,7 +15,31 @@ export const useEntityInfo = (selectedEntity: number | null): IUseEntityInfo => 
       setEntityName('');
       return;
     }
-    setEntityName(getEntityName(selectedEntity) || `Entity ${selectedEntity}`);
+
+    const updateEntityName = () => {
+      const nameData = componentManager.getComponentData(selectedEntity, 'name');
+      if (nameData?.value) {
+        setEntityName(nameData.value);
+      } else {
+        setEntityName(`Entity ${selectedEntity}`);
+      }
+    };
+
+    // Initial load
+    updateEntityName();
+
+    // Listen for component changes
+    const handleComponentChange = (event: any) => {
+      if (event.entityId === selectedEntity && event.componentId === 'name') {
+        updateEntityName();
+      }
+    };
+
+    componentManager.addEventListener(handleComponentChange);
+
+    return () => {
+      componentManager.removeEventListener(handleComponentChange);
+    };
   }, [selectedEntity]);
 
   return { entityId: selectedEntity, entityName };

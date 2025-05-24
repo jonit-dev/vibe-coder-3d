@@ -1,14 +1,9 @@
+import { addEntity } from 'bitecs';
 import React, { useRef, useState } from 'react';
 
+import { componentManager } from '@/core/dynamic-components/init';
 import { useEditorStore } from '@/editor/store/editorStore';
-import {
-  createEntity,
-  destroyEntity,
-  getEntityName,
-  MeshType,
-  setEntityName,
-  Transform,
-} from '@core/lib/ecs';
+import { destroyEntity, getEntityName, world } from '@core/lib/ecs';
 
 import { HierarchyContextMenu } from './HierarchyContextMenu';
 import { HierarchyItem } from './HierarchyItem';
@@ -51,21 +46,63 @@ export const HierarchyPanelContent: React.FC<IHierarchyPanelContentProps> = ({ e
     handleCloseMenu();
   };
 
-  const handleDuplicate = () => {
+  const handleDuplicate = async () => {
     if (contextMenu.entityId != null) {
-      const src = contextMenu.entityId;
-      const newId = createEntity();
-      MeshType.type[newId] = MeshType.type[src];
-      for (let i = 0; i < 3; i++) {
-        Transform.position[newId][i] = Transform.position[src][i];
-        Transform.rotation[newId][i] = Transform.rotation[src][i];
-        Transform.scale[newId][i] = Transform.scale[src][i];
+      try {
+        const src = contextMenu.entityId;
+        console.log(`[HierarchyPanel] Duplicating entity ${src}...`);
+
+        // Create a raw BitECS entity
+        const newId = addEntity(world);
+        console.log(`[HierarchyPanel] Created new entity ${newId}`);
+
+        // Get all components from the source entity
+        const sourceComponents = componentManager.getEntityComponents(src);
+        console.log(`[HierarchyPanel] Source entity has components:`, sourceComponents);
+
+        // Copy each component from source to new entity
+        for (const componentId of sourceComponents) {
+          const sourceData = componentManager.getComponentData(src, componentId);
+          if (sourceData) {
+            console.log(`[HierarchyPanel] Copying component '${componentId}' to entity ${newId}`);
+            const result = await componentManager.addComponent(newId, componentId, sourceData);
+            if (!result.valid) {
+              console.warn(
+                `[HierarchyPanel] Failed to copy component '${componentId}':`,
+                result.errors,
+              );
+            }
+          }
+        }
+
+        // Update the name to indicate it's a copy
+        const srcName = getEntityName(src) || `Entity ${src}`;
+        const copyName = `${srcName} Copy`;
+        const nameResult = await componentManager.updateComponent(newId, 'name', {
+          value: copyName,
+        });
+
+        if (!nameResult.valid) {
+          console.warn(`[HierarchyPanel] Failed to set copy name:`, nameResult.errors);
+        }
+
+        // Offset position slightly so copy is visible
+        const transformResult = await componentManager.updateComponent(newId, 'transform', {
+          position: [0.5, 0, 0], // Offset by 0.5 units on X axis
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+          needsUpdate: 1,
+        });
+
+        if (!transformResult.valid) {
+          console.warn(`[HierarchyPanel] Failed to offset copy position:`, transformResult.errors);
+        }
+
+        setSelectedId(newId);
+        console.log(`[HierarchyPanel] ✅ Successfully duplicated entity ${src} as ${newId}`);
+      } catch (error) {
+        console.error(`[HierarchyPanel] ❌ Failed to duplicate entity:`, error);
       }
-      Transform.needsUpdate[newId] = 1;
-      // Copy name if present
-      const srcName = getEntityName(src);
-      if (srcName) setEntityName(newId, srcName);
-      setSelectedId(newId);
     }
     handleCloseMenu();
   };

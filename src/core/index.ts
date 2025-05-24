@@ -44,8 +44,6 @@ export { useEngineStore } from './state/engineStore';
 
 // ECS
 export {
-  Transform,
-  Velocity,
   addVelocity,
   createEntity,
   destroyEntity,
@@ -53,14 +51,12 @@ export {
   markAllTransformsForUpdate,
   objectToEntity,
   resetWorld,
+  Transform,
   transformQuery,
+  Velocity,
   velocityQuery,
   world,
 } from './lib/ecs';
-
-// ECS Manager
-export { ecsManager } from './lib/ecs-manager';
-export type { IVelocityOptions } from './lib/ecs-manager';
 
 // Rendering Utilities
 export {
@@ -96,19 +92,11 @@ export * from './types/ecs';
 export {
   AudioControlsSchema,
   AudioOptionsSchema,
+  createValidationError,
   DebugVisualizationSchema,
   EventDataSchema,
   GameEngineControlsSchema,
   GameEventSchema,
-  LODConfigSchema,
-  PhysicsBodyConfigSchema,
-  PositionSchema,
-  QuaternionValidationSchema,
-  RenderingConfigSchema,
-  RotationSchema,
-  ScaleSchema,
-  SystemUpdateConfigSchema,
-  createValidationError,
   getDefaultPosition,
   getDefaultQuaternion,
   getDefaultRotation,
@@ -117,13 +105,21 @@ export {
   isValidPosition,
   isValidRotation,
   isValidScale,
+  LODConfigSchema,
   logValidationWarning,
+  PhysicsBodyConfigSchema,
+  PositionSchema,
+  QuaternionValidationSchema,
+  RenderingConfigSchema,
+  RotationSchema,
   safeValidateGameEvent,
   safeValidatePhysicsBodyConfig,
   safeValidatePosition,
   safeValidateRenderingConfig,
   safeValidateRotation,
   safeValidateScale,
+  ScaleSchema,
+  SystemUpdateConfigSchema,
   validateAudioOptions,
   validateDebugVisualization,
   validateGameEngineControls,
@@ -159,14 +155,13 @@ export * from './stores/uiStore';
 
 // Dynamic Component System - Unified
 export { ComponentManager } from './dynamic-components/ComponentManager';
-export { registerAllBuiltInComponents } from './lib/built-in-components';
 export { registerBuiltInComponentGroups } from './lib/component-groups';
 export {
   ComponentGroupManager,
-  ComponentRegistry,
-  DynamicComponentManager,
   componentManager,
+  ComponentRegistry,
   componentRegistry,
+  DynamicComponentManager,
   dynamicComponentManager,
 } from './lib/dynamic-components';
 export { ArchetypeManager, registerBuiltInArchetypes } from './lib/entity-archetypes';

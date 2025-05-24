@@ -182,7 +182,7 @@ export const rigidBodyDescriptor: IComponentDescriptor = {
   id: 'rigidBody',
   name: 'Rigid Body',
   category: ComponentCategory.Physics,
-  component: null, // This is managed by the editor store, not bitECS
+  component: null, // This is managed by the ComponentManager centrally
   removable: true, // Optional physics component
   dependencies: ['transform'],
   conflicts: [],
@@ -201,11 +201,25 @@ export const rigidBodyDescriptor: IComponentDescriptor = {
     }),
   }),
   serialize: (_entityId: number) => {
-    // This would integrate with the editor store
-    return null;
+    // Return default data structure for centralized ComponentManager
+    return {
+      enabled: true,
+      bodyType: 'dynamic' as const,
+      mass: 1,
+      gravityScale: 1,
+      canSleep: true,
+      linearDamping: 0.01,
+      angularDamping: 0.01,
+      material: {
+        friction: 0.6,
+        restitution: 0.3,
+        density: 1,
+      },
+    };
   },
-  deserialize: (_entityId: number, _data: any) => {
-    // This is handled by the EditorStoreIntegration
+  deserialize: (entityId: number, data: any) => {
+    // Store data in ComponentManager - handled by centralized system
+    console.debug(`[rigidBody] Storing data for entity ${entityId}:`, data);
   },
   metadata: {
     description: 'Physics rigid body for realistic physics simulation',
@@ -217,7 +231,7 @@ export const meshColliderDescriptor: IComponentDescriptor = {
   id: 'meshCollider',
   name: 'Mesh Collider',
   category: ComponentCategory.Physics,
-  component: null, // This is managed by the editor store, not bitECS
+  component: null, // This is managed by the ComponentManager centrally
   removable: true, // Optional physics component
   dependencies: ['transform'],
   schema: z.object({
@@ -240,11 +254,30 @@ export const meshColliderDescriptor: IComponentDescriptor = {
     }),
   }),
   serialize: (_entityId: number) => {
-    // This would integrate with the editor store
-    return null;
+    // Return default data structure for centralized ComponentManager
+    return {
+      enabled: true,
+      colliderType: 'box' as const,
+      isTrigger: false,
+      center: [0, 0, 0] as [number, number, number],
+      size: {
+        width: 1,
+        height: 1,
+        depth: 1,
+        radius: 0.5,
+        capsuleRadius: 0.5,
+        capsuleHeight: 2,
+      },
+      physicsMaterial: {
+        friction: 0.6,
+        restitution: 0.3,
+        density: 1,
+      },
+    };
   },
-  deserialize: (_entityId: number, _data: any) => {
-    // This is handled by the EditorStoreIntegration
+  deserialize: (entityId: number, data: any) => {
+    // Store data in ComponentManager - handled by centralized system
+    console.debug(`[meshCollider] Storing data for entity ${entityId}:`, data);
   },
   metadata: {
     description: 'Collision detection shape for the entity',
@@ -256,7 +289,7 @@ export const meshRendererDescriptor: IComponentDescriptor = {
   id: 'meshRenderer',
   name: 'Mesh Renderer',
   category: ComponentCategory.Rendering,
-  component: null, // This is managed by the editor store, not bitECS
+  component: null, // This is managed by the ComponentManager centrally
   removable: true, // Optional rendering enhancement
   dependencies: ['transform', 'meshType', 'material'],
   schema: z.object({
@@ -272,11 +305,23 @@ export const meshRendererDescriptor: IComponentDescriptor = {
     }),
   }),
   serialize: (_entityId: number) => {
-    // This would integrate with the editor store
-    return null;
+    // Return default data structure for centralized ComponentManager
+    return {
+      enabled: true,
+      castShadows: true,
+      receiveShadows: true,
+      material: {
+        color: '#ffffff',
+        metalness: 0,
+        roughness: 0.5,
+        emissive: '#000000',
+        emissiveIntensity: 0,
+      },
+    };
   },
-  deserialize: (_entityId: number, _data: any) => {
-    // This would integrate with the editor store
+  deserialize: (entityId: number, data: any) => {
+    // Store data in ComponentManager - handled by centralized system
+    console.debug(`[meshRenderer] Storing data for entity ${entityId}:`, data);
   },
   metadata: {
     description: 'Enhanced rendering properties and materials for the entity mesh',

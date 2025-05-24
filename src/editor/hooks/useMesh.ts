@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { MeshType, MeshTypeEnum, updateMeshType } from '@core/lib/ecs';
+import { componentManager } from '@/core/dynamic-components/init';
+import { MeshTypeEnum } from '@core/lib/ecs';
 
 export interface IUseMesh {
   meshType: string;
@@ -13,8 +14,35 @@ export const useMesh = (selectedEntity: number | null): IUseMesh => {
   const [meshType, setMeshTypeState] = useState<string>('unknown');
 
   useEffect(() => {
-    if (selectedEntity == null) return;
-    setMeshTypeState(meshTypeEnumToString(MeshType.type[selectedEntity]));
+    if (selectedEntity == null) {
+      setMeshTypeState('unknown');
+      return;
+    }
+
+    const updateMeshType = () => {
+      const meshTypeData = componentManager.getComponentData(selectedEntity, 'meshType');
+      if (meshTypeData?.type !== undefined) {
+        setMeshTypeState(meshTypeEnumToString(meshTypeData.type));
+      } else {
+        setMeshTypeState('unknown');
+      }
+    };
+
+    // Initial load
+    updateMeshType();
+
+    // Listen for component changes
+    const handleComponentChange = (event: any) => {
+      if (event.entityId === selectedEntity && event.componentId === 'meshType') {
+        updateMeshType();
+      }
+    };
+
+    componentManager.addEventListener(handleComponentChange);
+
+    return () => {
+      componentManager.removeEventListener(handleComponentChange);
+    };
   }, [selectedEntity]);
 
   const meshTypeEnumToString = useCallback((type: MeshTypeEnum | undefined): string => {
@@ -56,12 +84,24 @@ export const useMesh = (selectedEntity: number | null): IUseMesh => {
   }, []);
 
   const setMeshType = useCallback(
-    (type: string) => {
+    async (type: string) => {
       if (selectedEntity == null) return;
+
       const meshTypeEnum = meshTypeStringToEnum(type);
-      if (meshTypeEnum === undefined) return;
-      updateMeshType(selectedEntity, meshTypeEnum);
-      setMeshTypeState(type);
+      if (meshTypeEnum === undefined) {
+        console.warn('[useMesh] Invalid mesh type:', type);
+        return;
+      }
+
+      const result = await componentManager.updateComponent(selectedEntity, 'meshType', {
+        type: meshTypeEnum,
+      });
+
+      if (result.valid) {
+        setMeshTypeState(type);
+      } else {
+        console.warn('[useMesh] Failed to update mesh type:', result.errors);
+      }
     },
     [selectedEntity, meshTypeStringToEnum],
   );

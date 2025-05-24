@@ -1,27 +1,76 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { componentManager } from '@/core/dynamic-components/init';
 import { IMeshRendererData } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
-import { useEditorStore } from '@/editor/store/editorStore';
 
 /**
  * Hook to manage mesh renderer data for entities
  */
 export const useMeshRenderer = (entityId: number | null) => {
-  const meshRenderers = useEditorStore((state) => state.meshRenderers);
-  const setEntityMeshRenderer = useEditorStore((state) => state.setEntityMeshRenderer);
+  const [meshRenderer, setMeshRendererState] = useState<IMeshRendererData | null>(null);
 
-  const meshRenderer = useMemo(() => {
-    if (entityId == null) return null;
-    return meshRenderers[entityId] || null;
-  }, [entityId, meshRenderers]);
+  useEffect(() => {
+    if (entityId == null) {
+      setMeshRendererState(null);
+      return;
+    }
+
+    const updateMeshRenderer = () => {
+      const meshRendererData = componentManager.getComponentData(entityId, 'meshRenderer');
+      setMeshRendererState(meshRendererData || null);
+    };
+
+    // Initial load
+    updateMeshRenderer();
+
+    // Listen for component changes
+    const handleComponentChange = (event: any) => {
+      if (event.entityId === entityId && event.componentId === 'meshRenderer') {
+        updateMeshRenderer();
+      }
+    };
+
+    componentManager.addEventListener(handleComponentChange);
+
+    return () => {
+      componentManager.removeEventListener(handleComponentChange);
+    };
+  }, [entityId]);
 
   const setMeshRenderer = useCallback(
-    (data: IMeshRendererData | null) => {
-      if (entityId != null) {
-        setEntityMeshRenderer(entityId, data);
+    async (data: IMeshRendererData | null) => {
+      if (entityId == null) return;
+
+      if (data === null) {
+        // Remove the component
+        const result = await componentManager.removeComponent(entityId, 'meshRenderer');
+        if (result.valid) {
+          setMeshRendererState(null);
+        } else {
+          console.warn('[useMeshRenderer] Failed to remove mesh renderer:', result.errors);
+        }
+      } else {
+        // Add or update the component
+        const hasComponent = componentManager.hasComponent(entityId, 'meshRenderer');
+
+        if (hasComponent) {
+          const result = await componentManager.updateComponent(entityId, 'meshRenderer', data);
+          if (result.valid) {
+            setMeshRendererState(data);
+          } else {
+            console.warn('[useMeshRenderer] Failed to update mesh renderer:', result.errors);
+          }
+        } else {
+          const result = await componentManager.addComponent(entityId, 'meshRenderer', data);
+          if (result.valid) {
+            setMeshRendererState(data);
+          } else {
+            console.warn('[useMeshRenderer] Failed to add mesh renderer:', result.errors);
+          }
+        }
       }
     },
-    [entityId, setEntityMeshRenderer],
+    [entityId],
   );
 
   return {

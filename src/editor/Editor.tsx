@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { useECSQuery } from '@core/hooks/useECS';
-import { Transform } from '@core/lib/ecs';
+import { componentManager } from '@/core/dynamic-components/init';
 
 import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
@@ -38,13 +37,32 @@ export interface ISceneObject {
 }
 
 const Editor: React.FC = () => {
-  // ECS and Editor State
-  const entityIds = useECSQuery([Transform]);
+  // ComponentManager as single source of truth - get all entities with transform
+  const [entityIds, setEntityIds] = useState<number[]>([]);
 
-  // Debug hierarchy entity detection
-  React.useEffect(() => {
-    console.log(`[Hierarchy] Entity list updated:`, entityIds);
-  }, [entityIds]);
+  // Subscribe to ComponentManager for entity changes
+  useEffect(() => {
+    const updateEntities = () => {
+      const entities = componentManager.getEntitiesWithComponents(['transform']);
+      setEntityIds(entities);
+      console.log(`[Editor] Entity list updated:`, entities);
+    };
+
+    // Initial load
+    updateEntities();
+
+    // Listen for changes
+    const listener = () => {
+      updateEntities();
+    };
+
+    componentManager.subscribe(listener);
+
+    return () => {
+      componentManager.unsubscribe(listener);
+    };
+  }, []);
+
   const selectedId = useEditorStore((s) => s.selectedId);
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
   const showAddMenu = useEditorStore((s) => s.showAddMenu);

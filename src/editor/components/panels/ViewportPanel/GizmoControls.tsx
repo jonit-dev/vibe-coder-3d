@@ -2,8 +2,7 @@ import { TransformControls } from '@react-three/drei';
 import React, { MutableRefObject, useRef } from 'react';
 import { Object3D } from 'three';
 
-import { ecsManager } from '@/core/lib/ecs-manager';
-import { frameEventBatch } from '@core/lib/ecs-events';
+import { componentManager } from '@/core/dynamic-components/init';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -15,15 +14,25 @@ export interface IGizmoControlsProps {
   setIsTransforming?: (isTransforming: boolean) => void;
 }
 
-function updateEcsFromMesh(
+async function updateTransformThroughComponentManager(
   mesh: Object3D,
   mode: GizmoMode,
   entityId: number,
   onTransformChange?: (values: [number, number, number]) => void,
 ) {
+  // Get current transform data from ComponentManager
+  const currentTransform = componentManager.getComponentData(entityId, 'transform') || {
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    scale: [1, 1, 1],
+    needsUpdate: 1,
+  };
+
+  const updatedTransform = { ...currentTransform };
+
   if (mode === 'translate') {
     const position: [number, number, number] = [mesh.position.x, mesh.position.y, mesh.position.z];
-    ecsManager.updateTransform(entityId, { position });
+    updatedTransform.position = position;
     if (onTransformChange) {
       onTransformChange(position);
     }
@@ -32,20 +41,23 @@ function updateEcsFromMesh(
     const yDeg = mesh.rotation.y * (180 / Math.PI);
     const zDeg = mesh.rotation.z * (180 / Math.PI);
     const rotation: [number, number, number] = [xDeg, yDeg, zDeg];
-    ecsManager.updateTransform(entityId, { rotation });
+    updatedTransform.rotation = rotation;
     if (onTransformChange) {
       onTransformChange(rotation);
     }
   } else if (mode === 'scale') {
     const scale: [number, number, number] = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
-    ecsManager.updateTransform(entityId, { scale });
+    updatedTransform.scale = scale;
     if (onTransformChange) {
       onTransformChange(scale);
     }
   }
 
-  // Immediately emit events to ensure inspector panel updates
-  frameEventBatch.emit();
+  // Update through ComponentManager (single source of truth)
+  updatedTransform.needsUpdate = 1;
+  await componentManager.updateComponent(entityId, 'transform', updatedTransform);
+
+  console.debug(`[GizmoControls] Updated ${mode} for entity ${entityId} through ComponentManager`);
 }
 
 export const GizmoControls: React.FC<IGizmoControlsProps> = ({
@@ -70,11 +82,21 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = ({
           scaleSnap={0.1}
           onObjectChange={() => {
             if (!meshRef.current) return;
-            updateEcsFromMesh(meshRef.current, mode, entityId, onTransformChange);
+            updateTransformThroughComponentManager(
+              meshRef.current,
+              mode,
+              entityId,
+              onTransformChange,
+            );
           }}
           onChange={() => {
             if (!meshRef.current) return;
-            updateEcsFromMesh(meshRef.current, mode, entityId, onTransformChange);
+            updateTransformThroughComponentManager(
+              meshRef.current,
+              mode,
+              entityId,
+              onTransformChange,
+            );
           }}
           onMouseDown={() => setIsTransforming && setIsTransforming(true)}
           onMouseUp={() => setIsTransforming && setIsTransforming(false)}

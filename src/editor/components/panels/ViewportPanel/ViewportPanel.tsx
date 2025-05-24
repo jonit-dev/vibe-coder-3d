@@ -1,10 +1,9 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { useECSQuery } from '@core/hooks/useECS';
-import { Transform } from '@core/lib/ecs';
+import { componentManager } from '@/core/dynamic-components/init';
 
 import { useEditorStore } from '../../../store/editorStore';
 
@@ -17,9 +16,32 @@ export interface IViewportPanelProps {
 }
 
 export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
-  // Get all entities with a Transform
-  const entityIds = useECSQuery([Transform]);
+  // Get all entities with a Transform from centralized ComponentManager
+  const [entityIds, setEntityIds] = useState<number[]>([]);
   const isPlaying = useEditorStore((state) => state.isPlaying);
+
+  // Subscribe to entity changes from ComponentManager
+  useEffect(() => {
+    const updateEntities = () => {
+      const entities = componentManager.getEntitiesWithComponents(['transform']);
+      setEntityIds(entities);
+      console.debug(`[ViewportPanel] 🔍 Found ${entities.length} renderable entities:`, entities);
+    };
+
+    // Initial load
+    updateEntities();
+
+    // Listen for component changes
+    const listener = () => {
+      updateEntities();
+    };
+
+    componentManager.subscribe(listener);
+
+    return () => {
+      componentManager.unsubscribe(listener);
+    };
+  }, []);
 
   // Gizmo mode state
   const [mode, setMode] = useState<GizmoMode>('translate');

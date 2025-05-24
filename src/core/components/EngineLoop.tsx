@@ -2,7 +2,6 @@
 import { useFrame } from '@react-three/fiber';
 import { ReactNode, useEffect, useRef } from 'react';
 
-import { frameEventBatch } from '../lib/ecs-events';
 import { useGameLoop } from '../lib/gameLoop';
 import { materialSystem } from '../systems/MaterialSystem';
 import { runPhysicsSyncSystem } from '../systems/PhysicsSyncSystem';
@@ -153,8 +152,8 @@ export const EngineLoop = ({
             const { velocity, physics, overall } = metricsRef.current;
             console.log(
               `Performance (ms): Overall: ${overall.average.toFixed(2)}, ` +
-              `Velocity: ${velocity.average.toFixed(2)}, ` +
-              `Physics: ${physics.average.toFixed(2)}`,
+                `Velocity: ${velocity.average.toFixed(2)}, ` +
+                `Physics: ${physics.average.toFixed(2)}`,
             );
           }
         }
@@ -200,9 +199,6 @@ function runECSSystems(deltaTime: number) {
     // Uncomment for debugging:
     // console.log(`Updated ${velocityCount} velocity entities and ${physicsSyncCount} physics entities`);
   }
-
-  // Emit batched ECS events at the end of the frame
-  frameEventBatch.emit();
 }
 
 // Track performance metrics

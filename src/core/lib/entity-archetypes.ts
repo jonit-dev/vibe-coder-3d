@@ -4,8 +4,7 @@ import { ComponentCategory } from '../types/component-registry';
 
 import { componentRegistry } from './component-registry';
 import { dynamicComponentManager } from './dynamic-components';
-import { createEntity as createEntityLegacy, incrementWorldVersion, MeshTypeEnum } from './ecs';
-import { frameEventBatch } from './ecs-events';
+import { MeshTypeEnum } from './ecs';
 
 // Entity archetype interface
 export interface IEntityArchetype {
@@ -63,30 +62,13 @@ export class ArchetypeManager {
       overrides,
     );
 
-    // Create basic entity using legacy system for now
-    // This ensures all core components are properly initialized
-    let entityId: number;
-
-    if (archetype.components.includes('meshType') && overrides?.meshType?.type !== undefined) {
-      entityId = createEntityLegacy(overrides.meshType.type);
-    } else {
-      entityId = createEntityLegacy(MeshTypeEnum.Cube);
-    }
+    // Use ComponentManager directly as single source of truth
+    const entityId = await dynamicComponentManager.createEntity();
 
     console.log(`[ArchetypeManager] Created base entity with ID: ${entityId}`);
 
-    // Add any additional components required by the archetype
-    const coreComponents = ['transform', 'meshType', 'material']; // These are added by createEntity
-    const additionalComponents = archetype.components.filter(
-      (comp) => !coreComponents.includes(comp),
-    );
-
-    console.log(
-      `[ArchetypeManager] Entity ${entityId} needs additional components:`,
-      additionalComponents,
-    );
-
-    for (const componentId of additionalComponents) {
+    // Add all components required by the archetype
+    for (const componentId of archetype.components) {
       const defaultData = archetype.defaultValues?.[componentId];
       const overrideData = overrides?.[componentId];
       const componentData = overrideData || defaultData;
@@ -119,83 +101,6 @@ export class ArchetypeManager {
         );
       }
     }
-
-    // Apply any overrides to core components
-    if (overrides) {
-      console.log(
-        `[ArchetypeManager] Applying overrides to core components for entity ${entityId}:`,
-        overrides,
-      );
-      for (const [componentId, data] of Object.entries(overrides)) {
-        if (coreComponents.includes(componentId) && data) {
-          try {
-            console.log(
-              `[ArchetypeManager] Setting data for core component '${componentId}' on entity ${entityId}:`,
-              data,
-            );
-            const result = await dynamicComponentManager.setComponentData(
-              entityId,
-              componentId,
-              data,
-            );
-            if (!result.valid) {
-              console.warn(
-                `[ArchetypeManager] Failed to set component data for '${componentId}' on entity ${entityId}:`,
-                result.errors,
-              );
-            }
-          } catch (error) {
-            console.warn(
-              `[ArchetypeManager] Error setting component data for '${componentId}':`,
-              error,
-            );
-          }
-        }
-      }
-    }
-
-    // Apply archetype defaultValues for core components (this was missing!)
-    if (archetype.defaultValues) {
-      console.log(
-        `[ArchetypeManager] Applying archetype defaultValues for core components on entity ${entityId}:`,
-        archetype.defaultValues,
-      );
-      for (const [componentId, data] of Object.entries(archetype.defaultValues)) {
-        if (coreComponents.includes(componentId) && data && !overrides?.[componentId]) {
-          // Only apply if there's no override for this component
-          try {
-            console.log(
-              `[ArchetypeManager] Setting archetype default data for core component '${componentId}' on entity ${entityId}:`,
-              data,
-            );
-            const result = await dynamicComponentManager.setComponentData(
-              entityId,
-              componentId,
-              data,
-            );
-            if (!result.valid) {
-              console.warn(
-                `[ArchetypeManager] Failed to set archetype default data for '${componentId}' on entity ${entityId}:`,
-                result.errors,
-              );
-            } else {
-              console.log(
-                `[ArchetypeManager] ✅ Successfully applied archetype default for '${componentId}' on entity ${entityId}`,
-              );
-            }
-          } catch (error) {
-            console.warn(
-              `[ArchetypeManager] Error setting archetype default data for '${componentId}':`,
-              error,
-            );
-          }
-        }
-      }
-    }
-
-    // Force world version update to ensure entity is immediately visible to queries
-    incrementWorldVersion();
-    frameEventBatch.emit(); // Ensure all batched events (like transform updates) are flushed
 
     console.log(`✅ Created entity ${entityId} from archetype '${archetype.name}'`);
     return entityId;

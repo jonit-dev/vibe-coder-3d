@@ -1,8 +1,11 @@
 /**
  * Unified Dynamic Component Manager
- * Consolidates all component functionality into a single class
+ * THE SINGLE SOURCE OF TRUTH for all entity and component operations
  */
 
+import { addComponent, addEntity, hasComponent, removeComponent } from 'bitecs';
+
+import { world } from '@/core/lib/ecs';
 import type {
   ComponentCategory,
   IComponentChangeEvent,
@@ -16,35 +19,8 @@ interface IComponentStats {
   totalComponentInstances: number;
 }
 
-interface IComponentHandler {
-  add(entityId: number, data?: any): Promise<void>;
-  remove(entityId: number): Promise<void>;
-  update?(entityId: number, data: any): Promise<void>;
-  has(entityId: number): boolean;
-  get?(entityId: number): any;
-}
-
 interface IComponentInfo {
   descriptor: IComponentDescriptor;
-  handler: IComponentHandler;
-}
-
-interface IComponentOperation {
-  action: 'add' | 'remove' | 'update';
-  entityId: number;
-  componentId: string;
-  data?: any;
-}
-
-interface IComponentBatch {
-  operations: IComponentOperation[];
-  continueOnError?: boolean;
-}
-
-interface IComponentOperationResult {
-  successful: number;
-  failed: number;
-  results: Array<{ operation: IComponentOperation; result: IValidationResult }>;
 }
 
 interface IComponentGroup {
@@ -58,15 +34,22 @@ interface IComponentGroup {
   order: number;
 }
 
+export interface IEntityCreationOptions {
+  name?: string;
+  components?: Array<{ id: string; data?: any }>;
+}
+
 export class ComponentManager {
-  // Singleton instance for backwards compatibility
+  // Singleton instance
   private static instance: ComponentManager;
 
   // Component registry
   private components = new Map<string, IComponentInfo>();
 
-  // Entity tracking
+  // Entity tracking - THIS IS THE MASTER REGISTRY
+  private entities = new Set<number>();
   private entityComponents = new Map<number, Set<string>>();
+  private entityData = new Map<string, Map<number, any>>(); // componentId -> entityId -> data
 
   // Event listeners
   private eventListeners: Array<(event: IComponentChangeEvent) => void> = [];
@@ -75,11 +58,11 @@ export class ComponentManager {
   private componentGroups = new Map<string, IComponentGroup>();
 
   constructor() {
-    console.debug('ComponentManager initialized');
+    console.debug('[ComponentManager] 🚀 Centralized system initialized');
   }
 
   /**
-   * Get singleton instance (for backwards compatibility)
+   * Get singleton instance
    */
   static getInstance(): ComponentManager {
     if (!ComponentManager.instance) {
@@ -88,38 +71,111 @@ export class ComponentManager {
     return ComponentManager.instance;
   }
 
-  // ========== Component Registry Methods ==========
+  // ========== ENTITY MANAGEMENT (CENTRALIZED) ==========
+
+  /**
+   * Create a new entity through ComponentManager (CENTRALIZED)
+   */
+  createEntity(options: IEntityCreationOptions = {}): number {
+    // Create BitECS entity
+    const entityId = addEntity(world);
+
+    // Track in our centralized system
+    this.entities.add(entityId);
+    this.entityComponents.set(entityId, new Set());
+
+    console.debug(`[ComponentManager] 🆕 Created entity ${entityId}`);
+
+    // Add default name component
+    const name = options.name || `Entity ${entityId}`;
+    this.addComponentSync(entityId, 'name', { value: name });
+
+    // Add any requested components
+    if (options.components) {
+      for (const { id, data } of options.components) {
+        this.addComponentSync(entityId, id, data);
+      }
+    }
+
+    this.emitEvent({
+      entityId,
+      componentId: '__entity__',
+      action: 'add',
+      timestamp: Date.now(),
+    });
+
+    return entityId;
+  }
+
+  /**
+   * Destroy an entity through ComponentManager (CENTRALIZED)
+   */
+  destroyEntity(entityId: number): void {
+    if (!this.entities.has(entityId)) {
+      console.warn(`[ComponentManager] Entity ${entityId} does not exist`);
+      return;
+    }
+
+    // Remove all components first
+    const components = Array.from(this.entityComponents.get(entityId) || []);
+    for (const componentId of components) {
+      this.removeComponentSync(entityId, componentId);
+    }
+
+    // Remove from tracking
+    this.entities.delete(entityId);
+    this.entityComponents.delete(entityId);
+
+    // Clear all component data for this entity
+    for (const componentData of this.entityData.values()) {
+      componentData.delete(entityId);
+    }
+
+    console.debug(`[ComponentManager] 🗑️ Destroyed entity ${entityId}`);
+
+    this.emitEvent({
+      entityId,
+      componentId: '__entity__',
+      action: 'remove',
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Get all entities (CENTRALIZED QUERY)
+   */
+  getAllEntities(): number[] {
+    return Array.from(this.entities);
+  }
+
+  /**
+   * Get entities with specific components (CENTRALIZED QUERY)
+   */
+  getEntitiesWithComponents(componentIds: string[]): number[] {
+    const result: number[] = [];
+
+    for (const entityId of this.entities) {
+      const entityComponents = this.entityComponents.get(entityId);
+      if (entityComponents && componentIds.every((id) => entityComponents.has(id))) {
+        result.push(entityId);
+      }
+    }
+
+    return result;
+  }
+
+  // ========== COMPONENT REGISTRY ==========
 
   /**
    * Register a component descriptor
    */
   registerComponent(descriptor: IComponentDescriptor): void {
-    try {
-      // Create handler based on component type
-      const handler = this.createHandler(descriptor);
+    this.components.set(descriptor.id, { descriptor });
 
-      this.components.set(descriptor.id, { descriptor, handler });
-      console.debug(`Component '${descriptor.id}' registered`);
+    // Initialize component data storage
+    this.entityData.set(descriptor.id, new Map());
 
-      // Emit registration event
-      this.emitEvent({
-        entityId: -1, // Special value for registration events
-        componentId: descriptor.id,
-        action: 'add',
-        data: descriptor,
-        timestamp: Date.now(),
-      });
-    } catch (error) {
-      console.error(`Failed to register component '${descriptor.id}'`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get a component descriptor by ID
-   */
-  getComponent(componentId: string): IComponentDescriptor | undefined {
-    return this.components.get(componentId)?.descriptor;
+    console.debug(`[ComponentManager] 📝 Registered component '${descriptor.id}'`);
   }
 
   /**
@@ -130,69 +186,81 @@ export class ComponentManager {
   }
 
   /**
-   * Check if a component is registered
+   * Get component by ID
    */
-  hasRegisteredComponent(componentId: string): boolean {
-    return this.components.has(componentId);
+  getComponent(componentId: string): IComponentDescriptor | undefined {
+    return this.components.get(componentId)?.descriptor;
   }
 
-  /**
-   * Get components by category
-   */
-  getComponentsByCategory(category: ComponentCategory): IComponentDescriptor[] {
-    return this.getAllComponents().filter((comp) => comp.category === category);
-  }
-
-  // ========== Entity Component Management ==========
+  // ========== COMPONENT MANAGEMENT (CENTRALIZED) ==========
 
   /**
-   * Add a component to an entity
+   * Add component to entity (CENTRALIZED)
    */
   async addComponent(
     entityId: number,
     componentId: string,
     data?: any,
   ): Promise<IValidationResult> {
+    return this.addComponentSync(entityId, componentId, data);
+  }
+
+  /**
+   * Add component synchronously (CENTRALIZED)
+   */
+  addComponentSync(entityId: number, componentId: string, data?: any): IValidationResult {
+    // Validate
+    const componentInfo = this.components.get(componentId);
+    if (!componentInfo) {
+      return { valid: false, errors: [`Component '${componentId}' not registered`], warnings: [] };
+    }
+
+    if (this.hasComponent(entityId, componentId)) {
+      return {
+        valid: false,
+        errors: [`Entity ${entityId} already has component '${componentId}'`],
+        warnings: [],
+      };
+    }
+
+    const { descriptor } = componentInfo;
+
     try {
-      // Validate the operation
-      const validation = this.validateAdd(entityId, componentId);
-      if (!validation.valid) {
-        return validation;
+      // Add to BitECS if it's a BitECS component
+      if (descriptor.component) {
+        addComponent(world, descriptor.component, entityId);
+        console.debug(
+          `[ComponentManager] ➕ Added BitECS component '${componentId}' to entity ${entityId}`,
+        );
       }
 
-      const componentInfo = this.components.get(componentId);
-      if (!componentInfo) {
-        return {
-          valid: false,
-          errors: [`Component '${componentId}' not registered`],
-          warnings: [],
-        };
-      }
-
-      // Auto-add missing dependencies
-      if (validation.missingDependencies?.length) {
-        for (const depId of validation.missingDependencies) {
-          const depResult = await this.addComponent(entityId, depId);
-          if (!depResult.valid) {
-            return {
-              valid: false,
-              errors: [`Failed to add dependency '${depId}': ${depResult.errors.join(', ')}`],
-              warnings: [],
-            };
-          }
+      // Store component data in centralized storage
+      const componentDataMap = this.entityData.get(componentId)!;
+      if (data && descriptor.deserialize) {
+        // Use descriptor to deserialize data
+        descriptor.deserialize(entityId, data);
+        componentDataMap.set(entityId, data);
+      } else if (data) {
+        componentDataMap.set(entityId, data);
+      } else {
+        // Create default data
+        const defaultData = this.createDefaultData(descriptor);
+        if (descriptor.deserialize) {
+          descriptor.deserialize(entityId, defaultData);
         }
+        componentDataMap.set(entityId, defaultData);
       }
 
-      // Add the component
-      await componentInfo.handler.add(entityId, data);
-
-      // Track the component
-      if (!this.entityComponents.has(entityId)) {
-        this.entityComponents.set(entityId, new Set());
-      }
+      // Track component
       this.entityComponents.get(entityId)!.add(componentId);
 
-      // Emit event
+      // Call onAdd callback
+      if (descriptor.onAdd) {
+        descriptor.onAdd(entityId);
+      }
+
+      console.debug(`[ComponentManager] ✅ Added component '${componentId}' to entity ${entityId}`);
+
       this.emitEvent({
         entityId,
         componentId,
@@ -201,44 +269,61 @@ export class ComponentManager {
         timestamp: Date.now(),
       });
 
-      return { valid: true, errors: [], warnings: validation.warnings || [] };
+      return { valid: true, errors: [], warnings: [] };
     } catch (error) {
-      const errorMsg = `Failed to add component '${componentId}' to entity ${entityId}: ${String(error)}`;
-      console.error(errorMsg, error);
-      return { valid: false, errors: [errorMsg], warnings: [] };
+      console.error(`[ComponentManager] ❌ Failed to add component '${componentId}':`, error);
+      return {
+        valid: false,
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        warnings: [],
+      };
     }
   }
 
   /**
-   * Remove a component from an entity
+   * Remove component from entity (CENTRALIZED)
    */
   async removeComponent(entityId: number, componentId: string): Promise<IValidationResult> {
+    return this.removeComponentSync(entityId, componentId);
+  }
+
+  /**
+   * Remove component synchronously (CENTRALIZED)
+   */
+  removeComponentSync(entityId: number, componentId: string): IValidationResult {
+    if (!this.hasComponent(entityId, componentId)) {
+      return {
+        valid: false,
+        errors: [`Entity ${entityId} does not have component '${componentId}'`],
+        warnings: [],
+      };
+    }
+
+    const componentInfo = this.components.get(componentId)!;
+    const { descriptor } = componentInfo;
+
     try {
-      // Validate the operation
-      const validation = this.validateRemove(entityId, componentId);
-      if (!validation.valid) {
-        return validation;
+      // Remove from BitECS if it's a BitECS component
+      if (descriptor.component && hasComponent(world, descriptor.component, entityId)) {
+        removeComponent(world, descriptor.component, entityId);
+        console.debug(
+          `[ComponentManager] ➖ Removed BitECS component '${componentId}' from entity ${entityId}`,
+        );
       }
 
-      const componentInfo = this.components.get(componentId);
-      if (!componentInfo) {
-        return {
-          valid: false,
-          errors: [`Component '${componentId}' not registered`],
-          warnings: [],
-        };
+      // Remove from centralized storage
+      this.entityData.get(componentId)!.delete(entityId);
+      this.entityComponents.get(entityId)!.delete(componentId);
+
+      // Call onRemove callback
+      if (descriptor.onRemove) {
+        descriptor.onRemove(entityId);
       }
 
-      // Remove the component
-      await componentInfo.handler.remove(entityId);
+      console.debug(
+        `[ComponentManager] ✅ Removed component '${componentId}' from entity ${entityId}`,
+      );
 
-      // Untrack the component
-      this.entityComponents.get(entityId)?.delete(componentId);
-      if (this.entityComponents.get(entityId)?.size === 0) {
-        this.entityComponents.delete(entityId);
-      }
-
-      // Emit event
       this.emitEvent({
         entityId,
         componentId,
@@ -248,45 +333,48 @@ export class ComponentManager {
 
       return { valid: true, errors: [], warnings: [] };
     } catch (error) {
-      const errorMsg = `Failed to remove component '${componentId}' from entity ${entityId}: ${String(error)}`;
-      console.error(errorMsg, error);
-      return { valid: false, errors: [errorMsg], warnings: [] };
+      console.error(`[ComponentManager] ❌ Failed to remove component '${componentId}':`, error);
+      return {
+        valid: false,
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        warnings: [],
+      };
     }
   }
 
   /**
-   * Update component data for an entity
+   * Update component data (CENTRALIZED)
    */
   async updateComponent(
     entityId: number,
     componentId: string,
     data: any,
   ): Promise<IValidationResult> {
+    if (!this.hasComponent(entityId, componentId)) {
+      return {
+        valid: false,
+        errors: [`Entity ${entityId} does not have component '${componentId}'`],
+        warnings: [],
+      };
+    }
+
+    const componentInfo = this.components.get(componentId)!;
+    const { descriptor } = componentInfo;
+
     try {
-      // Validate the operation
-      const validation = this.validateUpdate(entityId, componentId, data);
-      if (!validation.valid) {
-        return validation;
+      // Update data in centralized storage
+      const componentDataMap = this.entityData.get(componentId)!;
+      componentDataMap.set(entityId, { ...componentDataMap.get(entityId), ...data });
+
+      // Use descriptor to deserialize updated data
+      if (descriptor.deserialize) {
+        descriptor.deserialize(entityId, componentDataMap.get(entityId));
       }
 
-      const componentInfo = this.components.get(componentId);
-      if (!componentInfo) {
-        return {
-          valid: false,
-          errors: [`Component '${componentId}' not registered`],
-          warnings: [],
-        };
-      }
+      console.debug(
+        `[ComponentManager] 🔄 Updated component '${componentId}' for entity ${entityId}`,
+      );
 
-      // Update the component
-      if (componentInfo.handler.update) {
-        await componentInfo.handler.update(entityId, data);
-      } else {
-        // Fallback to add with new data
-        await componentInfo.handler.add(entityId, data);
-      }
-
-      // Emit event
       this.emitEvent({
         entityId,
         componentId,
@@ -297,14 +385,38 @@ export class ComponentManager {
 
       return { valid: true, errors: [], warnings: [] };
     } catch (error) {
-      const errorMsg = `Failed to update component '${componentId}' for entity ${entityId}: ${String(error)}`;
-      console.error(errorMsg, error);
-      return { valid: false, errors: [errorMsg], warnings: [] };
+      console.error(`[ComponentManager] ❌ Failed to update component '${componentId}':`, error);
+      return {
+        valid: false,
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+        warnings: [],
+      };
     }
   }
 
   /**
-   * Set component data (alias for updateComponent for backwards compatibility)
+   * Check if entity has component (CENTRALIZED)
+   */
+  hasComponent(entityId: number, componentId: string): boolean {
+    return this.entityComponents.get(entityId)?.has(componentId) ?? false;
+  }
+
+  /**
+   * Get all components for entity (CENTRALIZED)
+   */
+  getEntityComponents(entityId: number): string[] {
+    return Array.from(this.entityComponents.get(entityId) ?? []);
+  }
+
+  /**
+   * Get component data (CENTRALIZED)
+   */
+  getComponentData(entityId: number, componentId: string): any {
+    return this.entityData.get(componentId)?.get(entityId);
+  }
+
+  /**
+   * Set component data (alias for updateComponent - backwards compatibility)
    */
   async setComponentData(
     entityId: number,
@@ -314,53 +426,14 @@ export class ComponentManager {
     return this.updateComponent(entityId, componentId, data);
   }
 
-  /**
-   * Check if an entity has a specific component
-   */
-  hasComponent(entityId: number, componentId: string): boolean {
-    return this.entityComponents.get(entityId)?.has(componentId) ?? false;
-  }
+  // ========== COMPONENT GROUPS ==========
 
-  /**
-   * Get all components for an entity
-   */
-  getEntityComponents(entityId: number): string[] {
-    return Array.from(this.entityComponents.get(entityId) ?? []);
-  }
-
-  /**
-   * Get component data for an entity
-   */
-  getComponentData(entityId: number, componentId: string): any {
-    const componentInfo = this.components.get(componentId);
-    if (!componentInfo || !componentInfo.handler.get) {
-      return null;
-    }
-    return componentInfo.handler.get(entityId);
-  }
-
-  // ========== Component Groups ==========
-
-  /**
-   * Register a component group
-   */
   registerComponentGroup(group: IComponentGroup): void {
     this.componentGroups.set(group.id, group);
-    console.debug(`Component group '${group.id}' registered`);
   }
 
-  /**
-   * Get all component groups
-   */
   getAllGroups(): IComponentGroup[] {
-    return Array.from(this.componentGroups.values()).sort((a, b) => a.order - b.order);
-  }
-
-  /**
-   * Get a component group by ID
-   */
-  getGroup(groupId: string): IComponentGroup | undefined {
-    return this.componentGroups.get(groupId);
+    return Array.from(this.componentGroups.values());
   }
 
   /**
@@ -374,50 +447,12 @@ export class ComponentManager {
     return !group.components.some((componentId) => this.hasComponent(entityId, componentId));
   }
 
-  /**
-   * Add all components from a group to an entity
-   */
-  async addGroupToEntity(entityId: number, groupId: string): Promise<IValidationResult> {
-    const group = this.componentGroups.get(groupId);
-    if (!group) {
-      return { valid: false, errors: [`Group '${groupId}' not found`], warnings: [] };
-    }
+  // ========== EVENT SYSTEM ==========
 
-    const results: IValidationResult[] = [];
-
-    for (const componentId of group.components) {
-      const defaultData = group.defaultValues?.[componentId];
-      const result = await this.addComponent(entityId, componentId, defaultData);
-      results.push(result);
-
-      if (!result.valid) {
-        return {
-          valid: false,
-          errors: [`Failed to add group '${groupId}': ${result.errors.join(', ')}`],
-          warnings: [],
-        };
-      }
-    }
-
-    return {
-      valid: true,
-      errors: [],
-      warnings: results.flatMap((r) => r.warnings || []),
-    };
-  }
-
-  // ========== Event System ==========
-
-  /**
-   * Subscribe to component change events
-   */
   subscribe(listener: (event: IComponentChangeEvent) => void): void {
     this.eventListeners.push(listener);
   }
 
-  /**
-   * Unsubscribe from component change events
-   */
   unsubscribe(listener: (event: IComponentChangeEvent) => void): void {
     const index = this.eventListeners.indexOf(listener);
     if (index > -1) {
@@ -425,93 +460,32 @@ export class ComponentManager {
     }
   }
 
-  /**
-   * Add event listener (alias for backwards compatibility)
-   */
-  addEventListener(listener: (event: IComponentChangeEvent) => void): void {
-    this.subscribe(listener);
-  }
+  // Backwards compatibility aliases
+  addEventListener = this.subscribe;
+  removeEventListener = this.unsubscribe;
+
+  // ========== UTILITIES ==========
 
   /**
-   * Remove event listener (alias for backwards compatibility)
-   */
-  removeEventListener(listener: (event: IComponentChangeEvent) => void): void {
-    this.unsubscribe(listener);
-  }
-
-  // ========== Batch Operations ==========
-
-  /**
-   * Process multiple component operations in batch
-   */
-  async processBatch(batch: IComponentBatch): Promise<IComponentOperationResult> {
-    const results: Array<{ operation: IComponentOperation; result: IValidationResult }> = [];
-
-    for (const operation of batch.operations) {
-      let result: IValidationResult;
-
-      try {
-        switch (operation.action) {
-          case 'add':
-            result = await this.addComponent(
-              operation.entityId,
-              operation.componentId,
-              operation.data,
-            );
-            break;
-          case 'remove':
-            result = await this.removeComponent(operation.entityId, operation.componentId);
-            break;
-          case 'update':
-            result = await this.updateComponent(
-              operation.entityId,
-              operation.componentId,
-              operation.data,
-            );
-            break;
-          default:
-            result = {
-              valid: false,
-              errors: [`Unknown operation: ${operation.action}`],
-              warnings: [],
-            };
-        }
-      } catch (error) {
-        result = { valid: false, errors: [`Operation failed: ${String(error)}`], warnings: [] };
-      }
-
-      results.push({ operation, result });
-
-      // Stop on first failure if not continuing on error
-      if (!result.valid && !batch.continueOnError) {
-        break;
-      }
-    }
-
-    const successful = results.filter((r) => r.result.valid).length;
-    const failed = results.length - successful;
-
-    return {
-      successful,
-      failed,
-      results,
-    };
-  }
-
-  // ========== Validation ==========
-
-  /**
-   * Validate if a component can be added to an entity
+   * Validate if a component can be added to an entity (backwards compatibility)
    */
   validateComponentAddition(entityId: number, componentId: string): IValidationResult {
-    return this.validateAdd(entityId, componentId);
+    const componentInfo = this.components.get(componentId);
+    if (!componentInfo) {
+      return { valid: false, errors: [`Component '${componentId}' not registered`], warnings: [] };
+    }
+
+    if (this.hasComponent(entityId, componentId)) {
+      return {
+        valid: false,
+        errors: [`Entity ${entityId} already has component '${componentId}'`],
+        warnings: [],
+      };
+    }
+
+    return { valid: true, errors: [], warnings: [] };
   }
 
-  // ========== Utility Methods ==========
-
-  /**
-   * Get system statistics
-   */
   getStats(): IComponentStats {
     let totalInstances = 0;
     for (const components of this.entityComponents.values()) {
@@ -525,108 +499,43 @@ export class ComponentManager {
     };
   }
 
-  /**
-   * Clear all data (useful for testing)
-   */
   clear(): void {
     this.components.clear();
+    this.entities.clear();
     this.entityComponents.clear();
+    this.entityData.clear();
     this.eventListeners = [];
     this.componentGroups.clear();
   }
 
-  // ========== Private Helper Methods ==========
+  // ========== PRIVATE HELPERS ==========
 
-  private createHandler(descriptor: IComponentDescriptor): IComponentHandler {
-    // Create a basic handler that delegates to the descriptor's implementation
-    return new BasicComponentHandler(descriptor);
-  }
-
-  private validateAdd(entityId: number, componentId: string): IValidationResult {
-    const componentInfo = this.components.get(componentId);
-    if (!componentInfo) {
-      return { valid: false, errors: [`Component '${componentId}' not registered`], warnings: [] };
+  private createDefaultData(descriptor: IComponentDescriptor): any {
+    // Create sensible defaults based on component type
+    switch (descriptor.id) {
+      case 'transform':
+        return {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+          needsUpdate: 1,
+        };
+      case 'material':
+        return {
+          color: [0.8, 0.8, 0.8],
+          needsUpdate: 1,
+        };
+      case 'meshType':
+        return {
+          type: 0, // Default to Cube
+        };
+      case 'name':
+        return {
+          value: 'Entity',
+        };
+      default:
+        return {};
     }
-
-    // Check if component already exists
-    if (this.hasComponent(entityId, componentId)) {
-      return {
-        valid: false,
-        errors: [`Entity ${entityId} already has component '${componentId}'`],
-        warnings: [],
-      };
-    }
-
-    // Check dependencies
-    const { descriptor } = componentInfo;
-    const missingDependencies: string[] = [];
-    const warnings: string[] = [];
-
-    if (descriptor.dependencies) {
-      for (const depId of descriptor.dependencies) {
-        if (!this.hasComponent(entityId, depId)) {
-          missingDependencies.push(depId);
-          warnings.push(`Auto-adding missing dependency: ${depId}`);
-        }
-      }
-    }
-
-    return {
-      valid: true,
-      errors: [],
-      warnings,
-      missingDependencies: missingDependencies.length > 0 ? missingDependencies : undefined,
-    };
-  }
-
-  private validateRemove(entityId: number, componentId: string): IValidationResult {
-    if (!this.hasComponent(entityId, componentId)) {
-      return {
-        valid: false,
-        errors: [`Entity ${entityId} does not have component '${componentId}'`],
-        warnings: [],
-      };
-    }
-
-    // Check for dependents
-    const dependents: string[] = [];
-    const entityComponents = this.getEntityComponents(entityId);
-
-    for (const otherComponentId of entityComponents) {
-      const otherComponent = this.components.get(otherComponentId);
-      if (otherComponent?.descriptor.dependencies?.includes(componentId)) {
-        dependents.push(otherComponentId);
-      }
-    }
-
-    if (dependents.length > 0) {
-      return {
-        valid: false,
-        errors: [
-          `Cannot remove component '${componentId}' - it's required by: ${dependents.join(', ')}`,
-        ],
-        warnings: [],
-      };
-    }
-
-    return { valid: true, errors: [], warnings: [] };
-  }
-
-  private validateUpdate(entityId: number, componentId: string, data: any): IValidationResult {
-    if (!this.hasComponent(entityId, componentId)) {
-      return {
-        valid: false,
-        errors: [`Entity ${entityId} does not have component '${componentId}'`],
-        warnings: [],
-      };
-    }
-
-    // Basic data validation could be added here
-    if (data === null || data === undefined) {
-      return { valid: false, errors: ['Component data cannot be null or undefined'], warnings: [] };
-    }
-
-    return { valid: true, errors: [], warnings: [] };
   }
 
   private emitEvent(event: IComponentChangeEvent): void {
@@ -634,53 +543,8 @@ export class ComponentManager {
       try {
         listener(event);
       } catch (error) {
-        console.error('Error in component change listener:', error);
+        console.error('[ComponentManager] Error in event listener:', error);
       }
     }
-  }
-}
-
-// Simplified handler implementation
-class BasicComponentHandler implements IComponentHandler {
-  private descriptor: IComponentDescriptor;
-
-  constructor(descriptor: IComponentDescriptor) {
-    this.descriptor = descriptor;
-  }
-
-  async add(entityId: number, data?: any): Promise<void> {
-    // Use descriptor's deserialize method to add component data
-    if (data && this.descriptor.deserialize) {
-      this.descriptor.deserialize(entityId, data);
-    }
-
-    // Call onAdd callback if defined
-    if (this.descriptor.onAdd) {
-      this.descriptor.onAdd(entityId);
-    }
-  }
-
-  async remove(entityId: number): Promise<void> {
-    // Call onRemove callback if defined
-    if (this.descriptor.onRemove) {
-      this.descriptor.onRemove(entityId);
-    }
-  }
-
-  async update?(entityId: number, data: any): Promise<void> {
-    // Update by deserializing new data
-    if (this.descriptor.deserialize) {
-      this.descriptor.deserialize(entityId, data);
-    }
-  }
-
-  has(entityId: number): boolean {
-    // Use the descriptor's serialize method to check existence
-    // If serialize returns undefined, the component doesn't exist
-    return this.descriptor.serialize(entityId) !== undefined;
-  }
-
-  get?(entityId: number): any {
-    return this.descriptor.serialize(entityId);
   }
 }
