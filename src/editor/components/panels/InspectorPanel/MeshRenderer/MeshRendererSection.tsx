@@ -38,7 +38,7 @@ const DEFAULT_MESH_RENDERER: IMeshRendererData = {
 export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   meshRenderer,
   setMeshRenderer,
-  isPlaying,
+  isPlaying: _isPlaying,
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 

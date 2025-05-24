@@ -1,6 +1,6 @@
 import { OrbitControls, Sky, Stats } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { Physics, RigidBody } from '@react-three/rapier';
+import { Physics } from '@react-three/rapier';
 import React, { useEffect, useRef, useState } from 'react';
 import { Mesh } from 'three';
 
@@ -45,13 +45,15 @@ export const EntityScene: React.FC = () => {
 
       {/* Physics system with debug visualization */}
       <Physics debug>
-        {/* Static ground - using RigidBody directly for the ground as it's simpler */}
-        <RigidBody type="fixed" position={[0, -0.5, 0]}>
-          <mesh receiveShadow>
-            <boxGeometry args={[20, 1, 20]} />
-            <meshStandardMaterial color="#555555" />
-          </mesh>
-        </RigidBody>
+        {/* Static ground - using Entity component for proper ECS integration */}
+        <Entity position={[0, -0.5, 0]}>
+          <PhysicsBox size={[20, 1, 20]} type="fixed">
+            <mesh receiveShadow>
+              <boxGeometry args={[20, 1, 20]} />
+              <meshStandardMaterial color="#555555" />
+            </mesh>
+          </PhysicsBox>
+        </Entity>
 
         {/* Only render the more complex entity components once physics is ready */}
         {isReady && (
@@ -88,7 +90,7 @@ const DynamicEntities: React.FC = () => {
     <>
       {/* Boxes */}
       <Entity position={[0, 5, 0]}>
-        <PhysicsBox args={[1, 1, 1]} type="dynamic">
+        <PhysicsBox size={[1, 1, 1]} type="dynamic">
           <mesh castShadow>
             <boxGeometry args={[1, 1, 1]} />
             <meshStandardMaterial color="#ff0000" />
@@ -97,7 +99,7 @@ const DynamicEntities: React.FC = () => {
       </Entity>
 
       <Entity position={[1, 7, 0]}>
-        <PhysicsBox args={[1, 1, 1]} type="dynamic">
+        <PhysicsBox size={[1, 1, 1]} type="dynamic">
           <mesh castShadow>
             <boxGeometry args={[1, 1, 1]} />
             <meshStandardMaterial color="#00ff00" />
@@ -107,7 +109,7 @@ const DynamicEntities: React.FC = () => {
 
       {/* Spheres */}
       <Entity position={[-1, 9, 0]}>
-        <PhysicsSphere args={[0.5]} type="dynamic">
+        <PhysicsSphere radius={0.5} type="dynamic">
           <mesh castShadow>
             <sphereGeometry args={[0.5, 32, 32]} />
             <meshStandardMaterial color="#0000ff" />
@@ -116,7 +118,7 @@ const DynamicEntities: React.FC = () => {
       </Entity>
 
       <Entity position={[0, 11, 0]}>
-        <PhysicsSphere args={[0.5]} type="dynamic">
+        <PhysicsSphere radius={0.5} type="dynamic">
           <mesh castShadow>
             <sphereGeometry args={[0.5, 32, 32]} />
             <meshStandardMaterial color="#ffff00" />

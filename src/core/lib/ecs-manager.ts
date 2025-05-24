@@ -318,7 +318,7 @@ export class ECSManager {
   /**
    * Get all entities with specific components (query)
    */
-  query(components: any[]): number[] {
+  query(_components: any[]): number[] {
     // This would use the existing query system
     // For now, we'll need to implement a simple version
     // In a real implementation, this would be more sophisticated

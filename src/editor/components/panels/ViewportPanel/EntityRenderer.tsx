@@ -44,6 +44,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   const { meshCollider } = useMeshCollider(entityId);
   const { meshRenderer } = useMeshRenderer(entityId);
   const isPlaying = useEditorStore((s) => s.isPlaying);
+  const setSelectedId = useEditorStore((s) => s.setSelectedId);
 
   useThree(); // Required for some R3F functionality
 
@@ -146,6 +147,10 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
       receiveShadow={meshRenderer?.receiveShadows ?? true}
       userData={{ entityId }}
       visible={meshRenderer?.enabled ?? true}
+      onClick={(e) => {
+        e.stopPropagation();
+        setSelectedId(entityId);
+      }}
     >
       {getGeometry()}
       <meshStandardMaterial

@@ -1,13 +1,13 @@
 import React from 'react';
 import { FiInfo } from 'react-icons/fi';
 
+import { useEntityComponents, useHasComponent } from '@/core/hooks/useComponent';
 import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
 import { MeshColliderSection } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
 import { RigidBodySection } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 import { InspectorSection } from '@/editor/components/ui/InspectorSection';
-import { useEntityInfo } from '@/editor/hooks/useEntityInfo';
 import { useMesh } from '@/editor/hooks/useMesh';
 import { useMeshCollider } from '@/editor/hooks/useMeshCollider';
 import { useMeshRenderer } from '@/editor/hooks/useMeshRenderer';
@@ -18,13 +18,21 @@ import { useEditorStore } from '@/editor/store/editorStore';
 export const InspectorPanelContent: React.FC = () => {
   const selectedEntity = useEditorStore((s) => s.selectedId);
   const isPlaying = useEditorStore((s) => s.isPlaying);
+
+  // Legacy hooks for existing components
   const { meshType, setMeshType } = useMesh(selectedEntity);
   const { position, rotation, scale, setPosition, setRotation, setScale } =
     useTransform(selectedEntity);
-  const { entityId, entityName } = useEntityInfo(selectedEntity);
   const { rigidBody, setRigidBody } = useRigidBody(selectedEntity);
   const { meshCollider, setMeshCollider } = useMeshCollider(selectedEntity);
   const { meshRenderer, setMeshRenderer } = useMeshRenderer(selectedEntity);
+
+  // Dynamic component system hooks
+  const entityComponents = useEntityComponents(selectedEntity);
+  const hasVelocity = useHasComponent(selectedEntity, 'velocity');
+  const hasRigidBodyComponent = useHasComponent(selectedEntity, 'rigidBody');
+  const hasMeshColliderComponent = useHasComponent(selectedEntity, 'meshCollider');
+  const hasMeshRendererComponent = useHasComponent(selectedEntity, 'meshRenderer');
 
   if (selectedEntity == null) {
     return (
@@ -37,7 +45,7 @@ export const InspectorPanelContent: React.FC = () => {
 
   return (
     <div className="space-y-2 p-2 pb-4">
-      <EntityInfoSection entityId={entityId} entityName={entityName} />
+      {/* Core Components - Always present */}
       <MeshTypeSection meshType={meshType} setMeshType={setMeshType} />
       <TransformSection
         position={position}
@@ -47,49 +55,59 @@ export const InspectorPanelContent: React.FC = () => {
         setRotation={setRotation}
         setScale={setScale}
       />
-      <MeshRendererSection
-        meshRenderer={meshRenderer}
-        setMeshRenderer={setMeshRenderer}
-        isPlaying={isPlaying}
-      />
-      <RigidBodySection
-        rigidBody={rigidBody}
-        setRigidBody={setRigidBody}
-        meshCollider={meshCollider}
-        setMeshCollider={setMeshCollider}
-        meshType={meshType}
-        isPlaying={isPlaying}
-      />
-      <MeshColliderSection
-        meshCollider={meshCollider}
-        setMeshCollider={setMeshCollider}
-        meshType={meshType}
-        isPlaying={isPlaying}
-      />
+
+      {/* Dynamic Components - Only show if present */}
+      {(hasMeshRendererComponent || meshRenderer) && (
+        <MeshRendererSection
+          meshRenderer={meshRenderer}
+          setMeshRenderer={setMeshRenderer}
+          isPlaying={isPlaying}
+        />
+      )}
+
+      {hasVelocity && <VelocitySection entityId={selectedEntity} />}
+
+      {(hasRigidBodyComponent || rigidBody) && (
+        <RigidBodySection
+          rigidBody={rigidBody}
+          setRigidBody={setRigidBody}
+          meshCollider={meshCollider}
+          setMeshCollider={setMeshCollider}
+          meshType={meshType}
+          isPlaying={isPlaying}
+        />
+      )}
+
+      {(hasMeshColliderComponent || meshCollider) && (
+        <MeshColliderSection
+          meshCollider={meshCollider}
+          setMeshCollider={setMeshCollider}
+          meshType={meshType}
+          isPlaying={isPlaying}
+        />
+      )}
+
+      {/* Debug Info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 p-2 bg-gray-900 rounded border border-gray-600">
+          <div className="text-xs text-gray-400 mb-1">Debug - Entity Components:</div>
+          <div className="text-xs text-gray-300">
+            {entityComponents.length > 0 ? entityComponents.join(', ') : 'None'}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// Compact Entity Info Section
-export const EntityInfoSection: React.FC<{ entityId: number | null; entityName: string }> = ({
-  entityId,
-  entityName,
-}) => (
-  <InspectorSection title="Entity Info" icon={<FiInfo />} headerColor="cyan">
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-gray-400">ID:</span>
-        <div className="bg-black/30 border border-gray-600/30 rounded px-2 py-0.5">
-          <span className="text-xs font-mono text-cyan-300">{entityId}</span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-gray-400">Name:</span>
-        <div className="bg-black/30 border border-gray-600/30 rounded px-2 py-0.5">
-          <span className="text-xs text-gray-200">{entityName}</span>
-        </div>
-      </div>
-    </div>
-  </InspectorSection>
-);
+// Velocity Section Component
+const VelocitySection: React.FC<{ entityId: number }> = ({ entityId: _entityId }) => {
+  // This would be implemented using the dynamic component system
+  // For now, just a placeholder
+  return (
+    <InspectorSection title="Velocity" icon={<FiInfo />} headerColor="orange">
+      <div className="text-xs text-gray-400">Velocity component detected</div>
+      <div className="text-xs text-yellow-400">TODO: Implement velocity component UI</div>
+    </InspectorSection>
+  );
+};

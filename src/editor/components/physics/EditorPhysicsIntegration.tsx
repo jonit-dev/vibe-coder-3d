@@ -31,7 +31,7 @@ export const EditorPhysicsIntegration = () => {
       });
     } else {
       // Clean up physics bodies when stopping play mode
-      physicsBodyRefs.current.forEach((bodyRef, entityId) => {
+      physicsBodyRefs.current.forEach((_bodyRef, entityId) => {
         console.log(`Cleaning up physics body for entity ${entityId}`);
         // Clean up physics body
       });

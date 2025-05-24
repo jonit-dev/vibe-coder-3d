@@ -85,6 +85,8 @@ const Editor: React.FC = () => {
       mass: 1,
       gravityScale: 1,
       canSleep: true,
+      linearDamping: 0.01,
+      angularDamping: 0.01,
       initialVelocity: [0, 0, 0],
       initialAngularVelocity: [0, 0, 0],
       material: {
@@ -135,7 +137,9 @@ const Editor: React.FC = () => {
     }
   }, [selectedId, entityIds, setSelectedId]);
 
-  const handleAddObject = (type: 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane') => {
+  const handleAddObject = async (
+    type: 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane',
+  ) => {
     let meshType: MeshTypeEnum;
     switch (type) {
       case 'Cube':
@@ -159,11 +163,57 @@ const Editor: React.FC = () => {
       default:
         meshType = MeshTypeEnum.Cube;
     }
-    const entity = ecsManager.createEntity({ meshType });
-    setSelectedId(entity);
-    setStatusMessage(`Added new ${type}: ${entity}`);
+
+    try {
+      // Use physics entity archetype by default for new objects (except plane which should be static)
+      if (type === 'Plane') {
+        const entity = ecsManager.createEntity({ meshType });
+        setSelectedId(entity);
+        setStatusMessage(`Added new ${type}: ${entity}`);
+      } else {
+        const { ArchetypeManager } = await import('@core/index');
+
+        // Debug: Check what archetypes are available
+        const availableArchetypes = ArchetypeManager.listArchetypes();
+        console.log(
+          'Available archetypes:',
+          availableArchetypes.map((a) => a.id),
+        );
+
+        // Check if physics-entity archetype exists
+        const physicsArchetype = ArchetypeManager.getArchetype('physics-entity');
+        if (!physicsArchetype) {
+          console.warn('physics-entity archetype not found, falling back to basic-entity');
+
+          // Try basic-entity as fallback
+          const basicArchetype = ArchetypeManager.getArchetype('basic-entity');
+          if (basicArchetype) {
+            const entity = await ArchetypeManager.createEntity('basic-entity', {
+              meshType: { type: meshType },
+            });
+            setSelectedId(entity);
+            setStatusMessage(`Added new ${type}: ${entity} (basic entity)`);
+          } else {
+            throw new Error('No archetypes available');
+          }
+        } else {
+          const entity = await ArchetypeManager.createEntity('physics-entity', {
+            meshType: { type: meshType },
+          });
+          setSelectedId(entity);
+          setStatusMessage(`Added new physics-enabled ${type}: ${entity}`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to create entity:', error);
+      // Fallback to basic entity creation
+      const entity = ecsManager.createEntity({ meshType });
+      setSelectedId(entity);
+      setStatusMessage(`Added new ${type}: ${entity} (fallback)`);
+    }
+
     setShowAddMenu(false);
-    console.log('[AddObject] Added entity', { entity, type });
+    console.log('[AddObject] Added entity', { type });
     console.log('[AddObject] Current entity IDs before update:', entityIds);
   };
 

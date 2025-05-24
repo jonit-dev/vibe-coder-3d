@@ -67,3 +67,9 @@ export const useEditorStore = create<IEditorStore>((set) => ({
   isPlaying: false,
   setIsPlaying: (playing) => set({ isPlaying: playing }),
 }));
+
+// Expose editor store globally for component registry access
+// This avoids circular dependency issues
+if (typeof window !== 'undefined') {
+  (window as any).__editorStore = useEditorStore;
+}

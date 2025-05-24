@@ -118,13 +118,7 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
     }
   };
 
-  const updateCenter = (index: number, value: number) => {
-    if (meshCollider) {
-      const newCenter = [...meshCollider.center] as [number, number, number];
-      newCenter[index] = value;
-      updateMeshCollider({ center: newCenter });
-    }
-  };
+  // Center updates are handled directly through ColliderFields component
 
   return (
     <InspectorSection
