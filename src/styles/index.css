@@ -1,2 +1,74 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @plugin "daisyui";
+
+/* Custom scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) rgba(75, 85, 99, 0.5);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(75, 85, 99, 0.5);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* Additional scrollbar color variations */
+.scrollbar-track-gray-800\/50::-webkit-scrollbar-track {
+  background: rgba(31, 41, 55, 0.5);
+}
+
+.scrollbar-thumb-gray-600\/50::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+.hover\:scrollbar-thumb-gray-500\/50:hover::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.5);
+}
+
+/* Ensure smooth scrolling */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Fix for flex container scrolling */
+.flex-scroll-container {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.flex-scroll-content {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 2px;
+  /* Space for scrollbar */
+}
+
+/* Ensure inspector content can scroll properly */
+.inspector-content {
+  min-height: max-content;
+}
+
+/* Force proper height calculation for nested flex containers */
+.editor-panel-container {
+  height: 100vh;
+  max-height: 100vh;
+}
+
+.editor-main-content {
+  height: calc(100vh - 40px);
+  /* Subtract top bar height */
+  max-height: calc(100vh - 40px);
+}

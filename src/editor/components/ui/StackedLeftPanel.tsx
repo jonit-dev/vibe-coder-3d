@@ -26,7 +26,7 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
 
   return (
     <aside
-      className={`${isCollapsed ? 'w-16' : 'w-80'} bg-gradient-to-b from-[#0f0f10] to-[#1a1a1e] border-r border-gray-800/50 flex-shrink-0 flex flex-col h-full relative transition-all duration-300`}
+      className={`${isCollapsed ? 'w-16' : 'w-80'} bg-gradient-to-b from-[#0f0f10] to-[#1a1a1e] border-r border-gray-800/50 flex-shrink-0 flex flex-col h-full relative transition-all duration-300 overflow-hidden`}
     >
       {/* Panel collapse button when collapsed */}
       {isCollapsed && (
@@ -59,7 +59,7 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
         <>
           {/* Hierarchy Section */}
           <div
-            className={`flex flex-col ${isHierarchyExpanded ? 'flex-1' : 'flex-shrink-0'} border-b border-gray-700/50`}
+            className={`flex flex-col ${isHierarchyExpanded ? 'flex-shrink-0 max-h-[40vh]' : 'flex-shrink-0'} border-b border-gray-700/50`}
           >
             {/* Hierarchy Header */}
             <div className="h-10 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur-sm border-b border-gray-700/50 flex items-center justify-between px-3 relative overflow-hidden">
@@ -95,8 +95,8 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
 
             {/* Hierarchy Content */}
             {isHierarchyExpanded && (
-              <div className="flex-1 overflow-hidden">
-                <div className="h-full overflow-y-auto scrollbar-thin scrollbar-track-gray-800/50 scrollbar-thumb-gray-600/50 hover:scrollbar-thumb-gray-500/50">
+              <div className="flex-shrink-0 overflow-hidden">
+                <div className="max-h-[calc(40vh-40px)] overflow-y-auto scrollbar-thin scrollbar-track-gray-800/50 scrollbar-thumb-gray-600/50 hover:scrollbar-thumb-gray-500/50 smooth-scroll">
                   {hierarchyContent}
                 </div>
               </div>
@@ -104,7 +104,9 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
           </div>
 
           {/* Inspector Section */}
-          <div className={`flex flex-col ${isInspectorExpanded ? 'flex-1' : 'flex-shrink-0'}`}>
+          <div
+            className={`flex flex-col ${isInspectorExpanded ? 'flex-1 min-h-0' : 'flex-shrink-0'}`}
+          >
             {/* Inspector Header */}
             <div className="h-10 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur-sm border-b border-gray-700/50 flex items-center justify-between px-3 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/5 to-purple-900/5 animate-pulse"></div>
@@ -131,8 +133,8 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
 
             {/* Inspector Content */}
             {isInspectorExpanded && (
-              <div className="flex-1 overflow-hidden">
-                <div className="h-full overflow-y-auto scrollbar-thin scrollbar-track-gray-800/50 scrollbar-thumb-gray-600/50 hover:scrollbar-thumb-gray-500/50">
+              <div className="flex-1 flex-scroll-container">
+                <div className="flex-scroll-content scrollbar-thin scrollbar-track-gray-800/50 scrollbar-thumb-gray-600/50 hover:scrollbar-thumb-gray-500/50 smooth-scroll">
                   {inspectorContent}
                 </div>
               </div>

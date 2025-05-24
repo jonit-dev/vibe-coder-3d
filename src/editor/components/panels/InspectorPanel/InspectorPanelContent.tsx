@@ -29,7 +29,7 @@ export const InspectorPanelContent: React.FC = () => {
   }
 
   return (
-    <div className="space-y-2 p-2">
+    <div className="space-y-2 p-2 pb-4">
       <EntityInfoSection entityId={entityId} entityName={entityName} />
       <MeshTypeSection meshType={meshType} setMeshType={setMeshType} />
       <TransformSection
