@@ -1,5 +1,5 @@
 import { useThree } from '@react-three/fiber';
-import { RigidBody } from '@react-three/rapier';
+import { BallCollider, CuboidCollider, RigidBody } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
 import { useEntityMesh } from '@/editor/hooks/useEntityMesh';
@@ -11,6 +11,7 @@ import { useMeshRenderer } from '@/editor/hooks/useMeshRenderer';
 import { useRigidBody } from '@/editor/hooks/useRigidBody';
 import { useEditorStore } from '@/editor/store/editorStore';
 
+import { ColliderVisualization } from './ColliderVisualization';
 import { GizmoControls } from './GizmoControls';
 import { SelectionOutline } from './SelectionOutline';
 
@@ -171,8 +172,49 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
           position={position}
           rotation={rotationRadians}
           scale={scale}
-          colliders={getColliderType()}
+          colliders={meshCollider ? false : getColliderType()} // Disable auto colliders if we have custom ones
         >
+          {/* Custom Colliders based on MeshCollider settings */}
+          {meshCollider && meshCollider.enabled && (
+            <>
+              {meshCollider.colliderType === 'box' && (
+                <CuboidCollider
+                  args={[
+                    meshCollider.size.width / 2,
+                    meshCollider.size.height / 2,
+                    meshCollider.size.depth / 2,
+                  ]}
+                  position={meshCollider.center}
+                  sensor={meshCollider.isTrigger}
+                />
+              )}
+              {meshCollider.colliderType === 'sphere' && (
+                <BallCollider
+                  args={[meshCollider.size.radius]}
+                  position={meshCollider.center}
+                  sensor={meshCollider.isTrigger}
+                />
+              )}
+              {meshCollider.colliderType === 'capsule' && (
+                <CuboidCollider
+                  args={[
+                    meshCollider.size.capsuleRadius,
+                    meshCollider.size.capsuleHeight / 2,
+                    meshCollider.size.capsuleRadius,
+                  ]}
+                  position={meshCollider.center}
+                  sensor={meshCollider.isTrigger}
+                />
+              )}
+              {(meshCollider.colliderType === 'convex' || meshCollider.colliderType === 'mesh') && (
+                <CuboidCollider
+                  args={[0.5, 0.5, 0.5]} // Default size for convex/mesh - should use hull/trimesh
+                  position={meshCollider.center}
+                  sensor={meshCollider.isTrigger}
+                />
+              )}
+            </>
+          )}
           {meshContent}
         </RigidBody>
       ) : (
@@ -202,6 +244,16 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
           scale={outlineScale}
           key={dragTick}
         />
+      )}
+
+      {/* Collider Visualization (Unity-style wireframes) */}
+      {selected && (
+        <group position={position} rotation={rotationRadians} scale={scale}>
+          <ColliderVisualization
+            meshCollider={meshCollider}
+            visible={!shouldHavePhysics} // Show collider bounds in edit mode
+          />
+        </group>
       )}
     </group>
   );

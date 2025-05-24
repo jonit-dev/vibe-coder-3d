@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FiZap } from 'react-icons/fi';
 
 import { PhysicsBodyType } from '@/core/lib/physics';
+import { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { InspectorSection } from '@/editor/components/ui/InspectorSection';
 
 export interface IRigidBodyData {
@@ -24,6 +25,9 @@ export interface IRigidBodyData {
 export interface IRigidBodySectionProps {
   rigidBody: IRigidBodyData | null;
   setRigidBody: (data: IRigidBodyData | null) => void;
+  meshCollider: IMeshColliderData | null;
+  setMeshCollider: (data: IMeshColliderData | null) => void;
+  meshType?: string;
   isPlaying: boolean;
 }
 
@@ -47,6 +51,9 @@ const DEFAULT_RIGID_BODY: IRigidBodyData = {
 export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
   rigidBody,
   setRigidBody,
+  meshCollider,
+  setMeshCollider,
+  meshType,
   isPlaying,
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -56,6 +63,45 @@ export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
       setRigidBody(null);
     } else {
       setRigidBody(DEFAULT_RIGID_BODY);
+
+      // Auto-create mesh collider when enabling rigid body (Unity-like behavior)
+      if (!meshCollider) {
+        const getDefaultColliderType = (meshType?: string) => {
+          switch (meshType) {
+            case 'Sphere':
+              return 'sphere' as const;
+            case 'Capsule':
+              return 'capsule' as const;
+            case 'Cylinder':
+            case 'Cone':
+            case 'Torus':
+              return 'convex' as const;
+            default:
+              return 'box' as const;
+          }
+        };
+
+        const defaultMeshCollider: IMeshColliderData = {
+          enabled: true,
+          colliderType: getDefaultColliderType(meshType),
+          isTrigger: false,
+          center: [0, 0, 0],
+          size: {
+            width: 1,
+            height: 1,
+            depth: 1,
+            radius: 0.5,
+            capsuleRadius: 0.5,
+            capsuleHeight: 2,
+          },
+          physicsMaterial: {
+            friction: 0.3,
+            restitution: 0.3,
+            density: 1,
+          },
+        };
+        setMeshCollider(defaultMeshCollider);
+      }
     }
   };
 

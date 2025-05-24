@@ -52,7 +52,14 @@ export const InspectorPanelContent: React.FC = () => {
         setMeshRenderer={setMeshRenderer}
         isPlaying={isPlaying}
       />
-      <RigidBodySection rigidBody={rigidBody} setRigidBody={setRigidBody} isPlaying={isPlaying} />
+      <RigidBodySection
+        rigidBody={rigidBody}
+        setRigidBody={setRigidBody}
+        meshCollider={meshCollider}
+        setMeshCollider={setMeshCollider}
+        meshType={meshType}
+        isPlaying={isPlaying}
+      />
       <MeshColliderSection
         meshCollider={meshCollider}
         setMeshCollider={setMeshCollider}

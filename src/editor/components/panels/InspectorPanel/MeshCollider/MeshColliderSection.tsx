@@ -3,12 +3,27 @@ import { FiShield } from 'react-icons/fi';
 
 import { InspectorSection } from '@/editor/components/ui/InspectorSection';
 
+import { ColliderFields } from './ColliderFields';
+import { ColliderScalarField } from './ColliderScalarField';
+
 export type ColliderType = 'box' | 'sphere' | 'capsule' | 'mesh' | 'convex';
 
 export interface IMeshColliderData {
   enabled: boolean;
   colliderType: ColliderType;
   isTrigger: boolean;
+  center: [number, number, number];
+  size: {
+    // Box collider
+    width: number;
+    height: number;
+    depth: number;
+    // Sphere collider
+    radius: number;
+    // Capsule collider
+    capsuleRadius: number;
+    capsuleHeight: number;
+  };
   physicsMaterial: {
     friction: number;
     restitution: number;
@@ -27,6 +42,15 @@ const DEFAULT_MESH_COLLIDER: IMeshColliderData = {
   enabled: true,
   colliderType: 'box',
   isTrigger: false,
+  center: [0, 0, 0],
+  size: {
+    width: 1,
+    height: 1,
+    depth: 1,
+    radius: 0.5,
+    capsuleRadius: 0.5,
+    capsuleHeight: 2,
+  },
   physicsMaterial: {
     friction: 0.3,
     restitution: 0.3,
@@ -85,6 +109,23 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
     }
   };
 
+  const updateSize = (updates: Partial<IMeshColliderData['size']>) => {
+    if (meshCollider) {
+      setMeshCollider({
+        ...meshCollider,
+        size: { ...meshCollider.size, ...updates },
+      });
+    }
+  };
+
+  const updateCenter = (index: number, value: number) => {
+    if (meshCollider) {
+      const newCenter = [...meshCollider.center] as [number, number, number];
+      newCenter[index] = value;
+      updateMeshCollider({ center: newCenter });
+    }
+  };
+
   return (
     <InspectorSection
       title="Mesh Collider"
@@ -135,6 +176,135 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
                 <option value="mesh">Mesh Collider</option>
               </select>
             </div>
+
+            {/* Collider Center */}
+            <ColliderFields
+              label="Center"
+              value={meshCollider.center}
+              onChange={(center: [number, number, number]) => updateMeshCollider({ center })}
+              step={0.01}
+              sensitivity={0.1}
+            />
+
+            {/* Collider Size - varies by type */}
+            {meshCollider.colliderType === 'box' && (
+              <ColliderFields
+                label="Size"
+                value={[meshCollider.size.width, meshCollider.size.height, meshCollider.size.depth]}
+                onChange={(size: [number, number, number]) =>
+                  updateSize({ width: size[0], height: size[1], depth: size[2] })
+                }
+                step={0.01}
+                sensitivity={0.1}
+              />
+            )}
+
+            {meshCollider.colliderType === 'sphere' && (
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-gray-400">Size</div>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">Radius</label>
+                  <input
+                    type="number"
+                    value={meshCollider.size.radius}
+                    onChange={(e) => updateSize({ radius: parseFloat(e.target.value) || 0 })}
+                    disabled={isPlaying}
+                    step={0.1}
+                    min={0.01}
+                    className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
+                  />
+                </div>
+              </div>
+            )}
+
+            {meshCollider.colliderType === 'capsule' && (
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-gray-400">Size</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500">Radius</label>
+                    <input
+                      type="number"
+                      value={meshCollider.size.capsuleRadius}
+                      onChange={(e) =>
+                        updateSize({ capsuleRadius: parseFloat(e.target.value) || 0 })
+                      }
+                      disabled={isPlaying}
+                      step={0.1}
+                      min={0.01}
+                      className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500">Height</label>
+                    <input
+                      type="number"
+                      value={meshCollider.size.capsuleHeight}
+                      onChange={(e) =>
+                        updateSize({ capsuleHeight: parseFloat(e.target.value) || 0 })
+                      }
+                      disabled={isPlaying}
+                      step={0.1}
+                      min={0.01}
+                      className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(meshCollider.colliderType === 'convex' || meshCollider.colliderType === 'mesh') && (
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500 bg-blue-500/10 border border-blue-500/20 rounded px-2 py-1">
+                  ℹ️ {meshCollider.colliderType === 'convex' ? 'Convex Hull' : 'Mesh'} colliders use
+                  the original mesh geometry. Only center offset can be adjusted.
+                </div>
+              </div>
+            )}
+
+            {meshCollider.colliderType === 'sphere' && (
+              <ColliderScalarField
+                label="Radius"
+                value={meshCollider.size.radius}
+                onChange={(radius: number) => updateSize({ radius })}
+                step={0.01}
+                sensitivity={0.1}
+                min={0.01}
+                defaultValue={0.5}
+              />
+            )}
+
+            {meshCollider.colliderType === 'capsule' && (
+              <>
+                <ColliderScalarField
+                  label="Radius"
+                  value={meshCollider.size.capsuleRadius}
+                  onChange={(capsuleRadius: number) => updateSize({ capsuleRadius })}
+                  step={0.01}
+                  sensitivity={0.1}
+                  min={0.01}
+                  defaultValue={0.5}
+                />
+                <ColliderScalarField
+                  label="Height"
+                  value={meshCollider.size.capsuleHeight}
+                  onChange={(capsuleHeight: number) => updateSize({ capsuleHeight })}
+                  step={0.01}
+                  sensitivity={0.1}
+                  min={0.01}
+                  defaultValue={2}
+                />
+              </>
+            )}
+
+            {(meshCollider.colliderType === 'convex' || meshCollider.colliderType === 'mesh') && (
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500 bg-blue-500/10 border border-blue-500/20 rounded px-2 py-1">
+                  ℹ️ {meshCollider.colliderType === 'convex' ? 'Convex Hull' : 'Mesh'} colliders use
+                  the original mesh geometry. Only center offset can be adjusted.
+                </div>
+              </div>
+            )}
 
             {/* Is Trigger */}
             <div className="flex items-center justify-between">
