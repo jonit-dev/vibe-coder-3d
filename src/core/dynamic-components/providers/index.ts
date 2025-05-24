@@ -1,1 +1,0 @@
-export { ComponentProvider } from './ComponentProvider';

@@ -3,8 +3,8 @@ import { FiInfo } from 'react-icons/fi';
 
 console.log('🔥🔥🔥 INSPECTOR PANEL CONTENT IS LOADING - THIS IS A TEST 🔥🔥🔥');
 
+import { componentManager } from '@/core/dynamic-components/init';
 import { useEntityComponents, useHasComponent } from '@/core/hooks/useComponent';
-import { componentRegistry } from '@/core/lib/component-registry';
 import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
 import { MeshColliderSection } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
@@ -39,13 +39,16 @@ export const InspectorPanelContent: React.FC = () => {
 
   // Helper function to check if a component is removable
   const isComponentRemovable = (componentId: string): boolean => {
-    const component = componentRegistry.getComponent(componentId);
-    return component?.removable !== false; // Default to true if not explicitly false
+    const component = componentManager.getComponent(componentId);
+    if (!component) {
+      return false;
+    }
+    return component.removable !== false; // Default to true if not explicitly false
   };
 
   // Component registry debugging with reactive updates
   React.useEffect(() => {
-    const registeredComponents = componentRegistry.getAllComponents();
+    const registeredComponents = componentManager.getAllComponents();
     console.log(`[Inspector] 🔍 Registry Status Check:`);
     console.log(
       `[Inspector] - Registry has ${registeredComponents.length} components:`,

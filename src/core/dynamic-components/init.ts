@@ -1,30 +1,75 @@
-import { registerBuiltInComponents } from './components/BuiltInComponents';
-import { registerBuiltInComponentGroups } from './groups/BuiltInGroups';
-import { DynamicComponentManager } from './manager/DynamicComponentManager';
-import { ComponentRegistry } from './registry/ComponentRegistry';
+import { ComponentManager } from './ComponentManager';
+import {
+  materialDescriptor,
+  meshColliderDescriptor,
+  meshRendererDescriptor,
+  meshTypeDescriptor,
+  nameDescriptor,
+  rigidBodyDescriptor,
+  transformDescriptor,
+  velocityDescriptor,
+} from './components/BuiltInComponents';
+import { BUILT_IN_COMPONENT_GROUPS } from './groups/BuiltInGroups';
 
 /**
- * Initialize the dynamic components system
+ * Initialize the unified component system
  */
-export function initializeDynamicComponents(): {
-  registry: ComponentRegistry;
-  manager: DynamicComponentManager;
-} {
-  // Get registry instance
-  const registry = ComponentRegistry.getInstance();
-
-  // Initialize manager with registry
-  const manager = DynamicComponentManager.getInstance(registry);
+export function initializeComponentManager(): ComponentManager {
+  const manager = ComponentManager.getInstance();
 
   // Register built-in components
-  registerBuiltInComponents(registry);
+  registerBuiltInComponents(manager);
 
   // Register built-in component groups
-  registerBuiltInComponentGroups();
+  registerBuiltInComponentGroups(manager);
 
-  return { registry, manager };
+  return manager;
 }
 
-// Export instances for backwards compatibility
-export const componentRegistry = ComponentRegistry.getInstance();
-export const dynamicComponentManager = DynamicComponentManager.getInstance(componentRegistry);
+/**
+ * Register all built-in components with the manager
+ */
+export function registerBuiltInComponents(manager: ComponentManager): void {
+  // Core components
+  manager.registerComponent(transformDescriptor);
+  manager.registerComponent(nameDescriptor);
+
+  // Rendering components
+  manager.registerComponent(meshTypeDescriptor);
+  manager.registerComponent(materialDescriptor);
+  manager.registerComponent(meshRendererDescriptor);
+
+  // Physics components
+  manager.registerComponent(velocityDescriptor);
+  manager.registerComponent(rigidBodyDescriptor);
+  manager.registerComponent(meshColliderDescriptor);
+}
+
+/**
+ * Register all built-in component groups with the manager
+ */
+export function registerBuiltInComponentGroups(manager: ComponentManager): void {
+  for (const group of BUILT_IN_COMPONENT_GROUPS) {
+    manager.registerComponentGroup(group);
+  }
+}
+
+// Export singleton instances for backwards compatibility
+export const componentManager = ComponentManager.getInstance();
+export const componentRegistry = componentManager; // Alias for backwards compatibility
+export const dynamicComponentManager = componentManager; // Alias for backwards compatibility
+
+// Initialize built-in components and groups
+registerBuiltInComponents(componentManager);
+registerBuiltInComponentGroups(componentManager);
+
+// Legacy compatibility exports
+export { ComponentManager } from './ComponentManager';
+
+// For old-style initialization
+export function initializeDynamicComponents() {
+  return {
+    registry: componentManager,
+    manager: componentManager,
+  };
+}

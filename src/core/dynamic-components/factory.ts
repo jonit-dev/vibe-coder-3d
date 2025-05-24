@@ -2,8 +2,9 @@
  * Factory function for creating a configured ComponentManager
  */
 
+import type { IComponentDescriptor } from '@/core/types/component-registry';
+
 import { ComponentManager } from './ComponentManager';
-import type { IComponentDescriptor } from './types/core';
 
 export interface IComponentManagerConfig {
   getEditorStore?: () => any;
@@ -15,10 +16,10 @@ export interface IComponentManagerConfig {
  * Create a new ComponentManager with optional configuration
  */
 export function createComponentManager(config: IComponentManagerConfig = {}): ComponentManager {
-  const { getEditorStore, components = [], enableDebugLogging = false } = config;
+  const { components = [], enableDebugLogging = false } = config;
 
   // Create the manager
-  const manager = new ComponentManager(getEditorStore);
+  const manager = new ComponentManager();
 
   // Register provided components
   for (const component of components) {

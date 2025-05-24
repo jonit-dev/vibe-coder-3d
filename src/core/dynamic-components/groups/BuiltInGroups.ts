@@ -1,6 +1,15 @@
-import { ComponentCategory, IComponentGroup } from '@/core/types/component-registry';
+import { ComponentCategory } from '@/core/types/component-registry';
 
-import { ComponentGroupManager } from './ComponentGroupManager';
+interface IComponentGroup {
+  id: string;
+  name: string;
+  description: string;
+  category: ComponentCategory;
+  icon: string;
+  components: string[];
+  defaultValues?: Record<string, any>;
+  order: number;
+}
 
 // Built-in component groups
 export const BUILT_IN_COMPONENT_GROUPS: IComponentGroup[] = [
@@ -182,8 +191,11 @@ export const BUILT_IN_COMPONENT_GROUPS: IComponentGroup[] = [
   },
 ];
 
+// Legacy function for backwards compatibility
 export function registerBuiltInComponentGroups(): void {
-  for (const group of BUILT_IN_COMPONENT_GROUPS) {
-    ComponentGroupManager.registerGroup(group);
-  }
+  // This function is now handled by the init file
+  // Kept for backwards compatibility but does nothing
+  console.warn(
+    'registerBuiltInComponentGroups() is deprecated. Groups are automatically registered via ComponentManager.',
+  );
 }

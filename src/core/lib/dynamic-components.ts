@@ -1,7 +1,22 @@
-// Re-exports from dynamic-components directory
-export { ComponentGroupManager } from '../dynamic-components/groups/ComponentGroupManager';
-export { DynamicComponentManager } from '../dynamic-components/manager/DynamicComponentManager';
-export { ComponentRegistry } from '../dynamic-components/registry/ComponentRegistry';
+// Import the unified system
+import { ComponentManager } from '../dynamic-components/ComponentManager';
+import {
+  componentManager,
+  componentRegistry,
+  dynamicComponentManager,
+  initializeComponentManager,
+  initializeDynamicComponents,
+} from '../dynamic-components/init';
+
+// Export the unified system
+export {
+  ComponentManager,
+  componentManager,
+  componentRegistry,
+  dynamicComponentManager,
+  initializeComponentManager,
+  initializeDynamicComponents,
+};
 
 // Re-export types
 export type {
@@ -16,10 +31,12 @@ export type {
   IValidationResult,
 } from '../types/component-registry';
 
-// Export singleton instances for backward compatibility
-import { initializeDynamicComponents } from '../dynamic-components/init';
+// Legacy aliases - these all point to the same unified ComponentManager instance
+export {
+  componentManager as ComponentGroupManager,
+  componentRegistry as ComponentRegistry,
+  dynamicComponentManager as DynamicComponentManager,
+};
 
 // Initialize the system
-const { registry, manager } = initializeDynamicComponents();
-export const componentRegistry = registry;
-export const dynamicComponentManager = manager;
+initializeComponentManager();

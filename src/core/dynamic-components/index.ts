@@ -1,32 +1,29 @@
-// Main exports for the refactored dynamic components system
+// Main exports for the unified dynamic components system
 export { ComponentManager } from './ComponentManager';
 
 // Export factory functions
 export * from './factory';
 
-// Export services
-export * from './services';
+// Export initialization functions and instances
+export {
+  componentManager,
+  componentRegistry,
+  dynamicComponentManager,
+  initializeComponentManager,
+  initializeDynamicComponents,
+} from './init';
 
-// Export handlers
-export * from './handlers';
+// Export built-in components and groups
+export {
+  materialDescriptor,
+  meshColliderDescriptor,
+  meshRendererDescriptor,
+  meshTypeDescriptor,
+  nameDescriptor,
+  registerBuiltInComponents,
+  rigidBodyDescriptor,
+  transformDescriptor,
+  velocityDescriptor,
+} from './components/BuiltInComponents';
 
-// Export providers
-export * from './providers';
-
-// Export types
-export * from './types';
-
-// Export utilities
-export * from './utils';
-
-// Legacy exports for backwards compatibility
-export * from './components';
-export * from './groups';
-export * from './manager';
-export * from './registry';
-export * from './validation';
-
-// Re-export for backwards compatibility
-export { ComponentGroupManager } from './groups/ComponentGroupManager';
-export { DynamicComponentManager } from './manager/DynamicComponentManager';
-export { ComponentRegistry } from './registry/ComponentRegistry';
+export { BUILT_IN_COMPONENT_GROUPS, registerBuiltInComponentGroups } from './groups/BuiltInGroups';

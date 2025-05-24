@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { EditorStoreIntegration } from '@/core/dynamic-components/manager/EditorStoreIntegration';
 import { useECSQuery } from '@core/hooks/useECS';
 import { Transform } from '@core/lib/ecs';
 
@@ -52,51 +51,6 @@ const Editor: React.FC = () => {
   const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
   const isPlaying = useEditorStore((s) => s.isPlaying);
   const setIsPlaying = useEditorStore((s) => s.setIsPlaying);
-
-  // Process any pending editor store operations once the store is initialized
-  useEffect(() => {
-    let retryCount = 0;
-    const maxRetries = 5;
-
-    const processPendingWithRetry = async () => {
-      try {
-        await EditorStoreIntegration.processPendingOperations();
-        console.log('[Editor] Processed pending editor store operations');
-      } catch (error) {
-        console.error('[Editor] Failed to process pending operations:', error);
-
-        // Retry with exponential backoff
-        if (retryCount < maxRetries) {
-          retryCount++;
-          const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000); // Cap at 5 seconds
-          console.log(
-            `[Editor] Retrying pending operations in ${delay}ms (attempt ${retryCount}/${maxRetries})`,
-          );
-          setTimeout(processPendingWithRetry, delay);
-        }
-      }
-    };
-
-    // Initial attempt
-    processPendingWithRetry();
-
-    // Also try again periodically for the first few seconds in case entities are created very early
-    const intervalId = setInterval(() => {
-      EditorStoreIntegration.processPendingOperations().catch(() => {
-        // Ignore errors in periodic processing
-      });
-    }, 500);
-
-    // Clean up interval after 10 seconds
-    const timeoutId = setTimeout(() => {
-      clearInterval(intervalId);
-    }, 10000);
-
-    return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeoutId);
-    };
-  }, []); // Run once on mount
 
   // Local UI State
   const [statusMessage, setStatusMessage] = useState<string>('Ready');

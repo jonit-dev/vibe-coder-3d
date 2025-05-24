@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ComponentCategory, IComponentDescriptor } from '../types';
+import { ComponentCategory, IComponentDescriptor } from '../../types/component-registry';
 
 // Additional component definitions that can be added in the future
 

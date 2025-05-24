@@ -157,11 +157,17 @@ export type {
 // UI Store with validation
 export * from './stores/uiStore';
 
-// Dynamic Component System
-export * from './hooks/useComponent';
-export { registerBuiltInComponents } from './lib/built-in-components';
-export { ComponentGroupManager, registerBuiltInComponentGroups } from './lib/component-groups';
-export { componentRegistry } from './lib/component-registry';
-export { dynamicComponentManager } from './lib/dynamic-components';
+// Dynamic Component System - Unified
+export { ComponentManager } from './dynamic-components/ComponentManager';
+export { registerAllBuiltInComponents } from './lib/built-in-components';
+export { registerBuiltInComponentGroups } from './lib/component-groups';
+export {
+  ComponentGroupManager,
+  ComponentRegistry,
+  DynamicComponentManager,
+  componentManager,
+  componentRegistry,
+  dynamicComponentManager,
+} from './lib/dynamic-components';
 export { ArchetypeManager, registerBuiltInArchetypes } from './lib/entity-archetypes';
 export * from './types/component-registry';
