@@ -8,6 +8,7 @@ import {
 import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 import { useEntityInfo } from '@/editor/hooks/useEntityInfo';
+import { useMaterial } from '@/editor/hooks/useMaterial';
 import { useMesh } from '@/editor/hooks/useMesh';
 import { useTransform } from '@/editor/hooks/useTransform';
 import { useEditorStore } from '@/editor/store/editorStore';
@@ -20,6 +21,7 @@ export const InspectorPanel: React.FC = () => {
   const { position, rotation, scale, setPosition, setRotation, setScale } =
     useTransform(selectedEntity);
   const { entityId, entityName } = useEntityInfo(selectedEntity);
+  const { color, setColor } = useMaterial(selectedEntity);
   const [meshRenderer, setMeshRenderer] =
     React.useState<IMeshRendererSettings>(meshRendererDefaults);
 
@@ -44,7 +46,12 @@ export const InspectorPanel: React.FC = () => {
           setRotation={setRotation}
           setScale={setScale}
         />
-        <MeshRendererSection meshRenderer={meshRenderer} setMeshRenderer={setMeshRenderer} />
+        <MeshRendererSection
+          meshRenderer={meshRenderer}
+          setMeshRenderer={setMeshRenderer}
+          color={color}
+          setColor={setColor}
+        />
       </div>
     </Card>
   );

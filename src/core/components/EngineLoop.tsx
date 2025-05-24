@@ -187,6 +187,9 @@ function runECSSystems(deltaTime: number) {
   // Track physics system performance
   trackPerformance('physics', perfStartPhysics);
 
+  // Run material system - updates Three.js materials from ECS Material components
+  materialSystem.update();
+
   // For future systems, add them here in the appropriate order
   // e.g., movementSystem(ecsWorld, deltaTime);
 

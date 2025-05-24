@@ -1,8 +1,14 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
-import { Object3D } from 'three';
+import { Mesh, MeshStandardMaterial } from 'three';
 
-import { Transform } from '@/core/lib/ecs';
+import {
+  entityToObject,
+  getEntityColor,
+  Material,
+  objectToEntity,
+  Transform,
+} from '@/core/lib/ecs';
 import { getEntityMeshType } from '@core/helpers/meshUtils';
 
 import { GizmoControls } from './GizmoControls';
@@ -28,10 +34,24 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   setIsTransforming,
 }) => {
   const meshType = getEntityMeshType(entityId);
-  const meshRef = useRef<Object3D>(null);
+  const meshRef = useRef<Mesh>(null);
   const [isTransformingLocal, setIsTransformingLocal] = useState(false);
   const [dragTick, setDragTick] = useState(0);
   useThree();
+
+  // Link mesh to ECS entity
+  useEffect(() => {
+    if (meshRef.current) {
+      entityToObject.set(entityId, meshRef.current);
+      objectToEntity.set(meshRef.current, entityId);
+    }
+    return () => {
+      if (meshRef.current) {
+        entityToObject.delete(entityId);
+        objectToEntity.delete(meshRef.current);
+      }
+    };
+  }, [entityId]);
 
   // Handle keyboard shortcuts for gizmo mode switching
   useEffect(() => {
@@ -62,7 +82,10 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     Transform.scale[entityId][2],
   ];
 
-  // Sync mesh transform from ECS
+  // Get entity color from ECS
+  const entityColor = getEntityColor(entityId);
+
+  // Sync mesh transform and material from ECS
   useFrame(() => {
     if (isTransformingLocal) {
       setDragTick((tick) => tick + 1);
@@ -75,6 +98,15 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
         rotation[2] * (Math.PI / 180),
       );
       meshRef.current.scale.set(scale[0], scale[1], scale[2]);
+    }
+
+    // Sync material color from ECS
+    if (meshRef.current && Material.needsUpdate[entityId]) {
+      const material = meshRef.current.material as MeshStandardMaterial;
+      if (material && material.color) {
+        material.color.setHex(parseInt(entityColor.replace('#', ''), 16));
+        Material.needsUpdate[entityId] = 0; // Clear the update flag
+      }
     }
   });
 
@@ -126,7 +158,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     <group>
       <mesh ref={meshRef} castShadow receiveShadow userData={{ entityId }}>
         {geometry}
-        <meshStandardMaterial color="#ffffff" />
+        <meshStandardMaterial color={entityColor} />
       </mesh>
 
       {selected && (

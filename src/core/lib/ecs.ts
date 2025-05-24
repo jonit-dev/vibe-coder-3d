@@ -70,9 +70,18 @@ export const Name = defineComponent({
   value: [Types.ui8, 32], // 32 chars max, UTF-8 bytes
 });
 
+// Material component for entity appearance
+export const Material = defineComponent({
+  // Color as RGB values (0-1)
+  color: [Types.f32, 3],
+  // Flag to mark when the material needs to be applied to the Three.js object
+  needsUpdate: Types.ui8,
+});
+
 // Define queries
 export const transformQuery = defineQuery([Transform]);
 export const velocityQuery = defineQuery([Transform, Velocity]);
+export const materialQuery = defineQuery([Material]);
 
 // Core entity functions
 export function createEntity(meshType: MeshTypeEnum = MeshTypeEnum.Cube) {
@@ -81,6 +90,7 @@ export function createEntity(meshType: MeshTypeEnum = MeshTypeEnum.Cube) {
   // Initialize default transform values
   addComponent(world, Transform, entity);
   addComponent(world, MeshType, entity);
+  addComponent(world, Material, entity);
   MeshType.type[entity] = meshType;
 
   // Set default values
@@ -97,6 +107,12 @@ export function createEntity(meshType: MeshTypeEnum = MeshTypeEnum.Cube) {
   Transform.scale[entity][2] = 1;
 
   Transform.needsUpdate[entity] = 1; // Mark for update
+
+  // Set default material color (blue)
+  Material.color[entity][0] = 0.2; // Red
+  Material.color[entity][1] = 0.6; // Green
+  Material.color[entity][2] = 1.0; // Blue
+  Material.needsUpdate[entity] = 1; // Mark for update
 
   // Force world version update to notify queries
   incrementWorldVersion();
@@ -153,6 +169,10 @@ export function destroyEntity(entity: number) {
 
   if (hasComponent(world, MeshType, entity)) {
     removeComponent(world, MeshType, entity);
+  }
+
+  if (hasComponent(world, Material, entity)) {
+    removeComponent(world, Material, entity);
   }
 
   if (hasComponent(world, Velocity, entity)) {
@@ -231,4 +251,38 @@ export function getEntityName(entity: number): string {
   const end = bytes.findIndex((b) => b === 0);
   const slice = end === -1 ? bytes : bytes.slice(0, end);
   return new TextDecoder().decode(slice);
+}
+
+// Helper functions for entity materials
+export function setEntityColor(entity: number, color: string) {
+  // Ensure Material component exists
+  if (!hasComponent(world, Material, entity)) {
+    addComponent(world, Material, entity);
+  }
+
+  // Convert hex color to RGB values (0-1)
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16) / 255;
+  const g = parseInt(hex.substr(2, 2), 16) / 255;
+  const b = parseInt(hex.substr(4, 2), 16) / 255;
+
+  Material.color[entity][0] = r;
+  Material.color[entity][1] = g;
+  Material.color[entity][2] = b;
+  Material.needsUpdate[entity] = 1;
+
+  incrementWorldVersion();
+}
+
+export function getEntityColor(entity: number): string {
+  if (!hasComponent(world, Material, entity)) {
+    return '#3399ff'; // Default blue color
+  }
+
+  // Convert RGB values (0-1) to hex color
+  const r = Math.round(Material.color[entity][0] * 255);
+  const g = Math.round(Material.color[entity][1] * 255);
+  const b = Math.round(Material.color[entity][2] * 255);
+
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }

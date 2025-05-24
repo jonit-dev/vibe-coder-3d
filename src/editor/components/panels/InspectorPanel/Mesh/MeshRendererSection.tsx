@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { Collapsible } from '@/editor/components/common/Collapsible';
+import { ColorPicker } from '@/editor/components/common/ColorPicker';
 import { MeshRendererField } from '@/editor/components/panels/InspectorPanel/Mesh/MeshRendererField';
 
 export interface IMeshRendererSettings {
@@ -36,7 +37,9 @@ export const meshRendererDefaults: IMeshRendererSettings = {
 export const MeshRendererSection: React.FC<{
   meshRenderer: IMeshRendererSettings;
   setMeshRenderer: React.Dispatch<React.SetStateAction<IMeshRendererSettings>>;
-}> = ({ meshRenderer, setMeshRenderer }) => (
+  color: string;
+  setColor: (color: string) => void;
+}> = ({ meshRenderer, setMeshRenderer, color, setColor }) => (
   <Collapsible title="Mesh Renderer">
     {/* Materials subsection */}
     <Collapsible title="Materials" defaultOpen>
@@ -44,6 +47,9 @@ export const MeshRendererSection: React.FC<{
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs">Materials</span>
           <div className="badge badge-neutral badge-xs">1</div>
+        </div>
+        <div className="mt-2">
+          <ColorPicker label="Color" value={color} onChange={setColor} />
         </div>
       </div>
     </Collapsible>
