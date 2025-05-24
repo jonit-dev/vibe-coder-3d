@@ -206,7 +206,7 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
   if (!isOpen || !entityId) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-[100]">
+    <div className="fixed inset-0 bg-transparent flex items-center justify-center z-[100]">
       <div className="bg-gray-800 rounded-lg border border-gray-600 w-96 max-h-[80vh] flex flex-col shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-gray-600">
