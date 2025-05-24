@@ -5,10 +5,11 @@ import { MeshTypeEnum, Transform, destroyEntity } from '@core/lib/ecs';
 import { ecsManager } from '@core/lib/ecs-manager';
 
 import { AddObjectMenu } from './AddObjectMenu';
-import { HierarchyPanel } from './components/panels/HierarchyPanel/HierarchyPanel';
-import { InspectorPanel } from './components/panels/InspectorPanel/InspectorPanel';
+import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
+import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
-import { ChatPanel } from './components/ui/ChatPanel';
+import { RightSidebarChat } from './components/ui/RightSidebarChat';
+import { StackedLeftPanel } from './components/ui/StackedLeftPanel';
 import { StatusBar } from './components/ui/StatusBar';
 import { TopBar } from './components/ui/TopBar';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -41,7 +42,8 @@ const Editor: React.FC = () => {
   const showAddMenu = useEditorStore((s) => s.showAddMenu);
   const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
   const [statusMessage, setStatusMessage] = useState<string>('Ready');
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatExpanded, setIsChatExpanded] = useState(true);
+  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addButtonRef = useRef<HTMLDivElement>(null);
   const { exportScene, importScene } = useSceneSerialization();
@@ -181,7 +183,7 @@ const Editor: React.FC = () => {
       }
       if (e.ctrlKey && e.key === '/') {
         e.preventDefault();
-        setIsChatOpen(!isChatOpen);
+        setIsChatExpanded(!isChatExpanded);
       }
       if (e.key === 'Delete' && selectedId != null) {
         e.preventDefault();
@@ -192,7 +194,7 @@ const Editor: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedId, handleAddObject, handleSave, setSelectedId, isChatOpen]);
+  }, [selectedId, handleAddObject, handleSave, setSelectedId, isChatExpanded]);
 
   return (
     <div
@@ -205,8 +207,8 @@ const Editor: React.FC = () => {
         onLoad={() => fileInputRef.current?.click()}
         onClear={handleClear}
         onAddObject={() => setShowAddMenu(!showAddMenu)}
-        onToggleChat={() => setIsChatOpen(!isChatOpen)}
-        isChatOpen={isChatOpen}
+        onToggleChat={() => setIsChatExpanded(!isChatExpanded)}
+        isChatOpen={isChatExpanded}
       />
 
       <div ref={addButtonRef} className="hidden" />
@@ -223,12 +225,14 @@ const Editor: React.FC = () => {
         onChange={handleLoad}
       />
       <main className="flex-1 flex overflow-hidden">
-        <HierarchyPanel entityIds={entityIds} />
+        <StackedLeftPanel
+          hierarchyContent={<HierarchyPanelContent entityIds={entityIds} />}
+          inspectorContent={<InspectorPanelContent />}
+          isCollapsed={isLeftPanelCollapsed}
+          onToggleCollapse={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
+        />
         {selectedId != null ? (
-          <>
-            <ViewportPanel entityId={selectedId} />
-            <InspectorPanel />
-          </>
+          <ViewportPanel entityId={selectedId} />
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-400 text-lg">
             <div className="max-w-md text-center px-4">
@@ -242,6 +246,10 @@ const Editor: React.FC = () => {
             </div>
           </div>
         )}
+        <RightSidebarChat
+          isExpanded={isChatExpanded}
+          onToggle={() => setIsChatExpanded(!isChatExpanded)}
+        />
       </main>
       <StatusBar
         statusMessage={statusMessage}
@@ -251,8 +259,6 @@ const Editor: React.FC = () => {
           memory: '128MB', // placeholder
         }}
       />
-
-      <ChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 };

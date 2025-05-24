@@ -15,9 +15,9 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
     return (
       <li
         ref={ref}
-        className={`px-3 py-2 rounded-lg cursor-pointer text-sm flex items-center gap-3 outline-none transition-all duration-200 ${
+        className={`px-2 py-1 rounded cursor-pointer text-xs flex items-center gap-2 outline-none transition-all duration-200 ${
           selected
-            ? 'bg-gradient-to-r from-cyan-600/80 to-purple-600/80 text-white border border-cyan-500/30 shadow-lg'
+            ? 'bg-gradient-to-r from-cyan-600/80 to-purple-600/80 text-white border border-cyan-500/30 shadow-sm'
             : 'hover:bg-gray-800/50 text-gray-300 border border-transparent hover:border-gray-700/30'
         }`}
         onClick={() => onSelect(id)}
@@ -28,12 +28,12 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
         tabIndex={-1}
       >
         <CubeIcon
-          className={`${selected ? 'text-cyan-200' : 'text-gray-400'} transition-colors duration-200`}
+          className={`${selected ? 'text-cyan-200' : 'text-gray-400'} transition-colors duration-200 w-3 h-3`}
         />
-        <span className="font-medium">{name}</span>
+        <span className="font-medium truncate">{name}</span>
         {selected && (
           <div className="ml-auto">
-            <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
+            <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
           </div>
         )}
       </li>

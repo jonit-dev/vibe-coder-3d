@@ -1,6 +1,14 @@
-# Vibe Coder 3D
+# Vibe Coder 3D - AI-First Game Engine
 
-A 3D game engine built with React Three Fiber.
+🚀 **The future of game development is conversational.**
+
+Vibe Coder 3D is the first AI-native game engine where you can build 3D games by simply describing what you want. Powered by React Three Fiber and enhanced by sophisticated AI, it transforms natural language into fully functional game experiences.
+
+**"Create a bouncing ball" → Complete physics simulation**  
+**"Add a medieval castle" → 3D model sourced and placed**  
+**"Make the player jump on spacebar" → Controller script generated**
+
+[📖 Read the Full Vision](./docs/project-overview.md) | [🎯 Implementation Plan](./docs/ai-first-engine-implementation-plan.md) | [🏗️ Architecture](./docs/architecture/)
 
 ## Setup
 
@@ -40,13 +48,43 @@ GitHub Actions workflows are set up to run on pull requests and pushes to main/m
 - ESLint
 - Build verification
 
-## Technical Stack
+## AI-Enhanced Technical Stack
 
-- React Three Fiber (R3F) for 3D rendering
-- React for UI
-- TypeScript for type safety
-- Vite for fast development and building
-- Zustand for state management
-- TailwindCSS for styling
+**🤖 AI & Intelligence:**
 
-Refer to the documentation in the `docs` directory for more information on the architecture and design decisions.
+- Large Language Models (OpenAI GPT-4, Claude) for natural language understanding
+- Context-aware code generation and asset management
+- Intelligent scene analysis and optimization suggestions
+
+**🎮 Game Engine Core:**
+
+- React Three Fiber (R3F) for modern 3D rendering
+- bitecs Entity Component System for scalable game architecture
+- Rapier physics engine via WebAssembly
+- Zustand for reactive state management
+
+**⚡ Development Tools:**
+
+- TypeScript for type-safe AI code generation
+- Vite for lightning-fast development
+- TailwindCSS for responsive UI design
+- Comprehensive testing and validation pipelines
+
+## 🎯 Current Status
+
+**Phase: Foundation Complete** → **Next: AI Integration**
+
+- ✅ Core engine infrastructure established
+- ✅ Editor with scene manipulation capabilities
+- ✅ ECS system with physics integration
+- 🚧 AI Copilot system development beginning
+- ⏳ Natural language command processing
+
+## 📚 Documentation
+
+Explore the comprehensive documentation in the `docs/` directory:
+
+- **[Project Overview](./docs/project-overview.md)** - Vision and goals for the AI-first engine
+- **[Implementation Plan](./docs/ai-first-engine-implementation-plan.md)** - Detailed roadmap for AI integration
+- **[Architecture](./docs/architecture/)** - Technical specifications and system design
+- **[Core Abstractions](./docs/core-abstractions.md)** - Engine framework and patterns
