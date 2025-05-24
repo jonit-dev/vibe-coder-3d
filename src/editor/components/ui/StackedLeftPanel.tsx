@@ -36,7 +36,7 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
         >
           <div className="flex flex-col items-center space-y-2">
             <button
-              className="p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200"
+              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200"
               title="Expand panel"
             >
               <FiChevronRight className="w-4 h-4" />
@@ -44,10 +44,16 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
 
             {/* Vertical icons indicating the collapsed sections */}
             <div className="flex flex-col space-y-3 items-center">
-              <div className="p-1.5 bg-gray-800/50 rounded text-cyan-400" title="Hierarchy">
+              <div
+                className="w-6 h-6 flex items-center justify-center bg-gray-800/50 rounded text-cyan-400"
+                title="Hierarchy"
+              >
                 <FiLayers className="w-3 h-3" />
               </div>
-              <div className="p-1.5 bg-gray-800/50 rounded text-cyan-400" title="Inspector">
+              <div
+                className="w-6 h-6 flex items-center justify-center bg-gray-800/50 rounded text-cyan-400"
+                title="Inspector"
+              >
                 <FiSettings className="w-3 h-3" />
               </div>
             </div>
@@ -65,15 +71,17 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
             <div className="h-10 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur-sm border-b border-gray-700/50 flex items-center justify-between px-3 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/5 to-purple-900/5 animate-pulse"></div>
 
-              <div className="relative z-10 flex items-center space-x-2 flex-1">
-                <FiLayers className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-semibold text-gray-200">Hierarchy</span>
+              <div className="relative z-10 flex items-center gap-2 flex-1">
+                <div className="flex items-center justify-center w-4 h-4 flex-shrink-0">
+                  <FiLayers className="w-4 h-4 text-cyan-400" />
+                </div>
+                <span className="text-xs font-semibold text-gray-200 leading-none">Hierarchy</span>
               </div>
 
-              <div className="relative z-10 flex items-center space-x-1">
+              <div className="relative z-10 flex items-center gap-1">
                 <button
                   onClick={() => setIsHierarchyExpanded(!isHierarchyExpanded)}
-                  className="p-1 text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200"
+                  className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200"
                   title={isHierarchyExpanded ? 'Collapse hierarchy' : 'Expand hierarchy'}
                 >
                   {isHierarchyExpanded ? (
@@ -85,7 +93,7 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
 
                 <button
                   onClick={onToggleCollapse}
-                  className="p-1 text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200"
+                  className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200"
                   title="Collapse panel"
                 >
                   <FiChevronLeft className="w-3 h-3" />
@@ -111,15 +119,17 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
             <div className="h-10 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur-sm border-b border-gray-700/50 flex items-center justify-between px-3 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/5 to-purple-900/5 animate-pulse"></div>
 
-              <div className="relative z-10 flex items-center space-x-2 flex-1">
-                <FiSettings className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-semibold text-gray-200">Inspector</span>
+              <div className="relative z-10 flex items-center gap-2 flex-1">
+                <div className="flex items-center justify-center w-4 h-4 flex-shrink-0">
+                  <FiSettings className="w-4 h-4 text-cyan-400" />
+                </div>
+                <span className="text-xs font-semibold text-gray-200 leading-none">Inspector</span>
               </div>
 
               <div className="relative z-10">
                 <button
                   onClick={() => setIsInspectorExpanded(!isInspectorExpanded)}
-                  className="p-1 text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200"
+                  className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200"
                   title={isInspectorExpanded ? 'Collapse inspector' : 'Expand inspector'}
                 >
                   {isInspectorExpanded ? (

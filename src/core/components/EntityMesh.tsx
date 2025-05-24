@@ -3,6 +3,7 @@
 import { useFrame } from '@react-three/fiber';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Group, Mesh, Vector3 } from 'three';
+import { z } from 'zod';
 
 import {
   Transform,
@@ -14,6 +15,33 @@ import {
 import { isCulled } from '@core/lib/rendering';
 
 const FRUSTUM_CULLING_RANGE = 50; // How far to cull objects
+
+// Zod schema for LOD level
+const LODLevelSchema = z.object({
+  distance: z.number().nonnegative(),
+  detail: z.any(), // React.ReactNode
+});
+
+// Zod schema for EntityMesh props
+export const EntityMeshPropsSchema = z.object({
+  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+  rotation: z.tuple([z.number(), z.number(), z.number(), z.number()]).default([0, 0, 0, 1]),
+  scale: z
+    .tuple([z.number().positive(), z.number().positive(), z.number().positive()])
+    .default([1, 1, 1]),
+  visible: z.boolean().default(true),
+  frustumCulled: z.boolean().default(true),
+  castShadow: z.boolean().default(false),
+  receiveShadow: z.boolean().default(false),
+  children: z.any().optional(), // React.ReactNode
+  entityId: z.number().int().nonnegative().optional(),
+  onUpdate: z.function(z.tuple([z.any()]), z.void()).optional(), // (mesh: Mesh) => void
+  performance: z.enum(['low', 'medium', 'high']).default('medium'),
+  lodLevels: z.array(LODLevelSchema).default([]),
+  instanced: z.boolean().default(false),
+  instanceCount: z.number().int().positive().optional(),
+  instanceMatrix: z.instanceof(Float32Array).optional(),
+});
 
 // Props for the component
 export interface IEntityMeshProps {
@@ -36,6 +64,9 @@ export interface IEntityMeshProps {
   instanceCount?: number;
   instanceMatrix?: Float32Array;
 }
+
+// Validation helper
+export const validateEntityMeshProps = (props: unknown) => EntityMeshPropsSchema.parse(props);
 
 /**
  * An optimized mesh component integrated with the ECS system

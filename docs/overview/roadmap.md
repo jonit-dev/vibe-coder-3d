@@ -4,6 +4,15 @@ This document outlines the development roadmap for transforming Vibe Coder 3D in
 
 > **Status Update (December 2024):** Foundation phase complete. Beginning AI Copilot integration with enhanced timeline and objectives.
 
+**Current Focus: Initiating AI Copilot Core Functionality**
+
+Following the completion of Phase 1, our immediate focus is on implementing the core capabilities for the AI Copilot. This involves starting key tasks from Phase 2, specifically:
+
+- **AI Command Parser:** Developing the system to translate natural language into engine commands.
+- **AI Scene Manipulation:** Enabling the AI to create, modify, and manage scene objects.
+
+These tasks are crucial for bringing the conversational game development experience to life. While Phase 2 also includes Physics and ECS integration, the current priority is to establish the AI command and manipulation pipeline. The "enhanced timeline and objectives" mentioned in the status update should be integrated here as details become available.
+
 ## Timeline Visualization (Mermaid)
 
 ```mermaid
@@ -66,43 +75,43 @@ gantt
 _Goal: Establish the project structure, tooling, basic rendering, and research core AI technologies for the Copilot._
 
 - **Tasks:**
-  - Update project documentation to reflect the AI-first pivot (Vision, Goals, Audience).
-  - Initialize project using Vite + React + TypeScript template (if not already done).
-  - Set up repository, CI/CD basics (linting, testing hooks).
-  - Implement the `src/core`, `src/editor`, and `src/game` directory structure.
-  - Configure Vite, TypeScript (`tsconfig.json`), ESLint, Prettier.
-  - Install core dependencies: `three`, `react-three-fiber`, `@react-three/drei`, `zustand`.
-  - Set up basic R3F Canvas and render loop in `src/core`.
-  - **Technical Spike: AI Copilot Integration:**
-    - Research and select core AI model/platform (e.g., LLMs like GPT, Claude; open-source alternatives).
-    - Define initial API for communication between the editor and the AI Copilot.
-    - Prototype a simple conversational interface in the editor.
-  - Create a minimal "Hello Cube" scene in `src/game` using the core setup.
-  - Implement basic camera controls (`OrbitControls` from `drei`).
-  - Set up basic global state management with Zustand (`src/core/state`).
-  - Develop initial UI for the editor, including a panel for AI Copilot interaction.
+  - Update project documentation to reflect the AI-first pivot (Vision, Goals, Audience). [COMPLETED]
+  - Initialize project using Vite + React + TypeScript template (if not already done). [COMPLETED]
+  - Set up repository, CI/CD basics (linting, testing hooks). [COMPLETED]
+  - Implement the `src/core`, `src/editor`, and `src/game` directory structure. [COMPLETED]
+  - Configure Vite, TypeScript (`tsconfig.json`), ESLint, Prettier. [COMPLETED]
+  - Install core dependencies: `three`, `react-three-fiber`, `@react-three/drei`, `zustand`. [COMPLETED]
+  - Set up basic R3F Canvas and render loop in `src/core`. [COMPLETED]
+  - **Technical Spike: AI Copilot Integration:** [COMPLETED]
+    - Research and select core AI model/platform (e.g., LLMs like GPT, Claude; open-source alternatives). [COMPLETED]
+    - Define initial API for communication between the editor and the AI Copilot. [COMPLETED]
+    - Prototype a simple conversational interface in the editor. [COMPLETED]
+  - Create a minimal "Hello Cube" scene in `src/game` using the core setup. [COMPLETED]
+  - Implement basic camera controls (`OrbitControls` from `drei`). [COMPLETED]
+  - Set up basic global state management with Zustand (`src/core/state`). [COMPLETED]
+  - Develop initial UI for the editor, including a panel for AI Copilot interaction. [COMPLETED]
 
 ### Phase 2: Physics, ECS & Basic AI Integration (Estimated: 3-4 Sprints)
 
-_Goal: Integrate Rapier physics, bitecs ECS, and enable basic AI-driven scene manipulation._
+_Goal: Integrate Rapier physics, bitecs ECS, and enable basic AI-driven scene manipulation. **Current priority is on AI command parsing and scene manipulation.**_
 
 - **Tasks:**
-  - Install `rapier3d-compat` and `@dimforge/rapier3d-compat`.
-  - Install `bitecs`.
-  - Set up Rapier physics world within the R3F loop (`src/core/lib/physics.ts`).
-  - Create core R3F components for rigid bodies (`<PhysicsBody>`) that sync with Rapier (`src/core/components`).
-  - Implement basic physics stepping and synchronization.
-  - Set up `bitecs` world and basic component types (`src/core/lib/ecs.ts`, `src/core/types`).
-  - Define core ECS components (e.g., `Position`, `Velocity`, `Renderable`, `AIControllable`).
-  - Create core ECS systems (e.g., `MovementSystem`, `PhysicsSyncSystem`, `AISystem`) (`src/core/systems`).
-  - **AI Command Parser:** Develop a system to parse natural language commands from the AI Copilot into actionable engine commands (e.g., "create a red sphere at 0,5,0", "make this object bouncy").
-  - **AI Scene Manipulation:** Implement functionality for the AI to:
+  - Install `rapier3d-compat` and `@dimforge/rapier3d-compat`. [LIKELY DONE - Core physics files exist]
+  - Install `bitecs`. [LIKELY DONE - Core ECS files exist]
+  - Set up Rapier physics world within the R3F loop (`src/core/lib/physics.ts`). [PARTIALLY IMPLEMENTED - `physics.ts` exists]
+  - Create core R3F components for rigid bodies (`<PhysicsBody>`) that sync with Rapier (`src/core/components`). [PARTIALLY IMPLEMENTED - `src/core/components/physics/` exists]
+  - Implement basic physics stepping and synchronization. [PARTIALLY IMPLEMENTED - `PhysicsSyncSystem.ts` exists]
+  - Set up `bitecs` world and basic component types (`src/core/lib/ecs.ts`, `src/core/types`). [SUBSTANTIALLY IMPLEMENTED - Core ECS libs and types exist]
+  - Define core ECS components (e.g., `Position`, `Velocity`, `Renderable`, `AIControllable`). [PARTIALLY IMPLEMENTED - `src/core/types/ecs.ts` likely defines many. `AIControllable` might be missing or need review]
+  - Create core ECS systems (e.g., `MovementSystem`, `PhysicsSyncSystem`, `AISystem`) (`src/core/systems`). [PARTIALLY IMPLEMENTED - `transformSystem`, `VelocitySystem`, `PhysicsSyncSystem` exist. `AISystem` is a key missing piece for AI control.]
+  - **AI Command Parser:** Develop a system to parse natural language commands from the AI Copilot into actionable engine commands (e.g., "create a red sphere at 0,5,0", "make this object bouncy"). **[IMMEDIATE NEXT STEP - No direct evidence of implementation]**
+  - **AI Scene Manipulation:** Implement functionality for the AI to: **[IMMEDIATE NEXT STEP - Editor-side foundations exist (hooks, menus), AI-driven part pending Command Parser]**
     - Create, delete, and modify basic geometric primitives.
     - Change properties of existing objects (transform, material, physics properties).
     - Group and parent objects.
-  - Develop core hooks for interacting with physics, ECS, and the AI command system (`src/core/hooks`).
-  - Refactor the "Hello Cube" example to be controllable via AI commands (`src/game`).
-  - Add basic debug utilities for physics, ECS state, and AI command execution.
+  - Develop core hooks for interacting with physics, ECS, and the AI command system (`src/core/hooks`). [SUBSTANTIALLY IMPLEMENTED - Many relevant hooks exist]
+  - Refactor the "Hello Cube" example to be controllable via AI commands (`src/game`). [BLOCKED by AI Command Parser & Scene Manipulation]
+  - Add basic debug utilities for physics, ECS state, and AI command execution. [PARTIALLY IMPLEMENTED - Debug components and hooks exist]
 
 ### Phase 3: AI-Assisted Content & Gameplay (Estimated: 4-5 Sprints)
 
@@ -110,16 +119,17 @@ _Goal: Enable AI to assist with content generation (assets, scripts) and build a
 
 - **Tasks:**
   - **AI Asset Generation (Proof of Concept):**
-    - Integrate with APIs or models for generating simple 3D models (e.g., procedural generation guided by AI, or text-to-3D APIs if available and suitable).
-    - Implement AI-assisted material/texture generation or selection (e.g., "make this look like rusty metal").
+    - Integrate with APIs or models for generating simple 3D models (e.g., procedural generation guided by AI, or text-to-3D APIs if available and suitable). [AI part PENDING]
+    - Implement AI-assisted material/texture generation or selection (e.g., "make this look like rusty metal"). [AI part PENDING]
+    - (Foundation for asset definition and handling in `src/core/types/assets.ts` and `src/core/hooks/useAsset.ts` is STRONG)
   - **AI Scripting Helper:**
-    - Design a system where AI can suggest or scaffold basic scripts/behaviors (e.g., "make this object move back and forth", "when player touches this, play a sound").
-    - Explore generating simple JavaScript/TypeScript snippets or visual scripting nodes.
-  - Define and implement core camera types, potentially with AI assistance for framing or transitions.
-  - Integrate `three-mesh-ui` for in-world UI and `howler.js` for audio, with AI helping place/trigger them.
-  - Develop core input handling system/hook (`src/core/hooks/useInput.ts`).
-  - Implement asset loading utilities, potentially with AI classifying or suggesting asset usage.
-  - Create a simple character controller component, with AI helping to tune parameters or suggest behaviors.
+    - Design a system where AI can suggest or scaffold basic scripts/behaviors (e.g., "make this object move back and forth", "when player touches this, play a sound"). [PENDING]
+    - Explore generating simple JavaScript/TypeScript snippets or visual scripting nodes. [PENDING]
+  - Define and implement core camera types, potentially with AI assistance for framing or transitions. [Camera controls exist, AI part PENDING]
+  - Integrate `three-mesh-ui` for in-world UI and `howler.js` for audio, with AI helping place/trigger them. [Foundations for UI (`uiStore.ts`, `components/ui`) and Audio (`audio.ts`, `useAudio.ts`) exist. AI part PENDING]
+  - Develop core input handling system/hook (`src/core/hooks/useInput.ts`). [IMPLEMENTED - `useInput.ts` exists]
+  - Implement asset loading utilities, potentially with AI classifying or suggesting asset usage. [Asset loading utilities exist via `useAsset.ts`, AI part PENDING]
+  - Create a simple character controller component, with AI helping to tune parameters or suggest behaviors. [`CharacterController.tsx` exists. AI part PENDING]
   - Build a minimal game example in `src/game` (e.g., AI-designed obstacle course, simple puzzle game) showcasing:
     - AI-generated level layout or elements.
     - Player movement (using core controller).

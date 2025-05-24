@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import React, { useEffect, useRef } from 'react';
 import { Group } from 'three';
+import { z } from 'zod';
 
 import {
   createEntity,
@@ -10,6 +11,19 @@ import {
   Transform,
 } from '@core/lib/ecs';
 
+// Zod schema for Entity component props
+export const EntityPropsSchema = z.object({
+  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+  rotation: z.tuple([z.number(), z.number(), z.number(), z.number()]).default([0, 0, 0, 1]),
+  scale: z
+    .tuple([z.number().positive(), z.number().positive(), z.number().positive()])
+    .default([1, 1, 1]),
+  visible: z.boolean().default(true),
+  children: z.any().optional(), // React.ReactNode
+  onUpdate: z.function(z.tuple([z.number(), z.number()]), z.void()).optional(),
+});
+
+// Export the interface type for backward compatibility
 export interface IEntityProps {
   position?: [number, number, number];
   rotation?: [number, number, number, number];
@@ -18,6 +32,9 @@ export interface IEntityProps {
   children?: React.ReactNode;
   onUpdate?: (entityId: number, delta: number) => void;
 }
+
+// Validation helper
+export const validateEntityProps = (props: unknown) => EntityPropsSchema.parse(props);
 
 /**
  * Entity component - Core abstraction for game objects

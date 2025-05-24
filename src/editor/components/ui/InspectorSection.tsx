@@ -47,12 +47,14 @@ export const InspectorSection: React.FC<IInspectorSectionProps> = ({
             <div className={`w-1 h-1 ${glowClasses[headerColor]} rounded-full animate-pulse`}></div>
             {icon && (
               <div
-                className={`w-2.5 h-2.5 ${colorClasses[headerColor].split(' ')[0]} flex-shrink-0`}
+                className={`w-3 h-3 ${colorClasses[headerColor].split(' ')[0]} flex-shrink-0 flex items-center justify-center`}
               >
-                {icon}
+                <div className="w-2.5 h-2.5 flex items-center justify-center">{icon}</div>
               </div>
             )}
-            <h3 className={`text-[11px] font-semibold ${colorClasses[headerColor].split(' ')[0]}`}>
+            <h3
+              className={`text-[11px] font-semibold ${colorClasses[headerColor].split(' ')[0]} leading-none`}
+            >
               {title}
             </h3>
           </div>
@@ -60,7 +62,7 @@ export const InspectorSection: React.FC<IInspectorSectionProps> = ({
           {collapsible && (
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className={`p-px ${colorClasses[headerColor].split(' ')[0]} hover:bg-gray-600/30 rounded-sm transition-all duration-200`}
+              className={`w-4 h-4 ${colorClasses[headerColor].split(' ')[0]} hover:bg-gray-600/30 rounded-sm transition-all duration-200 flex items-center justify-center flex-shrink-0`}
               title={collapsed ? 'Expand section' : 'Collapse section'}
             >
               {collapsed ? (

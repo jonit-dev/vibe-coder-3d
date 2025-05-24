@@ -10,6 +10,7 @@
 - **AI-First Project Management**: Enable the AI Copilot to understand project structure, assets, and configurations to provide contextual assistance across project boundaries.
 - **Hot-Reload Development**: Support real-time synchronization between editor changes and running game instances, enabling immediate feedback during development.
 - **Multi-Project Workflow**: Allow developers to work on multiple projects while maintaining isolated asset pipelines, configurations, and build outputs.
+- **User Ownership**: Ensure complete user ownership of game runtime and projects, with no dependencies on closed-source components in the final build.
 
 ### Current Pain Points
 
@@ -22,6 +23,7 @@
 
 ### High-level Summary
 
+- **Clean Separation**: Closed-source editor with AI tooling, user-owned runtime and projects with full ownership and no telemetry.
 - **Project-Centric Architecture**: Implement a project workspace system where the editor can create, open, and manage discrete game projects with isolated assets, scenes, and configurations.
 - **Workspace Management**: Create a project management system that handles project creation, templates, imports/exports, and versioning.
 - **Editor-Runtime Bridge**: Establish a communication layer between the editor and running game instances for real-time synchronization and testing.
@@ -31,519 +33,548 @@
 ### Architecture & Directory Structure
 
 ```
-vibe-coder-3d/                           # Engine Distribution
+# CLOSED SOURCE - Proprietary Editor
+vibe-coder-3d-editor/                    # Editor Distribution (Closed Source)
 ├── src/
-│   ├── core/                            # Core Engine (Shared across projects)
-│   │   ├── engine/                      # Core R3F, ECS, Physics systems
-│   │   ├── editor/                      # Core editor functionality
-│   │   └── workspace/                   # Project management systems
-│   │       ├── ProjectManager.ts        # Project lifecycle management
-│   │       ├── WorkspaceStore.ts        # Current workspace state
-│   │       ├── ProjectTemplate.ts       # Project scaffolding system
-│   │       └── AssetPipeline.ts         # Project-aware asset management
-│   ├── editor/                          # Editor Application
+│   ├── editor/                          # Editor Application (Proprietary)
 │   │   ├── app/                         # Editor shell application
 │   │   ├── components/                  # Editor UI components
-│   │   ├── ai/                          # AI Copilot integration
-│   │   └── workspace/                   # Workspace-specific editor features
-│   │       ├── ProjectExplorer.tsx      # Project file browser
-│   │       ├── ProjectSettings.tsx      # Project configuration UI
-│   │       └── TemplateSelector.tsx     # Project creation wizard
-│   └── templates/                       # Project templates
+│   │   ├── ai/                          # AI Copilot integration (Proprietary)
+│   │   ├── workspace/                   # Workspace-specific editor features
+│   │   │   ├── ProjectExplorer.tsx      # Project file browser
+│   │   │   ├── ProjectSettings.tsx      # Project configuration UI
+│   │   │   └── TemplateSelector.tsx     # Project creation wizard
+│   │   ├── build-tools/                 # Proprietary build and optimization tools
+│   │   ├── asset-pipeline/              # Advanced asset processing (Proprietary)
+│   │   └── analytics/                   # Usage analytics and telemetry
+│   ├── core/                            # Editor Core (Proprietary)
+│   │   ├── workspace/                   # Project management systems
+│   │   │   ├── ProjectManager.ts        # Project lifecycle management
+│   │   │   ├── WorkspaceStore.ts        # Current workspace state
+│   │   │   ├── ProjectTemplate.ts       # Project scaffolding system
+│   │   │   └── AssetPipeline.ts         # Project-aware asset management
+│   │   ├── ai-services/                 # AI integration services
+│   │   └── licensing/                   # License validation and management
+│   └── templates/                       # Project templates (Editor-managed)
 │       ├── blank/                       # Empty project template
 │       ├── platformer/                  # 2.5D platformer template
 │       ├── fps/                         # First-person game template
 │       └── puzzle/                      # Puzzle game template
 
-projects/                                # User Projects Directory
+# USER OWNED - Game Runtime (Delivered with each project)
+my-game-project/node_modules/@vibe-coder/runtime/  # User-Owned Runtime (No telemetry, full ownership)
+├── src/
+│   ├── core/                            # Core Game Engine (User Owned)
+│   │   ├── engine/                      # Core R3F, ECS, Physics systems
+│   │   ├── components/                  # Reusable game components
+│   │   ├── systems/                     # ECS systems
+│   │   ├── physics/                     # Physics integration
+│   │   ├── audio/                       # Audio systems
+│   │   └── networking/                  # Multiplayer support
+│   ├── utils/                           # Utility functions
+│   ├── types/                           # TypeScript definitions
+│   └── exports/                         # Public API exports
+├── package.json                         # Standard npm package
+├── LICENSE                              # Permissive license (MIT) - Full user ownership
+└── README.md                            # Runtime documentation
+
+# USER OWNED - Game Projects
+projects/                                # User Projects Directory (User Owned)
 ├── my-game-project/                     # Individual Game Project
-│   ├── .vibe/                          # Project metadata (hidden)
-│   │   ├── project.json                # Project configuration
-│   │   ├── asset-manifest.json         # Asset registry and dependencies
-│   │   ├── build-cache/               # Cached build artifacts
-│   │   └── ai-context.json            # AI learning and context data
-│   ├── assets/                         # Project-specific assets
-│   │   ├── models/                     # 3D models, animations
-│   │   ├── textures/                   # Textures, materials
-│   │   ├── audio/                      # Sounds, music
-│   │   └── scenes/                     # Saved scenes
-│   ├── scripts/                        # Project-specific scripts
-│   │   ├── components/                 # Custom components
+│   ├── .vibe/                          # Project metadata (Editor-managed, optional)
+│   │   ├── editor-config.json          # Editor-specific configuration
+│   │   ├── build-cache/               # Cached build artifacts (Editor optimization)
+│   │   └── ai-context.json            # AI learning data (Editor-specific)
+│   ├── src/                            # Game Source Code (User Owned)
+│   │   ├── components/                 # Custom game components
 │   │   ├── systems/                    # Custom ECS systems
-│   │   └── behaviors/                  # Game logic behaviors
-│   ├── config/                         # Project configuration
-│   │   ├── game-config.json           # Game settings
-│   │   ├── build-config.json          # Build and deployment settings
-│   │   └── ai-config.json             # AI assistant preferences
-│   ├── scenes/                         # Scene files
+│   │   ├── scenes/                     # Scene definitions
+│   │   ├── utils/                      # Game-specific utilities
+│   │   └── main.ts                     # Game entry point
+│   ├── assets/                         # Game Assets (User Owned)
+│   │   ├── models/                     # 3D models, animations (GLTF/GLB)
+│   │   ├── textures/                   # Textures, materials (PNG/JPG/WebP)
+│   │   ├── audio/                      # Sounds, music (OGG/MP3/WAV)
+│   │   └── data/                       # Game data files (JSON)
+│   ├── scenes/                         # Scene Files (Standard Format)
 │   │   ├── main-menu.scene.json       # Individual scene files
 │   │   ├── level-01.scene.json
 │   │   └── level-02.scene.json
-│   ├── dist/                           # Build output (auto-generated)
-│   ├── package.json                    # Project dependencies
+│   ├── public/                         # Public assets for deployment
+│   ├── dist/                           # Build output (Standard web bundle)
+│   ├── node_modules/                   # Standard npm dependencies (including runtime)
+│   ├── package.json                    # Standard npm dependencies
+│   ├── vite.config.js                  # Standard Vite configuration
+│   ├── game.config.json               # Game configuration (User Owned)
+│   ├── LICENSE                         # User's chosen license
 │   └── README.md                       # Project documentation
 ```
 
+## Key Ownership Principles
+
+### Editor (Closed Source)
+
+- **AI Copilot**: Advanced AI features, natural language processing, contextual assistance
+- **Asset Pipeline**: Advanced optimization, format conversion, batch processing
+- **Build Tools**: Proprietary optimization, bundling, and deployment tools
+- **Analytics**: Editor usage analytics (not game analytics)
+- **Project Management**: Workspace and project creation tools
+
+### Runtime (User Owned)
+
+- **Full Ownership**: Users own the runtime completely, can modify, redistribute
+- **No Telemetry**: Zero data collection or communication back to editor
+- **Standard Dependencies**: Only depends on public npm packages (React Three Fiber, etc.)
+- **Open Source License**: MIT license for complete freedom
+- **Self-Contained**: Can be used without the editor for manual development
+
+### Projects (User Owned)
+
+- **Complete Ownership**: Users own all code, assets, and builds
+- **Standard Structure**: Uses standard web development patterns (Vite, npm, etc.)
+- **Editor Agnostic**: Can be built and deployed without the editor
+- **No Lock-in**: Projects can be migrated to other tools if desired
+- **User License**: Users choose their own license for their games
+
 ## Implementation Plan
 
-### Phase 1: Project Foundation & Workspace Management (2 weeks)
+### Phase 1: Project Foundation & User Ownership (2 weeks)
 
-#### Week 1: Core Project System
+#### Week 1: Core Project System & Runtime Separation
 
-1. **Project Configuration Schema**
+1. **Runtime Package Architecture**
 
    ```typescript
+   // User-owned runtime with zero editor dependencies
+   interface IVibeRuntime {
+     engine: GameEngine;
+     components: ComponentLibrary;
+     systems: SystemLibrary;
+     physics: PhysicsEngine;
+     audio: AudioEngine;
+   }
+
+   // Clean API with no telemetry or editor communication
+   export const createGame = (config: GameConfig) => {
+     return new VibeGame(config);
+   };
+   ```
+
+2. **Project Configuration Schema**
+   ```typescript
+   // User-owned project configuration
    interface IProjectConfig {
      name: string;
      version: string;
-     engine: {
-       version: string;
-       features: string[];
+     runtime: {
+       version: string; // @vibe-coder/runtime version
+       features: string[]; // Enabled runtime features
      };
      build: {
        target: 'web' | 'desktop' | 'mobile';
        optimization: 'development' | 'production';
      };
-     ai: {
-       preferences: Record<string, any>;
-       context: string[];
-     };
+     // NO editor-specific data in user-owned config
    }
    ```
 
-2. **Project Management Core**
-   - Implement `ProjectManager.ts` for project lifecycle operations
-   - Create `WorkspaceStore.ts` with Zustand for current project state
-   - Develop project validation and migration systems
-   - Add project template system with scaffolding capabilities
+#### Week 2: Editor Integration with Clean Boundaries
 
-#### Week 2: Editor Integration
+3. **Editor-Project Bridge**
 
-3. **Workspace UI Components**
+   - Editor communicates with projects through standard development server
+   - Hot-reload through standard Vite HMR (no proprietary protocols)
+   - AI context stored separately in `.vibe/` (optional, editor-only)
+   - Project can run completely independently of editor
 
-   - Create `ProjectExplorer.tsx` for project file navigation
-   - Implement `ProjectSettings.tsx` for configuration management
-   - Build `TemplateSelector.tsx` for project creation wizard
-   - Add project switching and recent projects functionality
-
-4. **Asset Pipeline Integration**
-   - Implement project-scoped asset management
-   - Create asset import/export for project boundaries
-   - Add asset dependency tracking and resolution
-   - Develop shared asset library system
+4. **Template System with User Ownership**
+   - Templates generate standard npm projects
+   - All generated code is user-owned
+   - No proprietary dependencies in generated projects
+   - Standard package.json with @vibe-coder/runtime dependency
 
 ### Phase 2: Editor-Runtime Communication Bridge (2 weeks)
 
-#### Week 1: Communication Architecture
+#### Week 1: Standard Development Protocols
 
-1. **Editor-Runtime Bridge**
+1. **Development Server Integration**
 
    ```typescript
-   interface IEditorRuntimeBridge {
-     sendCommand(command: string, data: any): Promise<any>;
-     subscribeToUpdates(callback: (update: any) => void): void;
-     getGameState(): Promise<GameState>;
-     hotReload(changes: ProjectChange[]): Promise<void>;
+   // Editor uses standard development server protocols
+   interface IEditorDevBridge {
+     connectToProject(projectPath: string): Promise<DevConnection>;
+     watchFileChanges(callback: (changes: FileChange[]) => void): void;
+     sendHotReload(changes: Change[]): Promise<void>;
+     // Uses standard Vite dev server underneath
    }
    ```
 
-2. **Hot-Reload System**
-   - Implement file watching for project changes
-   - Create incremental update system for scene changes
-   - Add script hot-reloading for custom components
-   - Develop asset hot-swapping capabilities
+2. **Hot-Reload Through Standard Channels**
+   - Leverage Vite's HMR for runtime updates
+   - Editor sends changes through standard dev server
+   - No proprietary communication protocols
+   - Works with any standard development workflow
 
-#### Week 2: Testing & Development Workflow
+#### Week 2: Build and Deployment Independence
 
-3. **Development Mode Integration**
+3. **Standard Build Pipeline**
 
-   - Create play-in-editor functionality
-   - Implement editor-game state synchronization
-   - Add debugging tools and real-time inspection
-   - Build performance monitoring and profiling tools
+   - Projects use standard Vite build process
+   - Editor can enhance but not replace standard tooling
+   - Generated builds work completely independently
+   - No editor runtime dependencies in production
 
-4. **Build System Integration**
-   - Implement project-specific build configurations
-   - Create development vs production build pipelines
-   - Add asset optimization and bundling
-   - Develop deployment and distribution tools
+4. **Deployment Independence**
+   - Standard web deployment (static hosting, CDN, etc.)
+   - No proprietary deployment services required
+   - Users control hosting and distribution
+   - Standard web technologies (HTML, JS, CSS)
 
 ### Phase 3: AI-Aware Project Intelligence (3 weeks)
 
-#### Week 1: AI Context System
+#### Week 1: AI Context with Privacy
 
-1. **Project-Aware AI Context**
+1. **Local AI Context Storage**
 
    ```typescript
+   // AI context stored locally in .vibe/ (optional)
    interface IAIProjectContext {
      projectType: string;
-     assets: AssetManifest;
-     dependencies: ProjectDependency[];
-     codePatterns: CodePattern[];
-     userPreferences: UserPreferences;
+     codePatterns: LocalCodePattern[]; // Analyzed locally
+     preferences: UserPreferences; // Local only
+     // NO data sent to external services without explicit consent
    }
    ```
 
-2. **AI Learning Integration**
-   - Implement project-specific AI context storage
-   - Create AI learning from project patterns
-   - Add intelligent asset and component suggestions
-   - Develop project-aware code generation
+2. **Privacy-First AI Integration**
+   - AI context stored locally in `.vibe/` directory
+   - Users can delete AI data without affecting project
+   - No AI data included in final builds
+   - Explicit consent for any external AI services
 
 #### Week 2: Intelligent Project Operations
 
 3. **Smart Project Management**
 
-   - AI-assisted project creation and setup
-   - Intelligent template selection based on requirements
-   - Automated dependency management and updates
-   - Smart asset organization and optimization
+   - AI assists with project setup and organization
+   - Template recommendations based on requirements
+   - Code analysis and suggestions (local processing where possible)
+   - Asset optimization recommendations
 
 4. **Contextual Development Assistance**
-   - Project-aware debugging and error resolution
-   - Intelligent code completion and generation
-   - Asset recommendation based on project style
-   - Performance optimization suggestions
+   - Project-aware code completion
+   - Component and system suggestions
+   - Performance optimization insights
+   - Standard tooling integration
 
-#### Week 3: Advanced AI Features
+#### Week 3: Advanced AI Features with User Control
 
-5. **Project Analysis & Insights**
+5. **Optional AI Services**
 
-   - Automated code quality analysis
-   - Performance bottleneck identification
-   - Asset usage optimization recommendations
-   - Project structure and organization suggestions
+   - External AI services only with explicit user consent
+   - Clear data usage policies
+   - Local-first processing where possible
+   - User controls all AI data and preferences
 
-6. **Collaborative Features**
-   - AI-assisted project sharing and collaboration
-   - Intelligent merge conflict resolution
-   - Project documentation generation
-   - Team workflow optimization
+6. **AI-Generated Content Ownership**
+   - All AI-generated code belongs to user
+   - No licensing restrictions on AI-assisted content
+   - Clear ownership of all assets and code
+   - Standard copyright and licensing applies
 
 ## File and Directory Structures
 
-### Core Engine Structure
+### User-Owned Runtime Structure
 
 ```
-src/core/workspace/
-├── ProjectManager.ts              # Main project lifecycle management
-├── WorkspaceStore.ts             # Current workspace state (Zustand)
-├── ProjectTemplate.ts            # Template system for project creation
-├── AssetPipeline.ts              # Project-aware asset management
-├── ProjectValidator.ts           # Project integrity validation
-├── ProjectMigration.ts           # Version migration system
-└── types/
-    ├── ProjectConfig.ts          # Project configuration interfaces
-    ├── WorkspaceState.ts         # Workspace state types
-    └── ProjectTemplate.ts        # Template definition types
+@vibe-coder/runtime/
+├── src/
+│   ├── core/
+│   │   ├── engine/                     # Core game engine
+│   │   ├── components/                 # Reusable components
+│   │   ├── systems/                    # ECS systems
+│   │   ├── physics/                    # Physics integration
+│   │   ├── audio/                      # Audio systems
+│   │   └── networking/                 # Multiplayer support
+│   ├── utils/                          # Utility functions
+│   ├── types/                          # TypeScript definitions
+│   └── index.ts                        # Public API exports
+├── package.json                        # Standard npm package
+├── LICENSE                             # MIT License (User ownership)
+├── README.md                           # Runtime documentation
+└── CHANGELOG.md                        # Version history
 ```
 
-### Editor Workspace Integration
+### User Project Template
 
 ```
-src/editor/workspace/
+my-game/
+├── src/
+│   ├── components/                     # Custom game components
+│   ├── systems/                        # Custom ECS systems
+│   ├── scenes/                         # Scene definitions
+│   ├── utils/                          # Game utilities
+│   └── main.ts                         # Game entry point
+├── assets/                             # Game assets (user-owned)
+├── scenes/                             # Scene files (standard format)
+├── public/                             # Static assets
+├── dist/                               # Build output
+├── .vibe/                              # Editor metadata (optional)
+├── package.json                        # Standard npm project
+├── vite.config.js                      # Standard Vite config
+├── game.config.json                    # Game configuration
+├── LICENSE                             # User's license choice
+└── README.md                           # Project documentation
+```
+
+### Editor Workspace (Closed Source)
+
+```
+vibe-editor/workspace/
 ├── components/
-│   ├── ProjectExplorer.tsx       # File browser and project navigation
-│   ├── ProjectSettings.tsx       # Project configuration UI
-│   ├── TemplateSelector.tsx      # Project creation wizard
-│   ├── ProjectSwitcher.tsx       # Quick project switching
-│   └── AssetImporter.tsx         # Asset import/management UI
-├── hooks/
-│   ├── useProject.ts             # Current project access hook
-│   ├── useProjectAssets.ts       # Project asset management
-│   ├── useProjectBuild.ts        # Build system integration
-│   └── useProjectAI.ts           # AI context for current project
-└── stores/
-    ├── projectStore.ts           # Project-specific state
-    └── workspaceStore.ts         # Workspace-level state
-```
-
-### Project Template Structure
-
-```
-templates/blank/
-├── .vibe/
-│   ├── project.json              # Template project configuration
-│   └── template-config.json      # Template metadata
-├── assets/                       # Default template assets
-├── scenes/
-│   └── main.scene.json          # Default scene
-├── scripts/
-│   └── components/              # Template-specific components
-├── config/
-│   ├── game-config.json         # Default game settings
-│   └── build-config.json        # Default build configuration
-└── package.json                  # Template dependencies
+│   ├── ProjectExplorer.tsx             # File browser
+│   ├── ProjectSettings.tsx             # Configuration UI
+│   ├── TemplateSelector.tsx            # Project wizard
+│   └── AIAssistant.tsx                 # AI integration
+├── services/
+│   ├── ProjectService.ts               # Project management
+│   ├── AIService.ts                    # AI integration
+│   ├── BuildService.ts                 # Build tools
+│   └── AssetService.ts                 # Asset processing
+└── templates/                          # Project templates
+    ├── blank/                          # Basic template
+    ├── platformer/                     # Game templates
+    └── custom/                         # User templates
 ```
 
 ## Technical Details
 
-### Project Configuration Schema
+### Runtime API Design
 
 ```typescript
-// Project configuration interface
-interface IProjectConfig {
-  name: string;
-  description?: string;
-  version: string;
-  engine: {
-    version: string;
-    features: EngineFeature[];
-  };
-  build: {
-    target: BuildTarget;
-    optimization: OptimizationLevel;
-    outputDir: string;
-  };
-  assets: {
-    baseUrl: string;
-    cachingStrategy: CachingStrategy;
-    optimizations: AssetOptimization[];
-  };
-  ai: {
-    enabled: boolean;
-    preferences: AIPreferences;
-    contextData: string[];
-  };
-  dependencies: ProjectDependency[];
-  scripts: {
-    [key: string]: string;
-  };
-}
+// Clean, user-owned runtime API
+import { createGame, Scene, Entity, Component } from '@vibe-coder/runtime';
 
-// Workspace state management
-interface IWorkspaceState {
-  currentProject: string | null;
-  recentProjects: string[];
-  projectsDirectory: string;
-  preferences: WorkspacePreferences;
-}
+// User's game code (completely owned)
+const game = createGame({
+  name: 'My Game',
+  version: '1.0.0',
+  target: 'web',
+});
 
-// Editor-Runtime bridge interface
-interface IEditorRuntimeBridge {
-  connected: boolean;
-  sendCommand<T>(command: string, data: any): Promise<T>;
-  subscribe(event: string, callback: (data: any) => void): () => void;
-  hotReload(changes: ProjectChange[]): Promise<void>;
-  getGameState(): Promise<GameState>;
-}
+// Standard ECS patterns
+const playerEntity = game.world
+  .createEntity()
+  .add(Transform, { position: [0, 0, 0] })
+  .add(Mesh, { geometry: 'box' })
+  .add(PlayerController);
+
+// No editor dependencies in runtime code
 ```
 
-### Project Manager Core Implementation
+### Project Independence
 
 ```typescript
-export class ProjectManager {
-  private static instance: ProjectManager;
-  private currentProject: IProject | null = null;
+// Projects work without editor
+import { defineConfig } from 'vite';
 
-  static getInstance(): ProjectManager {
-    if (!ProjectManager.instance) {
-      ProjectManager.instance = new ProjectManager();
-    }
-    return ProjectManager.instance;
-  }
+export default defineConfig({
+  // Standard Vite configuration
+  plugins: [
+    // Standard plugins only
+  ],
+  build: {
+    // Standard build configuration
+    target: 'esnext',
+    rollupOptions: {
+      // Standard Rollup options
+    },
+  },
+});
+```
 
-  async createProject(config: IProjectCreationConfig): Promise<IProject> {
-    // Validate project configuration
-    // Create project directory structure
-    // Initialize from template if specified
-    // Set up asset pipeline
-    // Configure AI context
-    // Return project instance
-  }
+### Editor Integration
 
-  async openProject(projectPath: string): Promise<IProject> {
-    // Validate project structure
-    // Load project configuration
-    // Initialize asset pipeline
-    // Load AI context
-    // Set as current project
-    // Return project instance
-  }
+```typescript
+// Editor enhances but doesn't control projects
+interface IEditorProjectBridge {
+  // Read-only project analysis
+  analyzeProject(path: string): Promise<ProjectAnalysis>;
 
-  async saveProject(): Promise<void> {
-    // Save current project state
-    // Update asset manifests
-    // Persist AI context
-    // Update project metadata
-  }
+  // Enhancement suggestions (user accepts/rejects)
+  suggestOptimizations(): Promise<Suggestion[]>;
+
+  // AI assistance (optional, user-controlled)
+  getAIAssistance(context: string): Promise<AIResponse>;
+
+  // Standard development server integration
+  startDevServer(): Promise<DevServer>;
 }
 ```
 
 ## Usage Examples
 
-### Creating a New Project
+### Creating a User-Owned Project
 
 ```typescript
-// Using the AI Copilot
-const aiCopilot = useAICopilot();
+// Editor creates standard npm project
+const project = await editor.createProject({
+  name: 'my-platformer',
+  template: 'platformer',
+  location: './projects/'
+});
 
-// User: "Create a new 2D platformer game called 'Super Jump Adventure'"
-await aiCopilot.processCommand("Create a new 2D platformer game called 'Super Jump Adventure'");
-
-// AI automatically:
-// 1. Selects platformer template
-// 2. Sets up project structure
-// 3. Configures appropriate assets
-// 4. Initializes with platformer-specific components
+// Generated project is completely user-owned
+// package.json includes:
+{
+  "name": "my-platformer",
+  "version": "1.0.0",
+  "dependencies": {
+    "@vibe-coder/runtime": "^1.0.0",
+    "vite": "^4.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
 ```
 
-### Opening an Existing Project
+### Independent Development
 
 ```typescript
-// Using the Project Manager
-const projectManager = useProjectManager();
-const project = await projectManager.openProject('/projects/my-game');
+// Users can develop without editor
+npm install
+npm run dev        # Standard Vite dev server
+npm run build      # Standard build process
+npm run preview    # Standard preview
 
-// Editor automatically:
-// 1. Loads project configuration
-// 2. Initializes asset pipeline
-// 3. Restores AI context
-// 4. Updates workspace state
+// Deploy anywhere
+npm run build && rsync -r dist/ user@server:/var/www/
 ```
 
-### Hot-Reload Development
+### AI Assistance with User Control
 
 ```typescript
-// Editor-Runtime bridge automatically handles:
-const bridge = useEditorRuntimeBridge();
+// AI suggestions are optional
+const aiSuggestion = await editor.ai.suggest({
+  context: 'player movement',
+  codeContext: playerController,
+  userPreferences: { framework: 'functional' },
+});
 
-// When files change in the editor:
-bridge.hotReload([
-  { type: 'scene', path: 'scenes/level-01.scene.json' },
-  { type: 'script', path: 'scripts/PlayerController.ts' },
-  { type: 'asset', path: 'assets/models/player.glb' },
-]);
-
-// Running game immediately reflects changes
+if (user.accepts(aiSuggestion)) {
+  // Generated code belongs to user
+  editor.insertCode(aiSuggestion.code);
+}
 ```
+
+## Ownership and Licensing
+
+### Runtime Ownership
+
+- **License**: MIT License for complete user freedom
+- **Modification**: Users can fork and modify the runtime
+- **Distribution**: Users can redistribute runtime with their games
+- **No Telemetry**: Zero data collection or external communication
+- **Self-Contained**: No dependencies on proprietary services
+
+### Project Ownership
+
+- **Full Ownership**: Users own all code, assets, and generated content
+- **License Choice**: Users choose their own license for their projects
+- **No Lock-in**: Projects use standard tools and can be migrated
+- **Commercial Use**: No restrictions on commercial game development
+- **Source Control**: Standard git repositories, user-controlled
+
+### Editor Boundaries
+
+- **Development Only**: Editor is used only during development
+- **No Runtime Dependencies**: Games don't require editor to run
+- **Optional Enhancement**: Editor features are enhancements, not requirements
+- **Standard Protocols**: Uses standard development server protocols
+- **Privacy Respect**: AI features respect user privacy and data ownership
 
 ## Testing Strategy
 
-### Unit Tests
+### Runtime Testing
 
-- Project creation and validation logic
-- Asset pipeline operations
-- Project configuration serialization/deserialization
-- Template system functionality
-- AI context management
-- Editor-runtime bridge communication
+- **Unit Tests**: Comprehensive runtime testing independent of editor
+- **Integration Tests**: Game builds work without editor
+- **Performance Tests**: Runtime performance benchmarks
+- **Compatibility Tests**: Standard browser and platform compatibility
 
-### Integration Tests
+### Project Independence Testing
 
-- End-to-end project creation workflow
-- Asset import and management across projects
-- Hot-reload functionality with running game instances
-- AI Copilot project-aware assistance
-- Project switching and state management
-- Build system integration
+- **Build Without Editor**: Projects build using standard npm/yarn commands
+- **Deploy Without Editor**: Built games deploy to standard hosting
+- **Migration Tests**: Projects can be migrated to other development environments
+- **License Compliance**: Verify user ownership of all generated content
 
-### Edge Cases
+### Editor Integration Testing
 
-| Edge Case                       | Remediation                                       |
-| ------------------------------- | ------------------------------------------------- |
-| Corrupted project configuration | Validate and repair with backup or defaults       |
-| Missing project assets          | Asset recovery system with user guidance          |
-| Version incompatibility         | Automatic migration with user confirmation        |
-| Editor-runtime connection loss  | Graceful reconnection with state synchronization  |
-| Large project performance       | Lazy loading and incremental updates              |
-| Concurrent project access       | File locking and conflict resolution              |
-| Template corruption             | Fallback to default template with error reporting |
-| AI context overflow             | Context pruning and archival system               |
-
-## Sequence Diagram
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Editor as Editor Application
-    participant PM as Project Manager
-    participant AI as AI Copilot
-    participant FS as File System
-    participant Runtime as Game Runtime
-
-    User->>Editor: Create new project
-    Editor->>PM: createProject(config)
-    PM->>FS: Create directory structure
-    PM->>AI: Initialize project context
-    AI->>PM: Context initialized
-    PM->>Editor: Project created
-    Editor->>User: Project ready
-
-    User->>Editor: Open scene in editor
-    Editor->>PM: loadScene(scenePath)
-    PM->>FS: Read scene file
-    FS->>PM: Scene data
-    PM->>Editor: Scene loaded
-    Editor->>Runtime: Hot-reload scene
-    Runtime->>Editor: Scene updated
-
-    User->>AI: "Add a player character"
-    AI->>PM: Analyze project context
-    PM->>AI: Project type and assets
-    AI->>Editor: Generate player setup
-    Editor->>Runtime: Apply changes
-    Runtime->>User: Player appears in game
-```
+- **Development Workflow**: Editor enhances standard development
+- **Hot Reload**: Standard HMR integration
+- **AI Features**: AI assistance respects user privacy and control
+- **Template Generation**: Generated projects are properly user-owned
 
 ## Risks & Mitigations
 
-| Risk                                  | Mitigation                                             |
-| ------------------------------------- | ------------------------------------------------------ |
-| Complex project state management      | Implement robust state validation and recovery systems |
-| Performance impact of hot-reload      | Optimize change detection and incremental updates      |
-| AI context becoming stale             | Regular context refresh and validation mechanisms      |
-| Project corruption during development | Automated backups and version control integration      |
-| Editor-runtime synchronization issues | Robust error handling and reconnection logic           |
-| Large projects causing memory issues  | Implement lazy loading and resource management         |
-| Template system complexity            | Thorough testing and fallback mechanisms               |
-| Cross-platform project compatibility  | Standardized project format and validation             |
+| Risk                       | Mitigation                                                           |
+| -------------------------- | -------------------------------------------------------------------- |
+| Runtime vendor lock-in     | MIT license and standard dependencies ensure user freedom            |
+| Editor dependency creep    | Strict boundaries between editor and runtime/projects                |
+| AI data privacy concerns   | Local-first AI processing and explicit consent for external services |
+| Project portability issues | Standard tools and file formats for complete portability             |
+| License confusion          | Clear documentation of ownership and licensing                       |
+| Performance overhead       | Lightweight runtime with minimal dependencies                        |
 
 ## Timeline
 
 **Total Estimated Time: 7 weeks**
 
-### Phase 1: Foundation (2 weeks)
+### Phase 1: Foundation & Ownership (2 weeks)
 
-- Week 1: Project system core and configuration
-- Week 2: Editor integration and UI components
+- Week 1: Runtime separation and user ownership architecture
+- Week 2: Project independence and template system
 
-### Phase 2: Communication Bridge (2 weeks)
+### Phase 2: Development Integration (2 weeks)
 
-- Week 3: Editor-runtime bridge and hot-reload
-- Week 4: Development workflow and build integration
+- Week 3: Standard development server integration
+- Week 4: Build and deployment independence
 
-### Phase 3: AI Intelligence (3 weeks)
+### Phase 3: AI Integration with Privacy (3 weeks)
 
-- Week 5: AI project context and learning
-- Week 6: Intelligent project operations
-- Week 7: Advanced AI features and collaboration
+- Week 5: Local AI context and privacy-first design
+- Week 6: AI assistance with user control
+- Week 7: Advanced AI features and ownership clarity
 
 ## Acceptance Criteria
 
-- ✅ **Project Creation**: Users can create new projects from templates with AI assistance
-- ✅ **Project Management**: Users can open, save, and switch between multiple projects
-- ✅ **Asset Isolation**: Each project maintains isolated assets and configurations
-- ✅ **Hot-Reload Development**: Changes in editor immediately reflect in running game
-- ✅ **AI Project Awareness**: AI Copilot provides contextual assistance based on current project
-- ✅ **Build Integration**: Projects can be built and deployed independently
-- ✅ **Template System**: Users can create and share project templates
-- ✅ **Performance**: Large projects load and operate smoothly with minimal latency
+- ✅ **Runtime Independence**: Runtime works completely without editor
+- ✅ **Project Ownership**: Users own all code, assets, and builds completely
+- ✅ **No Lock-in**: Projects can be developed and deployed without editor
+- ✅ **Standard Tools**: Uses standard web development tools and practices
+- ✅ **Privacy Protection**: AI features respect user privacy and data ownership
+- ✅ **License Clarity**: Clear ownership and licensing of all components
+- ✅ **Performance**: Lightweight runtime with minimal overhead
+- ✅ **Portability**: Projects work with standard development workflows
 
 ## Conclusion
 
-This editor-project relationship architecture transforms Vibe Coder 3D into a professional-grade development environment while maintaining the AI-first principles that make it unique. By implementing project-centric workflows, we enable scalable development processes, better asset management, and more intelligent AI assistance. The hot-reload development experience and seamless editor-runtime integration will significantly accelerate the development workflow, making Vibe Coder 3D a compelling alternative to traditional game engines.
+This architecture ensures that while the editor provides powerful AI-assisted development capabilities, users maintain complete ownership and control over their games and the runtime. The clear separation between proprietary editor tooling and user-owned runtime/projects creates a sustainable business model while respecting user freedom and preventing vendor lock-in.
 
-The proposed architecture balances complexity with usability, ensuring that both novice creators and experienced developers can benefit from the enhanced project management capabilities while leveraging the power of AI-assisted development.
+The design prioritizes user ownership, privacy, and independence while still enabling the advanced AI features that make Vibe Coder 3D unique. Users benefit from powerful development tools while maintaining complete control over their creative work and technical infrastructure.
 
 ## Assumptions & Dependencies
 
-- **File System Access**: Implementation assumes modern browser File System API or Electron-based editor for full project management
-- **AI API Availability**: Depends on continued access to LLM APIs (OpenAI, Anthropic) for contextual assistance
-- **Browser Capabilities**: Advanced features may require modern browser APIs (File Handling, Origin Private File System)
-- **Development Resources**: Assumes dedicated development time for editor enhancements and testing
-- **User Adoption**: Success depends on user acceptance of AI-assisted development workflows
-- **Performance Requirements**: Large project support requires careful optimization and testing across different hardware configurations
+- **User Ownership Priority**: Architecture prioritizes user ownership over editor integration convenience
+- **Standard Web Technologies**: Relies on standard web development tools and practices
+- **Privacy-First AI**: AI features designed with privacy and user control as primary concerns
+- **MIT Runtime License**: Runtime uses permissive licensing for maximum user freedom
+- **Editor Business Model**: Closed-source editor business model supports open runtime development
+- **Browser Standards**: Leverages standard browser APIs and web development practices
 
 ```
 

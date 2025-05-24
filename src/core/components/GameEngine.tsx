@@ -2,9 +2,18 @@
 // The main component that sets up the R3F Canvas with the game engine
 import { Canvas } from '@react-three/fiber';
 import { useEffect } from 'react';
+import { z } from 'zod';
 
 import { EngineLoop } from '@core/components/EngineLoop';
 import { useGameEngine } from '@core/hooks/useGameEngine';
+
+// Zod schema for GameEngine component props
+export const GameEnginePropsSchema = z.object({
+  autoStart: z.boolean().default(true),
+  canvasProps: z.record(z.unknown()).optional(), // React.ComponentProps<typeof Canvas>
+  noCanvas: z.boolean().default(false),
+  children: z.any().optional(), // React.ReactNode
+});
 
 // Props for the GameEngine component
 export interface IGameEngineProps {
@@ -20,6 +29,9 @@ export interface IGameEngineProps {
   /** Scene content */
   children?: React.ReactNode;
 }
+
+// Validation helper
+export const validateGameEngineProps = (props: unknown) => GameEnginePropsSchema.parse(props);
 
 /**
  * Main GameEngine component

@@ -40,14 +40,18 @@ export const TabPanel: React.FC<ITabPanelProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 h-10 px-3 flex items-center justify-center space-x-2 text-xs font-medium transition-all duration-200 ${
+              className={`flex-1 h-10 px-3 flex items-center justify-center gap-2 text-xs font-medium transition-all duration-200 ${
                 activeTab === tab.id
                   ? 'bg-gradient-to-b from-cyan-600/20 to-cyan-700/20 text-cyan-200 border-b-2 border-cyan-400'
                   : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/30'
               } ${tabClassName}`}
             >
-              {tab.icon}
-              <span>{tab.label}</span>
+              {tab.icon && (
+                <div className="flex items-center justify-center w-4 h-4 flex-shrink-0">
+                  {tab.icon}
+                </div>
+              )}
+              <span className="leading-none">{tab.label}</span>
             </button>
           ))}
         </div>

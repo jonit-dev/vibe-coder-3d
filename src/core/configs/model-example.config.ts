@@ -1,13 +1,14 @@
-import { IModelConfig } from '@/core/types/assets';
+import { validateModelConfig, type IModelConfig } from '@/core/types/assets';
 
 /**
  * Example configuration for a character model with skeleton visualization
+ * This configuration is validated using Zod schemas to ensure type safety
  */
-export const exampleCharacterConfig: IModelConfig = {
+const rawConfig = {
   scale: 1.0,
-  position: [0, 0, 0],
-  rotation: [0, 0, 0],
-  offset: [0, 0, 0],
+  position: [0, 0, 0] as [number, number, number],
+  rotation: [0, 0, 0] as [number, number, number],
+  offset: [0, 0, 0] as [number, number, number],
 
   // Animation settings
   initialAnimation: 'Idle',
@@ -34,11 +35,11 @@ export const exampleCharacterConfig: IModelConfig = {
   // Collision settings
   collision: {
     enabled: true,
-    type: 'characterController',
-    shape: 'capsule',
+    type: 'characterController' as const,
+    shape: 'capsule' as const,
     radius: 0.3,
     height: 1.8,
-    offset: [0, 0.9, 0],
+    offset: [0, 0.9, 0] as [number, number, number],
     isTrigger: false,
     layer: 'character',
   },
@@ -53,9 +54,9 @@ export const exampleCharacterConfig: IModelConfig = {
     receiveShadows: true,
     cullingEnabled: true,
     LODLevels: [
-      { distance: 0, detail: 'high' },
-      { distance: 10, detail: 'medium' },
-      { distance: 30, detail: 'low' },
+      { distance: 0, detail: 'high' as const },
+      { distance: 10, detail: 'medium' as const },
+      { distance: 30, detail: 'low' as const },
     ],
   },
 
@@ -69,7 +70,26 @@ export const exampleCharacterConfig: IModelConfig = {
     showPhysicsForces: false, // Display physics forces
     showVelocity: false, // Display velocity vector
     showObjectPivot: true, // Display object pivot and axes
-    debugColor: [0, 1, 0], // RGB color for debug visualizations (green)
+    debugColor: [0, 1, 0] as [number, number, number], // RGB color for debug visualizations (green)
     logToConsole: true, // Print debug info to console
   },
-};
+} as const;
+
+// Validate the configuration using Zod schema
+// This will throw an error if the configuration is invalid
+export const exampleCharacterConfig: IModelConfig = validateModelConfig(rawConfig);
+
+// Example of safe validation with error handling
+export function createValidatedCharacterConfig(
+  userConfig: Record<string, unknown>,
+): IModelConfig | null {
+  try {
+    return validateModelConfig({ ...rawConfig, ...userConfig });
+  } catch (error) {
+    console.error('Invalid character configuration:', error);
+    return null;
+  }
+}
+
+// Export the raw config for testing/reference
+export const rawCharacterConfig = rawConfig;

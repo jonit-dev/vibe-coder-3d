@@ -2,15 +2,24 @@
 // This file exports all the core components, hooks, and utilities from the engine
 
 // Components
-export { EntityMesh, EntityMesh as OptimizedEntityMesh } from '@/core/components/EntityMesh';
+export {
+  EntityMesh,
+  EntityMeshPropsSchema,
+  EntityMesh as OptimizedEntityMesh,
+  validateEntityMeshProps,
+} from '@/core/components/EntityMesh';
 export type {
   IEntityMeshProps as EntityMeshProps,
   IEntityMeshProps as OptimizedEntityMeshProps,
 } from '@/core/components/EntityMesh';
 export { EngineLoop } from './components/EngineLoop';
-export { Entity } from './components/Entity';
+export { Entity, EntityPropsSchema, validateEntityProps } from './components/Entity';
 export type { IEntityProps as EntityProps } from './components/Entity';
-export { GameEngine } from './components/GameEngine';
+export {
+  GameEngine,
+  GameEnginePropsSchema,
+  validateGameEngineProps,
+} from './components/GameEngine';
 export type { IGameEngineProps as GameEngineProps } from './components/GameEngine';
 
 // Physics Components
@@ -35,6 +44,8 @@ export { useEngineStore } from './state/engineStore';
 
 // ECS
 export {
+  Transform,
+  Velocity,
   addVelocity,
   createEntity,
   destroyEntity,
@@ -42,9 +53,7 @@ export {
   markAllTransformsForUpdate,
   objectToEntity,
   resetWorld,
-  Transform,
   transformQuery,
-  Velocity,
   velocityQuery,
   world,
 } from './lib/ecs';
@@ -74,3 +83,72 @@ export { CharacterController } from '@/core/components/CharacterController';
 export { Hud } from '@/core/components/ui';
 export { useAudio } from '@/core/hooks/useAudio';
 export { useEvent } from '@/core/hooks/useEvent';
+
+// Assets and Types with Zod validation
+export * from './types/assets';
+export * from './types/ecs';
+
+// Validation utilities (excluding conflicting exports)
+export {
+  AudioControlsSchema,
+  AudioOptionsSchema,
+  DebugVisualizationSchema,
+  EventDataSchema,
+  GameEngineControlsSchema,
+  GameEventSchema,
+  LODConfigSchema,
+  PhysicsBodyConfigSchema,
+  PositionSchema,
+  QuaternionValidationSchema,
+  RenderingConfigSchema,
+  RotationSchema,
+  ScaleSchema,
+  SystemUpdateConfigSchema,
+  createValidationError,
+  getDefaultPosition,
+  getDefaultQuaternion,
+  getDefaultRotation,
+  getDefaultScale,
+  isValidGameEvent,
+  isValidPosition,
+  isValidRotation,
+  isValidScale,
+  logValidationWarning,
+  safeValidateGameEvent,
+  safeValidatePhysicsBodyConfig,
+  safeValidatePosition,
+  safeValidateRenderingConfig,
+  safeValidateRotation,
+  safeValidateScale,
+  validateAudioOptions,
+  validateDebugVisualization,
+  validateGameEngineControls,
+  validateGameEvent,
+  validatePhysicsBodyConfig,
+  validatePosition,
+  validateRenderingConfig,
+  validateRotation,
+  validateScale,
+  validateSystemUpdateConfig,
+} from './lib/validation';
+
+// Export types from validation
+export type {
+  IAudioControls,
+  IAudioOptions,
+  IDebugVisualization,
+  IEventData,
+  IGameEngineControls,
+  IGameEvent,
+  ILODConfig,
+  IPhysicsBodyConfig,
+  IPosition,
+  IRenderingConfig,
+  IRotation,
+  IScale,
+  ISystemUpdateConfig,
+  IValidationQuaternion,
+} from './lib/validation';
+
+// UI Store with validation
+export * from './stores/uiStore';

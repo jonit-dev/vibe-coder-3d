@@ -47,14 +47,16 @@ export const TabbedLeftPanel: React.FC<ITabbedLeftPanelProps> = ({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 h-10 px-3 flex items-center justify-center space-x-2 text-xs font-medium transition-all duration-200 ${
+                  className={`flex-1 h-10 px-3 flex items-center justify-center gap-2 text-xs font-medium transition-all duration-200 ${
                     activeTab === tab.id
                       ? 'bg-gradient-to-b from-cyan-600/20 to-cyan-700/20 text-cyan-200 border-b-2 border-cyan-400'
                       : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/30'
                   }`}
                 >
-                  {tab.icon}
-                  <span>{tab.label}</span>
+                  <div className="flex items-center justify-center w-4 h-4 flex-shrink-0">
+                    {tab.icon}
+                  </div>
+                  <span className="leading-none">{tab.label}</span>
                 </button>
               ))}
             </div>
@@ -63,7 +65,7 @@ export const TabbedLeftPanel: React.FC<ITabbedLeftPanelProps> = ({
           {/* Collapse button */}
           <button
             onClick={onToggleCollapse}
-            className={`absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200 ${
+            className={`absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 rounded transition-all duration-200 ${
               isCollapsed ? 'top-1/2 -translate-y-1/2 right-1/2 translate-x-1/2' : ''
             }`}
             title={isCollapsed ? 'Expand panel' : 'Collapse panel'}

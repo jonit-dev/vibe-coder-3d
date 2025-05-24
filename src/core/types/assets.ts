@@ -1,149 +1,212 @@
+import { z } from 'zod';
+
 // Core asset metadata interfaces
 export enum AssetKeys {
   NightStalkerModel = 'NightStalkerModel',
   // Add other asset keys as needed
 }
 
-export type AssetType = 'gltf' | 'fbx' | 'obj' | 'dae' | 'texture' | 'audio';
+export const AssetTypeSchema = z.enum(['gltf', 'fbx', 'obj', 'dae', 'texture', 'audio']);
+export type AssetType = z.infer<typeof AssetTypeSchema>;
 
-// Base asset metadata interface
-export interface IBaseAssetMetadata {
-  key: AssetKeys;
-  type: AssetType;
-  url: string;
-}
+// Base asset metadata schema
+export const BaseAssetMetadataSchema = z.object({
+  key: z.nativeEnum(AssetKeys),
+  type: AssetTypeSchema,
+  url: z.string().url(),
+});
 
-// Animation configuration
-export interface IAnimationConfig {
-  loop: boolean; // Whether to loop the animation
-  timeScale: number; // Playback speed (1.0 = normal, 0.5 = half speed, etc.)
-  clampWhenFinished: boolean; // Hold the last frame when animation completes
-  blendDuration: number; // Transition time between animations
-  crossFadeEnabled: boolean; // Whether to use crossfade between animations
-}
+// Animation configuration schema
+export const AnimationConfigSchema = z.object({
+  loop: z.boolean().default(true),
+  timeScale: z.number().positive().default(1.0),
+  clampWhenFinished: z.boolean().default(false),
+  blendDuration: z.number().nonnegative().default(0.2),
+  crossFadeEnabled: z.boolean().default(true),
+});
 
-// Physics configuration
-export interface IPhysicsConfig {
-  enabled: boolean; // Whether physics are enabled for this model
-  mass: number; // Mass in kg
-  friction: number; // Friction coefficient (0-1)
-  restitution: number; // Bounciness (0-1)
-  linearDamping: number; // Resistance to linear movement
-  angularDamping: number; // Resistance to rotation
-  useGravity: boolean; // Whether this object is affected by gravity
-}
+// Physics configuration schema
+export const PhysicsConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  mass: z.number().positive().default(1.0),
+  friction: z.number().min(0).max(1).default(0.5),
+  restitution: z.number().min(0).max(1).default(0.0),
+  linearDamping: z.number().min(0).max(1).default(0.01),
+  angularDamping: z.number().min(0).max(1).default(0.01),
+  useGravity: z.boolean().default(true),
+});
 
-// Collision configuration
-export interface ICollisionConfig {
-  enabled: boolean; // Whether collision is enabled
-  type: 'static' | 'dynamic' | 'kinematic' | 'characterController';
-  shape: 'box' | 'sphere' | 'capsule' | 'mesh' | 'convexHull';
-  height?: number; // For capsule, cylinder
-  radius?: number; // For sphere, capsule, cylinder
-  offset: [number, number, number]; // Position offset from model center
-  isTrigger: boolean; // Is this a trigger volume or solid collision
-  layer: string; // Collision layer for filtering
-}
+// Collision configuration schema
+export const CollisionConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  type: z.enum(['static', 'dynamic', 'kinematic', 'characterController']).default('static'),
+  shape: z.enum(['box', 'sphere', 'capsule', 'mesh', 'convexHull']).default('box'),
+  height: z.number().positive().optional(),
+  radius: z.number().positive().optional(),
+  offset: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+  isTrigger: z.boolean().default(false),
+  layer: z.string().default('default'),
+});
 
-// Level of Detail (LOD) configuration
-interface ILODLevel {
-  distance: number; // Distance at which this LOD becomes active
-  detail: 'high' | 'medium' | 'low' | 'ultralow';
-}
+// Level of Detail (LOD) configuration schema
+const LODLevelSchema = z.object({
+  distance: z.number().nonnegative(),
+  detail: z.enum(['high', 'medium', 'low', 'ultralow']),
+});
 
-// GameObject configuration (Unity-like concepts)
-export interface IGameObjectConfig {
-  tag: string; // Object tag for quick identification
-  layer: string; // Rendering/physics layer
-  isInteractive: boolean; // Whether the object can be interacted with
-  isSelectable: boolean; // Whether the object can be selected
-  castShadows: boolean; // Whether this object casts shadows
-  receiveShadows: boolean; // Whether this object receives shadows
-  cullingEnabled: boolean; // Whether this object can be culled from rendering
-  LODLevels?: ILODLevel[]; // Level of detail configuration
-}
+// GameObject configuration schema
+export const GameObjectConfigSchema = z.object({
+  tag: z.string().default('untagged'),
+  layer: z.string().default('default'),
+  isInteractive: z.boolean().default(false),
+  isSelectable: z.boolean().default(false),
+  castShadows: z.boolean().default(true),
+  receiveShadows: z.boolean().default(true),
+  cullingEnabled: z.boolean().default(true),
+  LODLevels: z.array(LODLevelSchema).optional(),
+});
 
-// Debug mode configuration
-export interface IDebugConfig {
-  enabled: boolean;
-  showBoundingBox: boolean;
-  showColliders: boolean;
-  showSkeleton: boolean;
-  showWireframe: boolean;
-  showPhysicsForces: boolean;
-  showVelocity: boolean;
-  showObjectPivot: boolean;
-  debugColor: [number, number, number]; // RGB color for debug visualizations
-  logToConsole: boolean;
-}
+// Debug mode configuration schema
+export const DebugConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  showBoundingBox: z.boolean().default(false),
+  showColliders: z.boolean().default(false),
+  showSkeleton: z.boolean().default(false),
+  showWireframe: z.boolean().default(false),
+  showPhysicsForces: z.boolean().default(false),
+  showVelocity: z.boolean().default(false),
+  showObjectPivot: z.boolean().default(false),
+  debugColor: z
+    .tuple([z.number().min(0).max(1), z.number().min(0).max(1), z.number().min(0).max(1)])
+    .default([0, 1, 0]),
+  logToConsole: z.boolean().default(false),
+});
 
-// Model configuration with expanded options
-export interface IModelConfig {
-  scale: number | [number, number, number]; // Uniform or XYZ scale
-  position: [number, number, number];
-  rotation: [number, number, number];
-  offset: [number, number, number];
+// Model configuration schema
+export const ModelConfigSchema = z.object({
+  scale: z
+    .union([
+      z.number().positive(),
+      z.tuple([z.number().positive(), z.number().positive(), z.number().positive()]),
+    ])
+    .default(1),
+  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+  offset: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 
   // Animation properties
-  initialAnimation?: string;
-  animations?: string[];
-  animationConfig?: IAnimationConfig;
+  initialAnimation: z.string().optional(),
+  animations: z.array(z.string()).optional(),
+  animationConfig: AnimationConfigSchema.optional(),
 
   // Game engine properties
-  physics?: IPhysicsConfig;
-  collision?: ICollisionConfig;
-  gameObject?: IGameObjectConfig;
-  debugMode?: IDebugConfig;
-}
+  physics: PhysicsConfigSchema.optional(),
+  collision: CollisionConfigSchema.optional(),
+  gameObject: GameObjectConfigSchema.optional(),
+  debugMode: DebugConfigSchema.optional(),
+});
 
-// Texture configuration with expanded options
-export interface ITextureConfig {
-  repeat: [number, number];
-  filter?: 'nearest' | 'linear' | 'mipmap';
-  mipmap?: boolean;
-  anisotropy?: number;
-  encoding?: 'linear' | 'sRGB' | 'RGBE' | 'RGBM';
-  flipY?: boolean;
-  premultiplyAlpha?: boolean;
-  wrapS?: 'clamp' | 'repeat' | 'mirror';
-  wrapT?: 'clamp' | 'repeat' | 'mirror';
-  generateMipmaps?: boolean;
-  compression?: 'none' | 'default' | 'ASTC' | 'BPTC' | 'ETC1' | 'ETC2' | 'S3TC' | 'PVRTC';
-}
+// Texture configuration schema
+export const TextureConfigSchema = z.object({
+  repeat: z.tuple([z.number().positive(), z.number().positive()]).default([1, 1]),
+  filter: z.enum(['nearest', 'linear', 'mipmap']).default('linear'),
+  mipmap: z.boolean().default(true),
+  anisotropy: z.number().positive().max(16).default(1),
+  encoding: z.enum(['linear', 'sRGB', 'RGBE', 'RGBM']).default('sRGB'),
+  flipY: z.boolean().default(true),
+  premultiplyAlpha: z.boolean().default(false),
+  wrapS: z.enum(['clamp', 'repeat', 'mirror']).default('repeat'),
+  wrapT: z.enum(['clamp', 'repeat', 'mirror']).default('repeat'),
+  generateMipmaps: z.boolean().default(true),
+  compression: z
+    .enum(['none', 'default', 'ASTC', 'BPTC', 'ETC1', 'ETC2', 'S3TC', 'PVRTC'])
+    .default('none'),
+});
 
-// Audio configuration
-export interface IAudioConfig {
-  volume?: number;
-  loop?: boolean;
-  autoplay?: boolean;
-  spatial?: boolean;
-  maxDistance?: number;
-  rolloffFactor?: number;
-}
+// Audio configuration schema
+export const AudioConfigSchema = z.object({
+  volume: z.number().min(0).max(1).default(1),
+  loop: z.boolean().default(false),
+  autoplay: z.boolean().default(false),
+  spatial: z.boolean().default(false),
+  maxDistance: z.number().positive().default(10000),
+  rolloffFactor: z.number().positive().default(1),
+});
 
-// Model asset metadata
-export interface IModelAssetMetadata extends IBaseAssetMetadata {
-  type: 'gltf' | 'fbx' | 'obj' | 'dae';
-  config: IModelConfig;
-}
+// Model asset metadata schema
+export const ModelAssetMetadataSchema = BaseAssetMetadataSchema.extend({
+  type: z.enum(['gltf', 'fbx', 'obj', 'dae']),
+  config: ModelConfigSchema,
+});
 
-// Texture asset metadata
-export interface ITextureAssetMetadata extends IBaseAssetMetadata {
-  type: 'texture';
-  config: ITextureConfig;
-}
+// Texture asset metadata schema
+export const TextureAssetMetadataSchema = BaseAssetMetadataSchema.extend({
+  type: z.literal('texture'),
+  config: TextureConfigSchema,
+});
 
-// Audio asset metadata
-export interface IAudioAssetMetadata extends IBaseAssetMetadata {
-  type: 'audio';
-  config: IAudioConfig;
-}
+// Audio asset metadata schema
+export const AudioAssetMetadataSchema = BaseAssetMetadataSchema.extend({
+  type: z.literal('audio'),
+  config: AudioConfigSchema,
+});
 
-// Union type for all asset configs
-export type IAssetConfig = IModelConfig | ITextureConfig | IAudioConfig;
+// Union schema for all asset configs
+export const AssetConfigSchema = z.union([
+  ModelConfigSchema,
+  TextureConfigSchema,
+  AudioConfigSchema,
+]);
 
-// Union type for all asset metadata
-export type IAssetMetadataUnion = IModelAssetMetadata | ITextureAssetMetadata | IAudioAssetMetadata;
+// Union schema for all asset metadata
+export const AssetMetadataUnionSchema = z.union([
+  ModelAssetMetadataSchema,
+  TextureAssetMetadataSchema,
+  AudioAssetMetadataSchema,
+]);
 
-// Asset manifest type
-export type AssetManifest = Record<AssetKeys, IAssetMetadataUnion>;
+// Asset manifest schema
+export const AssetManifestSchema = z.record(z.nativeEnum(AssetKeys), AssetMetadataUnionSchema);
+
+// Export inferred types for backward compatibility
+export type IAnimationConfig = z.infer<typeof AnimationConfigSchema>;
+export type IPhysicsConfig = z.infer<typeof PhysicsConfigSchema>;
+export type ICollisionConfig = z.infer<typeof CollisionConfigSchema>;
+export type ILODLevel = z.infer<typeof LODLevelSchema>;
+export type IGameObjectConfig = z.infer<typeof GameObjectConfigSchema>;
+export type IDebugConfig = z.infer<typeof DebugConfigSchema>;
+export type IModelConfig = z.infer<typeof ModelConfigSchema>;
+export type ITextureConfig = z.infer<typeof TextureConfigSchema>;
+export type IAudioConfig = z.infer<typeof AudioConfigSchema>;
+export type IBaseAssetMetadata = z.infer<typeof BaseAssetMetadataSchema>;
+export type IModelAssetMetadata = z.infer<typeof ModelAssetMetadataSchema>;
+export type ITextureAssetMetadata = z.infer<typeof TextureAssetMetadataSchema>;
+export type IAudioAssetMetadata = z.infer<typeof AudioAssetMetadataSchema>;
+export type IAssetConfig = z.infer<typeof AssetConfigSchema>;
+export type IAssetMetadataUnion = z.infer<typeof AssetMetadataUnionSchema>;
+export type AssetManifest = z.infer<typeof AssetManifestSchema>;
+
+// Validation helper functions
+export const validateModelConfig = (config: unknown): IModelConfig =>
+  ModelConfigSchema.parse(config);
+
+export const validateTextureConfig = (config: unknown): ITextureConfig =>
+  TextureConfigSchema.parse(config);
+
+export const validateAudioConfig = (config: unknown): IAudioConfig =>
+  AudioConfigSchema.parse(config);
+
+export const validateAssetMetadata = (metadata: unknown): IAssetMetadataUnion =>
+  AssetMetadataUnionSchema.parse(metadata);
+
+export const validateAssetManifest = (manifest: unknown): AssetManifest =>
+  AssetManifestSchema.parse(manifest);
+
+// Safe parsing helpers that return results without throwing
+export const safeValidateModelConfig = (config: unknown) => ModelConfigSchema.safeParse(config);
+
+export const safeValidateAssetMetadata = (metadata: unknown) =>
+  AssetMetadataUnionSchema.safeParse(metadata);
+
+export const safeValidateAssetManifest = (manifest: unknown) =>
+  AssetManifestSchema.safeParse(manifest);
