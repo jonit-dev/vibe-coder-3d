@@ -18,7 +18,7 @@ export const MeshRendererSection: React.FC<{
   setColor: (color: string) => void;
 }> = ({ color, setColor }) => (
   <InspectorSection
-    title="Material"
+    title="Material" // This title refers to the UI section, which is about material properties
     icon={<FiDroplet />}
     headerColor="orange"
     collapsible

@@ -44,12 +44,12 @@ export const TransformFields: React.FC<ITransformFieldsProps> = ({ label, value,
   const sensitivity = label === 'Scale' ? 0.01 : 0.1;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       {/* Label */}
-      <div className="flex justify-between items-center">
-        <span className="text-xs font-medium text-gray-300">{label}</span>
+      <div className="flex justify-between items-center mb-0.5">
+        <span className="text-[11px] font-medium text-gray-300">{label}</span>
         <button
-          className="text-[10px] text-gray-400 hover:text-cyan-300 bg-black/30 hover:bg-gray-700/50 border border-gray-600/30 hover:border-cyan-500/30 rounded px-1.5 py-0.5 transition-all duration-200"
+          className="text-[9px] text-gray-400 hover:text-cyan-300 bg-black/30 hover:bg-gray-700/50 border border-gray-600/30 hover:border-cyan-500/30 rounded-sm px-1 py-px transition-all duration-200"
           onClick={() => {
             const defaultVals: [number, number, number] = label === 'Scale' ? [1, 1, 1] : [0, 0, 0];
             setLocalValues(defaultVals);
@@ -60,7 +60,7 @@ export const TransformFields: React.FC<ITransformFieldsProps> = ({ label, value,
         </button>
       </div>
 
-      <div className="space-y-0.5">
+      <div className="space-y-px">
         {(['x', 'y', 'z'] as const).map((axis, idx) => {
           const { dragActive, onDragStart } = useDragAxis(
             localValues[idx],

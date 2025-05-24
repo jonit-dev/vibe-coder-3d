@@ -28,7 +28,7 @@ export const TransformSection: React.FC<ITransformSectionProps> = ({
     collapsible
     defaultCollapsed={false}
   >
-    <div className="space-y-2">
+    <div className="space-y-1">
       <TransformFields label="Position" value={position} onChange={setPosition} />
       <TransformFields label="Rotation" value={rotation} onChange={setRotation} />
       <TransformFields label="Scale" value={scale} onChange={setScale} />

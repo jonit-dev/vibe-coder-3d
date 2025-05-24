@@ -1,7 +1,7 @@
 import React from 'react';
 import { FiInfo, FiSettings } from 'react-icons/fi';
 
-import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshRendererSection';
+import { MaterialSection } from '@/editor/components/panels/InspectorPanel/Material/MaterialSection';
 import { MeshTypeSection } from '@/editor/components/panels/InspectorPanel/Mesh/MeshTypeSection';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 import { InspectorSection } from '@/editor/components/ui/InspectorSection';
@@ -47,7 +47,7 @@ export const InspectorPanel: React.FC = () => {
           setRotation={setRotation}
           setScale={setScale}
         />
-        <MeshRendererSection color={color} setColor={setColor} />
+        <MaterialSection color={color} setColor={setColor} />
       </div>
     </SidePanel>
   );
