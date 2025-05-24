@@ -10,6 +10,18 @@ For better code organization and to avoid excessive relative imports, the projec
 - All imports from the core library should use these aliases instead of relative paths
   - Example: `import { useECS } from '@core/hooks/useECS'` instead of `import { useECS } from '../../hooks/useECS'`
 
+## AI Copilot Integration
+
+A key aspect of Vibe Coder 3D is the AI Copilot. The core abstractions are designed with AI interaction in mind. The AI Copilot will interface with these abstractions primarily through the **Engine API**.
+
+- **Conversational Scene Building:** Users will be able to describe scenes, and the AI will use the `<Entity>` and component abstractions (both React and ECS) to construct the scene graph. For example, "Create a tall red cylinder here" would translate to the AI instructing the Engine API to instantiate an `<Entity>` with appropriate `Transform`, `Mesh` (cylinder), and `Material` (red) components.
+- **AI-Assisted Scripting:** The AI can help generate or scaffold scripts (React components with logic, or ECS systems). It will understand the available core components and hooks, allowing it to suggest using `useInput` for player controls or `useCollisionEvents` for interaction logic.
+- **Intelligent Asset Management:** The AI can interact with the `AssetLoader` and `useAsset` abstractions to suggest, find, or even trigger the generation of assets based on user descriptions (e.g., "Find a rusty metal texture," "Generate a simple rock model").
+- **Automated Debugging & Suggestions:** When issues arise, the AI can query the state of entities, physics bodies, and ECS components through the Engine API to help diagnose problems and suggest solutions based on the established abstractions (e.g., "It seems your entity is missing a RigidBody component, which is why it's falling through the floor. Would you like to add one?").
+- **State Management Assistance:** The AI can help set up or modify Zustand stores, or generate components that subscribe to specific parts of the game state.
+
+The Engine API will provide a structured way for the AI to query the available abstractions, their properties, and their current state, as well as to instantiate and configure them.
+
 ## Goal
 
 The goal is to create a set of well-documented, type-safe abstractions that simplify common game development tasks while providing flexibility for different game types.

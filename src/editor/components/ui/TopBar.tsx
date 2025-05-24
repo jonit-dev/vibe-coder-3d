@@ -4,6 +4,7 @@ import {
   FiActivity,
   FiCpu,
   FiFolder,
+  FiMessageSquare,
   FiPause,
   FiPlay,
   FiSave,
@@ -22,6 +23,8 @@ export interface ITopBarProps {
   onPlay?: () => void;
   onPause?: () => void;
   onStop?: () => void;
+  onToggleChat?: () => void;
+  isChatOpen?: boolean;
 }
 
 export const TopBar: React.FC<ITopBarProps> = ({
@@ -34,6 +37,8 @@ export const TopBar: React.FC<ITopBarProps> = ({
   onPlay,
   onPause,
   onStop,
+  onToggleChat,
+  isChatOpen = false,
 }) => {
   return (
     <header className="h-14 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-b border-cyan-900/20 shadow-lg relative overflow-hidden">
@@ -144,6 +149,18 @@ export const TopBar: React.FC<ITopBarProps> = ({
 
           <button className="p-2 text-gray-400 hover:bg-gray-800/50 hover:text-gray-300 rounded-md transition-all duration-200">
             <FiSettings className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={onToggleChat}
+            className={`p-2 rounded-md transition-all duration-200 ${
+              isChatOpen
+                ? 'text-cyan-400 bg-cyan-900/30 border border-cyan-500/30'
+                : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-300'
+            }`}
+            title="Toggle AI Chat (Ctrl+/)"
+          >
+            <FiMessageSquare className="w-5 h-5" />
           </button>
         </div>
       </div>

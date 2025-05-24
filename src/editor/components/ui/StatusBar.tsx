@@ -19,6 +19,7 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
   shortcuts = [
     { key: 'Ctrl+N', description: 'Add Object' },
     { key: 'Ctrl+S', description: 'Save Scene' },
+    { key: 'Ctrl+/', description: 'Toggle Chat' },
     { key: 'Delete', description: 'Delete Object' },
   ],
   stats,
