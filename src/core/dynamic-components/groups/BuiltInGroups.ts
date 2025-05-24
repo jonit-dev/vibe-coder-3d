@@ -186,5 +186,4 @@ export function registerBuiltInComponentGroups(): void {
   for (const group of BUILT_IN_COMPONENT_GROUPS) {
     ComponentGroupManager.registerGroup(group);
   }
-  console.log(`Registered ${BUILT_IN_COMPONENT_GROUPS.length} built-in component groups`);
 }

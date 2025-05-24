@@ -302,8 +302,6 @@ export function registerBuiltInComponents(registry: any): void {
     registry.registerComponent(rigidBodyDescriptor);
     registry.registerComponent(meshColliderDescriptor);
     registry.registerComponent(meshRendererDescriptor);
-
-    console.log('✅ All built-in components registered successfully');
   } catch (error) {
     console.error('❌ Failed to register built-in components:', error);
     throw error;

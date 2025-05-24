@@ -2,14 +2,56 @@
  * Handles integration with the editor store for components that aren't managed by bitECS
  */
 export class EditorStoreIntegration {
+  // Queue for operations when editor store isn't available
+  private static pendingOperations: Array<{
+    entityId: number;
+    componentId: string;
+    operation: 'add' | 'remove';
+    data?: any;
+    resolve: (value: void) => void;
+    reject: (error: Error) => void;
+  }> = [];
+
+  private static isProcessingQueue = false;
+
   private static getEditorStore() {
     try {
       const globalThis = window as any;
-      return globalThis.__editorStore;
+      const editorStore = globalThis.__editorStore;
+      if (!editorStore) {
+        console.warn('[EditorStoreIntegration] Editor store not available on global object');
+        return null;
+      }
+      return editorStore;
     } catch (error) {
-      console.warn('Failed to access editor store:', error);
+      console.warn('[EditorStoreIntegration] Failed to access editor store:', error);
       return null;
     }
+  }
+
+  private static async processQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.pendingOperations.length === 0) {
+      return;
+    }
+
+    this.isProcessingQueue = true;
+    console.log(
+      `[EditorStoreIntegration] Processing ${this.pendingOperations.length} pending operations`,
+    );
+
+    const operations = [...this.pendingOperations];
+    this.pendingOperations = [];
+
+    for (const op of operations) {
+      try {
+        await this.handleComponentInternal(op.entityId, op.componentId, op.operation, op.data);
+        op.resolve();
+      } catch (error) {
+        op.reject(error as Error);
+      }
+    }
+
+    this.isProcessingQueue = false;
   }
 
   static async handleComponent(
@@ -18,24 +60,77 @@ export class EditorStoreIntegration {
     operation: 'add' | 'remove',
     data?: any,
   ): Promise<void> {
+    console.log(
+      `[EditorStoreIntegration] Handling ${operation} of '${componentId}' for entity ${entityId}`,
+    );
+
     const editorStore = this.getEditorStore();
     if (!editorStore) {
-      throw new Error('Editor store not available');
+      console.warn(
+        `[EditorStoreIntegration] Editor store not available, queueing ${operation} of '${componentId}' for entity ${entityId}`,
+      );
+
+      // Return a promise that will be resolved when the queue is processed
+      return new Promise<void>((resolve, reject) => {
+        this.pendingOperations.push({
+          entityId,
+          componentId,
+          operation,
+          data,
+          resolve,
+          reject,
+        });
+
+        // Try to process queue after a short delay
+        setTimeout(() => this.processQueue(), 100);
+      });
     }
 
-    switch (componentId) {
-      case 'rigidBody':
-        await this.handleRigidBody(editorStore, entityId, operation, data);
-        break;
-      case 'meshCollider':
-        await this.handleMeshCollider(editorStore, entityId, operation, data);
-        break;
-      case 'meshRenderer':
-        await this.handleMeshRenderer(editorStore, entityId, operation, data);
-        break;
-      default:
-        throw new Error(`Unknown editor store component: ${componentId}`);
+    return this.handleComponentInternal(entityId, componentId, operation, data);
+  }
+
+  private static async handleComponentInternal(
+    entityId: number,
+    componentId: string,
+    operation: 'add' | 'remove',
+    data?: any,
+  ): Promise<void> {
+    const editorStore = this.getEditorStore();
+    if (!editorStore) {
+      const errorMsg = `Editor store not available when trying to ${operation} '${componentId}' for entity ${entityId}`;
+      console.error(`[EditorStoreIntegration] ${errorMsg}`);
+      throw new Error(errorMsg);
     }
+
+    try {
+      switch (componentId) {
+        case 'rigidBody':
+          await this.handleRigidBody(editorStore, entityId, operation, data);
+          break;
+        case 'meshCollider':
+          await this.handleMeshCollider(editorStore, entityId, operation, data);
+          break;
+        case 'meshRenderer':
+          await this.handleMeshRenderer(editorStore, entityId, operation, data);
+          break;
+        default:
+          throw new Error(`Unknown editor store component: ${componentId}`);
+      }
+      console.log(
+        `[EditorStoreIntegration] ✅ Successfully ${operation === 'add' ? 'added' : 'removed'} '${componentId}' for entity ${entityId}`,
+      );
+    } catch (error) {
+      console.error(
+        `[EditorStoreIntegration] ❌ Failed to ${operation} '${componentId}' for entity ${entityId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  // Public method to manually trigger queue processing (can be called from editor initialization)
+  static processPendingOperations(): Promise<void> {
+    return this.processQueue();
   }
 
   private static async handleRigidBody(
@@ -64,8 +159,13 @@ export class EditorStoreIntegration {
         },
         ...data,
       };
+      console.log(
+        `[EditorStoreIntegration] Adding rigidBody to entity ${entityId} with data:`,
+        rigidBodyData,
+      );
       setEntityRigidBody(entityId, rigidBodyData);
     } else {
+      console.log(`[EditorStoreIntegration] Removing rigidBody from entity ${entityId}`);
       setEntityRigidBody(entityId, null);
     }
   }
@@ -99,8 +199,13 @@ export class EditorStoreIntegration {
         },
         ...data,
       };
+      console.log(
+        `[EditorStoreIntegration] Adding meshCollider to entity ${entityId} with data:`,
+        meshColliderData,
+      );
       setEntityMeshCollider(entityId, meshColliderData);
     } else {
+      console.log(`[EditorStoreIntegration] Removing meshCollider from entity ${entityId}`);
       setEntityMeshCollider(entityId, null);
     }
   }
@@ -127,8 +232,13 @@ export class EditorStoreIntegration {
         },
         ...data,
       };
+      console.log(
+        `[EditorStoreIntegration] Adding meshRenderer to entity ${entityId} with data:`,
+        meshRendererData,
+      );
       setEntityMeshRenderer(entityId, meshRendererData);
     } else {
+      console.log(`[EditorStoreIntegration] Removing meshRenderer from entity ${entityId}`);
       setEntityMeshRenderer(entityId, null);
     }
   }

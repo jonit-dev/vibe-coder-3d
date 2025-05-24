@@ -161,5 +161,4 @@ export function registerAdditionalComponents(registry: any): void {
   for (const descriptor of ADDITIONAL_COMPONENTS) {
     registry.registerComponent(descriptor);
   }
-  console.log(`Registered ${ADDITIONAL_COMPONENTS.length} additional components`);
 }

@@ -19,13 +19,10 @@ export const useSceneInitialization = ({
   useEffect(() => {
     if (isInitialized) return;
 
-    console.log('Initialization effect running - savedScene:', savedScene);
-
     const initializeScene = async () => {
       // Only load on first mount and if there's a saved scene with entities
       if (savedScene && savedScene.entities && savedScene.entities.length > 0) {
         try {
-          console.log('Loading scene from localStorage:', savedScene);
           importScene(savedScene);
           onStatusMessage(
             `Loaded last saved scene from localStorage (version ${savedScene.version}).`,
@@ -35,7 +32,6 @@ export const useSceneInitialization = ({
           onStatusMessage('Failed to load last scene. Starting with empty scene.');
         }
       } else {
-        console.log('No saved scene found, starting with empty scene');
         onStatusMessage('Ready - Empty scene loaded.');
       }
       setIsInitialized(true);

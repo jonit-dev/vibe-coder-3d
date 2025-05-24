@@ -11,11 +11,9 @@ export class ComponentGroupManager {
 
   static registerGroup(group: IComponentGroup): void {
     if (this.groupMap.has(group.id)) {
-      console.warn(`Component group '${group.id}' is already registered, skipping...`);
       return;
     }
     this.groupMap.register(group);
-    console.log(`Component group '${group.name}' registered with id '${group.id}'`);
   }
 
   static getGroup(id: string): IComponentGroup | undefined {

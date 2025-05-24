@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+import { EditorStoreIntegration } from '@/core/dynamic-components/manager/EditorStoreIntegration';
 import { useECSQuery } from '@core/hooks/useECS';
 import { Transform } from '@core/lib/ecs';
 
@@ -51,6 +52,51 @@ const Editor: React.FC = () => {
   const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
   const isPlaying = useEditorStore((s) => s.isPlaying);
   const setIsPlaying = useEditorStore((s) => s.setIsPlaying);
+
+  // Process any pending editor store operations once the store is initialized
+  useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 5;
+
+    const processPendingWithRetry = async () => {
+      try {
+        await EditorStoreIntegration.processPendingOperations();
+        console.log('[Editor] Processed pending editor store operations');
+      } catch (error) {
+        console.error('[Editor] Failed to process pending operations:', error);
+
+        // Retry with exponential backoff
+        if (retryCount < maxRetries) {
+          retryCount++;
+          const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 5000); // Cap at 5 seconds
+          console.log(
+            `[Editor] Retrying pending operations in ${delay}ms (attempt ${retryCount}/${maxRetries})`,
+          );
+          setTimeout(processPendingWithRetry, delay);
+        }
+      }
+    };
+
+    // Initial attempt
+    processPendingWithRetry();
+
+    // Also try again periodically for the first few seconds in case entities are created very early
+    const intervalId = setInterval(() => {
+      EditorStoreIntegration.processPendingOperations().catch(() => {
+        // Ignore errors in periodic processing
+      });
+    }, 500);
+
+    // Clean up interval after 10 seconds
+    const timeoutId = setTimeout(() => {
+      clearInterval(intervalId);
+    }, 10000);
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
+  }, []); // Run once on mount
 
   // Local UI State
   const [statusMessage, setStatusMessage] = useState<string>('Ready');
@@ -138,10 +184,62 @@ const Editor: React.FC = () => {
     onStatusMessage: setStatusMessage,
   });
 
-  // Auto-select first entity when available
+  // Auto-select first entity when available and fix Entity 0 if needed
   useEffect(() => {
     if ((selectedId === null || !entityIds.includes(selectedId)) && entityIds.length > 0) {
       setSelectedId(entityIds[0]);
+    }
+
+    // Check if Entity 0 is missing expected physics components and fix it
+    if (entityIds.includes(0)) {
+      const checkAndFixEntity0 = async () => {
+        try {
+          // Import the component registry and dynamic component manager
+          const { componentRegistry } = await import('@/core/dynamic-components/init');
+          const { dynamicComponentManager } = await import('@/core/dynamic-components/init');
+
+          const entity0Components = componentRegistry.getEntityComponents(0);
+          console.log('[Editor] Entity 0 components:', entity0Components);
+
+          // Check if Entity 0 is missing rigidBody or meshCollider
+          const expectedPhysicsComponents = ['rigidBody', 'meshCollider'];
+          const missingComponents = expectedPhysicsComponents.filter(
+            (comp) => !entity0Components.includes(comp),
+          );
+
+          if (missingComponents.length > 0) {
+            console.log(
+              `[Editor] Entity 0 is missing components: ${missingComponents.join(', ')}. Attempting to add them...`,
+            );
+
+            for (const componentId of missingComponents) {
+              try {
+                const result = await dynamicComponentManager.addComponent(0, componentId);
+                if (result.valid) {
+                  console.log(
+                    `[Editor] ✅ Successfully added missing component '${componentId}' to Entity 0`,
+                  );
+                } else {
+                  console.error(
+                    `[Editor] ❌ Failed to add component '${componentId}' to Entity 0:`,
+                    result.errors,
+                  );
+                }
+              } catch (error) {
+                console.error(
+                  `[Editor] ❌ Exception adding component '${componentId}' to Entity 0:`,
+                  error,
+                );
+              }
+            }
+          }
+        } catch (error) {
+          console.error('[Editor] Failed to check/fix Entity 0:', error);
+        }
+      };
+
+      // Check after a delay to allow editor store to be ready
+      setTimeout(checkAndFixEntity0, 1000);
     }
   }, [selectedId, entityIds, setSelectedId]);
 

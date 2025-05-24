@@ -1,0 +1,1 @@
+export { ComponentProvider } from './ComponentProvider';

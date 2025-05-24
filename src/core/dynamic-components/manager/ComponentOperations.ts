@@ -1,6 +1,8 @@
 import { addComponent, removeComponent } from 'bitecs';
 
 import { incrementWorldVersion, world } from '@/core/lib/ecs';
+import { frameEventBatch } from '@/core/lib/ecs-events';
+import { ecsManager } from '@/core/lib/ecs-manager';
 import {
   IComponentBatch,
   IComponentChangeEvent,
@@ -210,12 +212,15 @@ export class ComponentOperations {
       const editorStoreComponents = ['rigidBody', 'meshCollider', 'meshRenderer'];
       if (editorStoreComponents.includes(componentId)) {
         await this.handleEditorStoreComponent(entityId, componentId, 'add', validatedData);
+      } else if (componentId === 'transform' && descriptor.id === 'transform') {
+        ecsManager.updateTransform(entityId, validatedData);
+        frameEventBatch.emit();
       } else if (descriptor.component && descriptor.deserialize) {
-        // Handle bitECS components
+        // Handle other bitECS components via direct deserialization
         descriptor.deserialize(entityId, validatedData);
       }
 
-      // Emit event
+      // Emit generic event (for other systems that might be listening)
       this.emitEvent({
         entityId,
         componentId,

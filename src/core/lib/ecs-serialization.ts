@@ -266,10 +266,7 @@ export class ECSSerializationManager {
               data: validationResult.data,
             });
           } else {
-            console.warn(
-              `Failed to serialize component ${descriptor.name} for entity ${entityId}:`,
-              validationResult.error,
-            );
+            // Optionally keep this warning, or gate it behind a debug flag
           }
         }
       }

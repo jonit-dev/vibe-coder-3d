@@ -22,8 +22,6 @@ export function initializeDynamicComponents(): {
   // Register built-in component groups
   registerBuiltInComponentGroups();
 
-  console.log('Dynamic components system initialized');
-
   return { registry, manager };
 }
 

@@ -13,8 +13,7 @@ import { MainScene } from '@/game/scenes/MainScene';
 export default function App() {
   // Initialize component system globally with proper order
   useEffect(() => {
-    console.log('🚀 Initializing Global Component System...');
-
+    // Remove verbose logs, keep only error logs or add a debug flag if needed
     // Use a flag to prevent double registration in development StrictMode
     const isInitialized = (window as any).__componentSystemInitialized;
     if (isInitialized) {

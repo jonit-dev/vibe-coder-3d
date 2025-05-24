@@ -26,7 +26,6 @@ export class ComponentRegistry {
 
   registerComponent<T>(descriptor: IComponentDescriptor<T>): void {
     if (this.componentMap.has(descriptor.id)) {
-      console.warn(`Component with id '${descriptor.id}' is already registered, skipping...`);
       return;
     }
 
@@ -35,14 +34,12 @@ export class ComponentRegistry {
     if (!validationResult.success) {
       const defaultValidation = descriptor.schema.safeParse(undefined);
       if (!defaultValidation.success) {
-        console.warn(
-          `Schema validation warning for component '${descriptor.id}': schema may require specific values. This is normal for components with required fields.`,
-        );
+        // Optionally keep this warning, or gate it behind a debug flag
       }
     }
 
     this.componentMap.register(descriptor);
-    console.log(`Component '${descriptor.name}' registered with id '${descriptor.id}'`);
+    // Optionally keep this log, or gate it behind a debug flag
   }
 
   unregisterComponent(id: string): void {
