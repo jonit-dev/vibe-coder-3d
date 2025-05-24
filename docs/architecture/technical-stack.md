@@ -24,8 +24,6 @@ Our stack consists of the following key libraries and technologies:
   - _Reason:_ A battle-tested framework for multiplayer game servers, providing features like room management, state synchronization (delta patching), and client prediction.
 - **Build Tooling:** **Vite 5 + TypeScript 5**
   - _Reason:_ Vite offers extremely fast Hot Module Replacement (HMR) for a rapid development feedback loop, while TypeScript provides static typing for improved code safety and maintainability.
-- **Editor (Optional):** **Rogue Engine**
-  - _Reason:_ A visual, Unity-like editor for Three.js scenes. It can export vanilla JavaScript or work with React, providing a visual authoring workflow.
 
 ## Rationale
 

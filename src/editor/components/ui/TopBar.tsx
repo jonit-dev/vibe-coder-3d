@@ -19,6 +19,7 @@ export interface ITopBarProps {
   onLoad: () => void;
   onClear: () => void;
   onAddObject: () => void;
+  addButtonRef?: React.RefObject<HTMLButtonElement | null>;
   isPlaying?: boolean;
   onPlay?: () => void;
   onPause?: () => void;
@@ -33,6 +34,7 @@ export const TopBar: React.FC<ITopBarProps> = ({
   onLoad,
   onClear,
   onAddObject,
+  addButtonRef,
   isPlaying = false,
   onPlay,
   onPause,
@@ -114,6 +116,7 @@ export const TopBar: React.FC<ITopBarProps> = ({
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1 bg-black/30 backdrop-blur-sm rounded-lg border border-gray-700/50 p-1">
             <button
+              ref={addButtonRef}
               onClick={onAddObject}
               className="px-3 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white rounded-md transition-all duration-200 text-sm font-medium flex items-center space-x-2 shadow-lg"
               title="Add Object (Ctrl+N)"

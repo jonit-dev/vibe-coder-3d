@@ -42,7 +42,7 @@ This document describes the tools and development workflow used for the Vibe Cod
 
 ## Editor & Asset Pipeline with AI
 
-- **Vibe Coder 3D Editor with Integrated AI Copilot:** This is the primary tool. There is no reliance on external visual editors like Rogue Engine, as the AI facilitates visual and logical assembly through conversation and direct engine manipulation.
+- **Vibe Coder 3D Editor with Integrated AI Copilot:** This is the primary tool. The AI facilitates visual and logical assembly through conversation and direct engine manipulation.
 - **AI-Driven Asset Handling:**
   - The AI Copilot can interface with asset generation tools (e.g., text-to-3D, procedural generators) or search asset libraries based on user descriptions.
   - Assets are managed within the project structure, with the AI assisting in their import, organization, and application.
@@ -58,7 +58,7 @@ This document describes the tools and development workflow used for the Vibe Cod
 
 ## Future Considerations
 
-- Development of custom editor tools built with React/Web technologies if Rogue Engine proves insufficient or too restrictive.
+- Development of custom editor tools built with React/Web technologies as needed.
 - More sophisticated asset pipeline/management system if project scale demands it.
 - Integration of automated testing tools (e.g., Vitest, Playwright).
 - Standardized logging framework.

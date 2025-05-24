@@ -43,6 +43,6 @@ Note that these components are intentionally minimal. Game developers are expect
 - **Vite:** Our build tool and development server. It provides extremely fast Hot Module Replacement (HMR) for instant feedback during development and optimizes the final build for production.
 - **TypeScript:** Ensures type safety throughout the codebase, reducing runtime errors and improving code maintainability and developer confidence.
 
-## Optional Editor
+## Development Workflow
 
-- **Rogue Engine:** A visual editor that can be used to design and lay out scenes, configure components, and preview the game. It streamlines the level design and asset integration process, exporting configurations compatible with our Three.js/R3F setup.
+The engine is designed to work primarily through code and our AI-assisted editor interface, focusing on programmatic scene creation and manipulation rather than visual drag-and-drop tools.

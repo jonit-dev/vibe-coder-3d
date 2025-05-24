@@ -4,7 +4,7 @@ import { useECSQuery } from '@core/hooks/useECS';
 import { MeshTypeEnum, Transform, destroyEntity } from '@core/lib/ecs';
 import { ecsManager } from '@core/lib/ecs-manager';
 
-import { AddObjectMenu } from './AddObjectMenu';
+import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
 import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
@@ -45,7 +45,7 @@ const Editor: React.FC = () => {
   const [isChatExpanded, setIsChatExpanded] = useState(true);
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const addButtonRef = useRef<HTMLDivElement>(null);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
   const { exportScene, importScene } = useSceneSerialization();
   // Store the last scene in localStorage with the correct type
   const [savedScene, setSavedScene] = useLocalStorage<ISerializedScene>('lastScene', {
@@ -207,12 +207,12 @@ const Editor: React.FC = () => {
         onLoad={() => fileInputRef.current?.click()}
         onClear={handleClear}
         onAddObject={() => setShowAddMenu(!showAddMenu)}
+        addButtonRef={addButtonRef}
         onToggleChat={() => setIsChatExpanded(!isChatExpanded)}
         isChatOpen={isChatExpanded}
       />
 
-      <div ref={addButtonRef} className="hidden" />
-      <AddObjectMenu
+      <EnhancedAddObjectMenu
         anchorRef={addButtonRef as React.RefObject<HTMLElement>}
         onAdd={handleAddObject}
       />
