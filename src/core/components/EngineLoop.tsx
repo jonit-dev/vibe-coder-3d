@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { ReactNode, useEffect, useRef } from 'react';
 
 import { useGameLoop } from '../lib/gameLoop';
+import { materialSystem } from '../systems/MaterialSystem';
 import { runPhysicsSyncSystem } from '../systems/PhysicsSyncSystem';
 import { runVelocitySystem } from '../systems/VelocitySystem';
 

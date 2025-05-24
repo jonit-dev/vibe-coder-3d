@@ -1,14 +1,8 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
-import { Mesh, MeshStandardMaterial } from 'three';
+import { Mesh } from 'three';
 
-import {
-  entityToObject,
-  getEntityColor,
-  Material,
-  objectToEntity,
-  Transform,
-} from '@/core/lib/ecs';
+import { entityToObject, getEntityColor, objectToEntity, Transform } from '@/core/lib/ecs';
 import { getEntityMeshType } from '@core/helpers/meshUtils';
 
 import { GizmoControls } from './GizmoControls';
@@ -82,10 +76,10 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     Transform.scale[entityId][2],
   ];
 
-  // Get entity color from ECS
+  // Get entity color from ECS (only used for initial material setup)
   const entityColor = getEntityColor(entityId);
 
-  // Sync mesh transform and material from ECS
+  // Sync mesh transform from ECS (but NOT material - let MaterialSystem handle that)
   useFrame(() => {
     if (isTransformingLocal) {
       setDragTick((tick) => tick + 1);
@@ -100,14 +94,8 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
       meshRef.current.scale.set(scale[0], scale[1], scale[2]);
     }
 
-    // Sync material color from ECS
-    if (meshRef.current && Material.needsUpdate[entityId]) {
-      const material = meshRef.current.material as MeshStandardMaterial;
-      if (material && material.color) {
-        material.color.setHex(parseInt(entityColor.replace('#', ''), 16));
-        Material.needsUpdate[entityId] = 0; // Clear the update flag
-      }
-    }
+    // Note: Material updates are now handled by MaterialSystem in EngineLoop
+    // This reduces redundant work and improves performance
   });
 
   // Geometry selection

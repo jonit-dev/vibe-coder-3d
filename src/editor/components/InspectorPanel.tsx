@@ -77,23 +77,6 @@ export const InspectorPanel: React.FC<IInspectorPanelProps> = ({ selectedEntity 
     );
   }
 
-  const handleMeshTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newType = e.target.value;
-    let meshTypeEnum: MeshTypeEnum;
-    switch (newType) {
-      case 'Cube':
-        meshTypeEnum = MeshTypeEnum.Cube;
-        break;
-      case 'Sphere':
-        meshTypeEnum = MeshTypeEnum.Sphere;
-        break;
-      default:
-        return;
-    }
-    updateMeshType(selectedEntity, meshTypeEnum);
-    setMeshType(newType);
-  };
-
   const handlePositionChange = (next: [number, number, number]) => {
     setPosition(next);
     Transform.position[selectedEntity][0] = next[0];
