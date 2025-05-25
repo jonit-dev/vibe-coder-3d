@@ -1,178 +1,390 @@
-import { z } from 'zod';
-
-import { ComponentCategory, IComponentDescriptor } from '@/core/types/component-registry';
+import React from 'react';
+import { FiBox, FiEye, FiMove, FiShield, FiZap } from 'react-icons/fi';
 
 import { KnownComponentTypes } from './IComponent';
-import { IMeshColliderData } from './components/MeshColliderComponent';
-import { IMeshRendererData } from './components/MeshRendererComponent';
-import { IRigidBodyData } from './components/RigidBodyComponent';
-import { ITransformData } from './components/TransformComponent';
 
-// Component registry with removable properties
-export const COMPONENT_REGISTRY: Record<string, IComponentDescriptor> = {
+// Rendering contributions that a component can provide
+export interface IRenderingContributions {
+  geometry?: React.ReactNode;
+  material?: {
+    color?: string;
+    metalness?: number;
+    roughness?: number;
+    emissive?: string;
+    emissiveIntensity?: number;
+  };
+  visible?: boolean;
+  castShadow?: boolean;
+  receiveShadow?: boolean;
+  meshType?: string; // For geometry selection
+}
+
+// Physics contributions that a component can provide
+export interface IPhysicsContributions {
+  colliders?: React.ReactNode[];
+  rigidBodyProps?: {
+    type?: string;
+    mass?: number;
+    friction?: number;
+    restitution?: number;
+    density?: number;
+    gravityScale?: number;
+    canSleep?: boolean;
+  };
+  enabled?: boolean;
+}
+
+// Component pack definition
+export interface IComponentPack {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  components: string[];
+  category: string;
+}
+
+// Main component definition with all metadata and behavior
+export interface IComponentDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  category: string;
+
+  // Default data when component is added
+  getDefaultData: (
+    entityId?: number,
+    getComponentData?: (entityId: number, componentType: string) => any,
+  ) => any;
+
+  // How this component affects rendering
+  getRenderingContributions?: (data: any) => IRenderingContributions;
+
+  // How this component affects physics
+  getPhysicsContributions?: (data: any) => IPhysicsContributions;
+
+  // Whether this component can be removed
+  removable?: boolean;
+}
+
+// Helper to get default material data
+const getDefaultMaterialData = (
+  entityId?: number,
+  getComponentData?: (entityId: number, componentType: string) => any,
+) => {
+  if (!entityId || !getComponentData) {
+    return {
+      color: '#3399ff',
+      metalness: 0.0,
+      roughness: 0.5,
+      emissive: '#000000',
+      emissiveIntensity: 0.0,
+    };
+  }
+
+  const materialData = getComponentData(entityId, 'material') as any;
+  let color = '#3399ff'; // Default blue
+
+  if (materialData?.color) {
+    if (Array.isArray(materialData.color)) {
+      // Convert RGB array to hex
+      const [r, g, b] = materialData.color;
+      color = `#${Math.round(r * 255)
+        .toString(16)
+        .padStart(2, '0')}${Math.round(g * 255)
+        .toString(16)
+        .padStart(2, '0')}${Math.round(b * 255)
+        .toString(16)
+        .padStart(2, '0')}`;
+    } else if (typeof materialData.color === 'string') {
+      color = materialData.color;
+    }
+  }
+
+  return {
+    color,
+    metalness: 0.0,
+    roughness: 0.5,
+    emissive: '#000000',
+    emissiveIntensity: 0.0,
+  };
+};
+
+// Centralized component definitions
+export const COMPONENT_REGISTRY: Record<string, IComponentDefinition> = {
   [KnownComponentTypes.TRANSFORM]: {
     id: KnownComponentTypes.TRANSFORM,
     name: 'Transform',
-    category: ComponentCategory.Core,
-    component: null, // Will be set when bitecs components are available
-    required: true,
-    removable: false, // Transform is required and cannot be removed
-    schema: z.object({
-      position: z.tuple([z.number(), z.number(), z.number()]),
-      rotation: z.tuple([z.number(), z.number(), z.number()]),
-      scale: z.tuple([z.number(), z.number(), z.number()]),
+    description: 'Position, rotation, and scale',
+    icon: React.createElement(FiMove, { className: 'w-4 h-4' }),
+    category: 'Core',
+    removable: false,
+    getDefaultData: () => ({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
     }),
-    serialize: (_entityId: number) => {
-      // Implementation will be added when needed
-      return undefined;
-    },
-    deserialize: (_entityId: number, _data: ITransformData) => {
-      // Implementation will be added when needed
-    },
-    metadata: {
-      description: 'Position, rotation, and scale of the entity',
-      tags: ['core', 'transform', 'required'],
-    },
   },
 
   [KnownComponentTypes.MESH_RENDERER]: {
     id: KnownComponentTypes.MESH_RENDERER,
     name: 'Mesh Renderer',
-    category: ComponentCategory.Rendering,
-    component: null,
-    required: false,
-    removable: true, // Can be removed
-    schema: z.object({
-      meshId: z.string(),
-      materialId: z.string(),
-      enabled: z.boolean(),
-      material: z.object({
-        color: z.string(),
-        metalness: z.number(),
-        roughness: z.number(),
-        emissive: z.string(),
-        emissiveIntensity: z.number(),
-      }),
+    description: 'Renders 3D mesh geometry',
+    icon: React.createElement(FiEye, { className: 'w-4 h-4' }),
+    category: 'Rendering',
+    removable: true,
+    getDefaultData: (entityId, getComponentData) => ({
+      meshId: 'cube',
+      materialId: 'default',
+      enabled: true,
+      castShadows: true,
+      receiveShadows: true,
+      material: getDefaultMaterialData(entityId, getComponentData),
     }),
-    serialize: (_entityId: number) => {
-      return undefined;
-    },
-    deserialize: (_entityId: number, _data: IMeshRendererData) => {
-      // Implementation will be added when needed
-    },
-    metadata: {
-      description: 'Renders 3D mesh geometry',
-      tags: ['rendering', 'visual'],
+    getRenderingContributions: (data) => {
+      // Convert meshId to meshType for geometry selection
+      const meshIdToTypeMap: { [key: string]: string } = {
+        cube: 'Cube',
+        sphere: 'Sphere',
+        cylinder: 'Cylinder',
+        cone: 'Cone',
+        torus: 'Torus',
+        plane: 'Plane',
+        capsule: 'Cube', // Fallback to cube for now
+      };
+
+      return {
+        meshType: meshIdToTypeMap[data.meshId] || 'Cube',
+        material: data.material,
+        visible: data.enabled ?? true,
+        castShadow: data.castShadows ?? true,
+        receiveShadow: data.receiveShadows ?? true,
+      };
     },
   },
 
   [KnownComponentTypes.RIGID_BODY]: {
     id: KnownComponentTypes.RIGID_BODY,
     name: 'Rigid Body',
-    category: ComponentCategory.Physics,
-    component: null,
-    required: false,
-    removable: true, // Can be removed
-    schema: z.object({
-      enabled: z.boolean(),
-      bodyType: z.string(),
-      mass: z.number(),
-      gravityScale: z.number(),
-      canSleep: z.boolean(),
-      linearDamping: z.number().optional(),
-      angularDamping: z.number().optional(),
-      initialVelocity: z.tuple([z.number(), z.number(), z.number()]).optional(),
-      initialAngularVelocity: z.tuple([z.number(), z.number(), z.number()]).optional(),
-      material: z.object({
-        friction: z.number(),
-        restitution: z.number(),
-        density: z.number(),
-      }),
+    description: 'Physics simulation body',
+    icon: React.createElement(FiZap, { className: 'w-4 h-4' }),
+    category: 'Physics',
+    removable: true,
+    getDefaultData: () => ({
+      type: 'dynamic',
+      mass: 1,
+      enabled: true,
+      bodyType: 'dynamic',
+      gravityScale: 1,
+      canSleep: true,
+      material: {
+        friction: 0.7,
+        restitution: 0.3,
+        density: 1,
+      },
     }),
-    serialize: (_entityId: number) => {
-      return undefined;
-    },
-    deserialize: (_entityId: number, _data: IRigidBodyData) => {
-      // Implementation will be added when needed
-    },
-    metadata: {
-      description: 'Physics simulation body',
-      tags: ['physics', 'simulation'],
-    },
+    getPhysicsContributions: (data) => ({
+      rigidBodyProps: {
+        type: data.bodyType || data.type,
+        mass: data.mass ?? 1,
+        friction: data.material?.friction ?? 0.7,
+        restitution: data.material?.restitution ?? 0.3,
+        density: data.material?.density ?? 1,
+        gravityScale: data.gravityScale ?? 1,
+        canSleep: data.canSleep ?? true,
+      },
+      enabled: data.enabled ?? true,
+    }),
   },
 
   [KnownComponentTypes.MESH_COLLIDER]: {
     id: KnownComponentTypes.MESH_COLLIDER,
     name: 'Mesh Collider',
-    category: ComponentCategory.Physics,
-    component: null,
-    required: false,
-    removable: true, // Can be removed
-    schema: z.object({
-      enabled: z.boolean(),
-      colliderType: z.enum(['box', 'sphere', 'capsule', 'convex', 'mesh']),
-      isTrigger: z.boolean(),
-      center: z.tuple([z.number(), z.number(), z.number()]),
-      size: z.object({
-        width: z.number(),
-        height: z.number(),
-        depth: z.number(),
-        radius: z.number(),
-        capsuleRadius: z.number(),
-        capsuleHeight: z.number(),
-      }),
-      physicsMaterial: z.object({
-        friction: z.number(),
-        restitution: z.number(),
-        density: z.number(),
-      }),
+    description: 'Physics collision detection',
+    icon: React.createElement(FiShield, { className: 'w-4 h-4' }),
+    category: 'Physics',
+    removable: true,
+    getDefaultData: () => ({
+      enabled: true,
+      colliderType: 'box',
+      isTrigger: false,
+      center: [0, 0, 0],
+      size: {
+        width: 1,
+        height: 1,
+        depth: 1,
+        radius: 0.5,
+        capsuleRadius: 0.5,
+        capsuleHeight: 2,
+      },
+      physicsMaterial: {
+        friction: 0.7,
+        restitution: 0.3,
+        density: 1,
+      },
     }),
-    serialize: (_entityId: number) => {
-      return undefined;
-    },
-    deserialize: (_entityId: number, _data: IMeshColliderData) => {
-      // Implementation will be added when needed
-    },
-    metadata: {
-      description: 'Physics collision detection',
-      tags: ['physics', 'collision'],
+    getPhysicsContributions: (data) => {
+      if (!data.enabled) {
+        return { enabled: false };
+      }
+
+      return {
+        rigidBodyProps: {
+          friction: data.physicsMaterial?.friction ?? 0.7,
+          restitution: data.physicsMaterial?.restitution ?? 0.3,
+          density: data.physicsMaterial?.density ?? 1,
+        },
+        enabled: true,
+      };
     },
   },
 };
 
-/**
- * Get component descriptor by ID
- */
-export function getComponentDescriptor(componentId: string): IComponentDescriptor | undefined {
-  return COMPONENT_REGISTRY[componentId];
-}
+// Component packs using the registry
+export const COMPONENT_PACKS: IComponentPack[] = [
+  {
+    id: 'physics-basics',
+    name: 'Physics Basics',
+    description: 'Rigid body + mesh collider for basic physics',
+    icon: React.createElement(FiZap, { className: 'w-4 h-4' }),
+    components: [KnownComponentTypes.RIGID_BODY, KnownComponentTypes.MESH_COLLIDER],
+    category: 'Physics',
+  },
+  {
+    id: 'rendering-basics',
+    name: 'Rendering Basics',
+    description: 'Complete rendering setup',
+    icon: React.createElement(FiBox, { className: 'w-4 h-4' }),
+    components: [KnownComponentTypes.MESH_RENDERER],
+    category: 'Rendering',
+  },
+  {
+    id: 'complete-entity',
+    name: 'Complete Entity',
+    description: 'Transform + rendering for a complete visible entity',
+    icon: React.createElement(FiBox, { className: 'w-4 h-4' }),
+    components: [KnownComponentTypes.TRANSFORM, KnownComponentTypes.MESH_RENDERER],
+    category: 'Core',
+  },
+  {
+    id: 'physics-entity',
+    name: 'Physics Entity',
+    description: 'Complete physics-enabled entity with rendering',
+    icon: React.createElement(FiBox, { className: 'w-4 h-4' }),
+    components: [
+      KnownComponentTypes.TRANSFORM,
+      KnownComponentTypes.MESH_RENDERER,
+      KnownComponentTypes.RIGID_BODY,
+      KnownComponentTypes.MESH_COLLIDER,
+    ],
+    category: 'Physics',
+  },
+];
 
-/**
- * Check if a component is removable
- */
-export function isComponentRemovable(componentId: string): boolean {
-  const descriptor = getComponentDescriptor(componentId);
-  return descriptor?.removable ?? true; // Default to removable if not specified
-}
+// Helper functions for the registry
+export const getComponentDefinition = (componentType: string): IComponentDefinition | undefined => {
+  return COMPONENT_REGISTRY[componentType];
+};
 
-/**
- * Check if a component is required
- */
-export function isComponentRequired(componentId: string): boolean {
-  const descriptor = getComponentDescriptor(componentId);
-  return descriptor?.required ?? false; // Default to not required if not specified
-}
+export const getAllComponentDefinitions = (): IComponentDefinition[] => {
+  return Object.values(COMPONENT_REGISTRY);
+};
 
-/**
- * Get all registered component IDs
- */
-export function getRegisteredComponentIds(): string[] {
-  return Object.keys(COMPONENT_REGISTRY);
-}
+export const getComponentsByCategory = (): Record<string, IComponentDefinition[]> => {
+  const categories: Record<string, IComponentDefinition[]> = {};
+  Object.values(COMPONENT_REGISTRY).forEach((def) => {
+    if (!categories[def.category]) {
+      categories[def.category] = [];
+    }
+    categories[def.category].push(def);
+  });
+  return categories;
+};
 
-/**
- * Get components by category
- */
-export function getComponentsByCategory(category: ComponentCategory): IComponentDescriptor[] {
-  return Object.values(COMPONENT_REGISTRY).filter((desc) => desc.category === category);
-}
+export const isComponentRemovable = (componentType: string): boolean => {
+  const definition = getComponentDefinition(componentType);
+  return definition?.removable ?? true;
+};
+
+// Helper to get default data for a component
+export const getComponentDefaultData = (
+  componentType: string,
+  entityId?: number,
+  getComponentData?: (entityId: number, componentType: string) => any,
+): any => {
+  const definition = getComponentDefinition(componentType);
+  if (!definition) {
+    return {};
+  }
+  return definition.getDefaultData(entityId, getComponentData);
+};
+
+// Helper to combine rendering contributions from all components
+export const combineRenderingContributions = (
+  entityComponents: Array<{ type: string; data: any }>,
+): IRenderingContributions => {
+  const combined: IRenderingContributions = {
+    visible: true,
+    castShadow: true,
+    receiveShadow: true,
+    meshType: 'Cube',
+    material: {
+      color: '#3399ff',
+      metalness: 0,
+      roughness: 0.5,
+      emissive: '#000000',
+      emissiveIntensity: 0,
+    },
+  };
+
+  entityComponents.forEach(({ type, data }) => {
+    const definition = getComponentDefinition(type);
+    if (definition?.getRenderingContributions) {
+      const contributions = definition.getRenderingContributions(data);
+      Object.assign(combined, contributions);
+      if (contributions.material) {
+        Object.assign(combined.material!, contributions.material);
+      }
+    }
+  });
+
+  return combined;
+};
+
+// Helper to combine physics contributions from all components
+export const combinePhysicsContributions = (
+  entityComponents: Array<{ type: string; data: any }>,
+): IPhysicsContributions => {
+  const combined: IPhysicsContributions = {
+    enabled: false,
+    rigidBodyProps: {
+      type: 'dynamic',
+      mass: 1,
+      friction: 0.7,
+      restitution: 0.3,
+      density: 1,
+      gravityScale: 1,
+      canSleep: true,
+    },
+    colliders: [],
+  };
+
+  entityComponents.forEach(({ type, data }) => {
+    const definition = getComponentDefinition(type);
+    if (definition?.getPhysicsContributions) {
+      const contributions = definition.getPhysicsContributions(data);
+      if (contributions.enabled) {
+        combined.enabled = true;
+      }
+      if (contributions.rigidBodyProps) {
+        Object.assign(combined.rigidBodyProps!, contributions.rigidBodyProps);
+      }
+      if (contributions.colliders) {
+        combined.colliders!.push(...contributions.colliders);
+      }
+    }
+  });
+
+  return combined;
+};

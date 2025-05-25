@@ -1,19 +1,22 @@
+import { Edges } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { BallCollider, CuboidCollider, RigidBody } from '@react-three/rapier';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as THREE from 'three';
 import { Mesh } from 'three';
 
+import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import {
+  combinePhysicsContributions,
+  combineRenderingContributions,
+} from '@/editor/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
-import { IMeshColliderData } from '@/editor/lib/ecs/components/MeshColliderComponent';
-import { IMeshRendererData } from '@/editor/lib/ecs/components/MeshRendererComponent';
-import { IRigidBodyData } from '@/editor/lib/ecs/components/RigidBodyComponent';
 import { ITransformData } from '@/editor/lib/ecs/components/TransformComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 import { ColliderVisualization } from './ColliderVisualization';
 import { GizmoControls } from './GizmoControls';
-import { SelectionOutline } from './SelectionOutline';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -26,314 +29,409 @@ export interface IEntityRendererProps {
   setIsTransforming?: (isTransforming: boolean) => void;
 }
 
-export const EntityRenderer: React.FC<IEntityRendererProps> = ({
-  entityId,
-  selected,
-  mode,
-  onTransformChange,
-  setGizmoMode,
-  setIsTransforming,
-}) => {
-  const [isTransformingLocal, setIsTransformingLocal] = useState(false);
-  const [dragTick, setDragTick] = useState(0);
+export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
+  ({ entityId, selected, mode, onTransformChange, setGizmoMode, setIsTransforming }) => {
+    const [isTransformingLocal, setIsTransformingLocal] = useState(false);
+    const [dragTick, setDragTick] = useState(0);
+    const [updateCounter, setUpdateCounter] = useState(0);
 
-  // Use new ECS system
-  const componentManager = useComponentManager();
-  const isPlaying = useEditorStore((s) => s.isPlaying);
-  const setSelectedId = useEditorStore((s) => s.setSelectedId);
+    // Use new ECS system
+    const componentManager = useComponentManager();
+    const isPlaying = useEditorStore((s) => s.isPlaying);
+    const setSelectedId = useEditorStore((s) => s.setSelectedId);
 
-  // Get components using new ECS system
-  const transform = componentManager.getComponent<ITransformData>(
-    entityId,
-    KnownComponentTypes.TRANSFORM,
-  );
-  const rigidBody = componentManager.getComponent<IRigidBodyData>(
-    entityId,
-    KnownComponentTypes.RIGID_BODY,
-  );
-  const meshCollider = componentManager.getComponent<IMeshColliderData>(
-    entityId,
-    KnownComponentTypes.MESH_COLLIDER,
-  );
-  const meshRenderer = componentManager.getComponent<IMeshRendererData>(
-    entityId,
-    KnownComponentTypes.MESH_RENDERER,
-  );
+    // Only listen for component changes that actually affect rendering
+    useEffect(() => {
+      const handleComponentChange = (event: any) => {
+        // Only force update if this event affects our entity for specific component types
+        if (event.entityId === entityId) {
+          // Only update for rendering-related components
+          const relevantComponents = [
+            KnownComponentTypes.TRANSFORM,
+            KnownComponentTypes.MESH_RENDERER,
+            KnownComponentTypes.MESH_COLLIDER,
+            KnownComponentTypes.RIGID_BODY,
+          ];
 
-  // Extract component data with defaults
-  const position: [number, number, number] = transform?.data?.position || [0, 0, 0];
-  const rotation: [number, number, number] = transform?.data?.rotation || [0, 0, 0];
-  const scale: [number, number, number] = transform?.data?.scale || [1, 1, 1];
+          if (relevantComponents.includes(event.componentType)) {
+            const entityExists = componentManager.getComponent(
+              entityId,
+              KnownComponentTypes.TRANSFORM,
+            );
+            if (entityExists) {
+              // Remove the debug log to reduce console spam during dragging
+              setUpdateCounter((prev) => prev + 1);
+            }
+          }
+        }
+      };
 
-  // Mesh ref and properties
-  const meshRef = useRef<Mesh>(null);
-  const [meshType, setMeshType] = useState<string>('Cube');
-  const [entityColor, setEntityColor] = useState<string>('#3388ff');
+      const unsubscribe = componentManager.addEventListener(handleComponentChange);
+      return unsubscribe;
+    }, [entityId, componentManager]);
 
-  useThree(); // Required for some R3F functionality
+    // Get transform component (required for positioning)
+    const transform = componentManager.getComponent<ITransformData>(
+      entityId,
+      KnownComponentTypes.TRANSFORM,
+    );
 
-  // Get mesh type and color from ComponentManager
-  useEffect(() => {
-    const meshData = componentManager.getComponent(entityId, 'mesh');
-    const materialData = componentManager.getComponent(entityId, 'material');
+    // Get all components for this entity dynamically - stable reference
+    const entityComponents = useMemo(() => {
+      const components = componentManager.getComponentsForEntity(entityId);
+      return components;
+    }, [componentManager, entityId, updateCounter]); // updateCounter ensures fresh data after component events
 
-    if (meshData?.data && typeof meshData.data === 'object' && meshData.data !== null) {
-      const meshTypeValue = (meshData.data as any).meshType;
-      if (meshTypeValue) {
-        setMeshType(meshTypeValue || 'Cube');
-      }
+    // Get individual component data when needed for specific logic
+    const meshCollider = componentManager.getComponent(entityId, KnownComponentTypes.MESH_COLLIDER);
+
+    // Use the registry to combine contributions from all components
+    const renderingContributions = useMemo(() => {
+      const contributions = combineRenderingContributions(entityComponents);
+      return contributions;
+    }, [entityComponents]);
+
+    const physicsContributions = useMemo(() => {
+      const contributions = combinePhysicsContributions(entityComponents);
+      return contributions;
+    }, [entityComponents]);
+
+    // Safety check: Don't render if entity doesn't have a transform (likely deleted)
+    if (!transform?.data) {
+      return null;
     }
-    if (materialData?.data && typeof materialData.data === 'object' && materialData.data !== null) {
-      const colorValue = (materialData.data as any).color;
-      if (colorValue) {
-        setEntityColor(colorValue || '#3388ff');
-      }
-    }
-  }, [entityId, componentManager]);
 
-  // Sync mesh transform from ComponentManager (single source of truth)
-  useEffect(() => {
-    if (meshRef.current && !isTransformingLocal && !isPlaying) {
-      // Only sync when NOT transforming and NOT in physics mode
-      meshRef.current.position.set(position[0], position[1], position[2]);
-      meshRef.current.rotation.set(
+    // Extract component data with defaults - direct access for real-time updates
+    const position: [number, number, number] = transform.data.position || [0, 0, 0];
+    const rotation: [number, number, number] = transform.data.rotation || [0, 0, 0];
+    const scale: [number, number, number] = transform.data.scale || [1, 1, 1];
+
+    // Mesh ref and properties
+    const meshRef = useRef<Mesh>(null);
+    const [meshType, setMeshType] = useState<string>('Cube');
+    const [entityColor, setEntityColor] = useState<string>('#3388ff');
+
+    useThree(); // Required for some R3F functionality
+
+    // Update mesh type and color from rendering contributions
+    useEffect(() => {
+      if (renderingContributions.meshType) {
+        setMeshType(renderingContributions.meshType);
+      }
+      if (renderingContributions.material?.color) {
+        setEntityColor(renderingContributions.material.color);
+      }
+    }, [renderingContributions, entityId]);
+
+    // Sync mesh transform from ComponentManager (single source of truth)
+    useEffect(() => {
+      if (meshRef.current && !isTransformingLocal && !isPlaying) {
+        // Only sync when NOT transforming and NOT in physics mode
+        meshRef.current.position.set(position[0], position[1], position[2]);
+        meshRef.current.rotation.set(
+          rotation[0] * (Math.PI / 180),
+          rotation[1] * (Math.PI / 180),
+          rotation[2] * (Math.PI / 180),
+        );
+        meshRef.current.scale.set(scale[0], scale[1], scale[2]);
+      }
+    }, [position, rotation, scale, isTransformingLocal, isPlaying]);
+
+    // Memoized rotation calculations in radians for physics system
+    const rotationRadians = useMemo(
+      (): [number, number, number] => [
         rotation[0] * (Math.PI / 180),
         rotation[1] * (Math.PI / 180),
         rotation[2] * (Math.PI / 180),
-      );
-      meshRef.current.scale.set(scale[0], scale[1], scale[2]);
-    }
-  }, [position, rotation, scale, isTransformingLocal, isPlaying]);
+      ],
+      [rotation],
+    );
 
-  // Calculate rotations in radians for physics system
-  const rotationRadians: [number, number, number] = [
-    rotation[0] * (Math.PI / 180),
-    rotation[1] * (Math.PI / 180),
-    rotation[2] * (Math.PI / 180),
-  ];
+    // Check if this entity should have physics
+    const shouldHavePhysics = useMemo(
+      () => isPlaying && physicsContributions.enabled,
+      [isPlaying, physicsContributions.enabled],
+    );
 
-  // Check if this entity should have physics
-  const shouldHavePhysics = isPlaying && rigidBody?.data && rigidBody.data.enabled;
+    // Memoized click handler
+    const handleMeshClick = useCallback(
+      (e: any) => {
+        e.stopPropagation();
+        setSelectedId(entityId);
+      },
+      [entityId, setSelectedId],
+    );
 
-  // Handle keyboard shortcuts for gizmo mode switching
-  useEffect(() => {
-    if (!selected || !setGizmoMode) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'w' || e.key === 'W') setGizmoMode('translate');
-      else if (e.key === 'e' || e.key === 'E') setGizmoMode('rotate');
-      else if (e.key === 'r' || e.key === 'R') setGizmoMode('scale');
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selected, setGizmoMode]);
+    // Memoized keyboard shortcuts handler
+    useEffect(() => {
+      if (!selected || !setGizmoMode) return;
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'w' || e.key === 'W') setGizmoMode('translate');
+        else if (e.key === 'e' || e.key === 'E') setGizmoMode('rotate');
+        else if (e.key === 'r' || e.key === 'R') setGizmoMode('scale');
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selected, setGizmoMode]);
 
-  // Geometry selection based on mesh type
-  const getGeometry = () => {
-    switch (meshType) {
-      case 'Sphere':
-        return <sphereGeometry args={[0.5, 32, 32]} />;
-      case 'Cylinder':
-        return <cylinderGeometry args={[0.5, 0.5, 1, 32]} />;
-      case 'Cone':
-        return <coneGeometry args={[0.5, 1, 32]} />;
-      case 'Torus':
-        return <torusGeometry args={[0.5, 0.2, 16, 100]} />;
-      case 'Plane':
-        return <planeGeometry args={[1, 1]} />;
-      default:
-        return <boxGeometry args={[1, 1, 1]} />;
-    }
-  };
+    // Memoized geometry selection based on mesh type
+    const geometry = useMemo(() => {
+      switch (meshType) {
+        case 'Sphere':
+          return <sphereGeometry args={[0.5, 32, 32]} />;
+        case 'Cylinder':
+          return <cylinderGeometry args={[0.5, 0.5, 1, 32]} />;
+        case 'Cone':
+          return <coneGeometry args={[0.5, 1, 32]} />;
+        case 'Torus':
+          return <torusGeometry args={[0.5, 0.2, 16, 100]} />;
+        case 'Plane':
+          return <planeGeometry args={[1, 1]} />;
+        default:
+          return <boxGeometry args={[1, 1, 1]} />;
+      }
+    }, [meshType]);
 
-  // Get appropriate collider type
-  const getColliderType = () => {
-    if (meshCollider?.data && meshCollider.data.enabled) {
-      switch (meshCollider.data.colliderType) {
-        case 'box':
-          return 'cuboid';
-        case 'sphere':
+    // Memoized collider type calculation
+    const colliderType = useMemo(() => {
+      const meshColliderData = meshCollider?.data as IMeshColliderData | undefined;
+      if (meshColliderData && meshColliderData.enabled) {
+        switch (meshColliderData.colliderType) {
+          case 'box':
+            return 'cuboid';
+          case 'sphere':
+            return 'ball';
+          case 'capsule':
+            return 'hull';
+          case 'convex':
+            return 'hull';
+          case 'mesh':
+            return 'trimesh';
+          default:
+            return 'cuboid';
+        }
+      }
+
+      // Fallback to auto-detection based on mesh type
+      switch (meshType) {
+        case 'Sphere':
           return 'ball';
-        case 'capsule':
+        case 'Cylinder':
           return 'hull';
-        case 'convex':
+        case 'Cone':
           return 'hull';
-        case 'mesh':
-          return 'trimesh';
+        case 'Torus':
+          return 'hull';
+        case 'Plane':
+          return 'cuboid';
         default:
           return 'cuboid';
       }
-    }
+    }, [meshCollider?.data, meshType]);
 
-    // Fallback to auto-detection based on mesh type
-    switch (meshType) {
-      case 'Sphere':
-        return 'ball';
-      case 'Cylinder':
-        return 'hull';
-      case 'Cone':
-        return 'hull';
-      case 'Torus':
-        return 'hull';
-      case 'Plane':
-        return 'cuboid';
-      default:
-        return 'cuboid';
-    }
-  };
+    // Create a pure Three.js outline that updates without React
+    const outlineGroupRef = useRef<THREE.Group>(null);
+    const outlineMeshRef = useRef<THREE.Mesh>(null);
 
-  // Calculate outline position (for selection) based on current transform
-  const outlinePosition: [number, number, number] =
-    isTransformingLocal && meshRef.current
-      ? [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z]
-      : position;
+    // Initialize outline mesh once - no React updates after this
+    useEffect(() => {
+      if (!outlineGroupRef.current || !selected) return;
 
-  const outlineRotation: [number, number, number] =
-    isTransformingLocal && meshRef.current
-      ? [meshRef.current.rotation.x, meshRef.current.rotation.y, meshRef.current.rotation.z]
-      : rotationRadians;
+      // Create outline mesh once
+      if (!outlineMeshRef.current) {
+        const outlineMesh = new THREE.Mesh();
+        outlineMeshRef.current = outlineMesh;
+        outlineGroupRef.current.add(outlineMesh);
 
-  const outlineScale: [number, number, number] =
-    isTransformingLocal && meshRef.current
-      ? [
-          meshRef.current.scale.x + 0.05,
-          meshRef.current.scale.y + 0.05,
-          meshRef.current.scale.z + 0.05,
-        ]
-      : [scale[0] + 0.05, scale[1] + 0.05, scale[2] + 0.05];
+        // Set up outline material and geometry
+        const edges = new THREE.EdgesGeometry();
+        const lineMaterial = new THREE.LineBasicMaterial({ color: '#ff6b35', linewidth: 2 });
+        const lineSegments = new THREE.LineSegments(edges, lineMaterial);
+        outlineMesh.add(lineSegments);
+      }
 
-  // Create the mesh content that will be either wrapped with physics or not
-  const meshContent = (
-    <mesh
-      ref={meshRef}
-      castShadow={meshRenderer?.data?.castShadows ?? true}
-      receiveShadow={meshRenderer?.data?.receiveShadows ?? true}
-      userData={{ entityId }}
-      visible={meshRenderer?.data?.enabled ?? true}
-      onClick={(e) => {
-        e.stopPropagation();
-        setSelectedId(entityId);
-      }}
-    >
-      {getGeometry()}
-      <meshStandardMaterial
-        color={meshRenderer?.data?.material?.color ?? entityColor}
-        metalness={meshRenderer?.data?.material?.metalness ?? 0}
-        roughness={meshRenderer?.data?.material?.roughness ?? 0.5}
-        emissive={meshRenderer?.data?.material?.emissive ?? '#000000'}
-        emissiveIntensity={meshRenderer?.data?.material?.emissiveIntensity ?? 0}
-      />
-    </mesh>
-  );
+      // Initial position sync
+      const mesh = meshRef.current;
+      const outline = outlineMeshRef.current;
+      if (mesh && outline) {
+        outline.position.copy(mesh.position);
+        outline.rotation.copy(mesh.rotation);
+        outline.scale.copy(mesh.scale);
+        outline.scale.addScalar(0.05);
+      }
+    }, [selected]);
 
-  return (
-    <group>
-      {shouldHavePhysics ? (
-        <RigidBody
-          type={rigidBody?.data?.bodyType as any}
-          mass={rigidBody?.data?.mass ?? 1}
-          friction={
-            meshCollider?.data?.physicsMaterial?.friction ??
-            rigidBody?.data?.material?.friction ??
-            0.7
+    // Handle transform updates - pure Three.js, no React
+    useEffect(() => {
+      if (!selected || !meshRef.current || !outlineMeshRef.current) return;
+
+      const mesh = meshRef.current;
+      const outline = outlineMeshRef.current;
+
+      // During drag: direct Three.js updates via animation loop
+      if (isTransformingLocal) {
+        let animationId: number;
+
+        const updateOutline = () => {
+          if (mesh && outline) {
+            outline.position.copy(mesh.position);
+            outline.rotation.copy(mesh.rotation);
+            outline.scale.copy(mesh.scale);
+            outline.scale.addScalar(0.05);
           }
-          restitution={
-            meshCollider?.data?.physicsMaterial?.restitution ??
-            rigidBody?.data?.material?.restitution ??
-            0.3
-          }
-          density={
-            meshCollider?.data?.physicsMaterial?.density ?? rigidBody?.data?.material?.density ?? 1
-          }
-          gravityScale={rigidBody?.data?.gravityScale ?? 1}
-          canSleep={rigidBody?.data?.canSleep ?? true}
-          position={position}
-          rotation={rotationRadians}
-          scale={scale}
-          colliders={meshCollider?.data ? false : getColliderType()}
-        >
-          {/* Custom Colliders based on MeshCollider settings */}
-          {meshCollider?.data && meshCollider.data.enabled && (
-            <>
-              {meshCollider.data.colliderType === 'box' && (
-                <CuboidCollider
-                  args={[
-                    (meshCollider.data.size?.width ?? 1) / 2,
-                    (meshCollider.data.size?.height ?? 1) / 2,
-                    (meshCollider.data.size?.depth ?? 1) / 2,
-                  ]}
-                  position={meshCollider.data.center ?? [0, 0, 0]}
-                  sensor={meshCollider.data.isTrigger}
-                />
-              )}
-              {meshCollider.data.colliderType === 'sphere' && (
-                <BallCollider
-                  args={[meshCollider.data.size?.radius ?? 0.5]}
-                  position={meshCollider.data.center ?? [0, 0, 0]}
-                  sensor={meshCollider.data.isTrigger}
-                />
-              )}
-              {meshCollider.data.colliderType === 'capsule' && (
-                <CuboidCollider
-                  args={[
-                    meshCollider.data.size?.capsuleRadius ?? 0.5,
-                    (meshCollider.data.size?.capsuleHeight ?? 1) / 2,
-                    meshCollider.data.size?.capsuleRadius ?? 0.5,
-                  ]}
-                  position={meshCollider.data.center ?? [0, 0, 0]}
-                  sensor={meshCollider.data.isTrigger}
-                />
-              )}
-              {(meshCollider.data.colliderType === 'convex' ||
-                meshCollider.data.colliderType === 'mesh') && (
-                <CuboidCollider
-                  args={[0.5, 0.5, 0.5]}
-                  position={meshCollider.data.center ?? [0, 0, 0]}
-                  sensor={meshCollider.data.isTrigger}
-                />
-              )}
-            </>
+          animationId = requestAnimationFrame(updateOutline);
+        };
+
+        animationId = requestAnimationFrame(updateOutline);
+
+        return () => {
+          if (animationId) cancelAnimationFrame(animationId);
+        };
+      } else {
+        // When not dragging: sync with ComponentManager data once
+        outline.position.set(position[0], position[1], position[2]);
+        outline.rotation.set(rotationRadians[0], rotationRadians[1], rotationRadians[2]);
+        outline.scale.set(scale[0] + 0.05, scale[1] + 0.05, scale[2] + 0.05);
+      }
+    }, [selected, isTransformingLocal, position, rotationRadians, scale]);
+
+    // Memoized transform changing handler
+    const handleSetIsTransforming = useCallback(
+      (val: boolean) => {
+        setIsTransformingLocal(val);
+        if (setIsTransforming) setIsTransforming(val);
+        if (val) setDragTick((prev) => prev + 1);
+      },
+      [setIsTransforming],
+    );
+
+    // Mesh content without aggressive memoization to allow for reactive updates
+    const meshContent = (
+      <mesh
+        ref={meshRef}
+        castShadow={renderingContributions.castShadow}
+        receiveShadow={renderingContributions.receiveShadow}
+        userData={{ entityId }}
+        visible={renderingContributions.visible}
+        onClick={handleMeshClick}
+      >
+        {geometry}
+        <meshStandardMaterial
+          color={renderingContributions.material?.color ?? entityColor}
+          metalness={renderingContributions.material?.metalness ?? 0}
+          roughness={renderingContributions.material?.roughness ?? 0.5}
+          emissive={renderingContributions.material?.emissive ?? '#000000'}
+          emissiveIntensity={renderingContributions.material?.emissiveIntensity ?? 0}
+        />
+      </mesh>
+    );
+
+    // Memoized colliders based on MeshCollider settings
+    const customColliders = useMemo(() => {
+      const meshColliderData = meshCollider?.data as IMeshColliderData | undefined;
+      if (!meshColliderData || !meshColliderData.enabled) {
+        return null;
+      }
+
+      return (
+        <>
+          {meshColliderData.colliderType === 'box' && (
+            <CuboidCollider
+              args={[
+                (meshColliderData.size?.width ?? 1) / 2,
+                (meshColliderData.size?.height ?? 1) / 2,
+                (meshColliderData.size?.depth ?? 1) / 2,
+              ]}
+              position={meshColliderData.center ?? [0, 0, 0]}
+              sensor={meshColliderData.isTrigger}
+            />
           )}
-          {meshContent}
-        </RigidBody>
-      ) : (
-        meshContent
-      )}
+          {meshColliderData.colliderType === 'sphere' && (
+            <BallCollider
+              args={[meshColliderData.size?.radius ?? 0.5]}
+              position={meshColliderData.center ?? [0, 0, 0]}
+              sensor={meshColliderData.isTrigger}
+            />
+          )}
+          {meshColliderData.colliderType === 'capsule' && (
+            <CuboidCollider
+              args={[
+                meshColliderData.size?.capsuleRadius ?? 0.5,
+                (meshColliderData.size?.capsuleHeight ?? 1) / 2,
+                meshColliderData.size?.capsuleRadius ?? 0.5,
+              ]}
+              position={meshColliderData.center ?? [0, 0, 0]}
+              sensor={meshColliderData.isTrigger}
+            />
+          )}
+          {(meshColliderData.colliderType === 'convex' ||
+            meshColliderData.colliderType === 'mesh') && (
+            <CuboidCollider
+              args={[0.5, 0.5, 0.5]}
+              position={meshColliderData.center ?? [0, 0, 0]}
+              sensor={meshColliderData.isTrigger}
+            />
+          )}
+        </>
+      );
+    }, [meshCollider?.data]);
 
-      {/* Gizmo controls (disabled during physics) */}
-      {selected && !shouldHavePhysics && (
-        <GizmoControls
-          meshRef={meshRef}
-          mode={mode}
-          entityId={entityId}
-          onTransformChange={onTransformChange}
-          setIsTransforming={(val) => {
-            setIsTransformingLocal(val);
-            if (setIsTransforming) setIsTransforming(val);
-            if (val) setDragTick((prev) => prev + 1);
-          }}
-        />
-      )}
+    return (
+      <group>
+        {shouldHavePhysics ? (
+          <RigidBody
+            type={physicsContributions.rigidBodyProps?.type as any}
+            mass={physicsContributions.rigidBodyProps?.mass ?? 1}
+            friction={physicsContributions.rigidBodyProps?.friction ?? 0.7}
+            restitution={physicsContributions.rigidBodyProps?.restitution ?? 0.3}
+            density={physicsContributions.rigidBodyProps?.density ?? 1}
+            gravityScale={physicsContributions.rigidBodyProps?.gravityScale ?? 1}
+            canSleep={physicsContributions.rigidBodyProps?.canSleep ?? true}
+            position={position}
+            rotation={rotationRadians}
+            scale={scale}
+            colliders={meshCollider?.data ? false : colliderType}
+          >
+            {/* Custom Colliders based on MeshCollider settings */}
+            {customColliders}
+            {meshContent}
+          </RigidBody>
+        ) : (
+          meshContent
+        )}
 
-      {/* Selection outline (uses ComponentManager data) */}
-      {selected && (
-        <SelectionOutline
-          geometry={getGeometry()}
-          position={outlinePosition}
-          rotation={outlineRotation}
-          scale={outlineScale}
-          key={dragTick}
-        />
-      )}
-
-      {/* Collider Visualization (Unity-style wireframes) */}
-      {selected && (
-        <group position={position} rotation={rotationRadians} scale={scale}>
-          <ColliderVisualization
-            meshCollider={meshCollider?.data || null}
-            visible={!shouldHavePhysics}
+        {/* Gizmo controls (disabled during physics) */}
+        {selected && !shouldHavePhysics && (
+          <GizmoControls
+            meshRef={meshRef}
+            mode={mode}
+            entityId={entityId}
+            onTransformChange={onTransformChange}
+            setIsTransforming={handleSetIsTransforming}
           />
+        )}
+
+        {/* Selection outline with smooth real-time updates */}
+        <group ref={outlineGroupRef}>
+          <mesh ref={outlineMeshRef}>
+            {geometry}
+            <meshBasicMaterial visible={false} />
+            <Edges color="#ff6b35" lineWidth={2} />
+          </mesh>
         </group>
-      )}
-    </group>
-  );
-};
+
+        {/* Collider Visualization (Unity-style wireframes) */}
+        {selected && (
+          <group position={position} rotation={rotationRadians} scale={scale}>
+            <ColliderVisualization
+              meshCollider={(meshCollider?.data as IMeshColliderData) || null}
+              visible={!shouldHavePhysics}
+            />
+          </group>
+        )}
+      </group>
+    );
+  },
+);
+
+EntityRenderer.displayName = 'EntityRenderer';

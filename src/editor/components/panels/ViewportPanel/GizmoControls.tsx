@@ -1,5 +1,5 @@
 import { TransformControls } from '@react-three/drei';
-import React, { MutableRefObject, useRef } from 'react';
+import React, { MutableRefObject, useCallback, useRef } from 'react';
 import { Object3D } from 'three';
 
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
@@ -38,29 +38,33 @@ function updateTransformThroughComponentManager(
   const updatedTransform: ITransformData = { ...transformData };
 
   if (mode === 'translate') {
-    const position: [number, number, number] = [mesh.position.x, mesh.position.y, mesh.position.z];
-    updatedTransform.position = position;
+    const newPosition: [number, number, number] = [
+      mesh.position.x,
+      mesh.position.y,
+      mesh.position.z,
+    ];
+    updatedTransform.position = newPosition;
     if (onTransformChange) {
-      onTransformChange(position);
+      onTransformChange(newPosition);
     }
   } else if (mode === 'rotate') {
     const xDeg = mesh.rotation.x * (180 / Math.PI);
     const yDeg = mesh.rotation.y * (180 / Math.PI);
     const zDeg = mesh.rotation.z * (180 / Math.PI);
-    const rotation: [number, number, number] = [xDeg, yDeg, zDeg];
-    updatedTransform.rotation = rotation;
+    const newRotation: [number, number, number] = [xDeg, yDeg, zDeg];
+    updatedTransform.rotation = newRotation;
     if (onTransformChange) {
-      onTransformChange(rotation);
+      onTransformChange(newRotation);
     }
   } else if (mode === 'scale') {
-    const scale: [number, number, number] = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
-    updatedTransform.scale = scale;
+    const newScale: [number, number, number] = [mesh.scale.x, mesh.scale.y, mesh.scale.z];
+    updatedTransform.scale = newScale;
     if (onTransformChange) {
-      onTransformChange(scale);
+      onTransformChange(newScale);
     }
   }
 
-  // Update through ComponentManager (single source of truth)
+  // Update ComponentManager (restore original immediate update behavior)
   if (currentTransform) {
     componentManager.updateComponent(entityId, KnownComponentTypes.TRANSFORM, updatedTransform);
   } else {
@@ -70,51 +74,74 @@ function updateTransformThroughComponentManager(
   console.debug(`[GizmoControls] Updated ${mode} for entity ${entityId} through ComponentManager`);
 }
 
-export const GizmoControls: React.FC<IGizmoControlsProps> = ({
-  meshRef,
-  mode,
-  entityId,
-  onTransformChange,
-  setIsTransforming,
-}) => {
-  const transformRef = useRef<any>(null);
-  const componentManager = useComponentManager();
+export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
+  ({ meshRef, mode, entityId, onTransformChange, setIsTransforming }) => {
+    const transformRef = useRef<any>(null);
+    const componentManager = useComponentManager();
+    const [, setForceUpdate] = React.useState(0);
+    const isDragging = useRef(false);
+    const lastUpdateTime = useRef(0);
+    const throttleDelay = 16; // ~60fps throttling
 
-  return (
-    <>
-      {meshRef.current && (
-        <TransformControls
-          ref={transformRef}
-          object={meshRef.current}
-          mode={mode}
-          size={0.75}
-          translationSnap={0.25}
-          rotationSnap={Math.PI / 24}
-          scaleSnap={0.1}
-          onObjectChange={() => {
-            if (!meshRef.current) return;
-            updateTransformThroughComponentManager(
-              meshRef.current,
-              mode,
-              entityId,
-              componentManager,
-              onTransformChange,
-            );
-          }}
-          onChange={() => {
-            if (!meshRef.current) return;
-            updateTransformThroughComponentManager(
-              meshRef.current,
-              mode,
-              entityId,
-              componentManager,
-              onTransformChange,
-            );
-          }}
-          onMouseDown={() => setIsTransforming && setIsTransforming(true)}
-          onMouseUp={() => setIsTransforming && setIsTransforming(false)}
-        />
-      )}
-    </>
-  );
-};
+    // Force re-render when meshRef becomes available
+    React.useEffect(() => {
+      if (meshRef.current) {
+        setForceUpdate((prev) => prev + 1);
+      }
+    }, [meshRef.current]);
+
+    // Throttled update function for smooth performance
+    const handleTransformUpdate = useCallback(() => {
+      if (!meshRef.current) return;
+
+      const now = Date.now();
+      if (isDragging.current && now - lastUpdateTime.current < throttleDelay) {
+        return; // Skip update if too frequent during drag
+      }
+      lastUpdateTime.current = now;
+
+      updateTransformThroughComponentManager(
+        meshRef.current,
+        mode,
+        entityId,
+        componentManager,
+        onTransformChange,
+      );
+    }, [meshRef, mode, entityId, componentManager, onTransformChange, throttleDelay]);
+
+    const handleMouseDown = useCallback(() => {
+      isDragging.current = true;
+      if (setIsTransforming) {
+        setIsTransforming(true);
+      }
+    }, [setIsTransforming]);
+
+    const handleMouseUp = useCallback(() => {
+      isDragging.current = false;
+      if (setIsTransforming) {
+        setIsTransforming(false);
+      }
+      // Always do final update on mouse up (no throttling)
+      lastUpdateTime.current = 0;
+      handleTransformUpdate();
+    }, [setIsTransforming, handleTransformUpdate]);
+
+    // Only use onObjectChange to avoid duplicate updates
+    return (
+      <TransformControls
+        ref={transformRef}
+        object={meshRef.current || undefined}
+        mode={mode}
+        size={0.75}
+        translationSnap={0.25}
+        rotationSnap={Math.PI / 24}
+        scaleSnap={0.1}
+        onObjectChange={handleTransformUpdate}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+      />
+    );
+  },
+);
+
+GizmoControls.displayName = 'GizmoControls';

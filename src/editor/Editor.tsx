@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
 import { RightSidebarChat } from './components/chat/RightSidebarChat';
@@ -41,7 +41,25 @@ export interface ISceneObject {
 const Editor: React.FC = () => {
   // New ECS system - get all entities with reactive updates
   const entityManager = useEntityManager();
-  const [entityIds, setEntityIds] = useState<number[]>([]);
+
+  // Zustand store selectors - grouped by concern
+  const entityIds = useEditorStore((state) => state.entityIds);
+  const setEntityIds = useEditorStore((state) => state.setEntityIds);
+  const selectedId = useEditorStore((state) => state.selectedId);
+  const setSelectedId = useEditorStore((state) => state.setSelectedId);
+  const statusMessage = useEditorStore((state) => state.statusMessage);
+  const setStatusMessage = useEditorStore((state) => state.setStatusMessage);
+  const isChatExpanded = useEditorStore((state) => state.isChatExpanded);
+  const setIsChatExpanded = useEditorStore((state) => state.setIsChatExpanded);
+  const isLeftPanelCollapsed = useEditorStore((state) => state.isLeftPanelCollapsed);
+  const setIsLeftPanelCollapsed = useEditorStore((state) => state.setIsLeftPanelCollapsed);
+  const showAddMenu = useEditorStore((state) => state.showAddMenu);
+  const setShowAddMenu = useEditorStore((state) => state.setShowAddMenu);
+  const isPlaying = useEditorStore((state) => state.isPlaying);
+  const setIsPlaying = useEditorStore((state) => state.setIsPlaying);
+  const performanceMetrics = useEditorStore((state) => state.performanceMetrics);
+
+  const addButtonRef = useRef<HTMLButtonElement>(null);
 
   // Subscribe to ECS system for entity changes with reactive updates
   useEffect(() => {
@@ -50,16 +68,13 @@ const Editor: React.FC = () => {
       const newIds = entities.map((entity) => entity.id);
 
       // Only update if the entity list actually changed
-      setEntityIds((prevIds) => {
-        if (
-          prevIds.length !== newIds.length ||
-          !prevIds.every((id, index) => id === newIds[index])
-        ) {
-          console.log(`[Editor] Entity list updated:`, newIds);
-          return newIds;
-        }
-        return prevIds;
-      });
+      if (
+        entityIds.length !== newIds.length ||
+        !entityIds.every((id, index) => id === newIds[index])
+      ) {
+        console.log(`[Editor] Entity list updated:`, newIds);
+        setEntityIds(newIds);
+      }
     };
 
     // Initial load
@@ -72,24 +87,18 @@ const Editor: React.FC = () => {
     });
 
     return removeEventListener;
-  }, [entityManager]);
-
-  // Individual store selectors to prevent infinite loops
-  const selectedId = useEditorStore((s) => s.selectedId);
-  const setSelectedId = useEditorStore((s) => s.setSelectedId);
-  const showAddMenu = useEditorStore((s) => s.showAddMenu);
-  const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
-  const isPlaying = useEditorStore((s) => s.isPlaying);
-  const setIsPlaying = useEditorStore((s) => s.setIsPlaying);
-
-  // Local UI State
-  const [statusMessage, setStatusMessage] = useState<string>('Ready');
-  const [isChatExpanded, setIsChatExpanded] = useState(false);
-  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
-  const addButtonRef = useRef<HTMLButtonElement>(null);
+  }, [entityManager, entityIds, setEntityIds]);
 
   // Custom Hooks
-  const { createEntity, createCube, createSphere } = useEntityCreation();
+  const {
+    createEntity,
+    createCube,
+    createSphere,
+    createCylinder,
+    createCone,
+    createTorus,
+    createPlane,
+  } = useEntityCreation();
   const {
     fileInputRef,
     savedScene,
@@ -122,6 +131,18 @@ const Editor: React.FC = () => {
           case 'Sphere':
             entity = createSphere();
             break;
+          case 'Cylinder':
+            entity = createCylinder();
+            break;
+          case 'Cone':
+            entity = createCone();
+            break;
+          case 'Torus':
+            entity = createTorus();
+            break;
+          case 'Plane':
+            entity = createPlane();
+            break;
           default:
             entity = createEntity(type);
             break;
@@ -138,7 +159,18 @@ const Editor: React.FC = () => {
         );
       }
     },
-    [createEntity, createCube, createSphere, setSelectedId, setStatusMessage, setShowAddMenu],
+    [
+      createEntity,
+      createCube,
+      createSphere,
+      createCylinder,
+      createCone,
+      createTorus,
+      createPlane,
+      setSelectedId,
+      setStatusMessage,
+      setShowAddMenu,
+    ],
   );
 
   // Memoized wrapped handlers for status updates
@@ -175,18 +207,19 @@ const Editor: React.FC = () => {
     handleStop();
   }, [setIsPlaying, handleStop]);
 
-  // Memoized toggle handlers
-  const toggleAddMenu = useCallback(() => {
-    setShowAddMenu(!showAddMenu);
-  }, [showAddMenu, setShowAddMenu]);
-
-  const toggleChat = useCallback(() => {
-    setIsChatExpanded(!isChatExpanded);
-  }, [isChatExpanded]);
-
-  const toggleLeftPanel = useCallback(() => {
-    setIsLeftPanelCollapsed(!isLeftPanelCollapsed);
-  }, [isLeftPanelCollapsed]);
+  // Simplified toggle handlers using store
+  const toggleAddMenu = useCallback(
+    () => setShowAddMenu(!showAddMenu),
+    [showAddMenu, setShowAddMenu],
+  );
+  const toggleChat = useCallback(
+    () => setIsChatExpanded(!isChatExpanded),
+    [isChatExpanded, setIsChatExpanded],
+  );
+  const toggleLeftPanel = useCallback(
+    () => setIsLeftPanelCollapsed(!isLeftPanelCollapsed),
+    [isLeftPanelCollapsed, setIsLeftPanelCollapsed],
+  );
 
   // Keyboard Shortcuts
   useEditorKeyboard({
@@ -210,10 +243,10 @@ const Editor: React.FC = () => {
   const stats = useMemo(
     () => ({
       entities: entityIds.length,
-      fps: 60, // placeholder
-      memory: '128MB', // placeholder
+      fps: Math.round(performanceMetrics.averageFPS || 0),
+      memory: '128MB', // placeholder - no memory tracking yet
     }),
-    [entityIds.length],
+    [entityIds.length, performanceMetrics.averageFPS],
   );
 
   return (
@@ -255,7 +288,7 @@ const Editor: React.FC = () => {
 
       <main className="flex-1 flex overflow-hidden">
         <StackedLeftPanel
-          hierarchyContent={<HierarchyPanelContent entityIds={entityIds} />}
+          hierarchyContent={<HierarchyPanelContent />}
           inspectorContent={<InspectorPanelContent />}
           isCollapsed={isLeftPanelCollapsed}
           onToggleCollapse={toggleLeftPanel}

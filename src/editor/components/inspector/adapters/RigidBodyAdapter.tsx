@@ -69,7 +69,13 @@ export const RigidBodyAdapter: React.FC<IRigidBodyAdapterProps> = ({
     : null;
 
   const handleRigidBodyUpdate = (newData: any) => {
-    updateComponent(KnownComponentTypes.RIGID_BODY, newData);
+    if (newData === null) {
+      // Remove rigid body component
+      removeComponent(KnownComponentTypes.RIGID_BODY);
+    } else {
+      // Update rigid body component
+      updateComponent(KnownComponentTypes.RIGID_BODY, newData);
+    }
   };
 
   const handleMeshColliderUpdate = (newData: any) => {

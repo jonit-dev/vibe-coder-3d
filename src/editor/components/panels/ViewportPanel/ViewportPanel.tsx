@@ -4,6 +4,7 @@ import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 import { useEditorStore } from '../../../store/editorStore';
@@ -21,8 +22,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
   const [entityIds, setEntityIds] = useState<number[]>([]);
   const isPlaying = useEditorStore((state) => state.isPlaying);
   const componentManager = useComponentManager();
+  const entityManager = useEntityManager();
 
-  // Subscribe to entity changes from ECS system
+  // Subscribe to entity changes from ECS system using events
   useEffect(() => {
     const updateEntities = () => {
       const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
@@ -33,14 +35,28 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
     // Initial load
     updateEntities();
 
-    // For now, poll for changes since we don't have an event system yet
-    // In a future improvement, we could add an event emitter to ComponentManager
-    const interval = setInterval(updateEntities, 100);
+    // Listen for both entity and component events that affect rendering
+    const unsubscribeEntityEvents = entityManager.addEventListener((event: any) => {
+      if (
+        event.type === 'entity-created' ||
+        event.type === 'entity-deleted' ||
+        event.type === 'entities-cleared'
+      ) {
+        updateEntities();
+      }
+    });
+
+    const unsubscribeComponentEvents = componentManager.addEventListener((event) => {
+      if (event.componentType === KnownComponentTypes.TRANSFORM) {
+        updateEntities();
+      }
+    });
 
     return () => {
-      clearInterval(interval);
+      unsubscribeEntityEvents();
+      unsubscribeComponentEvents();
     };
-  }, [componentManager]);
+  }, [componentManager, entityManager]);
 
   // Gizmo mode state
   const [mode, setMode] = useState<GizmoMode>('translate');
@@ -51,7 +67,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
   // This is now handled by GizmoControls which properly emits events
   const handleTransformChange = (id: number) => (values: [number, number, number]) => {
     // This callback is no longer used as GizmoControls handles transform updates
-    console.log(`Transform updated for entity ${id}:`, values);
+    // Removed debug logging to reduce console spam during drag
   };
 
   return (

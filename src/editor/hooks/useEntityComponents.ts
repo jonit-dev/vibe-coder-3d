@@ -31,10 +31,7 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     const removeEventListener = componentManager.addEventListener((event) => {
       // Only update if the event affects our current entity
       if (event.entityId === entityId) {
-        console.log(
-          `[useEntityComponents] Component ${event.type} for entity ${entityId}:`,
-          event.componentType,
-        );
+        // Removed debug logging to reduce console spam during drag
         updateComponents();
         setUpdateTrigger((prev) => prev + 1); // Force re-render for dependent computations
       }
@@ -56,7 +53,7 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     <TData>(type: ComponentType, data: Partial<TData>): boolean => {
       if (entityId === null) return false;
 
-      console.log(`[useEntityComponents] Updating ${type} component for entity ${entityId}:`, data);
+      // Removed debug logging to reduce console spam during drag
       return componentManager.updateComponent(entityId, type, data);
     },
     [entityId, componentManager],

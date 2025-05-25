@@ -9,11 +9,8 @@ import { getEntityName } from '@core/lib/ecs';
 import { HierarchyContextMenu } from './HierarchyContextMenu';
 import { HierarchyItem } from './HierarchyItem';
 
-export interface IHierarchyPanelContentProps {
-  entityIds: number[];
-}
-
-export const HierarchyPanelContent: React.FC<IHierarchyPanelContentProps> = ({ entityIds }) => {
+export const HierarchyPanelContent: React.FC = () => {
+  const entityIds = useEditorStore((s) => s.entityIds);
   const selectedId = useEditorStore((s) => s.selectedId);
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
   const entityManager = useEntityManager();

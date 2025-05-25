@@ -93,6 +93,52 @@ export const useEntityCreation = () => {
     [createEntity, addMeshRenderer],
   );
 
+  const createCylinder = useCallback(
+    (name = 'Cylinder', parentId?: number) => {
+      const entity = createEntity(name, parentId);
+      addMeshRenderer(entity.id, 'cylinder');
+      return entity;
+    },
+    [createEntity, addMeshRenderer],
+  );
+
+  const createCone = useCallback(
+    (name = 'Cone', parentId?: number) => {
+      const entity = createEntity(name, parentId);
+      addMeshRenderer(entity.id, 'cone');
+      return entity;
+    },
+    [createEntity, addMeshRenderer],
+  );
+
+  const createTorus = useCallback(
+    (name = 'Torus', parentId?: number) => {
+      const entity = createEntity(name, parentId);
+      addMeshRenderer(entity.id, 'torus');
+      return entity;
+    },
+    [createEntity, addMeshRenderer],
+  );
+
+  const createPlane = useCallback(
+    (name = 'Plane', parentId?: number) => {
+      const entity = createEntity(name, parentId);
+      addMeshRenderer(entity.id, 'plane');
+
+      // Position the plane to be parallel to the floor (rotate -90 degrees on X axis)
+      const transformData: ITransformData = {
+        position: [0, 0, 0],
+        rotation: [-90, 0, 0], // Rotate to lay flat on the floor
+        scale: [10, 10, 1], // Make it larger and thinner like a ground plane
+      };
+
+      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+
+      return entity;
+    },
+    [createEntity, addMeshRenderer, componentManager],
+  );
+
   const deleteEntity = useCallback(
     (entityId: number) => {
       // Remove all components first
@@ -114,6 +160,10 @@ export const useEntityCreation = () => {
     createEntity,
     createCube,
     createSphere,
+    createCylinder,
+    createCone,
+    createTorus,
+    createPlane,
     deleteEntity,
   };
 };

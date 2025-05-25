@@ -6,16 +6,40 @@ interface IContextMenuState {
   anchorRef: React.RefObject<HTMLElement> | null;
 }
 
+interface IPerformanceMetrics {
+  averageFPS: number;
+  frameTime: number;
+  renderCount: number;
+}
+
 interface IEditorStore {
   // Entity selection state
   selectedId: number | null;
   setSelectedId: (id: number | null) => void;
+
+  // Entity list cache
+  entityIds: number[];
+  setEntityIds: (ids: number[]) => void;
 
   // UI state
   contextMenu: IContextMenuState;
   setContextMenu: (state: IContextMenuState) => void;
   showAddMenu: boolean;
   setShowAddMenu: (show: boolean) => void;
+
+  // Status and messaging
+  statusMessage: string;
+  setStatusMessage: (message: string) => void;
+
+  // Panel states
+  isChatExpanded: boolean;
+  setIsChatExpanded: (expanded: boolean) => void;
+  isLeftPanelCollapsed: boolean;
+  setIsLeftPanelCollapsed: (collapsed: boolean) => void;
+
+  // Performance monitoring
+  performanceMetrics: IPerformanceMetrics;
+  setPerformanceMetrics: (metrics: IPerformanceMetrics) => void;
 
   // Play mode state
   isPlaying: boolean;
@@ -35,11 +59,29 @@ export const useEditorStore = create<IEditorStore>((set) => ({
   selectedId: null,
   setSelectedId: (id) => set({ selectedId: id }),
 
+  // Entity list cache
+  entityIds: [],
+  setEntityIds: (ids) => set({ entityIds: ids }),
+
   // UI state
   contextMenu: { open: false, entityId: null, anchorRef: null },
   setContextMenu: (state) => set({ contextMenu: state }),
   showAddMenu: false,
   setShowAddMenu: (show) => set({ showAddMenu: show }),
+
+  // Status and messaging
+  statusMessage: 'Ready',
+  setStatusMessage: (message) => set({ statusMessage: message }),
+
+  // Panel states
+  isChatExpanded: false,
+  setIsChatExpanded: (expanded) => set({ isChatExpanded: expanded }),
+  isLeftPanelCollapsed: false,
+  setIsLeftPanelCollapsed: (collapsed) => set({ isLeftPanelCollapsed: collapsed }),
+
+  // Performance monitoring
+  performanceMetrics: { averageFPS: 60, frameTime: 0, renderCount: 0 },
+  setPerformanceMetrics: (metrics) => set({ performanceMetrics: metrics }),
 
   // Play mode
   isPlaying: false,
@@ -53,6 +95,24 @@ export const useEditorStore = create<IEditorStore>((set) => ({
   showViewport: true,
   setShowViewport: (show) => set({ showViewport: show }),
 }));
+
+// Individual selectors to prevent infinite loops - use these instead of object destructuring
+export const useStatusMessage = () => useEditorStore((state) => state.statusMessage);
+export const useSetStatusMessage = () => useEditorStore((state) => state.setStatusMessage);
+export const useIsChatExpanded = () => useEditorStore((state) => state.isChatExpanded);
+export const useSetIsChatExpanded = () => useEditorStore((state) => state.setIsChatExpanded);
+export const useIsLeftPanelCollapsed = () => useEditorStore((state) => state.isLeftPanelCollapsed);
+export const useSetIsLeftPanelCollapsed = () =>
+  useEditorStore((state) => state.setIsLeftPanelCollapsed);
+export const useShowAddMenu = () => useEditorStore((state) => state.showAddMenu);
+export const useSetShowAddMenu = () => useEditorStore((state) => state.setShowAddMenu);
+
+export const useIsPlaying = () => useEditorStore((state) => state.isPlaying);
+export const useSetIsPlaying = () => useEditorStore((state) => state.setIsPlaying);
+
+export const usePerformanceMetrics = () => useEditorStore((state) => state.performanceMetrics);
+export const useSetPerformanceMetrics = () =>
+  useEditorStore((state) => state.setPerformanceMetrics);
 
 // Expose editor store globally for component registry access
 // This avoids circular dependency issues
