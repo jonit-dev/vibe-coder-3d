@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 
-import { componentManager } from '@/core/dynamic-components/init';
+import { useComponentManager } from './useComponentManager';
+import { useEntityManager } from './useEntityManager';
 
 // Legacy interface for backward compatibility
 export interface ISerializedScene {
@@ -10,22 +11,28 @@ export interface ISerializedScene {
 
 /**
  * Hook that provides scene action functions (save, load, clear)
- * Now uses ComponentManager as single source of truth
+ * Now uses the new ECS system as single source of truth
  */
 export function useSceneActions() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const entityManager = useEntityManager();
+  const componentManager = useComponentManager();
 
-  // Simple scene serialization using ComponentManager
+  // Simple scene serialization using new ECS system
   const exportScene = (): ISerializedScene => {
-    const entities = componentManager.getEntitiesWithComponents(['transform']);
-    const serializedEntities = entities.map((entityId) => {
-      const entityComponents = componentManager.getEntityComponents(entityId);
-      const entityData: any = { id: entityId, components: {} };
+    const entities = entityManager.getAllEntities();
+    const serializedEntities = entities.map((entity) => {
+      const entityComponents = componentManager.getComponentsForEntity(entity.id);
+      const entityData: any = {
+        id: entity.id,
+        name: entity.name,
+        parentId: entity.parentId,
+        components: {},
+      };
 
-      entityComponents.forEach((componentId) => {
-        const componentData = componentManager.getComponentData(entityId, componentId);
-        if (componentData) {
-          entityData.components[componentId] = componentData;
+      entityComponents.forEach((component) => {
+        if (component.data) {
+          entityData.components[component.type] = component.data;
         }
       });
 
@@ -33,29 +40,33 @@ export function useSceneActions() {
     });
 
     return {
-      version: 2,
+      version: 3, // Increment version for new ECS format
       entities: serializedEntities,
     };
   };
 
-  // Simple scene import using ComponentManager
+  // Simple scene import using new ECS system
   const importScene = async (scene: ISerializedScene): Promise<void> => {
     if (!scene || !scene.entities) {
       throw new Error('Invalid scene data');
     }
 
-    // Clear existing entities (optional)
-    // For now, we'll just add to existing scene
+    // Clear existing entities first
+    entityManager.clearEntities();
+    componentManager.clearComponents();
 
     // Import entities
     for (const entityData of scene.entities) {
       try {
-        const entityId = await componentManager.createEntity();
+        const entity = entityManager.createEntity(
+          entityData.name || `Entity ${entityData.id}`,
+          entityData.parentId,
+        );
 
         // Add components
-        for (const [componentId, componentData] of Object.entries(entityData.components)) {
+        for (const [componentType, componentData] of Object.entries(entityData.components)) {
           if (componentData) {
-            await componentManager.updateComponent(entityId, componentId, componentData);
+            componentManager.addComponent(entity.id, componentType, componentData);
           }
         }
       } catch (error) {
@@ -110,18 +121,12 @@ export function useSceneActions() {
 
   const handleClear = (): string => {
     try {
-      // Clear ComponentManager entities
-      const entities = componentManager.getEntitiesWithComponents(['transform']);
-      let clearedCount = 0;
+      // Clear ECS entities
+      const entities = entityManager.getAllEntities();
+      const clearedCount = entities.length;
 
-      entities.forEach((entityId) => {
-        try {
-          componentManager.destroyEntity(entityId);
-          clearedCount++;
-        } catch (error) {
-          console.error(`Failed to destroy entity ${entityId}:`, error);
-        }
-      });
+      entityManager.clearEntities();
+      componentManager.clearComponents();
 
       return `Cleared ${clearedCount} entities`;
     } catch (error) {

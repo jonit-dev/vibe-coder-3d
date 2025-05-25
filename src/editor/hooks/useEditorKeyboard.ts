@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 
-import { destroyEntity } from '@core/lib/ecs';
+import { useEntityCreation } from './useEntityCreation';
 
-import { ShapeType } from './useEntityCreation';
+// Shape types that can be created in the editor
+export type ShapeType = 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane';
 
 interface IUseEditorKeyboardProps {
   selectedId: number | null;
@@ -23,6 +24,8 @@ export const useEditorKeyboard = ({
   onSave,
   onStatusMessage,
 }: IUseEditorKeyboardProps) => {
+  const { deleteEntity } = useEntityCreation();
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't handle shortcuts when typing in input fields
@@ -49,8 +52,7 @@ export const useEditorKeyboard = ({
       // Delete: Delete selected entity
       if (e.key === 'Delete' && selectedId != null) {
         e.preventDefault();
-        destroyEntity(selectedId);
-        setSelectedId(null);
+        deleteEntity(selectedId);
         onStatusMessage('Entity deleted');
       }
     };
@@ -65,5 +67,6 @@ export const useEditorKeyboard = ({
     onAddObject,
     onSave,
     onStatusMessage,
+    deleteEntity,
   ]);
 };

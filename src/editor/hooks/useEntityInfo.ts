@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { componentManager } from '@/core/dynamic-components/init';
+import { useEntityManager } from '@/editor/hooks/useEntityManager';
 
 export interface IUseEntityInfo {
   entityId: number | null;
@@ -9,6 +9,7 @@ export interface IUseEntityInfo {
 
 export const useEntityInfo = (selectedEntity: number | null): IUseEntityInfo => {
   const [entityName, setEntityName] = useState('');
+  const entityManager = useEntityManager();
 
   useEffect(() => {
     if (selectedEntity == null) {
@@ -17,9 +18,9 @@ export const useEntityInfo = (selectedEntity: number | null): IUseEntityInfo => 
     }
 
     const updateEntityName = () => {
-      const nameData = componentManager.getComponentData(selectedEntity, 'name');
-      if (nameData?.value) {
-        setEntityName(nameData.value);
+      const entity = entityManager.getEntity(selectedEntity);
+      if (entity) {
+        setEntityName(entity.name);
       } else {
         setEntityName(`Entity ${selectedEntity}`);
       }
@@ -28,19 +29,14 @@ export const useEntityInfo = (selectedEntity: number | null): IUseEntityInfo => 
     // Initial load
     updateEntityName();
 
-    // Listen for component changes
-    const handleComponentChange = (event: any) => {
-      if (event.entityId === selectedEntity && event.componentId === 'name') {
-        updateEntityName();
-      }
-    };
-
-    componentManager.addEventListener(handleComponentChange);
+    // For now, poll for changes since we don't have an event system yet
+    // In a future improvement, we could add an event emitter to EntityManager
+    const interval = setInterval(updateEntityName, 100);
 
     return () => {
-      componentManager.removeEventListener(handleComponentChange);
+      clearInterval(interval);
     };
-  }, [selectedEntity]);
+  }, [selectedEntity, entityManager]);
 
   return { entityId: selectedEntity, entityName };
 };

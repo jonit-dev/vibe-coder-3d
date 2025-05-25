@@ -1,32 +1,44 @@
 import React from 'react';
 
-import { componentManager } from '@/core/dynamic-components/init';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useEntityManager } from '@/editor/hooks/useEntityManager';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 export const ComponentDebugger: React.FC = () => {
-  const allComponents = componentManager.getAllComponents();
-  const allGroups = componentManager.getAllGroups();
+  const componentManager = useComponentManager();
+  const entityManager = useEntityManager();
+
+  const allEntities = entityManager.getAllEntities();
+  const componentTypes = Object.values(KnownComponentTypes);
 
   return (
     <div className="p-4 bg-gray-800 text-white text-xs">
-      <h3 className="font-bold mb-2">Component Registry Debug</h3>
+      <h3 className="font-bold mb-2">ECS Debug</h3>
       <div className="mb-4">
-        <strong>Registered Components ({allComponents.length}):</strong>
+        <strong>Entities ({allEntities.length}):</strong>
         <ul className="ml-4 mt-1">
-          {allComponents.map((comp) => (
-            <li key={comp.id}>
-              {comp.id} - {comp.name} ({comp.category})
-            </li>
-          ))}
+          {allEntities.map((entity) => {
+            const components = componentManager.getComponentsForEntity(entity.id);
+            return (
+              <li key={entity.id}>
+                Entity {entity.id} - {entity.name} ({components.length} components:{' '}
+                {components.map((c) => c.type).join(', ')})
+              </li>
+            );
+          })}
         </ul>
       </div>
       <div>
-        <strong>Registered Groups ({allGroups.length}):</strong>
+        <strong>Known Component Types ({componentTypes.length}):</strong>
         <ul className="ml-4 mt-1">
-          {allGroups.map((group) => (
-            <li key={group.id}>
-              {group.id} - {group.name} ({group.components.join(', ')})
-            </li>
-          ))}
+          {componentTypes.map((type) => {
+            const entitiesWithType = componentManager.getEntitiesWithComponent(type);
+            return (
+              <li key={type}>
+                {type} ({entitiesWithType.length} entities)
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>

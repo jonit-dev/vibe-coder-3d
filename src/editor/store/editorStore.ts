@@ -1,9 +1,5 @@
 import { create } from 'zustand';
 
-import { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
-import { IMeshRendererData } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
-import { IRigidBodyData } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
-
 interface IContextMenuState {
   open: boolean;
   entityId: number | null;
@@ -11,61 +7,51 @@ interface IContextMenuState {
 }
 
 interface IEditorStore {
+  // Entity selection state
   selectedId: number | null;
   setSelectedId: (id: number | null) => void;
+
+  // UI state
   contextMenu: IContextMenuState;
   setContextMenu: (state: IContextMenuState) => void;
   showAddMenu: boolean;
   setShowAddMenu: (show: boolean) => void;
-  rigidBodies: Record<number, IRigidBodyData>;
-  setEntityRigidBody: (entityId: number, data: IRigidBodyData | null) => void;
-  meshColliders: Record<number, IMeshColliderData>;
-  setEntityMeshCollider: (entityId: number, data: IMeshColliderData | null) => void;
-  meshRenderers: Record<number, IMeshRendererData>;
-  setEntityMeshRenderer: (entityId: number, data: IMeshRendererData | null) => void;
+
+  // Play mode state
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
+
+  // Panel visibility (future extension)
+  showHierarchy: boolean;
+  setShowHierarchy: (show: boolean) => void;
+  showInspector: boolean;
+  setShowInspector: (show: boolean) => void;
+  showViewport: boolean;
+  setShowViewport: (show: boolean) => void;
 }
 
 export const useEditorStore = create<IEditorStore>((set) => ({
+  // Entity selection
   selectedId: null,
   setSelectedId: (id) => set({ selectedId: id }),
+
+  // UI state
   contextMenu: { open: false, entityId: null, anchorRef: null },
   setContextMenu: (state) => set({ contextMenu: state }),
   showAddMenu: false,
   setShowAddMenu: (show) => set({ showAddMenu: show }),
-  rigidBodies: {},
-  setEntityRigidBody: (entityId, data) =>
-    set((state) => {
-      if (data) {
-        return { rigidBodies: { ...state.rigidBodies, [entityId]: data } };
-      } else {
-        const { [entityId]: removed, ...rest } = state.rigidBodies;
-        return { rigidBodies: rest };
-      }
-    }),
-  meshColliders: {},
-  setEntityMeshCollider: (entityId, data) =>
-    set((state) => {
-      if (data) {
-        return { meshColliders: { ...state.meshColliders, [entityId]: data } };
-      } else {
-        const { [entityId]: removed, ...rest } = state.meshColliders;
-        return { meshColliders: rest };
-      }
-    }),
-  meshRenderers: {},
-  setEntityMeshRenderer: (entityId, data) =>
-    set((state) => {
-      if (data) {
-        return { meshRenderers: { ...state.meshRenderers, [entityId]: data } };
-      } else {
-        const { [entityId]: removed, ...rest } = state.meshRenderers;
-        return { meshRenderers: rest };
-      }
-    }),
+
+  // Play mode
   isPlaying: false,
   setIsPlaying: (playing) => set({ isPlaying: playing }),
+
+  // Panel visibility
+  showHierarchy: true,
+  setShowHierarchy: (show) => set({ showHierarchy: show }),
+  showInspector: true,
+  setShowInspector: (show) => set({ showInspector: show }),
+  showViewport: true,
+  setShowViewport: (show) => set({ showViewport: show }),
 }));
 
 // Expose editor store globally for component registry access

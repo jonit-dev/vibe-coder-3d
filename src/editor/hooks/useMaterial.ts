@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { componentManager } from '@/core/dynamic-components/init';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
 
 export interface IUseMaterial {
   color: string;
@@ -9,6 +9,7 @@ export interface IUseMaterial {
 
 export const useMaterial = (selectedEntity: number | null): IUseMaterial => {
   const [color, setColorState] = useState<string>('#3399ff');
+  const componentManager = useComponentManager();
 
   useEffect(() => {
     if (selectedEntity == null) {
@@ -17,18 +18,27 @@ export const useMaterial = (selectedEntity: number | null): IUseMaterial => {
     }
 
     const updateColor = () => {
-      const materialData = componentManager.getComponentData(selectedEntity, 'material');
-      if (materialData?.color) {
-        // Convert RGB array to hex color
-        const [r, g, b] = materialData.color;
-        const hex = `#${Math.round(r * 255)
-          .toString(16)
-          .padStart(2, '0')}${Math.round(g * 255)
-          .toString(16)
-          .padStart(2, '0')}${Math.round(b * 255)
-          .toString(16)
-          .padStart(2, '0')}`;
-        setColorState(hex);
+      const materialData = componentManager.getComponent(selectedEntity, 'material');
+      if (
+        materialData?.data &&
+        typeof materialData.data === 'object' &&
+        materialData.data !== null
+      ) {
+        // Convert RGB array to hex color if it's an array
+        const colorValue = (materialData.data as any).color;
+        if (Array.isArray(colorValue)) {
+          const [r, g, b] = colorValue;
+          const hex = `#${Math.round(r * 255)
+            .toString(16)
+            .padStart(2, '0')}${Math.round(g * 255)
+            .toString(16)
+            .padStart(2, '0')}${Math.round(b * 255)
+            .toString(16)
+            .padStart(2, '0')}`;
+          setColorState(hex);
+        } else if (typeof colorValue === 'string') {
+          setColorState(colorValue);
+        }
       } else {
         setColorState('#3399ff'); // Default blue
       }
@@ -37,22 +47,16 @@ export const useMaterial = (selectedEntity: number | null): IUseMaterial => {
     // Initial load
     updateColor();
 
-    // Listen for component changes
-    const handleComponentChange = (event: any) => {
-      if (event.entityId === selectedEntity && event.componentId === 'material') {
-        updateColor();
-      }
-    };
-
-    componentManager.addEventListener(handleComponentChange);
+    // For now, poll for changes since we don't have an event system yet
+    const interval = setInterval(updateColor, 100);
 
     return () => {
-      componentManager.removeEventListener(handleComponentChange);
+      clearInterval(interval);
     };
-  }, [selectedEntity]);
+  }, [selectedEntity, componentManager]);
 
   const setColor = useCallback(
-    async (newColor: string) => {
+    (newColor: string) => {
       if (selectedEntity == null) return;
 
       // Convert hex color to RGB array
@@ -61,18 +65,24 @@ export const useMaterial = (selectedEntity: number | null): IUseMaterial => {
       const g = parseInt(hex.substr(2, 2), 16) / 255;
       const b = parseInt(hex.substr(4, 2), 16) / 255;
 
-      const result = await componentManager.updateComponent(selectedEntity, 'material', {
-        color: [r, g, b],
-        needsUpdate: 1,
-      });
+      // Update through ComponentManager
+      const currentMaterial = componentManager.getComponent(selectedEntity, 'material');
+      const materialData = currentMaterial?.data || {};
 
-      if (result.valid) {
-        setColorState(newColor);
+      const updatedMaterial = {
+        ...materialData,
+        color: [r, g, b],
+      };
+
+      if (currentMaterial) {
+        componentManager.updateComponent(selectedEntity, 'material', updatedMaterial);
       } else {
-        console.warn('[useMaterial] Failed to update material color:', result.errors);
+        componentManager.addComponent(selectedEntity, 'material', updatedMaterial);
       }
+
+      setColorState(newColor);
     },
-    [selectedEntity],
+    [selectedEntity, componentManager],
   );
 
   return { color, setColor };

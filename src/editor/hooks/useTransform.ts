@@ -1,7 +1,9 @@
 // Updated useTransform hook - now uses the new reactive ECS system
 import { useCallback, useEffect, useState } from 'react';
 
-import { componentManager } from '@/core/dynamic-components/init';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
+
+import { useComponentManager } from './useComponentManager';
 
 export interface IUseTransform {
   position: [number, number, number];
@@ -12,108 +14,69 @@ export interface IUseTransform {
   setScale: (next: [number, number, number]) => void;
 }
 
-export const useTransform = (selectedEntity: number | null): IUseTransform => {
+export const useTransform = (entityId: number | null): IUseTransform => {
+  const componentManager = useComponentManager();
   const [position, setPositionState] = useState<[number, number, number]>([0, 0, 0]);
   const [rotation, setRotationState] = useState<[number, number, number]>([0, 0, 0]);
   const [scale, setScaleState] = useState<[number, number, number]>([1, 1, 1]);
 
+  // Load transform data when entity changes
   useEffect(() => {
-    if (selectedEntity == null) {
+    if (entityId === null) {
       setPositionState([0, 0, 0]);
       setRotationState([0, 0, 0]);
       setScaleState([1, 1, 1]);
       return;
     }
 
-    const updateTransform = () => {
-      const transformData = componentManager.getComponentData(selectedEntity, 'transform');
-      if (transformData) {
-        setPositionState(transformData.position || [0, 0, 0]);
-        setRotationState(transformData.rotation || [0, 0, 0]);
-        setScaleState(transformData.scale || [1, 1, 1]);
-      } else {
-        setPositionState([0, 0, 0]);
-        setRotationState([0, 0, 0]);
-        setScaleState([1, 1, 1]);
-      }
-    };
-
-    // Initial load
-    updateTransform();
-
-    // Listen for component changes
-    const handleComponentChange = (event: any) => {
-      if (event.entityId === selectedEntity && event.componentId === 'transform') {
-        updateTransform();
-      }
-    };
-
-    componentManager.addEventListener(handleComponentChange);
-
-    return () => {
-      componentManager.removeEventListener(handleComponentChange);
-    };
-  }, [selectedEntity]);
+    const transformComponent = componentManager.getTransformComponent(entityId);
+    if (transformComponent?.data) {
+      const data = transformComponent.data;
+      setPositionState(data.position || [0, 0, 0]);
+      setRotationState(data.rotation || [0, 0, 0]);
+      setScaleState(data.scale || [1, 1, 1]);
+    }
+  }, [entityId, componentManager]);
 
   const setPosition = useCallback(
-    async (next: [number, number, number]) => {
-      if (selectedEntity == null) return;
-
-      const result = await componentManager.updateComponent(selectedEntity, 'transform', {
-        position: next,
-        rotation,
-        scale,
-        needsUpdate: 1,
+    (newPosition: [number, number, number]) => {
+      if (entityId === null) return;
+      setPositionState(newPosition);
+      componentManager.updateComponent(entityId, KnownComponentTypes.TRANSFORM, {
+        position: newPosition,
       });
-
-      if (result.valid) {
-        setPositionState(next);
-      } else {
-        console.warn('[useTransform] Failed to update position:', result.errors);
-      }
     },
-    [selectedEntity, rotation, scale],
+    [entityId, componentManager],
   );
 
   const setRotation = useCallback(
-    async (next: [number, number, number]) => {
-      if (selectedEntity == null) return;
-
-      const result = await componentManager.updateComponent(selectedEntity, 'transform', {
-        position,
-        rotation: next,
-        scale,
-        needsUpdate: 1,
+    (newRotation: [number, number, number]) => {
+      if (entityId === null) return;
+      setRotationState(newRotation);
+      componentManager.updateComponent(entityId, KnownComponentTypes.TRANSFORM, {
+        rotation: newRotation,
       });
-
-      if (result.valid) {
-        setRotationState(next);
-      } else {
-        console.warn('[useTransform] Failed to update rotation:', result.errors);
-      }
     },
-    [selectedEntity, position, scale],
+    [entityId, componentManager],
   );
 
   const setScale = useCallback(
-    async (next: [number, number, number]) => {
-      if (selectedEntity == null) return;
-
-      const result = await componentManager.updateComponent(selectedEntity, 'transform', {
-        position,
-        rotation,
-        scale: next,
-        needsUpdate: 1,
+    (newScale: [number, number, number]) => {
+      if (entityId === null) return;
+      setScaleState(newScale);
+      componentManager.updateComponent(entityId, KnownComponentTypes.TRANSFORM, {
+        scale: newScale,
       });
-
-      if (result.valid) {
-        setScaleState(next);
-      } else {
-        console.warn('[useTransform] Failed to update scale:', result.errors);
-      }
     },
-    [selectedEntity, position, rotation],
+    [entityId, componentManager],
   );
 
-  return { position, rotation, scale, setPosition, setRotation, setScale };
+  return {
+    position,
+    rotation,
+    scale,
+    setPosition,
+    setRotation,
+    setScale,
+  };
 };

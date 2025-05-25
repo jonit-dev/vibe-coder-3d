@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
-import { registerBuiltInArchetypes } from '@/core';
 import Editor from '@/editor/Editor';
 import { MainScene } from '@/game/scenes/MainScene';
 
@@ -9,26 +8,21 @@ import { MainScene } from '@/game/scenes/MainScene';
  * Main App component
  */
 export default function App() {
-  // Initialize component system globally with proper order
+  // Initialize the new ECS system
   useEffect(() => {
     // Use a flag to prevent double registration in development StrictMode
-    const isInitialized = (window as any).__componentSystemInitialized;
+    const isInitialized = (window as any).__ecsSystemInitialized;
     if (isInitialized) {
-      console.log('Component system already initialized, skipping...');
+      console.log('ECS system already initialized, skipping...');
       return;
     }
 
     try {
-      // The component manager is already initialized in main.tsx
-      // Just register archetypes here as they depend on components being available
-      console.log('Registering built-in archetypes...');
-      registerBuiltInArchetypes();
-      console.log('✅ Archetypes registered');
-
-      console.log('✅ Global Component System initialized successfully');
-      (window as any).__componentSystemInitialized = true;
+      // The ECS system is already initialized via DI container in main.tsx
+      console.log('✅ ECS System initialized successfully');
+      (window as any).__ecsSystemInitialized = true;
     } catch (error) {
-      console.error('❌ Failed to initialize Global Component System:', error);
+      console.error('❌ Failed to initialize ECS System:', error);
       console.error('Error details:', error);
     }
   }, []);

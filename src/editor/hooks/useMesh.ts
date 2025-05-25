@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { componentManager } from '@/core/dynamic-components/init';
-import { MeshTypeEnum } from '@core/lib/ecs';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
 
 export interface IUseMesh {
   meshType: string;
   setMeshType: (type: string) => void;
-  meshTypeEnumToString: (type: MeshTypeEnum | undefined) => string;
-  meshTypeStringToEnum: (type: string) => MeshTypeEnum | undefined;
+  meshTypeEnumToString: (type: string | undefined) => string;
+  meshTypeStringToEnum: (type: string) => string | undefined;
 }
 
 export const useMesh = (selectedEntity: number | null): IUseMesh => {
   const [meshType, setMeshTypeState] = useState<string>('unknown');
+  const componentManager = useComponentManager();
 
   useEffect(() => {
     if (selectedEntity == null) {
@@ -20,9 +20,14 @@ export const useMesh = (selectedEntity: number | null): IUseMesh => {
     }
 
     const updateMeshType = () => {
-      const meshTypeData = componentManager.getComponentData(selectedEntity, 'meshType');
-      if (meshTypeData?.type !== undefined) {
-        setMeshTypeState(meshTypeEnumToString(meshTypeData.type));
+      const meshData = componentManager.getComponent(selectedEntity, 'mesh');
+      if (meshData?.data && typeof meshData.data === 'object' && meshData.data !== null) {
+        const meshTypeValue = (meshData.data as any).meshType;
+        if (meshTypeValue) {
+          setMeshTypeState(meshTypeEnumToString(meshTypeValue));
+        } else {
+          setMeshTypeState('unknown');
+        }
       } else {
         setMeshTypeState('unknown');
       }
@@ -31,60 +36,54 @@ export const useMesh = (selectedEntity: number | null): IUseMesh => {
     // Initial load
     updateMeshType();
 
-    // Listen for component changes
-    const handleComponentChange = (event: any) => {
-      if (event.entityId === selectedEntity && event.componentId === 'meshType') {
-        updateMeshType();
-      }
-    };
-
-    componentManager.addEventListener(handleComponentChange);
+    // For now, poll for changes since we don't have an event system yet
+    const interval = setInterval(updateMeshType, 100);
 
     return () => {
-      componentManager.removeEventListener(handleComponentChange);
+      clearInterval(interval);
     };
-  }, [selectedEntity]);
+  }, [selectedEntity, componentManager]);
 
-  const meshTypeEnumToString = useCallback((type: MeshTypeEnum | undefined): string => {
+  const meshTypeEnumToString = useCallback((type: string | undefined): string => {
     switch (type) {
-      case MeshTypeEnum.Cube:
+      case 'Cube':
         return 'Cube';
-      case MeshTypeEnum.Sphere:
+      case 'Sphere':
         return 'Sphere';
-      case MeshTypeEnum.Cylinder:
+      case 'Cylinder':
         return 'Cylinder';
-      case MeshTypeEnum.Cone:
+      case 'Cone':
         return 'Cone';
-      case MeshTypeEnum.Torus:
+      case 'Torus':
         return 'Torus';
-      case MeshTypeEnum.Plane:
+      case 'Plane':
         return 'Plane';
       default:
         return 'unknown';
     }
   }, []);
 
-  const meshTypeStringToEnum = useCallback((type: string): MeshTypeEnum | undefined => {
+  const meshTypeStringToEnum = useCallback((type: string): string | undefined => {
     switch (type) {
       case 'Cube':
-        return MeshTypeEnum.Cube;
+        return 'Cube';
       case 'Sphere':
-        return MeshTypeEnum.Sphere;
+        return 'Sphere';
       case 'Cylinder':
-        return MeshTypeEnum.Cylinder;
+        return 'Cylinder';
       case 'Cone':
-        return MeshTypeEnum.Cone;
+        return 'Cone';
       case 'Torus':
-        return MeshTypeEnum.Torus;
+        return 'Torus';
       case 'Plane':
-        return MeshTypeEnum.Plane;
+        return 'Plane';
       default:
         return undefined;
     }
   }, []);
 
   const setMeshType = useCallback(
-    async (type: string) => {
+    (type: string) => {
       if (selectedEntity == null) return;
 
       const meshTypeEnum = meshTypeStringToEnum(type);
@@ -93,17 +92,24 @@ export const useMesh = (selectedEntity: number | null): IUseMesh => {
         return;
       }
 
-      const result = await componentManager.updateComponent(selectedEntity, 'meshType', {
-        type: meshTypeEnum,
-      });
+      // Update through ComponentManager
+      const currentMesh = componentManager.getComponent(selectedEntity, 'mesh');
+      const meshData = currentMesh?.data || {};
 
-      if (result.valid) {
-        setMeshTypeState(type);
+      const updatedMesh = {
+        ...meshData,
+        meshType: meshTypeEnum,
+      };
+
+      if (currentMesh) {
+        componentManager.updateComponent(selectedEntity, 'mesh', updatedMesh);
       } else {
-        console.warn('[useMesh] Failed to update mesh type:', result.errors);
+        componentManager.addComponent(selectedEntity, 'mesh', updatedMesh);
       }
+
+      setMeshTypeState(type);
     },
-    [selectedEntity, meshTypeStringToEnum],
+    [selectedEntity, meshTypeStringToEnum, componentManager],
   );
 
   return { meshType, setMeshType, meshTypeEnumToString, meshTypeStringToEnum };

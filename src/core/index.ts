@@ -152,17 +152,3 @@ export type {
 
 // UI Store with validation
 export * from './stores/uiStore';
-
-// Dynamic Component System - Unified
-export { ComponentManager } from './dynamic-components/ComponentManager';
-export { registerBuiltInComponentGroups } from './lib/component-groups';
-export {
-  ComponentGroupManager,
-  componentManager,
-  ComponentRegistry,
-  componentRegistry,
-  DynamicComponentManager,
-  dynamicComponentManager,
-} from './lib/dynamic-components';
-export { ArchetypeManager, registerBuiltInArchetypes } from './lib/entity-archetypes';
-export * from './types/component-registry';

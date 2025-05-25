@@ -2,25 +2,36 @@
 import { useEffect, useRef } from 'react';
 
 import { IPhysicsBodyHandle } from '@/core/components/physics/PhysicsBody';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useEntityManager } from '@/editor/hooks/useEntityManager';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
+import { IRigidBodyData } from '@/editor/lib/ecs/components/RigidBodyComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 /**
  * Component that manages physics integration with the editor
- * Creates physics bodies for entities with rigid body data when play mode is active
+ * Creates physics bodies for entities with rigid body components when play mode is active
  */
 export const EditorPhysicsIntegration = () => {
   const isPlaying = useEditorStore((state) => state.isPlaying);
-  const rigidBodies = useEditorStore((state) => state.rigidBodies);
+  const entityManager = useEntityManager();
+  const componentManager = useComponentManager();
 
   const physicsBodyRefs = useRef<Map<number, IPhysicsBodyHandle>>(new Map());
 
   useEffect(() => {
     if (isPlaying) {
-      // Create physics bodies for all entities with rigid body data
-      Object.entries(rigidBodies).forEach(([entityIdStr, rigidBodyData]) => {
-        const entityId = parseInt(entityIdStr, 10);
+      // Get all entities with RigidBody components
+      const entitiesWithRigidBodies = componentManager.getEntitiesWithComponent(
+        KnownComponentTypes.RIGID_BODY,
+      );
 
-        if (rigidBodyData && rigidBodyData.enabled) {
+      entitiesWithRigidBodies.forEach((entityId) => {
+        const rigidBodyComponent = componentManager.getRigidBodyComponent(entityId);
+
+        if (rigidBodyComponent && rigidBodyComponent.data) {
+          const rigidBodyData = rigidBodyComponent.data as IRigidBodyData;
+
           // Create physics body for this entity
           console.log(`Creating physics body for entity ${entityId}`, rigidBodyData);
 
@@ -37,7 +48,7 @@ export const EditorPhysicsIntegration = () => {
       });
       physicsBodyRefs.current.clear();
     }
-  }, [isPlaying, rigidBodies]);
+  }, [isPlaying, entityManager, componentManager]);
 
   // This component doesn't render anything - it's just for side effects
   return null;
@@ -48,10 +59,11 @@ export const EditorPhysicsIntegration = () => {
  */
 export const usePhysicsBodyCreation = (entityId: number) => {
   const isPlaying = useEditorStore((state) => state.isPlaying);
-  const rigidBodies = useEditorStore((state) => state.rigidBodies);
+  const componentManager = useComponentManager();
 
-  const rigidBodyData = rigidBodies[entityId];
-  const shouldHavePhysics = isPlaying && rigidBodyData && rigidBodyData.enabled;
+  const rigidBodyComponent = componentManager.getRigidBodyComponent(entityId);
+  const rigidBodyData = rigidBodyComponent?.data as IRigidBodyData | undefined;
+  const shouldHavePhysics = isPlaying && rigidBodyData && !rigidBodyData.isStatic;
 
   return {
     shouldHavePhysics,

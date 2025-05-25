@@ -3,7 +3,8 @@ import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
-import { componentManager } from '@/core/dynamic-components/init';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 import { useEditorStore } from '../../../store/editorStore';
 
@@ -16,14 +17,15 @@ export interface IViewportPanelProps {
 }
 
 export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
-  // Get all entities with a Transform from centralized ComponentManager
+  // Get all entities with a Transform from new ECS system
   const [entityIds, setEntityIds] = useState<number[]>([]);
   const isPlaying = useEditorStore((state) => state.isPlaying);
+  const componentManager = useComponentManager();
 
-  // Subscribe to entity changes from ComponentManager
+  // Subscribe to entity changes from ECS system
   useEffect(() => {
     const updateEntities = () => {
-      const entities = componentManager.getEntitiesWithComponents(['transform']);
+      const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
       setEntityIds(entities);
       console.debug(`[ViewportPanel] 🔍 Found ${entities.length} renderable entities:`, entities);
     };
@@ -31,17 +33,14 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
     // Initial load
     updateEntities();
 
-    // Listen for component changes
-    const listener = () => {
-      updateEntities();
-    };
-
-    componentManager.subscribe(listener);
+    // For now, poll for changes since we don't have an event system yet
+    // In a future improvement, we could add an event emitter to ComponentManager
+    const interval = setInterval(updateEntities, 100);
 
     return () => {
-      componentManager.unsubscribe(listener);
+      clearInterval(interval);
     };
-  }, []);
+  }, [componentManager]);
 
   // Gizmo mode state
   const [mode, setMode] = useState<GizmoMode>('translate');

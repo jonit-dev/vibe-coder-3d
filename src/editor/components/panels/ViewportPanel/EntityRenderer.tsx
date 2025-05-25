@@ -3,11 +3,12 @@ import { BallCollider, CuboidCollider, RigidBody } from '@react-three/rapier';
 import React, { useEffect, useRef, useState } from 'react';
 import { Mesh } from 'three';
 
-import { componentManager } from '@/core/dynamic-components/init';
-import { useMeshCollider } from '@/editor/hooks/useMeshCollider';
-import { useMeshRenderer } from '@/editor/hooks/useMeshRenderer';
-import { useRigidBody } from '@/editor/hooks/useRigidBody';
-import { useTransform } from '@/editor/hooks/useTransform';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
+import { IMeshColliderData } from '@/editor/lib/ecs/components/MeshColliderComponent';
+import { IMeshRendererData } from '@/editor/lib/ecs/components/MeshRendererComponent';
+import { IRigidBodyData } from '@/editor/lib/ecs/components/RigidBodyComponent';
+import { ITransformData } from '@/editor/lib/ecs/components/TransformComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 import { ColliderVisualization } from './ColliderVisualization';
@@ -36,13 +37,33 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   const [isTransformingLocal, setIsTransformingLocal] = useState(false);
   const [dragTick, setDragTick] = useState(0);
 
-  // Single source of truth - ComponentManager only
-  const { position, rotation, scale } = useTransform(entityId);
-  const { rigidBody } = useRigidBody(entityId);
-  const { meshCollider } = useMeshCollider(entityId);
-  const { meshRenderer } = useMeshRenderer(entityId);
+  // Use new ECS system
+  const componentManager = useComponentManager();
   const isPlaying = useEditorStore((s) => s.isPlaying);
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
+
+  // Get components using new ECS system
+  const transform = componentManager.getComponent<ITransformData>(
+    entityId,
+    KnownComponentTypes.TRANSFORM,
+  );
+  const rigidBody = componentManager.getComponent<IRigidBodyData>(
+    entityId,
+    KnownComponentTypes.RIGID_BODY,
+  );
+  const meshCollider = componentManager.getComponent<IMeshColliderData>(
+    entityId,
+    KnownComponentTypes.MESH_COLLIDER,
+  );
+  const meshRenderer = componentManager.getComponent<IMeshRendererData>(
+    entityId,
+    KnownComponentTypes.MESH_RENDERER,
+  );
+
+  // Extract component data with defaults
+  const position: [number, number, number] = transform?.data?.position || [0, 0, 0];
+  const rotation: [number, number, number] = transform?.data?.rotation || [0, 0, 0];
+  const scale: [number, number, number] = transform?.data?.scale || [1, 1, 1];
 
   // Mesh ref and properties
   const meshRef = useRef<Mesh>(null);
@@ -53,16 +74,22 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
 
   // Get mesh type and color from ComponentManager
   useEffect(() => {
-    const meshData = componentManager.getComponentData(entityId, 'mesh');
-    const materialData = componentManager.getComponentData(entityId, 'material');
+    const meshData = componentManager.getComponent(entityId, 'mesh');
+    const materialData = componentManager.getComponent(entityId, 'material');
 
-    if (meshData) {
-      setMeshType(meshData.meshType || 'Cube');
+    if (meshData?.data && typeof meshData.data === 'object' && meshData.data !== null) {
+      const meshTypeValue = (meshData.data as any).meshType;
+      if (meshTypeValue) {
+        setMeshType(meshTypeValue || 'Cube');
+      }
     }
-    if (materialData) {
-      setEntityColor(materialData.color || '#3388ff');
+    if (materialData?.data && typeof materialData.data === 'object' && materialData.data !== null) {
+      const colorValue = (materialData.data as any).color;
+      if (colorValue) {
+        setEntityColor(colorValue || '#3388ff');
+      }
     }
-  }, [entityId]);
+  }, [entityId, componentManager]);
 
   // Sync mesh transform from ComponentManager (single source of truth)
   useEffect(() => {
@@ -86,7 +113,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   ];
 
   // Check if this entity should have physics
-  const shouldHavePhysics = isPlaying && rigidBody && rigidBody.enabled;
+  const shouldHavePhysics = isPlaying && rigidBody?.data && rigidBody.data.enabled;
 
   // Handle keyboard shortcuts for gizmo mode switching
   useEffect(() => {
@@ -120,8 +147,8 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
 
   // Get appropriate collider type
   const getColliderType = () => {
-    if (meshCollider && meshCollider.enabled) {
-      switch (meshCollider.colliderType) {
+    if (meshCollider?.data && meshCollider.data.enabled) {
+      switch (meshCollider.data.colliderType) {
         case 'box':
           return 'cuboid';
         case 'sphere':
@@ -178,10 +205,10 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
   const meshContent = (
     <mesh
       ref={meshRef}
-      castShadow={meshRenderer?.castShadows ?? true}
-      receiveShadow={meshRenderer?.receiveShadows ?? true}
+      castShadow={meshRenderer?.data?.castShadows ?? true}
+      receiveShadow={meshRenderer?.data?.receiveShadows ?? true}
       userData={{ entityId }}
-      visible={meshRenderer?.enabled ?? true}
+      visible={meshRenderer?.data?.enabled ?? true}
       onClick={(e) => {
         e.stopPropagation();
         setSelectedId(entityId);
@@ -189,11 +216,11 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     >
       {getGeometry()}
       <meshStandardMaterial
-        color={meshRenderer?.material.color ?? entityColor}
-        metalness={meshRenderer?.material.metalness ?? 0}
-        roughness={meshRenderer?.material.roughness ?? 0.5}
-        emissive={meshRenderer?.material.emissive ?? '#000000'}
-        emissiveIntensity={meshRenderer?.material.emissiveIntensity ?? 0}
+        color={meshRenderer?.data?.material?.color ?? entityColor}
+        metalness={meshRenderer?.data?.material?.metalness ?? 0}
+        roughness={meshRenderer?.data?.material?.roughness ?? 0.5}
+        emissive={meshRenderer?.data?.material?.emissive ?? '#000000'}
+        emissiveIntensity={meshRenderer?.data?.material?.emissiveIntensity ?? 0}
       />
     </mesh>
   );
@@ -202,55 +229,66 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
     <group>
       {shouldHavePhysics ? (
         <RigidBody
-          type={rigidBody.bodyType}
-          mass={rigidBody.mass}
-          friction={meshCollider?.physicsMaterial.friction ?? rigidBody.material.friction}
-          restitution={meshCollider?.physicsMaterial.restitution ?? rigidBody.material.restitution}
-          density={meshCollider?.physicsMaterial.density ?? rigidBody.material.density}
-          gravityScale={rigidBody.gravityScale}
-          canSleep={rigidBody.canSleep}
+          type={rigidBody?.data?.bodyType as any}
+          mass={rigidBody?.data?.mass ?? 1}
+          friction={
+            meshCollider?.data?.physicsMaterial?.friction ??
+            rigidBody?.data?.material?.friction ??
+            0.7
+          }
+          restitution={
+            meshCollider?.data?.physicsMaterial?.restitution ??
+            rigidBody?.data?.material?.restitution ??
+            0.3
+          }
+          density={
+            meshCollider?.data?.physicsMaterial?.density ?? rigidBody?.data?.material?.density ?? 1
+          }
+          gravityScale={rigidBody?.data?.gravityScale ?? 1}
+          canSleep={rigidBody?.data?.canSleep ?? true}
           position={position}
           rotation={rotationRadians}
           scale={scale}
-          colliders={meshCollider ? false : getColliderType()}
+          colliders={meshCollider?.data ? false : getColliderType()}
         >
           {/* Custom Colliders based on MeshCollider settings */}
-          {meshCollider && meshCollider.enabled && (
+          {meshCollider?.data && meshCollider.data.enabled && (
             <>
-              {meshCollider.colliderType === 'box' && (
+              {meshCollider.data.colliderType === 'box' && (
                 <CuboidCollider
                   args={[
-                    meshCollider.size.width / 2,
-                    meshCollider.size.height / 2,
-                    meshCollider.size.depth / 2,
+                    (meshCollider.data.size?.width ?? 1) / 2,
+                    (meshCollider.data.size?.height ?? 1) / 2,
+                    (meshCollider.data.size?.depth ?? 1) / 2,
                   ]}
-                  position={meshCollider.center}
-                  sensor={meshCollider.isTrigger}
+                  position={meshCollider.data.center ?? [0, 0, 0]}
+                  sensor={meshCollider.data.isTrigger}
                 />
               )}
-              {meshCollider.colliderType === 'sphere' && (
+              {meshCollider.data.colliderType === 'sphere' && (
                 <BallCollider
-                  args={[meshCollider.size.radius]}
-                  position={meshCollider.center}
-                  sensor={meshCollider.isTrigger}
+                  args={[meshCollider.data.size?.radius ?? 0.5]}
+                  position={meshCollider.data.center ?? [0, 0, 0]}
+                  sensor={meshCollider.data.isTrigger}
                 />
               )}
-              {meshCollider.colliderType === 'capsule' && (
+              {meshCollider.data.colliderType === 'capsule' && (
                 <CuboidCollider
                   args={[
-                    meshCollider.size.capsuleRadius,
-                    meshCollider.size.capsuleHeight / 2,
-                    meshCollider.size.capsuleRadius,
+                    meshCollider.data.size?.capsuleRadius ?? 0.5,
+                    (meshCollider.data.size?.capsuleHeight ?? 1) / 2,
+                    meshCollider.data.size?.capsuleRadius ?? 0.5,
                   ]}
-                  position={meshCollider.center}
-                  sensor={meshCollider.isTrigger}
+                  position={meshCollider.data.center ?? [0, 0, 0]}
+                  sensor={meshCollider.data.isTrigger}
                 />
               )}
-              {(meshCollider.colliderType === 'convex' || meshCollider.colliderType === 'mesh') && (
+              {(meshCollider.data.colliderType === 'convex' ||
+                meshCollider.data.colliderType === 'mesh') && (
                 <CuboidCollider
                   args={[0.5, 0.5, 0.5]}
-                  position={meshCollider.center}
-                  sensor={meshCollider.isTrigger}
+                  position={meshCollider.data.center ?? [0, 0, 0]}
+                  sensor={meshCollider.data.isTrigger}
                 />
               )}
             </>
@@ -290,7 +328,10 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = ({
       {/* Collider Visualization (Unity-style wireframes) */}
       {selected && (
         <group position={position} rotation={rotationRadians} scale={scale}>
-          <ColliderVisualization meshCollider={meshCollider} visible={!shouldHavePhysics} />
+          <ColliderVisualization
+            meshCollider={meshCollider?.data || null}
+            visible={!shouldHavePhysics}
+          />
         </group>
       )}
     </group>

@@ -1,118 +1,88 @@
 import React from 'react';
-import { FiCheck, FiPlus, FiX } from 'react-icons/fi';
 
-import {
-  useAvailableComponents,
-  useComponentManager,
-  useEntityComponents,
-} from '@/core/hooks/useComponent';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useEntityManager } from '@/editor/hooks/useEntityManager';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 interface IDynamicComponentDemoProps {
-  entityId: number | null;
+  entityId: number;
 }
 
 export const DynamicComponentDemo: React.FC<IDynamicComponentDemoProps> = ({ entityId }) => {
-  const entityComponents = useEntityComponents(entityId);
-  const availableComponents = useAvailableComponents(entityId);
-  const velocityManager = useComponentManager(entityId, 'velocity');
+  const componentManager = useComponentManager();
+  const entityManager = useEntityManager();
 
-  if (!entityId) {
-    return (
-      <div className="p-4 bg-gray-800 rounded border border-gray-600">
-        <h3 className="text-sm font-semibold text-white mb-2">Dynamic Component Demo</h3>
-        <p className="text-xs text-gray-400">No entity selected</p>
-      </div>
-    );
-  }
+  const entity = entityManager.getEntity(entityId);
+  const entityComponents = componentManager.getComponentsForEntity(entityId);
+  const availableComponentTypes = Object.values(KnownComponentTypes);
 
-  const handleToggleVelocity = async () => {
-    if (velocityManager.hasComponent) {
-      await velocityManager.removeComponent();
-    } else {
-      await velocityManager.addComponent({
-        linear: [0, 0, 0],
-        angular: [0, 0, 0],
-        linearDamping: 0.01,
-        angularDamping: 0.01,
-        priority: 1,
-      });
+  const handleAddComponent = (componentType: string) => {
+    let defaultData = {};
+    switch (componentType) {
+      case KnownComponentTypes.TRANSFORM:
+        defaultData = { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
+        break;
+      case KnownComponentTypes.MESH_RENDERER:
+        defaultData = { meshId: 'cube', materialId: 'default', enabled: true };
+        break;
+      case KnownComponentTypes.RIGID_BODY:
+        defaultData = { type: 'dynamic', mass: 1, enabled: true };
+        break;
+      case KnownComponentTypes.MESH_COLLIDER:
+        defaultData = { type: 'box', enabled: true };
+        break;
     }
+
+    componentManager.addComponent(entityId, componentType, defaultData);
+  };
+
+  const handleRemoveComponent = (componentType: string) => {
+    componentManager.removeComponent(entityId, componentType);
   };
 
   return (
-    <div className="p-4 bg-gray-800 rounded border border-gray-600">
-      <h3 className="text-sm font-semibold text-white mb-3">Dynamic Component Demo</h3>
+    <div className="p-4 bg-gray-900 text-white">
+      <h2 className="text-lg font-bold mb-4">ECS Demo - Entity {entityId}</h2>
 
-      {/* Current Components */}
-      <div className="mb-4">
-        <h4 className="text-xs font-medium text-gray-300 mb-2">
-          Current Components ({entityComponents.length})
-        </h4>
-        <div className="space-y-1">
-          {entityComponents.map((componentId) => (
-            <div key={componentId} className="flex items-center gap-2 text-xs">
-              <FiCheck className="text-green-400" />
-              <span className="text-gray-200">{componentId}</span>
-            </div>
-          ))}
+      {entity && (
+        <div className="mb-4">
+          <h3 className="font-semibold">Entity Info:</h3>
+          <p>Name: {entity.name}</p>
+          <p>ID: {entity.id}</p>
         </div>
+      )}
+
+      <div className="mb-4">
+        <h3 className="font-semibold">Current Components ({entityComponents.length}):</h3>
+        <ul className="list-disc list-inside">
+          {entityComponents.map((component) => (
+            <li key={component.type} className="flex justify-between items-center">
+              <span>{component.type}</span>
+              <button
+                onClick={() => handleRemoveComponent(component.type)}
+                className="ml-2 px-2 py-1 bg-red-600 text-white rounded text-xs"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
 
-      {/* Available Components */}
-      <div className="mb-4">
-        <h4 className="text-xs font-medium text-gray-300 mb-2">
-          Available Components ({availableComponents.length})
-        </h4>
-        <div className="max-h-32 overflow-y-auto space-y-1">
-          {availableComponents.slice(0, 5).map((component) => (
-            <div key={component.id} className="flex items-center gap-2 text-xs">
-              <FiPlus className="text-blue-400" />
-              <span className="text-gray-300">{component.name}</span>
-              <span className="text-gray-500">({component.category})</span>
-            </div>
+      <div>
+        <h3 className="font-semibold">Available Component Types:</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {availableComponentTypes.slice(0, 5).map((componentType) => (
+            <button
+              key={componentType}
+              onClick={() => handleAddComponent(componentType)}
+              className="p-2 bg-blue-600 text-white rounded text-sm"
+              disabled={entityComponents.some((c) => c.type === componentType)}
+            >
+              Add {componentType}
+            </button>
           ))}
-          {availableComponents.length > 5 && (
-            <div className="text-xs text-gray-500">
-              ...and {availableComponents.length - 5} more
-            </div>
-          )}
         </div>
-      </div>
-
-      {/* Velocity Component Demo */}
-      <div className="border-t border-gray-600 pt-3">
-        <h4 className="text-xs font-medium text-gray-300 mb-2">Velocity Component Test</h4>
-        <div className="flex items-center gap-2 mb-2">
-          <button
-            onClick={handleToggleVelocity}
-            disabled={velocityManager.isLoading}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-              velocityManager.hasComponent
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            } disabled:opacity-50`}
-          >
-            {velocityManager.hasComponent ? <FiX /> : <FiPlus />}
-            {velocityManager.isLoading
-              ? 'Loading...'
-              : velocityManager.hasComponent
-                ? 'Remove Velocity'
-                : 'Add Velocity'}
-          </button>
-        </div>
-
-        {velocityManager.lastResult && !velocityManager.lastResult.valid && (
-          <div className="text-xs text-red-400 mb-2">
-            Error: {velocityManager.lastResult.errors.join(', ')}
-          </div>
-        )}
-
-        {velocityManager.hasComponent && velocityManager.data && (
-          <div className="text-xs text-gray-300">
-            <div>Linear: [{velocityManager.data.linear?.join(', ')}]</div>
-            <div>Angular: [{velocityManager.data.angular?.join(', ')}]</div>
-          </div>
-        )}
       </div>
     </div>
   );

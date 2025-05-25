@@ -1,76 +1,47 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { componentManager } from '@/core/dynamic-components/init';
-import { IRigidBodyData } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
+import { IRigidBodyData } from '@/editor/lib/ecs/components/RigidBodyComponent';
+
+import { useComponentManager } from './useComponentManager';
 
 /**
  * Hook to manage rigid body data for entities
  */
 export const useRigidBody = (entityId: number | null) => {
+  const componentManager = useComponentManager();
   const [rigidBody, setRigidBodyState] = useState<IRigidBodyData | null>(null);
 
+  // Load rigid body data when entity changes
   useEffect(() => {
-    if (entityId == null) {
+    if (entityId === null) {
       setRigidBodyState(null);
       return;
     }
 
-    const updateRigidBody = () => {
-      const rigidBodyData = componentManager.getComponentData(entityId, 'rigidBody');
-      setRigidBodyState(rigidBodyData || null);
-    };
-
-    // Initial load
-    updateRigidBody();
-
-    // Listen for component changes
-    const handleComponentChange = (event: any) => {
-      if (event.entityId === entityId && event.componentId === 'rigidBody') {
-        updateRigidBody();
-      }
-    };
-
-    componentManager.addEventListener(handleComponentChange);
-
-    return () => {
-      componentManager.removeEventListener(handleComponentChange);
-    };
-  }, [entityId]);
+    const rigidBodyComponent = componentManager.getRigidBodyComponent(entityId);
+    if (rigidBodyComponent?.data) {
+      setRigidBodyState(rigidBodyComponent.data);
+    } else {
+      setRigidBodyState(null);
+    }
+  }, [entityId, componentManager]);
 
   const setRigidBody = useCallback(
-    async (data: IRigidBodyData | null) => {
-      if (entityId == null) return;
+    (newRigidBody: IRigidBodyData | null) => {
+      if (entityId === null) return;
 
-      if (data === null) {
-        // Remove the component
-        const result = await componentManager.removeComponent(entityId, 'rigidBody');
-        if (result.valid) {
-          setRigidBodyState(null);
-        } else {
-          console.warn('[useRigidBody] Failed to remove rigid body:', result.errors);
-        }
+      if (newRigidBody === null) {
+        // Remove component
+        componentManager.removeComponent(entityId, KnownComponentTypes.RIGID_BODY);
+        setRigidBodyState(null);
       } else {
-        // Add or update the component
-        const hasComponent = componentManager.hasComponent(entityId, 'rigidBody');
-
-        if (hasComponent) {
-          const result = await componentManager.updateComponent(entityId, 'rigidBody', data);
-          if (result.valid) {
-            setRigidBodyState(data);
-          } else {
-            console.warn('[useRigidBody] Failed to update rigid body:', result.errors);
-          }
-        } else {
-          const result = await componentManager.addComponent(entityId, 'rigidBody', data);
-          if (result.valid) {
-            setRigidBodyState(data);
-          } else {
-            console.warn('[useRigidBody] Failed to add rigid body:', result.errors);
-          }
-        }
+        // Add or update component
+        componentManager.addComponent(entityId, KnownComponentTypes.RIGID_BODY, newRigidBody);
+        setRigidBodyState(newRigidBody);
       }
     },
-    [entityId],
+    [entityId, componentManager],
   );
 
   return {

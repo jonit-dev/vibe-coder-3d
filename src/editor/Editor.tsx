@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { componentManager } from '@/core/dynamic-components/init';
-
 import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
 import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent';
@@ -12,11 +10,15 @@ import { StackedLeftPanel } from './components/ui/StackedLeftPanel';
 import { StatusBar } from './components/ui/StatusBar';
 import { TopBar } from './components/ui/TopBar';
 import { useEditorKeyboard } from './hooks/useEditorKeyboard';
-import { ShapeType, useEntityCreation } from './hooks/useEntityCreation';
+import { useEntityCreation } from './hooks/useEntityCreation';
+import { useEntityManager } from './hooks/useEntityManager';
 import { usePhysicsControls } from './hooks/usePhysicsControls';
 import { useSceneActions } from './hooks/useSceneActions';
 import { useSceneInitialization } from './hooks/useSceneInitialization';
 import { useEditorStore } from './store/editorStore';
+
+// Shape types that can be created in the editor
+export type ShapeType = 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane';
 
 // Legacy interfaces kept for compatibility
 export interface ITransform {
@@ -37,31 +39,30 @@ export interface ISceneObject {
 }
 
 const Editor: React.FC = () => {
-  // ComponentManager as single source of truth - get all entities with transform
+  // New ECS system - get all entities
+  const entityManager = useEntityManager();
   const [entityIds, setEntityIds] = useState<number[]>([]);
 
-  // Subscribe to ComponentManager for entity changes
+  // Subscribe to ECS system for entity changes
   useEffect(() => {
     const updateEntities = () => {
-      const entities = componentManager.getEntitiesWithComponents(['transform']);
-      setEntityIds(entities);
-      console.log(`[Editor] Entity list updated:`, entities);
+      const entities = entityManager.getAllEntities();
+      const ids = entities.map((entity) => entity.id);
+      setEntityIds(ids);
+      console.log(`[Editor] Entity list updated:`, ids);
     };
 
     // Initial load
     updateEntities();
 
-    // Listen for changes
-    const listener = () => {
-      updateEntities();
-    };
-
-    componentManager.subscribe(listener);
+    // TODO: Add event listener system to ECS managers for real-time updates
+    // For now, we'll use periodic updates
+    const interval = setInterval(updateEntities, 1000);
 
     return () => {
-      componentManager.unsubscribe(listener);
+      clearInterval(interval);
     };
-  }, []);
+  }, [entityManager]);
 
   const selectedId = useEditorStore((s) => s.selectedId);
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
@@ -77,7 +78,7 @@ const Editor: React.FC = () => {
   const addButtonRef = useRef<HTMLButtonElement>(null);
 
   // Custom Hooks
-  const { createEntity, isCreating } = useEntityCreation();
+  const { createEntity, createCube, createSphere } = useEntityCreation();
   const {
     fileInputRef,
     savedScene,
@@ -101,11 +102,23 @@ const Editor: React.FC = () => {
   // Entity Creation Handler
   const handleAddObject = async (type: ShapeType) => {
     try {
-      const result = await createEntity(type);
-      setSelectedId(result.entityId);
-      setStatusMessage(result.message);
+      let entity;
+      switch (type) {
+        case 'Cube':
+          entity = createCube();
+          break;
+        case 'Sphere':
+          entity = createSphere();
+          break;
+        default:
+          entity = createEntity(type);
+          break;
+      }
+
+      setSelectedId(entity.id);
+      setStatusMessage(`Created ${type} (Entity ${entity.id})`);
       setShowAddMenu(false);
-      console.log('[AddObject] Created entity:', result);
+      console.log('[AddObject] Created entity:', entity);
     } catch (error) {
       console.error('[AddObject] Failed to create entity:', error);
       setStatusMessage(
@@ -156,62 +169,10 @@ const Editor: React.FC = () => {
     onStatusMessage: setStatusMessage,
   });
 
-  // Auto-select first entity when available and fix Entity 0 if needed
+  // Auto-select first entity when available
   useEffect(() => {
     if ((selectedId === null || !entityIds.includes(selectedId)) && entityIds.length > 0) {
       setSelectedId(entityIds[0]);
-    }
-
-    // Check if Entity 0 is missing expected physics components and fix it
-    if (entityIds.includes(0)) {
-      const checkAndFixEntity0 = async () => {
-        try {
-          // Import the component registry and dynamic component manager
-          const { componentRegistry } = await import('@/core/dynamic-components/init');
-          const { dynamicComponentManager } = await import('@/core/dynamic-components/init');
-
-          const entity0Components = componentRegistry.getEntityComponents(0);
-          console.log('[Editor] Entity 0 components:', entity0Components);
-
-          // Check if Entity 0 is missing rigidBody or meshCollider
-          const expectedPhysicsComponents = ['rigidBody', 'meshCollider'];
-          const missingComponents = expectedPhysicsComponents.filter(
-            (comp) => !entity0Components.includes(comp),
-          );
-
-          if (missingComponents.length > 0) {
-            console.log(
-              `[Editor] Entity 0 is missing components: ${missingComponents.join(', ')}. Attempting to add them...`,
-            );
-
-            for (const componentId of missingComponents) {
-              try {
-                const result = await dynamicComponentManager.addComponent(0, componentId);
-                if (result.valid) {
-                  console.log(
-                    `[Editor] ✅ Successfully added missing component '${componentId}' to Entity 0`,
-                  );
-                } else {
-                  console.error(
-                    `[Editor] ❌ Failed to add component '${componentId}' to Entity 0:`,
-                    result.errors,
-                  );
-                }
-              } catch (error) {
-                console.error(
-                  `[Editor] ❌ Exception adding component '${componentId}' to Entity 0:`,
-                  error,
-                );
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[Editor] Failed to check/fix Entity 0:', error);
-        }
-      };
-
-      // Check after a delay to allow editor store to be ready
-      setTimeout(checkAndFixEntity0, 1000);
     }
   }, [selectedId, entityIds, setSelectedId]);
 
@@ -269,9 +230,8 @@ const Editor: React.FC = () => {
               <button
                 className="px-3 py-1 rounded bg-green-700 hover:bg-green-800 text-sm mt-2 disabled:opacity-50"
                 onClick={() => handleAddObject('Cube')}
-                disabled={isCreating}
               >
-                {isCreating ? 'Creating...' : 'Add Object'}
+                Add Object
               </button>
             </div>
           </div>

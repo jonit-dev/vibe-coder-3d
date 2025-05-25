@@ -2,7 +2,10 @@ import { TransformControls } from '@react-three/drei';
 import React, { MutableRefObject, useRef } from 'react';
 import { Object3D } from 'three';
 
-import { componentManager } from '@/core/dynamic-components/init';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { ComponentManager } from '@/editor/lib/ecs/ComponentManager';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
+import { ITransformData } from '@/editor/lib/ecs/components/TransformComponent';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -14,21 +17,25 @@ export interface IGizmoControlsProps {
   setIsTransforming?: (isTransforming: boolean) => void;
 }
 
-async function updateTransformThroughComponentManager(
+function updateTransformThroughComponentManager(
   mesh: Object3D,
   mode: GizmoMode,
   entityId: number,
+  componentManager: ComponentManager,
   onTransformChange?: (values: [number, number, number]) => void,
 ) {
   // Get current transform data from ComponentManager
-  const currentTransform = componentManager.getComponentData(entityId, 'transform') || {
-    position: [0, 0, 0],
-    rotation: [0, 0, 0],
-    scale: [1, 1, 1],
-    needsUpdate: 1,
+  const currentTransform = componentManager.getComponent<ITransformData>(
+    entityId,
+    KnownComponentTypes.TRANSFORM,
+  );
+  const transformData = currentTransform?.data || {
+    position: [0, 0, 0] as [number, number, number],
+    rotation: [0, 0, 0] as [number, number, number],
+    scale: [1, 1, 1] as [number, number, number],
   };
 
-  const updatedTransform = { ...currentTransform };
+  const updatedTransform: ITransformData = { ...transformData };
 
   if (mode === 'translate') {
     const position: [number, number, number] = [mesh.position.x, mesh.position.y, mesh.position.z];
@@ -54,8 +61,11 @@ async function updateTransformThroughComponentManager(
   }
 
   // Update through ComponentManager (single source of truth)
-  updatedTransform.needsUpdate = 1;
-  await componentManager.updateComponent(entityId, 'transform', updatedTransform);
+  if (currentTransform) {
+    componentManager.updateComponent(entityId, KnownComponentTypes.TRANSFORM, updatedTransform);
+  } else {
+    componentManager.addComponent(entityId, KnownComponentTypes.TRANSFORM, updatedTransform);
+  }
 
   console.debug(`[GizmoControls] Updated ${mode} for entity ${entityId} through ComponentManager`);
 }
@@ -68,6 +78,7 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = ({
   setIsTransforming,
 }) => {
   const transformRef = useRef<any>(null);
+  const componentManager = useComponentManager();
 
   return (
     <>
@@ -86,6 +97,7 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = ({
               meshRef.current,
               mode,
               entityId,
+              componentManager,
               onTransformChange,
             );
           }}
@@ -95,6 +107,7 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = ({
               meshRef.current,
               mode,
               entityId,
+              componentManager,
               onTransformChange,
             );
           }}
