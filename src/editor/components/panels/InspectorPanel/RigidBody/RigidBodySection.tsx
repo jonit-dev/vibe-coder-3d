@@ -47,6 +47,7 @@ export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
   };
 
   const handleAutoCreateMeshCollider = () => {
+    console.log('[RigidBodySection] Add Mesh Collider button clicked', { meshCollider });
     if (!meshCollider) {
       const getDefaultColliderType = (meshType?: string) => {
         switch (meshType) {
@@ -82,6 +83,7 @@ export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
           density: 1,
         },
       };
+      console.log('[RigidBodySection] Calling setMeshCollider with:', defaultMeshCollider);
       setMeshCollider(defaultMeshCollider);
     }
   };

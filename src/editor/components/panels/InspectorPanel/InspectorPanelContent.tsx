@@ -26,6 +26,7 @@ export const InspectorPanelContent: React.FC = () => {
     getMeshRenderer,
     getRigidBody,
     getMeshCollider,
+    addComponent,
     updateComponent,
     removeComponent,
   } = useEntityComponents(selectedEntity);
@@ -71,6 +72,7 @@ export const InspectorPanelContent: React.FC = () => {
       {hasRigidBody && (
         <ProperRigidBodySection
           rigidBodyComponent={getRigidBody()}
+          addComponent={addComponent}
           updateComponent={updateComponent}
           removeComponent={removeComponent}
           isPlaying={isPlaying}
@@ -241,6 +243,7 @@ const ProperMeshRendererSection: React.FC<{
 
 const ProperRigidBodySection: React.FC<{
   rigidBodyComponent: any;
+  addComponent: (type: string, data: any) => any;
   updateComponent: (type: string, data: any) => boolean;
   removeComponent: (type: string) => boolean;
   isPlaying: boolean;
@@ -248,6 +251,7 @@ const ProperRigidBodySection: React.FC<{
   getMeshCollider: () => any;
 }> = ({
   rigidBodyComponent,
+  addComponent,
   updateComponent,
   removeComponent,
   isPlaying,
@@ -305,12 +309,19 @@ const ProperRigidBodySection: React.FC<{
   };
 
   const handleMeshColliderUpdate = (newData: any) => {
+    console.log('[ProperRigidBodySection] Mesh collider update:', { newData, hasMeshCollider });
     if (newData === null) {
       // Remove mesh collider component
       removeComponent(KnownComponentTypes.MESH_COLLIDER);
     } else {
       // Add or update mesh collider component
-      updateComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+      if (hasMeshCollider) {
+        console.log('[ProperRigidBodySection] Updating existing mesh collider');
+        updateComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+      } else {
+        console.log('[ProperRigidBodySection] Adding new mesh collider');
+        addComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+      }
     }
   };
 
