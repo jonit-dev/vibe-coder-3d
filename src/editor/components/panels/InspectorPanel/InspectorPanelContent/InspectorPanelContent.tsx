@@ -1,13 +1,11 @@
 import React from 'react';
 
-console.log('🔥🔥🔥 INSPECTOR PANEL CONTENT IS LOADING - THIS IS A TEST 🔥🔥🔥');
-
 import { ComponentList } from '@/editor/components/inspector/sections/ComponentList';
 import { DebugSection } from '@/editor/components/inspector/sections/DebugSection';
 import { EmptyState } from '@/editor/components/inspector/sections/EmptyState';
 import { useInspectorData } from '@/editor/hooks/useInspectorData';
 
-export const InspectorPanelContent: React.FC = () => {
+export const InspectorPanelContent: React.FC = React.memo(() => {
   const {
     selectedEntity,
     isPlaying,
@@ -51,4 +49,4 @@ export const InspectorPanelContent: React.FC = () => {
       <DebugSection selectedEntity={selectedEntity} components={components} />
     </div>
   );
-};
+});

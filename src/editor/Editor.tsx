@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
 import { RightSidebarChat } from './components/chat/RightSidebarChat';
@@ -11,7 +11,7 @@ import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
 import { useAutoSelection } from './hooks/useAutoSelection';
 import { useEditorHandlers } from './hooks/useEditorHandlers';
-import { useEditorKeyboard } from './hooks/useEditorKeyboard';
+import { GizmoMode, useEditorKeyboard } from './hooks/useEditorKeyboard';
 import { useAppState, useEntityState, usePhysicsState, useUIState } from './hooks/useEditorState';
 import { useEditorStats } from './hooks/useEditorStats';
 import { useEntitySynchronization } from './hooks/useEntitySynchronization';
@@ -53,10 +53,13 @@ const Editor: React.FC = () => {
   const { isPlaying, setIsPlaying } = usePhysicsState();
   const { statusMessage, setStatusMessage, performanceMetrics } = useAppState();
 
+  // Gizmo mode state for viewport
+  const [gizmoMode, setGizmoMode] = useState<GizmoMode>('translate');
+
   const addButtonRef = useRef<HTMLButtonElement>(null);
 
   // Entity synchronization with ECS system
-  const { entityManager } = useEntitySynchronization({ entityIds, setEntityIds });
+  useEntitySynchronization({ entityIds, setEntityIds });
 
   // Scene actions and file input ref
   const { fileInputRef, savedScene, importScene } = useSceneActions();
@@ -102,10 +105,20 @@ const Editor: React.FC = () => {
     onAddObject: handleAddObject,
     onSave: handleSaveWithStatus,
     onStatusMessage: setStatusMessage,
+    gizmoMode,
+    setGizmoMode,
   });
 
   // Auto-selection logic
   useAutoSelection({ selectedId, entityIds, setSelectedId });
+
+  // Validation: Clear selectedId if selected entity no longer exists
+  useEffect(() => {
+    if (selectedId !== null && !entityIds.includes(selectedId)) {
+      console.log(`[Editor] Selected entity ${selectedId} no longer exists, clearing selection`);
+      setSelectedId(null);
+    }
+  }, [selectedId, entityIds, setSelectedId]);
 
   // Performance stats calculation
   const stats = useEditorStats({
@@ -158,21 +171,8 @@ const Editor: React.FC = () => {
           onToggleCollapse={toggleLeftPanel}
         />
 
-        {selectedId != null ? (
-          <ViewportPanel entityId={selectedId} />
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-lg">
-            <div className="max-w-md text-center px-4">
-              <div className="mb-2">No entity selected or scene is empty.</div>
-              <button
-                className="px-3 py-1 rounded bg-green-700 hover:bg-green-800 text-sm mt-2 disabled:opacity-50"
-                onClick={() => handleAddObject('Cube')}
-              >
-                Add Object
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Always render ViewportPanel to prevent Canvas unmounting */}
+        <ViewportPanel entityId={selectedId} gizmoMode={gizmoMode} setGizmoMode={setGizmoMode} />
 
         <RightSidebarChat isExpanded={isChatExpanded} onToggle={toggleChat} />
       </main>

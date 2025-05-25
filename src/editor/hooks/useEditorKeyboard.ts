@@ -4,6 +4,7 @@ import { useEntityCreation } from './useEntityCreation';
 
 // Shape types that can be created in the editor
 export type ShapeType = 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane';
+export type GizmoMode = 'translate' | 'rotate' | 'scale';
 
 interface IUseEditorKeyboardProps {
   selectedId: number | null;
@@ -13,6 +14,9 @@ interface IUseEditorKeyboardProps {
   onAddObject: (type: ShapeType) => void;
   onSave: () => void;
   onStatusMessage: (message: string) => void;
+  // Gizmo mode handling
+  gizmoMode?: GizmoMode;
+  setGizmoMode?: (mode: GizmoMode) => void;
 }
 
 export const useEditorKeyboard = ({
@@ -23,6 +27,8 @@ export const useEditorKeyboard = ({
   onAddObject,
   onSave,
   onStatusMessage,
+  gizmoMode: _gizmoMode, // Currently unused but kept for future extensibility
+  setGizmoMode,
 }: IUseEditorKeyboardProps) => {
   const { deleteEntity } = useEntityCreation();
 
@@ -55,6 +61,27 @@ export const useEditorKeyboard = ({
         deleteEntity(selectedId);
         onStatusMessage('Entity deleted');
       }
+
+      // Gizmo mode shortcuts (only when entity is selected and setGizmoMode is provided)
+      if (selectedId != null && setGizmoMode) {
+        // W: Move tool
+        if (e.key === 'w' || e.key === 'W') {
+          e.preventDefault();
+          setGizmoMode('translate');
+        }
+
+        // E: Rotate tool
+        if (e.key === 'e' || e.key === 'E') {
+          e.preventDefault();
+          setGizmoMode('rotate');
+        }
+
+        // R: Scale tool
+        if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          setGizmoMode('scale');
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -68,5 +95,6 @@ export const useEditorKeyboard = ({
     onSave,
     onStatusMessage,
     deleteEntity,
+    setGizmoMode,
   ]);
 };

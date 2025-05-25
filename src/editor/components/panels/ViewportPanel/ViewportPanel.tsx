@@ -4,27 +4,33 @@ import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { useEntityManager } from '@/editor/hooks/useEntityManager';
+import { GizmoMode } from '@/editor/hooks/useEditorKeyboard';
 import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 import { useEditorStore } from '../../../store/editorStore';
 
 import { EntityRenderer } from './EntityRenderer';
-
-type GizmoMode = 'translate' | 'rotate' | 'scale';
+import { AxesIndicator } from './components/AxesIndicator';
+import { GizmoModeSelector } from './components/GizmoModeSelector';
+import { ViewportHeader } from './components/ViewportHeader';
 
 export interface IViewportPanelProps {
-  entityId: number; // selected entity
+  entityId: number | null; // selected entity - can be null
+  gizmoMode: GizmoMode;
+  setGizmoMode: (mode: GizmoMode) => void;
 }
 
-export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
+export const ViewportPanel: React.FC<IViewportPanelProps> = ({
+  entityId,
+  gizmoMode,
+  setGizmoMode,
+}) => {
   // Get all entities with a Transform from new ECS system
   const [entityIds, setEntityIds] = useState<number[]>([]);
   const isPlaying = useEditorStore((state) => state.isPlaying);
   const componentManager = useComponentManager();
-  const entityManager = useEntityManager();
 
-  // Subscribe to entity changes from ECS system using events
+  // Subscribe to component changes only (entities are managed by Editor)
   useEffect(() => {
     const updateEntities = () => {
       const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
@@ -35,17 +41,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
     // Initial load
     updateEntities();
 
-    // Listen for both entity and component events that affect rendering
-    const unsubscribeEntityEvents = entityManager.addEventListener((event: any) => {
-      if (
-        event.type === 'entity-created' ||
-        event.type === 'entity-deleted' ||
-        event.type === 'entities-cleared'
-      ) {
-        updateEntities();
-      }
-    });
-
+    // Listen only to component events that affect rendering
     const unsubscribeComponentEvents = componentManager.addEventListener((event) => {
       if (event.componentType === KnownComponentTypes.TRANSFORM) {
         updateEntities();
@@ -53,89 +49,30 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
     });
 
     return () => {
-      unsubscribeEntityEvents();
       unsubscribeComponentEvents();
     };
-  }, [componentManager, entityManager]);
+  }, [componentManager]);
 
-  // Gizmo mode state
-  const [mode, setMode] = useState<GizmoMode>('translate');
   // Track if TransformControls is active
   const [isTransforming, setIsTransforming] = useState(false);
 
   // Handler to update ECS transform when gizmo is used
   // This is now handled by GizmoControls which properly emits events
-  const handleTransformChange = (id: number) => (values: [number, number, number]) => {
+  const handleTransformChange = () => () => {
     // This callback is no longer used as GizmoControls handles transform updates
     // Removed debug logging to reduce console spam during drag
   };
 
   return (
     <section className="flex-1 bg-gradient-to-br from-[#0c0c0d] to-[#18181b] flex flex-col items-stretch border-r border-gray-800/50 relative overflow-hidden">
-      {/* Modern viewport header with glassmorphism */}
-      <div className="absolute top-4 left-4 z-10 bg-black/30 backdrop-blur-sm border border-gray-700/50 rounded-lg px-3 py-2 flex items-center space-x-2">
-        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-        <span className="text-sm text-gray-200 font-medium">Viewport</span>
-        <span className="text-xs text-gray-400">Entity {entityId}</span>
-      </div>
+      {/* Modern viewport header */}
+      <ViewportHeader entityId={entityId} />
 
-      {/* Gizmo mode switcher - Modern style with glassmorphism */}
-      <div className="absolute top-4 right-4 z-10 bg-black/30 backdrop-blur-sm border border-gray-700/50 rounded-lg p-1 flex gap-1">
-        <button
-          className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 flex items-center space-x-1 ${
-            mode === 'translate'
-              ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg'
-              : 'text-gray-300 hover:bg-gray-700/50'
-          }`}
-          onClick={() => setMode('translate')}
-          title="Switch to Move Tool (W)"
-        >
-          <span>Move</span>
-          <kbd className="ml-1 bg-black/30 px-1 rounded text-[10px]">W</kbd>
-        </button>
-        <button
-          className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 flex items-center space-x-1 ${
-            mode === 'rotate'
-              ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
-              : 'text-gray-300 hover:bg-gray-700/50'
-          }`}
-          onClick={() => setMode('rotate')}
-          title="Switch to Rotate Tool (E)"
-        >
-          <span>Rotate</span>
-          <kbd className="ml-1 bg-black/30 px-1 rounded text-[10px]">E</kbd>
-        </button>
-        <button
-          className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 flex items-center space-x-1 ${
-            mode === 'scale'
-              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
-              : 'text-gray-300 hover:bg-gray-700/50'
-          }`}
-          onClick={() => setMode('scale')}
-          title="Switch to Scale Tool (R)"
-        >
-          <span>Scale</span>
-          <kbd className="ml-1 bg-black/30 px-1 rounded text-[10px]">R</kbd>
-        </button>
-      </div>
+      {/* Gizmo mode switcher - Only show when entity selected */}
+      {entityId != null && <GizmoModeSelector gizmoMode={gizmoMode} setGizmoMode={setGizmoMode} />}
 
-      {/* Axes indicator - bottom right with modern styling */}
-      <div className="absolute bottom-4 right-4 z-10 bg-black/30 backdrop-blur-sm border border-gray-700/50 rounded-lg px-3 py-2">
-        <div className="flex items-center space-x-2 text-sm font-medium">
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-            <span className="text-red-400">X</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span className="text-green-400">Y</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            <span className="text-blue-400">Z</span>
-          </div>
-        </div>
-      </div>
+      {/* Axes indicator */}
+      <AxesIndicator />
 
       <div className="w-full h-full">
         <Canvas
@@ -159,12 +96,22 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({ entityId }) => {
                 key={id}
                 entityId={id}
                 selected={id === entityId}
-                mode={mode}
-                onTransformChange={id === entityId ? handleTransformChange(id) : undefined}
+                mode={gizmoMode}
+                onTransformChange={id === entityId ? handleTransformChange() : undefined}
                 setIsTransforming={id === entityId ? setIsTransforming : undefined}
-                setGizmoMode={id === entityId ? setMode : undefined}
+                setGizmoMode={id === entityId ? setGizmoMode : undefined}
               />
             ))}
+
+            {/* Show empty state message when no entities exist or none selected */}
+            {entityIds.length === 0 && (
+              <group>
+                <mesh position={[0, 0, 0]}>
+                  <boxGeometry args={[0.1, 0.1, 0.1]} />
+                  <meshBasicMaterial transparent opacity={0} />
+                </mesh>
+              </group>
+            )}
           </Physics>
 
           <OrbitControls enabled={!isTransforming} />

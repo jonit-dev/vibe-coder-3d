@@ -40,11 +40,15 @@ export const HierarchyPanelContent: React.FC = () => {
 
   const handleDelete = () => {
     if (contextMenu.entityId != null) {
-      // Use new ECS system to delete entity
-      entityManager.deleteEntity(contextMenu.entityId);
-      if (selectedId === contextMenu.entityId) {
-        setSelectedId(entityIds.length > 0 ? entityIds[0] : null);
+      const entityToDelete = contextMenu.entityId;
+
+      // Clear selection if we're deleting the currently selected entity
+      if (selectedId === entityToDelete) {
+        setSelectedId(null);
       }
+
+      // Delete the entity (this will trigger entity synchronization)
+      entityManager.deleteEntity(entityToDelete);
     }
     handleCloseMenu();
   };

@@ -32,7 +32,8 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
   ({ entityId, selected, mode, onTransformChange, setGizmoMode, setIsTransforming }) => {
     const isPlaying = useEditorStore((s) => s.isPlaying);
 
-    // Custom hooks for different concerns
+    // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS!
+    // This prevents "Rendered fewer hooks than expected" React error
     const { transform, entityComponents, meshCollider } = useEntityComponents(entityId);
     const { isValid } = useEntityValidation({ entityId, transform, isPlaying });
     const { isTransformingLocal, handleSetIsTransforming } = useGizmoInteraction({
@@ -41,12 +42,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       setIsTransforming,
     });
 
-    // Early return for performance - don't render if entity doesn't exist
-    if (!isValid) {
-      return null;
-    }
-
-    const { meshRef, position, rotation, scale, rotationRadians } = useEntityTransform({
+    const { meshRef, position, scale, rotationRadians } = useEntityTransform({
       transform,
       isTransforming: isTransformingLocal,
       isPlaying,
@@ -77,6 +73,17 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       rotationRadians,
       scale,
     });
+
+    // Early return AFTER all hooks - don't render if entity doesn't exist
+    if (!isValid) {
+      return null;
+    }
+
+    // Defensive checks to prevent crashes
+    if (!meshRef || !position || !scale || !rotationRadians) {
+      console.warn(`[EntityRenderer] Missing required data for entity ${entityId}`);
+      return null;
+    }
 
     // Create the mesh content
     const meshContent = (

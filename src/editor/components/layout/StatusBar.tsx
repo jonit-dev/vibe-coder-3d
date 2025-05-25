@@ -1,5 +1,7 @@
 import React from 'react';
-import { FiCpu, FiHardDrive, FiWifi } from 'react-icons/fi';
+import { FiClock, FiCpu, FiHardDrive, FiWifi } from 'react-icons/fi';
+
+import { usePerformanceMonitor } from '@/editor/hooks/usePerformanceMonitor';
 
 export interface IStatusBarProps {
   statusMessage: string;
@@ -8,10 +10,10 @@ export interface IStatusBarProps {
     description: string;
   }>;
   stats?: {
-    fps?: number;
     memory?: string;
     entities?: number;
   };
+  enablePerformanceMonitoring?: boolean;
 }
 
 export const StatusBar: React.FC<IStatusBarProps> = ({
@@ -23,7 +25,9 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
     { key: 'Delete', description: 'Delete Object' },
   ],
   stats,
+  enablePerformanceMonitoring = true,
 }) => {
+  const { metrics } = usePerformanceMonitor(enablePerformanceMonitoring);
   return (
     <footer className="h-8 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-t border-gray-800/50 flex items-center text-xs text-gray-400 relative overflow-hidden">
       {/* Animated background effect */}
@@ -37,26 +41,33 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
             <span className="text-gray-300">{statusMessage}</span>
           </div>
 
-          {stats && (
+          {(enablePerformanceMonitoring || stats) && (
             <>
               <div className="w-px h-4 bg-gray-700"></div>
 
               <div className="flex items-center space-x-4">
-                {stats.fps && (
+                {enablePerformanceMonitoring && metrics.averageFPS > 0 && (
                   <div className="flex items-center space-x-1">
                     <FiCpu className="w-3 h-3 text-cyan-400" />
-                    <span>{stats.fps} FPS</span>
+                    <span>{Math.round(metrics.averageFPS)} FPS</span>
                   </div>
                 )}
 
-                {stats.memory && (
+                {enablePerformanceMonitoring && metrics.frameTime > 0 && (
+                  <div className="flex items-center space-x-1">
+                    <FiClock className="w-3 h-3 text-yellow-400" />
+                    <span>{metrics.frameTime.toFixed(1)}ms</span>
+                  </div>
+                )}
+
+                {stats?.memory && (
                   <div className="flex items-center space-x-1">
                     <FiHardDrive className="w-3 h-3 text-purple-400" />
                     <span>{stats.memory}</span>
                   </div>
                 )}
 
-                {stats.entities && (
+                {stats?.entities && (
                   <div className="flex items-center space-x-1">
                     <FiWifi className="w-3 h-3 text-green-400" />
                     <span>{stats.entities} Entities</span>

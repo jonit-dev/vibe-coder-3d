@@ -15,6 +15,7 @@ alwaysApply: true
 
 **Critical**
 
+* React: focus on hook usage + prevent re-rendering
 * Don’t request approval—just do it.
 * If unsure, call **Context7** for docs, call *SequentialThinking* for reasoning help.
 * Named exports only; no barrel `index.ts`.

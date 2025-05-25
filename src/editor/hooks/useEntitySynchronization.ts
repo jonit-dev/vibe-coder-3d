@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useEntityManager } from './useEntityManager';
 
@@ -12,20 +12,29 @@ export const useEntitySynchronization = ({
   setEntityIds,
 }: IUseEntitySynchronizationProps) => {
   const entityManager = useEntityManager();
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const updateEntities = () => {
-      const entities = entityManager.getAllEntities();
-      const newIds = entities.map((entity) => entity.id);
-
-      // Only update if the entity list actually changed
-      if (
-        entityIds.length !== newIds.length ||
-        !entityIds.every((id, index) => id === newIds[index])
-      ) {
-        console.log(`[Editor] Entity list updated:`, newIds);
-        setEntityIds(newIds);
+      // Clear any pending update
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
       }
+
+      // Batch updates to prevent rapid successive calls
+      updateTimeoutRef.current = setTimeout(() => {
+        const entities = entityManager.getAllEntities();
+        const newIds = entities.map((entity) => entity.id);
+
+        // Only update if the entity list actually changed
+        if (
+          entityIds.length !== newIds.length ||
+          !entityIds.every((id, index) => id === newIds[index])
+        ) {
+          console.log(`[Editor] Entity list updated:`, newIds);
+          setEntityIds(newIds);
+        }
+      }, 16); // ~60fps batching
     };
 
     // Initial load
@@ -37,7 +46,13 @@ export const useEntitySynchronization = ({
       updateEntities();
     });
 
-    return removeEventListener;
+    return () => {
+      removeEventListener();
+      // Clean up pending timeout
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
   }, [entityManager, entityIds, setEntityIds]);
 
   return { entityManager };
