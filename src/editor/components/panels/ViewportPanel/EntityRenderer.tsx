@@ -138,6 +138,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
           meshType={meshType}
           outlineGroupRef={outlineGroupRef}
           outlineMeshRef={outlineMeshRef}
+          isPlaying={isPlaying}
         />
 
         {/* Collider Visualization (Unity-style wireframes) */}

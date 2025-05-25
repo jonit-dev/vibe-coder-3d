@@ -7,10 +7,11 @@ interface IEntityOutlineProps {
   meshType: string;
   outlineGroupRef: React.RefObject<THREE.Group | null>;
   outlineMeshRef: React.RefObject<THREE.Mesh | null>;
+  isPlaying: boolean;
 }
 
 export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
-  ({ selected, meshType, outlineGroupRef, outlineMeshRef }) => {
+  ({ selected, meshType, outlineGroupRef, outlineMeshRef, isPlaying }) => {
     // Memoized geometry for outline
     const geometry = useMemo(() => {
       switch (meshType) {
@@ -29,11 +30,15 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
       }
     }, [meshType]);
 
+    // Don't render at all when not selected
     if (!selected) return null;
+
+    // Render but make invisible when playing (so it can still follow the cube)
+    const shouldBeVisible = !isPlaying;
 
     return (
       <group ref={outlineGroupRef}>
-        <mesh ref={outlineMeshRef}>
+        <mesh ref={outlineMeshRef} visible={shouldBeVisible}>
           {geometry}
           <meshBasicMaterial visible={false} />
           <Edges color="#ff6b35" lineWidth={2} />
