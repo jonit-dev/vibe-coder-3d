@@ -45,9 +45,9 @@ const CAMERA_PRESETS: Record<
     type: 'perspective',
     position: [0, 1, -10],
     target: [0, 0, 0],
-    fov: 60, // Unity's default FOV
-    near: 0.3, // Unity's default near
-    far: 1000, // Unity's default far
+    fov: 30, // Updated default FOV
+    near: 0.1, // Better near plane
+    far: 10, // Updated default far
     enableControls: true,
   },
   'perspective-game': {

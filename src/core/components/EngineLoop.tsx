@@ -6,6 +6,7 @@ import { useGameLoop } from '../lib/gameLoop';
 import { materialSystem } from '../systems/MaterialSystem';
 import { runPhysicsSyncSystem } from '../systems/PhysicsSyncSystem';
 import { runVelocitySystem } from '../systems/VelocitySystem';
+import { cameraSystem } from '../systems/cameraSystem';
 
 // Types for component props
 interface IEngineLoopProps {
@@ -190,6 +191,9 @@ function runECSSystems(deltaTime: number) {
 
   // Run material system - updates Three.js materials from ECS Material components
   materialSystem.update();
+
+  // Run camera system - updates Three.js cameras from ECS Camera components
+  cameraSystem();
 
   // For future systems, add them here in the appropriate order
   // e.g., movementSystem(ecsWorld, deltaTime);

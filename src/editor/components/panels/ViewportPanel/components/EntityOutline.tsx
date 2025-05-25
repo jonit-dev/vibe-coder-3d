@@ -10,10 +10,11 @@ interface IEntityOutlineProps {
   outlineGroupRef: React.RefObject<THREE.Group | null>;
   outlineMeshRef: React.RefObject<THREE.Mesh | null>;
   isPlaying: boolean;
+  entityComponents?: Array<{ type: string; data: any }>;
 }
 
 export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
-  ({ selected, meshType, outlineGroupRef, outlineMeshRef, isPlaying }) => {
+  ({ selected, meshType, outlineGroupRef, outlineMeshRef, isPlaying, entityComponents = [] }) => {
     // Memoized geometry for outline
     const geometry = useMemo(() => {
       switch (meshType) {
@@ -45,7 +46,7 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
       return (
         <group ref={outlineGroupRef}>
           <group ref={outlineMeshRef as any} visible={shouldBeVisible}>
-            <CameraGeometry showFrustum={false} />
+            <CameraGeometry showFrustum={false} isPlaying={isPlaying} />
             <Edges color="#ff6b35" lineWidth={2} />
           </group>
         </group>

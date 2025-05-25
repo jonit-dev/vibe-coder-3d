@@ -5,7 +5,10 @@ import { CameraPreset } from '@/core/components/cameras/DefaultCamera';
 import { isComponentRemovable } from '@/core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
+import { cameraSystem } from '@/core/systems/cameraSystem';
 import { InspectorSection } from '@/editor/components/shared/InspectorSection';
+
+import { CameraFields } from './CameraFields';
 
 export interface ICameraSectionProps {
   cameraData: ICameraData;
@@ -34,6 +37,8 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
   const handleFieldChange = useCallback(
     (field: keyof ICameraData, value: any) => {
       onUpdate({ [field]: value });
+      // Trigger camera system update for immediate feedback
+      cameraSystem();
     },
     [onUpdate],
   );
@@ -43,38 +48,38 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
       // Update preset and apply preset-specific defaults
       const presetDefaults: Record<CameraPreset, Partial<ICameraData>> = {
         'unity-default': {
-          fov: 60,
-          near: 0.3,
-          far: 1000,
+          fov: 30,
+          near: 0.1,
+          far: 10,
           projectionType: 'perspective',
         },
         'perspective-game': {
           fov: 75,
           near: 0.1,
-          far: 1000,
+          far: 10,
           projectionType: 'perspective',
         },
         'perspective-film': {
           fov: 35,
           near: 0.1,
-          far: 1000,
+          far: 10,
           projectionType: 'perspective',
         },
         'orthographic-top': {
           near: 0.1,
-          far: 1000,
+          far: 10,
           projectionType: 'orthographic',
           orthographicSize: 10,
         },
         'orthographic-front': {
           near: 0.1,
-          far: 1000,
+          far: 10,
           projectionType: 'orthographic',
           orthographicSize: 10,
         },
         isometric: {
           near: 0.1,
-          far: 1000,
+          far: 10,
           projectionType: 'orthographic',
           orthographicSize: 10,
         },
@@ -84,18 +89,20 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
         preset,
         ...presetDefaults[preset],
       });
+      // Trigger camera system update for immediate feedback
+      cameraSystem();
     },
     [onUpdate],
   );
 
-  const handleTargetChange = useCallback(
-    (index: number, value: number) => {
-      const newTarget = [...cameraData.target] as [number, number, number];
-      newTarget[index] = value;
-      handleFieldChange('target', newTarget);
-    },
-    [cameraData.target, handleFieldChange],
-  );
+  // const handleTargetChange = useCallback(
+  //   (index: number, value: number) => {
+  //     const newTarget = [...cameraData.target] as [number, number, number];
+  //     newTarget[index] = value;
+  //     handleFieldChange('target', newTarget);
+  //   },
+  //   [cameraData.target, handleFieldChange],
+  // );
 
   return (
     <InspectorSection
@@ -140,83 +147,8 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
           </select>
         </div>
 
-        {/* FOV (Perspective only) */}
-        {cameraData.projectionType === 'perspective' && (
-          <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">Field of View</label>
-            <input
-              type="number"
-              value={cameraData.fov}
-              onChange={(e) => handleFieldChange('fov', parseFloat(e.target.value) || 60)}
-              className="w-full px-2 py-1 text-xs bg-gray-800 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
-              min="10"
-              max="179"
-              step="1"
-            />
-          </div>
-        )}
-
-        {/* Orthographic Size (Orthographic only) */}
-        {cameraData.projectionType === 'orthographic' && (
-          <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">Size</label>
-            <input
-              type="number"
-              value={cameraData.orthographicSize || 10}
-              onChange={(e) =>
-                handleFieldChange('orthographicSize', parseFloat(e.target.value) || 10)
-              }
-              className="w-full px-2 py-1 text-xs bg-gray-800 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
-              min="0.1"
-              step="0.1"
-            />
-          </div>
-        )}
-
-        {/* Clipping Planes */}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">Near</label>
-            <input
-              type="number"
-              value={cameraData.near}
-              onChange={(e) => handleFieldChange('near', parseFloat(e.target.value) || 0.1)}
-              className="w-full px-2 py-1 text-xs bg-gray-800 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
-              min="0.01"
-              step="0.01"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">Far</label>
-            <input
-              type="number"
-              value={cameraData.far}
-              onChange={(e) => handleFieldChange('far', parseFloat(e.target.value) || 1000)}
-              className="w-full px-2 py-1 text-xs bg-gray-800 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
-              min="0.1"
-              step="1"
-            />
-          </div>
-        </div>
-
-        {/* Target Position */}
-        <div>
-          <label className="block text-xs font-medium text-gray-300 mb-1">Target</label>
-          <div className="grid grid-cols-3 gap-1">
-            {cameraData.target.map((value, index) => (
-              <div key={index}>
-                <label className="block text-xs text-gray-400 mb-1">{['X', 'Y', 'Z'][index]}</label>
-                <input
-                  type="number"
-                  value={value}
-                  onChange={(e) => handleTargetChange(index, parseFloat(e.target.value) || 0)}
-                  className="w-full px-2 py-1 text-xs bg-gray-800 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
-                  step="0.1"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Camera Fields with Drag Support */}
+        <CameraFields cameraData={cameraData} onUpdate={onUpdate} />
 
         {/* Main Camera Toggle */}
         <div className="flex items-center space-x-2">

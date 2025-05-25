@@ -94,6 +94,8 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         entityColor={entityColor}
         entityId={entityId}
         onMeshClick={handleMeshClick}
+        isPlaying={isPlaying}
+        entityComponents={entityComponents}
       />
     );
 
@@ -139,6 +141,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
           outlineGroupRef={outlineGroupRef}
           outlineMeshRef={outlineMeshRef}
           isPlaying={isPlaying}
+          entityComponents={entityComponents}
         />
 
         {/* Collider Visualization (Unity-style wireframes) */}

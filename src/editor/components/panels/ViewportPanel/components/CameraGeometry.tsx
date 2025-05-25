@@ -1,59 +1,58 @@
-import React from 'react';
-import * as THREE from 'three';
+import { Html } from '@react-three/drei';
+import React, { useMemo } from 'react';
+import { BsCameraReelsFill } from 'react-icons/bs';
 
 export interface ICameraGeometryProps {
   size?: number;
   showFrustum?: boolean;
+  isPlaying?: boolean;
+  fov?: number;
+  near?: number;
+  far?: number;
+  aspect?: number;
 }
 
 /**
- * Simple Unity-style camera icon - minimal wireframe design
- * Clean, geometric representation like Unity's scene view with proper frustum
+ * Simple 2D camera icon using react-icons with dynamic frustum
+ * Clean, flat design like modern game engines
  */
 export const CameraGeometry: React.FC<ICameraGeometryProps> = ({
   size = 0.75,
   showFrustum = true,
+  isPlaying = false,
+  fov = 60,
+  near = 0.3,
+  far = 4.0,
+  aspect = 16 / 9,
 }) => {
-  // Create proper camera frustum geometry
-  const frustumGeometry = React.useMemo(() => {
-    const geometry = new THREE.BufferGeometry();
-
-    // Define frustum parameters (like a real camera)
-    const near = 0.3;
-    const far = 4.0;
-    const fov = 60; // field of view in degrees
-    const aspect = 16 / 9;
-
-    // Calculate frustum dimensions
+  // Calculate frustum dimensions based on actual camera parameters
+  const frustumVertices = useMemo(() => {
+    // Calculate frustum dimensions using camera parameters
     const nearHeight = 2 * Math.tan((fov * Math.PI) / 360) * near;
     const nearWidth = nearHeight * aspect;
     const farHeight = 2 * Math.tan((fov * Math.PI) / 360) * far;
     const farWidth = farHeight * aspect;
 
-    // Define frustum vertices
-    const vertices = new Float32Array([
-      // Near plane rectangle (closer to camera)
+    return new Float32Array([
+      // Near plane (small rectangle)
       -nearWidth / 2,
       -nearHeight / 2,
       near,
       nearWidth / 2,
       -nearHeight / 2,
       near,
-
       nearWidth / 2,
       -nearHeight / 2,
       near,
       nearWidth / 2,
       nearHeight / 2,
       near,
-
       nearWidth / 2,
       nearHeight / 2,
       near,
       -nearWidth / 2,
       nearHeight / 2,
       near,
-
       -nearWidth / 2,
       nearHeight / 2,
       near,
@@ -61,28 +60,25 @@ export const CameraGeometry: React.FC<ICameraGeometryProps> = ({
       -nearHeight / 2,
       near,
 
-      // Far plane rectangle (farther from camera)
+      // Far plane (larger rectangle)
       -farWidth / 2,
       -farHeight / 2,
       far,
       farWidth / 2,
       -farHeight / 2,
       far,
-
       farWidth / 2,
       -farHeight / 2,
       far,
       farWidth / 2,
       farHeight / 2,
       far,
-
       farWidth / 2,
       farHeight / 2,
       far,
       -farWidth / 2,
       farHeight / 2,
       far,
-
       -farWidth / 2,
       farHeight / 2,
       far,
@@ -90,28 +86,25 @@ export const CameraGeometry: React.FC<ICameraGeometryProps> = ({
       -farHeight / 2,
       far,
 
-      // Connecting lines from near to far plane
+      // Connecting lines
       -nearWidth / 2,
       -nearHeight / 2,
       near,
       -farWidth / 2,
       -farHeight / 2,
       far,
-
       nearWidth / 2,
       -nearHeight / 2,
       near,
       farWidth / 2,
       -farHeight / 2,
       far,
-
       nearWidth / 2,
       nearHeight / 2,
       near,
       farWidth / 2,
       farHeight / 2,
       far,
-
       -nearWidth / 2,
       nearHeight / 2,
       near,
@@ -119,33 +112,37 @@ export const CameraGeometry: React.FC<ICameraGeometryProps> = ({
       farHeight / 2,
       far,
     ]);
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-    return geometry;
-  }, []);
+  }, [fov, near, far, aspect]);
 
   return (
     <group>
-      {/* Camera Body - Just wireframe outline */}
-      <lineSegments position={[0, 0, 0]}>
-        <edgesGeometry attach="geometry">
-          <boxGeometry args={[size * 1.0, size * 0.6, size * 0.4]} />
-        </edgesGeometry>
-        <lineBasicMaterial attach="material" color="#ffffff" linewidth={2} />
-      </lineSegments>
+      {/* Simple white camera icon with transparent background */}
+      <Html
+        center
+        distanceFactor={10}
+        transform
+        occlude={false}
+        style={{
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        <BsCameraReelsFill
+          size={size * 32}
+          color="#ffffff"
+          style={{
+            filter: 'drop-shadow(0 0 2px rgba(0, 0, 0, 0.8))',
+          }}
+        />
+      </Html>
 
-      {/* Lens - Simple wireframe circle */}
-      <lineSegments position={[0, 0, size * 0.25]} rotation={[Math.PI / 2, 0, 0]}>
-        <edgesGeometry attach="geometry">
-          <cylinderGeometry args={[size * 0.15, size * 0.15, size * 0.1, 8]} />
-        </edgesGeometry>
-        <lineBasicMaterial attach="material" color="#ffffff" linewidth={2} />
-      </lineSegments>
-
-      {/* Camera Frustum - Proper wireframe showing field of view */}
-      {showFrustum && (
-        <lineSegments geometry={frustumGeometry}>
-          <lineBasicMaterial attach="material" color="#ffffff" transparent opacity={0.8} />
+      {/* Camera Frustum - Only show in editor mode, not play mode */}
+      {showFrustum && !isPlaying && (
+        <lineSegments>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[frustumVertices, 3]} />
+          </bufferGeometry>
+          <lineBasicMaterial color="#ffffff" transparent opacity={0.6} />
         </lineSegments>
       )}
     </group>

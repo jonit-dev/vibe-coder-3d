@@ -62,9 +62,9 @@ export const useSceneInitialization = ({
             // Add Camera component with Unity default settings
             const defaultCamera: ICameraData = {
               preset: 'unity-default',
-              fov: 60,
-              near: 0.3,
-              far: 1000,
+              fov: 30,
+              near: 0.1,
+              far: 10,
               isMain: true, // Mark as main camera
               enableControls: true,
               target: [0, 0, 0],

@@ -10,10 +10,21 @@ interface IEntityMeshProps {
   entityColor: string;
   entityId: number;
   onMeshClick: (e: any) => void;
+  isPlaying?: boolean;
+  entityComponents?: Array<{ type: string; data: any }>;
 }
 
 export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
-  ({ meshRef, meshType, renderingContributions, entityColor, entityId, onMeshClick }) => {
+  ({
+    meshRef,
+    meshType,
+    renderingContributions,
+    entityColor,
+    entityId,
+    onMeshClick,
+    isPlaying = false,
+    entityComponents = [],
+  }) => {
     // Memoized geometry/content selection based on mesh type
     const geometryContent = useMemo(() => {
       switch (meshType) {
@@ -36,9 +47,20 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
 
     // Special handling for camera entities
     if (meshType === 'Camera') {
+      // Extract camera data for dynamic frustum
+      const cameraComponent = entityComponents.find((c) => c.type === 'Camera');
+      const cameraData = cameraComponent?.data;
+
       return (
         <group ref={meshRef as any} userData={{ entityId }} onClick={onMeshClick}>
-          <CameraGeometry showFrustum={true} />
+          <CameraGeometry
+            showFrustum={true}
+            isPlaying={isPlaying}
+            fov={cameraData?.fov}
+            near={cameraData?.near}
+            far={cameraData?.far}
+            aspect={16 / 9} // TODO: Get actual viewport aspect ratio
+          />
         </group>
       );
     }

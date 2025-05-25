@@ -206,6 +206,7 @@ export const CameraConverter = {
     Camera.presetHash[eid] = storeString(data.preset);
     Camera.clearDepth[eid] = data.clearDepth ? 1 : 0;
     Camera.renderPriority[eid] = data.renderPriority || 0;
+    Camera.needsUpdate[eid] = 1; // Mark for update
   },
 
   get: (eid: EntityId): ICameraData => ({

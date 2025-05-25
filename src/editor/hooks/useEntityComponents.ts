@@ -53,7 +53,6 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     <TData>(type: ComponentType, data: Partial<TData>): boolean => {
       if (entityId === null) return false;
 
-      // Removed debug logging to reduce console spam during drag
       return componentManager.updateComponent(entityId, type, data);
     },
     [entityId, componentManager],

@@ -76,6 +76,8 @@ export const Camera = defineComponent({
   // Optional properties
   clearDepth: Types.ui8,
   renderPriority: Types.i32,
+  // Flag to mark when the camera needs to be updated
+  needsUpdate: Types.ui8,
 });
 
 // Entity metadata component to store hierarchy and name information

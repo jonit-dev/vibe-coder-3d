@@ -5,6 +5,8 @@ import React, { useEffect, useState } from 'react';
 
 import { GameCameraManager } from '@/core/components/cameras/GameCameraManager';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { isValidEntityId } from '@/core/lib/ecs/utils';
+import { setSelectedCameraEntity } from '@/core/systems/cameraSystem';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { GizmoMode } from '@/editor/hooks/useEditorKeyboard';
 
@@ -12,6 +14,7 @@ import { useEditorStore } from '../../../store/editorStore';
 
 import { EntityRenderer } from './EntityRenderer';
 import { AxesIndicator } from './components/AxesIndicator';
+import { CameraSystemConnector } from './components/CameraSystemConnector';
 import { GizmoModeSelector } from './components/GizmoModeSelector';
 import { ViewportHeader } from './components/ViewportHeader';
 
@@ -36,7 +39,6 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
     const updateEntities = () => {
       const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
       setEntityIds(entities);
-      console.debug(`[ViewportPanel] 🔍 Found ${entities.length} renderable entities:`, entities);
     };
 
     // Initial load
@@ -57,12 +59,19 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
   // Track if TransformControls is active
   const [isTransforming, setIsTransforming] = useState(false);
 
-  // Handler to update ECS transform when gizmo is used
-  // This is now handled by GizmoControls which properly emits events
-  const handleTransformChange = () => () => {
-    // This callback is no longer used as GizmoControls handles transform updates
-    // Removed debug logging to reduce console spam during drag
-  };
+  // Check if selected entity is a camera using isValidEntityId
+  const selectedEntityIsCamera = isValidEntityId(entityId)
+    ? componentManager.hasComponent(entityId, KnownComponentTypes.CAMERA)
+    : false;
+
+  // Notify camera system when a camera entity is selected
+  useEffect(() => {
+    if (selectedEntityIsCamera && isValidEntityId(entityId)) {
+      setSelectedCameraEntity(entityId);
+    } else {
+      setSelectedCameraEntity(null);
+    }
+  }, [selectedEntityIsCamera, entityId]);
 
   return (
     <section className="flex-1 bg-gradient-to-br from-[#0c0c0d] to-[#18181b] flex flex-col items-stretch border-r border-gray-800/50 relative overflow-hidden">
@@ -70,7 +79,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
       <ViewportHeader entityId={entityId} />
 
       {/* Gizmo mode switcher - Only show when entity selected */}
-      {entityId != null && <GizmoModeSelector gizmoMode={gizmoMode} setGizmoMode={setGizmoMode} />}
+      {isValidEntityId(entityId) && (
+        <GizmoModeSelector gizmoMode={gizmoMode} setGizmoMode={setGizmoMode} />
+      )}
 
       {/* Axes indicator */}
       <AxesIndicator />
@@ -83,6 +94,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
           }}
           shadows
         >
+          {/* Camera System Connector - connects editor camera to camera system */}
+          <CameraSystemConnector />
+
           {/* Game Camera Manager - handles camera switching between editor and play mode */}
           <GameCameraManager isPlaying={isPlaying} />
 
@@ -101,7 +115,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
                 entityId={id}
                 selected={id === entityId}
                 mode={gizmoMode}
-                onTransformChange={id === entityId ? handleTransformChange() : undefined}
+                onTransformChange={undefined}
                 setIsTransforming={id === entityId ? setIsTransforming : undefined}
                 setGizmoMode={id === entityId ? setGizmoMode : undefined}
               />

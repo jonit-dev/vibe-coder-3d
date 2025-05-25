@@ -252,12 +252,12 @@ export const COMPONENT_REGISTRY: Record<string, IComponentDefinition> = {
     description: 'Camera for rendering perspectives',
     icon: React.createElement(FiCamera, { className: 'w-4 h-4' }),
     category: 'Rendering',
-    removable: true,
+    removable: false,
     getDefaultData: () => ({
       preset: 'unity-default',
-      fov: 60,
-      near: 0.3,
-      far: 1000,
+      fov: 30,
+      near: 0.1,
+      far: 10,
       isMain: false,
       enableControls: true,
       target: [0, 0, 0],
@@ -265,7 +265,7 @@ export const COMPONENT_REGISTRY: Record<string, IComponentDefinition> = {
       clearDepth: true,
       renderPriority: 0,
     }),
-    getRenderingContributions: (_data) => {
+    getRenderingContributions: () => {
       return {
         meshType: 'Camera', // Special camera shape
         visible: true,
@@ -405,8 +405,6 @@ export const combinePhysicsContributions = (
     colliders: [],
   };
 
-  console.log('[Physics Debug] Starting with default:', combined.rigidBodyProps);
-
   // Process components in two passes:
   // 1. First pass: collect all contributions
   // 2. Second pass: ensure RigidBody type takes precedence
@@ -417,7 +415,6 @@ export const combinePhysicsContributions = (
     const definition = getComponentDefinition(type);
     if (definition?.getPhysicsContributions) {
       const contributions = definition.getPhysicsContributions(data);
-      console.log(`[Physics Debug] Component ${type} contributes:`, contributions);
 
       if (contributions.enabled) {
         combined.enabled = true;
@@ -429,9 +426,7 @@ export const combinePhysicsContributions = (
       }
 
       if (contributions.rigidBodyProps) {
-        console.log(`[Physics Debug] Before assign for ${type}:`, combined.rigidBodyProps);
         Object.assign(combined.rigidBodyProps!, contributions.rigidBodyProps);
-        console.log(`[Physics Debug] After assign for ${type}:`, combined.rigidBodyProps);
       }
       if (contributions.colliders) {
         combined.colliders!.push(...contributions.colliders);
@@ -442,9 +437,7 @@ export const combinePhysicsContributions = (
   // Ensure RigidBody type always takes precedence
   if (rigidBodyType) {
     combined.rigidBodyProps!.type = rigidBodyType;
-    console.log('[Physics Debug] Applied RigidBody type precedence:', rigidBodyType);
   }
 
-  console.log('[Physics Debug] Final result:', combined.rigidBodyProps);
   return combined;
 };

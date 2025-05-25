@@ -12,8 +12,11 @@ import {
 } from 'bitecs';
 import type { Object3D } from 'three';
 
-// Create a world instance
-export const world = createWorld();
+import { Camera } from './ecs/BitECSComponents';
+import { ECSWorld } from './ecs/World';
+
+// Use the singleton world instance
+export const world = ECSWorld.getInstance().getWorld();
 
 // Maps to link ECS entities with Three.js objects
 export const entityToObject = new Map<number, Object3D>();
@@ -82,6 +85,7 @@ export const Material = defineComponent({
 export const transformQuery = defineQuery([Transform]);
 export const velocityQuery = defineQuery([Transform, Velocity]);
 export const materialQuery = defineQuery([Material]);
+export const cameraQuery = defineQuery([Camera]);
 
 // Core entity functions
 export function createEntity(meshType: MeshTypeEnum = MeshTypeEnum.Cube) {
