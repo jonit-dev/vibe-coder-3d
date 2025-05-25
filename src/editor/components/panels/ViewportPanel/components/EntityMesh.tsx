@@ -1,37 +1,55 @@
-import React, { ForwardedRef, forwardRef } from 'react';
-
-import { MeshTypeEnum } from '@core/lib/ecs';
+import React, { useMemo } from 'react';
+import type { Mesh } from 'three';
 
 interface IEntityMeshProps {
-  meshType: MeshTypeEnum;
-  selected: boolean;
-  meshRef: ForwardedRef<any>;
-  position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-  children?: React.ReactNode; // for edges
+  meshRef: React.RefObject<Mesh | null>;
+  meshType: string;
+  renderingContributions: any;
+  entityColor: string;
+  entityId: number;
+  onMeshClick: (e: any) => void;
 }
 
-export const EntityMesh = forwardRef<any, IEntityMeshProps>(
-  ({ meshType, meshRef, position, rotation, scale, children }, _ref) => (
-    <mesh ref={meshRef} position={position} rotation={rotation} scale={scale} castShadow>
-      {meshType === MeshTypeEnum.Cube ? (
-        <boxGeometry args={[1, 1, 1]} />
-      ) : meshType === MeshTypeEnum.Sphere ? (
-        <sphereGeometry args={[0.5, 32, 32]} />
-      ) : meshType === MeshTypeEnum.Cylinder ? (
-        <cylinderGeometry args={[0.5, 0.5, 1, 32]} />
-      ) : meshType === MeshTypeEnum.Cone ? (
-        <coneGeometry args={[0.5, 1, 32]} />
-      ) : meshType === MeshTypeEnum.Torus ? (
-        <torusGeometry args={[0.5, 0.2, 16, 100]} />
-      ) : meshType === MeshTypeEnum.Plane ? (
-        <planeGeometry args={[1, 1]} />
-      ) : (
-        <boxGeometry args={[1, 1, 1]} />
-      )}
-      <meshStandardMaterial color="#3399ff" />
-      {children}
-    </mesh>
-  ),
+export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
+  ({ meshRef, meshType, renderingContributions, entityColor, entityId, onMeshClick }) => {
+    // Memoized geometry selection based on mesh type
+    const geometry = useMemo(() => {
+      switch (meshType) {
+        case 'Sphere':
+          return <sphereGeometry args={[0.5, 32, 32]} />;
+        case 'Cylinder':
+          return <cylinderGeometry args={[0.5, 0.5, 1, 32]} />;
+        case 'Cone':
+          return <coneGeometry args={[0.5, 1, 32]} />;
+        case 'Torus':
+          return <torusGeometry args={[0.5, 0.2, 16, 100]} />;
+        case 'Plane':
+          return <planeGeometry args={[1, 1]} />;
+        default:
+          return <boxGeometry args={[1, 1, 1]} />;
+      }
+    }, [meshType]);
+
+    return (
+      <mesh
+        ref={meshRef}
+        castShadow={renderingContributions.castShadow}
+        receiveShadow={renderingContributions.receiveShadow}
+        userData={{ entityId }}
+        visible={renderingContributions.visible}
+        onClick={onMeshClick}
+      >
+        {geometry}
+        <meshStandardMaterial
+          color={renderingContributions.material?.color ?? entityColor}
+          metalness={renderingContributions.material?.metalness ?? 0}
+          roughness={renderingContributions.material?.roughness ?? 0.5}
+          emissive={renderingContributions.material?.emissive ?? '#000000'}
+          emissiveIntensity={renderingContributions.material?.emissiveIntensity ?? 0}
+        />
+      </mesh>
+    );
+  },
 );
+
+EntityMesh.displayName = 'EntityMesh';

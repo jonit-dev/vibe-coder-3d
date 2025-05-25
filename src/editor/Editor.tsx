@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useRef } from 'react';
 
 import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
 import { RightSidebarChat } from './components/chat/RightSidebarChat';
@@ -9,13 +9,14 @@ import { HierarchyPanelContent } from './components/panels/HierarchyPanel/Hierar
 import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent/InspectorPanelContent';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
+import { useAutoSelection } from './hooks/useAutoSelection';
+import { useEditorHandlers } from './hooks/useEditorHandlers';
 import { useEditorKeyboard } from './hooks/useEditorKeyboard';
-import { useEntityCreation } from './hooks/useEntityCreation';
-import { useEntityManager } from './hooks/useEntityManager';
-import { usePhysicsControls } from './hooks/usePhysicsControls';
+import { useAppState, useEntityState, usePhysicsState, useUIState } from './hooks/useEditorState';
+import { useEditorStats } from './hooks/useEditorStats';
+import { useEntitySynchronization } from './hooks/useEntitySynchronization';
 import { useSceneActions } from './hooks/useSceneActions';
 import { useSceneInitialization } from './hooks/useSceneInitialization';
-import { useEditorStore } from './store/editorStore';
 
 // Shape types that can be created in the editor
 export type ShapeType = 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane';
@@ -39,77 +40,50 @@ export interface ISceneObject {
 }
 
 const Editor: React.FC = () => {
-  // New ECS system - get all entities with reactive updates
-  const entityManager = useEntityManager();
-
-  // Zustand store selectors - grouped by concern
-  const entityIds = useEditorStore((state) => state.entityIds);
-  const setEntityIds = useEditorStore((state) => state.setEntityIds);
-  const selectedId = useEditorStore((state) => state.selectedId);
-  const setSelectedId = useEditorStore((state) => state.setSelectedId);
-  const statusMessage = useEditorStore((state) => state.statusMessage);
-  const setStatusMessage = useEditorStore((state) => state.setStatusMessage);
-  const isChatExpanded = useEditorStore((state) => state.isChatExpanded);
-  const setIsChatExpanded = useEditorStore((state) => state.setIsChatExpanded);
-  const isLeftPanelCollapsed = useEditorStore((state) => state.isLeftPanelCollapsed);
-  const setIsLeftPanelCollapsed = useEditorStore((state) => state.setIsLeftPanelCollapsed);
-  const showAddMenu = useEditorStore((state) => state.showAddMenu);
-  const setShowAddMenu = useEditorStore((state) => state.setShowAddMenu);
-  const isPlaying = useEditorStore((state) => state.isPlaying);
-  const setIsPlaying = useEditorStore((state) => state.setIsPlaying);
-  const performanceMetrics = useEditorStore((state) => state.performanceMetrics);
+  // Grouped state management hooks - prevents unnecessary re-renders
+  const { entityIds, selectedId, setEntityIds, setSelectedId } = useEntityState();
+  const {
+    isChatExpanded,
+    setIsChatExpanded,
+    isLeftPanelCollapsed,
+    setIsLeftPanelCollapsed,
+    showAddMenu,
+    setShowAddMenu,
+  } = useUIState();
+  const { isPlaying, setIsPlaying } = usePhysicsState();
+  const { statusMessage, setStatusMessage, performanceMetrics } = useAppState();
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Subscribe to ECS system for entity changes with reactive updates
-  useEffect(() => {
-    const updateEntities = () => {
-      const entities = entityManager.getAllEntities();
-      const newIds = entities.map((entity) => entity.id);
+  // Entity synchronization with ECS system
+  const { entityManager } = useEntitySynchronization({ entityIds, setEntityIds });
 
-      // Only update if the entity list actually changed
-      if (
-        entityIds.length !== newIds.length ||
-        !entityIds.every((id, index) => id === newIds[index])
-      ) {
-        console.log(`[Editor] Entity list updated:`, newIds);
-        setEntityIds(newIds);
-      }
-    };
+  // Scene actions and file input ref
+  const { fileInputRef, savedScene, importScene } = useSceneActions();
 
-    // Initial load
-    updateEntities();
-
-    // Listen for entity events for real-time reactive updates
-    const removeEventListener = entityManager.addEventListener((event) => {
-      console.log(`[Editor] Entity event: ${event.type}`, event.entityId);
-      updateEntities();
-    });
-
-    return removeEventListener;
-  }, [entityManager, entityIds, setEntityIds]);
-
-  // Custom Hooks
+  // All action handlers encapsulated in custom hook
   const {
-    createEntity,
-    createCube,
-    createSphere,
-    createCylinder,
-    createCone,
-    createTorus,
-    createPlane,
-  } = useEntityCreation();
-  const {
-    fileInputRef,
-    savedScene,
-    handleSave,
-    handleLoad,
-    handleClear,
+    handleAddObject,
+    handleSaveWithStatus,
+    handleLoadWithStatus,
+    handleClearWithStatus,
     triggerFileLoad,
-    importScene,
-  } = useSceneActions();
-  const { handlePlay, handlePause, handleStop } = usePhysicsControls({
-    onStatusMessage: setStatusMessage,
+    handlePlayWithStatus,
+    handlePauseWithStatus,
+    handleStopWithStatus,
+    toggleAddMenu,
+    toggleChat,
+    toggleLeftPanel,
+  } = useEditorHandlers({
+    setSelectedId,
+    setStatusMessage,
+    setShowAddMenu,
+    setIsPlaying,
+    setIsChatExpanded,
+    setIsLeftPanelCollapsed,
+    showAddMenu,
+    isChatExpanded,
+    isLeftPanelCollapsed,
   });
 
   // Scene Initialization
@@ -118,108 +92,6 @@ const Editor: React.FC = () => {
     importScene,
     onStatusMessage: setStatusMessage,
   });
-
-  // Memoized Entity Creation Handler
-  const handleAddObject = useCallback(
-    async (type: ShapeType) => {
-      try {
-        let entity;
-        switch (type) {
-          case 'Cube':
-            entity = createCube();
-            break;
-          case 'Sphere':
-            entity = createSphere();
-            break;
-          case 'Cylinder':
-            entity = createCylinder();
-            break;
-          case 'Cone':
-            entity = createCone();
-            break;
-          case 'Torus':
-            entity = createTorus();
-            break;
-          case 'Plane':
-            entity = createPlane();
-            break;
-          default:
-            entity = createEntity(type);
-            break;
-        }
-
-        setSelectedId(entity.id);
-        setStatusMessage(`Created ${type} (Entity ${entity.id})`);
-        setShowAddMenu(false);
-        console.log('[AddObject] Created entity:', entity);
-      } catch (error) {
-        console.error('[AddObject] Failed to create entity:', error);
-        setStatusMessage(
-          `Failed to create ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
-      }
-    },
-    [
-      createEntity,
-      createCube,
-      createSphere,
-      createCylinder,
-      createCone,
-      createTorus,
-      createPlane,
-      setSelectedId,
-      setStatusMessage,
-      setShowAddMenu,
-    ],
-  );
-
-  // Memoized wrapped handlers for status updates
-  const handleSaveWithStatus = useCallback(() => {
-    const message = handleSave();
-    setStatusMessage(message);
-  }, [handleSave]);
-
-  const handleLoadWithStatus = useCallback(
-    async (e?: React.ChangeEvent<HTMLInputElement>) => {
-      const message = await handleLoad(e);
-      setStatusMessage(message);
-    },
-    [handleLoad],
-  );
-
-  const handleClearWithStatus = useCallback(() => {
-    const message = handleClear();
-    setStatusMessage(message);
-  }, [handleClear]);
-
-  const handlePlayWithStatus = useCallback(() => {
-    setIsPlaying(true);
-    handlePlay();
-  }, [setIsPlaying, handlePlay]);
-
-  const handlePauseWithStatus = useCallback(() => {
-    setIsPlaying(false);
-    handlePause();
-  }, [setIsPlaying, handlePause]);
-
-  const handleStopWithStatus = useCallback(() => {
-    setIsPlaying(false);
-    handleStop();
-  }, [setIsPlaying, handleStop]);
-
-  // Simplified toggle handlers using store
-  const toggleAddMenu = useCallback(
-    () => setShowAddMenu(!showAddMenu),
-    [showAddMenu, setShowAddMenu],
-  );
-  const toggleChat = useCallback(
-    () => setIsChatExpanded(!isChatExpanded),
-    [isChatExpanded, setIsChatExpanded],
-  );
-  const toggleLeftPanel = useCallback(
-    () => setIsLeftPanelCollapsed(!isLeftPanelCollapsed),
-    [isLeftPanelCollapsed, setIsLeftPanelCollapsed],
-  );
 
   // Keyboard Shortcuts
   useEditorKeyboard({
@@ -232,22 +104,14 @@ const Editor: React.FC = () => {
     onStatusMessage: setStatusMessage,
   });
 
-  // Auto-select first entity when available (memoized)
-  useEffect(() => {
-    if ((selectedId === null || !entityIds.includes(selectedId)) && entityIds.length > 0) {
-      setSelectedId(entityIds[0]);
-    }
-  }, [selectedId, entityIds, setSelectedId]);
+  // Auto-selection logic
+  useAutoSelection({ selectedId, entityIds, setSelectedId });
 
-  // Memoized stats object to prevent StatusBar re-renders
-  const stats = useMemo(
-    () => ({
-      entities: entityIds.length,
-      fps: Math.round(performanceMetrics.averageFPS || 0),
-      memory: '128MB', // placeholder - no memory tracking yet
-    }),
-    [entityIds.length, performanceMetrics.averageFPS],
-  );
+  // Performance stats calculation
+  const stats = useEditorStats({
+    entityCount: entityIds.length,
+    averageFPS: performanceMetrics.averageFPS,
+  });
 
   return (
     <div

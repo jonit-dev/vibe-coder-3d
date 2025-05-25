@@ -1,0 +1,24 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+**Rules (condensed)**
+
+* Import via TS path aliases (see tsconfig).
+* Yarn only; Tailwind for CSS.
+* Stick to SRP / DRY / KISS.
+* Prefix interfaces with `I`.
+* Use Cursor CLI when helpful.
+* Keep components small; put logic in hooks.
+* Skip `.md` reports unless I ask.
+
+**Critical**
+
+* Don’t request approval—just do it.
+* If unsure, call **Context7** for docs, call *SequentialThinking* for reasoning help.
+* Named exports only; no barrel `index.ts`.
+* Declare components inline: `export const …`.
+* Don’t run `yarn dev`; ask me to.
+* Prefix interfaces with I
+* Favor using Zod

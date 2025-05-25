@@ -1,49 +1,53 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Mesh } from 'three';
+import type { Mesh } from 'three';
 
-import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 import { ITransformData } from '@/editor/lib/ecs/components/TransformComponent';
 
-export interface IUseEntityTransformProps {
-  entityId: number;
-  isTransformingLocal: boolean;
+interface IUseEntityTransformProps {
+  transform: { data: ITransformData } | null | undefined;
+  isTransforming: boolean;
   isPlaying: boolean;
 }
 
 export const useEntityTransform = ({
-  entityId,
-  isTransformingLocal,
+  transform,
+  isTransforming,
   isPlaying,
 }: IUseEntityTransformProps) => {
-  const componentManager = useComponentManager();
-  const meshRef = useRef<Mesh>(null);
+  const meshRef = useRef<Mesh | null>(null);
 
-  // Get transform component data
-  const transform = componentManager.getComponent<ITransformData>(
-    entityId,
-    KnownComponentTypes.TRANSFORM,
-  );
+  // Extract transform data with defaults
+  const transformData = useMemo(() => {
+    if (!transform?.data) {
+      return {
+        position: [0, 0, 0] as [number, number, number],
+        rotation: [0, 0, 0] as [number, number, number],
+        scale: [1, 1, 1] as [number, number, number],
+      };
+    }
 
-  // Extract transform values with defaults
-  const position: [number, number, number] = transform?.data?.position || [0, 0, 0];
-  const rotation: [number, number, number] = transform?.data?.rotation || [0, 0, 0];
-  const scale: [number, number, number] = transform?.data?.scale || [1, 1, 1];
+    return {
+      position: transform.data.position || ([0, 0, 0] as [number, number, number]),
+      rotation: transform.data.rotation || ([0, 0, 0] as [number, number, number]),
+      scale: transform.data.scale || ([1, 1, 1] as [number, number, number]),
+    };
+  }, [transform?.data]);
 
-  // Convert rotation to radians for Three.js
+  // Convert rotation to radians for physics
   const rotationRadians = useMemo(
     (): [number, number, number] => [
-      rotation[0] * (Math.PI / 180),
-      rotation[1] * (Math.PI / 180),
-      rotation[2] * (Math.PI / 180),
+      transformData.rotation[0] * (Math.PI / 180),
+      transformData.rotation[1] * (Math.PI / 180),
+      transformData.rotation[2] * (Math.PI / 180),
     ],
-    [rotation],
+    [transformData.rotation],
   );
 
   // Sync mesh transform from ComponentManager (single source of truth)
   useEffect(() => {
-    if (meshRef.current && !isTransformingLocal && !isPlaying) {
-      // Only sync when NOT transforming and NOT in physics mode
+    if (meshRef.current && !isTransforming && !isPlaying) {
+      const { position, rotation, scale } = transformData;
+
       meshRef.current.position.set(position[0], position[1], position[2]);
       meshRef.current.rotation.set(
         rotation[0] * (Math.PI / 180),
@@ -52,14 +56,13 @@ export const useEntityTransform = ({
       );
       meshRef.current.scale.set(scale[0], scale[1], scale[2]);
     }
-  }, [position, rotation, scale, isTransformingLocal, isPlaying]);
+  }, [transformData, isTransforming, isPlaying]);
 
   return {
     meshRef,
-    transform,
-    position,
-    rotation,
-    scale,
+    position: transformData.position,
+    rotation: transformData.rotation,
+    scale: transformData.scale,
     rotationRadians,
   };
 };
