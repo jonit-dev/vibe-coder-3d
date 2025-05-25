@@ -1,7 +1,7 @@
 import React from 'react';
 import { FiBox } from 'react-icons/fi';
 
-import { InspectorSection } from '@/editor/components/ui/InspectorSection';
+import { InspectorSection } from '@/editor/components/shared/InspectorSection';
 
 export interface IMeshTypeSectionProps {
   meshType: string;

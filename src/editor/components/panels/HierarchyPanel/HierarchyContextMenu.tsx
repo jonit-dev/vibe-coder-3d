@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { DropdownMenu } from '@/editor/components/common/DropdownMenu';
+import { DropdownMenu } from '@/editor/components/menus/DropdownMenu';
 
 export interface IHierarchyContextMenuProps {
   anchorRef: React.RefObject<HTMLElement | HTMLButtonElement | null>;

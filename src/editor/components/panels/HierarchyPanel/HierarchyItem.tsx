@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 
-import { EditableEntityName } from '@/editor/components/ui/EditableEntityName';
+import { EditableEntityName } from '@/editor/components/forms/EditableEntityName';
 
 import { CubeIcon } from './HierarchyPanel';
 

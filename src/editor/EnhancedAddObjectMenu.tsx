@@ -17,7 +17,7 @@ import {
   IMenuCategory,
   IMenuItemOption,
   NestedDropdownMenu,
-} from './components/common/NestedDropdownMenu';
+} from './components/menus/NestedDropdownMenu';
 import { useEditorStore } from './store/editorStore';
 
 export interface IEnhancedAddObjectMenuProps {

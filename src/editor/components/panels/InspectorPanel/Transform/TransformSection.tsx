@@ -2,7 +2,7 @@ import React from 'react';
 import { FiMove } from 'react-icons/fi';
 
 import { TransformFields } from '@/editor/components/panels/InspectorPanel/Transform/TransformFields/TransformFields';
-import { InspectorSection } from '@/editor/components/ui/InspectorSection';
+import { InspectorSection } from '@/editor/components/shared/InspectorSection';
 
 export interface ITransformSectionProps {
   position: [number, number, number];

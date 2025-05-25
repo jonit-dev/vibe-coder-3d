@@ -9,11 +9,10 @@ import {
   FiSettings,
 } from 'react-icons/fi';
 
-import { AddComponentMenu } from '@/editor/components/ui/AddComponentMenu';
+import { EditableEntityName } from '@/editor/components/forms/EditableEntityName';
+import { AddComponentMenu } from '@/editor/components/menus/AddComponentMenu';
 import { useEntityInfo } from '@/editor/hooks/useEntityInfo';
 import { useEditorStore } from '@/editor/store/editorStore';
-
-import { EditableEntityName } from './EditableEntityName';
 
 export interface IStackedLeftPanelProps {
   hierarchyContent: ReactNode;

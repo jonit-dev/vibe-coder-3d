@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
+import { RightSidebarChat } from './components/chat/RightSidebarChat';
+import { StackedLeftPanel } from './components/layout/StackedLeftPanel';
+import { StatusBar } from './components/layout/StatusBar';
+import { TopBar } from './components/layout/TopBar';
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
-import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent';
+import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent/InspectorPanelContent';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
-import { RightSidebarChat } from './components/ui/RightSidebarChat';
-import { StackedLeftPanel } from './components/ui/StackedLeftPanel';
-import { StatusBar } from './components/ui/StatusBar';
-import { TopBar } from './components/ui/TopBar';
 import { useEditorKeyboard } from './hooks/useEditorKeyboard';
 import { useEntityCreation } from './hooks/useEntityCreation';
 import { useEntityManager } from './hooks/useEntityManager';

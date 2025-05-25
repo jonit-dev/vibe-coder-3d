@@ -3,7 +3,7 @@ import { FiZap } from 'react-icons/fi';
 
 import { PhysicsBodyType } from '@/core/lib/physics';
 import { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
-import { InspectorSection } from '@/editor/components/ui/InspectorSection';
+import { InspectorSection } from '@/editor/components/shared/InspectorSection';
 
 export interface IRigidBodyData {
   enabled: boolean;

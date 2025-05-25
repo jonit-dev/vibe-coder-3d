@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiShield } from 'react-icons/fi';
 
-import { InspectorSection } from '@/editor/components/ui/InspectorSection';
+import { InspectorSection } from '@/editor/components/shared/InspectorSection';
 
 import { ColliderFields } from './ColliderFields';
 

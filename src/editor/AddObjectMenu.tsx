@@ -1,7 +1,7 @@
 import React from 'react';
 import { TbCircle, TbCone, TbCube, TbCylinder, TbSquare } from 'react-icons/tb';
 
-import { DropdownMenu } from './components/common/DropdownMenu';
+import { DropdownMenu } from './components/menus/DropdownMenu';
 import { useEditorStore } from './store/editorStore';
 
 export interface IAddObjectMenuProps {

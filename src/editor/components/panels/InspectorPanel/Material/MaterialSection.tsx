@@ -1,8 +1,8 @@
 import React from 'react';
 import { FiDroplet } from 'react-icons/fi';
 
-import { ColorPicker } from '@/editor/components/common/ColorPicker';
-import { InspectorSection } from '@/editor/components/ui/InspectorSection';
+import { ColorPicker } from '@/editor/components/shared/ColorPicker';
+import { InspectorSection } from '@/editor/components/shared/InspectorSection';
 
 export interface IMaterialSettings {
   // Simplified - only keeping what's actually used
