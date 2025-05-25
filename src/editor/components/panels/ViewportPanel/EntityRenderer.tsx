@@ -131,6 +131,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
             entityId={entityId}
             onTransformChange={onTransformChange}
             setIsTransforming={handleSetIsTransforming}
+            meshType={meshType}
           />
         )}
 

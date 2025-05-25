@@ -116,25 +116,27 @@ export const CameraGeometry: React.FC<ICameraGeometryProps> = ({
 
   return (
     <group>
-      {/* Simple white camera icon with transparent background */}
-      <Html
-        center
-        distanceFactor={10}
-        transform
-        occlude={false}
-        style={{
-          pointerEvents: 'none',
-          userSelect: 'none',
-        }}
-      >
-        <BsCameraReelsFill
-          size={size * 32}
-          color="#ffffff"
+      {/* Simple white camera icon with transparent background - Hidden during play mode */}
+      {!isPlaying && (
+        <Html
+          center
+          distanceFactor={10}
+          transform
+          occlude={false}
           style={{
-            filter: 'drop-shadow(0 0 2px rgba(0, 0, 0, 0.8))',
+            pointerEvents: 'none',
+            userSelect: 'none',
           }}
-        />
-      </Html>
+        >
+          <BsCameraReelsFill
+            size={size * 32}
+            color="#ffffff"
+            style={{
+              filter: 'drop-shadow(0 0 2px rgba(0, 0, 0, 0.8))',
+            }}
+          />
+        </Html>
+      )}
 
       {/* Camera Frustum - Only show in editor mode, not play mode */}
       {showFrustum && !isPlaying && (

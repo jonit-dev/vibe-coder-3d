@@ -15,6 +15,7 @@ export interface IGizmoControlsProps {
   entityId: number;
   onTransformChange?: (values: [number, number, number]) => void;
   setIsTransforming?: (isTransforming: boolean) => void;
+  meshType?: string;
 }
 
 function updateTransformThroughComponentManager(
@@ -75,7 +76,7 @@ function updateTransformThroughComponentManager(
 }
 
 export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
-  ({ meshRef, mode, entityId, onTransformChange, setIsTransforming }) => {
+  ({ meshRef, mode, entityId, onTransformChange, setIsTransforming, meshType }) => {
     const transformRef = useRef<any>(null);
     const componentManager = useComponentManager();
     const [, setForceUpdate] = React.useState(0);
@@ -125,6 +126,12 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
       lastUpdateTime.current = 0;
       handleTransformUpdate();
     }, [setIsTransforming, handleTransformUpdate]);
+
+    // Don't render gizmo controls for camera entities as they contain HTML elements
+    // that cause TransformControls scene graph errors
+    if (meshType === 'Camera') {
+      return null;
+    }
 
     // Only use onObjectChange to avoid duplicate updates
     return (
