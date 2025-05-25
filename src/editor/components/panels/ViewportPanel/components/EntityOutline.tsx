@@ -2,6 +2,8 @@ import { Edges } from '@react-three/drei';
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 
+import { CameraGeometry } from './CameraGeometry';
+
 interface IEntityOutlineProps {
   selected: boolean;
   meshType: string;
@@ -25,6 +27,8 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
           return <torusGeometry args={[0.5, 0.2, 16, 100]} />;
         case 'Plane':
           return <planeGeometry args={[1, 1]} />;
+        case 'Camera':
+          return null; // Special case - uses CameraGeometry component
         default:
           return <boxGeometry args={[1, 1, 1]} />;
       }
@@ -35,6 +39,18 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
 
     // Render but make invisible when playing (so it can still follow the cube)
     const shouldBeVisible = !isPlaying;
+
+    // Special handling for camera entities
+    if (meshType === 'Camera') {
+      return (
+        <group ref={outlineGroupRef}>
+          <group ref={outlineMeshRef as any} visible={shouldBeVisible}>
+            <CameraGeometry showFrustum={false} />
+            <Edges color="#ff6b35" lineWidth={2} />
+          </group>
+        </group>
+      );
+    }
 
     return (
       <group ref={outlineGroupRef}>

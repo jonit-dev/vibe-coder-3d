@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
@@ -13,6 +14,21 @@ export const useEntityCreation = () => {
   const componentManager = useComponentManager();
   const setSelectedId = useEditorStore((state) => state.setSelectedId);
   const { getComponentData } = useEntityData();
+
+  // Helper to get the next available number for entity naming
+  const getNextNumber = useCallback(
+    (baseName: string) => {
+      const entities = entityManager.getAllEntities();
+      const existingNames = entities.map((e) => e.name);
+
+      let number = 0;
+      while (existingNames.includes(`${baseName} ${number}`)) {
+        number++;
+      }
+      return number;
+    },
+    [entityManager],
+  );
 
   const createEntity = useCallback(
     (name: string, parentId?: number) => {
@@ -76,53 +92,59 @@ export const useEntityCreation = () => {
   );
 
   const createCube = useCallback(
-    (name = 'Cube', parentId?: number) => {
-      const entity = createEntity(name, parentId);
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Cube ${getNextNumber('Cube')}`;
+      const entity = createEntity(actualName, parentId);
       addMeshRenderer(entity.id, 'cube');
       return entity;
     },
-    [createEntity, addMeshRenderer],
+    [createEntity, addMeshRenderer, getNextNumber],
   );
 
   const createSphere = useCallback(
-    (name = 'Sphere', parentId?: number) => {
-      const entity = createEntity(name, parentId);
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Sphere ${getNextNumber('Sphere')}`;
+      const entity = createEntity(actualName, parentId);
       addMeshRenderer(entity.id, 'sphere');
       return entity;
     },
-    [createEntity, addMeshRenderer],
+    [createEntity, addMeshRenderer, getNextNumber],
   );
 
   const createCylinder = useCallback(
-    (name = 'Cylinder', parentId?: number) => {
-      const entity = createEntity(name, parentId);
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Cylinder ${getNextNumber('Cylinder')}`;
+      const entity = createEntity(actualName, parentId);
       addMeshRenderer(entity.id, 'cylinder');
       return entity;
     },
-    [createEntity, addMeshRenderer],
+    [createEntity, addMeshRenderer, getNextNumber],
   );
 
   const createCone = useCallback(
-    (name = 'Cone', parentId?: number) => {
-      const entity = createEntity(name, parentId);
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Cone ${getNextNumber('Cone')}`;
+      const entity = createEntity(actualName, parentId);
       addMeshRenderer(entity.id, 'cone');
       return entity;
     },
-    [createEntity, addMeshRenderer],
+    [createEntity, addMeshRenderer, getNextNumber],
   );
 
   const createTorus = useCallback(
-    (name = 'Torus', parentId?: number) => {
-      const entity = createEntity(name, parentId);
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Torus ${getNextNumber('Torus')}`;
+      const entity = createEntity(actualName, parentId);
       addMeshRenderer(entity.id, 'torus');
       return entity;
     },
-    [createEntity, addMeshRenderer],
+    [createEntity, addMeshRenderer, getNextNumber],
   );
 
   const createPlane = useCallback(
-    (name = 'Plane', parentId?: number) => {
-      const entity = createEntity(name, parentId);
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Plane ${getNextNumber('Plane')}`;
+      const entity = createEntity(actualName, parentId);
       addMeshRenderer(entity.id, 'plane');
 
       // Position the plane to be parallel to the floor (rotate -90 degrees on X axis)
@@ -136,7 +158,32 @@ export const useEntityCreation = () => {
 
       return entity;
     },
-    [createEntity, addMeshRenderer, componentManager],
+    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+  );
+
+  const createCamera = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Camera ${getNextNumber('Camera')}`;
+      const entity = createEntity(actualName, parentId);
+
+      // Add Camera component with default Unity-like settings
+      const defaultCamera: ICameraData = {
+        preset: 'unity-default',
+        fov: 60,
+        near: 0.3,
+        far: 1000,
+        isMain: false, // Don't make it main by default
+        enableControls: true,
+        target: [0, 0, 0],
+        projectionType: 'perspective',
+        clearDepth: true,
+        renderPriority: 0,
+      };
+      componentManager.addComponent(entity.id, KnownComponentTypes.CAMERA, defaultCamera);
+
+      return entity;
+    },
+    [createEntity, componentManager, getNextNumber],
   );
 
   const deleteEntity = useCallback(
@@ -164,6 +211,7 @@ export const useEntityCreation = () => {
     createCone,
     createTorus,
     createPlane,
+    createCamera,
     deleteEntity,
   };
 };

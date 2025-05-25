@@ -1,4 +1,4 @@
-export type ShapeType = 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane';
+export type ShapeType = 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane' | 'Camera';
 
 export interface ITransform {
   position: [number, number, number];

@@ -3,12 +3,14 @@
  * Provides a simple interface for converting between component data and BitECS storage
  */
 
+import { ICameraData } from './components/CameraComponent';
 import { IMeshColliderData } from './components/MeshColliderComponent';
 import { IMeshRendererData } from './components/MeshRendererComponent';
 import { IRigidBodyData } from './components/RigidBodyComponent';
 import { ITransformData } from './components/TransformComponent';
 import { EntityId } from './types';
 import {
+  CameraConverter,
   EntityMetaConverter,
   MeshColliderConverter,
   MeshRendererConverter,
@@ -54,6 +56,15 @@ export const setMeshColliderData = (eid: EntityId, data: IMeshColliderData): voi
 
 export const getMeshColliderData = (eid: EntityId): IMeshColliderData => {
   return MeshColliderConverter.get(eid);
+};
+
+// Camera data conversion - now using converters
+export const setCameraData = (eid: EntityId, data: ICameraData): void => {
+  CameraConverter.set(eid, data);
+};
+
+export const getCameraData = (eid: EntityId): ICameraData => {
+  return CameraConverter.get(eid);
 };
 
 // Entity metadata conversion - now using converters

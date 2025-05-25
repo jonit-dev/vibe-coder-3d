@@ -1,0 +1,162 @@
+import { useThree } from '@react-three/fiber';
+import React, { useEffect, useMemo, useRef } from 'react';
+import * as THREE from 'three';
+
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
+import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+
+export interface IGameCameraManagerProps {
+  isPlaying: boolean;
+}
+
+/**
+ * Game Camera Manager
+ *
+ * Handles the Unity-like behavior where:
+ * - During Editor Mode: Uses the standard OrbitControls camera for scene navigation
+ * - During Play Mode: Switches to ECS Camera entities to render what the player sees
+ *
+ * This component manages camera switching by replacing the main Three.js camera
+ * when entering/exiting play mode, just like Unity does.
+ */
+export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying }) => {
+  const componentManager = useComponentManager();
+  const { set, camera } = useThree();
+
+  // Store original camera for restoration when exiting play mode
+  const originalCameraRef = useRef<THREE.Camera | null>(null);
+  const hasSetOriginalCamera = useRef(false);
+
+  // Get all entities with Camera components
+  const cameraEntities = useMemo(() => {
+    if (!isPlaying) return [];
+
+    const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.CAMERA);
+
+    return entities
+      .map((entityId) => {
+        const cameraComponent = componentManager.getComponent(entityId, KnownComponentTypes.CAMERA);
+        const transformComponent = componentManager.getComponent(
+          entityId,
+          KnownComponentTypes.TRANSFORM,
+        );
+
+        const cameraData = cameraComponent?.data as ICameraData | undefined;
+        const transformData = transformComponent?.data as ITransformData | undefined;
+
+        return {
+          entityId,
+          cameraData,
+          transformData,
+          isValid: cameraData && transformData,
+        };
+      })
+      .filter((entity) => entity.isValid);
+  }, [componentManager, isPlaying]);
+
+  // Find the main camera or use the first available camera
+  const mainCamera = useMemo(() => {
+    if (cameraEntities.length === 0) return null;
+
+    // Try to find a camera marked as main
+    const mainCam = cameraEntities.find((entity) => entity.cameraData?.isMain);
+
+    // Otherwise use the first camera
+    return mainCam || cameraEntities[0];
+  }, [cameraEntities]);
+
+  // Track if we've already switched cameras for this play session
+  const currentPlayState = useRef<boolean>(false);
+  const currentCameraEntityId = useRef<number | null>(null);
+
+  // Handle camera switching when play mode starts/stops
+  useEffect(() => {
+    // Store original camera only once when we first encounter it
+    if (!hasSetOriginalCamera.current && !isPlaying) {
+      originalCameraRef.current = camera;
+      hasSetOriginalCamera.current = true;
+    }
+
+    // Check if play state actually changed
+    if (currentPlayState.current === isPlaying) {
+      // Also check if camera entity changed
+      const newCameraEntityId = mainCamera?.entityId || null;
+      if (currentCameraEntityId.current === newCameraEntityId) {
+        return; // No change, skip
+      }
+      currentCameraEntityId.current = newCameraEntityId;
+    } else {
+      currentPlayState.current = isPlaying;
+      currentCameraEntityId.current = mainCamera?.entityId || null;
+    }
+
+    if (!isPlaying) {
+      // Restore original editor camera when exiting play mode
+      if (originalCameraRef.current && hasSetOriginalCamera.current) {
+        set({ camera: originalCameraRef.current as any });
+        console.log('[GameCameraManager] Restored editor camera');
+      }
+      return;
+    }
+
+    if (!mainCamera || !mainCamera.cameraData || !mainCamera.transformData) {
+      console.warn('[GameCameraManager] No valid main camera found for play mode');
+      return;
+    }
+
+    const { cameraData, transformData } = mainCamera;
+
+    // Create new camera based on projection type
+    let gameCamera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+
+    if (cameraData.projectionType === 'orthographic') {
+      const size = cameraData.orthographicSize || 10;
+      const aspect = window.innerWidth / window.innerHeight;
+      gameCamera = new THREE.OrthographicCamera(
+        -size * aspect,
+        size * aspect,
+        size,
+        -size,
+        cameraData.near || 0.3,
+        cameraData.far || 1000,
+      );
+    } else {
+      gameCamera = new THREE.PerspectiveCamera(
+        cameraData.fov || 60,
+        window.innerWidth / window.innerHeight,
+        cameraData.near || 0.3,
+        cameraData.far || 1000,
+      );
+    }
+
+    // Set camera position and rotation based on transform
+    const position = transformData.position || [0, 1, -10];
+    const rotation = transformData.rotation || [0, 0, 0];
+
+    gameCamera.position.set(position[0], position[1], position[2]);
+    gameCamera.rotation.set(
+      (rotation[0] * Math.PI) / 180,
+      (rotation[1] * Math.PI) / 180,
+      (rotation[2] * Math.PI) / 180,
+    );
+
+    // If camera has a target, make it look at the target
+    if (cameraData.target) {
+      gameCamera.lookAt(cameraData.target[0], cameraData.target[1], cameraData.target[2]);
+    }
+
+    gameCamera.updateProjectionMatrix();
+
+    // Replace the main Three.js camera with our game camera
+    set({ camera: gameCamera as any });
+
+    console.log(
+      `[GameCameraManager] Switched to game camera (Entity ${mainCamera.entityId}) for play mode`,
+    );
+  }, [isPlaying, mainCamera]); // Removed 'set' and 'camera' from deps to prevent infinite loop
+
+  // This component doesn't render anything - it just manages camera switching
+  return null;
+};

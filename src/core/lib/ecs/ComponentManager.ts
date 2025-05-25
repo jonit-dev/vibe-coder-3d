@@ -1,11 +1,13 @@
 import { addComponent, hasComponent, removeComponent } from 'bitecs';
 
-import { MeshCollider, MeshRenderer, RigidBody, Transform } from './BitECSComponents';
+import { Camera, MeshCollider, MeshRenderer, RigidBody, Transform } from './BitECSComponents';
 import {
+  getCameraData,
   getMeshColliderData,
   getMeshRendererData,
   getRigidBodyData,
   getTransformData,
+  setCameraData,
   setMeshColliderData,
   setMeshRendererData,
   setRigidBodyData,
@@ -13,6 +15,7 @@ import {
 } from './DataConversion';
 import { IComponent, KnownComponentTypes } from './IComponent';
 import { ECSWorld } from './World';
+import { ICameraData } from './components/CameraComponent';
 import { IMeshColliderData } from './components/MeshColliderComponent';
 import { IMeshRendererData } from './components/MeshRendererComponent';
 import { IRigidBodyData } from './components/RigidBodyComponent';
@@ -34,6 +37,7 @@ const componentMap = {
   [KnownComponentTypes.MESH_RENDERER]: MeshRenderer,
   [KnownComponentTypes.RIGID_BODY]: RigidBody,
   [KnownComponentTypes.MESH_COLLIDER]: MeshCollider,
+  [KnownComponentTypes.CAMERA]: Camera,
 };
 
 export class ComponentManager {
@@ -106,6 +110,9 @@ export class ComponentManager {
       case KnownComponentTypes.MESH_COLLIDER:
         setMeshColliderData(entityId, data as IMeshColliderData);
         break;
+      case KnownComponentTypes.CAMERA:
+        setCameraData(entityId, data as ICameraData);
+        break;
     }
   }
 
@@ -122,6 +129,8 @@ export class ComponentManager {
         return getRigidBodyData(entityId) as TData;
       case KnownComponentTypes.MESH_COLLIDER:
         return getMeshColliderData(entityId) as TData;
+      case KnownComponentTypes.CAMERA:
+        return getCameraData(entityId) as TData;
       default:
         return undefined;
     }
@@ -290,5 +299,9 @@ export class ComponentManager {
 
   getMeshColliderComponent(entityId: EntityId): IComponent<IMeshColliderData> | undefined {
     return this.getComponent<IMeshColliderData>(entityId, KnownComponentTypes.MESH_COLLIDER);
+  }
+
+  getCameraComponent(entityId: EntityId): IComponent<ICameraData> | undefined {
+    return this.getComponent<ICameraData>(entityId, KnownComponentTypes.CAMERA);
   }
 }

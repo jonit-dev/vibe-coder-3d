@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
+import { GameCameraManager } from '@/core/components/cameras/GameCameraManager';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { GizmoMode } from '@/editor/hooks/useEditorKeyboard';
@@ -82,6 +83,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
           }}
           shadows
         >
+          {/* Game Camera Manager - handles camera switching between editor and play mode */}
+          <GameCameraManager isPlaying={isPlaying} />
+
           <ambientLight intensity={0.5} />
           <directionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
 

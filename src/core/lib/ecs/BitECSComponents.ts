@@ -58,6 +58,26 @@ export const MeshCollider = defineComponent({
   offsetZ: Types.f32,
 });
 
+export const Camera = defineComponent({
+  // Camera settings
+  fov: Types.f32,
+  near: Types.f32,
+  far: Types.f32,
+  isMain: Types.ui8,
+  enableControls: Types.ui8,
+  projectionType: Types.ui8, // 0: perspective, 1: orthographic
+  orthographicSize: Types.f32,
+  // Target position
+  targetX: Types.f32,
+  targetY: Types.f32,
+  targetZ: Types.f32,
+  // Preset stored as hash for exact preservation
+  presetHash: Types.ui32,
+  // Optional properties
+  clearDepth: Types.ui8,
+  renderPriority: Types.i32,
+});
+
 // Entity metadata component to store hierarchy and name information
 export const EntityMeta = defineComponent({
   // Store entity hierarchy using entity references
@@ -72,6 +92,7 @@ export const ComponentTypeMap = {
   MeshRenderer: 'MeshRenderer',
   RigidBody: 'RigidBody',
   MeshCollider: 'MeshCollider',
+  Camera: 'Camera',
 } as const;
 
 export type BitECSComponentType = keyof typeof ComponentTypeMap;

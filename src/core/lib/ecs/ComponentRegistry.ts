@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiBox, FiEye, FiMove, FiShield, FiZap } from 'react-icons/fi';
+import { FiBox, FiCamera, FiEye, FiMove, FiShield, FiZap } from 'react-icons/fi';
 
 import { KnownComponentTypes } from './IComponent';
 
@@ -242,6 +242,35 @@ export const COMPONENT_REGISTRY: Record<string, IComponentDefinition> = {
           density: data.physicsMaterial?.density ?? 1,
         },
         enabled: true,
+      };
+    },
+  },
+
+  [KnownComponentTypes.CAMERA]: {
+    id: KnownComponentTypes.CAMERA,
+    name: 'Camera',
+    description: 'Camera for rendering perspectives',
+    icon: React.createElement(FiCamera, { className: 'w-4 h-4' }),
+    category: 'Rendering',
+    removable: true,
+    getDefaultData: () => ({
+      preset: 'unity-default',
+      fov: 60,
+      near: 0.3,
+      far: 1000,
+      isMain: false,
+      enableControls: true,
+      target: [0, 0, 0],
+      projectionType: 'perspective',
+      clearDepth: true,
+      renderPriority: 0,
+    }),
+    getRenderingContributions: (_data) => {
+      return {
+        meshType: 'Camera', // Special camera shape
+        visible: true,
+        castShadow: false,
+        receiveShadow: false,
       };
     },
   },

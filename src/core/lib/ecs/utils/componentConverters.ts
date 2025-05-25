@@ -3,7 +3,15 @@
  * Each converter handles one component type to follow SRP
  */
 
-import { EntityMeta, MeshCollider, MeshRenderer, RigidBody, Transform } from '../BitECSComponents';
+import {
+  Camera,
+  EntityMeta,
+  MeshCollider,
+  MeshRenderer,
+  RigidBody,
+  Transform,
+} from '../BitECSComponents';
+import { ICameraData } from '../components/CameraComponent';
 import { IMeshColliderData } from '../components/MeshColliderComponent';
 import { IMeshRendererData } from '../components/MeshRendererComponent';
 import { IRigidBodyData } from '../components/RigidBodyComponent';
@@ -177,6 +185,41 @@ export const MeshColliderConverter = {
       restitution: 0.3,
       density: 1,
     },
+  }),
+};
+
+/**
+ * Camera component converter
+ */
+export const CameraConverter = {
+  set: (eid: EntityId, data: ICameraData): void => {
+    Camera.fov[eid] = data.fov;
+    Camera.near[eid] = data.near;
+    Camera.far[eid] = data.far;
+    Camera.isMain[eid] = data.isMain ? 1 : 0;
+    Camera.enableControls[eid] = data.enableControls ? 1 : 0;
+    Camera.projectionType[eid] = data.projectionType === 'orthographic' ? 1 : 0;
+    Camera.orthographicSize[eid] = data.orthographicSize || 10;
+    Camera.targetX[eid] = data.target[0];
+    Camera.targetY[eid] = data.target[1];
+    Camera.targetZ[eid] = data.target[2];
+    Camera.presetHash[eid] = storeString(data.preset);
+    Camera.clearDepth[eid] = data.clearDepth ? 1 : 0;
+    Camera.renderPriority[eid] = data.renderPriority || 0;
+  },
+
+  get: (eid: EntityId): ICameraData => ({
+    preset: getStringFromHash(Camera.presetHash[eid]) as any,
+    fov: Camera.fov[eid],
+    near: Camera.near[eid],
+    far: Camera.far[eid],
+    isMain: Boolean(Camera.isMain[eid]),
+    enableControls: Boolean(Camera.enableControls[eid]),
+    projectionType: Camera.projectionType[eid] === 1 ? 'orthographic' : 'perspective',
+    orthographicSize: Camera.orthographicSize[eid],
+    target: [Camera.targetX[eid], Camera.targetY[eid], Camera.targetZ[eid]],
+    clearDepth: Boolean(Camera.clearDepth[eid]),
+    renderPriority: Camera.renderPriority[eid],
   }),
 };
 

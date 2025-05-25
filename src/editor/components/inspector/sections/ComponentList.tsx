@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { CameraAdapter } from '@/editor/components/inspector/adapters/CameraAdapter';
 import { MeshColliderAdapter } from '@/editor/components/inspector/adapters/MeshColliderAdapter';
 import { MeshRendererAdapter } from '@/editor/components/inspector/adapters/MeshRendererAdapter';
 import { RigidBodyAdapter } from '@/editor/components/inspector/adapters/RigidBodyAdapter';
@@ -12,10 +13,12 @@ interface IComponentListProps {
   hasMeshRenderer: boolean;
   hasRigidBody: boolean;
   hasMeshCollider: boolean;
+  hasCamera: boolean;
   getTransform: () => any;
   getMeshRenderer: () => any;
   getRigidBody: () => any;
   getMeshCollider: () => any;
+  getCamera: () => any;
   addComponent: (type: string, data: any) => any;
   updateComponent: (type: string, data: any) => boolean;
   removeComponent: (type: string) => boolean;
@@ -28,10 +31,12 @@ export const ComponentList: React.FC<IComponentListProps> = ({
   hasMeshRenderer,
   hasRigidBody,
   hasMeshCollider,
+  hasCamera,
   getTransform,
   getMeshRenderer,
   getRigidBody,
   getMeshCollider,
+  getCamera,
   addComponent,
   updateComponent,
   removeComponent,
@@ -42,6 +47,16 @@ export const ComponentList: React.FC<IComponentListProps> = ({
       {hasTransform && (
         <TransformAdapter
           transformComponent={getTransform()}
+          updateComponent={updateComponent}
+          removeComponent={removeComponent}
+          entityId={selectedEntity}
+        />
+      )}
+
+      {/* Camera Component */}
+      {hasCamera && (
+        <CameraAdapter
+          cameraComponent={getCamera()}
           updateComponent={updateComponent}
           removeComponent={removeComponent}
           entityId={selectedEntity}

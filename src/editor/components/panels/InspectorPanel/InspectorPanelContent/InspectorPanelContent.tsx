@@ -14,10 +14,12 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
     hasMeshRenderer,
     hasRigidBody,
     hasMeshCollider,
+    hasCamera,
     getTransform,
     getMeshRenderer,
     getRigidBody,
     getMeshCollider,
+    getCamera,
     addComponent,
     updateComponent,
     removeComponent,
@@ -36,10 +38,12 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
         hasMeshRenderer={hasMeshRenderer}
         hasRigidBody={hasRigidBody}
         hasMeshCollider={hasMeshCollider}
+        hasCamera={hasCamera}
         getTransform={getTransform}
         getMeshRenderer={getMeshRenderer}
         getRigidBody={getRigidBody}
         getMeshCollider={getMeshCollider}
+        getCamera={getCamera}
         addComponent={addComponent}
         updateComponent={updateComponent}
         removeComponent={removeComponent}

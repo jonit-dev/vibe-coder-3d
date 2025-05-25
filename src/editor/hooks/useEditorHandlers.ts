@@ -38,6 +38,7 @@ export const useEditorHandlers = ({
     createCone,
     createTorus,
     createPlane,
+    createCamera,
   } = useEntityCreation();
 
   // Scene action hooks
@@ -72,6 +73,9 @@ export const useEditorHandlers = ({
           case 'Plane':
             entity = createPlane();
             break;
+          case 'Camera':
+            entity = createCamera();
+            break;
           default:
             entity = createEntity(type);
             break;
@@ -96,6 +100,7 @@ export const useEditorHandlers = ({
       createCone,
       createTorus,
       createPlane,
+      createCamera,
       setSelectedId,
       setStatusMessage,
       setShowAddMenu,

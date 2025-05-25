@@ -16,7 +16,14 @@ export type { IRigidBodyData } from './components/RigidBodyComponent';
 export type { ITransformData } from './components/TransformComponent';
 
 // Export BitECS components and utilities
-export { EntityMeta, MeshCollider, MeshRenderer, RigidBody, Transform } from './BitECSComponents';
+export {
+  Camera,
+  EntityMeta,
+  MeshCollider,
+  MeshRenderer,
+  RigidBody,
+  Transform,
+} from './BitECSComponents';
 
 export {
   getEntityName,

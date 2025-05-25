@@ -107,6 +107,11 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     [components],
   );
 
+  const hasCamera = useMemo(
+    () => components.some((c) => c.type === KnownComponentTypes.CAMERA),
+    [components],
+  );
+
   const getTransform = useCallback(() => {
     if (entityId === null) return undefined;
     return componentManager.getTransformComponent(entityId);
@@ -127,6 +132,11 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     return componentManager.getMeshColliderComponent(entityId);
   }, [entityId, componentManager, updateTrigger]);
 
+  const getCamera = useCallback(() => {
+    if (entityId === null) return undefined;
+    return componentManager.getCameraComponent(entityId);
+  }, [entityId, componentManager, updateTrigger]);
+
   return {
     components,
     addComponent,
@@ -139,9 +149,11 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     hasMeshRenderer,
     hasRigidBody,
     hasMeshCollider,
+    hasCamera,
     getTransform,
     getMeshRenderer,
     getRigidBody,
     getMeshCollider,
+    getCamera,
   };
 };

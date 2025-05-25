@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import type { Mesh } from 'three';
 
+import { CameraGeometry } from './CameraGeometry';
+
 interface IEntityMeshProps {
   meshRef: React.RefObject<Mesh | null>;
   meshType: string;
@@ -12,8 +14,8 @@ interface IEntityMeshProps {
 
 export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
   ({ meshRef, meshType, renderingContributions, entityColor, entityId, onMeshClick }) => {
-    // Memoized geometry selection based on mesh type
-    const geometry = useMemo(() => {
+    // Memoized geometry/content selection based on mesh type
+    const geometryContent = useMemo(() => {
       switch (meshType) {
         case 'Sphere':
           return <sphereGeometry args={[0.5, 32, 32]} />;
@@ -25,10 +27,21 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           return <torusGeometry args={[0.5, 0.2, 16, 100]} />;
         case 'Plane':
           return <planeGeometry args={[1, 1]} />;
+        case 'Camera':
+          return null; // Special case - uses CameraGeometry component
         default:
           return <boxGeometry args={[1, 1, 1]} />;
       }
     }, [meshType]);
+
+    // Special handling for camera entities
+    if (meshType === 'Camera') {
+      return (
+        <group ref={meshRef as any} userData={{ entityId }} onClick={onMeshClick}>
+          <CameraGeometry showFrustum={true} />
+        </group>
+      );
+    }
 
     return (
       <mesh
@@ -39,7 +52,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
         visible={renderingContributions.visible}
         onClick={onMeshClick}
       >
-        {geometry}
+        {geometryContent}
         <meshStandardMaterial
           color={renderingContributions.material?.color ?? entityColor}
           metalness={renderingContributions.material?.metalness ?? 0}
