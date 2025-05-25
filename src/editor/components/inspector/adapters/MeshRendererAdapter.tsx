@@ -7,6 +7,7 @@ import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 interface IMeshRendererAdapterProps {
   meshRendererComponent: any;
   updateComponent: (type: string, data: any) => boolean;
+  removeComponent?: (type: string) => boolean;
   isPlaying: boolean;
   entityId: number;
 }
@@ -14,6 +15,7 @@ interface IMeshRendererAdapterProps {
 export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = ({
   meshRendererComponent,
   updateComponent,
+  removeComponent,
   isPlaying,
   entityId,
 }) => {
@@ -45,6 +47,8 @@ export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = ({
 
   // Convert ECS data to the format expected by MeshRendererSection
   const meshRendererData = {
+    meshId: data.meshId || 'cube',
+    materialId: data.materialId || 'default',
     enabled: data.enabled ?? true,
     castShadows: data.castShadows ?? true,
     receiveShadows: data.receiveShadows ?? true,
@@ -58,18 +62,26 @@ export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = ({
   };
 
   const handleUpdate = (newData: any) => {
-    updateComponent(KnownComponentTypes.MESH_RENDERER, newData);
+    if (newData === null) {
+      // Remove component
+      if (removeComponent) {
+        removeComponent(KnownComponentTypes.MESH_RENDERER);
+      }
+    } else {
+      // Update component
+      updateComponent(KnownComponentTypes.MESH_RENDERER, newData);
 
-    // Sync color changes to the old material component for viewport compatibility
-    if (newData.material?.color) {
-      const color = newData.material.color;
-      // Convert hex to RGB array for old material component
-      const hex = color.replace('#', '');
-      const r = parseInt(hex.substr(0, 2), 16) / 255;
-      const g = parseInt(hex.substr(2, 2), 16) / 255;
-      const b = parseInt(hex.substr(4, 2), 16) / 255;
+      // Sync color changes to the old material component for viewport compatibility
+      if (newData.material?.color) {
+        const color = newData.material.color;
+        // Convert hex to RGB array for old material component
+        const hex = color.replace('#', '');
+        const r = parseInt(hex.substr(0, 2), 16) / 255;
+        const g = parseInt(hex.substr(2, 2), 16) / 255;
+        const b = parseInt(hex.substr(4, 2), 16) / 255;
 
-      updateComponentData(entityId, 'material', { color: [r, g, b] });
+        updateComponentData(entityId, 'material', { color: [r, g, b] });
+      }
     }
   };
 

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { FiShield } from 'react-icons/fi';
 
 import { InspectorSection } from '@/editor/components/shared/InspectorSection';
+import { isComponentRemovable } from '@/editor/lib/ecs/ComponentRegistry';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 import { ColliderFields } from './ColliderFields';
 
@@ -37,63 +39,22 @@ export interface IMeshColliderSectionProps {
   isPlaying: boolean;
 }
 
-const DEFAULT_MESH_COLLIDER: IMeshColliderData = {
-  enabled: true,
-  colliderType: 'box',
-  isTrigger: false,
-  center: [0, 0, 0],
-  size: {
-    width: 1,
-    height: 1,
-    depth: 1,
-    radius: 0.5,
-    capsuleRadius: 0.5,
-    capsuleHeight: 2,
-  },
-  physicsMaterial: {
-    friction: 0.3,
-    restitution: 0.3,
-    density: 1,
-  },
-};
-
-// Auto-detect appropriate collider type based on mesh type
-const getDefaultColliderType = (meshType?: string): ColliderType => {
-  switch (meshType) {
-    case 'Sphere':
-      return 'sphere';
-    case 'Capsule':
-      return 'capsule';
-    case 'Cylinder':
-    case 'Cone':
-    case 'Torus':
-      return 'convex';
-    default:
-      return 'box';
-  }
-};
-
 export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
   meshCollider,
   setMeshCollider,
-  meshType,
   isPlaying,
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const removable = isComponentRemovable(KnownComponentTypes.MESH_COLLIDER);
 
   const handleRemoveMeshCollider = () => {
     setMeshCollider(null);
   };
 
-  const handleToggleMeshCollider = () => {
+  // This function only toggles the enabled state, not the component existence
+  const handleToggleEnabled = () => {
     if (meshCollider) {
-      setMeshCollider(null);
-    } else {
-      const defaultCollider = {
-        ...DEFAULT_MESH_COLLIDER,
-        colliderType: getDefaultColliderType(meshType),
-      };
-      setMeshCollider(defaultCollider);
+      updateMeshCollider({ enabled: !meshCollider.enabled });
     }
   };
 
@@ -133,26 +94,26 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
       headerColor="green"
       collapsible
       defaultCollapsed={false}
-      removable={true}
-      onRemove={handleRemoveMeshCollider}
+      removable={removable}
+      onRemove={removable ? handleRemoveMeshCollider : undefined}
     >
       <div className="space-y-3">
         {/* Enable/Disable Toggle */}
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-gray-400">Enable Collider</span>
           <button
-            onClick={handleToggleMeshCollider}
+            onClick={handleToggleEnabled}
             disabled={isPlaying}
             className={`
               relative inline-flex h-5 w-8 items-center rounded-full transition-colors
-              ${meshCollider ? 'bg-green-500' : 'bg-gray-600'}
+              ${meshCollider.enabled ? 'bg-green-500' : 'bg-gray-600'}
               ${isPlaying ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             `}
           >
             <span
               className={`
                 inline-block h-3 w-3 transform rounded-full bg-white transition-transform
-                ${meshCollider ? 'translate-x-4' : 'translate-x-1'}
+                ${meshCollider.enabled ? 'translate-x-4' : 'translate-x-1'}
               `}
             />
           </button>
@@ -297,7 +258,7 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-gray-500">Restitution (Bounce)</label>
+                <label className="text-xs text-gray-500">Restitution</label>
                 <input
                   type="number"
                   value={meshCollider.physicsMaterial.restitution}
@@ -318,21 +279,15 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
                   type="number"
                   value={meshCollider.physicsMaterial.density}
                   onChange={(e) =>
-                    updatePhysicsMaterial({ density: parseFloat(e.target.value) || 0 })
+                    updatePhysicsMaterial({ density: parseFloat(e.target.value) || 0.1 })
                   }
                   disabled={isPlaying}
                   step={0.1}
-                  min={0.01}
+                  min={0.1}
                   className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
                 />
               </div>
             </div>
-          </div>
-        )}
-
-        {isPlaying && (
-          <div className="text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded px-2 py-1">
-            ⚠️ Physics settings cannot be modified during play mode
           </div>
         )}
       </div>

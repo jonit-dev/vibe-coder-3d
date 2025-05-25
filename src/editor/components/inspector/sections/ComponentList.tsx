@@ -43,6 +43,7 @@ export const ComponentList: React.FC<IComponentListProps> = ({
         <TransformAdapter
           transformComponent={getTransform()}
           updateComponent={updateComponent}
+          removeComponent={removeComponent}
           entityId={selectedEntity}
         />
       )}
@@ -52,6 +53,7 @@ export const ComponentList: React.FC<IComponentListProps> = ({
         <MeshRendererAdapter
           meshRendererComponent={getMeshRenderer()}
           updateComponent={updateComponent}
+          removeComponent={removeComponent}
           isPlaying={isPlaying}
           entityId={selectedEntity}
         />
@@ -75,6 +77,7 @@ export const ComponentList: React.FC<IComponentListProps> = ({
         <MeshColliderAdapter
           meshColliderComponent={getMeshCollider()}
           updateComponent={updateComponent}
+          removeComponent={removeComponent}
           isPlaying={isPlaying}
         />
       )}

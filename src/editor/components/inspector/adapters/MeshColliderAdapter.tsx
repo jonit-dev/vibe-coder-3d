@@ -6,12 +6,14 @@ import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 interface IMeshColliderAdapterProps {
   meshColliderComponent: any;
   updateComponent: (type: string, data: any) => boolean;
+  removeComponent?: (type: string) => boolean;
   isPlaying: boolean;
 }
 
 export const MeshColliderAdapter: React.FC<IMeshColliderAdapterProps> = ({
   meshColliderComponent,
   updateComponent,
+  removeComponent,
   isPlaying,
 }) => {
   const data = meshColliderComponent?.data;
@@ -40,7 +42,15 @@ export const MeshColliderAdapter: React.FC<IMeshColliderAdapterProps> = ({
   };
 
   const handleUpdate = (newData: any) => {
-    updateComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+    if (newData === null) {
+      // Remove component
+      if (removeComponent) {
+        removeComponent(KnownComponentTypes.MESH_COLLIDER);
+      }
+    } else {
+      // Update component
+      updateComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+    }
   };
 
   return (

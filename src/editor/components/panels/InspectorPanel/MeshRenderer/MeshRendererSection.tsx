@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { FiEye } from 'react-icons/fi';
 
 import { InspectorSection } from '@/editor/components/shared/InspectorSection';
+import { isComponentRemovable } from '@/editor/lib/ecs/ComponentRegistry';
+import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 export interface IMeshRendererData {
+  meshId: string;
+  materialId: string;
   enabled: boolean;
   castShadows: boolean;
   receiveShadows: boolean;
@@ -28,6 +32,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   isPlaying: _isPlaying,
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const removable = isComponentRemovable(KnownComponentTypes.MESH_RENDERER);
 
   const handleRemoveMeshRenderer = () => {
     setMeshRenderer(null);
@@ -60,33 +65,37 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
       headerColor="cyan"
       collapsible
       defaultCollapsed={false}
-      removable={true}
-      onRemove={handleRemoveMeshRenderer}
+      removable={removable}
+      onRemove={removable ? handleRemoveMeshRenderer : undefined}
     >
       <div className="space-y-3">
-        {/* Shadow Settings */}
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-gray-400">Shadows</div>
+        {/* Enable/Disable Toggle */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-gray-400">Enabled</span>
+          <input
+            type="checkbox"
+            checked={meshRenderer.enabled}
+            onChange={(e) => updateMeshRenderer({ enabled: e.target.checked })}
+            className="rounded border-gray-600 bg-black/30 text-cyan-500 focus:ring-cyan-500"
+          />
+        </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">Cast Shadows</span>
-            <input
-              type="checkbox"
-              checked={meshRenderer.castShadows}
-              onChange={(e) => updateMeshRenderer({ castShadows: e.target.checked })}
-              className="rounded border-gray-600 bg-black/30 text-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">Receive Shadows</span>
-            <input
-              type="checkbox"
-              checked={meshRenderer.receiveShadows}
-              onChange={(e) => updateMeshRenderer({ receiveShadows: e.target.checked })}
-              className="rounded border-gray-600 bg-black/30 text-blue-500 focus:ring-blue-500"
-            />
-          </div>
+        {/* Mesh Selection */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-400">Mesh</label>
+          <select
+            value={meshRenderer.meshId}
+            onChange={(e) => updateMeshRenderer({ meshId: e.target.value })}
+            className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200"
+          >
+            <option value="cube">Cube</option>
+            <option value="sphere">Sphere</option>
+            <option value="plane">Plane</option>
+            <option value="cylinder">Cylinder</option>
+            <option value="cone">Cone</option>
+            <option value="torus">Torus</option>
+            <option value="capsule">Capsule</option>
+          </select>
         </div>
 
         {/* Material Properties */}
@@ -113,12 +122,12 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
           </div>
         </div>
 
-        {/* Advanced Material Settings Toggle */}
+        {/* Advanced Settings Toggle */}
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full text-xs text-blue-400 hover:text-blue-300 text-left"
+          className="w-full text-xs text-cyan-400 hover:text-cyan-300 text-left"
         >
-          {showAdvanced ? '▼' : '▶'} Advanced Material
+          {showAdvanced ? '▼' : '▶'} Advanced Settings
         </button>
 
         {showAdvanced && (
@@ -193,6 +202,28 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
                   {meshRenderer.material.emissiveIntensity.toFixed(1)}
                 </div>
               </div>
+            </div>
+
+            {/* Cast Shadows */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-400">Cast Shadows</span>
+              <input
+                type="checkbox"
+                checked={meshRenderer.castShadows}
+                onChange={(e) => updateMeshRenderer({ castShadows: e.target.checked })}
+                className="rounded border-gray-600 bg-black/30 text-cyan-500 focus:ring-cyan-500"
+              />
+            </div>
+
+            {/* Receive Shadows */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-400">Receive Shadows</span>
+              <input
+                type="checkbox"
+                checked={meshRenderer.receiveShadows}
+                onChange={(e) => updateMeshRenderer({ receiveShadows: e.target.checked })}
+                className="rounded border-gray-600 bg-black/30 text-cyan-500 focus:ring-cyan-500"
+              />
             </div>
           </div>
         )}

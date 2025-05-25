@@ -6,12 +6,14 @@ import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 interface ITransformAdapterProps {
   transformComponent: any;
   updateComponent: (type: string, data: any) => boolean;
+  removeComponent?: (type: string) => boolean;
   entityId: number;
 }
 
 export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
   transformComponent,
   updateComponent,
+  removeComponent,
   entityId,
 }) => {
   const data = transformComponent?.data;
@@ -51,6 +53,12 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
     [data, updateComponent, entityId],
   );
 
+  const handleRemove = React.useCallback(() => {
+    if (removeComponent) {
+      removeComponent(KnownComponentTypes.TRANSFORM);
+    }
+  }, [removeComponent]);
+
   return (
     <TransformSection
       position={data.position || [0, 0, 0]}
@@ -59,6 +67,7 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
       setPosition={handlePositionChange}
       setRotation={handleRotationChange}
       setScale={handleScaleChange}
+      onRemove={removeComponent ? handleRemove : undefined}
     />
   );
 };
