@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
@@ -39,31 +39,42 @@ export interface ISceneObject {
 }
 
 const Editor: React.FC = () => {
-  // New ECS system - get all entities
+  // New ECS system - get all entities with reactive updates
   const entityManager = useEntityManager();
   const [entityIds, setEntityIds] = useState<number[]>([]);
 
-  // Subscribe to ECS system for entity changes
+  // Subscribe to ECS system for entity changes with reactive updates
   useEffect(() => {
     const updateEntities = () => {
       const entities = entityManager.getAllEntities();
-      const ids = entities.map((entity) => entity.id);
-      setEntityIds(ids);
-      console.log(`[Editor] Entity list updated:`, ids);
+      const newIds = entities.map((entity) => entity.id);
+
+      // Only update if the entity list actually changed
+      setEntityIds((prevIds) => {
+        if (
+          prevIds.length !== newIds.length ||
+          !prevIds.every((id, index) => id === newIds[index])
+        ) {
+          console.log(`[Editor] Entity list updated:`, newIds);
+          return newIds;
+        }
+        return prevIds;
+      });
     };
 
     // Initial load
     updateEntities();
 
-    // TODO: Add event listener system to ECS managers for real-time updates
-    // For now, we'll use periodic updates
-    const interval = setInterval(updateEntities, 1000);
+    // Listen for entity events for real-time reactive updates
+    const removeEventListener = entityManager.addEventListener((event) => {
+      console.log(`[Editor] Entity event: ${event.type}`, event.entityId);
+      updateEntities();
+    });
 
-    return () => {
-      clearInterval(interval);
-    };
+    return removeEventListener;
   }, [entityManager]);
 
+  // Individual store selectors to prevent infinite loops
   const selectedId = useEditorStore((s) => s.selectedId);
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
   const showAddMenu = useEditorStore((s) => s.showAddMenu);
@@ -99,64 +110,83 @@ const Editor: React.FC = () => {
     onStatusMessage: setStatusMessage,
   });
 
-  // Entity Creation Handler
-  const handleAddObject = async (type: ShapeType) => {
-    try {
-      let entity;
-      switch (type) {
-        case 'Cube':
-          entity = createCube();
-          break;
-        case 'Sphere':
-          entity = createSphere();
-          break;
-        default:
-          entity = createEntity(type);
-          break;
+  // Memoized Entity Creation Handler
+  const handleAddObject = useCallback(
+    async (type: ShapeType) => {
+      try {
+        let entity;
+        switch (type) {
+          case 'Cube':
+            entity = createCube();
+            break;
+          case 'Sphere':
+            entity = createSphere();
+            break;
+          default:
+            entity = createEntity(type);
+            break;
+        }
+
+        setSelectedId(entity.id);
+        setStatusMessage(`Created ${type} (Entity ${entity.id})`);
+        setShowAddMenu(false);
+        console.log('[AddObject] Created entity:', entity);
+      } catch (error) {
+        console.error('[AddObject] Failed to create entity:', error);
+        setStatusMessage(
+          `Failed to create ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
+    },
+    [createEntity, createCube, createSphere, setSelectedId, setStatusMessage, setShowAddMenu],
+  );
 
-      setSelectedId(entity.id);
-      setStatusMessage(`Created ${type} (Entity ${entity.id})`);
-      setShowAddMenu(false);
-      console.log('[AddObject] Created entity:', entity);
-    } catch (error) {
-      console.error('[AddObject] Failed to create entity:', error);
-      setStatusMessage(
-        `Failed to create ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-    }
-  };
-
-  // Wrapped handlers for status updates
-  const handleSaveWithStatus = () => {
+  // Memoized wrapped handlers for status updates
+  const handleSaveWithStatus = useCallback(() => {
     const message = handleSave();
     setStatusMessage(message);
-  };
+  }, [handleSave]);
 
-  const handleLoadWithStatus = async (e?: React.ChangeEvent<HTMLInputElement>) => {
-    const message = await handleLoad(e);
-    setStatusMessage(message);
-  };
+  const handleLoadWithStatus = useCallback(
+    async (e?: React.ChangeEvent<HTMLInputElement>) => {
+      const message = await handleLoad(e);
+      setStatusMessage(message);
+    },
+    [handleLoad],
+  );
 
-  const handleClearWithStatus = () => {
+  const handleClearWithStatus = useCallback(() => {
     const message = handleClear();
     setStatusMessage(message);
-  };
+  }, [handleClear]);
 
-  const handlePlayWithStatus = () => {
+  const handlePlayWithStatus = useCallback(() => {
     setIsPlaying(true);
     handlePlay();
-  };
+  }, [setIsPlaying, handlePlay]);
 
-  const handlePauseWithStatus = () => {
+  const handlePauseWithStatus = useCallback(() => {
     setIsPlaying(false);
     handlePause();
-  };
+  }, [setIsPlaying, handlePause]);
 
-  const handleStopWithStatus = () => {
+  const handleStopWithStatus = useCallback(() => {
     setIsPlaying(false);
     handleStop();
-  };
+  }, [setIsPlaying, handleStop]);
+
+  // Memoized toggle handlers
+  const toggleAddMenu = useCallback(() => {
+    setShowAddMenu(!showAddMenu);
+  }, [showAddMenu, setShowAddMenu]);
+
+  const toggleChat = useCallback(() => {
+    setIsChatExpanded(!isChatExpanded);
+  }, [isChatExpanded]);
+
+  const toggleLeftPanel = useCallback(() => {
+    setIsLeftPanelCollapsed(!isLeftPanelCollapsed);
+  }, [isLeftPanelCollapsed]);
 
   // Keyboard Shortcuts
   useEditorKeyboard({
@@ -169,12 +199,22 @@ const Editor: React.FC = () => {
     onStatusMessage: setStatusMessage,
   });
 
-  // Auto-select first entity when available
+  // Auto-select first entity when available (memoized)
   useEffect(() => {
     if ((selectedId === null || !entityIds.includes(selectedId)) && entityIds.length > 0) {
       setSelectedId(entityIds[0]);
     }
   }, [selectedId, entityIds, setSelectedId]);
+
+  // Memoized stats object to prevent StatusBar re-renders
+  const stats = useMemo(
+    () => ({
+      entities: entityIds.length,
+      fps: 60, // placeholder
+      memory: '128MB', // placeholder
+    }),
+    [entityIds.length],
+  );
 
   return (
     <div
@@ -189,13 +229,13 @@ const Editor: React.FC = () => {
         onSave={handleSaveWithStatus}
         onLoad={triggerFileLoad}
         onClear={handleClearWithStatus}
-        onAddObject={() => setShowAddMenu(!showAddMenu)}
+        onAddObject={toggleAddMenu}
         addButtonRef={addButtonRef}
         isPlaying={isPlaying}
         onPlay={handlePlayWithStatus}
         onPause={handlePauseWithStatus}
         onStop={handleStopWithStatus}
-        onToggleChat={() => setIsChatExpanded(!isChatExpanded)}
+        onToggleChat={toggleChat}
         isChatOpen={isChatExpanded}
       />
 
@@ -218,7 +258,7 @@ const Editor: React.FC = () => {
           hierarchyContent={<HierarchyPanelContent entityIds={entityIds} />}
           inspectorContent={<InspectorPanelContent />}
           isCollapsed={isLeftPanelCollapsed}
-          onToggleCollapse={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
+          onToggleCollapse={toggleLeftPanel}
         />
 
         {selectedId != null ? (
@@ -237,20 +277,10 @@ const Editor: React.FC = () => {
           </div>
         )}
 
-        <RightSidebarChat
-          isExpanded={isChatExpanded}
-          onToggle={() => setIsChatExpanded(!isChatExpanded)}
-        />
+        <RightSidebarChat isExpanded={isChatExpanded} onToggle={toggleChat} />
       </main>
 
-      <StatusBar
-        statusMessage={statusMessage}
-        stats={{
-          entities: entityIds.length,
-          fps: 60, // placeholder
-          memory: '128MB', // placeholder
-        }}
-      />
+      <StatusBar statusMessage={statusMessage} stats={stats} />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { FiInfo } from 'react-icons/fi';
 
 console.log('🔥🔥🔥 INSPECTOR PANEL CONTENT IS LOADING - THIS IS A TEST 🔥🔥🔥');
 
+import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 import { InspectorSection } from '@/editor/components/ui/InspectorSection';
 import { useEntityComponents } from '@/editor/hooks/useEntityComponents';
 import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
@@ -47,7 +48,11 @@ export const InspectorPanelContent: React.FC = () => {
     <div className="space-y-2 p-2 pb-4">
       {/* Transform Component */}
       {hasTransform && (
-        <TransformSection transformComponent={getTransform()} updateComponent={updateComponent} />
+        <ProperTransformSection
+          transformComponent={getTransform()}
+          updateComponent={updateComponent}
+          entityId={selectedEntity}
+        />
       )}
 
       {/* MeshRenderer Component */}
@@ -104,35 +109,62 @@ export const InspectorPanelContent: React.FC = () => {
   );
 };
 
-// Simplified component sections that work with the new ECS system
-const TransformSection: React.FC<{
+// Proper Transform section that uses the real TransformFields with drag functionality
+const ProperTransformSection: React.FC<{
   transformComponent: any;
   updateComponent: (type: string, data: any) => boolean;
-}> = ({ transformComponent }) => {
+  entityId: number;
+}> = ({ transformComponent, updateComponent, entityId }) => {
   const data = transformComponent?.data;
 
   if (!data) return null;
 
+  const handlePositionChange = React.useCallback(
+    (position: [number, number, number]) => {
+      console.log(`[Transform] Position changed for entity ${entityId}:`, position);
+      updateComponent(KnownComponentTypes.TRANSFORM, {
+        ...data,
+        position,
+      });
+    },
+    [data, updateComponent, entityId],
+  );
+
+  const handleRotationChange = React.useCallback(
+    (rotation: [number, number, number]) => {
+      console.log(`[Transform] Rotation changed for entity ${entityId}:`, rotation);
+      updateComponent(KnownComponentTypes.TRANSFORM, {
+        ...data,
+        rotation,
+      });
+    },
+    [data, updateComponent, entityId],
+  );
+
+  const handleScaleChange = React.useCallback(
+    (scale: [number, number, number]) => {
+      console.log(`[Transform] Scale changed for entity ${entityId}:`, scale);
+      updateComponent(KnownComponentTypes.TRANSFORM, {
+        ...data,
+        scale,
+      });
+    },
+    [data, updateComponent, entityId],
+  );
+
   return (
-    <InspectorSection title="Transform" icon={<FiInfo />} headerColor="cyan">
-      <div className="space-y-2">
-        <div>
-          <label className="text-xs text-gray-400">Position:</label>
-          <div className="text-xs text-white">[{data.position?.join(', ') || '0, 0, 0'}]</div>
-        </div>
-        <div>
-          <label className="text-xs text-gray-400">Rotation:</label>
-          <div className="text-xs text-white">[{data.rotation?.join(', ') || '0, 0, 0'}]</div>
-        </div>
-        <div>
-          <label className="text-xs text-gray-400">Scale:</label>
-          <div className="text-xs text-white">[{data.scale?.join(', ') || '1, 1, 1'}]</div>
-        </div>
-      </div>
-    </InspectorSection>
+    <TransformSection
+      position={data.position || [0, 0, 0]}
+      rotation={data.rotation || [0, 0, 0]}
+      scale={data.scale || [1, 1, 1]}
+      setPosition={handlePositionChange}
+      setRotation={handleRotationChange}
+      setScale={handleScaleChange}
+    />
   );
 };
 
+// Simplified component sections for now - can be enhanced later
 const MeshRendererSection: React.FC<{
   meshRendererComponent: any;
   updateComponent: (type: string, data: any) => boolean;
@@ -186,7 +218,7 @@ const RigidBodySection: React.FC<{
       <div className="space-y-2">
         <div>
           <label className="text-xs text-gray-400">Type:</label>
-          <div className="text-xs text-white">{data.type}</div>
+          <div className="text-xs text-white">{data.bodyType || data.type}</div>
         </div>
         <div>
           <label className="text-xs text-gray-400">Mass:</label>
@@ -219,7 +251,7 @@ const MeshColliderSection: React.FC<{
       <div className="space-y-2">
         <div>
           <label className="text-xs text-gray-400">Type:</label>
-          <div className="text-xs text-white">{data.type}</div>
+          <div className="text-xs text-white">{data.colliderType || data.type}</div>
         </div>
         {data.meshId && (
           <div>

@@ -7,9 +7,19 @@ import { ComponentType, EntityId } from './types';
 
 type ComponentDataMap = Map<EntityId, any>;
 
+type ComponentEvent = {
+  type: 'component-added' | 'component-updated' | 'component-removed';
+  entityId: EntityId;
+  componentType: ComponentType;
+  data?: any;
+};
+
+type ComponentEventListener = (event: ComponentEvent) => void;
+
 export class ComponentManager {
   private static instance: ComponentManager;
   private componentStores: Map<ComponentType, ComponentDataMap> = new Map();
+  private eventListeners: ComponentEventListener[] = [];
 
   private constructor() {
     // Initialize stores for known component types
@@ -25,12 +35,36 @@ export class ComponentManager {
     return ComponentManager.instance;
   }
 
+  // Event system for reactive updates
+  addEventListener(listener: ComponentEventListener): () => void {
+    this.eventListeners.push(listener);
+    return () => {
+      const index = this.eventListeners.indexOf(listener);
+      if (index > -1) {
+        this.eventListeners.splice(index, 1);
+      }
+    };
+  }
+
+  private emitEvent(event: ComponentEvent): void {
+    this.eventListeners.forEach((listener) => listener(event));
+  }
+
   addComponent<TData>(entityId: EntityId, type: ComponentType, data: TData): IComponent<TData> {
     if (!this.componentStores.has(type)) {
       console.warn(`Component type ${type} not registered. Adding dynamically.`);
       this.componentStores.set(type, new Map());
     }
     this.componentStores.get(type)!.set(entityId, data);
+
+    // Emit event for reactive updates
+    this.emitEvent({
+      type: 'component-added',
+      entityId,
+      componentType: type,
+      data,
+    });
+
     return { entityId, type, data };
   }
 
@@ -52,6 +86,15 @@ export class ComponentManager {
     const existingData = store.get(entityId);
     const updatedData = { ...existingData, ...data };
     store.set(entityId, updatedData);
+
+    // Emit event for reactive updates
+    this.emitEvent({
+      type: 'component-updated',
+      entityId,
+      componentType: type,
+      data: updatedData,
+    });
+
     return true;
   }
 
@@ -71,9 +114,20 @@ export class ComponentManager {
 
   removeComponent(entityId: EntityId, type: ComponentType): boolean {
     const store = this.componentStores.get(type);
-    if (!store) return false;
+    if (!store || !store.has(entityId)) return false;
 
-    return store.delete(entityId);
+    const wasDeleted = store.delete(entityId);
+
+    if (wasDeleted) {
+      // Emit event for reactive updates
+      this.emitEvent({
+        type: 'component-removed',
+        entityId,
+        componentType: type,
+      });
+    }
+
+    return wasDeleted;
   }
 
   removeComponentsForEntity(entityId: EntityId): void {

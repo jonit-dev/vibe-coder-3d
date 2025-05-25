@@ -1,10 +1,19 @@
 import { IEntity } from './IEntity';
 import { EntityId } from './types';
 
+type EntityEvent = {
+  type: 'entity-created' | 'entity-deleted' | 'entity-updated' | 'entities-cleared';
+  entityId?: EntityId;
+  entity?: IEntity;
+};
+
+type EntityEventListener = (event: EntityEvent) => void;
+
 export class EntityManager {
   private static instance: EntityManager;
   private entities: Map<EntityId, IEntity> = new Map();
   private nextEntityId: EntityId = 1;
+  private eventListeners: EntityEventListener[] = [];
 
   private constructor() {
     // Private constructor for singleton
@@ -17,6 +26,21 @@ export class EntityManager {
     return EntityManager.instance;
   }
 
+  // Event system for reactive updates
+  addEventListener(listener: EntityEventListener): () => void {
+    this.eventListeners.push(listener);
+    return () => {
+      const index = this.eventListeners.indexOf(listener);
+      if (index > -1) {
+        this.eventListeners.splice(index, 1);
+      }
+    };
+  }
+
+  private emitEvent(event: EntityEvent): void {
+    this.eventListeners.forEach((listener) => listener(event));
+  }
+
   createEntity(name: string, parentId?: EntityId): IEntity {
     const id = this.nextEntityId++;
     const entity: IEntity = { id, name, children: [], parentId };
@@ -27,6 +51,14 @@ export class EntityManager {
     }
 
     console.debug(`[EntityManager] Created entity ${id}: "${name}"`);
+
+    // Emit event for reactive updates
+    this.emitEvent({
+      type: 'entity-created',
+      entityId: id,
+      entity,
+    });
+
     return entity;
   }
 
@@ -58,6 +90,14 @@ export class EntityManager {
 
     this.entities.delete(id);
     console.debug(`[EntityManager] Deleted entity ${id}: "${entity.name}"`);
+
+    // Emit event for reactive updates
+    this.emitEvent({
+      type: 'entity-deleted',
+      entityId: id,
+      entity,
+    });
+
     return true;
   }
 
@@ -65,6 +105,11 @@ export class EntityManager {
     this.entities.clear();
     this.nextEntityId = 1;
     console.debug('[EntityManager] Cleared all entities');
+
+    // Emit event for reactive updates
+    this.emitEvent({
+      type: 'entities-cleared',
+    });
   }
 
   getChildren(id: EntityId): IEntity[] {
@@ -96,6 +141,14 @@ export class EntityManager {
     if (!entity) return false;
 
     entity.name = name;
+
+    // Emit event for reactive updates
+    this.emitEvent({
+      type: 'entity-updated',
+      entityId: id,
+      entity,
+    });
+
     return true;
   }
 
@@ -117,6 +170,13 @@ export class EntityManager {
     } else {
       entity.parentId = undefined;
     }
+
+    // Emit event for reactive updates
+    this.emitEvent({
+      type: 'entity-updated',
+      entityId,
+      entity,
+    });
 
     return true;
   }
