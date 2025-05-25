@@ -3,6 +3,7 @@ import { FiBox, FiEye, FiMove, FiPackage, FiSearch, FiShield, FiX, FiZap } from 
 import { TbCube } from 'react-icons/tb';
 
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useEntityData } from '@/editor/hooks/useEntityData';
 import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 /**
@@ -153,8 +154,39 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
   onClose,
 }) => {
   const componentManager = useComponentManager();
+  const { getComponentData } = useEntityData();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState<'components' | 'packs'>('components');
+
+  // Helper function to get default material data
+  const getDefaultMaterialData = (entityId: number) => {
+    const materialData = getComponentData(entityId, 'material') as any;
+    let color = '#3399ff'; // Default blue like old ECS system
+
+    if (materialData?.color) {
+      if (Array.isArray(materialData.color)) {
+        // Convert RGB array to hex
+        const [r, g, b] = materialData.color;
+        color = `#${Math.round(r * 255)
+          .toString(16)
+          .padStart(2, '0')}${Math.round(g * 255)
+          .toString(16)
+          .padStart(2, '0')}${Math.round(b * 255)
+          .toString(16)
+          .padStart(2, '0')}`;
+      } else if (typeof materialData.color === 'string') {
+        color = materialData.color;
+      }
+    }
+
+    return {
+      color,
+      metalness: 0.0,
+      roughness: 0.5,
+      emissive: '#000000',
+      emissiveIntensity: 0.0,
+    };
+  };
 
   // Get components for this entity using new ECS system
   const entityComponents = useMemo(() => {
@@ -235,9 +267,15 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
       case KnownComponentTypes.TRANSFORM:
         defaultData = { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
         break;
-      case KnownComponentTypes.MESH_RENDERER:
-        defaultData = { meshId: 'cube', materialId: 'default', enabled: true };
+      case KnownComponentTypes.MESH_RENDERER: {
+        defaultData = {
+          meshId: 'cube',
+          materialId: 'default',
+          enabled: true,
+          material: getDefaultMaterialData(entityId),
+        };
         break;
+      }
       case KnownComponentTypes.RIGID_BODY:
         defaultData = {
           type: 'dynamic',
@@ -535,7 +573,38 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
   onClose,
 }) => {
   const componentManager = useComponentManager();
+  const { getComponentData } = useEntityData();
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Helper function to get default material data
+  const getDefaultMaterialData = (entityId: number) => {
+    const materialData = getComponentData(entityId, 'material') as any;
+    let color = '#3399ff'; // Default blue like old ECS system
+
+    if (materialData?.color) {
+      if (Array.isArray(materialData.color)) {
+        // Convert RGB array to hex
+        const [r, g, b] = materialData.color;
+        color = `#${Math.round(r * 255)
+          .toString(16)
+          .padStart(2, '0')}${Math.round(g * 255)
+          .toString(16)
+          .padStart(2, '0')}${Math.round(b * 255)
+          .toString(16)
+          .padStart(2, '0')}`;
+      } else if (typeof materialData.color === 'string') {
+        color = materialData.color;
+      }
+    }
+
+    return {
+      color,
+      metalness: 0.0,
+      roughness: 0.5,
+      emissive: '#000000',
+      emissiveIntensity: 0.0,
+    };
+  };
 
   // Get components for this entity using new ECS system
   const entityComponents = useMemo(() => {
@@ -582,9 +651,15 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
       case KnownComponentTypes.TRANSFORM:
         defaultData = { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
         break;
-      case KnownComponentTypes.MESH_RENDERER:
-        defaultData = { meshId: 'cube', materialId: 'default', enabled: true };
+      case KnownComponentTypes.MESH_RENDERER: {
+        defaultData = {
+          meshId: 'cube',
+          materialId: 'default',
+          enabled: true,
+          material: getDefaultMaterialData(entityId),
+        };
         break;
+      }
       case KnownComponentTypes.RIGID_BODY:
         defaultData = {
           type: 'dynamic',

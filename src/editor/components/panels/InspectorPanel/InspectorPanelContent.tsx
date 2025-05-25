@@ -7,6 +7,7 @@ import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/M
 import { RigidBodySection } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 import { useEntityComponents } from '@/editor/hooks/useEntityComponents';
+import { useEntityData } from '@/editor/hooks/useEntityData';
 import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
@@ -26,6 +27,7 @@ export const InspectorPanelContent: React.FC = () => {
     getRigidBody,
     getMeshCollider,
     updateComponent,
+    removeComponent,
   } = useEntityComponents(selectedEntity);
 
   React.useEffect(() => {
@@ -61,6 +63,7 @@ export const InspectorPanelContent: React.FC = () => {
           meshRendererComponent={getMeshRenderer()}
           updateComponent={updateComponent}
           isPlaying={isPlaying}
+          entityId={selectedEntity}
         />
       )}
 
@@ -69,7 +72,10 @@ export const InspectorPanelContent: React.FC = () => {
         <ProperRigidBodySection
           rigidBodyComponent={getRigidBody()}
           updateComponent={updateComponent}
+          removeComponent={removeComponent}
           isPlaying={isPlaying}
+          hasMeshCollider={hasMeshCollider}
+          getMeshCollider={getMeshCollider}
         />
       )}
 
@@ -166,10 +172,33 @@ const ProperMeshRendererSection: React.FC<{
   meshRendererComponent: any;
   updateComponent: (type: string, data: any) => boolean;
   isPlaying: boolean;
-}> = ({ meshRendererComponent, updateComponent, isPlaying }) => {
+  entityId: number;
+}> = ({ meshRendererComponent, updateComponent, isPlaying, entityId }) => {
   const data = meshRendererComponent?.data;
+  const { getComponentData, updateComponentData } = useEntityData();
 
   if (!data) return null;
+
+  // Get color from old material component if MeshRenderer doesn't have it
+  const getColorFromOldMaterial = () => {
+    const materialData = getComponentData(entityId, 'material') as any;
+    if (materialData?.color) {
+      if (Array.isArray(materialData.color)) {
+        // Convert RGB array to hex
+        const [r, g, b] = materialData.color;
+        return `#${Math.round(r * 255)
+          .toString(16)
+          .padStart(2, '0')}${Math.round(g * 255)
+          .toString(16)
+          .padStart(2, '0')}${Math.round(b * 255)
+          .toString(16)
+          .padStart(2, '0')}`;
+      } else if (typeof materialData.color === 'string') {
+        return materialData.color;
+      }
+    }
+    return '#3399ff'; // Default blue like old ECS system
+  };
 
   // Convert ECS data to the format expected by MeshRendererSection
   const meshRendererData = {
@@ -177,16 +206,28 @@ const ProperMeshRendererSection: React.FC<{
     castShadows: data.castShadows ?? true,
     receiveShadows: data.receiveShadows ?? true,
     material: {
-      color: data.color || '#ffffff',
-      metalness: data.metalness || 0.0,
-      roughness: data.roughness || 0.5,
-      emissive: data.emissive || '#000000',
-      emissiveIntensity: data.emissiveIntensity || 0.0,
+      color: data.material?.color || data.color || getColorFromOldMaterial(),
+      metalness: data.material?.metalness || data.metalness || 0.0,
+      roughness: data.material?.roughness || data.roughness || 0.5,
+      emissive: data.material?.emissive || data.emissive || '#000000',
+      emissiveIntensity: data.material?.emissiveIntensity || data.emissiveIntensity || 0.0,
     },
   };
 
   const handleUpdate = (newData: any) => {
     updateComponent(KnownComponentTypes.MESH_RENDERER, newData);
+
+    // Sync color changes to the old material component for viewport compatibility
+    if (newData.material?.color) {
+      const color = newData.material.color;
+      // Convert hex to RGB array for old material component
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16) / 255;
+      const g = parseInt(hex.substr(2, 2), 16) / 255;
+      const b = parseInt(hex.substr(4, 2), 16) / 255;
+
+      updateComponentData(entityId, 'material', { color: [r, g, b] });
+    }
   };
 
   return (
@@ -201,8 +242,18 @@ const ProperMeshRendererSection: React.FC<{
 const ProperRigidBodySection: React.FC<{
   rigidBodyComponent: any;
   updateComponent: (type: string, data: any) => boolean;
+  removeComponent: (type: string) => boolean;
   isPlaying: boolean;
-}> = ({ rigidBodyComponent, updateComponent, isPlaying }) => {
+  hasMeshCollider: boolean;
+  getMeshCollider: () => any;
+}> = ({
+  rigidBodyComponent,
+  updateComponent,
+  removeComponent,
+  isPlaying,
+  hasMeshCollider,
+  getMeshCollider,
+}) => {
   const data = rigidBodyComponent?.data;
 
   if (!data) return null;
@@ -225,16 +276,50 @@ const ProperRigidBodySection: React.FC<{
     },
   };
 
-  const handleUpdate = (newData: any) => {
+  // Get mesh collider data if it exists
+  const meshColliderComponent = hasMeshCollider ? getMeshCollider() : null;
+  const meshColliderData = meshColliderComponent?.data
+    ? {
+        enabled: meshColliderComponent.data.enabled ?? true,
+        colliderType: meshColliderComponent.data.colliderType || 'box',
+        isTrigger: meshColliderComponent.data.isTrigger ?? false,
+        center: meshColliderComponent.data.center || [0, 0, 0],
+        size: {
+          width: meshColliderComponent.data.size?.width || 1,
+          height: meshColliderComponent.data.size?.height || 1,
+          depth: meshColliderComponent.data.size?.depth || 1,
+          radius: meshColliderComponent.data.size?.radius || 0.5,
+          capsuleRadius: meshColliderComponent.data.size?.capsuleRadius || 0.5,
+          capsuleHeight: meshColliderComponent.data.size?.capsuleHeight || 2,
+        },
+        physicsMaterial: {
+          friction: meshColliderComponent.data.physicsMaterial?.friction || 0.7,
+          restitution: meshColliderComponent.data.physicsMaterial?.restitution || 0.3,
+          density: meshColliderComponent.data.physicsMaterial?.density || 1,
+        },
+      }
+    : null;
+
+  const handleRigidBodyUpdate = (newData: any) => {
     updateComponent(KnownComponentTypes.RIGID_BODY, newData);
+  };
+
+  const handleMeshColliderUpdate = (newData: any) => {
+    if (newData === null) {
+      // Remove mesh collider component
+      removeComponent(KnownComponentTypes.MESH_COLLIDER);
+    } else {
+      // Add or update mesh collider component
+      updateComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+    }
   };
 
   return (
     <RigidBodySection
       rigidBody={rigidBodyData}
-      setRigidBody={handleUpdate}
-      meshCollider={null} // TODO: Get from ECS
-      setMeshCollider={() => {}} // TODO: Implement
+      setRigidBody={handleRigidBodyUpdate}
+      meshCollider={meshColliderData}
+      setMeshCollider={handleMeshColliderUpdate}
       isPlaying={isPlaying}
     />
   );
