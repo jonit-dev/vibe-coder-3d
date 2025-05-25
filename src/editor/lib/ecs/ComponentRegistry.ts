@@ -184,18 +184,23 @@ export const COMPONENT_REGISTRY: Record<string, IComponentDefinition> = {
         density: 1,
       },
     }),
-    getPhysicsContributions: (data) => ({
-      rigidBodyProps: {
-        type: data.bodyType || data.type,
-        mass: data.mass ?? 1,
-        friction: data.material?.friction ?? 0.7,
-        restitution: data.material?.restitution ?? 0.3,
-        density: data.material?.density ?? 1,
-        gravityScale: data.gravityScale ?? 1,
-        canSleep: data.canSleep ?? true,
-      },
-      enabled: data.enabled ?? true,
-    }),
+    getPhysicsContributions: (data) => {
+      console.log('[Rigid Body Debug] Input data:', data);
+      const result = {
+        rigidBodyProps: {
+          type: data.bodyType || data.type,
+          mass: data.mass ?? 1,
+          friction: data.material?.friction ?? 0.7,
+          restitution: data.material?.restitution ?? 0.3,
+          density: data.material?.density ?? 1,
+          gravityScale: data.gravityScale ?? 1,
+          canSleep: data.canSleep ?? true,
+        },
+        enabled: data.enabled ?? true,
+      };
+      console.log('[Rigid Body Debug] Output:', result);
+      return result;
+    },
   },
 
   [KnownComponentTypes.MESH_COLLIDER]: {
@@ -231,6 +236,7 @@ export const COMPONENT_REGISTRY: Record<string, IComponentDefinition> = {
 
       return {
         rigidBodyProps: {
+          // Only contribute material properties, not body type or mass
           friction: data.physicsMaterial?.friction ?? 0.7,
           restitution: data.physicsMaterial?.restitution ?? 0.3,
           density: data.physicsMaterial?.density ?? 1,
@@ -370,15 +376,33 @@ export const combinePhysicsContributions = (
     colliders: [],
   };
 
+  console.log('[Physics Debug] Starting with default:', combined.rigidBodyProps);
+
+  // Process components in two passes:
+  // 1. First pass: collect all contributions
+  // 2. Second pass: ensure RigidBody type takes precedence
+
+  let rigidBodyType: string | undefined;
+
   entityComponents.forEach(({ type, data }) => {
     const definition = getComponentDefinition(type);
     if (definition?.getPhysicsContributions) {
       const contributions = definition.getPhysicsContributions(data);
+      console.log(`[Physics Debug] Component ${type} contributes:`, contributions);
+
       if (contributions.enabled) {
         combined.enabled = true;
       }
+
+      // Store RigidBody type separately to ensure it takes precedence
+      if (type === KnownComponentTypes.RIGID_BODY && contributions.rigidBodyProps?.type) {
+        rigidBodyType = contributions.rigidBodyProps.type;
+      }
+
       if (contributions.rigidBodyProps) {
+        console.log(`[Physics Debug] Before assign for ${type}:`, combined.rigidBodyProps);
         Object.assign(combined.rigidBodyProps!, contributions.rigidBodyProps);
+        console.log(`[Physics Debug] After assign for ${type}:`, combined.rigidBodyProps);
       }
       if (contributions.colliders) {
         combined.colliders!.push(...contributions.colliders);
@@ -386,5 +410,12 @@ export const combinePhysicsContributions = (
     }
   });
 
+  // Ensure RigidBody type always takes precedence
+  if (rigidBodyType) {
+    combined.rigidBodyProps!.type = rigidBodyType;
+    console.log('[Physics Debug] Applied RigidBody type precedence:', rigidBodyType);
+  }
+
+  console.log('[Physics Debug] Final result:', combined.rigidBodyProps);
   return combined;
 };

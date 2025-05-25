@@ -7,7 +7,7 @@ import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 import { RigidBodyFields } from './RigidBodyFields';
 
-export type BodyType = 'static' | 'kinematic' | 'dynamic';
+export type BodyType = 'fixed' | 'kinematicVelocityBased' | 'kinematicPositionBased' | 'dynamic';
 
 export interface IRigidBodyData {
   enabled: boolean;
@@ -136,8 +136,9 @@ export const RigidBodySection: React.FC<IRigidBodySectionProps> = ({
             disabled={isPlaying}
             className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
           >
-            <option value="static">Static (Immovable)</option>
-            <option value="kinematic">Kinematic (Script Controlled)</option>
+            <option value="fixed">Fixed (Immovable)</option>
+            <option value="kinematicVelocityBased">Kinematic Velocity-Based</option>
+            <option value="kinematicPositionBased">Kinematic Position-Based</option>
             <option value="dynamic">Dynamic (Physics Controlled)</option>
           </select>
         </div>
