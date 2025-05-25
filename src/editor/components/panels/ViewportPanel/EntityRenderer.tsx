@@ -6,16 +6,16 @@ import { useEditorStore } from '@/editor/store/editorStore';
 
 import { ColliderVisualization } from './ColliderVisualization';
 import { GizmoControls } from './GizmoControls';
-import { EntityColliders, EntityMesh, EntityOutline } from './components';
-import {
-  useEntityColliders,
-  useEntityComponents,
-  useEntityMesh,
-  useEntitySelection,
-  useEntityTransform,
-  useEntityValidation,
-  useGizmoInteraction,
-} from './hooks';
+import { EntityColliders } from './components/EntityColliders';
+import { EntityMesh } from './components/EntityMesh';
+import { EntityOutline } from './components/EntityOutline';
+import { useEntityColliders } from './hooks/useEntityColliders';
+import { useEntityComponents } from './hooks/useEntityComponents';
+import { useEntityMesh } from './hooks/useEntityMesh';
+import { useEntitySelection } from './hooks/useEntitySelection';
+import { useEntityTransform } from './hooks/useEntityTransform';
+import { useEntityValidation } from './hooks/useEntityValidation';
+import { useGizmoInteraction } from './hooks/useGizmoInteraction';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 

@@ -13,16 +13,14 @@ import {
   TbSquare,
 } from 'react-icons/tb';
 
-import {
-  IMenuCategory,
-  IMenuItemOption,
-  NestedDropdownMenu,
-} from './components/menus/NestedDropdownMenu';
-import { useEditorStore } from './store/editorStore';
+import { useEditorStore } from '../../store/editorStore';
+import type { ShapeType } from '../../types/shapes';
+
+import { IMenuCategory, IMenuItemOption, NestedDropdownMenu } from './NestedDropdownMenu';
 
 export interface IEnhancedAddObjectMenuProps {
   anchorRef: React.RefObject<HTMLElement>;
-  onAdd: (type: 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane') => void;
+  onAdd: (type: ShapeType) => void;
 }
 
 const OBJECT_CATEGORIES: IMenuCategory[] = [
@@ -111,9 +109,9 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
 
   const handleItemSelect = (item: IMenuItemOption) => {
     // Only handle the basic shapes for now
-    const validTypes = ['Cube', 'Sphere', 'Cylinder', 'Cone', 'Torus', 'Plane'];
-    if (validTypes.includes(item.type)) {
-      onAdd(item.type as 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane');
+    const validTypes: ShapeType[] = ['Cube', 'Sphere', 'Cylinder', 'Cone', 'Torus', 'Plane'];
+    if (validTypes.includes(item.type as ShapeType)) {
+      onAdd(item.type as ShapeType);
     } else {
       // For future object types, show a placeholder message
       console.log(`[AddObjectMenu] Future object type selected: ${item.type}`);

@@ -13,6 +13,9 @@ import {
   FiTrash2,
 } from 'react-icons/fi';
 
+import { ToolbarButton } from '../shared/ToolbarButton';
+import { ToolbarGroup } from '../shared/ToolbarGroup';
+
 export interface ITopBarProps {
   entityCount: number;
   onSave: () => void;
@@ -78,43 +81,26 @@ export const TopBar: React.FC<ITopBarProps> = ({
         </div>
 
         {/* Center section - Playback controls */}
-        <div className="flex items-center space-x-1 bg-black/30 backdrop-blur-sm rounded border border-gray-700/50 p-0.5">
-          <button
+        <ToolbarGroup>
+          <ToolbarButton
             onClick={onPlay}
             disabled={isPlaying}
-            className={`p-1.5 rounded transition-all duration-200 ${
-              isPlaying
-                ? 'text-gray-500 cursor-not-allowed'
-                : 'text-green-400 hover:bg-green-900/30 hover:text-green-300'
-            }`}
+            variant="success"
             title="Play (Space)"
           >
             <FiPlay className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onPause}
-            disabled={!isPlaying}
-            className={`p-1.5 rounded transition-all duration-200 ${
-              !isPlaying
-                ? 'text-gray-500 cursor-not-allowed'
-                : 'text-yellow-400 hover:bg-yellow-900/30 hover:text-yellow-300'
-            }`}
-            title="Pause"
-          >
+          </ToolbarButton>
+          <ToolbarButton onClick={onPause} disabled={!isPlaying} variant="warning" title="Pause">
             <FiPause className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onStop}
-            className="p-1.5 rounded text-red-400 hover:bg-red-900/30 hover:text-red-300 transition-all duration-200"
-            title="Stop"
-          >
+          </ToolbarButton>
+          <ToolbarButton onClick={onStop} variant="danger" title="Stop">
             <FiSquare className="w-4 h-4" />
-          </button>
-        </div>
+          </ToolbarButton>
+        </ToolbarGroup>
 
         {/* Right section - File operations and settings */}
         <div className="flex items-center space-x-1">
-          <div className="flex items-center space-x-0.5 bg-black/30 backdrop-blur-sm rounded border border-gray-700/50 p-0.5">
+          <ToolbarGroup>
             <button
               ref={addButtonRef}
               onClick={onAddObject}
@@ -125,46 +111,31 @@ export const TopBar: React.FC<ITopBarProps> = ({
               <span>Add</span>
             </button>
 
-            <button
-              onClick={onSave}
-              className="p-1.5 text-cyan-400 hover:bg-cyan-900/30 hover:text-cyan-300 rounded transition-all duration-200"
-              title="Save Scene (Ctrl+S)"
-            >
+            <ToolbarButton onClick={onSave} variant="primary" title="Save Scene (Ctrl+S)">
               <FiSave className="w-4 h-4" />
-            </button>
+            </ToolbarButton>
 
-            <button
-              onClick={onLoad}
-              className="p-1.5 text-blue-400 hover:bg-blue-900/30 hover:text-blue-300 rounded transition-all duration-200"
-              title="Load Scene"
-            >
+            <ToolbarButton onClick={onLoad} variant="info" title="Load Scene">
               <FiFolder className="w-4 h-4" />
-            </button>
+            </ToolbarButton>
 
-            <button
-              onClick={onClear}
-              className="p-1.5 text-red-400 hover:bg-red-900/30 hover:text-red-300 rounded transition-all duration-200"
-              title="Clear Scene"
-            >
+            <ToolbarButton onClick={onClear} variant="danger" title="Clear Scene">
               <FiTrash2 className="w-4 h-4" />
-            </button>
-          </div>
+            </ToolbarButton>
+          </ToolbarGroup>
 
-          <button className="p-1.5 text-gray-400 hover:bg-gray-800/50 hover:text-gray-300 rounded transition-all duration-200">
+          <ToolbarButton variant="default">
             <FiSettings className="w-4 h-4" />
-          </button>
+          </ToolbarButton>
 
-          <button
+          <ToolbarButton
             onClick={onToggleChat}
-            className={`p-1.5 rounded transition-all duration-200 ${
-              isChatOpen
-                ? 'text-cyan-400 bg-cyan-900/30 border border-cyan-500/30'
-                : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-300'
-            }`}
+            variant="primary"
+            active={isChatOpen}
             title="Toggle AI Chat (Ctrl+/)"
           >
             <FiMessageSquare className="w-4 h-4" />
-          </button>
+          </ToolbarButton>
         </div>
       </div>
 

@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 
+import type { ShapeType } from '../types/shapes';
+
 import { useEntityCreation } from './useEntityCreation';
 
-// Shape types that can be created in the editor
-export type ShapeType = 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane';
 export type GizmoMode = 'translate' | 'rotate' | 'scale';
 
 interface IUseEditorKeyboardProps {

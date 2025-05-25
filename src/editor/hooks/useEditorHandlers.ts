@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import type { ShapeType } from '../Editor';
+import type { ShapeType } from '../types/shapes';
 
 import { useEntityCreation } from './useEntityCreation';
 import { usePhysicsControls } from './usePhysicsControls';

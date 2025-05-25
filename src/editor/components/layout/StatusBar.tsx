@@ -3,6 +3,8 @@ import { FiClock, FiCpu, FiHardDrive, FiWifi } from 'react-icons/fi';
 
 import { usePerformanceMonitor } from '@/editor/hooks/usePerformanceMonitor';
 
+import { StatusIndicator } from '../shared/StatusIndicator';
+
 export interface IStatusBarProps {
   statusMessage: string;
   shortcuts?: Array<{
@@ -47,31 +49,33 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
 
               <div className="flex items-center space-x-4">
                 {enablePerformanceMonitoring && metrics.averageFPS > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <FiCpu className="w-3 h-3 text-cyan-400" />
-                    <span>{Math.round(metrics.averageFPS)} FPS</span>
-                  </div>
+                  <StatusIndicator
+                    icon={<FiCpu />}
+                    value={Math.round(metrics.averageFPS)}
+                    label="FPS"
+                    color="cyan"
+                  />
                 )}
 
                 {enablePerformanceMonitoring && metrics.frameTime > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <FiClock className="w-3 h-3 text-yellow-400" />
-                    <span>{metrics.frameTime.toFixed(1)}ms</span>
-                  </div>
+                  <StatusIndicator
+                    icon={<FiClock />}
+                    value={`${metrics.frameTime.toFixed(1)}ms`}
+                    color="yellow"
+                  />
                 )}
 
                 {stats?.memory && (
-                  <div className="flex items-center space-x-1">
-                    <FiHardDrive className="w-3 h-3 text-purple-400" />
-                    <span>{stats.memory}</span>
-                  </div>
+                  <StatusIndicator icon={<FiHardDrive />} value={stats.memory} color="purple" />
                 )}
 
                 {stats?.entities && (
-                  <div className="flex items-center space-x-1">
-                    <FiWifi className="w-3 h-3 text-green-400" />
-                    <span>{stats.entities} Entities</span>
-                  </div>
+                  <StatusIndicator
+                    icon={<FiWifi />}
+                    value={stats.entities}
+                    label="Entities"
+                    color="green"
+                  />
                 )}
               </div>
             </>

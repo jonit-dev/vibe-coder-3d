@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { EnhancedAddObjectMenu } from './EnhancedAddObjectMenu';
 import { RightSidebarChat } from './components/chat/RightSidebarChat';
 import { StackedLeftPanel } from './components/layout/StackedLeftPanel';
 import { StatusBar } from './components/layout/StatusBar';
 import { TopBar } from './components/layout/TopBar';
+import { EnhancedAddObjectMenu } from './components/menus/EnhancedAddObjectMenu';
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
 import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent/InspectorPanelContent';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
@@ -18,26 +18,8 @@ import { useEntitySynchronization } from './hooks/useEntitySynchronization';
 import { useSceneActions } from './hooks/useSceneActions';
 import { useSceneInitialization } from './hooks/useSceneInitialization';
 
-// Shape types that can be created in the editor
-export type ShapeType = 'Cube' | 'Sphere' | 'Cylinder' | 'Cone' | 'Torus' | 'Plane';
-
-// Legacy interfaces kept for compatibility
-export interface ITransform {
-  position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-}
-
-export interface ISceneObject {
-  id: string;
-  name: string;
-  shape: ShapeType;
-  components: {
-    Transform: ITransform;
-    Mesh: string;
-    Material: string;
-  };
-}
+// Import types from centralized types file
+export type { ISceneObject, ITransform, ShapeType } from './types/shapes';
 
 const Editor: React.FC = () => {
   // Grouped state management hooks - prevents unnecessary re-renders
