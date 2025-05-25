@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
-import { ITransformData } from '@/editor/lib/ecs/components/TransformComponent';
 
 export const useEntityComponents = (entityId: number) => {
   const componentManager = useComponentManager();

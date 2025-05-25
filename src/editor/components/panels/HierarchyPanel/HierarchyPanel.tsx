@@ -2,10 +2,10 @@ import React, { useRef, useState } from 'react';
 import { FiLayers } from 'react-icons/fi';
 import { TbCube } from 'react-icons/tb';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { SidePanel } from '@/editor/components/layout/SidePanel';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 import { getEntityName } from '@core/lib/ecs';
 

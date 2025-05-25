@@ -1,7 +1,7 @@
 import React from 'react';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { RigidBodySection } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 interface IRigidBodyAdapterProps {
   rigidBodyComponent: any;

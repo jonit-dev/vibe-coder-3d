@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { IComponent, KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
-import { ComponentType, EntityId } from '@/editor/lib/ecs/types';
+import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ComponentType, EntityId } from '@/core/lib/ecs/types';
 
 import { useComponentManager } from './useComponentManager';
 

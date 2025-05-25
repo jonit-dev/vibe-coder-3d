@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
-import { ITransformData } from '@/editor/lib/ecs/components/TransformComponent';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 import { useComponentManager } from './useComponentManager';

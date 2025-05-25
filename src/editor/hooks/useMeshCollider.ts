@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
-import { IMeshColliderData } from '@/editor/lib/ecs/components/MeshColliderComponent';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { IMeshColliderData } from '@/core/lib/ecs/components/MeshColliderComponent';
 
 import { useComponentManager } from './useComponentManager';
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { Mesh } from 'three';
 
-import { ITransformData } from '@/editor/lib/ecs/components/TransformComponent';
+import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 
 interface IUseEntityTransformProps {
   transform: { data: ITransformData } | null | undefined;

@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 export interface IUseEntityPhysicsProps {
   entityId: number;

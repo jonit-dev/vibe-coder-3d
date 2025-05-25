@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
-import { IRigidBodyData } from '@/editor/lib/ecs/components/RigidBodyComponent';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { IRigidBodyData } from '@/core/lib/ecs/components/RigidBodyComponent';
 
 import { useComponentManager } from './useComponentManager';
 

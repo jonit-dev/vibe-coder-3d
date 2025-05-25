@@ -1,7 +1,7 @@
 import React from 'react';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { MeshColliderSection } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 interface IMeshColliderAdapterProps {
   meshColliderComponent: any;

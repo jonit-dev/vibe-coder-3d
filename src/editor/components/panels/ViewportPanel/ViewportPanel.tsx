@@ -3,9 +3,9 @@ import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { GizmoMode } from '@/editor/hooks/useEditorKeyboard';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 import { useEditorStore } from '../../../store/editorStore';
 

@@ -2,10 +2,10 @@ import { TransformControls } from '@react-three/drei';
 import React, { MutableRefObject, useCallback, useRef } from 'react';
 import { Object3D } from 'three';
 
+import { ComponentManager } from '@/core/lib/ecs/ComponentManager';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { ComponentManager } from '@/editor/lib/ecs/ComponentManager';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
-import { ITransformData } from '@/editor/lib/ecs/components/TransformComponent';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 

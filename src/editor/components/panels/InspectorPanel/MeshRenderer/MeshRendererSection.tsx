@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { FiEye } from 'react-icons/fi';
 
+import { isComponentRemovable } from '@/core/lib/ecs/ComponentRegistry';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { InspectorSection } from '@/editor/components/shared/InspectorSection';
-import { isComponentRemovable } from '@/editor/lib/ecs/ComponentRegistry';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 export interface IMeshRendererData {
   meshId: string;

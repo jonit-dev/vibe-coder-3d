@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 import { getEntityName } from '@core/lib/ecs';
 

@@ -1,8 +1,8 @@
 import React from 'react';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
 import { useEntityData } from '@/editor/hooks/useEntityData';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 interface IMeshRendererAdapterProps {
   meshRendererComponent: any;

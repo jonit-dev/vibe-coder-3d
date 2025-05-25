@@ -2,9 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { FiBox, FiEye, FiMove, FiPackage, FiSearch, FiShield, FiX, FiZap } from 'react-icons/fi';
 import { TbCube } from 'react-icons/tb';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityData } from '@/editor/hooks/useEntityData';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 /**
  * Add Component Menu System

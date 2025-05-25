@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   combinePhysicsContributions,
   combineRenderingContributions,
-} from '@/editor/lib/ecs/ComponentRegistry';
+} from '@/core/lib/ecs/ComponentRegistry';
 
 interface IUseEntityMeshProps {
   entityComponents: any[];

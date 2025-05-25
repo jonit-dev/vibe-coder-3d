@@ -2,10 +2,10 @@
 import { useEffect, useRef } from 'react';
 
 import { IPhysicsBodyHandle } from '@/core/components/physics/PhysicsBody';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { IRigidBodyData } from '@/core/lib/ecs/components/RigidBodyComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
-import { IRigidBodyData } from '@/editor/lib/ecs/components/RigidBodyComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 /**

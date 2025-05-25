@@ -1,7 +1,7 @@
 import React from 'react';
 
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
-import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 
 interface ITransformAdapterProps {
   transformComponent: any;
