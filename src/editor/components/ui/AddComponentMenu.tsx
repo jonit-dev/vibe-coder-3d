@@ -1,8 +1,55 @@
-import React, { useMemo } from 'react';
-import { FiX } from 'react-icons/fi';
+import React, { useMemo, useState } from 'react';
+import { FiBox, FiEye, FiMove, FiPackage, FiSearch, FiShield, FiX, FiZap } from 'react-icons/fi';
+import { TbCube } from 'react-icons/tb';
 
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
+
+/**
+ * Add Component Menu System
+ *
+ * This module provides two versions of the component menu:
+ *
+ * 1. **AddComponentMenu** (Full Modal Version)
+ *    - Full-screen modal overlay with tabs for components and packs
+ *    - Shows current components with overflow tooltips
+ *    - Search functionality across all components and packs
+ *    - Detailed component information and icons
+ *    - Best for: Standalone use when triggered by buttons in the main UI
+ *
+ * 2. **CompactAddComponentMenu** (Inline Version)
+ *    - Compact inline version for use within panels
+ *    - Combined list of packs and components (packs shown first)
+ *    - Search functionality with simplified layout
+ *    - Best for: Embedding within inspector panels or sidebars
+ *
+ * Features:
+ * - **Component Packs**: Pre-configured sets of related components
+ *   - Physics Basics: RigidBody + MeshCollider
+ *   - Complete Entity: Transform + MeshRenderer
+ *   - Physics Entity: All components for a physics-enabled entity
+ * - **Search**: Filter by component/pack name or description
+ * - **Icons**: Visual representation for each component type
+ * - **Current Component Display**: Shows attached components with overflow tooltips
+ * - **Smart Defaults**: Automatically configured default values for each component type
+ *
+ * Usage:
+ * ```tsx
+ * // Full modal version
+ * <AddComponentMenu
+ *   entityId={selectedEntityId}
+ *   isOpen={showModal}
+ *   onClose={() => setShowModal(false)}
+ * />
+ *
+ * // Compact inline version
+ * <CompactAddComponentMenu
+ *   entityId={selectedEntityId}
+ *   isOpen={showInlineMenu}
+ *   onClose={() => setShowInlineMenu(false)}
+ * />
+ * ```
+ */
 
 interface IAddComponentMenuProps {
   entityId: number | null;
@@ -10,12 +57,104 @@ interface IAddComponentMenuProps {
   onClose: () => void;
 }
 
+// Component definitions with icons and metadata
+interface IComponentDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  category: string;
+}
+
+// Component pack definitions
+interface IComponentPack {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  components: string[];
+  category: string;
+}
+
+const COMPONENT_DEFINITIONS: IComponentDefinition[] = [
+  {
+    id: KnownComponentTypes.TRANSFORM,
+    name: 'Transform',
+    description: 'Position, rotation, and scale',
+    icon: <FiMove className="w-4 h-4" />,
+    category: 'Core',
+  },
+  {
+    id: KnownComponentTypes.MESH_RENDERER,
+    name: 'Mesh Renderer',
+    description: 'Renders 3D mesh geometry',
+    icon: <FiEye className="w-4 h-4" />,
+    category: 'Rendering',
+  },
+  {
+    id: KnownComponentTypes.RIGID_BODY,
+    name: 'Rigid Body',
+    description: 'Physics simulation body',
+    icon: <FiZap className="w-4 h-4" />,
+    category: 'Physics',
+  },
+  {
+    id: KnownComponentTypes.MESH_COLLIDER,
+    name: 'Mesh Collider',
+    description: 'Physics collision detection',
+    icon: <FiShield className="w-4 h-4" />,
+    category: 'Physics',
+  },
+];
+
+const COMPONENT_PACKS: IComponentPack[] = [
+  {
+    id: 'physics-basics',
+    name: 'Physics Basics',
+    description: 'Rigid body + mesh collider for basic physics',
+    icon: <FiZap className="w-4 h-4" />,
+    components: [KnownComponentTypes.RIGID_BODY, KnownComponentTypes.MESH_COLLIDER],
+    category: 'Physics',
+  },
+  {
+    id: 'rendering-basics',
+    name: 'Rendering Basics',
+    description: 'Complete rendering setup',
+    icon: <TbCube className="w-4 h-4" />,
+    components: [KnownComponentTypes.MESH_RENDERER],
+    category: 'Rendering',
+  },
+  {
+    id: 'complete-entity',
+    name: 'Complete Entity',
+    description: 'Transform + rendering for a complete visible entity',
+    icon: <FiPackage className="w-4 h-4" />,
+    components: [KnownComponentTypes.TRANSFORM, KnownComponentTypes.MESH_RENDERER],
+    category: 'Core',
+  },
+  {
+    id: 'physics-entity',
+    name: 'Physics Entity',
+    description: 'Complete physics-enabled entity with rendering',
+    icon: <FiBox className="w-4 h-4" />,
+    components: [
+      KnownComponentTypes.TRANSFORM,
+      KnownComponentTypes.MESH_RENDERER,
+      KnownComponentTypes.RIGID_BODY,
+      KnownComponentTypes.MESH_COLLIDER,
+    ],
+    category: 'Physics',
+  },
+];
+
 export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
   entityId,
   isOpen,
   onClose,
 }) => {
   const componentManager = useComponentManager();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTab, setSelectedTab] = useState<'components' | 'packs'>('components');
 
   // Get components for this entity using new ECS system
   const entityComponents = useMemo(() => {
@@ -28,17 +167,64 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     if (!entityId) return [];
     const existingTypes = entityComponents.map((c) => c.type);
 
-    return Object.values(KnownComponentTypes)
-      .filter((type) => !existingTypes.includes(type))
-      .map((type) => ({
-        id: type,
-        name: type,
-        description: `Add ${type} component`,
-      }));
+    return COMPONENT_DEFINITIONS.filter((comp) => !existingTypes.includes(comp.id));
   }, [entityId, entityComponents]);
 
-  // For now, no groups in the new ECS system
-  // const availableGroups: any[] = [];
+  // Get available component packs
+  const availablePacks = useMemo(() => {
+    if (!entityId) return [];
+    const existingTypes = entityComponents.map((c) => c.type);
+
+    return COMPONENT_PACKS.filter((pack) =>
+      pack.components.some((compId) => !existingTypes.includes(compId)),
+    );
+  }, [entityId, entityComponents]);
+
+  // Filter by search term
+  const filteredComponents = useMemo(() => {
+    if (!searchTerm) return availableComponents;
+    const term = searchTerm.toLowerCase();
+    return availableComponents.filter(
+      (comp) =>
+        comp.name.toLowerCase().includes(term) ||
+        comp.description.toLowerCase().includes(term) ||
+        comp.category.toLowerCase().includes(term),
+    );
+  }, [availableComponents, searchTerm]);
+
+  const filteredPacks = useMemo(() => {
+    if (!searchTerm) return availablePacks;
+    const term = searchTerm.toLowerCase();
+    return availablePacks.filter(
+      (pack) =>
+        pack.name.toLowerCase().includes(term) ||
+        pack.description.toLowerCase().includes(term) ||
+        pack.category.toLowerCase().includes(term),
+    );
+  }, [availablePacks, searchTerm]);
+
+  // Group components by category
+  const componentsByCategory = useMemo(() => {
+    const categories: Record<string, IComponentDefinition[]> = {};
+    filteredComponents.forEach((comp) => {
+      if (!categories[comp.category]) {
+        categories[comp.category] = [];
+      }
+      categories[comp.category].push(comp);
+    });
+    return categories;
+  }, [filteredComponents]);
+
+  const packsByCategory = useMemo(() => {
+    const categories: Record<string, IComponentPack[]> = {};
+    filteredPacks.forEach((pack) => {
+      if (!categories[pack.category]) {
+        categories[pack.category] = [];
+      }
+      categories[pack.category].push(pack);
+    });
+    return categories;
+  }, [filteredPacks]);
 
   const handleAddComponent = (componentType: string) => {
     if (!entityId) return;
@@ -53,10 +239,40 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
         defaultData = { meshId: 'cube', materialId: 'default', enabled: true };
         break;
       case KnownComponentTypes.RIGID_BODY:
-        defaultData = { type: 'dynamic', mass: 1, enabled: true };
+        defaultData = {
+          type: 'dynamic',
+          mass: 1,
+          enabled: true,
+          bodyType: 'dynamic',
+          gravityScale: 1,
+          canSleep: true,
+          material: {
+            friction: 0.7,
+            restitution: 0.3,
+            density: 1,
+          },
+        };
         break;
       case KnownComponentTypes.MESH_COLLIDER:
-        defaultData = { type: 'box', enabled: true };
+        defaultData = {
+          enabled: true,
+          colliderType: 'box',
+          isTrigger: false,
+          center: [0, 0, 0],
+          size: {
+            width: 1,
+            height: 1,
+            depth: 1,
+            radius: 0.5,
+            capsuleRadius: 0.5,
+            capsuleHeight: 2,
+          },
+          physicsMaterial: {
+            friction: 0.7,
+            restitution: 0.3,
+            density: 1,
+          },
+        };
         break;
     }
 
@@ -64,45 +280,442 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     onClose();
   };
 
+  const handleAddPack = (pack: IComponentPack) => {
+    if (!entityId) return;
+
+    const existingTypes = entityComponents.map((c) => c.type);
+
+    // Add each component in the pack that doesn't already exist
+    pack.components.forEach((componentType) => {
+      if (!existingTypes.includes(componentType)) {
+        handleAddComponent(componentType);
+      }
+    });
+  };
+
+  // Display current components with overflow handling
+  const renderCurrentComponents = () => {
+    const maxVisible = 3;
+    const visibleComponents = entityComponents.slice(0, maxVisible);
+    const hiddenCount = Math.max(0, entityComponents.length - maxVisible);
+
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        {visibleComponents.map((component) => {
+          const definition = COMPONENT_DEFINITIONS.find((def) => def.id === component.type);
+          return (
+            <div
+              key={component.type}
+              className="flex items-center gap-1 px-2 py-1 bg-gray-700/50 border border-gray-600/50 rounded text-xs"
+              title={definition?.description || component.type}
+            >
+              {definition?.icon || <FiBox className="w-3 h-3" />}
+              <span className="text-gray-300">{definition?.name || component.type}</span>
+            </div>
+          );
+        })}
+        {hiddenCount > 0 && (
+          <div
+            className="flex items-center px-2 py-1 bg-gray-600/50 border border-gray-500/50 rounded text-xs text-gray-400 cursor-help"
+            title={`+${hiddenCount} more: ${entityComponents
+              .slice(maxVisible)
+              .map((c) => {
+                const def = COMPONENT_DEFINITIONS.find((d) => d.id === c.type);
+                return def?.name || c.type;
+              })
+              .join(', ')}`}
+          >
+            +{hiddenCount} more
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (!isOpen || !entityId) return null;
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
-      <div className="bg-gray-800 rounded-lg border border-gray-600 w-96 max-h-[80vh] flex flex-col shadow-xl">
-        <div className="flex items-center justify-between p-3 border-b border-gray-600">
-          <h3 className="text-sm font-semibold text-white">Add Component</h3>
+      <div className="bg-gray-800 rounded-lg border border-gray-600 w-[500px] max-h-[80vh] flex flex-col shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-600">
+          <div className="flex items-center gap-3">
+            <FiPackage className="w-5 h-5 text-cyan-400" />
+            <div>
+              <h3 className="text-sm font-semibold text-white">Add Component</h3>
+              <p className="text-xs text-gray-400">Entity {entityId}</p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white"
+            className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
           >
-            <FiX />
+            <FiX className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-4 max-h-96 overflow-y-auto">
-          <div className="space-y-2">
-            {availableComponents.map((component) => (
-              <button
-                key={component.id}
-                onClick={() => handleAddComponent(component.id)}
-                className="w-full text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg border border-gray-600 transition-colors"
-              >
-                <div className="text-sm font-medium text-white">{component.name}</div>
-                <div className="text-xs text-gray-400">{component.description}</div>
-              </button>
-            ))}
+        {/* Current Components */}
+        <div className="p-4 border-b border-gray-600/50">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-400">Current Components</span>
+            <span className="text-xs text-gray-500">{entityComponents.length} total</span>
           </div>
+          {entityComponents.length > 0 ? (
+            renderCurrentComponents()
+          ) : (
+            <div className="text-xs text-gray-500">No components attached</div>
+          )}
+        </div>
 
-          {availableComponents.length === 0 && (
-            <div className="text-sm text-gray-400 text-center py-4">
-              No components available to add
+        {/* Search Bar */}
+        <div className="p-4 border-b border-gray-600/50">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search components and packs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-gray-600/50">
+          <button
+            onClick={() => setSelectedTab('components')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              selectedTab === 'components'
+                ? 'text-cyan-400 border-b-2 border-cyan-400 bg-gray-700/30'
+                : 'text-gray-400 hover:text-gray-300'
+            }`}
+          >
+            Individual Components
+          </button>
+          <button
+            onClick={() => setSelectedTab('packs')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              selectedTab === 'packs'
+                ? 'text-cyan-400 border-b-2 border-cyan-400 bg-gray-700/30'
+                : 'text-gray-400 hover:text-gray-300'
+            }`}
+          >
+            Component Packs
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[400px]">
+          {selectedTab === 'components' ? (
+            Object.keys(componentsByCategory).length > 0 ? (
+              Object.entries(componentsByCategory).map(([category, components]) => (
+                <div key={category}>
+                  <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">
+                    {category}
+                  </h4>
+                  <div className="space-y-2">
+                    {components.map((component) => (
+                      <button
+                        key={component.id}
+                        onClick={() => handleAddComponent(component.id)}
+                        className="w-full text-left p-3 bg-gray-700/50 hover:bg-gray-600/50 border border-gray-600/50 hover:border-gray-500/50 rounded-lg transition-all duration-200 group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 text-cyan-400 group-hover:text-cyan-300 transition-colors">
+                            {component.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-white group-hover:text-gray-100">
+                              {component.name}
+                            </div>
+                            <div className="text-xs text-gray-400 group-hover:text-gray-300">
+                              {component.description}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-400 text-sm">
+                  {searchTerm
+                    ? `No components found for "${searchTerm}"`
+                    : 'All available components have been added'}
+                </div>
+              </div>
+            )
+          ) : Object.keys(packsByCategory).length > 0 ? (
+            Object.entries(packsByCategory).map(([category, packs]) => (
+              <div key={category}>
+                <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">
+                  {category} Packs
+                </h4>
+                <div className="space-y-2">
+                  {packs.map((pack) => (
+                    <button
+                      key={pack.id}
+                      onClick={() => handleAddPack(pack)}
+                      className="w-full text-left p-3 bg-gradient-to-r from-gray-700/50 to-gray-600/50 hover:from-gray-600/50 hover:to-gray-500/50 border border-gray-600/50 hover:border-gray-500/50 rounded-lg transition-all duration-200 group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 text-purple-400 group-hover:text-purple-300 transition-colors">
+                          {pack.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-white group-hover:text-gray-100">
+                            {pack.name}
+                          </div>
+                          <div className="text-xs text-gray-400 group-hover:text-gray-300 mb-1">
+                            {pack.description}
+                          </div>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {pack.components.map((compId) => {
+                              const def = COMPONENT_DEFINITIONS.find((d) => d.id === compId);
+                              return (
+                                <span
+                                  key={compId}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-black/20 border border-gray-500/30 rounded text-xs text-gray-300"
+                                >
+                                  {def?.icon || <FiBox className="w-3 h-3" />}
+                                  {def?.name || compId}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-gray-400 text-sm">
+                {searchTerm
+                  ? `No component packs found for "${searchTerm}"`
+                  : 'No component packs available'}
+              </div>
             </div>
           )}
         </div>
 
+        {/* Footer */}
         <div className="p-3 bg-gray-750 border-t border-gray-600 text-xs text-gray-400">
-          Entity {entityId} has {entityComponents.length} components
+          <div className="flex justify-between items-center">
+            <span>
+              Entity {entityId} • {entityComponents.length} components
+            </span>
+            <span className="text-gray-500">
+              {selectedTab === 'components'
+                ? `${Object.values(componentsByCategory).flat().length} available`
+                : `${Object.values(packsByCategory).flat().length} packs available`}
+            </span>
+          </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Compact version for inline use in panels
+interface ICompactAddComponentMenuProps {
+  entityId: number | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = ({
+  entityId,
+  isOpen,
+  onClose,
+}) => {
+  const componentManager = useComponentManager();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Get components for this entity using new ECS system
+  const entityComponents = useMemo(() => {
+    if (!entityId) return [];
+    return componentManager.getComponentsForEntity(entityId);
+  }, [entityId, componentManager]);
+
+  // Get available components and packs
+  const availableComponents = useMemo(() => {
+    if (!entityId) return [];
+    const existingTypes = entityComponents.map((c) => c.type);
+    return COMPONENT_DEFINITIONS.filter((comp) => !existingTypes.includes(comp.id));
+  }, [entityId, entityComponents]);
+
+  const availablePacks = useMemo(() => {
+    if (!entityId) return [];
+    const existingTypes = entityComponents.map((c) => c.type);
+    return COMPONENT_PACKS.filter((pack) =>
+      pack.components.some((compId) => !existingTypes.includes(compId)),
+    );
+  }, [entityId, entityComponents]);
+
+  // Filter by search term - combine components and packs
+  const filteredItems = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    const components = availableComponents.filter(
+      (comp) =>
+        comp.name.toLowerCase().includes(term) || comp.description.toLowerCase().includes(term),
+    );
+    const packs = availablePacks.filter(
+      (pack) =>
+        pack.name.toLowerCase().includes(term) || pack.description.toLowerCase().includes(term),
+    );
+
+    return [...packs, ...components]; // Show packs first
+  }, [availableComponents, availablePacks, searchTerm]);
+
+  const handleAddComponent = (componentType: string) => {
+    if (!entityId) return;
+
+    // Add component with default data based on type
+    let defaultData = {};
+    switch (componentType) {
+      case KnownComponentTypes.TRANSFORM:
+        defaultData = { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
+        break;
+      case KnownComponentTypes.MESH_RENDERER:
+        defaultData = { meshId: 'cube', materialId: 'default', enabled: true };
+        break;
+      case KnownComponentTypes.RIGID_BODY:
+        defaultData = {
+          type: 'dynamic',
+          mass: 1,
+          enabled: true,
+          bodyType: 'dynamic',
+          gravityScale: 1,
+          canSleep: true,
+          material: {
+            friction: 0.7,
+            restitution: 0.3,
+            density: 1,
+          },
+        };
+        break;
+      case KnownComponentTypes.MESH_COLLIDER:
+        defaultData = {
+          enabled: true,
+          colliderType: 'box',
+          isTrigger: false,
+          center: [0, 0, 0],
+          size: {
+            width: 1,
+            height: 1,
+            depth: 1,
+            radius: 0.5,
+            capsuleRadius: 0.5,
+            capsuleHeight: 2,
+          },
+          physicsMaterial: {
+            friction: 0.7,
+            restitution: 0.3,
+            density: 1,
+          },
+        };
+        break;
+    }
+
+    componentManager.addComponent(entityId, componentType, defaultData);
+    onClose();
+  };
+
+  const handleAddPack = (pack: IComponentPack) => {
+    if (!entityId) return;
+
+    const existingTypes = entityComponents.map((c) => c.type);
+
+    // Add each component in the pack that doesn't already exist
+    pack.components.forEach((componentType) => {
+      if (!existingTypes.includes(componentType)) {
+        handleAddComponent(componentType);
+      }
+    });
+  };
+
+  const handleItemClick = (item: IComponentDefinition | IComponentPack) => {
+    if ('components' in item) {
+      // It's a pack
+      handleAddPack(item);
+    } else {
+      // It's a component
+      handleAddComponent(item.id);
+    }
+  };
+
+  if (!isOpen || !entityId) return null;
+
+  return (
+    <div className="bg-gray-750/50 border border-gray-600/50 rounded-lg p-3">
+      {/* Search Bar */}
+      <div className="relative mb-3">
+        <FiSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search components..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-7 pr-3 py-1.5 text-xs bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 transition-colors"
+        />
+      </div>
+
+      {/* Items List */}
+      <div className="space-y-1 max-h-48 overflow-y-auto">
+        {filteredItems.length > 0 ? (
+          filteredItems.map((item) => {
+            const isPack = 'components' in item;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleItemClick(item)}
+                className={`w-full text-left p-2 rounded border transition-all duration-200 group ${
+                  isPack
+                    ? 'bg-gradient-to-r from-purple-900/20 to-purple-800/20 border-purple-600/30 hover:from-purple-800/30 hover:to-purple-700/30 hover:border-purple-500/50'
+                    : 'bg-gray-700/50 border-gray-600/50 hover:bg-gray-600/50 hover:border-gray-500/50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`flex-shrink-0 transition-colors ${
+                      isPack
+                        ? 'text-purple-400 group-hover:text-purple-300'
+                        : 'text-cyan-400 group-hover:text-cyan-300'
+                    }`}
+                  >
+                    {item.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-white group-hover:text-gray-100 truncate">
+                      {item.name}
+                      {isPack && <span className="text-purple-300 ml-1">(Pack)</span>}
+                    </div>
+                    <div className="text-[10px] text-gray-400 group-hover:text-gray-300 truncate">
+                      {item.description}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })
+        ) : (
+          <div className="text-xs text-gray-400 text-center py-4">
+            {searchTerm
+              ? `No components found for "${searchTerm}"`
+              : 'All components have been added'}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="mt-2 pt-2 border-t border-gray-600/30 text-[10px] text-gray-500">
+        {filteredItems.length} available • {entityComponents.length} attached
       </div>
     </div>
   );

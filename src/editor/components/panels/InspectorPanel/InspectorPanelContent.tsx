@@ -1,10 +1,11 @@
 import React from 'react';
-import { FiInfo } from 'react-icons/fi';
 
 console.log('🔥🔥🔥 INSPECTOR PANEL CONTENT IS LOADING - THIS IS A TEST 🔥🔥🔥');
 
+import { MeshColliderSection } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
+import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
+import { RigidBodySection } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
-import { InspectorSection } from '@/editor/components/ui/InspectorSection';
 import { useEntityComponents } from '@/editor/hooks/useEntityComponents';
 import { KnownComponentTypes } from '@/editor/lib/ecs/IComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
@@ -25,7 +26,6 @@ export const InspectorPanelContent: React.FC = () => {
     getRigidBody,
     getMeshCollider,
     updateComponent,
-    removeComponent,
   } = useEntityComponents(selectedEntity);
 
   React.useEffect(() => {
@@ -57,30 +57,27 @@ export const InspectorPanelContent: React.FC = () => {
 
       {/* MeshRenderer Component */}
       {hasMeshRenderer && (
-        <MeshRendererSection
+        <ProperMeshRendererSection
           meshRendererComponent={getMeshRenderer()}
           updateComponent={updateComponent}
-          removeComponent={removeComponent}
           isPlaying={isPlaying}
         />
       )}
 
       {/* RigidBody Component */}
       {hasRigidBody && (
-        <RigidBodySection
+        <ProperRigidBodySection
           rigidBodyComponent={getRigidBody()}
           updateComponent={updateComponent}
-          removeComponent={removeComponent}
           isPlaying={isPlaying}
         />
       )}
 
       {/* MeshCollider Component */}
       {hasMeshCollider && (
-        <MeshColliderSection
+        <ProperMeshColliderSection
           meshColliderComponent={getMeshCollider()}
           updateComponent={updateComponent}
-          removeComponent={removeComponent}
           isPlaying={isPlaying}
         />
       )}
@@ -164,103 +161,124 @@ const ProperTransformSection: React.FC<{
   );
 };
 
-// Simplified component sections for now - can be enhanced later
-const MeshRendererSection: React.FC<{
+// Adapter components to bridge ECS system with the proper component sections
+const ProperMeshRendererSection: React.FC<{
   meshRendererComponent: any;
   updateComponent: (type: string, data: any) => boolean;
-  removeComponent: (type: string) => boolean;
   isPlaying: boolean;
-}> = ({ meshRendererComponent, removeComponent, isPlaying }) => {
+}> = ({ meshRendererComponent, updateComponent, isPlaying }) => {
   const data = meshRendererComponent?.data;
 
   if (!data) return null;
 
+  // Convert ECS data to the format expected by MeshRendererSection
+  const meshRendererData = {
+    enabled: data.enabled ?? true,
+    castShadows: data.castShadows ?? true,
+    receiveShadows: data.receiveShadows ?? true,
+    material: {
+      color: data.color || '#ffffff',
+      metalness: data.metalness || 0.0,
+      roughness: data.roughness || 0.5,
+      emissive: data.emissive || '#000000',
+      emissiveIntensity: data.emissiveIntensity || 0.0,
+    },
+  };
+
+  const handleUpdate = (newData: any) => {
+    updateComponent(KnownComponentTypes.MESH_RENDERER, newData);
+  };
+
   return (
-    <InspectorSection
-      title="Mesh Renderer"
-      icon={<FiInfo />}
-      headerColor="green"
-      removable={!isPlaying}
-      onRemove={() => removeComponent(KnownComponentTypes.MESH_RENDERER)}
-    >
-      <div className="space-y-2">
-        <div>
-          <label className="text-xs text-gray-400">Mesh ID:</label>
-          <div className="text-xs text-white">{data.meshId}</div>
-        </div>
-        <div>
-          <label className="text-xs text-gray-400">Material ID:</label>
-          <div className="text-xs text-white">{data.materialId}</div>
-        </div>
-      </div>
-    </InspectorSection>
+    <MeshRendererSection
+      meshRenderer={meshRendererData}
+      setMeshRenderer={handleUpdate}
+      isPlaying={isPlaying}
+    />
   );
 };
 
-const RigidBodySection: React.FC<{
+const ProperRigidBodySection: React.FC<{
   rigidBodyComponent: any;
   updateComponent: (type: string, data: any) => boolean;
-  removeComponent: (type: string) => boolean;
   isPlaying: boolean;
-}> = ({ rigidBodyComponent, removeComponent, isPlaying }) => {
+}> = ({ rigidBodyComponent, updateComponent, isPlaying }) => {
   const data = rigidBodyComponent?.data;
 
   if (!data) return null;
 
+  // Convert ECS data to the format expected by RigidBodySection
+  const rigidBodyData = {
+    enabled: data.enabled ?? true,
+    bodyType: data.bodyType || data.type || 'dynamic',
+    mass: data.mass || 1,
+    gravityScale: data.gravityScale || 1,
+    canSleep: data.canSleep ?? true,
+    linearDamping: data.linearDamping || 0,
+    angularDamping: data.angularDamping || 0,
+    initialVelocity: data.initialVelocity || [0, 0, 0],
+    initialAngularVelocity: data.initialAngularVelocity || [0, 0, 0],
+    material: {
+      friction: data.material?.friction || 0.7,
+      restitution: data.material?.restitution || 0.3,
+      density: data.material?.density || 1,
+    },
+  };
+
+  const handleUpdate = (newData: any) => {
+    updateComponent(KnownComponentTypes.RIGID_BODY, newData);
+  };
+
   return (
-    <InspectorSection
-      title="Rigid Body"
-      icon={<FiInfo />}
-      headerColor="orange"
-      removable={!isPlaying}
-      onRemove={() => removeComponent(KnownComponentTypes.RIGID_BODY)}
-    >
-      <div className="space-y-2">
-        <div>
-          <label className="text-xs text-gray-400">Type:</label>
-          <div className="text-xs text-white">{data.bodyType || data.type}</div>
-        </div>
-        <div>
-          <label className="text-xs text-gray-400">Mass:</label>
-          <div className="text-xs text-white">{data.mass}</div>
-        </div>
-        {data.isStatic && <div className="text-xs text-blue-400">Static Body</div>}
-      </div>
-    </InspectorSection>
+    <RigidBodySection
+      rigidBody={rigidBodyData}
+      setRigidBody={handleUpdate}
+      meshCollider={null} // TODO: Get from ECS
+      setMeshCollider={() => {}} // TODO: Implement
+      isPlaying={isPlaying}
+    />
   );
 };
 
-const MeshColliderSection: React.FC<{
+const ProperMeshColliderSection: React.FC<{
   meshColliderComponent: any;
   updateComponent: (type: string, data: any) => boolean;
-  removeComponent: (type: string) => boolean;
   isPlaying: boolean;
-}> = ({ meshColliderComponent, removeComponent, isPlaying }) => {
+}> = ({ meshColliderComponent, updateComponent, isPlaying }) => {
   const data = meshColliderComponent?.data;
 
   if (!data) return null;
 
+  // Convert ECS data to the format expected by MeshColliderSection
+  const meshColliderData = {
+    enabled: data.enabled ?? true,
+    colliderType: data.colliderType || 'box',
+    isTrigger: data.isTrigger ?? false,
+    center: data.center || [0, 0, 0],
+    size: {
+      width: data.size?.width || 1,
+      height: data.size?.height || 1,
+      depth: data.size?.depth || 1,
+      radius: data.size?.radius || 0.5,
+      capsuleRadius: data.size?.capsuleRadius || 0.5,
+      capsuleHeight: data.size?.capsuleHeight || 2,
+    },
+    physicsMaterial: {
+      friction: data.physicsMaterial?.friction || 0.7,
+      restitution: data.physicsMaterial?.restitution || 0.3,
+      density: data.physicsMaterial?.density || 1,
+    },
+  };
+
+  const handleUpdate = (newData: any) => {
+    updateComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+  };
+
   return (
-    <InspectorSection
-      title="Mesh Collider"
-      icon={<FiInfo />}
-      headerColor="purple"
-      removable={!isPlaying}
-      onRemove={() => removeComponent(KnownComponentTypes.MESH_COLLIDER)}
-    >
-      <div className="space-y-2">
-        <div>
-          <label className="text-xs text-gray-400">Type:</label>
-          <div className="text-xs text-white">{data.colliderType || data.type}</div>
-        </div>
-        {data.meshId && (
-          <div>
-            <label className="text-xs text-gray-400">Mesh ID:</label>
-            <div className="text-xs text-white">{data.meshId}</div>
-          </div>
-        )}
-        {data.isTrigger && <div className="text-xs text-green-400">Trigger</div>}
-      </div>
-    </InspectorSection>
+    <MeshColliderSection
+      meshCollider={meshColliderData}
+      setMeshCollider={handleUpdate}
+      isPlaying={isPlaying}
+    />
   );
 };
