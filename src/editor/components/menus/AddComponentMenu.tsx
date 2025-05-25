@@ -3,6 +3,7 @@ import { FiBox, FiEye, FiMove, FiPackage, FiSearch, FiShield, FiX, FiZap } from 
 import { TbCube } from 'react-icons/tb';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { isValidEntityId } from '@/core/lib/ecs/utils';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityData } from '@/editor/hooks/useEntityData';
 
@@ -190,13 +191,13 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
 
   // Get components for this entity using new ECS system
   const entityComponents = useMemo(() => {
-    if (!entityId) return [];
+    if (!isValidEntityId(entityId)) return [];
     return componentManager.getComponentsForEntity(entityId);
   }, [entityId, componentManager]);
 
   // Get available components from KnownComponentTypes
   const availableComponents = useMemo(() => {
-    if (!entityId) return [];
+    if (!isValidEntityId(entityId)) return [];
     const existingTypes = entityComponents.map((c) => c.type);
 
     return COMPONENT_DEFINITIONS.filter((comp) => !existingTypes.includes(comp.id));
@@ -204,7 +205,7 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
 
   // Get available component packs
   const availablePacks = useMemo(() => {
-    if (!entityId) return [];
+    if (!isValidEntityId(entityId)) return [];
     const existingTypes = entityComponents.map((c) => c.type);
 
     return COMPONENT_PACKS.filter((pack) =>
@@ -259,7 +260,7 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
   }, [filteredPacks]);
 
   const handleAddComponent = (componentType: string) => {
-    if (!entityId) return;
+    if (!isValidEntityId(entityId)) return;
 
     // Add component with default data based on type
     let defaultData = {};
@@ -319,7 +320,7 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
   };
 
   const handleAddPack = (pack: IComponentPack) => {
-    if (!entityId) return;
+    if (!isValidEntityId(entityId)) return;
 
     const existingTypes = entityComponents.map((c) => c.type);
 
@@ -370,7 +371,7 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     );
   };
 
-  if (!isOpen || !entityId) return null;
+  if (!isOpen || !isValidEntityId(entityId)) return null;
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100]">
@@ -608,19 +609,19 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
 
   // Get components for this entity using new ECS system
   const entityComponents = useMemo(() => {
-    if (!entityId) return [];
+    if (!isValidEntityId(entityId)) return [];
     return componentManager.getComponentsForEntity(entityId);
   }, [entityId, componentManager]);
 
   // Get available components and packs
   const availableComponents = useMemo(() => {
-    if (!entityId) return [];
+    if (!isValidEntityId(entityId)) return [];
     const existingTypes = entityComponents.map((c) => c.type);
     return COMPONENT_DEFINITIONS.filter((comp) => !existingTypes.includes(comp.id));
   }, [entityId, entityComponents]);
 
   const availablePacks = useMemo(() => {
-    if (!entityId) return [];
+    if (!isValidEntityId(entityId)) return [];
     const existingTypes = entityComponents.map((c) => c.type);
     return COMPONENT_PACKS.filter((pack) =>
       pack.components.some((compId) => !existingTypes.includes(compId)),
@@ -643,7 +644,7 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
   }, [availableComponents, availablePacks, searchTerm]);
 
   const handleAddComponent = (componentType: string) => {
-    if (!entityId) return;
+    if (!isValidEntityId(entityId)) return;
 
     // Add component with default data based on type
     let defaultData = {};
@@ -703,7 +704,7 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
   };
 
   const handleAddPack = (pack: IComponentPack) => {
-    if (!entityId) return;
+    if (!isValidEntityId(entityId)) return;
 
     const existingTypes = entityComponents.map((c) => c.type);
 
@@ -725,7 +726,7 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
     }
   };
 
-  if (!isOpen || !entityId) return null;
+  if (!isOpen || !isValidEntityId(entityId)) return null;
 
   return (
     <div className="bg-gray-750/50 border border-gray-600/50 rounded-lg p-3">

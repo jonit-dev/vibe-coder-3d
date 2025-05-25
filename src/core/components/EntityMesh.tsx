@@ -12,6 +12,7 @@ import {
   entityToObject,
   objectToEntity,
 } from '@core/lib/ecs';
+import { isValidEntityId } from '@core/lib/ecs/utils';
 import { isCulled } from '@core/lib/rendering';
 
 const FRUSTUM_CULLING_RANGE = 50; // How far to cull objects
@@ -120,7 +121,7 @@ export const EntityMesh = forwardRef<Mesh, IEntityMeshProps>(
       // Cleanup function
       return () => {
         // Only destroy the entity if we created it (not if it was provided)
-        if (entityId && !providedEntityId) {
+        if (isValidEntityId(entityId) && !providedEntityId) {
           destroyEntity(entityId);
         }
       };
@@ -168,7 +169,7 @@ export const EntityMesh = forwardRef<Mesh, IEntityMeshProps>(
 
     // Setup: Link the mesh to the entity
     useEffect(() => {
-      if (meshRef.current && entityId) {
+      if (meshRef.current && isValidEntityId(entityId)) {
         // If we already have an entity for this object, update it
         const existingId = objectToEntity.get(meshRef.current);
         if (existingId && existingId !== entityId) {
@@ -211,7 +212,7 @@ export const EntityMesh = forwardRef<Mesh, IEntityMeshProps>(
       // Skip frames based on performance setting
       if (frameCounter.current !== 0) return;
 
-      if (meshRef.current && entityId) {
+      if (meshRef.current && isValidEntityId(entityId)) {
         // Only update if transform needs update
         if (Transform.needsUpdate[entityId] === 1) {
           // Update the mesh transform directly

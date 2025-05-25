@@ -1,11 +1,23 @@
+import { addComponent, hasComponent, removeComponent } from 'bitecs';
+
+import { MeshCollider, MeshRenderer, RigidBody, Transform } from './BitECSComponents';
+import {
+  getMeshColliderData,
+  getMeshRendererData,
+  getRigidBodyData,
+  getTransformData,
+  setMeshColliderData,
+  setMeshRendererData,
+  setRigidBodyData,
+  setTransformData,
+} from './DataConversion';
 import { IComponent, KnownComponentTypes } from './IComponent';
+import { ECSWorld } from './World';
 import { IMeshColliderData } from './components/MeshColliderComponent';
 import { IMeshRendererData } from './components/MeshRendererComponent';
 import { IRigidBodyData } from './components/RigidBodyComponent';
 import { ITransformData } from './components/TransformComponent';
 import { ComponentType, EntityId } from './types';
-
-type ComponentDataMap = Map<EntityId, any>;
 
 type ComponentEvent = {
   type: 'component-added' | 'component-updated' | 'component-removed';
@@ -16,16 +28,21 @@ type ComponentEvent = {
 
 type ComponentEventListener = (event: ComponentEvent) => void;
 
+// Map component type strings to BitECS components
+const componentMap = {
+  [KnownComponentTypes.TRANSFORM]: Transform,
+  [KnownComponentTypes.MESH_RENDERER]: MeshRenderer,
+  [KnownComponentTypes.RIGID_BODY]: RigidBody,
+  [KnownComponentTypes.MESH_COLLIDER]: MeshCollider,
+};
+
 export class ComponentManager {
   private static instance: ComponentManager;
-  private componentStores: Map<ComponentType, ComponentDataMap> = new Map();
+  private world = ECSWorld.getInstance().getWorld();
   private eventListeners: ComponentEventListener[] = [];
 
   private constructor() {
-    // Initialize stores for known component types
-    Object.values(KnownComponentTypes).forEach((type) => {
-      this.componentStores.set(type, new Map());
-    });
+    // Private constructor for singleton
   }
 
   public static getInstance(): ComponentManager {
@@ -51,11 +68,18 @@ export class ComponentManager {
   }
 
   addComponent<TData>(entityId: EntityId, type: ComponentType, data: TData): IComponent<TData> {
-    if (!this.componentStores.has(type)) {
-      console.warn(`Component type ${type} not registered. Adding dynamically.`);
-      this.componentStores.set(type, new Map());
+    const bitECSComponent = componentMap[type as keyof typeof componentMap];
+
+    if (!bitECSComponent) {
+      console.warn(`Component type ${type} not supported in BitECS implementation.`);
+      return { entityId, type, data };
     }
-    this.componentStores.get(type)!.set(entityId, data);
+
+    // Add the component to the entity
+    addComponent(this.world, bitECSComponent, entityId);
+
+    // Set the component data using conversion functions
+    this.setComponentData(entityId, type, data);
 
     // Emit event for reactive updates
     this.emitEvent({
@@ -68,24 +92,75 @@ export class ComponentManager {
     return { entityId, type, data };
   }
 
+  private setComponentData<TData>(entityId: EntityId, type: ComponentType, data: TData): void {
+    switch (type) {
+      case KnownComponentTypes.TRANSFORM:
+        setTransformData(entityId, data as ITransformData);
+        break;
+      case KnownComponentTypes.MESH_RENDERER:
+        setMeshRendererData(entityId, data as IMeshRendererData);
+        break;
+      case KnownComponentTypes.RIGID_BODY:
+        setRigidBodyData(entityId, data as IRigidBodyData);
+        break;
+      case KnownComponentTypes.MESH_COLLIDER:
+        setMeshColliderData(entityId, data as IMeshColliderData);
+        break;
+    }
+  }
+
+  private getComponentDataInternal<TData>(
+    entityId: EntityId,
+    type: ComponentType,
+  ): TData | undefined {
+    switch (type) {
+      case KnownComponentTypes.TRANSFORM:
+        return getTransformData(entityId) as TData;
+      case KnownComponentTypes.MESH_RENDERER:
+        return getMeshRendererData(entityId) as TData;
+      case KnownComponentTypes.RIGID_BODY:
+        return getRigidBodyData(entityId) as TData;
+      case KnownComponentTypes.MESH_COLLIDER:
+        return getMeshColliderData(entityId) as TData;
+      default:
+        return undefined;
+    }
+  }
+
   getComponent<TData>(entityId: EntityId, type: ComponentType): IComponent<TData> | undefined {
-    const data = this.componentStores.get(type)?.get(entityId);
+    const bitECSComponent = componentMap[type as keyof typeof componentMap];
+
+    if (!bitECSComponent || !hasComponent(this.world, bitECSComponent, entityId)) {
+      return undefined;
+    }
+
+    const data = this.getComponentDataInternal<TData>(entityId, type);
     return data ? { entityId, type, data } : undefined;
   }
 
   getComponentData<TData>(entityId: EntityId, type: ComponentType): TData | undefined {
-    return this.componentStores.get(type)?.get(entityId);
+    const bitECSComponent = componentMap[type as keyof typeof componentMap];
+
+    if (!bitECSComponent || !hasComponent(this.world, bitECSComponent, entityId)) {
+      return undefined;
+    }
+
+    return this.getComponentDataInternal<TData>(entityId, type);
   }
 
   updateComponent<TData>(entityId: EntityId, type: ComponentType, data: Partial<TData>): boolean {
-    const store = this.componentStores.get(type);
-    if (!store || !store.has(entityId)) {
+    const bitECSComponent = componentMap[type as keyof typeof componentMap];
+
+    if (!bitECSComponent || !hasComponent(this.world, bitECSComponent, entityId)) {
       return false;
     }
 
-    const existingData = store.get(entityId);
+    // Get existing data and merge with updates
+    const existingData = this.getComponentDataInternal<TData>(entityId, type);
+    if (!existingData) return false;
+
     const updatedData = { ...existingData, ...data };
-    store.set(entityId, updatedData);
+    this.setComponentData(entityId, type, updatedData);
 
     // Emit event for reactive updates
     this.emitEvent({
@@ -100,83 +175,104 @@ export class ComponentManager {
 
   getComponentsForEntity(entityId: EntityId): IComponent<any>[] {
     const components: IComponent<any>[] = [];
-    this.componentStores.forEach((store, type) => {
-      if (store.has(entityId)) {
-        components.push({ entityId, type, data: store.get(entityId) });
+
+    Object.entries(componentMap).forEach(([typeString, bitECSComponent]) => {
+      if (hasComponent(this.world, bitECSComponent, entityId)) {
+        const data = this.getComponentDataInternal(entityId, typeString);
+        if (data) {
+          components.push({ entityId, type: typeString, data });
+        }
       }
     });
+
     return components;
   }
 
   hasComponent(entityId: EntityId, type: ComponentType): boolean {
-    return this.componentStores.get(type)?.has(entityId) ?? false;
+    const bitECSComponent = componentMap[type as keyof typeof componentMap];
+    return bitECSComponent ? hasComponent(this.world, bitECSComponent, entityId) : false;
   }
 
   removeComponent(entityId: EntityId, type: ComponentType): boolean {
-    const store = this.componentStores.get(type);
-    if (!store || !store.has(entityId)) return false;
+    const bitECSComponent = componentMap[type as keyof typeof componentMap];
 
-    const wasDeleted = store.delete(entityId);
-
-    if (wasDeleted) {
-      // Emit event for reactive updates
-      this.emitEvent({
-        type: 'component-removed',
-        entityId,
-        componentType: type,
-      });
+    if (!bitECSComponent || !hasComponent(this.world, bitECSComponent, entityId)) {
+      return false;
     }
 
-    return wasDeleted;
+    removeComponent(this.world, bitECSComponent, entityId);
+
+    // Emit event for reactive updates
+    this.emitEvent({
+      type: 'component-removed',
+      entityId,
+      componentType: type,
+    });
+
+    return true;
   }
 
   removeComponentsForEntity(entityId: EntityId): void {
-    this.componentStores.forEach((store) => store.delete(entityId));
+    Object.values(componentMap).forEach((bitECSComponent) => {
+      if (hasComponent(this.world, bitECSComponent, entityId)) {
+        removeComponent(this.world, bitECSComponent, entityId);
+      }
+    });
   }
 
   getEntitiesWithComponent(componentType: ComponentType): EntityId[] {
-    const store = this.componentStores.get(componentType);
-    if (!store) return [];
+    const bitECSComponent = componentMap[componentType as keyof typeof componentMap];
+    if (!bitECSComponent) return [];
 
-    return Array.from(store.keys());
+    const entities: EntityId[] = [];
+
+    // Scan for entities with this component
+    // Note: BitECS doesn't provide a direct way to get all entities with a component,
+    // so we'll scan a reasonable range starting from 0
+    for (let eid = 0; eid < 10000; eid++) {
+      if (hasComponent(this.world, bitECSComponent, eid)) {
+        entities.push(eid);
+      }
+    }
+
+    return entities;
   }
 
   getEntitiesWithComponents(types: ComponentType[]): EntityId[] {
     if (types.length === 0) return [];
 
     // Start with entities that have the first component type
-    const firstStore = this.componentStores.get(types[0]);
-    if (!firstStore) return [];
-
-    let entities = Array.from(firstStore.keys());
+    let entities = this.getEntitiesWithComponent(types[0]);
 
     // Filter to only include entities that have all required components
     for (let i = 1; i < types.length; i++) {
-      const store = this.componentStores.get(types[i]);
-      if (!store) return [];
-
-      entities = entities.filter((entityId) => store.has(entityId));
+      const entitiesWithComponent = this.getEntitiesWithComponent(types[i]);
+      entities = entities.filter((entityId) => entitiesWithComponent.includes(entityId));
     }
 
     return entities;
   }
 
   clearComponents(): void {
-    this.componentStores.forEach((store) => store.clear());
+    // This would require removing all components from all entities
+    // For now, we'll rely on the EntityManager's clearEntities method
+    console.warn('clearComponents not fully implemented - use EntityManager.clearEntities()');
   }
 
   getComponentCount(type?: ComponentType): number {
     if (type) {
-      return this.componentStores.get(type)?.size ?? 0;
+      return this.getEntitiesWithComponent(type).length;
     }
 
     let total = 0;
-    this.componentStores.forEach((store) => (total += store.size));
+    Object.keys(componentMap).forEach((componentType) => {
+      total += this.getEntitiesWithComponent(componentType).length;
+    });
     return total;
   }
 
   getRegisteredComponentTypes(): ComponentType[] {
-    return Array.from(this.componentStores.keys());
+    return Object.keys(componentMap);
   }
 
   // Helper methods for specific component types

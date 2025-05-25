@@ -157,7 +157,7 @@ export const StackedLeftPanel: React.FC<IStackedLeftPanelProps> = ({
                 </div>
 
                 {/* Entity Info Row - only show when expanded and entity selected */}
-                {isInspectorExpanded && selectedEntity && (
+                {isInspectorExpanded && selectedEntity !== null && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse flex-shrink-0"></div>

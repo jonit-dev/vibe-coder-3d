@@ -73,7 +73,7 @@ const getDefaultMaterialData = (
   entityId?: number,
   getComponentData?: (entityId: number, componentType: string) => any,
 ) => {
-  if (!entityId || !getComponentData) {
+  if (entityId === undefined || !getComponentData) {
     return {
       color: '#3399ff',
       metalness: 0.0,

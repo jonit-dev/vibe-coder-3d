@@ -81,6 +81,8 @@ export const ComponentList: React.FC<IComponentListProps> = ({
           isPlaying={isPlaying}
         />
       )}
+
+      {/* TODO: Camera and Light components will be added when their adapters are implemented */}
     </>
   );
 };
