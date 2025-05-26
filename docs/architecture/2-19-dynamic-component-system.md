@@ -1,6 +1,22 @@
-# Dynamic Component System Implementation Summary
+# Dynamic Component System
 
-## ✅ What's Been Implemented
+## Overview
+
+### Context & Goals
+
+- **Flexibility**: Enable entities to have only the components they actually need, rather than forcing all entities to support all components
+- **Performance**: Reduce memory usage and improve cache efficiency by avoiding unused component data
+- **Scalability**: Support a growing ecosystem of components without bloating every entity
+- **AI Integration**: Allow the AI Copilot to dynamically add/remove components based on natural language commands
+
+### Current Pain Points
+
+- All entities are created with core components (`Transform`, `MeshType`, `Material`) regardless of need
+- Adding new components requires manual updates to entity creation logic
+- No standardized way to define component dependencies or compatibility
+- Limited support for optional components that can be added at runtime
+
+## ✅ Current Implementation Status
 
 ### 🎯 Phase 1: Component Registry Foundation (COMPLETE)
 
@@ -195,6 +211,210 @@ src/editor/
 │   └── panels/InspectorPanel/
 │       └── InspectorPanelContent.tsx  # Updated with enhanced Add Component
 └── Editor.tsx                         # System initialization (updated)
+```
+
+## Technical Architecture
+
+### Component Registry
+
+```typescript
+// src/core/lib/component-registry.ts
+export interface IComponentDescriptor<T = any> {
+  id: string;
+  name: string;
+  category: ComponentCategory;
+  component: any; // bitecs component
+  dependencies?: string[];
+  conflicts?: string[];
+  schema: z.ZodSchema<T>;
+  serialize: (entityId: number) => T | undefined;
+  deserialize: (entityId: number, data: T) => void;
+  onAdd?: (entityId: number) => void;
+  onRemove?: (entityId: number) => void;
+  required?: boolean;
+  metadata?: {
+    description?: string;
+    version?: string;
+    author?: string;
+  };
+}
+
+export enum ComponentCategory {
+  Core = 'core', // Transform, Name
+  Rendering = 'rendering', // Material, MeshType
+  Physics = 'physics', // Velocity, RigidBody
+  Gameplay = 'gameplay', // Health, Inventory
+  AI = 'ai', // AIAgent, Behavior
+  Audio = 'audio', // AudioSource, AudioListener
+  UI = 'ui', // UIElement, Canvas
+  Network = 'network', // NetworkSync, PlayerInput
+}
+
+export class ComponentRegistry {
+  private static instance: ComponentRegistry;
+  private components: Map<string, IComponentDescriptor> = new Map();
+
+  registerComponent<T>(descriptor: IComponentDescriptor<T>): void;
+  unregisterComponent(id: string): void;
+  getComponent(id: string): IComponentDescriptor | undefined;
+  getComponentsByCategory(category: ComponentCategory): IComponentDescriptor[];
+  validateDependencies(componentIds: string[]): ValidationResult;
+  resolveDependencies(componentIds: string[]): string[];
+}
+```
+
+### Entity Archetypes
+
+```typescript
+// src/core/lib/entity-archetypes.ts
+export interface IEntityArchetype {
+  id: string;
+  name: string;
+  description?: string;
+  components: string[]; // Component IDs
+  defaultValues?: Record<string, any>;
+  validation?: (data: any) => boolean;
+}
+
+export class ArchetypeManager {
+  private static archetypes: Map<string, IEntityArchetype> = new Map();
+
+  static registerArchetype(archetype: IEntityArchetype): void;
+  static createEntity(archetypeId: string, overrides?: any): number;
+  static getArchetype(id: string): IEntityArchetype | undefined;
+  static listArchetypes(): IEntityArchetype[];
+}
+
+// Built-in archetypes
+export const BUILT_IN_ARCHETYPES: IEntityArchetype[] = [
+  {
+    id: 'static-mesh',
+    name: 'Static Mesh',
+    components: ['transform', 'meshType', 'material'],
+  },
+  {
+    id: 'dynamic-object',
+    name: 'Dynamic Object',
+    components: ['transform', 'meshType', 'material', 'velocity'],
+  },
+  {
+    id: 'physics-body',
+    name: 'Physics Body',
+    components: ['transform', 'meshType', 'material', 'velocity', 'rigidBody'],
+  },
+  {
+    id: 'character',
+    name: 'Character',
+    components: ['transform', 'meshType', 'material', 'velocity', 'health', 'input'],
+  },
+];
+```
+
+### Dynamic Component Manager
+
+```typescript
+// src/core/lib/dynamic-components.ts
+export class DynamicComponentManager {
+  private static instance: DynamicComponentManager;
+
+  addComponent(entityId: number, componentId: string, data?: any): Promise<boolean>;
+  removeComponent(entityId: number, componentId: string): Promise<boolean>;
+  hasComponent(entityId: number, componentId: string): boolean;
+  getEntityComponents(entityId: number): string[];
+  validateComponentAddition(entityId: number, componentId: string): ValidationResult;
+
+  private resolveDependencies(entityId: number, componentId: string): void;
+  private checkConflicts(entityId: number, componentId: string): string[];
+  private notifyComponentChange(
+    entityId: number,
+    componentId: string,
+    action: 'add' | 'remove',
+  ): void;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  missingDependencies?: string[];
+  conflicts?: string[];
+}
+```
+
+## API Reference & Usage Examples
+
+### Registering a Custom Component
+
+```typescript
+import { ComponentRegistry, ComponentCategory } from '@core/lib/component-registry';
+
+// Register a Health component
+componentRegistry.registerComponent({
+  id: 'health',
+  name: 'Health',
+  category: ComponentCategory.Gameplay,
+  component: HealthComponent,
+  schema: z.object({
+    current: z.number().min(0),
+    maximum: z.number().min(1),
+    regeneration: z.number().min(0).default(0),
+  }),
+  serialize: (entityId) => ({
+    current: HealthComponent.current[entityId],
+    maximum: HealthComponent.maximum[entityId],
+    regeneration: HealthComponent.regeneration[entityId],
+  }),
+  deserialize: (entityId, data) => {
+    HealthComponent.current[entityId] = data.current;
+    HealthComponent.maximum[entityId] = data.maximum;
+    HealthComponent.regeneration[entityId] = data.regeneration;
+  },
+  onAdd: (entityId) => {
+    console.log(`Health component added to entity ${entityId}`);
+  },
+});
+```
+
+### Creating Entities with Archetypes
+
+```typescript
+import { ArchetypeManager } from '@core/lib/entity-archetypes';
+
+// Create a character entity
+const characterId = ArchetypeManager.createEntity('character', {
+  transform: { position: [0, 1, 0] },
+  health: { current: 100, maximum: 100 },
+});
+
+// Create a static mesh
+const meshId = ArchetypeManager.createEntity('static-mesh', {
+  material: { color: [1, 0, 0] },
+});
+```
+
+### Dynamic Component Management
+
+```typescript
+import { DynamicComponentManager } from '@core/lib/dynamic-components';
+
+const componentManager = DynamicComponentManager.getInstance();
+
+// Add a component at runtime
+await componentManager.addComponent(entityId, 'velocity', {
+  linear: [0, 0, 0],
+  angular: [0, 0, 0],
+});
+
+// Remove a component
+await componentManager.removeComponent(entityId, 'velocity');
+
+// Check validation before adding
+const validation = componentManager.validateComponentAddition(entityId, 'rigidBody');
+if (validation.valid) {
+  await componentManager.addComponent(entityId, 'rigidBody');
+} else {
+  console.error('Cannot add component:', validation.errors);
+}
 ```
 
 ## 🎮 How to Use

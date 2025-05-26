@@ -8,20 +8,68 @@ A "Blueprint" is analogous to a _Scene_ in Godot or a _Prefab_ in Unity. It repr
 
 ## Core Patterns
 
-| Feature                | Traditional Analog                             | Purpose                                           | R3F Implementation                                                                                                              |
-| ---------------------- | ---------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Node Composition**   | Godot Nodes/Scenes, Unity GameObject/Component | Build behaviour via composition, not inheritance. | Pure JSX. Each file typically represents one Blueprint root. Children are functional components with single concerns.           |
-| **Blueprint Variant**  | Godot Inherited Scene, Unity Prefab Variant    | Create variations without duplicating code.       | A `Blueprint(BaseComponent, overrideProps)` factory function allows creating tuned instances.                                   |
-| **Signals / Events**   | Godot Signals, UnityEvent                      | Enable decoupled communication between systems.   | A global event bus using `mitt` + a `useSignal(event, callback)` hook for subscribing components.                               |
-| **Groups / Tags**      | Godot Groups, Unity Tags                       | Query collections of objects efficiently.         | A `useTag("tag-name", ref)` hook registers objects; `getNodes("tag-name")` retrieves refs array.                                |
-| **Singleton / Global** | Godot Autoload, Unity Singletons               | Provide globally accessible state or services.    | React Context (e.g., `<GameStateProvider>`, `<InputProvider>`).                                                                 |
-| **Data Assets**        | Godot Resource, Unity ScriptableObject         | Allow designer-friendly data editing.             | Type-safe JSON files (e.g., `data/items/sword.json`) validated using Zod schemas, loaded via a `useAsset` hook.                 |
-| **Addressables**       | Unity Addressables                             | Load assets asynchronously by ID.                 | A manifest mapping IDs to URLs (`{id: url}`). Assets loaded via `import(url)` + Three.js loaders, potentially cached.           |
-| **Input Map**          | Godot InputMap, Unity Input System Action Maps | Abstract input devices from actions.              | A central `useInput(actions)` hook maps raw inputs (keys, gamepad) to named actions (e.g., "jump", "interact").                 |
-| **Scene Loading**      | Unity Additive Scene Loading                   | Stream large worlds or manage complex UIs.        | Potentially mount multiple R3F `<Canvas>` roots; lazy-load Blueprints as needed (e.g., based on world chunks).                  |
-| **ECS (Optional)**     | Unity DOTS/ECS                                 | Optimize performance for massive object counts.   | Integrate an ECS library like `bitecs` if performance profiling indicates a bottleneck.                                         |
-| **Build Slices**       | Unity Assembly Definitions (.asmdef)           | Improve build times and code organization.        | Utilize Monorepo workspaces (e.g., Yarn/PNPM workspaces) + bundler features (Vite/Turbopack) for incremental builds.            |
-| **Editor Tools**       | Godot `@tool` scripts, Unity Custom Inspectors | Automate tasks, provide in-game debugging.        | Leverage tools like Storybook or create custom in-browser editors that import game Blueprints directly. Hot-reloading via Vite. |
+### Blueprint Engine Pattern Mapping
+
+*("Blueprint" = the saved object graph you would call *Scene* in Godot or *Prefab* in Unity.)*
+
+| Classical feature          | Source engine                                   | Purpose                                                | R3F translation                                                                                            |
+| -------------------------- | ----------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| **Node Composition**       | Godot Nodes/Scenes & Unity GameObject/Component | Build behaviour by adding tiny parts, not subclassing. | Pure JSX. One file ≈ one Blueprint root; children are functional components that own **one** concern each. |
+| **Blueprint Variant**      | Inherited Scene / Prefab Variant                | Create tuned-offspring without copy–paste.             | `const Orc = Blueprint(Goblin, {color:"#0f0", hp:200})` – call a factory with override-props.              |
+| **Signals / UnityEvent**   | Godot Signals / UnityEvent                      | Decoupled callbacks.                                   | Global **mitt** emitter + `useSignal(event, cb)` hook.                                                     |
+| **Groups / Tags**          | Godot Groups                                    | Query bulk objects.                                    | `useTag("enemy")` registers; `getNodes("enemy")` returns refs for AI or cleanup.                           |
+| **Singleton / Autoload**   | Godot Autoload                                  | Always-reachable state/service.                        | React Context (`<GameStateProvider>`).                                                                     |
+| **Data Assets**            | Godot Resource & Unity ScriptableObject         | Designer-editable data.                                | Type-safe JSON (`items/sword.json`) validated by Zod, loaded with `useAsset`.                              |
+| **Addressables**           | Unity Addressables                              | Async load by ID, remote-ready.                        | Manifest `{id:url}` → `import(url)` + Three.js loader, cached via IndexedDB.                               |
+| **Input Action Map**       | Godot InputMap / Unity Input System             | Device-agnostic controls.                              | Central `useInput(actions)` hook maps keys+gamepads → "jump", "dash".                                      |
+| **Layer / Additive Scene** | Unity additive scene                            | Stream big worlds.                                     | Mount multiple R3F `Canvas` roots; lazy-load Blueprints per grid-chunk.                                    |
+| **ECS (optional)**         | Unity DOTS                                      | Millions of bullets.                                   | Plug bitecs; keep the rest declarative R3F.                                                                |
+| **Build Slices**           | Unity asmdef                                    | Fast iteration.                                        | Monorepo workspaces + Vite/Turbo incremental bundles.                                                      |
+| **Editor-time Tools**      | Godot `@tool` & Unity custom inspectors         | Automate tedious tasks.                                | Expose in-browser editors (Storybook or custom) that import same Blueprints; hot-reload via Vite.          |
+
+### Minimal API Implementation
+
+```ts
+// blueprint.ts
+import { ReactElement, cloneElement } from "react";
+type Blueprint<T extends object> = (props?: Partial<T>) => ReactElement;
+
+export function Blueprint<T extends object>(
+  Base: Blueprint<T> | ReactElement,
+  overrides: Partial<T> = {}
+): Blueprint<T> {
+  return (props = {}) =>
+    cloneElement(
+      typeof Base === "function" ? <Base /> : Base,
+      { ...overrides, ...props }
+    );
+}
+```
+
+```ts
+// signals.ts
+import mitt from 'mitt';
+const bus = mitt();
+export const emit = bus.emit;
+export function useSignal<T = any>(type: string, cb: (e: T) => void) {
+  React.useEffect(() => {
+    bus.on(type, cb);
+    return () => bus.off(type, cb);
+  }, [type, cb]);
+}
+```
+
+```ts
+// tags.ts
+const registry: Record<string, Set<THREE.Object3D>> = {};
+export function useTag(tag: string, ref: React.RefObject<THREE.Object3D>) {
+  React.useEffect(() => {
+    (registry[tag] ??= new Set()).add(ref.current!);
+    return () => registry[tag]?.delete(ref.current!);
+  }, [tag, ref]);
+}
+export const getNodes = (tag: string) => Array.from(registry[tag] ?? []);
+```
 
 ## Pattern Impact Ratings (1-5 stars)
 
