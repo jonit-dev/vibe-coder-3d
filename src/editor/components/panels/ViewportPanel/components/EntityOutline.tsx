@@ -15,6 +15,8 @@ interface IEntityOutlineProps {
 
 export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
   ({ selected, meshType, outlineGroupRef, outlineMeshRef, isPlaying, entityComponents = [] }) => {
+    // Note: entityComponents is available for future use but currently unused
+    void entityComponents;
     // Memoized geometry for outline
     const geometry = useMemo(() => {
       switch (meshType) {

@@ -46,8 +46,10 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 
     // Listen only to component events that affect rendering
     const unsubscribeComponentEvents = componentManager.addEventListener((event) => {
-      if (event.componentType === KnownComponentTypes.TRANSFORM) {
-        updateEntities();
+      if (event.type === 'component-added' || event.type === 'component-removed') {
+        if (event.componentId === KnownComponentTypes.TRANSFORM) {
+          updateEntities();
+        }
       }
     });
 

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
+import { initializeECS } from '@/core/lib/ecs/init';
 import Editor from '@/editor/Editor';
 import { MainScene } from '@/game/scenes/MainScene';
 
@@ -18,9 +19,17 @@ export default function App() {
     }
 
     try {
-      // The ECS system is already initialized via DI container in main.tsx
+      // Initialize the new component registry system
+      initializeECS();
       console.log('✅ ECS System initialized successfully');
       (window as any).__ecsSystemInitialized = true;
+
+      // Test the component system in development
+      if (import.meta.env.DEV) {
+        import('./core/lib/ecs/test-component-system').then(({ testComponentSystem }) => {
+          testComponentSystem();
+        });
+      }
     } catch (error) {
       console.error('❌ Failed to initialize ECS System:', error);
       console.error('Error details:', error);

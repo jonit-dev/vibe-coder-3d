@@ -1,5 +1,5 @@
-import { ComponentManager } from '@/core/lib/ecs/ComponentManager';
+import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 
 export const useComponentManager = () => {
-  return ComponentManager.getInstance();
+  return componentRegistry;
 };

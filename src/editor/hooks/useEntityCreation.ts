@@ -79,6 +79,8 @@ export const useEntityCreation = () => {
         meshId,
         materialId: 'default',
         enabled: true,
+        castShadows: true,
+        receiveShadows: true,
         material: {
           color,
           metalness: 0.0,

@@ -18,7 +18,7 @@ export const useEntityComponents = (entityId: number) => {
     ];
 
     const handleComponentChange = (event: any) => {
-      if (event.entityId === entityId && relevantComponents.includes(event.componentType)) {
+      if (event.entityId === entityId && relevantComponents.includes(event.componentId)) {
         // Verify entity still exists before triggering update
         const entityExists = componentManager.getComponent(entityId, KnownComponentTypes.TRANSFORM);
         if (entityExists) {

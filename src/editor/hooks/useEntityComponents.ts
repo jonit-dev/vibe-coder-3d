@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ComponentType, EntityId } from '@/core/lib/ecs/types';
-
-import { useComponentManager } from './useComponentManager';
 
 /**
  * Hook for managing components on an entity - enables customization of entity behavior
  */
 export const useEntityComponents = (entityId: EntityId | null) => {
-  const componentManager = useComponentManager();
+  const {
+    addComponent,
+    removeComponent,
+    hasComponent,
+    getComponentData,
+    updateComponent,
+    listEntityComponents,
+  } = useComponentRegistry();
+
   const [components, setComponents] = useState<IComponent<any>[]>([]);
   const [updateTrigger, setUpdateTrigger] = useState(0);
 
@@ -21,68 +28,82 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     }
 
     const updateComponents = () => {
-      const entityComponents = componentManager.getComponentsForEntity(entityId);
-      setComponents(entityComponents);
+      const entityComponents = listEntityComponents(entityId);
+      // Convert to old format for compatibility
+      const formattedComponents = entityComponents.map((componentId) => {
+        const data = getComponentData(entityId, componentId);
+        return {
+          entityId,
+          type: componentId,
+          data,
+        };
+      });
+      setComponents(formattedComponents);
     };
 
     updateComponents();
 
-    // Listen for component events to trigger reactive updates
-    const removeEventListener = componentManager.addEventListener((event) => {
-      // Only update if the event affects our current entity
-      if (event.entityId === entityId) {
-        // Removed debug logging to reduce console spam during drag
-        updateComponents();
-        setUpdateTrigger((prev) => prev + 1); // Force re-render for dependent computations
-      }
-    });
+    // Set up a periodic refresh for now (can be optimized later with proper events)
+    const interval = setInterval(updateComponents, 100);
+    return () => clearInterval(interval);
+  }, [entityId, getComponentData, listEntityComponents]);
 
-    return removeEventListener;
-  }, [entityId, componentManager]);
-
-  const addComponent = useCallback(
+  const addComponentWrapper = useCallback(
     <TData>(type: ComponentType, data: TData): IComponent<TData> | null => {
       if (entityId === null) return null;
 
-      return componentManager.addComponent(entityId, type, data);
+      const success = addComponent(entityId, type, data);
+      if (success) {
+        setUpdateTrigger((prev) => prev + 1);
+        return { entityId, type, data };
+      }
+      return null;
     },
-    [entityId, componentManager],
+    [entityId, addComponent],
   );
 
-  const updateComponent = useCallback(
+  const updateComponentWrapper = useCallback(
     <TData>(type: ComponentType, data: Partial<TData>): boolean => {
       if (entityId === null) return false;
 
-      return componentManager.updateComponent(entityId, type, data);
+      const success = updateComponent(entityId, type, data);
+      if (success) {
+        setUpdateTrigger((prev) => prev + 1);
+      }
+      return success;
     },
-    [entityId, componentManager],
+    [entityId, updateComponent],
   );
 
-  const removeComponent = useCallback(
+  const removeComponentWrapper = useCallback(
     (type: ComponentType): boolean => {
       if (entityId === null) return false;
 
-      return componentManager.removeComponent(entityId, type);
+      const success = removeComponent(entityId, type);
+      if (success) {
+        setUpdateTrigger((prev) => prev + 1);
+      }
+      return success;
     },
-    [entityId, componentManager],
+    [entityId, removeComponent],
   );
 
-  const hasComponent = useCallback(
+  const hasComponentWrapper = useCallback(
     (type: ComponentType): boolean => {
       if (entityId === null) return false;
-
-      return componentManager.hasComponent(entityId, type);
+      return hasComponent(entityId, type);
     },
-    [entityId, componentManager, updateTrigger], // Include updateTrigger to invalidate memoization
+    [entityId, hasComponent, updateTrigger],
   );
 
   const getComponent = useCallback(
     <TData>(type: ComponentType): IComponent<TData> | undefined => {
       if (entityId === null) return undefined;
 
-      return componentManager.getComponent<TData>(entityId, type);
+      const data = getComponentData<TData>(entityId, type);
+      return data ? { entityId, type, data } : undefined;
     },
-    [entityId, componentManager, updateTrigger], // Include updateTrigger to invalidate memoization
+    [entityId, getComponentData, updateTrigger],
   );
 
   // Convenience computed values based on components array (safe for render)
@@ -111,39 +132,34 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     [components],
   );
 
+  // Legacy getter methods for compatibility
   const getTransform = useCallback(() => {
-    if (entityId === null) return undefined;
-    return componentManager.getTransformComponent(entityId);
-  }, [entityId, componentManager, updateTrigger]);
+    return getComponent(KnownComponentTypes.TRANSFORM);
+  }, [getComponent]);
 
   const getMeshRenderer = useCallback(() => {
-    if (entityId === null) return undefined;
-    return componentManager.getMeshRendererComponent(entityId);
-  }, [entityId, componentManager, updateTrigger]);
+    return getComponent(KnownComponentTypes.MESH_RENDERER);
+  }, [getComponent]);
 
   const getRigidBody = useCallback(() => {
-    if (entityId === null) return undefined;
-    return componentManager.getRigidBodyComponent(entityId);
-  }, [entityId, componentManager, updateTrigger]);
+    return getComponent(KnownComponentTypes.RIGID_BODY);
+  }, [getComponent]);
 
   const getMeshCollider = useCallback(() => {
-    if (entityId === null) return undefined;
-    return componentManager.getMeshColliderComponent(entityId);
-  }, [entityId, componentManager, updateTrigger]);
+    return getComponent(KnownComponentTypes.MESH_COLLIDER);
+  }, [getComponent]);
 
   const getCamera = useCallback(() => {
-    if (entityId === null) return undefined;
-    return componentManager.getCameraComponent(entityId);
-  }, [entityId, componentManager, updateTrigger]);
+    return getComponent(KnownComponentTypes.CAMERA);
+  }, [getComponent]);
 
   return {
     components,
-    addComponent,
-    updateComponent,
-    removeComponent,
-    hasComponent,
+    addComponent: addComponentWrapper,
+    updateComponent: updateComponentWrapper,
+    removeComponent: removeComponentWrapper,
+    hasComponent: hasComponentWrapper,
     getComponent,
-    // Convenience accessors
     hasTransform,
     hasMeshRenderer,
     hasRigidBody,

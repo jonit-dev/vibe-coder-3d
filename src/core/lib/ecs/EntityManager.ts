@@ -1,6 +1,6 @@
 import { addComponent, addEntity, hasComponent, removeEntity } from 'bitecs';
 
-import { EntityMeta, Transform } from './BitECSComponents';
+import { EntityMeta } from './BitECSComponents';
 import { getEntityName, getEntityParent, setEntityMeta } from './DataConversion';
 import { IEntity } from './IEntity';
 import { ECSWorld } from './World';
@@ -80,23 +80,14 @@ export class EntityManager {
   createEntity(name: string, parentId?: EntityId): IEntity {
     const eid = addEntity(this.world);
 
-    // Add required components
+    // Add required components (only EntityMeta - Transform will be added by ComponentRegistry)
     addComponent(this.world, EntityMeta, eid);
-    addComponent(this.world, Transform, eid);
 
     // Set entity metadata
     setEntityMeta(eid, name, parentId);
 
-    // Initialize transform with default values
-    Transform.positionX[eid] = 0;
-    Transform.positionY[eid] = 0;
-    Transform.positionZ[eid] = 0;
-    Transform.rotationX[eid] = 0;
-    Transform.rotationY[eid] = 0;
-    Transform.rotationZ[eid] = 0;
-    Transform.scaleX[eid] = 1;
-    Transform.scaleY[eid] = 1;
-    Transform.scaleZ[eid] = 1;
+    // Note: Transform component is now handled by the new ComponentRegistry system
+    // The useEntityCreation hook will add it via componentManager.addComponent()
 
     const entity = this.buildEntityFromEid(eid)!;
     this.entityCache.set(eid, entity);

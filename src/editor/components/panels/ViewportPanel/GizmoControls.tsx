@@ -2,7 +2,7 @@ import { TransformControls } from '@react-three/drei';
 import React, { MutableRefObject, useCallback, useRef } from 'react';
 import { Object3D } from 'three';
 
-import { ComponentManager } from '@/core/lib/ecs/ComponentManager';
+import { ComponentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
@@ -22,7 +22,7 @@ function updateTransformThroughComponentManager(
   mesh: Object3D,
   mode: GizmoMode,
   entityId: number,
-  componentManager: ComponentManager,
+  componentManager: ComponentRegistry,
   onTransformChange?: (values: [number, number, number]) => void,
 ) {
   // Get current transform data from ComponentManager
