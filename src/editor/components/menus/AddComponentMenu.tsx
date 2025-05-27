@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FiBox,
   FiCamera,
@@ -209,11 +209,41 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     };
   };
 
-  // Get components for this entity using new ECS system
-  const entityComponents = useMemo(() => {
-    if (!isValidEntityId(entityId)) return [];
-    return componentManager.getComponentsForEntity(entityId);
+  // Get components for this entity using new ECS system with reactive updates
+  const [entityComponents, setEntityComponents] = useState<
+    Array<{ entityId: number; type: string; data: any }>
+  >([]);
+
+  // Update components when entity changes or components are modified
+  const updateEntityComponents = useCallback(() => {
+    if (!isValidEntityId(entityId)) {
+      setEntityComponents([]);
+      return;
+    }
+    const components = componentManager.getComponentsForEntity(entityId);
+    setEntityComponents(components);
   }, [entityId, componentManager]);
+
+  // Listen for component events to update reactively
+  useEffect(() => {
+    updateEntityComponents();
+  }, [updateEntityComponents]);
+
+  // Listen for component events using the new event system
+  useEffect(() => {
+    if (!isValidEntityId(entityId)) return;
+
+    const handleComponentEvent = (event: any) => {
+      if (event.entityId === entityId) {
+        updateEntityComponents();
+      }
+    };
+
+    // Listen to component events from the ComponentManager
+    const unsubscribe = componentManager.addEventListener(handleComponentEvent);
+
+    return unsubscribe;
+  }, [entityId, componentManager, updateEntityComponents]);
 
   // Get available components from KnownComponentTypes
   const availableComponents = useMemo(() => {
@@ -644,11 +674,41 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
     };
   };
 
-  // Get components for this entity using new ECS system
-  const entityComponents = useMemo(() => {
-    if (!isValidEntityId(entityId)) return [];
-    return componentManager.getComponentsForEntity(entityId);
+  // Get components for this entity using new ECS system with reactive updates
+  const [entityComponents, setEntityComponents] = useState<
+    Array<{ entityId: number; type: string; data: any }>
+  >([]);
+
+  // Update components when entity changes or components are modified
+  const updateEntityComponents = useCallback(() => {
+    if (!isValidEntityId(entityId)) {
+      setEntityComponents([]);
+      return;
+    }
+    const components = componentManager.getComponentsForEntity(entityId);
+    setEntityComponents(components);
   }, [entityId, componentManager]);
+
+  // Listen for component events to update reactively
+  useEffect(() => {
+    updateEntityComponents();
+  }, [updateEntityComponents]);
+
+  // Listen for component events using the new event system
+  useEffect(() => {
+    if (!isValidEntityId(entityId)) return;
+
+    const handleComponentEvent = (event: any) => {
+      if (event.entityId === entityId) {
+        updateEntityComponents();
+      }
+    };
+
+    // Listen to component events from the ComponentManager
+    const unsubscribe = componentManager.addEventListener(handleComponentEvent);
+
+    return unsubscribe;
+  }, [entityId, componentManager, updateEntityComponents]);
 
   // Get available components and packs
   const availableComponents = useMemo(() => {

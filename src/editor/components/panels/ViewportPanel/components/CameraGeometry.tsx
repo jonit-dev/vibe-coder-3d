@@ -140,7 +140,7 @@ export const CameraGeometry: React.FC<ICameraGeometryProps> = ({
 
       {/* Camera Frustum - Only show in editor mode, not play mode */}
       {showFrustum && !isPlaying && (
-        <lineSegments>
+        <lineSegments raycast={() => null}>
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" args={[frustumVertices, 3]} />
           </bufferGeometry>
