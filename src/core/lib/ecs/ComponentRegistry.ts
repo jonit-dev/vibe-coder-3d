@@ -519,7 +519,7 @@ export function combineRenderingContributions(
     visible: true,
     castShadow: true,
     receiveShadow: true,
-    meshType: 'Cube',
+    meshType: null as string | null, // No default mesh type - only show mesh if explicitly set
     material: {
       color: '#3399ff',
       metalness: 0,

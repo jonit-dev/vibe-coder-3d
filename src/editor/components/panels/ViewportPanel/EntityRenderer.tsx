@@ -61,7 +61,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
 
     const { colliderType, colliderConfig, hasCustomColliders } = useEntityColliders({
       meshCollider,
-      meshType,
+      meshType: meshType || 'unknown', // Provide fallback to avoid null issues
     });
 
     const { outlineGroupRef, outlineMeshRef, handleMeshClick } = useEntitySelection({
@@ -69,9 +69,9 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       selected,
       meshRef,
       isTransforming: isTransformingLocal,
-      position,
-      rotationRadians,
-      scale,
+      position: position || [0, 0, 0], // Provide fallback to avoid null issues
+      rotationRadians: rotationRadians || [0, 0, 0],
+      scale: scale || [1, 1, 1],
     });
 
     // Early return AFTER all hooks - don't render if entity doesn't exist
@@ -79,11 +79,15 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       return null;
     }
 
-    // Defensive checks to prevent crashes
-    if (!meshRef || !position || !scale || !rotationRadians) {
-      console.warn(`[EntityRenderer] Missing required data for entity ${entityId}`);
+    // CRITICAL: Block all rendering until all core data is ready (especially for cameras)
+    if (!meshRef || !position || !scale || !rotationRadians || !meshType) {
       return null;
     }
+
+    // After null checks, we can safely assert types
+    const safePosition = position as [number, number, number];
+    const safeScale = scale as [number, number, number];
+    const safeRotationRadians = rotationRadians as [number, number, number];
 
     // Create the mesh content
     const meshContent = (
@@ -96,6 +100,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         onMeshClick={handleMeshClick}
         isPlaying={isPlaying}
         entityComponents={entityComponents}
+        position={safePosition}
       />
     );
 

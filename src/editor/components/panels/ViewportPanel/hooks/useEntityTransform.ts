@@ -19,13 +19,8 @@ export const useEntityTransform = ({
   // Extract transform data with defaults
   const transformData = useMemo(() => {
     if (!transform?.data) {
-      return {
-        position: [0, 0, 0] as [number, number, number],
-        rotation: [0, 0, 0] as [number, number, number],
-        scale: [1, 1, 1] as [number, number, number],
-      };
+      return null; // Don't provide any transform data until it's properly loaded
     }
-
     return {
       position: transform.data.position || ([0, 0, 0] as [number, number, number]),
       rotation: transform.data.rotation || ([0, 0, 0] as [number, number, number]),
@@ -34,18 +29,18 @@ export const useEntityTransform = ({
   }, [transform?.data]);
 
   // Convert rotation to radians for physics
-  const rotationRadians = useMemo(
-    (): [number, number, number] => [
+  const rotationRadians = useMemo((): [number, number, number] | null => {
+    if (!transformData) return null;
+    return [
       transformData.rotation[0] * (Math.PI / 180),
       transformData.rotation[1] * (Math.PI / 180),
       transformData.rotation[2] * (Math.PI / 180),
-    ],
-    [transformData.rotation],
-  );
+    ];
+  }, [transformData]);
 
   // Sync mesh transform from ComponentManager (single source of truth)
   useEffect(() => {
-    if (meshRef.current && !isTransforming && !isPlaying) {
+    if (meshRef.current && !isTransforming && !isPlaying && transformData) {
       const { position, rotation, scale } = transformData;
 
       meshRef.current.position.set(position[0], position[1], position[2]);
@@ -60,9 +55,9 @@ export const useEntityTransform = ({
 
   return {
     meshRef,
-    position: transformData.position,
-    rotation: transformData.rotation,
-    scale: transformData.scale,
+    position: transformData?.position || null,
+    rotation: transformData?.rotation || null,
+    scale: transformData?.scale || null,
     rotationRadians,
   };
 };

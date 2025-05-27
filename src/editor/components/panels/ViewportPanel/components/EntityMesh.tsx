@@ -5,13 +5,14 @@ import { CameraGeometry } from './CameraGeometry';
 
 interface IEntityMeshProps {
   meshRef: React.RefObject<Mesh | null>;
-  meshType: string;
+  meshType: string | null;
   renderingContributions: any;
   entityColor: string;
   entityId: number;
   onMeshClick: (e: any) => void;
   isPlaying?: boolean;
   entityComponents?: Array<{ type: string; data: any }>;
+  position?: [number, number, number] | null;
 }
 
 export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
@@ -24,7 +25,13 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     onMeshClick,
     isPlaying = false,
     entityComponents = [],
+    position = null,
   }) => {
+    // Don't render anything if no mesh type is set
+    if (!meshType) {
+      return null;
+    }
+
     // Memoized geometry/content selection based on mesh type
     const geometryContent = useMemo(() => {
       switch (meshType) {

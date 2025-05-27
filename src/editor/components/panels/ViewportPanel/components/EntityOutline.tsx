@@ -2,11 +2,9 @@ import { Edges } from '@react-three/drei';
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 
-import { CameraGeometry } from './CameraGeometry';
-
 interface IEntityOutlineProps {
   selected: boolean;
-  meshType: string;
+  meshType: string | null;
   outlineGroupRef: React.RefObject<THREE.Group | null>;
   outlineMeshRef: React.RefObject<THREE.Mesh | null>;
   isPlaying: boolean;
@@ -17,6 +15,10 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
   ({ selected, meshType, outlineGroupRef, outlineMeshRef, isPlaying, entityComponents = [] }) => {
     // Note: entityComponents is available for future use but currently unused
     void entityComponents;
+
+    // Don't render at all when not selected or no mesh type
+    if (!selected || !meshType) return null;
+
     // Memoized geometry for outline
     const geometry = useMemo(() => {
       switch (meshType) {
@@ -37,22 +39,12 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
       }
     }, [meshType]);
 
-    // Don't render at all when not selected
-    if (!selected) return null;
-
     // Render but make invisible when playing (so it can still follow the cube)
     const shouldBeVisible = !isPlaying;
 
-    // Special handling for camera entities
+    // Special handling for camera entities - no outline for cameras
     if (meshType === 'Camera') {
-      return (
-        <group ref={outlineGroupRef}>
-          <group ref={outlineMeshRef as any} visible={shouldBeVisible}>
-            <CameraGeometry showFrustum={false} isPlaying={isPlaying} />
-            <Edges color="#ff6b35" lineWidth={2} />
-          </group>
-        </group>
-      );
+      return null; // Cameras don't need selection outlines
     }
 
     return (

@@ -11,7 +11,6 @@ interface IUseEntityMeshProps {
 }
 
 export const useEntityMesh = ({ entityComponents, isPlaying }: IUseEntityMeshProps) => {
-  const [meshType, setMeshType] = useState<string>('Cube');
   const [entityColor, setEntityColor] = useState<string>('#3388ff');
 
   // Combine contributions from all components
@@ -23,11 +22,11 @@ export const useEntityMesh = ({ entityComponents, isPlaying }: IUseEntityMeshPro
     return combinePhysicsContributions(entityComponents);
   }, [entityComponents]);
 
-  // Update mesh type and color from rendering contributions
+  // Use meshType directly from renderingContributions (no state delay)
+  const meshType = renderingContributions.meshType;
+
+  // Update color from rendering contributions
   useEffect(() => {
-    if (renderingContributions.meshType) {
-      setMeshType(renderingContributions.meshType);
-    }
     if (renderingContributions.material?.color) {
       setEntityColor(renderingContributions.material.color);
     }
