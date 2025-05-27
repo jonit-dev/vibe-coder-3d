@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { isComponentRemovable } from '@core/lib/ecs/dynamicComponentRegistry';
 import { RigidBodySection } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
 
 interface IRigidBodyAdapterProps {
@@ -68,13 +68,18 @@ export const RigidBodyAdapter: React.FC<IRigidBodyAdapterProps> = ({
       }
     : null;
 
+  const rigidBodyComponentId = 'RigidBody';
+  const meshColliderComponentId = 'MeshCollider';
+
   const handleRigidBodyUpdate = (newData: any) => {
     if (newData === null) {
       // Remove rigid body component
-      removeComponent(KnownComponentTypes.RIGID_BODY);
+      if (isComponentRemovable(rigidBodyComponentId)) {
+        removeComponent(rigidBodyComponentId);
+      }
     } else {
       // Update rigid body component
-      updateComponent(KnownComponentTypes.RIGID_BODY, newData);
+      updateComponent(rigidBodyComponentId, newData);
     }
   };
 
@@ -82,15 +87,19 @@ export const RigidBodyAdapter: React.FC<IRigidBodyAdapterProps> = ({
     console.log('[RigidBodyAdapter] Mesh collider update:', { newData, hasMeshCollider });
     if (newData === null) {
       // Remove mesh collider component
-      removeComponent(KnownComponentTypes.MESH_COLLIDER);
+      if (isComponentRemovable(meshColliderComponentId)) {
+        removeComponent(meshColliderComponentId);
+      }
     } else {
       // Add or update mesh collider component
       if (hasMeshCollider) {
         console.log('[RigidBodyAdapter] Updating existing mesh collider');
-        updateComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+        updateComponent(meshColliderComponentId, newData);
       } else {
         console.log('[RigidBodyAdapter] Adding new mesh collider');
-        addComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+        // Default data for new MeshCollider should be handled by AddComponentMenu or a similar mechanism
+        // For now, assuming newData contains appropriate default values if it's a new component.
+        addComponent(meshColliderComponentId, newData);
       }
     }
   };

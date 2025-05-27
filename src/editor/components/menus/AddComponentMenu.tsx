@@ -1,11 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { FiBox, FiEye, FiMove, FiPackage, FiSearch, FiShield, FiX, FiZap } from 'react-icons/fi';
-import { TbCube } from 'react-icons/tb';
+import { FiBox, FiPackage, FiSearch, FiX } from 'react-icons/fi'; // Removed unused icons FiEye, FiMove, FiShield, FiZap, TbCube
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { isValidEntityId } from '@/core/lib/ecs/utils';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { useEntityData } from '@/editor/hooks/useEntityData';
+// import { useEntityData } from '@/editor/hooks/useEntityData'; // Not used after refactor
+import {
+  getAllComponentDefinitions,
+  getComponentDefaultData,
+  AUTO_COMPONENT_PACKS,
+  getComponentsByCategory as getRegistryComponentsByCategory, // Renamed to avoid conflict
+} from '@core/lib/ecs/dynamicComponentRegistry';
+import { ComponentManifest } from '@core/components/types'; // For typing
+import { IComponentPack } from '@core/lib/ecs/types'; // Assuming IComponentPack is here
 
 /**
  * Add Component Menu System
@@ -59,95 +65,8 @@ interface IAddComponentMenuProps {
   onClose: () => void;
 }
 
-// Component definitions with icons and metadata
-interface IComponentDefinition {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  category: string;
-}
-
-// Component pack definitions
-interface IComponentPack {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  components: string[];
-  category: string;
-}
-
-const COMPONENT_DEFINITIONS: IComponentDefinition[] = [
-  {
-    id: KnownComponentTypes.TRANSFORM,
-    name: 'Transform',
-    description: 'Position, rotation, and scale',
-    icon: <FiMove className="w-4 h-4" />,
-    category: 'Core',
-  },
-  {
-    id: KnownComponentTypes.MESH_RENDERER,
-    name: 'Mesh Renderer',
-    description: 'Renders 3D mesh geometry',
-    icon: <FiEye className="w-4 h-4" />,
-    category: 'Rendering',
-  },
-  {
-    id: KnownComponentTypes.RIGID_BODY,
-    name: 'Rigid Body',
-    description: 'Physics simulation body',
-    icon: <FiZap className="w-4 h-4" />,
-    category: 'Physics',
-  },
-  {
-    id: KnownComponentTypes.MESH_COLLIDER,
-    name: 'Mesh Collider',
-    description: 'Physics collision detection',
-    icon: <FiShield className="w-4 h-4" />,
-    category: 'Physics',
-  },
-];
-
-const COMPONENT_PACKS: IComponentPack[] = [
-  {
-    id: 'physics-basics',
-    name: 'Physics Basics',
-    description: 'Rigid body + mesh collider for basic physics',
-    icon: <FiZap className="w-4 h-4" />,
-    components: [KnownComponentTypes.RIGID_BODY, KnownComponentTypes.MESH_COLLIDER],
-    category: 'Physics',
-  },
-  {
-    id: 'rendering-basics',
-    name: 'Rendering Basics',
-    description: 'Complete rendering setup',
-    icon: <TbCube className="w-4 h-4" />,
-    components: [KnownComponentTypes.MESH_RENDERER],
-    category: 'Rendering',
-  },
-  {
-    id: 'complete-entity',
-    name: 'Complete Entity',
-    description: 'Transform + rendering for a complete visible entity',
-    icon: <FiPackage className="w-4 h-4" />,
-    components: [KnownComponentTypes.TRANSFORM, KnownComponentTypes.MESH_RENDERER],
-    category: 'Core',
-  },
-  {
-    id: 'physics-entity',
-    name: 'Physics Entity',
-    description: 'Complete physics-enabled entity with rendering',
-    icon: <FiBox className="w-4 h-4" />,
-    components: [
-      KnownComponentTypes.TRANSFORM,
-      KnownComponentTypes.MESH_RENDERER,
-      KnownComponentTypes.RIGID_BODY,
-      KnownComponentTypes.MESH_COLLIDER,
-    ],
-    category: 'Physics',
-  },
-];
+// Removed local IComponentDefinition and IComponentPack, will use ComponentManifest from core types
+// Removed local COMPONENT_DEFINITIONS and COMPONENT_PACKS
 
 export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
   entityId,
@@ -155,63 +74,33 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
   onClose,
 }) => {
   const componentManager = useComponentManager();
-  const { getComponentData } = useEntityData();
+  // const { getComponentData } = useEntityData(); // Not used after refactor
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState<'components' | 'packs'>('components');
 
-  // Helper function to get default material data
-  const getDefaultMaterialData = (entityId: number) => {
-    const materialData = getComponentData(entityId, 'material') as any;
-    let color = '#3399ff'; // Default blue like old ECS system
+  // Removed local getDefaultMaterialData, default data now comes from manifest.getDefaultData()
 
-    if (materialData?.color) {
-      if (Array.isArray(materialData.color)) {
-        // Convert RGB array to hex
-        const [r, g, b] = materialData.color;
-        color = `#${Math.round(r * 255)
-          .toString(16)
-          .padStart(2, '0')}${Math.round(g * 255)
-          .toString(16)
-          .padStart(2, '0')}${Math.round(b * 255)
-          .toString(16)
-          .padStart(2, '0')}`;
-      } else if (typeof materialData.color === 'string') {
-        color = materialData.color;
-      }
-    }
-
-    return {
-      color,
-      metalness: 0.0,
-      roughness: 0.5,
-      emissive: '#000000',
-      emissiveIntensity: 0.0,
-    };
-  };
-
-  // Get components for this entity using new ECS system
   const entityComponents = useMemo(() => {
     if (!isValidEntityId(entityId)) return [];
     return componentManager.getComponentsForEntity(entityId);
   }, [entityId, componentManager]);
 
-  // Get available components from KnownComponentTypes
+  const allManifests = useMemo(() => getAllComponentDefinitions(), []);
+  const allPacks = useMemo(() => AUTO_COMPONENT_PACKS as IComponentPack[], []); // Cast if necessary, ensure AUTO_COMPONENT_PACKS matches IComponentPack structure
+
   const availableComponents = useMemo(() => {
     if (!isValidEntityId(entityId)) return [];
-    const existingTypes = entityComponents.map((c) => c.type);
+    const existingTypes = new Set(entityComponents.map((c) => c.type));
+    return allManifests.filter((manifest) => !existingTypes.has(manifest.id));
+  }, [entityId, entityComponents, allManifests]);
 
-    return COMPONENT_DEFINITIONS.filter((comp) => !existingTypes.includes(comp.id));
-  }, [entityId, entityComponents]);
-
-  // Get available component packs
   const availablePacks = useMemo(() => {
     if (!isValidEntityId(entityId)) return [];
-    const existingTypes = entityComponents.map((c) => c.type);
-
-    return COMPONENT_PACKS.filter((pack) =>
-      pack.components.some((compId) => !existingTypes.includes(compId)),
+    const existingTypes = new Set(entityComponents.map((c) => c.type));
+    return allPacks.filter((pack) =>
+      pack.components.some((compId) => !existingTypes.has(compId)),
     );
-  }, [entityId, entityComponents]);
+  }, [entityId, entityComponents, allPacks]);
 
   // Filter by search term
   const filteredComponents = useMemo(() => {
@@ -238,12 +127,12 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
 
   // Group components by category
   const componentsByCategory = useMemo(() => {
-    const categories: Record<string, IComponentDefinition[]> = {};
-    filteredComponents.forEach((comp) => {
-      if (!categories[comp.category]) {
-        categories[comp.category] = [];
+    const categories: Record<string, ComponentManifest<any>[]> = {};
+    filteredComponents.forEach((manifest) => {
+      if (!categories[manifest.category]) {
+        categories[manifest.category] = [];
       }
-      categories[comp.category].push(comp);
+      categories[manifest.category].push(manifest);
     });
     return categories;
   }, [filteredComponents]);
@@ -259,63 +148,17 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     return categories;
   }, [filteredPacks]);
 
-  const handleAddComponent = (componentType: string) => {
+  const handleAddComponent = (componentId: string) => {
     if (!isValidEntityId(entityId)) return;
 
-    // Add component with default data based on type
-    let defaultData = {};
-    switch (componentType) {
-      case KnownComponentTypes.TRANSFORM:
-        defaultData = { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
-        break;
-      case KnownComponentTypes.MESH_RENDERER: {
-        defaultData = {
-          meshId: 'cube',
-          materialId: 'default',
-          enabled: true,
-          material: getDefaultMaterialData(entityId),
-        };
-        break;
-      }
-      case KnownComponentTypes.RIGID_BODY:
-        defaultData = {
-          type: 'dynamic',
-          mass: 1,
-          enabled: true,
-          bodyType: 'dynamic',
-          gravityScale: 1,
-          canSleep: true,
-          material: {
-            friction: 0.7,
-            restitution: 0.3,
-            density: 1,
-          },
-        };
-        break;
-      case KnownComponentTypes.MESH_COLLIDER:
-        defaultData = {
-          enabled: true,
-          colliderType: 'box',
-          isTrigger: false,
-          center: [0, 0, 0],
-          size: {
-            width: 1,
-            height: 1,
-            depth: 1,
-            radius: 0.5,
-            capsuleRadius: 0.5,
-            capsuleHeight: 2,
-          },
-          physicsMaterial: {
-            friction: 0.7,
-            restitution: 0.3,
-            density: 1,
-          },
-        };
-        break;
+    const defaultData = getComponentDefaultData(componentId);
+    if (Object.keys(defaultData).length === 0 && !allManifests.find(m => m.id === componentId)?.getDefaultData) {
+        // This check is primarily for components that might not yet be refactored and are not in AUTO_COMPONENT_REGISTRY
+        // or if getComponentDefaultData returned empty due to some issue.
+        console.warn(`[AddComponentMenu] Could not get default data for component ID: ${componentId}. Adding with empty data.`);
     }
 
-    componentManager.addComponent(entityId, componentType, defaultData);
+    componentManager.addComponent(entityId, componentId, defaultData);
     onClose();
   };
 
@@ -341,15 +184,15 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     return (
       <div className="flex items-center gap-1 flex-wrap">
         {visibleComponents.map((component) => {
-          const definition = COMPONENT_DEFINITIONS.find((def) => def.id === component.type);
+          const manifest = allManifests.find((m) => m.id === component.type);
           return (
             <div
               key={component.type}
               className="flex items-center gap-1 px-2 py-1 bg-gray-700/50 border border-gray-600/50 rounded text-xs"
-              title={definition?.description || component.type}
+              title={manifest?.description || component.type}
             >
-              {definition?.icon || <FiBox className="w-3 h-3" />}
-              <span className="text-gray-300">{definition?.name || component.type}</span>
+              {manifest?.icon || <FiBox className="w-3 h-3" />}
+              <span className="text-gray-300">{manifest?.name || component.type}</span>
             </div>
           );
         })}
@@ -359,8 +202,8 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
             title={`+${hiddenCount} more: ${entityComponents
               .slice(maxVisible)
               .map((c) => {
-                const def = COMPONENT_DEFINITIONS.find((d) => d.id === c.type);
-                return def?.name || c.type;
+                const manifest = allManifests.find((m) => m.id === c.type);
+                return manifest?.name || c.type;
               })
               .join(', ')}`}
           >
@@ -462,14 +305,15 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
                       >
                         <div className="flex items-center gap-3">
                           <div className="flex-shrink-0 text-cyan-400 group-hover:text-cyan-300 transition-colors">
-                            {component.icon}
+                            {/* Ensure manifest.icon is a ReactNode. If it's a string or path, handle appropriately */}
+                            {typeof component.icon === 'function' ? component.icon({}) : component.icon}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-white group-hover:text-gray-100">
                               {component.name}
                             </div>
                             <div className="text-xs text-gray-400 group-hover:text-gray-300">
-                              {component.description}
+                              {component.description} {/* Ensure description is a string */}
                             </div>
                           </div>
                         </div>
@@ -502,25 +346,26 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex-shrink-0 text-purple-400 group-hover:text-purple-300 transition-colors">
-                          {pack.icon}
+                             {/* Ensure pack.icon is a ReactNode */}
+                             {typeof pack.icon === 'function' ? pack.icon({}) : pack.icon}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-white group-hover:text-gray-100">
                             {pack.name}
                           </div>
                           <div className="text-xs text-gray-400 group-hover:text-gray-300 mb-1">
-                            {pack.description}
+                              {pack.description} {/* Ensure description is a string */}
                           </div>
                           <div className="flex items-center gap-1 flex-wrap">
                             {pack.components.map((compId) => {
-                              const def = COMPONENT_DEFINITIONS.find((d) => d.id === compId);
+                                const manifest = allManifests.find((m) => m.id === compId);
                               return (
                                 <span
                                   key={compId}
                                   className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-black/20 border border-gray-500/30 rounded text-xs text-gray-300"
                                 >
-                                  {def?.icon || <FiBox className="w-3 h-3" />}
-                                  {def?.name || compId}
+                                    {manifest?.icon || <FiBox className="w-3 h-3" />}
+                                    {manifest?.name || compId}
                                 </span>
                               );
                             })}
@@ -574,132 +419,54 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
   onClose,
 }) => {
   const componentManager = useComponentManager();
-  const { getComponentData } = useEntityData();
+  // const { getComponentData } = useEntityData(); // Not used
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Helper function to get default material data
-  const getDefaultMaterialData = (entityId: number) => {
-    const materialData = getComponentData(entityId, 'material') as any;
-    let color = '#3399ff'; // Default blue like old ECS system
+  // Removed local getDefaultMaterialData
 
-    if (materialData?.color) {
-      if (Array.isArray(materialData.color)) {
-        // Convert RGB array to hex
-        const [r, g, b] = materialData.color;
-        color = `#${Math.round(r * 255)
-          .toString(16)
-          .padStart(2, '0')}${Math.round(g * 255)
-          .toString(16)
-          .padStart(2, '0')}${Math.round(b * 255)
-          .toString(16)
-          .padStart(2, '0')}`;
-      } else if (typeof materialData.color === 'string') {
-        color = materialData.color;
-      }
-    }
-
-    return {
-      color,
-      metalness: 0.0,
-      roughness: 0.5,
-      emissive: '#000000',
-      emissiveIntensity: 0.0,
-    };
-  };
-
-  // Get components for this entity using new ECS system
   const entityComponents = useMemo(() => {
     if (!isValidEntityId(entityId)) return [];
     return componentManager.getComponentsForEntity(entityId);
   }, [entityId, componentManager]);
 
-  // Get available components and packs
+  const allManifests = useMemo(() => getAllComponentDefinitions(), []);
+  const allPacks = useMemo(() => AUTO_COMPONENT_PACKS as IComponentPack[], []);
+
   const availableComponents = useMemo(() => {
     if (!isValidEntityId(entityId)) return [];
-    const existingTypes = entityComponents.map((c) => c.type);
-    return COMPONENT_DEFINITIONS.filter((comp) => !existingTypes.includes(comp.id));
-  }, [entityId, entityComponents]);
+    const existingTypes = new Set(entityComponents.map((c) => c.type));
+    return allManifests.filter((manifest) => !existingTypes.has(manifest.id));
+  }, [entityId, entityComponents, allManifests]);
 
   const availablePacks = useMemo(() => {
     if (!isValidEntityId(entityId)) return [];
-    const existingTypes = entityComponents.map((c) => c.type);
-    return COMPONENT_PACKS.filter((pack) =>
-      pack.components.some((compId) => !existingTypes.includes(compId)),
+    const existingTypes = new Set(entityComponents.map((c) => c.type));
+    return allPacks.filter((pack) =>
+      pack.components.some((compId) => !existingTypes.has(compId)),
     );
-  }, [entityId, entityComponents]);
+  }, [entityId, entityComponents, allPacks]);
 
-  // Filter by search term - combine components and packs
   const filteredItems = useMemo(() => {
     const term = searchTerm.toLowerCase();
     const components = availableComponents.filter(
-      (comp) =>
-        comp.name.toLowerCase().includes(term) || comp.description.toLowerCase().includes(term),
+      (manifest) =>
+        manifest.name.toLowerCase().includes(term) || manifest.description.toLowerCase().includes(term),
     );
     const packs = availablePacks.filter(
       (pack) =>
         pack.name.toLowerCase().includes(term) || pack.description.toLowerCase().includes(term),
     );
-
-    return [...packs, ...components]; // Show packs first
+    // Type assertion to treat ComponentManifest and IComponentPack as a common type for the list
+    return [...packs, ...components] as (ComponentManifest<any> | IComponentPack)[];
   }, [availableComponents, availablePacks, searchTerm]);
 
-  const handleAddComponent = (componentType: string) => {
+  const handleAddComponent = (componentId: string) => {
     if (!isValidEntityId(entityId)) return;
-
-    // Add component with default data based on type
-    let defaultData = {};
-    switch (componentType) {
-      case KnownComponentTypes.TRANSFORM:
-        defaultData = { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
-        break;
-      case KnownComponentTypes.MESH_RENDERER: {
-        defaultData = {
-          meshId: 'cube',
-          materialId: 'default',
-          enabled: true,
-          material: getDefaultMaterialData(entityId),
-        };
-        break;
-      }
-      case KnownComponentTypes.RIGID_BODY:
-        defaultData = {
-          type: 'dynamic',
-          mass: 1,
-          enabled: true,
-          bodyType: 'dynamic',
-          gravityScale: 1,
-          canSleep: true,
-          material: {
-            friction: 0.7,
-            restitution: 0.3,
-            density: 1,
-          },
-        };
-        break;
-      case KnownComponentTypes.MESH_COLLIDER:
-        defaultData = {
-          enabled: true,
-          colliderType: 'box',
-          isTrigger: false,
-          center: [0, 0, 0],
-          size: {
-            width: 1,
-            height: 1,
-            depth: 1,
-            radius: 0.5,
-            capsuleRadius: 0.5,
-            capsuleHeight: 2,
-          },
-          physicsMaterial: {
-            friction: 0.7,
-            restitution: 0.3,
-            density: 1,
-          },
-        };
-        break;
+    const defaultData = getComponentDefaultData(componentId);
+     if (Object.keys(defaultData).length === 0 && !allManifests.find(m => m.id === componentId)?.getDefaultData) {
+        console.warn(`[CompactAddComponentMenu] Could not get default data for component ID: ${componentId}. Adding with empty data.`);
     }
-
-    componentManager.addComponent(entityId, componentType, defaultData);
+    componentManager.addComponent(entityId, componentId, defaultData);
     onClose();
   };
 
@@ -716,12 +483,10 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
     });
   };
 
-  const handleItemClick = (item: IComponentDefinition | IComponentPack) => {
-    if ('components' in item) {
-      // It's a pack
-      handleAddPack(item);
-    } else {
-      // It's a component
+  const handleItemClick = (item: ComponentManifest<any> | IComponentPack) => {
+    if ('components' in item) { // Check if it's an IComponentPack by looking for 'components' property
+      handleAddPack(item as IComponentPack);
+    } else { // Otherwise, it's a ComponentManifest
       handleAddComponent(item.id);
     }
   };
@@ -765,7 +530,8 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
                         : 'text-cyan-400 group-hover:text-cyan-300'
                     }`}
                   >
-                    {item.icon}
+                    {/* Ensure item.icon is ReactNode */}
+                    {typeof item.icon === 'function' ? item.icon({}) : item.icon}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium text-white group-hover:text-gray-100 truncate">
@@ -773,7 +539,7 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
                       {isPack && <span className="text-purple-300 ml-1">(Pack)</span>}
                     </div>
                     <div className="text-[10px] text-gray-400 group-hover:text-gray-300 truncate">
-                      {item.description}
+                      {item.description} {/* Ensure description is string */}
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { isComponentRemovable } from '@core/lib/ecs/dynamicComponentRegistry';
 import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
 import { useEntityData } from '@/editor/hooks/useEntityData';
 
@@ -61,15 +61,17 @@ export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = ({
     },
   };
 
+  const componentId = 'MeshRenderer'; // Using string literal ID
+
   const handleUpdate = (newData: any) => {
     if (newData === null) {
       // Remove component
-      if (removeComponent) {
-        removeComponent(KnownComponentTypes.MESH_RENDERER);
+      if (removeComponent && isComponentRemovable(componentId)) {
+        removeComponent(componentId);
       }
     } else {
       // Update component
-      updateComponent(KnownComponentTypes.MESH_RENDERER, newData);
+      updateComponent(componentId, newData);
 
       // Sync color changes to the old material component for viewport compatibility
       if (newData.material?.color) {

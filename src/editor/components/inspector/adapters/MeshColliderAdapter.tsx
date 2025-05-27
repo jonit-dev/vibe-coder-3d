@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { isComponentRemovable } from '@core/lib/ecs/dynamicComponentRegistry';
 import { MeshColliderSection } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 
 interface IMeshColliderAdapterProps {
@@ -41,15 +41,17 @@ export const MeshColliderAdapter: React.FC<IMeshColliderAdapterProps> = ({
     },
   };
 
+  const componentId = 'MeshCollider'; // Using string literal ID
+
   const handleUpdate = (newData: any) => {
     if (newData === null) {
       // Remove component
-      if (removeComponent) {
-        removeComponent(KnownComponentTypes.MESH_COLLIDER);
+      if (removeComponent && isComponentRemovable(componentId)) {
+        removeComponent(componentId);
       }
     } else {
       // Update component
-      updateComponent(KnownComponentTypes.MESH_COLLIDER, newData);
+      updateComponent(componentId, newData);
     }
   };
 

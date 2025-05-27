@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { isComponentRemovable } from '@core/lib/ecs/dynamicComponentRegistry';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 
 interface ITransformAdapterProps {
@@ -20,10 +20,12 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
 
   if (!data) return null;
 
+  const componentId = 'Transform'; // Using string literal ID
+
   const handlePositionChange = React.useCallback(
     (position: [number, number, number]) => {
       console.log(`[Transform] Position changed for entity ${entityId}:`, position);
-      updateComponent(KnownComponentTypes.TRANSFORM, {
+      updateComponent(componentId, {
         ...data,
         position,
       });
@@ -34,7 +36,7 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
   const handleRotationChange = React.useCallback(
     (rotation: [number, number, number]) => {
       console.log(`[Transform] Rotation changed for entity ${entityId}:`, rotation);
-      updateComponent(KnownComponentTypes.TRANSFORM, {
+      updateComponent(componentId, {
         ...data,
         rotation,
       });
@@ -45,7 +47,7 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
   const handleScaleChange = React.useCallback(
     (scale: [number, number, number]) => {
       console.log(`[Transform] Scale changed for entity ${entityId}:`, scale);
-      updateComponent(KnownComponentTypes.TRANSFORM, {
+      updateComponent(componentId, {
         ...data,
         scale,
       });
@@ -53,11 +55,12 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
     [data, updateComponent, entityId],
   );
 
+  const canRemove = isComponentRemovable(componentId);
   const handleRemove = React.useCallback(() => {
-    if (removeComponent) {
-      removeComponent(KnownComponentTypes.TRANSFORM);
+    if (removeComponent && canRemove) {
+      removeComponent(componentId);
     }
-  }, [removeComponent]);
+  }, [removeComponent, canRemove]);
 
   return (
     <TransformSection
@@ -67,7 +70,7 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
       setPosition={handlePositionChange}
       setRotation={handleRotationChange}
       setScale={handleScaleChange}
-      onRemove={removeComponent ? handleRemove : undefined}
+      onRemove={canRemove && removeComponent ? handleRemove : undefined}
     />
   );
 };
