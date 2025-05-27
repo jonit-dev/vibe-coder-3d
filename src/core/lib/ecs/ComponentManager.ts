@@ -69,6 +69,30 @@ export class ComponentManager {
 
   private emitEvent(event: ComponentEvent): void {
     this.eventListeners.forEach((listener) => listener(event));
+
+    // Also emit global events for the new event system
+    switch (event.type) {
+      case 'component-added':
+        emit('component:added', {
+          entityId: event.entityId,
+          componentId: event.componentType,
+          data: event.data,
+        });
+        break;
+      case 'component-updated':
+        emit('component:updated', {
+          entityId: event.entityId,
+          componentId: event.componentType,
+          data: event.data,
+        });
+        break;
+      case 'component-removed':
+        emit('component:removed', {
+          entityId: event.entityId,
+          componentId: event.componentType,
+        });
+        break;
+    }
   }
 
   addComponent<TData>(entityId: EntityId, type: ComponentType, data: TData): IComponent<TData> {

@@ -193,6 +193,24 @@ export class ComponentRegistry {
       return false;
     }
 
+    // Check if entity already has this component
+    if (hasComponent(this.world, bitECSComponent, entityId)) {
+      console.warn(`Entity ${entityId} already has component ${componentId}`);
+      return false;
+    }
+
+    // Check for component conflicts
+    if (descriptor.conflicts) {
+      for (const conflictingComponent of descriptor.conflicts) {
+        if (this.hasComponent(entityId, conflictingComponent)) {
+          console.warn(
+            `Cannot add component ${componentId} to entity ${entityId}: conflicts with existing component ${conflictingComponent}`,
+          );
+          return false;
+        }
+      }
+    }
+
     try {
       // Validate data
       descriptor.schema.parse(data);
