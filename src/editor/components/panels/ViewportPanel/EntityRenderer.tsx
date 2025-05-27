@@ -84,11 +84,6 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       return null;
     }
 
-    // After null checks, we can safely assert types
-    const safePosition = position as [number, number, number];
-    const safeScale = scale as [number, number, number];
-    const safeRotationRadians = rotationRadians as [number, number, number];
-
     // Create the mesh content
     const meshContent = (
       <EntityMesh
@@ -100,7 +95,6 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         onMeshClick={handleMeshClick}
         isPlaying={isPlaying}
         entityComponents={entityComponents}
-        position={safePosition}
       />
     );
 

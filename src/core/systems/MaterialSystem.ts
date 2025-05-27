@@ -4,10 +4,24 @@ import { Mesh, MeshStandardMaterial } from 'three';
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { ECSWorld } from '@core/lib/ecs/World';
 
-// Get world instance and create material query
+// Get world instance
 const world = ECSWorld.getInstance().getWorld();
-const meshRendererComponent = componentRegistry.getBitECSComponent('MeshRenderer');
-const materialQuery = defineQuery([meshRendererComponent]);
+
+// Lazy-initialize the query to avoid module-load timing issues
+let materialQuery: ReturnType<typeof defineQuery> | null = null;
+
+// Initialize the query when needed
+function getMaterialQuery() {
+  if (!materialQuery) {
+    const meshRendererComponent = componentRegistry.getBitECSComponent('MeshRenderer');
+    if (!meshRendererComponent) {
+      console.warn('[MaterialSystem] MeshRenderer component not yet registered, skipping update');
+      return null;
+    }
+    materialQuery = defineQuery([meshRendererComponent]);
+  }
+  return materialQuery;
+}
 
 // Entity to Three.js object mapping (simplified for now)
 const entityToObject = new Map<number, any>();
@@ -33,7 +47,13 @@ export class MaterialSystem {
       return 0;
     }
 
-    const entities = materialQuery(world);
+    // Get the query (lazy-initialized)
+    const query = getMaterialQuery();
+    if (!query) {
+      return 0; // MeshRenderer component not yet registered
+    }
+
+    const entities = query(world);
     let updatedCount = 0;
 
     entities.forEach((eid: number) => {
@@ -97,9 +117,13 @@ export class MaterialSystem {
    * Get performance metrics
    */
   getMetrics() {
+    // Get the query (lazy-initialized)
+    const query = getMaterialQuery();
+    const totalEntities = query ? query(world).length : 0;
+
     return {
       lastUpdateCount: this.lastUpdateCount,
-      totalEntities: materialQuery(world).length,
+      totalEntities,
       throttleMs: this.updateThrottleMs,
       lastUpdateTime: this.lastUpdateTime,
     };

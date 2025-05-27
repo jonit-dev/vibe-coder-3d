@@ -12,7 +12,6 @@ interface IEntityMeshProps {
   onMeshClick: (e: any) => void;
   isPlaying?: boolean;
   entityComponents?: Array<{ type: string; data: any }>;
-  position?: [number, number, number] | null;
 }
 
 export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
@@ -25,7 +24,6 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     onMeshClick,
     isPlaying = false,
     entityComponents = [],
-    position = null,
   }) => {
     // Don't render anything if no mesh type is set
     if (!meshType) {
