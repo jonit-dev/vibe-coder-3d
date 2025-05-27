@@ -4,7 +4,7 @@ This folder contains deployment strategies, operations guides, and platform-spec
 
 ## 📋 Contents
 
-### 🚀 [Deployment Strategy](./deployment.md)
+### 🚀 [Deployment Strategy](./8-1-deployment-strategy)
 
 **Multi-platform deployment strategy for web, desktop, and mobile**
 

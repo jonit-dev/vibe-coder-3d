@@ -4,6 +4,16 @@ This document provides a comprehensive guide to navigating the Vibe Coder 3D doc
 
 _All documents are now organized with numeric prefixes for logical reading order (X-Y-filename.md format)_
 
+## 📋 Recent Updates
+
+**Documentation Consistency Review (Latest):**
+
+- ✅ **ECS Documentation Updated**: Aligned with actual BitECS implementation and modern architecture
+- ✅ **Physics Integration Clarified**: Updated to reflect multiple physics components and current patterns
+- ✅ **AI Implementation Status**: Clarified that AI system is planned but not yet implemented
+- ✅ **File Naming Consistency**: All documents follow X-Y-filename.md convention
+- ✅ **Technical Accuracy**: Documentation now matches actual codebase implementation
+
 ## 🗺️ Documentation Flow
 
 ```mermaid
@@ -138,7 +148,7 @@ graph TD
 
 1. **[2-2 Technical Stack](./architecture/2-2-technical-stack.md)** - Technology foundation
 2. **[3-7 Performance Research](./research/3-7-performance-research.md)** - Optimization strategies
-3. **[Deployment Strategy](./deployment/deployment.md)** - Multi-platform deployment
+3. **[Deployment Strategy](./deployment/8-1-deployment-strategy.md)** - Multi-platform deployment
 4. **[2-18 Tooling](./architecture/2-18-tooling.md)** - Development workflow
 
 ### 🎮 For Game Developers
@@ -208,7 +218,7 @@ graph TD
 
 - [6-1 Performance Report](./performance/6-1-performance-report.md)
 - [3-7 Performance Research](./research/3-7-performance-research.md)
-- [Deployment Strategy](./deployment/deployment.md)
+- [Deployment Strategy](./deployment/8-1-deployment-strategy.md)
 
 ### By Role
 
@@ -237,13 +247,14 @@ This navigation map is updated when:
 
 ## 📋 Document Organization Rules
 
-- **1-X**: Overview and vision documents
+- **1-X**: Overview and vision documents (`1-0-overview-readme.md`)
 - **2-X**: Architecture and technical design
 - **3-X**: Research and investigations
-- **4-X**: Implementation plans and guides
+- **4-X**: Implementation plans and guides (`4-0-implementation-readme.md`)
 - **5-X**: Patterns and best practices
 - **6-X**: Performance and optimization
 - **7-X**: Refactoring and code improvement
+- **8-X**: Deployment (`8-0-deployment-readme.md`, `8-1-deployment-strategy.md`)
 
 ---
 

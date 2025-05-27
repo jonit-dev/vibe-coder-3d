@@ -4,7 +4,7 @@ This folder contains high-level project vision, goals, and strategic planning do
 
 ## 📋 Contents
 
-### 🎯 [Project Overview](./project-overview.md)
+### 🎯 [Project Overview](./1-1-project-overview)
 
 **Complete project vision and comprehensive overview**
 
@@ -14,7 +14,7 @@ This folder contains high-level project vision, goals, and strategic planning do
 - Current development status
 - Getting started information
 
-### 🚀 [AI-First Vision Summary](./ai-first-vision-summary.md)
+### 🚀 [AI-First Vision Summary](./1-2-ai-first-vision)
 
 **Core innovation and key differentiators**
 
@@ -24,7 +24,7 @@ This folder contains high-level project vision, goals, and strategic planning do
 - Success metrics and target impact
 - Future roadmap highlights
 
-### 📅 [Roadmap](./roadmap.md)
+### 📅 [Roadmap](./1-3-roadmap)
 
 **Development timeline and milestones**
 
@@ -54,7 +54,7 @@ These documents provide the strategic foundation for understanding:
 
 - **[Architecture](../architecture/)** - Technical implementation details
 - **[Implementation](../implementation/)** - Detailed development plans
-- **[Getting Started](../getting-started/)** - Practical development guides
+- **[Getting Started](../overview/1-4-getting-started)** - Practical development guides
 
 ---
 

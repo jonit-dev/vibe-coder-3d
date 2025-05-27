@@ -4,7 +4,7 @@ This folder contains detailed implementation plans, technical guides, and step-b
 
 ## 📋 Contents
 
-### 🤖 [AI-First Engine Implementation Plan](./ai-first-engine-implementation-plan.md)
+### 🤖 [AI-First Engine Implementation Plan](./4-2-ai-first-engine-implementation-plan)
 
 **Comprehensive roadmap for AI integration**
 
@@ -15,7 +15,7 @@ This folder contains detailed implementation plans, technical guides, and step-b
 - Code generation and behavior scripting
 - Advanced AI features and optimization
 
-### 📜 [Unity-Like Script System](./unity-like-script-system.md)
+### 📜 [Unity-Like Script System](./4-8-unity-like-script-system)
 
 **Script attachment and management system**
 
@@ -25,7 +25,7 @@ This folder contains detailed implementation plans, technical guides, and step-b
 - Hot-reloading and real-time parameter updates
 - Script lifecycle management and execution
 
-### 🌳 [Unity-Like Hierarchy System](./unity-like-hierarchy-system.md)
+### 🌳 [Unity-Like Hierarchy System](./4-7-unity-like-hierarchy-system)
 
 **Scene hierarchy implementation**
 
@@ -35,7 +35,7 @@ This folder contains detailed implementation plans, technical guides, and step-b
 - Drag-and-drop entity organization
 - Scene graph optimization
 
-### 💾 [Game Editor Scene Serialization](./game-editor-scene-serialization.md)
+### 💾 [Game Editor Scene Serialization](./4-5-game-editor-scene-serialization)
 
 **Scene save/load system**
 

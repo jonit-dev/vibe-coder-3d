@@ -5,50 +5,184 @@ This document details the integration of the Rapier physics engine within the Vi
 ## Overview
 
 - **Dependencies:** Integration relies on `rapier3d-compat` and `@react-three/rapier`.
-- **Setup:** The Rapier physics world is initialized and managed within the main React Three Fiber render loop, likely handled in `src/core/lib/physics.ts`.
-- **Synchronization:** Physics simulation runs independently and needs synchronization with the Three.js scene graph.
+- **Setup:** The Rapier physics world is initialized and managed within the main React Three Fiber render loop, handled through `@react-three/rapier`'s `<Physics>` component.
+- **Synchronization:** Physics simulation runs independently and needs synchronization with the Three.js scene graph and ECS system.
 
 ## Core Components
 
-- **`<PhysicsBody>`:** A React component located in `src/core/components` designed to wrap Three.js objects (like `Mesh`). It automatically creates and manages a corresponding Rapier rigid body and collider.
-- **`<PhysicsTrigger>`:** A React component located in `src/core/components/physics` that creates a non-solid trigger zone. It integrates with our ECS system and allows detection of entities entering or exiting the trigger volume.
-- **Synchronization:** These components handle the synchronization between the Rapier body's transform (position, rotation) and the associated Three.js object's transform on each frame or physics step.
+The engine provides multiple physics components for different use cases:
+
+### Primary Physics Components
+
+- **`<PhysicsBody>`:** Enhanced physics body component in `src/core/components/physics/PhysicsBody.tsx` with comprehensive API:
+
+  - Automatic ECS integration with entity creation
+  - Support for all Rapier body types (dynamic, kinematic, fixed)
+  - Material property configuration (friction, restitution, density)
+  - Imperative handle for external control
+  - Debug and metadata support
+
+- **`<PhysicsObject>`:** Base component in `src/core/components/physics/PhysicsObject.tsx` for simple physics integration:
+  - Wraps `@react-three/rapier`'s `RigidBody`
+  - Automatic ECS entity creation and registration
+  - Basic collision handling
+
+### Specialized Physics Components
+
+- **`<PhysicsTrigger>`:** Non-solid trigger zones in `src/core/components/physics/PhysicsTrigger.tsx`:
+
+  - Creates sensor colliders for detection zones
+  - Integrates with ECS system for entity tracking
+  - Supports enter/exit event callbacks
+
+- **`<PhysicsBall>`:** Specialized ball physics in `src/core/components/physics/PhysicsBall.tsx`:
+
+  - Optimized for spherical objects
+  - Configurable physics properties (mass, restitution, damping)
+  - Built-in visual representation
+
+- **`<PhysicsJoint>`:** Joint system in `src/core/components/physics/PhysicsJoint.tsx`:
+  - Supports revolute, fixed, and spherical joints
+  - Connects multiple physics bodies
+  - Configurable joint parameters
+
+### Factory and Utility Components
+
+- **`<PhysicsObjectFactory>`:** Factory component for creating common physics objects
+- **`<TaggablePhysicsObject>`:** Physics objects with tagging system for state management
+- **`<PhysicsSystem>`:** System component that initializes physics integration
 
 ## ECS Integration
 
-- **PhysicsBodyRef Component:** Defined in `src/core/systems/PhysicsSyncSystem.ts`, this ECS component stores references to physics bodies.
-- **Registration:** Physics bodies are registered with the ECS system using the `registerPhysicsBody` function, which links a physics body to an entity ID.
-- **PhysicsSyncSystem:** This system synchronizes transforms between physics bodies and ECS entities. It queries for entities with both Transform and PhysicsBodyRef components and keeps them in sync.
+### Physics-ECS Synchronization
 
-## Usage
+- **PhysicsBodyRef Component:** Defined in `src/core/systems/PhysicsSyncSystem.ts`, stores references to physics bodies:
 
-- **Adding Physics:** Wrap visual components (`<mesh>`, `<group>`, etc.) with the `<PhysicsBody>` component to add physics properties. Configure properties like mass, shape (cube, sphere, capsule), friction, etc., via props.
-- **Creating Triggers:** Use the `<PhysicsTrigger>` component to create non-solid trigger zones that can detect when entities enter or exit their volume.
-- **Stepping:** The physics world simulation is advanced ('stepped') within the game loop, typically using `world.step()`. The frequency might be tied to the render loop or run at a fixed rate.
-- **Hooks:** A core hook (e.g., `usePhysics`) might be provided in `src/core/hooks` to access the physics world instance or perform specific physics operations.
+  ```typescript
+  export const PhysicsBodyRef = defineComponent({
+    bodyId: Types.ui32, // Store an ID for body lookup
+    isActive: Types.ui8, // Flag for active simulation
+    priority: Types.ui8, // Update priority
+  });
+  ```
+
+- **Registration System:** Physics bodies are registered with the ECS using:
+
+  - `registerPhysicsBody(entityId, rigidBody)`: Links physics body to ECS entity
+  - `unregisterPhysicsBody(entityId)`: Removes physics-ECS link
+
+- **PhysicsSyncSystem:** Synchronizes transforms between physics bodies and ECS entities:
+  - Queries entities with both Transform and PhysicsBodyRef components
+  - Updates ECS Transform data from physics body positions/rotations
+  - Handles bidirectional synchronization when needed
+
+## Physics Hooks and Utilities
+
+### Core Physics Hook
+
+- **`usePhysics()`:** Comprehensive physics utilities in `src/core/lib/physics.ts`:
+  - Access to Rapier world and API
+  - Raycasting utilities (`raycast`, `raycastAll`)
+  - Shape creation helpers (`createShape`)
+  - Material application (`applyMaterial`)
+  - Body manipulation utilities (forces, impulses, velocities)
+
+### Event Handling
+
+- **`useCollisionEvents()`:** Collision event management in `src/core/hooks/useCollisionEvents.ts`:
+  - Subscribe to collision enter/exit events
+  - Sensor event handling
+  - Entity-based event filtering
+
+### Physics System Integration
+
+- **`usePhysicsSystem()`:** System-level physics integration
+- **`PhysicsWorld`:** Wrapper component providing physics context and lighting
+
+## Usage Patterns
+
+### Basic Physics Object
+
+```typescript
+// Simple physics-enabled object
+<PhysicsBody bodyType="dynamic" position={[0, 5, 0]}>
+  <mesh>
+    <boxGeometry />
+    <meshStandardMaterial />
+  </mesh>
+</PhysicsBody>
+```
+
+### Advanced Physics Configuration
+
+```typescript
+// Advanced physics body with custom properties
+<PhysicsBody
+  bodyType="dynamic"
+  material={{ friction: 0.8, restitution: 0.6 }}
+  mass={2.5}
+  autoRegister={true}
+  debug={true}
+>
+  <mesh>
+    <sphereGeometry />
+    <meshStandardMaterial />
+  </mesh>
+</PhysicsBody>
+```
+
+### Trigger Zones
+
+```typescript
+// Non-solid trigger for detection
+<PhysicsTrigger
+  position={[0, 0, 0]}
+  size={[2, 2, 2]}
+  onEnter={(entityId) => console.log('Entity entered:', entityId)}
+  onExit={(entityId) => console.log('Entity exited:', entityId)}
+/>
+```
+
+## Editor Integration
+
+- **`EditorPhysicsIntegration`:** Component in `src/editor/components/physics/` that manages physics in editor context:
+  - Handles play/pause state for physics simulation
+  - Creates physics bodies for entities with RigidBody components
+  - Manages physics body lifecycle in editor mode
 
 ## Debugging
 
-- **Visual Debugger:** Plan to integrate `@react-three/rapier`'s `<Debug />` component or a similar utility for visualizing collider shapes and physics interactions.
+- **Visual Debugger:** Integration with `@react-three/rapier`'s `<Debug />` component for visualizing colliders and physics interactions
+- **Performance Monitoring:** Physics body tracking and performance metrics
+- **State Inspection:** Access to physics body properties and simulation state
 
 ## Synchronization Loop
 
-The physics world runs its simulation steps, and the results need to be synchronized with the visual representation in the Three.js scene. This typically happens within the main game loop.
+The physics world runs its simulation steps, and the results are synchronized with both the visual representation and the ECS system:
 
 ```mermaid
 sequenceDiagram
     participant GameLoop
     participant PhysicsWorld
+    participant PhysicsSyncSystem
     participant ECSSystems
     participant ThreeScene
 
     loop Frame Update
         GameLoop->>PhysicsWorld: Step simulation (world.step())
         PhysicsWorld-->>PhysicsWorld: Calculate new positions/rotations
-        GameLoop->>ECSSystems: Run PhysicsSyncSystem
-        ECSSystems->>PhysicsWorld: Read updated body transforms
-        ECSSystems->>ECSSystems: Update ECS Position/Rotation components
-        GameLoop->>ECSSystems: Run RenderSystem (or similar)
-        ECSSystems->>ThreeScene: Update visual object transforms from ECS components
+        GameLoop->>PhysicsSyncSystem: Run PhysicsSyncSystem
+        PhysicsSyncSystem->>PhysicsWorld: Read updated body transforms
+        PhysicsSyncSystem->>ECSSystems: Update ECS Transform components
+        GameLoop->>ECSSystems: Run other ECS systems
+        ECSSystems->>ThreeScene: Update visual object transforms
+        ThreeScene-->>GameLoop: Render updated scene
     end
 ```
+
+## Performance Considerations
+
+- **Body Management:** Efficient registration/unregistration of physics bodies
+- **Update Prioritization:** Priority-based updates for performance-critical objects
+- **Collision Optimization:** Efficient collision detection and event handling
+- **Memory Management:** Proper cleanup of physics resources and ECS entities
