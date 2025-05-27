@@ -1,33 +1,36 @@
 import { useFrame } from '@react-three/fiber';
-import { defineQuery, hasComponent } from 'bitecs';
+import { defineQuery } from 'bitecs';
 import { useEffect, useState } from 'react';
 
-import { world } from '@core/lib/ecs';
+import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { ECSWorld } from '@core/lib/ecs/World';
+
+// Get world instance
+const world = ECSWorld.getInstance().getWorld();
 
 /**
  * Hook to access and subscribe to ECS component data for a specific entity
  *
  * @param entityId The entity ID to access
- * @param component The ECS component to access
+ * @param componentId The component ID to access (e.g., 'Transform', 'Camera')
  * @returns Whether the entity has the given component
  */
-export function useEntity(entityId: number | null, component: any): boolean {
-  const [hasComp, setHasComp] = useState(
-    entityId !== null && hasComponent(world, component, entityId),
-  );
+export function useEntity(entityId: number | null, componentId: string): boolean {
+  const [hasComp, setHasComp] = useState(false);
 
   useEffect(() => {
     if (entityId !== null) {
-      setHasComp(hasComponent(world, component, entityId));
+      const hasComponent = componentRegistry.hasComponent(entityId, componentId);
+      setHasComp(hasComponent);
     } else {
       setHasComp(false);
     }
-  }, [entityId, component]);
+  }, [entityId, componentId]);
 
   // Update subscription when component data changes
   useFrame(() => {
     if (entityId !== null) {
-      const current = hasComponent(world, component, entityId);
+      const current = componentRegistry.hasComponent(entityId, componentId);
       if (current !== hasComp) {
         setHasComp(current);
       }

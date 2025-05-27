@@ -4,9 +4,8 @@ import { ReactNode, useEffect, useRef } from 'react';
 
 import { useGameLoop } from '../lib/gameLoop';
 import { materialSystem } from '../systems/MaterialSystem';
-import { runPhysicsSyncSystem } from '../systems/PhysicsSyncSystem';
-import { runVelocitySystem } from '../systems/VelocitySystem';
 import { cameraSystem } from '../systems/cameraSystem';
+import { transformSystem } from '../systems/transformSystem';
 
 // Types for component props
 interface IEngineLoopProps {
@@ -172,22 +171,14 @@ export const EngineLoop = ({
  * Function to run all ECS systems
  * This would be expanded as more systems are added
  */
-function runECSSystems(deltaTime: number) {
+function runECSSystems(_deltaTime: number) {
   const perfStartVelocity = performance.now();
 
-  // Run velocity system first - updates positions based on velocity
-  const velocityCount = runVelocitySystem(deltaTime);
+  // Run transform system - updates Three.js objects from ECS Transform components
+  const transformCount = transformSystem();
 
-  // Track velocity system performance
+  // Track transform system performance
   trackPerformance('velocity', perfStartVelocity);
-
-  const perfStartPhysics = performance.now();
-
-  // Run physics sync system - syncs physics bodies with Transform components
-  const physicsSyncCount = runPhysicsSyncSystem(deltaTime);
-
-  // Track physics system performance
-  trackPerformance('physics', perfStartPhysics);
 
   // Run material system - updates Three.js materials from ECS Material components
   materialSystem.update();
@@ -199,9 +190,9 @@ function runECSSystems(deltaTime: number) {
   // e.g., movementSystem(ecsWorld, deltaTime);
 
   // Debug info
-  if (physicsSyncCount > 0 || velocityCount > 0) {
+  if (transformCount > 0) {
     // Uncomment for debugging:
-    // console.log(`Updated ${velocityCount} velocity entities and ${physicsSyncCount} physics entities`);
+    // console.log(`Updated ${transformCount} transform entities`);
   }
 }
 

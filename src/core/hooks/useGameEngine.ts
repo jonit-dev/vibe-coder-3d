@@ -2,7 +2,7 @@
 // Provides control functions for the game engine using the game loop store
 import { useCallback } from 'react';
 
-import { resetWorld } from '@core/lib/ecs';
+import { ECSWorld } from '@core/lib/ecs/World';
 import { useGameLoop } from '@core/lib/gameLoop';
 
 // The controls returned by the hook
@@ -49,7 +49,7 @@ export function useGameEngine(): IGameEngineControls {
     }
 
     // Reset the ECS world
-    resetWorld();
+    ECSWorld.getInstance().reset();
 
     // Restart the engine
     gameLoop.startLoop();

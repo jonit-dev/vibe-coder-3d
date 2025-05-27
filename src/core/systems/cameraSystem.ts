@@ -1,13 +1,22 @@
 // Camera System
 // Synchronizes Camera components with Three.js cameras
+import { defineQuery } from 'bitecs';
 import { OrthographicCamera, PerspectiveCamera } from 'three';
 
-import { cameraQuery, entityToObject, world } from '@core/lib/ecs';
-import { Camera } from '@core/lib/ecs/BitECSComponents';
+import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { ECSWorld } from '@core/lib/ecs/World';
+
+// Get world instance and create camera query
+const world = ECSWorld.getInstance().getWorld();
+const cameraComponent = componentRegistry.getBitECSComponent('Camera');
+const cameraQuery = defineQuery([cameraComponent]);
 
 // Global reference to the editor camera (set by viewport)
 let editorCamera: PerspectiveCamera | OrthographicCamera | null = null;
 let selectedCameraEntityId: number | null = null;
+
+// Entity to Three.js object mapping (simplified for now)
+const entityToObject = new Map<number, any>();
 
 /**
  * Set the editor camera reference for real-time updates
@@ -36,53 +45,63 @@ export function cameraSystem(): number {
 
   // Update Three.js cameras from ECS data
   entities.forEach((eid: number) => {
-    // Skip if doesn't need update
-    if (!Camera.needsUpdate[eid]) {
+    // Get camera data using the new component registry
+    const cameraData = componentRegistry.getComponentData(eid, 'Camera');
+    if (!cameraData) return;
+
+    // Check if camera needs update (we'll use a simple flag for now)
+    const bitECSCamera = componentRegistry.getBitECSComponent('Camera');
+    if (!bitECSCamera?.needsUpdate?.[eid]) {
       return;
     }
 
     // For editor mode: if this camera entity is selected, update the editor camera
     if (selectedCameraEntityId === eid && editorCamera) {
-      updateCameraFromEntity(editorCamera, eid);
+      updateCameraFromData(editorCamera, cameraData);
       updatedCount++;
     }
 
     // For game mode: check for actual camera objects (during play mode)
     const object = entityToObject.get(eid);
     if (object && (object instanceof PerspectiveCamera || object instanceof OrthographicCamera)) {
-      updateCameraFromEntity(object as PerspectiveCamera | OrthographicCamera, eid);
+      updateCameraFromData(object as PerspectiveCamera | OrthographicCamera, cameraData);
       updatedCount++;
     }
 
     // Reset update flag
-    Camera.needsUpdate[eid] = 0;
+    if (bitECSCamera?.needsUpdate) {
+      bitECSCamera.needsUpdate[eid] = 0;
+    }
   });
 
   return updatedCount;
 }
 
 /**
- * Helper function to update a Three.js camera from ECS camera data
+ * Helper function to update a Three.js camera from camera data
  */
-function updateCameraFromEntity(camera: PerspectiveCamera | OrthographicCamera, eid: number): void {
-  const isOrthographic = Camera.projectionType[eid] === 1;
+function updateCameraFromData(
+  camera: PerspectiveCamera | OrthographicCamera,
+  cameraData: any,
+): void {
+  const isOrthographic = cameraData.projectionType === 'orthographic';
 
   if (isOrthographic && camera instanceof OrthographicCamera) {
     // Update orthographic camera
-    const size = Camera.orthographicSize[eid];
+    const size = cameraData.orthographicSize || 10;
     const aspect = window.innerWidth / window.innerHeight;
 
     camera.left = -size * aspect;
     camera.right = size * aspect;
     camera.top = size;
     camera.bottom = -size;
-    camera.near = Camera.near[eid];
-    camera.far = Camera.far[eid];
+    camera.near = cameraData.near;
+    camera.far = cameraData.far;
   } else if (!isOrthographic && camera instanceof PerspectiveCamera) {
     // Update perspective camera
-    camera.fov = Camera.fov[eid];
-    camera.near = Camera.near[eid];
-    camera.far = Camera.far[eid];
+    camera.fov = cameraData.fov;
+    camera.near = cameraData.near;
+    camera.far = cameraData.far;
     camera.aspect = window.innerWidth / window.innerHeight;
   }
 
@@ -96,10 +115,27 @@ function updateCameraFromEntity(camera: PerspectiveCamera | OrthographicCamera, 
  */
 export function markAllCamerasForUpdate(): number {
   const entities = cameraQuery(world);
+  const bitECSCamera = componentRegistry.getBitECSComponent('Camera');
 
   entities.forEach((eid: number) => {
-    Camera.needsUpdate[eid] = 1;
+    if (bitECSCamera?.needsUpdate) {
+      bitECSCamera.needsUpdate[eid] = 1;
+    }
   });
 
   return entities.length;
+}
+
+/**
+ * Register an entity-to-object mapping for game mode camera switching
+ */
+export function registerEntityObject(entityId: number, object: any): void {
+  entityToObject.set(entityId, object);
+}
+
+/**
+ * Unregister an entity-to-object mapping
+ */
+export function unregisterEntityObject(entityId: number): void {
+  entityToObject.delete(entityId);
 }

@@ -1,9 +1,19 @@
+import { defineQuery } from 'bitecs';
 import { Mesh, MeshStandardMaterial } from 'three';
 
-import { entityToObject, Material, materialQuery, world } from '@/core/lib/ecs';
+import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { ECSWorld } from '@core/lib/ecs/World';
+
+// Get world instance and create material query
+const world = ECSWorld.getInstance().getWorld();
+const meshRendererComponent = componentRegistry.getBitECSComponent('MeshRenderer');
+const materialQuery = defineQuery([meshRendererComponent]);
+
+// Entity to Three.js object mapping (simplified for now)
+const entityToObject = new Map<number, any>();
 
 /**
- * Material System - Updates Three.js materials from ECS Material components
+ * Material System - Updates Three.js materials from ECS MeshRenderer components
  * Only updates materials that are marked with needsUpdate flag for performance
  */
 export class MaterialSystem {
@@ -26,9 +36,23 @@ export class MaterialSystem {
     const entities = materialQuery(world);
     let updatedCount = 0;
 
-    entities.forEach((eid) => {
-      // Skip if no update needed
-      if (!Material.needsUpdate[eid]) return;
+    entities.forEach((eid: number) => {
+      // Get mesh renderer data using the new component registry
+      const meshRendererData = componentRegistry.getComponentData(eid, 'MeshRenderer') as
+        | {
+            material?: {
+              color: string;
+              metalness: number;
+              roughness: number;
+              emissive: string;
+              emissiveIntensity: number;
+            };
+          }
+        | undefined;
+      if (!meshRendererData) return;
+
+      // For now, we'll always update since we don't have needsUpdate in the new system yet
+      // TODO: Add needsUpdate flag to the new MeshRenderer component definition
 
       // Get the Three.js object
       const object = entityToObject.get(eid);
@@ -37,15 +61,14 @@ export class MaterialSystem {
       // Update material color (cast to Mesh to access material)
       const mesh = object as Mesh;
       const material = mesh.material as MeshStandardMaterial;
-      if (material && material.color) {
-        material.color.setRGB(
-          Material.color[eid][0],
-          Material.color[eid][1],
-          Material.color[eid][2],
-        );
+      if (material && material.color && meshRendererData.material) {
+        // Parse color from hex string
+        material.color.set(meshRendererData.material.color);
+        material.metalness = meshRendererData.material.metalness;
+        material.roughness = meshRendererData.material.roughness;
+        material.emissive.set(meshRendererData.material.emissive);
+        material.emissiveIntensity = meshRendererData.material.emissiveIntensity;
 
-        // Clear the update flag
-        Material.needsUpdate[eid] = 0;
         updatedCount++;
       }
     });
@@ -80,6 +103,20 @@ export class MaterialSystem {
       throttleMs: this.updateThrottleMs,
       lastUpdateTime: this.lastUpdateTime,
     };
+  }
+
+  /**
+   * Register an entity-to-object mapping for material synchronization
+   */
+  registerEntityObject(entityId: number, object: any): void {
+    entityToObject.set(entityId, object);
+  }
+
+  /**
+   * Unregister an entity-to-object mapping
+   */
+  unregisterEntityObject(entityId: number): void {
+    entityToObject.delete(entityId);
   }
 }
 

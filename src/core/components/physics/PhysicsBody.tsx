@@ -1,12 +1,21 @@
 // PhysicsBody.tsx - Enhanced physics body component with better API
 import { RapierRigidBody, RigidBody } from '@react-three/rapier';
 import { forwardRef, ReactNode, useEffect, useImperativeHandle, useRef } from 'react';
-import { Euler, Quaternion } from 'three';
 
-import { useECS } from '../../hooks/useECS';
-import { Transform } from '../../lib/ecs';
-import { IPhysicsMaterial, PhysicsBodyType, usePhysics } from '../../lib/physics';
-import { registerPhysicsBody, unregisterPhysicsBody } from '../../systems/PhysicsSyncSystem';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useEntityManager } from '@/editor/hooks/useEntityManager';
+
+// Physics material interface (simplified for now)
+export interface IPhysicsMaterial {
+  friction?: number;
+  restitution?: number;
+  density?: number;
+}
+
+// Physics body types
+export type PhysicsBodyType = 'dynamic' | 'kinematicPosition' | 'kinematicVelocity' | 'fixed';
 
 // Extended props for the PhysicsBody component
 export interface IPhysicsBodyProps {
@@ -88,9 +97,9 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
     const rigidBodyRef = useRef<RapierRigidBody>(null);
     const entityRef = useRef<number | null>(null);
 
-    // ECS and physics hooks
-    const { createEntity, destroyEntity } = useECS();
-    const physics = usePhysics();
+    // ECS hooks
+    const entityManager = useEntityManager();
+    const componentManager = useComponentManager();
 
     // Convert our body type to Rapier type
     const rapierBodyType =
@@ -106,30 +115,27 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
     useEffect(() => {
       if (autoRegister && rigidBodyRef.current) {
         // Use external entity ID or create a new one
-        const entity = externalEntityId ?? createEntity();
+        const entity =
+          externalEntityId ?? entityManager.createEntity(`PhysicsBody_${Date.now()}`).id;
         entityRef.current = entity;
 
-        // Set initial transform values
-        if (Array.isArray(position) && position.length === 3) {
-          Transform.position[entity][0] = position[0];
-          Transform.position[entity][1] = position[1];
-          Transform.position[entity][2] = position[2];
-        }
+        // Set initial transform values using the new ComponentRegistry system
+        const transformData: ITransformData = {
+          position: [...position] as [number, number, number],
+          rotation: [...rotation] as [number, number, number],
+          scale: [...scale] as [number, number, number],
+        };
 
-        // Set rotation if provided
-        if (Array.isArray(rotation) && rotation.length === 3) {
-          // Convert Euler to quaternion if needed
-          const quaternion = new Quaternion().setFromEuler(
-            new Euler(rotation[0], rotation[1], rotation[2]),
-          );
-          Transform.rotation[entity][0] = quaternion.x;
-          Transform.rotation[entity][1] = quaternion.y;
-          Transform.rotation[entity][2] = quaternion.z;
-          Transform.rotation[entity][3] = quaternion.w;
+        // Add or update Transform component
+        const existingTransform = componentManager.getComponent(
+          entity,
+          KnownComponentTypes.TRANSFORM,
+        );
+        if (existingTransform) {
+          componentManager.updateComponent(entity, KnownComponentTypes.TRANSFORM, transformData);
+        } else {
+          componentManager.addComponent(entity, KnownComponentTypes.TRANSFORM, transformData);
         }
-
-        // Register the physics body with ECS
-        registerPhysicsBody(entity, rigidBodyRef.current as any);
 
         // Apply initial physics properties
         const body = rigidBodyRef.current;
@@ -170,11 +176,9 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
         // Cleanup on unmount
         return () => {
           if (entityRef.current !== null) {
-            unregisterPhysicsBody(entityRef.current);
-
             // Only destroy entity if we created it (not external)
             if (!externalEntityId) {
-              destroyEntity(entityRef.current);
+              entityManager.deleteEntity(entityRef.current);
             }
 
             if (debug) {
@@ -188,11 +192,12 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
     }, [
       autoRegister,
       externalEntityId,
-      createEntity,
-      destroyEntity,
+      entityManager,
+      componentManager,
       debug,
       position,
       rotation,
+      scale,
       mass,
       canSleep,
       gravityScale,
@@ -210,26 +215,44 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
         entityId: entityRef.current,
 
         applyForce: (force: [number, number, number], point?: [number, number, number]) => {
-          if (rigidBodyRef.current) {
-            physics.body.applyForce(rigidBodyRef.current, force, point);
+          if (rigidBodyRef.current && rigidBodyRef.current.addForce) {
+            const forceVector = { x: force[0], y: force[1], z: force[2] };
+            if (point) {
+              const pointVector = { x: point[0], y: point[1], z: point[2] };
+              rigidBodyRef.current.addForceAtPoint(forceVector, pointVector, true);
+            } else {
+              rigidBodyRef.current.addForce(forceVector, true);
+            }
           }
         },
 
         applyImpulse: (impulse: [number, number, number], point?: [number, number, number]) => {
-          if (rigidBodyRef.current) {
-            physics.body.applyImpulse(rigidBodyRef.current, impulse, point);
+          if (rigidBodyRef.current && rigidBodyRef.current.applyImpulse) {
+            const impulseVector = { x: impulse[0], y: impulse[1], z: impulse[2] };
+            if (point) {
+              const pointVector = { x: point[0], y: point[1], z: point[2] };
+              rigidBodyRef.current.applyImpulseAtPoint(impulseVector, pointVector, true);
+            } else {
+              rigidBodyRef.current.applyImpulse(impulseVector, true);
+            }
           }
         },
 
         setVelocity: (velocity: [number, number, number]) => {
-          if (rigidBodyRef.current) {
-            physics.body.setVelocity(rigidBodyRef.current, velocity);
+          if (rigidBodyRef.current && rigidBodyRef.current.setLinvel) {
+            rigidBodyRef.current.setLinvel(
+              { x: velocity[0], y: velocity[1], z: velocity[2] },
+              true,
+            );
           }
         },
 
         setAngularVelocity: (velocity: [number, number, number]) => {
-          if (rigidBodyRef.current) {
-            physics.body.setAngularVelocity(rigidBodyRef.current, velocity);
+          if (rigidBodyRef.current && rigidBodyRef.current.setAngvel) {
+            rigidBodyRef.current.setAngvel(
+              { x: velocity[0], y: velocity[1], z: velocity[2] },
+              true,
+            );
           }
         },
 
@@ -245,7 +268,7 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
           }
         },
       }),
-      [physics],
+      [],
     );
 
     return (
@@ -255,6 +278,9 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
         position={position}
         rotation={rotation}
         scale={scale}
+        mass={mass}
+        canSleep={canSleep}
+        gravityScale={gravityScale}
         {...rigidBodyProps}
       >
         {children}

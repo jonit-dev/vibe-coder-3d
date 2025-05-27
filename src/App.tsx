@@ -3,7 +3,6 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
 import { initializeECS } from '@/core/lib/ecs/init';
 import Editor from '@/editor/Editor';
-import { MainScene } from '@/game/scenes/MainScene';
 
 /**
  * Main App component
@@ -23,13 +22,6 @@ export default function App() {
       initializeECS();
       console.log('✅ ECS System initialized successfully');
       (window as any).__ecsSystemInitialized = true;
-
-      // Test the component system in development
-      if (import.meta.env.DEV) {
-        import('./core/lib/ecs/test-component-system').then(({ testComponentSystem }) => {
-          testComponentSystem();
-        });
-      }
     } catch (error) {
       console.error('❌ Failed to initialize ECS System:', error);
       console.error('Error details:', error);
@@ -39,8 +31,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainScene />} />
-        <Route path="/editor" element={<Editor />} />
+        <Route path="/" element={<Editor />} />
       </Routes>
     </Router>
   );

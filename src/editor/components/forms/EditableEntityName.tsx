@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { getEntityName, setEntityName } from '@/core/lib/ecs';
+import { getEntityName } from '@/core/lib/ecs';
+import { useEntityManager } from '@/editor/hooks/useEntityManager';
 
 export interface IEditableEntityNameProps {
   entityId: number;
@@ -29,6 +30,7 @@ export const EditableEntityName: React.FC<IEditableEntityNameProps> = ({
   const [value, setValue] = useState('');
   const [originalValue, setOriginalValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const entityManager = useEntityManager();
 
   // Get current entity name
   const currentName = getEntityName(entityId) || `Entity ${entityId}`;
@@ -53,7 +55,7 @@ export const EditableEntityName: React.FC<IEditableEntityNameProps> = ({
       if (save && value.trim() !== originalValue) {
         const trimmedValue = value.trim();
         if (trimmedValue) {
-          setEntityName(entityId, trimmedValue);
+          entityManager.updateEntityName(entityId, trimmedValue);
         }
       } else if (!save) {
         setValue(originalValue);

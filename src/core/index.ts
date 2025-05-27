@@ -2,19 +2,8 @@
 // This file exports all the core components, hooks, and utilities from the engine
 
 // Components
-export {
-  EntityMesh,
-  EntityMeshPropsSchema,
-  EntityMesh as OptimizedEntityMesh,
-  validateEntityMeshProps,
-} from '@/core/components/EntityMesh';
-export type {
-  IEntityMeshProps as EntityMeshProps,
-  IEntityMeshProps as OptimizedEntityMeshProps,
-} from '@/core/components/EntityMesh';
+// Note: EntityMesh and Entity components have been removed during ECS refactoring
 export { EngineLoop } from './components/EngineLoop';
-export { Entity, EntityPropsSchema, validateEntityProps } from './components/Entity';
-export type { IEntityProps as EntityProps } from './components/Entity';
 export {
   GameEngine,
   GameEnginePropsSchema,
@@ -23,18 +12,18 @@ export {
 export type { IGameEngineProps as GameEngineProps } from './components/GameEngine';
 
 // Physics Components
-export { PhysicsBox } from './components/physics/PhysicsBox';
-export { PhysicsJoint } from './components/physics/PhysicsJoint';
-export { PhysicsObject } from './components/physics/PhysicsObject';
-export { PhysicsSphere } from './components/physics/PhysicsSphere';
-export { PhysicsSystem } from './components/physics/PhysicsSystem';
-export { PhysicsTrigger } from './components/physics/PhysicsTrigger';
-export { PhysicsWorld } from './components/physics/PhysicsWorld';
+export { PhysicsBody } from './components/physics/PhysicsBody';
+export type {
+  IPhysicsBodyHandle,
+  IPhysicsBodyProps,
+  IPhysicsMaterial,
+  PhysicsBodyType,
+} from './components/physics/PhysicsBody';
 
 // Debug Components
 
 // Hooks
-export { useEntity, useEntityQuery } from './hooks/useEntity';
+export { useEntity } from './hooks/useEntity';
 export { useGameEngine } from './hooks/useGameEngine';
 export type { IGameEngineControls as GameEngineControls } from './hooks/useGameEngine';
 
@@ -42,21 +31,12 @@ export type { IGameEngineControls as GameEngineControls } from './hooks/useGameE
 export { useGameLoop } from './lib/gameLoop';
 export { useEngineStore } from './state/engineStore';
 
-// ECS
-export {
-  addVelocity,
-  createEntity,
-  destroyEntity,
-  entityToObject,
-  markAllTransformsForUpdate,
-  objectToEntity,
-  resetWorld,
-  Transform,
-  transformQuery,
-  Velocity,
-  velocityQuery,
-  world,
-} from './lib/ecs';
+// ECS - New ComponentRegistry system
+export { ComponentManager } from './lib/ecs/ComponentManager';
+export { ComponentRegistry, componentRegistry } from './lib/ecs/ComponentRegistry';
+export { EntityManager } from './lib/ecs/EntityManager';
+export type { ComponentType, EntityId } from './lib/ecs/types';
+export { ECSWorld as World } from './lib/ecs/World';
 
 // Rendering Utilities
 export {
@@ -69,20 +49,10 @@ export {
 } from './lib/rendering';
 
 // Systems
-export {
-  PhysicsBodyRef,
-  registerPhysicsBody,
-  setPhysicsBodyActive,
-  unregisterPhysicsBody,
-} from './systems/PhysicsSyncSystem';
+export { MaterialSystem } from './systems/MaterialSystem';
 export { transformSystem } from './systems/transformSystem';
-export { runVelocitySystem } from './systems/VelocitySystem';
 
-// New Sprint 4 core abstractions
-export { CharacterController } from '@/core/components/CharacterController';
-export { Hud } from '@/core/components/ui';
-export { useAudio } from '@/core/hooks/useAudio';
-export { useEvent } from '@/core/hooks/useEvent';
+// Note: useAudio and useEvent hooks have been temporarily removed during ECS refactoring
 
 // Assets and Types with Zod validation
 export * from './types/assets';
