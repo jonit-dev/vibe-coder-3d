@@ -215,6 +215,30 @@ export class ComponentRegistry {
       }
     }
 
+    // Check for incompatible components
+    if (descriptor.incompatibleComponents) {
+      for (const incompatibleComponent of descriptor.incompatibleComponents) {
+        if (this.hasComponent(entityId, incompatibleComponent)) {
+          console.warn(
+            `Cannot add component ${componentId} to entity ${entityId}: incompatible with existing component ${incompatibleComponent}`,
+          );
+          return false;
+        }
+      }
+    }
+
+    // Check if any existing components are incompatible with this one
+    const existingComponents = this.getEntityComponents(entityId);
+    for (const existingComponentId of existingComponents) {
+      const existingDescriptor = this.get(existingComponentId);
+      if (existingDescriptor?.incompatibleComponents?.includes(componentId)) {
+        console.warn(
+          `Cannot add component ${componentId} to entity ${entityId}: existing component ${existingComponentId} is incompatible with it`,
+        );
+        return false;
+      }
+    }
+
     try {
       // Validate data
       descriptor.schema.parse(data);
@@ -368,6 +392,59 @@ export class ComponentRegistry {
    */
   getBitECSComponent(componentId: string): any {
     return this.bitECSComponents.get(componentId);
+  }
+
+  /**
+   * Get incompatible components for a given component
+   */
+  getIncompatibleComponents(componentId: string): string[] {
+    const descriptor = this.get(componentId);
+    return descriptor?.incompatibleComponents || [];
+  }
+
+  /**
+   * Check if two components are incompatible with each other
+   */
+  areComponentsIncompatible(componentA: string, componentB: string): boolean {
+    const descriptorA = this.get(componentA);
+    const descriptorB = this.get(componentB);
+
+    // Check if A is incompatible with B
+    if (descriptorA?.incompatibleComponents?.includes(componentB)) {
+      return true;
+    }
+
+    // Check if B is incompatible with A
+    if (descriptorB?.incompatibleComponents?.includes(componentA)) {
+      return true;
+    }
+
+    // Check conflicts as well for backward compatibility
+    if (descriptorA?.conflicts?.includes(componentB)) {
+      return true;
+    }
+
+    if (descriptorB?.conflicts?.includes(componentA)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Get all components that would be incompatible with adding a specific component to an entity
+   */
+  getIncompatibleComponentsForEntity(entityId: EntityId, componentId: string): string[] {
+    const existingComponents = this.getEntityComponents(entityId);
+    const incompatibleComponents: string[] = [];
+
+    for (const existingComponentId of existingComponents) {
+      if (this.areComponentsIncompatible(componentId, existingComponentId)) {
+        incompatibleComponents.push(existingComponentId);
+      }
+    }
+
+    return incompatibleComponents;
   }
 
   // ============================================================================

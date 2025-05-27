@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
+import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ComponentType, EntityId } from '@/core/lib/ecs/types';
 
@@ -20,33 +21,38 @@ export const useEntityComponents = (entityId: EntityId | null) => {
   const [components, setComponents] = useState<IComponent<any>[]>([]);
   const [updateTrigger, setUpdateTrigger] = useState(0);
 
-  // Refresh components when entity changes or when component events occur
-  useEffect(() => {
+  // Update components when entity changes or components are modified
+  const updateComponents = useCallback(() => {
     if (entityId === null) {
       setComponents([]);
       return;
     }
 
-    const updateComponents = () => {
-      const entityComponents = listEntityComponents(entityId);
-      // Convert to old format for compatibility
-      const formattedComponents = entityComponents.map((componentId) => {
-        const data = getComponentData(entityId, componentId);
-        return {
-          entityId,
-          type: componentId,
-          data,
-        };
-      });
-      setComponents(formattedComponents);
-    };
+    const entityComponents = listEntityComponents(entityId);
+    // Convert to old format for compatibility
+    const formattedComponents = entityComponents.map((componentId) => {
+      const data = getComponentData(entityId, componentId);
+      return {
+        entityId,
+        type: componentId,
+        data,
+      };
+    });
+    setComponents(formattedComponents);
+  }, [entityId, getComponentData, listEntityComponents]);
 
+  // Refresh components when entity changes or when component events occur
+  useEffect(() => {
     updateComponents();
+  }, [updateComponents]);
 
-    // Set up a periodic refresh for now (can be optimized later with proper events)
+  // Use polling for now - will be replaced with event system later
+  useEffect(() => {
+    if (entityId === null) return;
+
     const interval = setInterval(updateComponents, 100);
     return () => clearInterval(interval);
-  }, [entityId, getComponentData, listEntityComponents]);
+  }, [entityId, updateComponents]);
 
   const addComponentWrapper = useCallback(
     <TData>(type: ComponentType, data: TData): IComponent<TData> | null => {
@@ -153,6 +159,23 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     return getComponent(KnownComponentTypes.CAMERA);
   }, [getComponent]);
 
+  // Incompatible components functionality
+  const getIncompatibleComponents = useCallback(
+    (componentId: string): string[] => {
+      if (entityId === null) return [];
+
+      return componentRegistry.getIncompatibleComponentsForEntity(entityId, componentId);
+    },
+    [entityId],
+  );
+
+  const areComponentsIncompatible = useCallback(
+    (componentA: string, componentB: string): boolean => {
+      return componentRegistry.areComponentsIncompatible(componentA, componentB);
+    },
+    [],
+  );
+
   return {
     components,
     addComponent: addComponentWrapper,
@@ -170,5 +193,7 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     getRigidBody,
     getMeshCollider,
     getCamera,
+    getIncompatibleComponents,
+    areComponentsIncompatible,
   };
 };
