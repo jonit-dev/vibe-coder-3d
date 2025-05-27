@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FiShield } from 'react-icons/fi';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { CheckboxField } from '@/editor/components/shared/CheckboxField';
+import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
 import { ComponentField } from '@/editor/components/shared/ComponentField';
 import { FieldGroup } from '@/editor/components/shared/FieldGroup';
 import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
+import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
+import { ToggleField } from '@/editor/components/shared/ToggleField';
 
 import { ColliderFields } from './ColliderFields';
 
@@ -45,8 +49,6 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
   setMeshCollider,
   isPlaying,
 }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
   const handleRemoveMeshCollider = () => {
     setMeshCollider(null);
   };
@@ -88,14 +90,12 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
       componentId={KnownComponentTypes.MESH_COLLIDER}
       onRemove={handleRemoveMeshCollider}
     >
-      <ComponentField
-        label="Enable Collider"
-        type="checkbox"
+      <ToggleField
+        label="Enabled"
         value={meshCollider.enabled}
-        onChange={(value) => updateMeshCollider({ enabled: value })}
-        placeholder="Enable collision detection"
+        onChange={(value: boolean) => updateMeshCollider({ enabled: value })}
         resetValue={true}
-        disabled={isPlaying}
+        color="green"
       />
 
       <ComponentField
@@ -183,64 +183,55 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
         </div>
       )}
 
-      <ComponentField
+      <CheckboxField
         label="Is Trigger"
-        type="checkbox"
         value={meshCollider.isTrigger}
-        onChange={(value) => updateMeshCollider({ isTrigger: value })}
-        disabled={isPlaying}
-        placeholder="Trigger events without physical collision"
+        onChange={(value: boolean) => updateMeshCollider({ isTrigger: value })}
+        description="Trigger events without physical collision"
         resetValue={false}
+        color="green"
       />
 
-      {/* Advanced Settings Toggle */}
-      <button
-        onClick={() => setShowAdvanced(!showAdvanced)}
-        className="w-full text-xs text-green-400 hover:text-green-300 text-left"
-      >
-        {showAdvanced ? '▼' : '▶'} Advanced Settings
-      </button>
+      <CollapsibleSection title="Physics Material" defaultExpanded={false} badge="3">
+        <SingleAxisField
+          label="Friction"
+          value={meshCollider.physicsMaterial.friction}
+          onChange={(value: number) => updatePhysicsMaterial({ friction: value })}
+          min={0}
+          max={2}
+          step={0.1}
+          sensitivity={0.1}
+          resetValue={0.7}
+          axisLabel="FRI"
+          axisColor="#e74c3c"
+        />
 
-      {showAdvanced && (
-        <div className="space-y-3 pl-2 border-l border-gray-600/30">
-          <FieldGroup label="Physics Material">
-            <ComponentField
-              label="Friction"
-              type="number"
-              value={meshCollider.physicsMaterial.friction}
-              onChange={(value) => updatePhysicsMaterial({ friction: value })}
-              disabled={isPlaying}
-              step={0.1}
-              min={0}
-              max={2}
-              resetValue={0.7}
-            />
+        <SingleAxisField
+          label="Restitution"
+          value={meshCollider.physicsMaterial.restitution}
+          onChange={(value: number) => updatePhysicsMaterial({ restitution: value })}
+          min={0}
+          max={1}
+          step={0.1}
+          sensitivity={0.1}
+          resetValue={0.3}
+          axisLabel="RES"
+          axisColor="#3498db"
+        />
 
-            <ComponentField
-              label="Restitution"
-              type="number"
-              value={meshCollider.physicsMaterial.restitution}
-              onChange={(value) => updatePhysicsMaterial({ restitution: value })}
-              disabled={isPlaying}
-              step={0.1}
-              min={0}
-              max={1}
-              resetValue={0.3}
-            />
-
-            <ComponentField
-              label="Density"
-              type="number"
-              value={meshCollider.physicsMaterial.density}
-              onChange={(value) => updatePhysicsMaterial({ density: value })}
-              disabled={isPlaying}
-              step={0.1}
-              min={0.1}
-              resetValue={1}
-            />
-          </FieldGroup>
-        </div>
-      )}
+        <SingleAxisField
+          label="Density"
+          value={meshCollider.physicsMaterial.density}
+          onChange={(value: number) => updatePhysicsMaterial({ density: value })}
+          min={0.1}
+          max={10}
+          step={0.1}
+          sensitivity={0.1}
+          resetValue={1}
+          axisLabel="DEN"
+          axisColor="#f39c12"
+        />
+      </CollapsibleSection>
     </GenericComponentSection>
   );
 };
