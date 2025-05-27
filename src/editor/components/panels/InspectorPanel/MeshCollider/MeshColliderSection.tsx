@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { FiShield } from 'react-icons/fi';
 
-import { isComponentRemovable } from '@/core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
-import { InspectorSection } from '@/editor/components/shared/InspectorSection';
+import { ComponentField } from '@/editor/components/shared/ComponentField';
+import { FieldGroup } from '@/editor/components/shared/FieldGroup';
+import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
 
 import { ColliderFields } from './ColliderFields';
 
@@ -45,17 +46,9 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
   isPlaying,
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const removable = isComponentRemovable(KnownComponentTypes.MESH_COLLIDER);
 
   const handleRemoveMeshCollider = () => {
     setMeshCollider(null);
-  };
-
-  // This function only toggles the enabled state, not the component existence
-  const handleToggleEnabled = () => {
-    if (meshCollider) {
-      updateMeshCollider({ enabled: !meshCollider.enabled });
-    }
   };
 
   const updateMeshCollider = (updates: Partial<IMeshColliderData>) => {
@@ -88,209 +81,166 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
   }
 
   return (
-    <InspectorSection
+    <GenericComponentSection
       title="Mesh Collider"
       icon={<FiShield />}
       headerColor="green"
-      collapsible
-      defaultCollapsed={false}
-      removable={removable}
-      onRemove={removable ? handleRemoveMeshCollider : undefined}
+      componentId={KnownComponentTypes.MESH_COLLIDER}
+      onRemove={handleRemoveMeshCollider}
     >
-      <div className="space-y-3">
-        {/* Enable/Disable Toggle */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-400">Enable Collider</span>
-          <button
-            onClick={handleToggleEnabled}
-            disabled={isPlaying}
-            className={`
-              relative inline-flex h-5 w-8 items-center rounded-full transition-colors
-              ${meshCollider.enabled ? 'bg-green-500' : 'bg-gray-600'}
-              ${isPlaying ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            `}
-          >
-            <span
-              className={`
-                inline-block h-3 w-3 transform rounded-full bg-white transition-transform
-                ${meshCollider.enabled ? 'translate-x-4' : 'translate-x-1'}
-              `}
-            />
-          </button>
-        </div>
+      <ComponentField
+        label="Enable Collider"
+        type="checkbox"
+        value={meshCollider.enabled}
+        onChange={(value) => updateMeshCollider({ enabled: value })}
+        placeholder="Enable collision detection"
+        resetValue={true}
+        disabled={isPlaying}
+      />
 
-        {/* Collider Type */}
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-400">Collider Type</label>
-          <select
-            value={meshCollider.colliderType}
-            onChange={(e) => updateMeshCollider({ colliderType: e.target.value as ColliderType })}
-            disabled={isPlaying}
-            className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-          >
-            <option value="box">Box Collider</option>
-            <option value="sphere">Sphere Collider</option>
-            <option value="capsule">Capsule Collider</option>
-            <option value="convex">Convex Hull</option>
-            <option value="mesh">Mesh Collider</option>
-          </select>
-        </div>
+      <ComponentField
+        label="Collider Type"
+        type="select"
+        value={meshCollider.colliderType}
+        onChange={(value) => updateMeshCollider({ colliderType: value as ColliderType })}
+        disabled={isPlaying}
+        options={[
+          { value: 'box', label: 'Box Collider' },
+          { value: 'sphere', label: 'Sphere Collider' },
+          { value: 'capsule', label: 'Capsule Collider' },
+          { value: 'convex', label: 'Convex Hull' },
+          { value: 'mesh', label: 'Mesh Collider' },
+        ]}
+      />
 
-        {/* Collider Center */}
+      <ColliderFields
+        label="Center"
+        value={meshCollider.center}
+        onChange={(center: [number, number, number]) => updateMeshCollider({ center })}
+        step={0.01}
+        sensitivity={0.1}
+      />
+
+      {/* Collider Size - varies by type */}
+      {meshCollider.colliderType === 'box' && (
         <ColliderFields
-          label="Center"
-          value={meshCollider.center}
-          onChange={(center: [number, number, number]) => updateMeshCollider({ center })}
+          label="Size"
+          value={[meshCollider.size.width, meshCollider.size.height, meshCollider.size.depth]}
+          onChange={(size: [number, number, number]) =>
+            updateSize({ width: size[0], height: size[1], depth: size[2] })
+          }
           step={0.01}
           sensitivity={0.1}
         />
+      )}
 
-        {/* Collider Size - varies by type */}
-        {meshCollider.colliderType === 'box' && (
-          <ColliderFields
-            label="Size"
-            value={[meshCollider.size.width, meshCollider.size.height, meshCollider.size.depth]}
-            onChange={(size: [number, number, number]) =>
-              updateSize({ width: size[0], height: size[1], depth: size[2] })
-            }
-            step={0.01}
-            sensitivity={0.1}
-          />
-        )}
-
-        {meshCollider.colliderType === 'sphere' && (
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-gray-400">Size</div>
-            <div className="space-y-1">
-              <label className="text-xs text-gray-500">Radius</label>
-              <input
-                type="number"
-                value={meshCollider.size.radius}
-                onChange={(e) => updateSize({ radius: parseFloat(e.target.value) || 0.01 })}
-                disabled={isPlaying}
-                step={0.01}
-                min={0.01}
-                className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-              />
-            </div>
-          </div>
-        )}
-
-        {meshCollider.colliderType === 'capsule' && (
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-gray-400">Size</div>
-            <div className="space-y-1">
-              <label className="text-xs text-gray-500">Radius</label>
-              <input
-                type="number"
-                value={meshCollider.size.capsuleRadius}
-                onChange={(e) => updateSize({ capsuleRadius: parseFloat(e.target.value) || 0.01 })}
-                disabled={isPlaying}
-                step={0.01}
-                min={0.01}
-                className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-gray-500">Height</label>
-              <input
-                type="number"
-                value={meshCollider.size.capsuleHeight}
-                onChange={(e) => updateSize({ capsuleHeight: parseFloat(e.target.value) || 0.01 })}
-                disabled={isPlaying}
-                step={0.01}
-                min={0.01}
-                className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-              />
-            </div>
-          </div>
-        )}
-
-        {(meshCollider.colliderType === 'mesh' || meshCollider.colliderType === 'convex') && (
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2">
-            <div className="text-xs text-blue-300">
-              💡 {meshCollider.colliderType === 'mesh' ? 'Mesh' : 'Convex'} colliders use the
-              entity's mesh geometry
-            </div>
-          </div>
-        )}
-
-        {/* Is Trigger */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-400">Is Trigger</span>
-          <input
-            type="checkbox"
-            checked={meshCollider.isTrigger}
-            onChange={(e) => updateMeshCollider({ isTrigger: e.target.checked })}
+      {meshCollider.colliderType === 'sphere' && (
+        <FieldGroup label="Size">
+          <ComponentField
+            label="Radius"
+            type="number"
+            value={meshCollider.size.radius}
+            onChange={(value) => updateSize({ radius: value })}
             disabled={isPlaying}
-            className="rounded border-gray-600 bg-black/30 text-green-500 focus:ring-green-500 disabled:opacity-50"
+            step={0.01}
+            min={0.01}
+            resetValue={0.5}
           />
-        </div>
+        </FieldGroup>
+      )}
 
-        {/* Advanced Settings Toggle */}
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full text-xs text-green-400 hover:text-green-300 text-left"
-        >
-          {showAdvanced ? '▼' : '▶'} Advanced Settings
-        </button>
+      {meshCollider.colliderType === 'capsule' && (
+        <FieldGroup label="Size">
+          <ComponentField
+            label="Radius"
+            type="number"
+            value={meshCollider.size.capsuleRadius}
+            onChange={(value) => updateSize({ capsuleRadius: value })}
+            disabled={isPlaying}
+            step={0.01}
+            min={0.01}
+            resetValue={0.5}
+          />
+          <ComponentField
+            label="Height"
+            type="number"
+            value={meshCollider.size.capsuleHeight}
+            onChange={(value) => updateSize({ capsuleHeight: value })}
+            disabled={isPlaying}
+            step={0.01}
+            min={0.01}
+            resetValue={2}
+          />
+        </FieldGroup>
+      )}
 
-        {showAdvanced && (
-          <div className="space-y-3 pl-2 border-l border-gray-600/30">
-            {/* Physics Material Properties */}
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-gray-400">Physics Material</div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-gray-500">Friction</label>
-                <input
-                  type="number"
-                  value={meshCollider.physicsMaterial.friction}
-                  onChange={(e) =>
-                    updatePhysicsMaterial({ friction: parseFloat(e.target.value) || 0 })
-                  }
-                  disabled={isPlaying}
-                  step={0.1}
-                  min={0}
-                  max={2}
-                  className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-gray-500">Restitution</label>
-                <input
-                  type="number"
-                  value={meshCollider.physicsMaterial.restitution}
-                  onChange={(e) =>
-                    updatePhysicsMaterial({ restitution: parseFloat(e.target.value) || 0 })
-                  }
-                  disabled={isPlaying}
-                  step={0.1}
-                  min={0}
-                  max={1}
-                  className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-gray-500">Density</label>
-                <input
-                  type="number"
-                  value={meshCollider.physicsMaterial.density}
-                  onChange={(e) =>
-                    updatePhysicsMaterial({ density: parseFloat(e.target.value) || 0.1 })
-                  }
-                  disabled={isPlaying}
-                  step={0.1}
-                  min={0.1}
-                  className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200 disabled:opacity-50"
-                />
-              </div>
-            </div>
+      {(meshCollider.colliderType === 'mesh' || meshCollider.colliderType === 'convex') && (
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2">
+          <div className="text-xs text-blue-300">
+            💡 {meshCollider.colliderType === 'mesh' ? 'Mesh' : 'Convex'} colliders use the entity's
+            mesh geometry
           </div>
-        )}
-      </div>
-    </InspectorSection>
+        </div>
+      )}
+
+      <ComponentField
+        label="Is Trigger"
+        type="checkbox"
+        value={meshCollider.isTrigger}
+        onChange={(value) => updateMeshCollider({ isTrigger: value })}
+        disabled={isPlaying}
+        placeholder="Trigger events without physical collision"
+        resetValue={false}
+      />
+
+      {/* Advanced Settings Toggle */}
+      <button
+        onClick={() => setShowAdvanced(!showAdvanced)}
+        className="w-full text-xs text-green-400 hover:text-green-300 text-left"
+      >
+        {showAdvanced ? '▼' : '▶'} Advanced Settings
+      </button>
+
+      {showAdvanced && (
+        <div className="space-y-3 pl-2 border-l border-gray-600/30">
+          <FieldGroup label="Physics Material">
+            <ComponentField
+              label="Friction"
+              type="number"
+              value={meshCollider.physicsMaterial.friction}
+              onChange={(value) => updatePhysicsMaterial({ friction: value })}
+              disabled={isPlaying}
+              step={0.1}
+              min={0}
+              max={2}
+              resetValue={0.7}
+            />
+
+            <ComponentField
+              label="Restitution"
+              type="number"
+              value={meshCollider.physicsMaterial.restitution}
+              onChange={(value) => updatePhysicsMaterial({ restitution: value })}
+              disabled={isPlaying}
+              step={0.1}
+              min={0}
+              max={1}
+              resetValue={0.3}
+            />
+
+            <ComponentField
+              label="Density"
+              type="number"
+              value={meshCollider.physicsMaterial.density}
+              onChange={(value) => updatePhysicsMaterial({ density: value })}
+              disabled={isPlaying}
+              step={0.1}
+              min={0.1}
+              resetValue={1}
+            />
+          </FieldGroup>
+        </div>
+      )}
+    </GenericComponentSection>
   );
 };

@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FiEye } from 'react-icons/fi';
 
-import { isComponentRemovable } from '@/core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
-import { InspectorSection } from '@/editor/components/shared/InspectorSection';
+import { CheckboxField } from '@/editor/components/shared/CheckboxField';
+import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
+import { ColorField } from '@/editor/components/shared/ColorField';
+import { ComponentField } from '@/editor/components/shared/ComponentField';
+import { FieldGroup } from '@/editor/components/shared/FieldGroup';
+import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
+import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
+import { ToggleField } from '@/editor/components/shared/ToggleField';
 
 export interface IMeshRendererData {
   meshId: string;
@@ -31,9 +37,6 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   setMeshRenderer,
   isPlaying: _isPlaying,
 }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const removable = isComponentRemovable(KnownComponentTypes.MESH_RENDERER);
-
   const handleRemoveMeshRenderer = () => {
     setMeshRenderer(null);
   };
@@ -59,175 +62,115 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   }
 
   return (
-    <InspectorSection
+    <GenericComponentSection
       title="Mesh Renderer"
       icon={<FiEye />}
       headerColor="cyan"
-      collapsible
-      defaultCollapsed={false}
-      removable={removable}
-      onRemove={removable ? handleRemoveMeshRenderer : undefined}
+      componentId={KnownComponentTypes.MESH_RENDERER}
+      onRemove={handleRemoveMeshRenderer}
     >
-      <div className="space-y-3">
-        {/* Enable/Disable Toggle */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-gray-400">Enabled</span>
-          <input
-            type="checkbox"
-            checked={meshRenderer.enabled}
-            onChange={(e) => updateMeshRenderer({ enabled: e.target.checked })}
-            className="rounded border-gray-600 bg-black/30 text-cyan-500 focus:ring-cyan-500"
-          />
-        </div>
+      <ToggleField
+        label="Enabled"
+        value={meshRenderer.enabled}
+        onChange={(value: boolean) => updateMeshRenderer({ enabled: value })}
+        resetValue={true}
+        color="cyan"
+      />
 
-        {/* Mesh Selection */}
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-400">Mesh</label>
-          <select
-            value={meshRenderer.meshId}
-            onChange={(e) => updateMeshRenderer({ meshId: e.target.value })}
-            className="w-full bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200"
-          >
-            <option value="cube">Cube</option>
-            <option value="sphere">Sphere</option>
-            <option value="plane">Plane</option>
-            <option value="cylinder">Cylinder</option>
-            <option value="cone">Cone</option>
-            <option value="torus">Torus</option>
-            <option value="capsule">Capsule</option>
-          </select>
-        </div>
+      <ComponentField
+        label="Mesh"
+        type="select"
+        value={meshRenderer.meshId}
+        onChange={(value) => updateMeshRenderer({ meshId: value })}
+        options={[
+          { value: 'cube', label: 'Cube' },
+          { value: 'sphere', label: 'Sphere' },
+          { value: 'plane', label: 'Plane' },
+          { value: 'cylinder', label: 'Cylinder' },
+          { value: 'cone', label: 'Cone' },
+          { value: 'torus', label: 'Torus' },
+          { value: 'capsule', label: 'Capsule' },
+        ]}
+      />
 
-        {/* Material Properties */}
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-gray-400">Material</div>
+      <FieldGroup label="Material">
+        <ColorField
+          label="Color"
+          value={meshRenderer.material.color}
+          onChange={(value: string) => updateMaterial({ color: value })}
+          resetValue="#ffffff"
+          placeholder="#ffffff"
+        />
+      </FieldGroup>
 
-          <div className="space-y-1">
-            <label className="text-xs text-gray-500">Color</label>
-            <div className="flex space-x-2">
-              <input
-                type="color"
-                value={meshRenderer.material.color}
-                onChange={(e) => updateMaterial({ color: e.target.value })}
-                className="w-12 h-8 rounded border border-gray-600/30 bg-black/30"
-              />
-              <input
-                type="text"
-                value={meshRenderer.material.color}
-                onChange={(e) => updateMaterial({ color: e.target.value })}
-                className="flex-1 bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200"
-                placeholder="#ffffff"
-              />
-            </div>
-          </div>
-        </div>
+      <CollapsibleSection title="Material Properties" defaultExpanded={false} badge="PBR">
+        <SingleAxisField
+          label="Metalness"
+          value={meshRenderer.material.metalness}
+          onChange={(value) => updateMaterial({ metalness: value })}
+          min={0}
+          max={1}
+          step={0.1}
+          sensitivity={0.1}
+          resetValue={0}
+          axisLabel="MET"
+          axisColor="#95a5a6"
+        />
 
-        {/* Advanced Settings Toggle */}
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full text-xs text-cyan-400 hover:text-cyan-300 text-left"
-        >
-          {showAdvanced ? '▼' : '▶'} Advanced Settings
-        </button>
+        <SingleAxisField
+          label="Roughness"
+          value={meshRenderer.material.roughness}
+          onChange={(value) => updateMaterial({ roughness: value })}
+          min={0}
+          max={1}
+          step={0.1}
+          sensitivity={0.1}
+          resetValue={0.5}
+          axisLabel="ROU"
+          axisColor="#34495e"
+        />
 
-        {showAdvanced && (
-          <div className="space-y-3 pl-2 border-l border-gray-600/30">
-            {/* Advanced Material Properties */}
-            <div className="space-y-2">
-              <div className="space-y-1">
-                <label className="text-xs text-gray-500">Metalness</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={meshRenderer.material.metalness}
-                  onChange={(e) => updateMaterial({ metalness: parseFloat(e.target.value) })}
-                  className="w-full"
-                />
-                <div className="text-xs text-gray-500">
-                  {meshRenderer.material.metalness.toFixed(1)}
-                </div>
-              </div>
+        <ColorField
+          label="Emissive Color"
+          value={meshRenderer.material.emissive}
+          onChange={(value: string) => updateMaterial({ emissive: value })}
+          resetValue="#000000"
+          placeholder="#000000"
+        />
 
-              <div className="space-y-1">
-                <label className="text-xs text-gray-500">Roughness</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={meshRenderer.material.roughness}
-                  onChange={(e) => updateMaterial({ roughness: parseFloat(e.target.value) })}
-                  className="w-full"
-                />
-                <div className="text-xs text-gray-500">
-                  {meshRenderer.material.roughness.toFixed(1)}
-                </div>
-              </div>
+        <SingleAxisField
+          label="Emissive Intensity"
+          value={meshRenderer.material.emissiveIntensity}
+          onChange={(value) => updateMaterial({ emissiveIntensity: value })}
+          min={0}
+          max={5}
+          step={0.1}
+          sensitivity={0.1}
+          resetValue={0}
+          axisLabel="EMI"
+          axisColor="#f39c12"
+        />
+      </CollapsibleSection>
 
-              <div className="space-y-1">
-                <label className="text-xs text-gray-500">Emissive Color</label>
-                <div className="flex space-x-2">
-                  <input
-                    type="color"
-                    value={meshRenderer.material.emissive}
-                    onChange={(e) => updateMaterial({ emissive: e.target.value })}
-                    className="w-12 h-8 rounded border border-gray-600/30 bg-black/30"
-                  />
-                  <input
-                    type="text"
-                    value={meshRenderer.material.emissive}
-                    onChange={(e) => updateMaterial({ emissive: e.target.value })}
-                    className="flex-1 bg-black/30 border border-gray-600/30 rounded px-2 py-1 text-xs text-gray-200"
-                    placeholder="#000000"
-                  />
-                </div>
-              </div>
+      <CollapsibleSection title="Shadow Settings" defaultExpanded={false} badge="2">
+        <CheckboxField
+          label="Cast Shadows"
+          value={meshRenderer.castShadows}
+          onChange={(value: boolean) => updateMeshRenderer({ castShadows: value })}
+          description="Cast shadows on other objects"
+          resetValue={true}
+          color="purple"
+        />
 
-              <div className="space-y-1">
-                <label className="text-xs text-gray-500">Emissive Intensity</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="5"
-                  step="0.1"
-                  value={meshRenderer.material.emissiveIntensity}
-                  onChange={(e) =>
-                    updateMaterial({ emissiveIntensity: parseFloat(e.target.value) })
-                  }
-                  className="w-full"
-                />
-                <div className="text-xs text-gray-500">
-                  {meshRenderer.material.emissiveIntensity.toFixed(1)}
-                </div>
-              </div>
-            </div>
-
-            {/* Cast Shadows */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-400">Cast Shadows</span>
-              <input
-                type="checkbox"
-                checked={meshRenderer.castShadows}
-                onChange={(e) => updateMeshRenderer({ castShadows: e.target.checked })}
-                className="rounded border-gray-600 bg-black/30 text-cyan-500 focus:ring-cyan-500"
-              />
-            </div>
-
-            {/* Receive Shadows */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-400">Receive Shadows</span>
-              <input
-                type="checkbox"
-                checked={meshRenderer.receiveShadows}
-                onChange={(e) => updateMeshRenderer({ receiveShadows: e.target.checked })}
-                className="rounded border-gray-600 bg-black/30 text-cyan-500 focus:ring-cyan-500"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    </InspectorSection>
+        <CheckboxField
+          label="Receive Shadows"
+          value={meshRenderer.receiveShadows}
+          onChange={(value: boolean) => updateMeshRenderer({ receiveShadows: value })}
+          description="Receive shadows from other objects"
+          resetValue={true}
+          color="purple"
+        />
+      </CollapsibleSection>
+    </GenericComponentSection>
   );
 };

@@ -67,22 +67,6 @@ export default [
           prefix: ['I'],
         },
       ],
-      'import/order': [
-        'error',
-        {
-          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
-          pathGroups: [
-            {
-              pattern: '@/**',
-              group: 'internal',
-            },
-          ],
-          alphabetize: {
-            order: 'asc',
-          },
-          'newlines-between': 'always',
-        },
-      ],
     },
   },
   prettierConfig,
