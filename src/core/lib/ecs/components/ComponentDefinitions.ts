@@ -73,17 +73,13 @@ const MeshColliderSchema = z.object({
 });
 
 const CameraSchema = z.object({
-  preset: z.string(),
   fov: z.number(),
   near: z.number(),
   far: z.number(),
-  isMain: z.boolean(),
-  enableControls: z.boolean(),
   projectionType: z.enum(['perspective', 'orthographic']),
-  orthographicSize: z.number().optional(),
-  target: z.tuple([z.number(), z.number(), z.number()]),
-  clearDepth: z.boolean(),
-  renderPriority: z.number(),
+  orthographicSize: z.number(),
+  depth: z.number(),
+  isMain: z.boolean(),
 });
 
 // ============================================================================
@@ -338,51 +334,31 @@ const cameraComponent = ComponentFactory.create({
     fov: Types.f32,
     near: Types.f32,
     far: Types.f32,
-    isMain: Types.ui8,
-    enableControls: Types.ui8,
     projectionType: Types.ui8,
     orthographicSize: Types.f32,
-    targetX: Types.f32,
-    targetY: Types.f32,
-    targetZ: Types.f32,
-    presetHash: Types.ui32,
-    clearDepth: Types.ui8,
-    renderPriority: Types.i32,
+    depth: Types.i32,
+    isMain: Types.ui8,
     needsUpdate: Types.ui8,
   },
   serialize: (eid: EntityId, component: any) => ({
-    preset: getStringFromHash(component.presetHash[eid]) || 'unity-default',
     fov: component.fov[eid],
     near: component.near[eid],
     far: component.far[eid],
-    isMain: Boolean(component.isMain[eid]),
-    enableControls: Boolean(component.enableControls[eid]),
     projectionType: (component.projectionType[eid] === 1 ? 'orthographic' : 'perspective') as
       | 'perspective'
       | 'orthographic',
     orthographicSize: component.orthographicSize[eid],
-    target: [component.targetX[eid], component.targetY[eid], component.targetZ[eid]] as [
-      number,
-      number,
-      number,
-    ],
-    clearDepth: Boolean(component.clearDepth[eid]),
-    renderPriority: component.renderPriority[eid],
+    depth: component.depth[eid],
+    isMain: Boolean(component.isMain[eid]),
   }),
   deserialize: (eid: EntityId, data, component: any) => {
     component.fov[eid] = data.fov;
     component.near[eid] = data.near;
     component.far[eid] = data.far;
-    component.isMain[eid] = data.isMain ? 1 : 0;
-    component.enableControls[eid] = data.enableControls ? 1 : 0;
     component.projectionType[eid] = data.projectionType === 'orthographic' ? 1 : 0;
     component.orthographicSize[eid] = data.orthographicSize || 10;
-    component.targetX[eid] = data.target[0];
-    component.targetY[eid] = data.target[1];
-    component.targetZ[eid] = data.target[2];
-    component.presetHash[eid] = storeString(data.preset);
-    component.clearDepth[eid] = data.clearDepth ? 1 : 0;
-    component.renderPriority[eid] = data.renderPriority || 0;
+    component.depth[eid] = data.depth || 0;
+    component.isMain[eid] = data.isMain ? 1 : 0;
     component.needsUpdate[eid] = 1; // Mark for update
   },
   dependencies: ['Transform'],

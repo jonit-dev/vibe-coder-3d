@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { cameraSystem } from '@/core/systems/cameraSystem';
 
-export interface IUseDragAxis {
+export interface IUseDragAxisCamera {
   dragActive: boolean;
   onDragStart: (e: React.MouseEvent) => void;
   cleanup: () => void;
@@ -12,7 +12,7 @@ export function useDragAxisCamera(
   value: number,
   onChange: (val: number) => void,
   sensitivity: number = 0.1,
-): IUseDragAxis {
+): IUseDragAxisCamera {
   const [dragActive, setDragActive] = useState(false);
   const dragStartValueRef = useRef(value);
   const dragStartXRef = useRef(0);
@@ -28,7 +28,6 @@ export function useDragAxisCamera(
     const delta = (e.clientX - dragStartXRef.current) * latestSensitivity.current;
     const next = Number((dragStartValueRef.current + delta).toFixed(2));
 
-    console.log('[useDragAxisCamera] Drag move', { delta, next });
     latestOnChange.current(next);
 
     // Run camera system to update the 3D view
@@ -40,8 +39,6 @@ export function useDragAxisCamera(
     document.removeEventListener('mousemove', handleDragMove);
     document.removeEventListener('mouseup', handleDragEnd);
     document.body.style.userSelect = '';
-
-    console.log('[useDragAxisCamera] Drag end');
 
     // Ensure final camera update is applied
     cameraSystem();
@@ -55,8 +52,6 @@ export function useDragAxisCamera(
       document.addEventListener('mousemove', handleDragMove);
       document.addEventListener('mouseup', handleDragEnd);
       document.body.style.userSelect = 'none';
-
-      console.log('[useDragAxisCamera] Drag start', { value, x: e.clientX });
     },
     [value, handleDragMove, handleDragEnd],
   );

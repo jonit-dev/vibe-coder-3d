@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { transformSystem } from '@core/systems/transformSystem';
+import { transformSystem } from '@/core/systems/transformSystem';
 
 export interface IUseDragAxis {
   dragActive: boolean;
@@ -27,9 +27,7 @@ export function useDragAxis(
   const handleDragMove = useCallback((e: MouseEvent) => {
     const delta = (e.clientX - dragStartXRef.current) * latestSensitivity.current;
     const next = Number((dragStartValueRef.current + delta).toFixed(2));
-    // Debug log
 
-    console.log('[useDragAxis] Drag move', { delta, next });
     latestOnChange.current(next);
 
     // Run transform system to update the 3D view
@@ -41,8 +39,6 @@ export function useDragAxis(
     document.removeEventListener('mousemove', handleDragMove);
     document.removeEventListener('mouseup', handleDragEnd);
     document.body.style.userSelect = '';
-
-    console.log('[useDragAxis] Drag end');
 
     // Ensure final transform update is applied
     transformSystem();
@@ -56,8 +52,6 @@ export function useDragAxis(
       document.addEventListener('mousemove', handleDragMove);
       document.addEventListener('mouseup', handleDragEnd);
       document.body.style.userSelect = 'none';
-
-      console.log('[useDragAxis] Drag start', { value, x: e.clientX });
     },
     [value, handleDragMove, handleDragEnd],
   );

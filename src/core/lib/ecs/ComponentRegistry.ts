@@ -505,8 +505,10 @@ export const componentRegistry = ComponentRegistry.getInstance();
  * Check if a component can be removed (legacy compatibility)
  */
 export function isComponentRemovable(componentId: string): boolean {
-  // For now, all components are removable except Transform
-  return componentId !== 'Transform';
+  // Transform and Camera components cannot be removed as they are essential
+  // Transform: Required for all entities to exist in 3D space
+  // Camera: A camera entity without a Camera component would be useless
+  return componentId !== 'Transform' && componentId !== 'Camera';
 }
 
 /**

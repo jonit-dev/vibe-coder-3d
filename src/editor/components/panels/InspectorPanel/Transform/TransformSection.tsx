@@ -1,10 +1,9 @@
 import React from 'react';
 import { FiMove } from 'react-icons/fi';
 
-import { isComponentRemovable } from '@/core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
-import { TransformFields } from '@/editor/components/panels/InspectorPanel/Transform/TransformFields/TransformFields';
-import { InspectorSection } from '@/editor/components/shared/InspectorSection';
+import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
+import { Vector3Field } from '@/editor/components/shared/Vector3Field';
 
 export interface ITransformSectionProps {
   position: [number, number, number];
@@ -25,23 +24,17 @@ export const TransformSection: React.FC<ITransformSectionProps> = ({
   setScale,
   onRemove,
 }) => {
-  const removable = isComponentRemovable(KnownComponentTypes.TRANSFORM);
-
   return (
-    <InspectorSection
+    <GenericComponentSection
       title="Transform"
       icon={<FiMove />}
       headerColor="green"
-      collapsible
-      defaultCollapsed={false}
-      removable={removable}
+      componentId={KnownComponentTypes.TRANSFORM}
       onRemove={onRemove}
     >
-      <div className="space-y-1">
-        <TransformFields label="Position" value={position} onChange={setPosition} />
-        <TransformFields label="Rotation" value={rotation} onChange={setRotation} />
-        <TransformFields label="Scale" value={scale} onChange={setScale} />
-      </div>
-    </InspectorSection>
+      <Vector3Field label="Position" value={position} onChange={setPosition} />
+      <Vector3Field label="Rotation" value={rotation} onChange={setRotation} />
+      <Vector3Field label="Scale" value={scale} onChange={setScale} resetValue={[1, 1, 1]} />
+    </GenericComponentSection>
   );
 };

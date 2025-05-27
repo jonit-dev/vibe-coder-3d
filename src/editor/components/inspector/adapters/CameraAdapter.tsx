@@ -7,15 +7,11 @@ import { CameraSection } from '@/editor/components/panels/InspectorPanel/Camera/
 interface ICameraAdapterProps {
   cameraComponent: any;
   updateComponent: (type: string, data: any) => boolean;
-  removeComponent?: (type: string) => boolean;
-  entityId: number;
 }
 
 export const CameraAdapter: React.FC<ICameraAdapterProps> = ({
   cameraComponent,
   updateComponent,
-  removeComponent,
-  entityId,
 }) => {
   const data = cameraComponent?.data as ICameraData;
 
@@ -26,16 +22,5 @@ export const CameraAdapter: React.FC<ICameraAdapterProps> = ({
     updateComponent(KnownComponentTypes.CAMERA, newData);
   };
 
-  const handleRemove = removeComponent
-    ? () => removeComponent(KnownComponentTypes.CAMERA)
-    : undefined;
-
-  return (
-    <CameraSection
-      cameraData={data}
-      onUpdate={handleUpdate}
-      onRemove={handleRemove}
-      entityId={entityId}
-    />
-  );
+  return <CameraSection cameraData={data} onUpdate={handleUpdate} />;
 };

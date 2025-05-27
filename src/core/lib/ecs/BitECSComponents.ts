@@ -63,19 +63,10 @@ export const Camera = defineComponent({
   fov: Types.f32,
   near: Types.f32,
   far: Types.f32,
-  isMain: Types.ui8,
-  enableControls: Types.ui8,
   projectionType: Types.ui8, // 0: perspective, 1: orthographic
   orthographicSize: Types.f32,
-  // Target position
-  targetX: Types.f32,
-  targetY: Types.f32,
-  targetZ: Types.f32,
-  // Preset stored as hash for exact preservation
-  presetHash: Types.ui32,
-  // Optional properties
-  clearDepth: Types.ui8,
-  renderPriority: Types.i32,
+  depth: Types.i32,
+  isMain: Types.ui8,
   // Flag to mark when the camera needs to be updated
   needsUpdate: Types.ui8,
 });

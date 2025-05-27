@@ -59,20 +59,17 @@ export const useSceneInitialization = ({
               defaultTransform,
             );
 
-            // Add Camera component with Unity default settings
-            const defaultCamera: ICameraData = {
-              preset: 'unity-default',
-              fov: 30,
+            // Add Camera component with Unity-like defaults
+            const cameraData: ICameraData = {
+              fov: 20,
               near: 0.1,
-              far: 10,
-              isMain: true, // Mark as main camera
-              enableControls: true,
-              target: [0, 0, 0],
+              far: 100,
               projectionType: 'perspective',
-              clearDepth: true,
-              renderPriority: 0,
+              orthographicSize: 10,
+              depth: 0,
+              isMain: true, // First camera is main
             };
-            componentManager.addComponent(mainCamera.id, KnownComponentTypes.CAMERA, defaultCamera);
+            componentManager.addComponent(mainCamera.id, KnownComponentTypes.CAMERA, cameraData);
 
             onStatusMessage('Created new scene with default Main Camera');
             hasInitialized.current = true;

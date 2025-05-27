@@ -1,16 +1,36 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { AxisInput } from './AxisInput';
-import { axisColors } from './axisColors';
 import { useDragAxis } from './useDragAxis';
 
-export interface ITransformFieldsProps {
+// Reuse the axis colors from TransformFields
+const axisColors = {
+  x: '#ff6b6b', // Red for X axis
+  y: '#4ecdc4', // Teal for Y axis
+  z: '#45b7d1', // Blue for Z axis
+};
+
+export interface IVector3FieldProps {
   label: string;
   value: [number, number, number];
   onChange: (next: [number, number, number]) => void;
+  step?: number;
+  resetValue?: [number, number, number];
+  sensitivity?: number;
+  min?: number;
+  max?: number;
 }
 
-export const TransformFields: React.FC<ITransformFieldsProps> = ({ label, value, onChange }) => {
+export const Vector3Field: React.FC<IVector3FieldProps> = ({
+  label,
+  value,
+  onChange,
+  step,
+  resetValue,
+  sensitivity = 0.1,
+  min,
+  max,
+}) => {
   const [localValues, setLocalValues] = useState<[number, number, number]>([...value]);
 
   useEffect(() => {
@@ -23,7 +43,6 @@ export const TransformFields: React.FC<ITransformFieldsProps> = ({ label, value,
       const next: [number, number, number] = [...localValues];
       next[idx] = val;
       setLocalValues(next);
-      console.log('[TransformFields] label:', label, 'idx:', idx, 'val:', val, 'next:', next);
       onChange(next);
     },
     [localValues, onChange],
@@ -31,17 +50,24 @@ export const TransformFields: React.FC<ITransformFieldsProps> = ({ label, value,
 
   const handleReset = useCallback(
     (idx: number) => {
-      const defaultVal = label === 'Scale' ? 1 : 0;
+      const defaultVal = resetValue ? resetValue[idx] : label === 'Scale' ? 1 : 0;
       const next: [number, number, number] = [...localValues];
       next[idx] = defaultVal;
       setLocalValues(next);
       onChange(next);
     },
-    [label, localValues, onChange],
+    [label, localValues, onChange, resetValue],
   );
 
-  // Sensitivity for drag
-  const sensitivity = label === 'Scale' ? 0.01 : 0.1;
+  const handleResetAll = useCallback(() => {
+    const defaultVals: [number, number, number] =
+      resetValue || (label === 'Scale' ? [1, 1, 1] : [0, 0, 0]);
+    setLocalValues(defaultVals);
+    onChange(defaultVals);
+  }, [label, onChange, resetValue]);
+
+  // Calculate step based on field type if not provided
+  const defaultStep = step || (label === 'Scale' ? 0.1 : 0.01);
 
   return (
     <div className="space-y-0.5">
@@ -50,11 +76,7 @@ export const TransformFields: React.FC<ITransformFieldsProps> = ({ label, value,
         <span className="text-[11px] font-medium text-gray-300">{label}</span>
         <button
           className="text-[9px] text-gray-400 hover:text-cyan-300 bg-black/30 hover:bg-gray-700/50 border border-gray-600/30 hover:border-cyan-500/30 rounded-sm px-1 py-px transition-all duration-200"
-          onClick={() => {
-            const defaultVals: [number, number, number] = label === 'Scale' ? [1, 1, 1] : [0, 0, 0];
-            setLocalValues(defaultVals);
-            onChange(defaultVals);
-          }}
+          onClick={handleResetAll}
         >
           Reset
         </button>
@@ -76,8 +98,10 @@ export const TransformFields: React.FC<ITransformFieldsProps> = ({ label, value,
               onChange={(val) => handleInputChange(idx, val)}
               onDragStart={onDragStart}
               onReset={() => handleReset(idx)}
-              step={label === 'Scale' ? 0.1 : 0.01}
+              step={defaultStep}
               dragActive={dragActive}
+              min={min}
+              max={max}
             />
           );
         })}

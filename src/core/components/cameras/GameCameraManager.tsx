@@ -142,12 +142,26 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
       (rotation[2] * Math.PI) / 180,
     );
 
-    // If camera has a target, make it look at the target
-    if (cameraData.target) {
-      gameCamera.lookAt(cameraData.target[0], cameraData.target[1], cameraData.target[2]);
+    // Apply camera properties from ECS data
+    if (gameCamera instanceof THREE.PerspectiveCamera) {
+      gameCamera.fov = cameraData.fov;
+      gameCamera.near = cameraData.near;
+      gameCamera.far = cameraData.far;
+      gameCamera.updateProjectionMatrix();
+    } else if (gameCamera instanceof THREE.OrthographicCamera) {
+      const size = cameraData.orthographicSize;
+      const aspect = size * (window.innerWidth / window.innerHeight);
+      gameCamera.left = -aspect;
+      gameCamera.right = aspect;
+      gameCamera.top = size;
+      gameCamera.bottom = -size;
+      gameCamera.near = cameraData.near;
+      gameCamera.far = cameraData.far;
+      gameCamera.updateProjectionMatrix();
     }
 
-    gameCamera.updateProjectionMatrix();
+    // Camera direction is now controlled by Transform component rotation
+    // No more lookAt target - Unity-style behavior
 
     // Replace the main Three.js camera with our game camera
     set({ camera: gameCamera as any });

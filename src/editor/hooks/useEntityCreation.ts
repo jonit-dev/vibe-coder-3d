@@ -170,16 +170,13 @@ export const useEntityCreation = () => {
 
       // Add Camera component with default Unity-like settings
       const defaultCamera: ICameraData = {
-        preset: 'unity-default',
-        fov: 30,
+        fov: 20,
         near: 0.1,
-        far: 10,
-        isMain: false, // Don't make it main by default
-        enableControls: true,
-        target: [0, 0, 0],
+        far: 1000,
         projectionType: 'perspective',
-        clearDepth: true,
-        renderPriority: 0,
+        orthographicSize: 10,
+        depth: 0,
+        isMain: false,
       };
       componentManager.addComponent(entity.id, KnownComponentTypes.CAMERA, defaultCamera);
 
