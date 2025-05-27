@@ -11,6 +11,11 @@ export type CoreEvents = {
   'game:scoreChanged': { newScore: number };
   'game:itemCollected': { itemType: string; entity: number };
   'ui:buttonClicked': { buttonId: string };
+
+  // Component system events
+  'component:added': { entityId: number; componentId: string; data: any };
+  'component:removed': { entityId: number; componentId: string };
+  'component:updated': { entityId: number; componentId: string; data: any };
 };
 
 export const emitter: Emitter<CoreEvents> = mitt<CoreEvents>();

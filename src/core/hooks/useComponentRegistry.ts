@@ -22,6 +22,8 @@ export interface IComponentRegistryHook {
 
   // Entity queries
   listEntityComponents: (entityId: EntityId) => string[];
+  getEntitiesWithComponent: (componentId: string) => EntityId[];
+  removeComponentsForEntity: (entityId: EntityId) => void;
 
   // Registry queries
   listComponents: () => string[];
@@ -103,6 +105,14 @@ export function useComponentRegistry(): IComponentRegistryHook {
     return componentRegistry.getEntityComponents(entityId);
   }, []);
 
+  const getEntitiesWithComponent = useCallback((componentId: string): EntityId[] => {
+    return componentRegistry.getEntitiesWithComponent(componentId);
+  }, []);
+
+  const removeComponentsForEntity = useCallback((entityId: EntityId): void => {
+    return componentRegistry.removeComponentsForEntity(entityId);
+  }, []);
+
   return {
     addComponent,
     removeComponent,
@@ -110,6 +120,8 @@ export function useComponentRegistry(): IComponentRegistryHook {
     getComponentData,
     updateComponent,
     listEntityComponents,
+    getEntitiesWithComponent,
+    removeComponentsForEntity,
     listComponents,
     getComponentsByCategory,
     registeredComponents,

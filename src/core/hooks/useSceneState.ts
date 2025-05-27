@@ -65,21 +65,18 @@ export const useSceneState = () => {
   );
 
   // Create a basic entity with Transform
-  const createBasicEntity = useCallback(
-    (name?: string) => {
-      return createEntity([
-        {
-          type: 'Transform',
-          data: {
-            position: [0, 0, 0],
-            rotation: [0, 0, 0],
-            scale: [1, 1, 1],
-          },
+  const createBasicEntity = useCallback(() => {
+    return createEntity([
+      {
+        type: 'Transform',
+        data: {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
         },
-      ]);
-    },
-    [createEntity],
-  );
+      },
+    ]);
+  }, [createEntity]);
 
   // Create a mesh entity (Transform + MeshRenderer)
   const createMeshEntity = useCallback(

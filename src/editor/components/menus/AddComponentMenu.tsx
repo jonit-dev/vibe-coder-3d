@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fi';
 import { TbCube } from 'react-icons/tb';
 
+import { useEvent } from '@/core/hooks/useEvent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { isValidEntityId } from '@/core/lib/ecs/utils';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
@@ -229,21 +230,24 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     updateEntityComponents();
   }, [updateEntityComponents]);
 
-  // Listen for component events using the new event system
-  useEffect(() => {
-    if (!isValidEntityId(entityId)) return;
+  // Listen for component events using the global event system
+  useEvent('component:added', (event) => {
+    if (event.entityId === entityId) {
+      updateEntityComponents();
+    }
+  });
 
-    const handleComponentEvent = (event: any) => {
-      if (event.entityId === entityId) {
-        updateEntityComponents();
-      }
-    };
+  useEvent('component:removed', (event) => {
+    if (event.entityId === entityId) {
+      updateEntityComponents();
+    }
+  });
 
-    // Listen to component events from the ComponentManager
-    const unsubscribe = componentManager.addEventListener(handleComponentEvent);
-
-    return unsubscribe;
-  }, [entityId, componentManager, updateEntityComponents]);
+  useEvent('component:updated', (event) => {
+    if (event.entityId === entityId) {
+      updateEntityComponents();
+    }
+  });
 
   // Get available components from KnownComponentTypes
   const availableComponents = useMemo(() => {
@@ -694,21 +698,24 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
     updateEntityComponents();
   }, [updateEntityComponents]);
 
-  // Listen for component events using the new event system
-  useEffect(() => {
-    if (!isValidEntityId(entityId)) return;
+  // Listen for component events using the global event system
+  useEvent('component:added', (event) => {
+    if (event.entityId === entityId) {
+      updateEntityComponents();
+    }
+  });
 
-    const handleComponentEvent = (event: any) => {
-      if (event.entityId === entityId) {
-        updateEntityComponents();
-      }
-    };
+  useEvent('component:removed', (event) => {
+    if (event.entityId === entityId) {
+      updateEntityComponents();
+    }
+  });
 
-    // Listen to component events from the ComponentManager
-    const unsubscribe = componentManager.addEventListener(handleComponentEvent);
-
-    return unsubscribe;
-  }, [entityId, componentManager, updateEntityComponents]);
+  useEvent('component:updated', (event) => {
+    if (event.entityId === entityId) {
+      updateEntityComponents();
+    }
+  });
 
   // Get available components and packs
   const availableComponents = useMemo(() => {

@@ -4,6 +4,7 @@ import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
 import { GameCameraManager } from '@/core/components/cameras/GameCameraManager';
+import { useEvent } from '@/core/hooks/useEvent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { isValidEntityId } from '@/core/lib/ecs/utils';
 import { setSelectedCameraEntity } from '@/core/systems/cameraSystem';
@@ -43,20 +44,22 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 
     // Initial load
     updateEntities();
-
-    // Listen only to component events that affect rendering
-    const unsubscribeComponentEvents = componentManager.addEventListener((event) => {
-      if (event.type === 'component-added' || event.type === 'component-removed') {
-        if (event.componentId === KnownComponentTypes.TRANSFORM) {
-          updateEntities();
-        }
-      }
-    });
-
-    return () => {
-      unsubscribeComponentEvents();
-    };
   }, [componentManager]);
+
+  // Listen to component events using the global event system
+  useEvent('component:added', (event) => {
+    if (event.componentId === KnownComponentTypes.TRANSFORM) {
+      const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
+      setEntityIds(entities);
+    }
+  });
+
+  useEvent('component:removed', (event) => {
+    if (event.componentId === KnownComponentTypes.TRANSFORM) {
+      const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
+      setEntityIds(entities);
+    }
+  });
 
   // Track if TransformControls is active
   const [isTransforming, setIsTransforming] = useState(false);

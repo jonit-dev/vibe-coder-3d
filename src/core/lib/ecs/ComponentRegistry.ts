@@ -6,6 +6,7 @@
 import { addComponent, defineComponent, hasComponent, removeComponent } from 'bitecs';
 import { z } from 'zod';
 
+import { emit } from '../events';
 import { ECSWorld } from './World';
 import { EntityId } from './types';
 
@@ -136,7 +137,6 @@ export class ComponentRegistry {
   private components = new Map<string, IComponentDescriptor>();
   private bitECSComponents = new Map<string, any>();
   private world = ECSWorld.getInstance().getWorld();
-  private eventListeners = new Set<(event: any) => void>();
 
   private constructor() {}
 
@@ -253,8 +253,7 @@ export class ComponentRegistry {
       descriptor.onAdd?.(entityId, data);
 
       // Emit component added event
-      this.emitEvent({
-        type: 'component-added',
+      emit('component:added', {
         entityId,
         componentId,
         data,
@@ -291,8 +290,7 @@ export class ComponentRegistry {
       removeComponent(this.world, bitECSComponent, entityId);
 
       // Emit component removed event
-      this.emitEvent({
-        type: 'component-removed',
+      emit('component:removed', {
         entityId,
         componentId,
       });
@@ -351,8 +349,7 @@ export class ComponentRegistry {
       descriptor.deserialize(entityId, updatedData);
 
       // Emit component updated event
-      this.emitEvent({
-        type: 'component-updated',
+      emit('component:updated', {
         entityId,
         componentId,
         data: updatedData,
@@ -565,31 +562,6 @@ export class ComponentRegistry {
    */
   clearComponents(): void {
     console.warn('clearComponents not fully implemented - use EntityManager.clearEntities()');
-  }
-
-  /**
-   * Event system for legacy compatibility
-   */
-  addEventListener(listener: (event: any) => void): () => void {
-    this.eventListeners.add(listener);
-
-    // Return unsubscribe function
-    return () => {
-      this.eventListeners.delete(listener);
-    };
-  }
-
-  /**
-   * Emit event to all listeners
-   */
-  private emitEvent(event: any): void {
-    this.eventListeners.forEach((listener) => {
-      try {
-        listener(event);
-      } catch (error) {
-        console.error('Error in component event listener:', error);
-      }
-    });
   }
 }
 

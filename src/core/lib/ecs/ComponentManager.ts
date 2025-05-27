@@ -1,5 +1,6 @@
 import { addComponent, hasComponent, removeComponent } from 'bitecs';
 
+import { emit } from '../events';
 import { Camera, MeshCollider, MeshRenderer, RigidBody, Transform } from './BitECSComponents';
 import {
   getCameraData,

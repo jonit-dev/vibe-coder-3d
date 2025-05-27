@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
+import { useEvent } from '@/core/hooks/useEvent';
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ComponentType, EntityId } from '@/core/lib/ecs/types';
@@ -19,7 +20,6 @@ export const useEntityComponents = (entityId: EntityId | null) => {
   } = useComponentRegistry();
 
   const [components, setComponents] = useState<IComponent<any>[]>([]);
-  const [updateTrigger, setUpdateTrigger] = useState(0);
 
   // Update components when entity changes or components are modified
   const updateComponents = useCallback(() => {
@@ -41,18 +41,29 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     setComponents(formattedComponents);
   }, [entityId, getComponentData, listEntityComponents]);
 
-  // Refresh components when entity changes or when component events occur
+  // Refresh components when entity changes
   useEffect(() => {
     updateComponents();
   }, [updateComponents]);
 
-  // Use polling for now - will be replaced with event system later
-  useEffect(() => {
-    if (entityId === null) return;
+  // Listen for component events to update reactively
+  useEvent('component:added', (event) => {
+    if (event.entityId === entityId) {
+      updateComponents();
+    }
+  });
 
-    const interval = setInterval(updateComponents, 100);
-    return () => clearInterval(interval);
-  }, [entityId, updateComponents]);
+  useEvent('component:removed', (event) => {
+    if (event.entityId === entityId) {
+      updateComponents();
+    }
+  });
+
+  useEvent('component:updated', (event) => {
+    if (event.entityId === entityId) {
+      updateComponents();
+    }
+  });
 
   const addComponentWrapper = useCallback(
     <TData>(type: ComponentType, data: TData): IComponent<TData> | null => {
@@ -60,7 +71,6 @@ export const useEntityComponents = (entityId: EntityId | null) => {
 
       const success = addComponent(entityId, type, data);
       if (success) {
-        setUpdateTrigger((prev) => prev + 1);
         return { entityId, type, data };
       }
       return null;
@@ -73,9 +83,6 @@ export const useEntityComponents = (entityId: EntityId | null) => {
       if (entityId === null) return false;
 
       const success = updateComponent(entityId, type, data);
-      if (success) {
-        setUpdateTrigger((prev) => prev + 1);
-      }
       return success;
     },
     [entityId, updateComponent],
@@ -86,9 +93,6 @@ export const useEntityComponents = (entityId: EntityId | null) => {
       if (entityId === null) return false;
 
       const success = removeComponent(entityId, type);
-      if (success) {
-        setUpdateTrigger((prev) => prev + 1);
-      }
       return success;
     },
     [entityId, removeComponent],
@@ -99,7 +103,7 @@ export const useEntityComponents = (entityId: EntityId | null) => {
       if (entityId === null) return false;
       return hasComponent(entityId, type);
     },
-    [entityId, hasComponent, updateTrigger],
+    [entityId, hasComponent],
   );
 
   const getComponent = useCallback(
@@ -109,7 +113,7 @@ export const useEntityComponents = (entityId: EntityId | null) => {
       const data = getComponentData<TData>(entityId, type);
       return data ? { entityId, type, data } : undefined;
     },
-    [entityId, getComponentData, updateTrigger],
+    [entityId, getComponentData],
   );
 
   // Convenience computed values based on components array (safe for render)
