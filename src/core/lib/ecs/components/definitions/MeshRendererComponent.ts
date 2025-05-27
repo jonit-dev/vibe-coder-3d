@@ -35,6 +35,7 @@ export const meshRendererComponent = ComponentFactory.create({
   name: 'Mesh Renderer',
   category: ComponentCategory.Rendering,
   schema: MeshRendererSchema,
+  incompatibleComponents: ['Camera'], // Mesh renderers shouldn't be on camera entities
   fields: {
     enabled: Types.ui8,
     castShadows: Types.ui8,

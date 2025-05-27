@@ -1,5 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { FiBox, FiEye, FiMove, FiPackage, FiSearch, FiShield, FiX, FiZap } from 'react-icons/fi';
+import {
+  FiBox,
+  FiCamera,
+  FiEye,
+  FiMove,
+  FiPackage,
+  FiSearch,
+  FiShield,
+  FiX,
+  FiZap,
+} from 'react-icons/fi';
 import { TbCube } from 'react-icons/tb';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
@@ -66,6 +76,7 @@ interface IComponentDefinition {
   description: string;
   icon: React.ReactNode;
   category: string;
+  incompatibleComponents?: string[]; // Components that cannot coexist with this one
 }
 
 // Component pack definitions
@@ -92,6 +103,7 @@ const COMPONENT_DEFINITIONS: IComponentDefinition[] = [
     description: 'Renders 3D mesh geometry',
     icon: <FiEye className="w-4 h-4" />,
     category: 'Rendering',
+    incompatibleComponents: ['Camera'],
   },
   {
     id: KnownComponentTypes.RIGID_BODY,
@@ -106,6 +118,14 @@ const COMPONENT_DEFINITIONS: IComponentDefinition[] = [
     description: 'Physics collision detection',
     icon: <FiShield className="w-4 h-4" />,
     category: 'Physics',
+  },
+  {
+    id: 'Camera',
+    name: 'Camera',
+    description: 'Camera for rendering perspectives',
+    icon: <FiCamera className="w-4 h-4" />,
+    category: 'Rendering',
+    incompatibleComponents: ['MeshRenderer'],
   },
 ];
 
@@ -200,7 +220,24 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     if (!isValidEntityId(entityId)) return [];
     const existingTypes = entityComponents.map((c) => c.type);
 
-    return COMPONENT_DEFINITIONS.filter((comp) => !existingTypes.includes(comp.id));
+    return COMPONENT_DEFINITIONS.filter((comp) => {
+      // Don't show if already exists
+      if (existingTypes.includes(comp.id)) return false;
+
+      // Check for incompatible components using the component definition
+      const hasIncompatibleComponent = existingTypes.some((existingType) => {
+        // Check if this component is incompatible with any existing component
+        if (comp.incompatibleComponents?.includes(existingType)) return true;
+
+        // Check if any existing component is incompatible with this component
+        const existingCompDef = COMPONENT_DEFINITIONS.find((c) => c.id === existingType);
+        if (existingCompDef?.incompatibleComponents?.includes(comp.id)) return true;
+
+        return false;
+      });
+
+      return !hasIncompatibleComponent;
+    });
   }, [entityId, entityComponents]);
 
   // Get available component packs

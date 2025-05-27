@@ -22,6 +22,7 @@ export interface IComponentDescriptor<TData = any> {
   onRemove?: (eid: EntityId) => void;
   dependencies?: string[];
   conflicts?: string[];
+  incompatibleComponents?: string[]; // Components that cannot coexist with this one
   metadata?: {
     description?: string;
     version?: string;
@@ -58,6 +59,7 @@ export class ComponentFactory {
     onRemove?: (eid: EntityId) => void;
     dependencies?: string[];
     conflicts?: string[];
+    incompatibleComponents?: string[]; // Components that cannot coexist with this one
     metadata?: {
       description?: string;
       version?: string;
@@ -80,6 +82,7 @@ export class ComponentFactory {
       onRemove: config.onRemove,
       dependencies: config.dependencies,
       conflicts: config.conflicts,
+      incompatibleComponents: config.incompatibleComponents,
       metadata: config.metadata,
       _bitECSComponent: bitECSComponent, // Internal reference
     } as IComponentDescriptor<TData> & { _bitECSComponent: any };
@@ -98,6 +101,7 @@ export class ComponentFactory {
     onRemove?: (eid: EntityId) => void;
     dependencies?: string[];
     conflicts?: string[];
+    incompatibleComponents?: string[];
     metadata?: {
       description?: string;
       version?: string;

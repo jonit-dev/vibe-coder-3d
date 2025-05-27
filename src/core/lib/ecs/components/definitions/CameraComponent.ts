@@ -26,6 +26,7 @@ export const cameraComponent = ComponentFactory.create({
   name: 'Camera',
   category: ComponentCategory.Rendering,
   schema: CameraSchema,
+  incompatibleComponents: ['MeshRenderer'], // Cameras shouldn't have mesh renderers
   fields: {
     fov: Types.f32,
     near: Types.f32,
