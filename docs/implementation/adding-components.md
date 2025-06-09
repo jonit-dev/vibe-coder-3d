@@ -704,14 +704,22 @@ export const CameraBackgroundManager: React.FC = () => {
       const entities = query(world);
 
       // Find the main camera
-      let mainCameraEntity = entities.find((eid) => {
-        const cameraData = componentRegistry.getComponentData(eid, 'Camera');
-        return cameraData?.isMain;
-      });
+      let mainCameraEntity: number | null = null;
 
-      // If no main camera found, use the first camera
-      if (!mainCameraEntity && entities.length > 0) {
+      for (const eid of entities) {
+        const cameraData = componentRegistry.getComponentData<CameraData>(eid, 'Camera');
+        console.log(`Entity ${eid} - Camera data:`, cameraData);
+
+        if (cameraData?.isMain) {
+          mainCameraEntity = eid;
+          console.log(`Found main camera: entity ${eid}`);
+          break;
+        }
+      }
+
+      if (mainCameraEntity === null && entities.length > 0) {
         mainCameraEntity = entities[0];
+        console.log('No main camera found, using first camera:', mainCameraEntity);
       }
 
       if (mainCameraEntity) {
@@ -1156,8 +1164,607 @@ componentRegistry.register(dynamicComponent);
 - Debounce user input for expensive updates
 - Only re-render inspector sections when data actually changes
 
+## 🔗 Advanced Integration Patterns
+
+### Component Evolution & Schema Updates
+
+When adding new fields to existing components, follow this pattern:
+
+```typescript
+// 1. Update the Zod schema
+const ComponentSchema = z.object({
+  // ... existing fields
+  newField: z.string().optional(), // Always make new fields optional for backward compatibility
+  newComplexField: z.object({
+    subField1: z.number(),
+    subField2: z.boolean(),
+  }).optional(),
+});
+
+// 2. Update BitECS fields
+fields: {
+  // ... existing fields
+  newField: Types.ui8, // Choose appropriate type
+  newComplexSubField1: Types.f32, // Break down complex objects into primitives
+  newComplexSubField2: Types.ui8,
+},
+
+// 3. Update serialization (BitECS → JS object)
+serialize: (eid: EntityId, component: any) => ({
+  // ... existing fields
+  newField: component.newField[eid] ?? 'defaultValue',
+  newComplexField: {
+    subField1: component.newComplexSubField1[eid] ?? 0,
+    subField2: Boolean(component.newComplexSubField2[eid] ?? 0),
+  },
+}),
+
+// 4. Update deserialization (JS object → BitECS)
+deserialize: (eid: EntityId, data, component: any) => {
+  // ... existing fields
+  component.newField[eid] = data.newField ?? 'defaultValue';
+  component.newComplexSubField1[eid] = data.newComplexField?.subField1 ?? 0;
+  component.newComplexSubField2[eid] = data.newComplexField?.subField2 ? 1 : 0;
+},
+```
+
+### System Integration Manager Pattern
+
+For components that need to affect external systems (Three.js, physics, audio, etc.), use this manager pattern:
+
+```typescript
+// 1. Create a system hook that applies component data to the external system
+export function useSystemIntegration(
+  componentData: ComponentData,
+  // Pass specific data, not the entire component
+) {
+  const { externalSystem } = useExternalSystemContext();
+  const lastDataRef = useRef<ComponentData | null>(null);
+
+  useEffect(() => {
+    // Change detection to avoid unnecessary updates
+    const hasChanged = !isEqual(lastDataRef.current, componentData);
+    if (!hasChanged) return;
+
+    console.log('[useSystemIntegration] Applying data to external system:', componentData);
+
+    // Apply data to external system
+    externalSystem.updateFromData(componentData);
+
+    // Update ref for next comparison
+    lastDataRef.current = componentData;
+  }, [componentData, externalSystem]);
+}
+
+// 2. Create a manager component that bridges ECS to the system hook
+export const SystemIntegrationManager: React.FC = () => {
+  const [componentData, setComponentData] = useState<ComponentData | null>(null);
+  const world = ECSWorld.getInstance().getWorld();
+
+  const updateFromECS = useCallback(() => {
+    try {
+      const component = componentRegistry.getBitECSComponent('YourComponent');
+      if (!component) {
+        console.log('[Manager] Component not registered yet');
+        return;
+      }
+
+      const query = defineQuery([component]);
+      const entities = query(world);
+
+      // Find the target entity (main, active, or first)
+      const targetEntity = findTargetEntity(entities);
+      if (!targetEntity) {
+        setComponentData(null);
+        return;
+      }
+
+      const data = componentRegistry.getComponentData<ComponentData>(targetEntity, 'YourComponent');
+      setComponentData(data || null);
+    } catch (error) {
+      console.error('[Manager] Error updating from ECS:', error);
+    }
+  }, [world]);
+
+  // Event-driven updates for real-time synchronization
+  useEvent('component:updated', (event) => {
+    if (event.componentId === 'YourComponent') {
+      setTimeout(() => updateFromECS(), 0);
+    }
+  });
+
+  useEvent('component:added', (event) => {
+    if (event.componentId === 'YourComponent') {
+      setTimeout(() => updateFromECS(), 0);
+    }
+  });
+
+  useEvent('component:removed', (event) => {
+    if (event.componentId === 'YourComponent') {
+      setTimeout(() => updateFromECS(), 0);
+    }
+  });
+
+  // Initial update and fallback polling
+  useEffect(() => {
+    updateFromECS();
+    const interval = setInterval(updateFromECS, 2000); // Fallback only
+    return () => clearInterval(interval);
+  }, [updateFromECS]);
+
+  // Apply data to external system
+  useSystemIntegration(componentData);
+
+  return null; // Manager components don't render UI
+};
+
+// 3. Add manager to your main scene/viewport
+<Canvas>
+  <SystemIntegrationManager />
+  {/* Rest of scene */}
+</Canvas>
+```
+
+### Component Update Flags Pattern
+
+For components that need to trigger system updates, use the needsUpdate flag pattern:
+
+```typescript
+// 1. Add needsUpdate field to your component
+fields: {
+  // ... other fields
+  needsUpdate: Types.ui8, // Flag to mark when component needs processing
+},
+
+// 2. Set flag in deserialize when data changes
+deserialize: (eid: EntityId, data, component: any) => {
+  // ... set other fields
+  component.needsUpdate[eid] = 1; // Mark for update
+},
+
+// 3. Add special handling in ComponentRegistry for your component
+updateComponent<TData>(entityId: EntityId, componentId: string, data: Partial<TData>): boolean {
+  // ... existing update logic
+
+  // Special handling for components that need immediate system updates
+  if (componentId === 'YourComponent') {
+    const bitECSComponent = this.bitECSComponents.get('YourComponent');
+    if (bitECSComponent?.needsUpdate) {
+      bitECSComponent.needsUpdate[entityId] = 1;
+    }
+  }
+
+  // ... rest of update logic
+}
+
+// 4. Check and reset flag in your system
+export function yourComponentSystem(): number {
+  const query = getComponentQuery();
+  if (!query) return 0;
+
+  const entities = query(world);
+  let updatedCount = 0;
+
+  entities.forEach((eid: number) => {
+    const component = componentRegistry.getBitECSComponent('YourComponent');
+
+    // Only process entities that need updates
+    if (!component?.needsUpdate?.[eid]) return;
+
+    const data = componentRegistry.getComponentData(eid, 'YourComponent');
+    if (!data) return;
+
+    // Process the component data
+    processComponentData(eid, data);
+    updatedCount++;
+
+    // Reset the needsUpdate flag
+    component.needsUpdate[eid] = 0;
+  });
+
+  return updatedCount;
+}
+```
+
+## 🐛 Advanced Troubleshooting Patterns
+
+### Debugging Component Data Flow
+
+When component changes don't reflect in your systems, add comprehensive logging:
+
+```typescript
+// 1. In your Manager component
+const updateFromECS = useCallback(() => {
+  try {
+    console.log('[Manager] === Update Cycle Start ===');
+
+    // Log component registration
+    const component = componentRegistry.getBitECSComponent('YourComponent');
+    if (!component) {
+      console.log('[Manager] ❌ Component not registered yet');
+      return;
+    }
+    console.log('[Manager] ✅ Component registered');
+
+    // Log entity query
+    const entities = query(world);
+    console.log('[Manager] 📊 Found entities:', entities.length);
+
+    // Log target entity selection
+    const targetEntity = findTargetEntity(entities);
+    if (!targetEntity) {
+      console.log('[Manager] ❌ No target entity found');
+      return;
+    }
+    console.log('[Manager] 🎯 Target entity:', targetEntity);
+
+    // Log raw BitECS data (for debugging data issues)
+    if (component.someField) {
+      const rawValue = component.someField[targetEntity];
+      console.log('[Manager] 🔧 Raw BitECS value:', rawValue);
+    }
+
+    // Log processed data
+    const data = componentRegistry.getComponentData(targetEntity, 'YourComponent');
+    console.log('[Manager] 📦 Processed data:', data);
+
+    // Log change detection
+    const hasChanged = !isEqual(lastDataRef.current, data);
+    console.log('[Manager] 🔄 Data changed:', hasChanged);
+
+    if (hasChanged) {
+      setComponentData(data);
+      console.log('[Manager] ✅ State updated');
+    }
+
+    console.log('[Manager] === Update Cycle End ===');
+  } catch (error) {
+    console.error('[Manager] ❌ Error in update cycle:', error);
+  }
+}, [world]);
+
+// 2. In your system hook
+export function useSystemIntegration(data: ComponentData) {
+  const { externalSystem } = useExternalSystemContext();
+
+  useEffect(() => {
+    console.log('[SystemHook] Hook triggered with data:', data);
+
+    if (!data) {
+      console.log('[SystemHook] No data, skipping');
+      return;
+    }
+
+    // Log what's being applied
+    console.log('[SystemHook] Applying to external system:', {
+      field1: data.field1,
+      field2: data.field2,
+    });
+
+    try {
+      externalSystem.update(data);
+      console.log('[SystemHook] ✅ Successfully applied to external system');
+    } catch (error) {
+      console.error('[SystemHook] ❌ Failed to apply to external system:', error);
+    }
+  }, [data, externalSystem]);
+}
+```
+
+### Common Integration Issues & Solutions
+
+| Issue                              | Symptoms                                           | Solution                                                                   |
+| ---------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------- |
+| **Manager not finding entities**   | "No entities found" in logs                        | Check component registration timing, ensure component is added to entities |
+| **Data not updating**              | Old values persist in system                       | Check event handlers, ensure component:updated events are firing           |
+| **External system not responding** | Component data changes but no visual/system effect | Add invalidation calls, check external system API usage                    |
+| **Performance issues**             | Excessive logging, frame drops                     | Add change detection, reduce polling frequency, optimize queries           |
+| **Event timing issues**            | Inconsistent updates, race conditions              | Use setTimeout(0) for event handling, ensure proper async patterns         |
+
+### Entity Target Selection Patterns
+
+```typescript
+// Pattern: Find main/active entity
+function findMainEntity(entities: number[]): number | null {
+  for (const eid of entities) {
+    const data = componentRegistry.getComponentData(eid, 'ComponentName');
+    if (data?.isMain || data?.isActive) {
+      return eid;
+    }
+  }
+  return entities.length > 0 ? entities[0] : null;
+}
+
+// Pattern: Find entity by priority
+function findPriorityEntity(entities: number[]): number | null {
+  let highestPriority = -1;
+  let targetEntity: number | null = null;
+
+  for (const eid of entities) {
+    const data = componentRegistry.getComponentData(eid, 'ComponentName');
+    const priority = data?.priority ?? 0;
+
+    if (priority > highestPriority) {
+      highestPriority = priority;
+      targetEntity = eid;
+    }
+  }
+
+  return targetEntity;
+}
+
+// Pattern: Find entity by selection state
+function findSelectedEntity(entities: number[], selectedEntityId?: number): number | null {
+  if (selectedEntityId && entities.includes(selectedEntityId)) {
+    return selectedEntityId;
+  }
+  return entities.length > 0 ? entities[0] : null;
+}
+```
+
+### Testing Integration Patterns
+
+```typescript
+// 1. Unit test your component data transformations
+describe('ComponentDataFlow', () => {
+  it('should serialize and deserialize correctly', () => {
+    const testData = { field1: 'value', field2: 123 };
+    const eid = 1;
+
+    // Simulate deserialize
+    component.deserialize(eid, testData);
+
+    // Simulate serialize
+    const result = component.serialize(eid);
+
+    expect(result).toEqual(testData);
+  });
+});
+
+// 2. Integration test your manager
+describe('SystemIntegrationManager', () => {
+  it('should update external system when component data changes', async () => {
+    const mockExternalSystem = jest.fn();
+
+    // Add component data
+    componentRegistry.addComponent(1, 'TestComponent', testData);
+
+    // Wait for manager to process
+    await waitForNextTick();
+
+    expect(mockExternalSystem).toHaveBeenCalledWith(testData);
+  });
+});
+
+// 3. Manual testing checklist
+/*
+□ Component appears in Add Component menu
+□ Component data shows correctly in inspector
+□ Inspector changes trigger component:updated events
+□ Manager receives and processes events
+□ External system reflects component changes
+□ Performance is acceptable with many entities
+*/
+```
+
 ---
 
 **Happy Component Building!** 🎉
 
 This guide covers the complete end-to-end pipeline from component definition to inspector visualization, including systems integration and practical usage patterns. The modular architecture makes it easy to add new components while maintaining type safety and performance.
+
+### Camera Background Rendering Issues
+
+```typescript
+// Problem: Main camera detection logic error
+// Original buggy code:
+let mainCameraEntity = entities.find((eid) => {
+  const cameraData = componentRegistry.getComponentData<CameraData>(eid, 'Camera');
+  const isMain = cameraData?.isMain;
+  console.log(`Entity ${eid} isMain:`, isMain); // Shows true
+  return isMain;
+});
+
+if (!mainCameraEntity && entities.length > 0) {
+  mainCameraEntity = entities[0];
+  console.log('No main camera found, using first camera:', mainCameraEntity);
+  // This runs even when isMain is true! Logic bug!
+}
+
+// Solution: Proper null checking and explicit iteration
+let mainCameraEntity: number | null = null;
+
+for (const eid of entities) {
+  const cameraData = componentRegistry.getComponentData<CameraData>(eid, 'Camera');
+  console.log(`Entity ${eid} - Camera data:`, cameraData);
+
+  if (cameraData?.isMain) {
+    mainCameraEntity = eid;
+    console.log(`Found main camera: entity ${eid}`);
+    break;
+  }
+}
+
+if (mainCameraEntity === null && entities.length > 0) {
+  mainCameraEntity = entities[0];
+  console.log('No main camera found, using first camera:', mainCameraEntity);
+}
+```
+
+### Component Update Flag Issues
+
+```typescript
+// Problem: needsUpdate flag not set for camera components
+// Solution: Add special handling in ComponentRegistry.ts
+
+updateComponent<TData>(entityId: EntityId, componentId: string, data: Partial<TData>): boolean {
+  // ... existing code ...
+
+  // Special handling for camera components - ensure needsUpdate flag is set
+  if (componentId === 'Camera') {
+    const bitECSCamera = this.bitECSComponents.get('Camera');
+    if (bitECSCamera?.needsUpdate) {
+      bitECSCamera.needsUpdate[entityId] = 1;
+    }
+  }
+
+  // ... rest of code ...
+}
+```
+
+### System Integration Debugging
+
+```typescript
+// Problem: Insufficient logging makes debugging impossible
+// Solution: Add comprehensive logging at each step
+
+const updateFromMainCamera = useCallback(() => {
+  try {
+    // Log component registration
+    const cameraComponent = componentRegistry.getBitECSComponent('Camera');
+    if (!cameraComponent) {
+      console.log('[CameraBackgroundManager] Camera component not registered yet');
+      return;
+    }
+
+    // Log entity query results
+    const entities = query(world);
+    console.log('[CameraBackgroundManager] Found camera entities:', entities.length);
+
+    // Log raw BitECS data for debugging
+    if (cameraComponent) {
+      const rawClearFlags = cameraComponent.clearFlags?.[mainCameraEntity];
+      const rawBgR = cameraComponent.backgroundR?.[mainCameraEntity];
+      console.log('[CameraBackgroundManager] Raw BitECS data:', {
+        clearFlags: rawClearFlags,
+        backgroundR: rawBgR,
+        // ... other fields
+      });
+    }
+
+    // Log processed data
+    const cameraData = componentRegistry.getComponentData<CameraData>(mainCameraEntity, 'Camera');
+    console.log('[CameraBackgroundManager] Retrieved camera data:', cameraData);
+
+    // Log change detection
+    console.log('[CameraBackgroundManager] Change detection:', {
+      clearFlagsChanged,
+      backgroundColorChanged,
+      currentClearFlags: lastUpdateRef.current.clearFlags,
+      newClearFlags,
+    });
+  } catch (error) {
+    console.error('[CameraBackgroundManager] Error updating from main camera:', error);
+  }
+}, [world]);
+```
+
+### Scene Update Issues
+
+```typescript
+// Problem: Three.js scene not updating when background changes
+// Solution: Proper scene invalidation in useCameraBackground
+
+export function useCameraBackground(clearFlags: string, backgroundColor?: RGBA) {
+  const { scene, invalidate } = useThree();
+
+  useEffect(() => {
+    // Log hook calls for debugging
+    console.log('[useCameraBackground] Hook called with params:', { clearFlags, backgroundColor });
+
+    // Apply background changes
+    switch (clearFlags) {
+      case 'solidColor':
+        if (backgroundColor) {
+          const appliedColor = new Color(backgroundColor.r, backgroundColor.g, backgroundColor.b);
+          scene.background = appliedColor;
+          console.log('[useCameraBackground] Applied solid color:', appliedColor.getHexString());
+        }
+        break;
+      // ... other cases
+    }
+
+    // Critical: Invalidate frame to trigger re-render
+    invalidate();
+    console.log('[useCameraBackground] Frame invalidated');
+  }, [clearFlags, backgroundColor, scene, invalidate]);
+}
+```
+
+### Event System Synchronization
+
+```typescript
+// Problem: Component events fire but data doesn't flow properly
+// Solution: Immediate event handling with proper timing
+
+useEvent('component:updated', (event) => {
+  if (event.componentId === 'Camera') {
+    console.log('[CameraBackgroundManager] Camera component updated for entity:', event.entityId);
+    // Use setTimeout to ensure event processing completes first
+    setTimeout(() => updateFromMainCamera(), 0);
+  }
+});
+```
+
+### Manager Component Best Practices
+
+```typescript
+// Essential pattern for system integration managers:
+
+export const SystemIntegrationManager: React.FC = () => {
+  const [systemState, setSystemState] = useState(defaultState);
+  const lastUpdateRef = useRef(defaultState);
+
+  const updateFromECS = useCallback(() => {
+    try {
+      // 1. Check component registration
+      const component = componentRegistry.getBitECSComponent('ComponentName');
+      if (!component) {
+        console.log('[Manager] Component not registered yet');
+        return;
+      }
+
+      // 2. Query entities
+      const entities = query(world);
+      console.log('[Manager] Found entities:', entities.length);
+
+      // 3. Process main/priority entity
+      const targetEntity = findTargetEntity(entities);
+      if (!targetEntity) {
+        console.log('[Manager] No target entity found');
+        return;
+      }
+
+      // 4. Get processed data
+      const data = componentRegistry.getComponentData(targetEntity, 'ComponentName');
+      console.log('[Manager] Retrieved data:', data);
+
+      // 5. Change detection
+      const hasChanges = detectChanges(data, lastUpdateRef.current);
+      if (!hasChanges) {
+        console.log('[Manager] No changes detected');
+        return;
+      }
+
+      // 6. Update state
+      setSystemState(data);
+      lastUpdateRef.current = data;
+      console.log('[Manager] State updated');
+    } catch (error) {
+      console.error('[Manager] Error:', error);
+    }
+  }, [world]);
+
+  // Event-driven updates
+  useEvent('component:updated', (event) => {
+    if (event.componentId === 'ComponentName') {
+      setTimeout(() => updateFromECS(), 0);
+    }
+  });
+
+  // Hook integration
+  useSystemHook(systemState);
+
+  return null;
+};
+```

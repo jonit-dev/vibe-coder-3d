@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
-import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
+import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
@@ -60,7 +60,7 @@ export const useSceneInitialization = ({
             );
 
             // Add Camera component with Unity-like defaults
-            const cameraData: ICameraData = {
+            const cameraData: CameraData = {
               fov: 20,
               near: 0.1,
               far: 100,
@@ -68,6 +68,8 @@ export const useSceneInitialization = ({
               orthographicSize: 10,
               depth: 0,
               isMain: true, // First camera is main
+              clearFlags: 'skybox',
+              backgroundColor: { r: 0.0, g: 0.0, b: 0.0, a: 0 },
             };
             componentManager.addComponent(mainCamera.id, KnownComponentTypes.CAMERA, cameraData);
 

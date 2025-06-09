@@ -348,6 +348,14 @@ export class ComponentRegistry {
       // Update data
       descriptor.deserialize(entityId, updatedData);
 
+      // Special handling for camera components - ensure needsUpdate flag is set
+      if (componentId === 'Camera') {
+        const bitECSCamera = this.bitECSComponents.get('Camera');
+        if (bitECSCamera?.needsUpdate) {
+          bitECSCamera.needsUpdate[entityId] = 1;
+        }
+      }
+
       // Emit component updated event
       emit('component:updated', {
         entityId,
