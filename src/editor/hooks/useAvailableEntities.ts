@@ -24,6 +24,11 @@ export const useAvailableEntities = (excludeEntityId?: number) => {
         return;
       }
 
+      // Skip entity ID 0 to avoid duplicate keys with "None" option
+      if (entityId === 0) {
+        return;
+      }
+
       // Get actual entity name from naming system
       const entityName = EntityMetaConverter.getName(entityId) || `Entity ${entityId}`;
       options.push({

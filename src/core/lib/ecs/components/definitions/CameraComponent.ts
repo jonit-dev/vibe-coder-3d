@@ -47,9 +47,6 @@ const CameraSchema = z.object({
       a: z.number().min(0).max(1),
     })
     .optional(),
-  // Culling Mask for selective rendering
-  cullingMask: z.number().optional(), // Bitmask for layer-based culling
-  enabledLayers: z.array(z.string()).optional(), // Array of layer names
   // Viewport Rectangle for multi-camera rendering
   viewportRect: z
     .object({
@@ -111,9 +108,6 @@ export const cameraComponent = ComponentFactory.create({
     backgroundG: Types.f32,
     backgroundB: Types.f32,
     backgroundA: Types.f32,
-    // Culling & Layers
-    cullingMask: Types.ui32,
-    enabledLayersHash: Types.ui32, // Hash of enabled layers for performance
     // Viewport Rectangle
     viewportX: Types.f32,
     viewportY: Types.f32,
@@ -162,9 +156,6 @@ export const cameraComponent = ComponentFactory.create({
         b: component.backgroundB[eid] ?? 0.0,
         a: component.backgroundA[eid] ?? 1.0,
       },
-      // Culling & Layers
-      cullingMask: component.cullingMask[eid] ?? 0xffffffff, // Default: all layers enabled
-      enabledLayers: [], // TODO: Decode from hash
       // Viewport Rectangle
       viewportRect: {
         x: component.viewportX[eid] ?? 0.0,
@@ -218,10 +209,6 @@ export const cameraComponent = ComponentFactory.create({
     component.backgroundG[eid] = data.backgroundColor?.g ?? 0.0;
     component.backgroundB[eid] = data.backgroundColor?.b ?? 0.0;
     component.backgroundA[eid] = data.backgroundColor?.a ?? 1.0;
-
-    // Culling & Layers
-    component.cullingMask[eid] = data.cullingMask ?? 0xffffffff;
-    component.enabledLayersHash[eid] = 0; // TODO: Calculate hash from enabledLayers
 
     // Viewport Rectangle
     component.viewportX[eid] = data.viewportRect?.x ?? 0.0;

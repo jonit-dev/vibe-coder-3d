@@ -31,9 +31,6 @@ export const CameraAdapter: React.FC<ICameraAdapterProps> = ({
     clearFlags: data.clearFlags ?? 'skybox',
     skyboxTexture: data.skyboxTexture ?? '',
     backgroundColor: data.backgroundColor ?? { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-    // Culling & Layers
-    cullingMask: data.cullingMask ?? 0xffffffff,
-    enabledLayers: data.enabledLayers ?? [],
     // Viewport Rectangle
     viewportRect: data.viewportRect ?? { x: 0.0, y: 0.0, width: 1.0, height: 1.0 },
     // HDR and Tone Mapping - THESE WERE MISSING!
