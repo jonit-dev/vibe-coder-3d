@@ -11,7 +11,7 @@ Following the completion of Phase 1, our immediate focus is on implementing the 
 - 💡 **AI Command Parser:** Developing the system to translate natural language into engine commands.
 - 💡 **AI Scene Manipulation:** Enabling the AI to create, modify, and manage scene objects.
 
-These tasks are crucial for bringing the conversational game development experience to life. While Phase 2 also includes Physics and ECS integration, the current priority is to establish the AI command and manipulation pipeline. The "enhanced timeline and objectives" mentioned in the status update should be integrated here as details become available.
+These tasks are crucial for bringing the conversational game development experience to life.
 
 ## Timeline Visualization (Mermaid)
 
@@ -27,38 +27,60 @@ gantt
     AI Copilot Tech Spike    :p1_ai_spike, after p1_setup, 14d
     Initial Editor UI        :p1_editor_ui, after p1_render, 14d
 
-    section Phase 2: Physics, ECS & Basic AI Integration
+    section Phase 2: AI Command System & Core ECS
     Rapier Integration       :p2_physics, after p1_render, 14d
     bitecs Integration       :p2_ecs, after p1_render, 14d
-    Dynamic Component System :p2_dynamic_ecs, after p2_ecs, 4d
     AI Command Parser        :p2_ai_parser, after p1_ai_spike, 21d
     AI Scene Manipulation    :p2_ai_scene, after p2_ai_parser, 21d
-    Debug Utilities          :p2_debug, after p2_dynamic_ecs, 7d
+    Dynamic Component System :p2_dynamic_ecs, after p2_ecs, 7d
 
-    section Phase 3: AI-Assisted Content & Gameplay
-    AI Asset Generation      :p3_ai_assets, after p2_ai_scene, 28d
-    AI Scripting Helper      :p3_ai_script, after p2_ai_scene, 28d
-    UI & Audio (AI Assisted) :p3_ui_audio, after p2_debug, 14d
-    Input & Basic Controls   :p3_input, after p3_ui_audio, 7d
-    Character Controller (AI):p3_controller, after p3_input, 14d
-    AI-Driven Game Example   :p3_game, after p3_controller, 21d
+    section Phase 3: Entity Management & Hierarchy
+    Entity Creation System   :p3_entities, after p2_dynamic_ecs, 5d
+    Parent-Child Relationships :p3_hierarchy, after p3_entities, 7d
+    Multi-Entity Selection   :p3_selection, after p3_hierarchy, 5d
+    Debug & Visualization    :p3_debug, after p3_selection, 7d
 
-    section Phase 4: Advanced AI & Multiplayer
-    Contextual AI Assistant  :p4_context_ai, after p3_game, 28d
-    AI Behavior Trees        :p4_ai_behavior, after p3_game, 28d
-    Colyseus Setup           :p4_colyseus, after p3_game, 7d
-    Networked AI Agents      :p4_network_ai, after p4_colyseus, 21d
+    section Phase 4: Project & Asset Management
+    Project Management System :p4_project, after p2_ai_scene, 10d
+    Assets Panel & Management :p4_assets_panel, after p4_project, 14d
+    Project-Editor Sync      :p4_sync, after p4_project, 10d
+    Asset Import/Export      :p4_asset_io, after p4_assets_panel, 7d
 
-    section Phase 5: Polish & Build Pipeline
-    Editor UX Refinement     :p5_editor_ux, after p4_context_ai, 14d
-    AI Model Optimization    :p5_ai_opt, after p4_context_ai, 14d
-    Binary Build Pipeline    :p5_build, after p5_editor_ux, 21d
-    End-to-End Testing       :p5_e2e_test, after p5_build, 14d
+    section Phase 5: Core Rendering Systems
+    Materials System         :p5_materials, after p4_assets_panel, 14d
+    Lighting System          :p5_lighting, after p5_materials, 14d
+    Enhanced Camera System   :p5_camera, after p5_lighting, 10d
+    Basic Rendering Pipeline :p5_rendering, after p5_camera, 7d
+
+    section Phase 6: Advanced Features & Content Creation
+    Prefab System            :p6_prefabs, after p3_hierarchy, 14d
+    AI Asset Generation      :p6_ai_assets, after p5_materials, 21d
+    AI Scripting Helper      :p6_ai_script, after p6_prefabs, 21d
+    Content Templates        :p6_templates, after p6_ai_assets, 10d
+
+    section Phase 7: UI Integration & Advanced AI
+    React Canvas Integration :p7_react_canvas, after p5_rendering, 14d
+    UI & Audio Systems       :p7_ui_audio, after p7_react_canvas, 14d
+    Contextual AI Assistant  :p7_context_ai, after p6_ai_script, 21d
+    AI Behavior Trees        :p7_ai_behavior, after p7_context_ai, 21d
+
+    section Phase 8: Gameplay & Networking
+    Input & Controls         :p8_input, after p7_ui_audio, 7d
+    Character Controller     :p8_controller, after p8_input, 10d
+    Colyseus Setup           :p8_colyseus, after p8_controller, 7d
+    Networked AI Agents      :p8_network_ai, after p8_colyseus, 14d
+    Complete Game Example    :p8_game, after p8_network_ai, 21d
+
+    section Phase 9: Polish & Production
+    Editor UX Refinement     :p9_editor_ux, after p7_context_ai, 14d
+    Performance Optimization :p9_performance, after p8_game, 14d
+    Binary Build Pipeline    :p9_build, after p9_editor_ux, 21d
+    End-to-End Testing       :p9_e2e_test, after p9_build, 14d
 
     section Future
-    Advanced AI Features     :milestone, after p5_e2e_test, 0d
-    Community AI Tools       :milestone, after p5_e2e_test, 0d
-    Core Library Packaging   :milestone, after p5_e2e_test, 0d
+    Advanced AI Features     :milestone, after p9_e2e_test, 0d
+    Community Tools          :milestone, after p9_e2e_test, 0d
+    Core Library Packaging   :milestone, after p9_e2e_test, 0d
 ```
 
 ## Guiding Principles
@@ -69,9 +91,9 @@ gantt
 - **Test Early, Test Often:** Integrate basic testing (unit, integration) from the beginning, including tests for AI interactions.
 - **Documentation:** Maintain clear documentation for both engine features and AI Copilot usage.
 
-## Proposed Phases
+## Refactored Phase Structure
 
-### Phase 1: Foundation & Core AI Research (Estimated: 2-3 Sprints)
+### Phase 1: Foundation & Core AI Research (Estimated: 2-3 Sprints) ✅ COMPLETE
 
 _Goal: Establish the project structure, tooling, basic rendering, and research core AI technologies for the Copilot._
 
@@ -92,9 +114,9 @@ _Goal: Establish the project structure, tooling, basic rendering, and research c
   - ✅ Set up basic global state management with Zustand (`src/core/state`).
   - ✅ Develop initial UI for the editor, including a panel for AI Copilot interaction.
 
-### Phase 2: Physics, ECS & Basic AI Integration (Estimated: 3-4 Sprints)
+### Phase 2: AI Command System & Core ECS (Estimated: 3-4 Sprints)
 
-_Goal: Integrate Rapier physics, bitecs ECS, and enable basic AI-driven scene manipulation. **Current priority is on AI command parsing and scene manipulation.**_
+_Goal: Establish the AI command parsing foundation and core ECS/Physics integration to enable AI-driven scene manipulation._
 
 - **Tasks:**
   - ✅ Install `@react-three/rapier` (for Rapier physics) and `bitecs`.
@@ -102,69 +124,182 @@ _Goal: Integrate Rapier physics, bitecs ECS, and enable basic AI-driven scene ma
   - ⏳ Create core R3F components for rigid bodies (`<PhysicsBody>`) that sync with Rapier (`src/core/components/physics/`).
   - ⏳ Implement basic physics stepping and synchronization (`PhysicsSyncSystem.ts`).
   - ✅ Set up `bitecs` world and basic component types (`src/core/lib/ecs.ts`, `src/core/types/ecs.ts`).
-  - ⏳ Define core ECS components (e.g., `Position`, `Velocity`, `Renderable`). (`AIControllable` or similar might be needed - ⚠️).
-  - ⏳ Create core ECS systems (`transformSystem`, `VelocitySystem`, `PhysicsSyncSystem` exist). (⚠️ `AISystem` is a key missing piece for AI control).
-  - 💡 **Dynamic Component System:** Implement a flexible system where entities can have components added on demand, rather than all entities supporting all components. This includes component registry, entity archetypes, and runtime component management. **[NEW PRIORITY - 4 days]** - See `docs/architecture/dynamic-component-system.md`
-  - 💡 **AI Command Parser:** Develop a system to parse natural language commands from the AI Copilot into actionable engine commands. **[IMMEDIATE NEXT STEP]**
-  - 💡 **AI Scene Manipulation:** Implement functionality for the AI to: **[IMMEDIATE NEXT STEP - Editor-side foundations exist, AI-driven part pending Command Parser]**
-    - Create, delete, and modify basic geometric primitives.
-    - Change properties of existing objects (transform, material, physics properties).
-    - Group and parent objects.
+  - ⏳ Define core ECS components (e.g., `Position`, `Velocity`, `Renderable`, `AIControllable`).
+  - ⏳ Create core ECS systems (`transformSystem`, `VelocitySystem`, `PhysicsSyncSystem`, `AISystem`).
+  - 💡 **AI Command Parser:** Develop the system to parse natural language commands from the AI Copilot into actionable engine commands. **[CRITICAL PATH]**
+  - 💡 **AI Scene Manipulation:** Implement functionality for the AI to: **[CRITICAL PATH]**
+    - Create, delete, and modify basic geometric primitives
+    - Change properties of existing objects (transform, material, physics properties)
+    - Execute batch operations and command sequences
+  - 💡 **Dynamic Component System:** Implement a flexible system where entities can have components added on demand, including component registry and runtime management.
   - ✅ Develop core hooks for interacting with physics, ECS (`src/core/hooks`).
-  - ❌ Refactor the "Hello Cube" example to be controllable via AI commands (`src/game`). (Blocked by AI Command Parser & Scene Manipulation)
-  - ⏳ Add basic debug utilities for physics, ECS state, and AI command execution.
 
-### Phase 3: AI-Assisted Content & Gameplay (Estimated: 4-5 Sprints)
+### Phase 3: Entity Management & Hierarchy (Estimated: 2-3 Sprints)
 
-_Goal: Enable AI to assist with content generation (assets, scripts) and build a simple AI-driven game example._
+_Goal: Build robust entity management with hierarchical relationships and multi-selection capabilities._
 
 - **Tasks:**
-  - **AI Asset Generation (Proof of Concept):**
-    - 💡 Integrate with APIs/models for 3D model generation. [AI part PENDING]
-    - 💡 Implement AI-assisted material/texture generation/selection. [AI part PENDING]
-    - (✅ Foundation for asset definition/handling in `src/core/types/assets.ts` & `hooks/useAsset.ts` is STRONG)
-  - **AI Scripting Helper:**
-    - 💡 Design system for AI to suggest/scaffold scripts.
-    - 💡 Explore generating JS/TS snippets or visual script nodes.
-  - ⏳ Define and implement core camera types. (✅ Basic controls exist, 💡 AI assistance PENDING)
-  - ⏳ Integrate UI (`three-mesh-ui`) and Audio (`howler.js`). (✅ Foundations exist, 💡 AI assistance PENDING)
-  - ✅ Develop core input handling system/hook (`src/core/hooks/useInput.ts`).
-  - ⏳ Implement asset loading utilities. (✅ Utilities exist via `useAsset.ts`, 💡 AI classification/suggestion PENDING)
-  - ⏳ Create a simple character controller component. (✅ `CharacterController.tsx` exists, 💡 AI tuning/behaviors PENDING)
-  - ❌ Build a minimal game example in `src/game` showcasing AI features. (Blocked by preceding AI tasks)
+  - 💡 **Entity Creation & Management:**
+    - Create empty entities functionality with AI command support
+    - Basic entity lifecycle management (create, destroy, clone)
+    - Entity templates and archetype system
+  - 💡 **Parent-Child Relationship Abstraction:**
+    - Implement hierarchical entity relationships with transform inheritance
+    - Scene graph management with AI-assisted grouping
+    - Parent-child synchronization for transforms, visibility, and components
+  - 💡 **Multi-Entity Selection System:**
+    - Editor support for selecting multiple entities simultaneously
+    - Bulk operations on selected entities (transform, component modification)
+    - AI commands for group selection and manipulation
+  - 💡 **Debug & Visualization Tools:**
+    - Entity hierarchy visualization in editor
+    - Debug utilities for physics, ECS state, and AI command execution
+    - Scene graph inspector with real-time updates
 
-### Phase 4: Advanced AI & Multiplayer (Estimated: 4-5 Sprints)
+### Phase 4: Project & Asset Management (Estimated: 3-4 Sprints)
 
-_Goal: Enhance AI capabilities with contextual understanding, behavior authoring, and explore networked AI._
-
-- **Tasks:**
-  - **Contextual AI Assistant:** Improve AI Copilot to understand conversation history, current scene selection, and project context for more relevant suggestions.
-  - **AI Behavior Trees/State Machines:** Research and implement a system for creating more complex AI agent behaviors, potentially with a visual editor or natural language interface (e.g., "make this enemy patrol between these points and attack if it sees the player").
-  - Set up Colyseus server and client library.
-  - Implement basic room management and connection handling (`src/core/lib/network.ts`).
-  - Define core network components/state synchronization strategy.
-  - **Networked AI Agents:** Create examples of AI-controlled characters or entities in a multiplayer context, synchronizing their state and behavior.
-
-### Phase 5: Polish, Build Pipeline & End-to-End Workflow (Estimated: 3-4 Sprints)
-
-_Goal: Refine the editor UX, optimize AI performance, establish a binary build pipeline, and define the full end-to-end workflow from AI-assisted editing to a playable build._
+_Goal: Establish comprehensive project management and asset handling systems._
 
 - **Tasks:**
-  - **Editor UX Refinement:** Gather user feedback and iterate on the AI Copilot interface, command clarity, and overall editor usability.
-  - **AI Model Optimization:** Investigate techniques to optimize AI model performance, reduce latency, and manage costs (if using cloud-based AI).
-  - **Binary Build Pipeline:**
-    - Research and implement a process to package the game into a playable binary (e.g., using Electron, Tauri, or similar technologies for web-based games, or exploring WebAssembly for native-like performance).
-    - Ensure assets, scripts, and AI-generated content are correctly bundled.
-    - Define how AI configurations or runtime dependencies are handled in the build.
-  - **End-to-End Workflow Definition & Testing:**
-    - Document and test the complete process: User describes a game concept to AI -> AI assists in scene creation, asset sourcing, scripting -> User refines and tests in editor -> User initiates build process -> Playable game binary is produced.
-    - Conduct thorough testing of the entire pipeline.
+  - 💡 **Project Management System:**
+    - Project creation and initialization workflows
+    - Project file structure and metadata management
+    - Project templates with AI-suggested configurations
+    - Save/load project state with version control integration
+  - 💡 **Assets Panel & Management:**
+    - Visual asset browser with drag-and-drop functionality
+    - Asset categorization, tagging, and search
+    - AI-assisted asset recommendations and organization
+    - Asset preview and metadata display
+  - 💡 **Project-Editor Synchronization:**
+    - Real-time synchronization between project files and editor state
+    - Conflict resolution for concurrent modifications
+    - Auto-save and recovery mechanisms
+  - 💡 **Asset Import/Export Systems:**
+    - Support for common 3D formats (GLB, GLTF, FBX, OBJ)
+    - Texture and material import pipelines
+    - Asset optimization and compression
+
+### Phase 5: Core Rendering Systems (Estimated: 3-4 Sprints)
+
+_Goal: Implement comprehensive rendering systems for materials, lighting, and camera management._
+
+- **Tasks:**
+  - 💡 **Materials System:**
+    - PBR material creation and editing interface
+    - Material presets and AI-suggested material combinations
+    - Real-time material preview and testing
+    - Material library and sharing system
+  - 💡 **Enhanced Lighting System:**
+    - Directional, point, and spot light management
+    - Environment lighting and IBL setup
+    - Shadow configuration and optimization
+    - AI-assisted lighting scene analysis and suggestions
+  - 💡 **Enhanced Camera System:**
+    - Multiple camera types (perspective, orthographic, cinematic)
+    - Camera animation and interpolation systems
+    - AI-assisted camera positioning for optimal scene viewing
+    - Camera presets and templates
+  - 💡 **Basic Rendering Pipeline:**
+    - Post-processing effects integration
+    - Render target management
+    - Performance monitoring and optimization
+
+### Phase 6: Advanced Features & Content Creation (Estimated: 4-5 Sprints)
+
+_Goal: Enable advanced content creation with AI assistance and reusable systems._
+
+- **Tasks:**
+  - 💡 **Prefab System:**
+    - Prefab creation from existing entity hierarchies
+    - Prefab instantiation with parameter overrides
+    - AI-assisted prefab suggestions and modifications
+    - Prefab versioning and update propagation
+  - 💡 **AI Asset Generation:**
+    - Integration with APIs/models for 3D model generation
+    - AI-assisted material/texture generation/selection
+    - Procedural content generation with AI guidance
+  - 💡 **AI Scripting Helper:**
+    - System for AI to suggest/scaffold scripts
+    - JS/TS snippet generation and visual script nodes
+    - Variable passing between editor and runtime scripts
+    - Global state management integration with editor
+  - 💡 **Content Templates:**
+    - Scene templates and starting points
+    - Component and system templates
+    - AI-driven template recommendations
+
+### Phase 7: UI Integration & Advanced AI (Estimated: 4-5 Sprints)
+
+_Goal: Advanced UI capabilities and sophisticated AI assistance._
+
+- **Tasks:**
+  - 💡 **React Canvas Integration:**
+    - System for embedding React components within the 3D scene
+    - UI component positioning and interaction in 3D space
+    - AI-assisted UI layout and component suggestions
+    - Integration with existing UI libraries and component systems
+  - ⏳ **UI & Audio Systems:**
+    - Integration with `three-mesh-ui` and `howler.js`
+    - 3D UI component library
+    - Spatial audio management
+  - 💡 **Contextual AI Assistant:**
+    - Conversation history and context awareness
+    - Scene selection and project context understanding
+    - Proactive suggestions and workflow optimization
+  - 💡 **AI Behavior Trees:**
+    - System for creating complex AI agent behaviors
+    - Visual editor for behavior tree creation
+    - Natural language interface for behavior description
+
+### Phase 8: Gameplay & Networking (Estimated: 4-5 Sprints)
+
+_Goal: Complete gameplay systems and multiplayer capabilities._
+
+- **Tasks:**
+  - ✅ **Input & Controls:**
+    - Core input handling system/hook (`src/core/hooks/useInput.ts`)
+    - Customizable input mapping and configuration
+  - ⏳ **Character Controller:**
+    - Enhanced character controller component with AI tuning
+    - Movement systems and physics integration
+  - 💡 **Colyseus Integration:**
+    - Server and client library setup
+    - Room management and connection handling
+    - Network components and state synchronization
+  - 💡 **Networked AI Agents:**
+    - AI-controlled characters in multiplayer context
+    - Synchronized AI behavior and state management
+  - 💡 **Complete Game Example:**
+    - Full game showcasing all AI features
+    - End-to-end workflow demonstration
+
+### Phase 9: Polish & Production (Estimated: 3-4 Sprints)
+
+_Goal: Production-ready polish, optimization, and build pipeline._
+
+- **Tasks:**
+  - 💡 **Editor UX Refinement:**
+    - User feedback integration and interface improvements
+    - AI Copilot interface optimization
+    - Workflow streamlining and usability enhancements
+  - 💡 **Performance Optimization:**
+    - AI model optimization and latency reduction
+    - Rendering performance improvements
+    - Memory management and asset optimization
+  - 💡 **Binary Build Pipeline:**
+    - Game packaging system (Electron, Tauri, or WebAssembly)
+    - Asset bundling and optimization
+    - AI configuration handling in builds
+  - 💡 **End-to-End Testing:**
+    - Complete workflow validation
+    - Automated testing for AI interactions
+    - Performance and reliability testing
 
 ### Future Phases
 
-- Advanced Rendering (AI-assisted post-processing, shader generation)
-- Advanced AI Systems (Learning agents, procedural content generation beyond simple assets)
-- Community AI Tools & Model Sharing
-- More Sophisticated Game Examples & Templates
-- Performance Optimization Pass for AI and Engine
-- Packaging `src/core` as a standalone library with AI hooks
+- **Advanced Rendering:** AI-assisted post-processing, shader generation
+- **Advanced AI Systems:** Learning agents, procedural content generation
+- **Community Tools:** AI model sharing, collaborative features
+- **Core Library:** Standalone library packaging with AI hooks
+- **Platform Expansion:** Mobile, VR/AR, and console support
