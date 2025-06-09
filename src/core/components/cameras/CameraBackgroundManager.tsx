@@ -13,7 +13,6 @@ export const CameraBackgroundManager: React.FC = () => {
     { r: number; g: number; b: number; a: number } | undefined
   >();
   const [skyboxTexture, setSkyboxTexture] = useState<string>('');
-  const [, setForceUpdate] = useState(0);
 
   const world = ECSWorld.getInstance().getWorld();
   const lastUpdateRef = useRef<{
@@ -28,30 +27,24 @@ export const CameraBackgroundManager: React.FC = () => {
     try {
       const cameraComponent = componentRegistry.getBitECSComponent('Camera');
       if (!cameraComponent) {
-        console.log('[CameraBackgroundManager] Camera component not registered yet');
         return;
       }
 
       const query = defineQuery([cameraComponent]);
       const entities = query(world);
 
-      console.log('[CameraBackgroundManager] Found camera entities:', entities.length);
-
       if (entities.length === 0) {
-        console.log('[CameraBackgroundManager] No camera entities found');
         return;
       }
 
-      // Find the main camera with better debugging
+      // Find the main camera
       let mainCameraEntity: number | null = null;
 
       for (const eid of entities) {
         const cameraData = componentRegistry.getComponentData<CameraData>(eid, 'Camera');
-        console.log(`[CameraBackgroundManager] Entity ${eid} - Camera data:`, cameraData);
 
         if (cameraData?.isMain) {
           mainCameraEntity = eid;
-          console.log(`[CameraBackgroundManager] Found main camera: entity ${eid}`);
           break;
         }
       }
@@ -59,52 +52,18 @@ export const CameraBackgroundManager: React.FC = () => {
       // If no main camera found, use the first camera
       if (mainCameraEntity === null && entities.length > 0) {
         mainCameraEntity = entities[0];
-        console.log(
-          '[CameraBackgroundManager] No main camera found, using first camera:',
-          mainCameraEntity,
-        );
       }
 
       if (mainCameraEntity !== null) {
-        console.log('[CameraBackgroundManager] Processing camera entity:', mainCameraEntity);
-
-        // Try to get the raw BitECS component data for debugging
-        const cameraComponent = componentRegistry.getBitECSComponent('Camera');
-        if (cameraComponent) {
-          const rawClearFlags = cameraComponent.clearFlags?.[mainCameraEntity];
-          const rawBgR = cameraComponent.backgroundR?.[mainCameraEntity];
-          const rawBgG = cameraComponent.backgroundG?.[mainCameraEntity];
-          const rawBgB = cameraComponent.backgroundB?.[mainCameraEntity];
-          const rawBgA = cameraComponent.backgroundA?.[mainCameraEntity];
-
-          console.log('[CameraBackgroundManager] Raw BitECS data:', {
-            clearFlags: rawClearFlags,
-            backgroundR: rawBgR,
-            backgroundG: rawBgG,
-            backgroundB: rawBgB,
-            backgroundA: rawBgA,
-          });
-        }
-
         const cameraData = componentRegistry.getComponentData<CameraData>(
           mainCameraEntity,
           'Camera',
         );
-        console.log('[CameraBackgroundManager] Retrieved camera data:', cameraData);
 
         if (cameraData) {
           const newClearFlags = cameraData.clearFlags || 'skybox';
           const newBackgroundColor = cameraData.backgroundColor;
           const newSkyboxTexture = cameraData.skyboxTexture || '';
-
-          console.log(
-            '[CameraBackgroundManager] Processing - clearFlags:',
-            newClearFlags,
-            'backgroundColor:',
-            newBackgroundColor,
-            'skyboxTexture:',
-            newSkyboxTexture,
-          );
 
           // Check if data actually changed
           const clearFlagsChanged = lastUpdateRef.current.clearFlags !== newClearFlags;
@@ -113,32 +72,16 @@ export const CameraBackgroundManager: React.FC = () => {
             JSON.stringify(newBackgroundColor);
           const skyboxTextureChanged = lastUpdateRef.current.skyboxTexture !== newSkyboxTexture;
 
-          console.log('[CameraBackgroundManager] Change detection:', {
-            clearFlagsChanged,
-            backgroundColorChanged,
-            skyboxTextureChanged,
-            currentClearFlags: lastUpdateRef.current.clearFlags,
-            currentBackgroundColor: lastUpdateRef.current.backgroundColor,
-            currentSkyboxTexture: lastUpdateRef.current.skyboxTexture,
-            newClearFlags,
-            newBackgroundColor,
-            newSkyboxTexture,
-          });
-
           if (clearFlagsChanged || backgroundColorChanged || skyboxTextureChanged) {
-            console.log('[CameraBackgroundManager] Data changed, updating state:', {
-              clearFlagsChanged,
-              backgroundColorChanged,
-              skyboxTextureChanged,
-              newClearFlags,
-              newBackgroundColor,
-              newSkyboxTexture,
+            console.log('[CameraBackgroundManager] Camera background updated:', {
+              clearFlags: newClearFlags,
+              backgroundColor: newBackgroundColor,
+              skyboxTexture: newSkyboxTexture,
             });
 
             setClearFlags(newClearFlags);
             setBackgroundColor(newBackgroundColor);
             setSkyboxTexture(newSkyboxTexture);
-            setForceUpdate((prev) => prev + 1);
 
             // Update the ref for next comparison
             lastUpdateRef.current = {
@@ -146,59 +89,37 @@ export const CameraBackgroundManager: React.FC = () => {
               backgroundColor: newBackgroundColor,
               skyboxTexture: newSkyboxTexture,
             };
-          } else {
-            console.log('[CameraBackgroundManager] No data changes detected');
           }
-        } else {
-          console.warn(
-            '[CameraBackgroundManager] No camera data found for entity:',
-            mainCameraEntity,
-          );
         }
-      } else {
-        console.warn('[CameraBackgroundManager] No valid camera entity found');
       }
     } catch (error) {
       console.error('[CameraBackgroundManager] Error updating from main camera:', error);
     }
   }, [world]);
 
-  // Update on component changes - use events for real-time updates
+  // Initial load
   useEffect(() => {
     updateFromMainCamera();
   }, [updateFromMainCamera]);
 
-  // Listen to component update events for real-time synchronization
+  // Listen to component events for real-time updates
   useEvent('component:updated', (event) => {
     if (event.componentId === 'Camera') {
-      console.log('[CameraBackgroundManager] Camera component updated for entity:', event.entityId);
-      // Use immediate update for camera changes
-      setTimeout(() => updateFromMainCamera(), 0);
+      updateFromMainCamera();
     }
   });
 
   useEvent('component:added', (event) => {
     if (event.componentId === 'Camera') {
-      console.log('[CameraBackgroundManager] Camera component added to entity:', event.entityId);
-      setTimeout(() => updateFromMainCamera(), 0);
+      updateFromMainCamera();
     }
   });
 
   useEvent('component:removed', (event) => {
     if (event.componentId === 'Camera') {
-      console.log(
-        '[CameraBackgroundManager] Camera component removed from entity:',
-        event.entityId,
-      );
-      setTimeout(() => updateFromMainCamera(), 0);
+      updateFromMainCamera();
     }
   });
-
-  // Reduced polling frequency as fallback (only for emergency sync)
-  useEffect(() => {
-    const interval = setInterval(updateFromMainCamera, 2000); // Reduced to 2 seconds
-    return () => clearInterval(interval);
-  }, [updateFromMainCamera]);
 
   // Use the hook to actually apply the changes to the scene
   useCameraBackground(clearFlags, backgroundColor, skyboxTexture);

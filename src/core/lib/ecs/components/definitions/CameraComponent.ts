@@ -47,6 +47,47 @@ const CameraSchema = z.object({
       a: z.number().min(0).max(1),
     })
     .optional(),
+  // Culling Mask for selective rendering
+  cullingMask: z.number().optional(), // Bitmask for layer-based culling
+  enabledLayers: z.array(z.string()).optional(), // Array of layer names
+  // Viewport Rectangle for multi-camera rendering
+  viewportRect: z
+    .object({
+      x: z.number().min(0).max(1), // Normalized coordinates (0-1)
+      y: z.number().min(0).max(1),
+      width: z.number().min(0).max(1),
+      height: z.number().min(0).max(1),
+    })
+    .optional(),
+  // HDR and Tone Mapping
+  hdr: z.boolean().optional(),
+  toneMapping: z.enum(['none', 'linear', 'reinhard', 'cineon', 'aces']).optional(),
+  toneMappingExposure: z.number().optional(),
+  // Target/LookAt functionality
+  targetEntity: z.number().optional(), // Entity ID to look at
+  lookAtTarget: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      z: z.number(),
+    })
+    .optional(),
+  enableLookAt: z.boolean().optional(),
+  // Post-processing
+  enablePostProcessing: z.boolean().optional(),
+  postProcessingPreset: z.enum(['none', 'cinematic', 'realistic', 'stylized']).optional(),
+  // Camera Following Entity System
+  enableSmoothing: z.boolean().optional(), // Renamed from enableSmoothing to enableFollowing for clarity
+  followTarget: z.number().optional(), // Entity ID to follow smoothly
+  followOffset: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      z: z.number(),
+    })
+    .optional(),
+  smoothingSpeed: z.number().min(0.1).max(10).optional(),
+  rotationSmoothing: z.number().min(0.1).max(10).optional(),
 });
 
 // Camera Component Definition
@@ -70,6 +111,35 @@ export const cameraComponent = ComponentFactory.create({
     backgroundG: Types.f32,
     backgroundB: Types.f32,
     backgroundA: Types.f32,
+    // Culling & Layers
+    cullingMask: Types.ui32,
+    enabledLayersHash: Types.ui32, // Hash of enabled layers for performance
+    // Viewport Rectangle
+    viewportX: Types.f32,
+    viewportY: Types.f32,
+    viewportWidth: Types.f32,
+    viewportHeight: Types.f32,
+    // HDR and Tone Mapping
+    hdr: Types.ui8,
+    toneMapping: Types.ui8, // 0=none, 1=linear, 2=reinhard, 3=cineon, 4=aces
+    toneMappingExposure: Types.f32,
+    // Target/LookAt
+    targetEntity: Types.ui32,
+    lookAtTargetX: Types.f32,
+    lookAtTargetY: Types.f32,
+    lookAtTargetZ: Types.f32,
+    enableLookAt: Types.ui8,
+    // Post-processing
+    enablePostProcessing: Types.ui8,
+    postProcessingPreset: Types.ui8, // 0=none, 1=cinematic, 2=realistic, 3=stylized
+    // Camera Animation & Follow
+    enableSmoothing: Types.ui8,
+    followTarget: Types.ui32,
+    followOffsetX: Types.f32,
+    followOffsetY: Types.f32,
+    followOffsetZ: Types.f32,
+    smoothingSpeed: Types.f32,
+    rotationSmoothing: Types.f32,
     needsUpdate: Types.ui8,
   },
   serialize: (eid: EntityId, component: any) => {
@@ -92,6 +162,44 @@ export const cameraComponent = ComponentFactory.create({
         b: component.backgroundB[eid] ?? 0.0,
         a: component.backgroundA[eid] ?? 1.0,
       },
+      // Culling & Layers
+      cullingMask: component.cullingMask[eid] ?? 0xffffffff, // Default: all layers enabled
+      enabledLayers: [], // TODO: Decode from hash
+      // Viewport Rectangle
+      viewportRect: {
+        x: component.viewportX[eid] ?? 0.0,
+        y: component.viewportY[eid] ?? 0.0,
+        width: component.viewportWidth[eid] ?? 1.0,
+        height: component.viewportHeight[eid] ?? 1.0,
+      },
+      // HDR and Tone Mapping
+      hdr: Boolean(component.hdr[eid] ?? 0),
+      toneMapping: (['none', 'linear', 'reinhard', 'cineon', 'aces'][component.toneMapping[eid]] ||
+        'none') as 'none' | 'linear' | 'reinhard' | 'cineon' | 'aces',
+      toneMappingExposure: component.toneMappingExposure[eid] ?? 1.0,
+      // Target/LookAt
+      targetEntity: component.targetEntity[eid] ?? 0,
+      lookAtTarget: {
+        x: component.lookAtTargetX[eid] ?? 0.0,
+        y: component.lookAtTargetY[eid] ?? 0.0,
+        z: component.lookAtTargetZ[eid] ?? 0.0,
+      },
+      enableLookAt: Boolean(component.enableLookAt[eid] ?? 0),
+      // Post-processing
+      enablePostProcessing: Boolean(component.enablePostProcessing[eid] ?? 0),
+      postProcessingPreset: (['none', 'cinematic', 'realistic', 'stylized'][
+        component.postProcessingPreset[eid]
+      ] || 'none') as 'none' | 'cinematic' | 'realistic' | 'stylized',
+      // Camera Animation & Follow
+      enableSmoothing: Boolean(component.enableSmoothing[eid] ?? 0),
+      followTarget: component.followTarget[eid] ?? 0,
+      followOffset: {
+        x: component.followOffsetX[eid] ?? 0.0,
+        y: component.followOffsetY[eid] ?? 5.0,
+        z: component.followOffsetZ[eid] ?? -10.0,
+      },
+      smoothingSpeed: component.smoothingSpeed[eid] ?? 2.0,
+      rotationSmoothing: component.rotationSmoothing[eid] ?? 1.5,
     };
     return serialized;
   },
@@ -110,6 +218,46 @@ export const cameraComponent = ComponentFactory.create({
     component.backgroundG[eid] = data.backgroundColor?.g ?? 0.0;
     component.backgroundB[eid] = data.backgroundColor?.b ?? 0.0;
     component.backgroundA[eid] = data.backgroundColor?.a ?? 1.0;
+
+    // Culling & Layers
+    component.cullingMask[eid] = data.cullingMask ?? 0xffffffff;
+    component.enabledLayersHash[eid] = 0; // TODO: Calculate hash from enabledLayers
+
+    // Viewport Rectangle
+    component.viewportX[eid] = data.viewportRect?.x ?? 0.0;
+    component.viewportY[eid] = data.viewportRect?.y ?? 0.0;
+    component.viewportWidth[eid] = data.viewportRect?.width ?? 1.0;
+    component.viewportHeight[eid] = data.viewportRect?.height ?? 1.0;
+
+    // HDR and Tone Mapping
+    component.hdr[eid] = data.hdr ? 1 : 0;
+    const toneMappingMap = { none: 0, linear: 1, reinhard: 2, cineon: 3, aces: 4 };
+    component.toneMapping[eid] =
+      toneMappingMap[data.toneMapping as keyof typeof toneMappingMap] ?? 0;
+    component.toneMappingExposure[eid] = data.toneMappingExposure ?? 1.0;
+
+    // Target/LookAt
+    component.targetEntity[eid] = data.targetEntity ?? 0;
+    component.lookAtTargetX[eid] = data.lookAtTarget?.x ?? 0.0;
+    component.lookAtTargetY[eid] = data.lookAtTarget?.y ?? 0.0;
+    component.lookAtTargetZ[eid] = data.lookAtTarget?.z ?? 0.0;
+    component.enableLookAt[eid] = data.enableLookAt ? 1 : 0;
+
+    // Post-processing
+    component.enablePostProcessing[eid] = data.enablePostProcessing ? 1 : 0;
+    const postProcessingMap = { none: 0, cinematic: 1, realistic: 2, stylized: 3 };
+    component.postProcessingPreset[eid] =
+      postProcessingMap[data.postProcessingPreset as keyof typeof postProcessingMap] ?? 0;
+
+    // Camera Animation & Follow
+    component.enableSmoothing[eid] = data.enableSmoothing ? 1 : 0;
+    component.followTarget[eid] = data.followTarget ?? 0;
+    component.followOffsetX[eid] = data.followOffset?.x ?? 0.0;
+    component.followOffsetY[eid] = data.followOffset?.y ?? 5.0;
+    component.followOffsetZ[eid] = data.followOffset?.z ?? -10.0;
+    component.smoothingSpeed[eid] = data.smoothingSpeed ?? 2.0;
+    component.rotationSmoothing[eid] = data.rotationSmoothing ?? 1.5;
+
     component.needsUpdate[eid] = 1; // Mark for update
   },
   dependencies: ['Transform'],

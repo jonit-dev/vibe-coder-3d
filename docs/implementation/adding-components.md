@@ -1119,17 +1119,235 @@ export const characterComponent = ComponentFactory.create({
 });
 ```
 
-### Component Events
+### Event-Driven Component Updates
+
+The Vibe Coder 3D engine includes a powerful event system that allows components to react to changes efficiently without polling. This is the **preferred approach** for real-time component synchronization.
+
+#### Available Component Events
 
 ```typescript
-// Listen for component lifecycle events
 import { useEvent } from '@/core/hooks/useEvent';
 
+// Component lifecycle events
 useEvent('component:added', (event) => {
-  if (event.componentId === 'Health') {
-    console.log(`Health component added to entity ${event.entityId}`);
+  console.log(`Component ${event.componentId} added to entity ${event.entityId}`);
+  console.log('Component data:', event.data);
+});
+
+useEvent('component:updated', (event) => {
+  console.log(`Component ${event.componentId} updated on entity ${event.entityId}`);
+  console.log('New data:', event.data);
+});
+
+useEvent('component:removed', (event) => {
+  console.log(`Component ${event.componentId} removed from entity ${event.entityId}`);
+});
+```
+
+#### Event-Driven Component Manager Pattern
+
+Instead of using polling (`setInterval`), use events for responsive component managers:
+
+```typescript
+export const CameraBackgroundManager: React.FC = () => {
+  const [clearFlags, setClearFlags] = useState<string>('skybox');
+  const [backgroundColor, setBackgroundColor] = useState<any>();
+
+  const world = ECSWorld.getInstance().getWorld();
+  const lastUpdateRef = useRef<any>({});
+
+  const updateFromMainCamera = useCallback(() => {
+    try {
+      const cameraComponent = componentRegistry.getBitECSComponent('Camera');
+      if (!cameraComponent) return;
+
+      const query = defineQuery([cameraComponent]);
+      const entities = query(world);
+
+      // Find main camera
+      let mainCameraEntity: number | null = null;
+      for (const eid of entities) {
+        const cameraData = componentRegistry.getComponentData<CameraData>(eid, 'Camera');
+        if (cameraData?.isMain) {
+          mainCameraEntity = eid;
+          break;
+        }
+      }
+
+      if (mainCameraEntity !== null) {
+        const cameraData = componentRegistry.getComponentData<CameraData>(
+          mainCameraEntity,
+          'Camera',
+        );
+
+        if (cameraData) {
+          const newClearFlags = cameraData.clearFlags || 'skybox';
+          const newBackgroundColor = cameraData.backgroundColor;
+
+          // Check for changes to avoid unnecessary updates
+          const clearFlagsChanged = lastUpdateRef.current.clearFlags !== newClearFlags;
+          const backgroundColorChanged =
+            JSON.stringify(lastUpdateRef.current.backgroundColor) !==
+            JSON.stringify(newBackgroundColor);
+
+          if (clearFlagsChanged || backgroundColorChanged) {
+            console.log('[CameraBackgroundManager] Camera background updated:', {
+              clearFlags: newClearFlags,
+              backgroundColor: newBackgroundColor,
+            });
+
+            setClearFlags(newClearFlags);
+            setBackgroundColor(newBackgroundColor);
+
+            // Update ref for next comparison
+            lastUpdateRef.current = {
+              clearFlags: newClearFlags,
+              backgroundColor: newBackgroundColor,
+            };
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[CameraBackgroundManager] Error updating from main camera:', error);
+    }
+  }, [world]);
+
+  // Initial load
+  useEffect(() => {
+    updateFromMainCamera();
+  }, [updateFromMainCamera]);
+
+  // Event-driven updates (NO POLLING!)
+  useEvent('component:updated', (event) => {
+    if (event.componentId === 'Camera') {
+      updateFromMainCamera();
+    }
+  });
+
+  useEvent('component:added', (event) => {
+    if (event.componentId === 'Camera') {
+      updateFromMainCamera();
+    }
+  });
+
+  useEvent('component:removed', (event) => {
+    if (event.componentId === 'Camera') {
+      updateFromMainCamera();
+    }
+  });
+
+  // Apply changes to Three.js scene
+  useCameraBackground(clearFlags, backgroundColor);
+
+  return null;
+};
+```
+
+#### Benefits of Event-Driven Components
+
+✅ **Performance**: No wasted CPU cycles on constant polling  
+✅ **Responsiveness**: Immediate updates when data changes  
+✅ **Debugging**: Clear event logs for tracking data flow  
+✅ **Scalability**: Works efficiently with many components
+
+#### Event-Driven Best Practices
+
+```typescript
+// ✅ DO: Use events for real-time synchronization
+useEvent('component:updated', (event) => {
+  if (event.componentId === 'YourComponent') {
+    updateFromECS();
   }
 });
+
+// ❌ DON'T: Use excessive polling
+useEffect(() => {
+  const interval = setInterval(updateFromECS, 100); // Wasteful!
+  return () => clearInterval(interval);
+}, []);
+
+// ✅ DO: Add change detection to prevent unnecessary updates
+const updateFromECS = useCallback(() => {
+  const newData = getComponentData();
+
+  // Only update if data actually changed
+  if (!isEqual(lastDataRef.current, newData)) {
+    setComponentState(newData);
+    lastDataRef.current = newData;
+  }
+}, []);
+
+// ✅ DO: Use setTimeout for event handling to ensure proper timing
+useEvent('component:updated', (event) => {
+  if (event.componentId === 'YourComponent') {
+    // Ensure event processing completes before updating
+    setTimeout(() => updateFromECS(), 0);
+  }
+});
+```
+
+#### Multi-Component Event Handling
+
+```typescript
+// Listen to multiple component types
+const WATCHED_COMPONENTS = ['Transform', 'MeshRenderer', 'Camera'];
+
+useEvent('component:updated', (event) => {
+  if (WATCHED_COMPONENTS.includes(event.componentId)) {
+    console.log(`Watched component updated: ${event.componentId}`);
+    updateRelatedSystems(event);
+  }
+});
+
+// Batch updates for performance
+const pendingUpdates = useRef(new Set<string>());
+
+useEvent('component:updated', (event) => {
+  pendingUpdates.current.add(event.componentId);
+
+  // Debounce batch updates
+  setTimeout(() => {
+    if (pendingUpdates.current.size > 0) {
+      processBatchUpdates(Array.from(pendingUpdates.current));
+      pendingUpdates.current.clear();
+    }
+  }, 0);
+});
+```
+
+#### Event Debugging Tools
+
+```typescript
+// Enable comprehensive event logging for debugging
+const DEBUG_COMPONENT_EVENTS = true;
+
+if (DEBUG_COMPONENT_EVENTS) {
+  useEvent('component:added', (event) => {
+    console.log(`[EVENT] ➕ Component added:`, {
+      component: event.componentId,
+      entity: event.entityId,
+      data: event.data,
+      timestamp: Date.now(),
+    });
+  });
+
+  useEvent('component:updated', (event) => {
+    console.log(`[EVENT] 🔄 Component updated:`, {
+      component: event.componentId,
+      entity: event.entityId,
+      data: event.data,
+      timestamp: Date.now(),
+    });
+  });
+
+  useEvent('component:removed', (event) => {
+    console.log(`[EVENT] ➖ Component removed:`, {
+      component: event.componentId,
+      entity: event.entityId,
+      timestamp: Date.now(),
+    });
+  });
+}
 ```
 
 ### Dynamic Component Loading

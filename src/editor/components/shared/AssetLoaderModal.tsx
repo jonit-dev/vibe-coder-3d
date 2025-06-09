@@ -115,11 +115,20 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
   // Filter and search assets
   const filteredAssets = useMemo(() => {
     let filtered = assets.filter((asset) => {
+      // Always show folders for navigation
       if (asset.type === 'folder') return true;
+
+      // If no extensions specified, show all files
       if (allowedExtensions.length === 0) return true;
-      return allowedExtensions.includes(asset.extension || '');
+
+      // Strict filtering: only show files with allowed extensions
+      const fileExtension = asset.extension?.toLowerCase();
+      return (
+        fileExtension && allowedExtensions.map((ext) => ext.toLowerCase()).includes(fileExtension)
+      );
     });
 
+    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter((asset) =>
         asset.name.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -128,6 +137,9 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
 
     return filtered;
   }, [assets, allowedExtensions, searchTerm]);
+
+  // Count files for better user feedback
+  const fileCount = filteredAssets.filter((asset) => asset.type === 'file').length;
 
   const handleAssetClick = (asset: IAssetFile) => {
     if (asset.type === 'folder') {
@@ -268,9 +280,29 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
               </div>
             ) : filteredAssets.length === 0 ? (
               <div className="text-center text-gray-400 py-8 text-xs">
-                {searchTerm
-                  ? `No assets found matching "${searchTerm}"`
-                  : 'No assets found in this folder'}
+                {searchTerm ? (
+                  <div>
+                    <div>No assets found matching "{searchTerm}"</div>
+                    {allowedExtensions.length > 0 && (
+                      <div className="mt-1 text-[10px] text-gray-500">
+                        Only showing {allowedExtensions.join(', ')} files
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    {allowedExtensions.length > 0 ? (
+                      <div>
+                        <div>No {allowedExtensions.join(', ')} files found in this folder</div>
+                        <div className="mt-1 text-[10px] text-gray-500">
+                          Navigate to a folder containing {allowedExtensions.join(' or ')} files
+                        </div>
+                      </div>
+                    ) : (
+                      'No assets found in this folder'
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-1">
@@ -287,11 +319,31 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
                     {asset.type === 'folder' ? (
                       <FiFolder className="text-yellow-400 flex-shrink-0" size={14} />
                     ) : (
-                      <FiFile className="text-blue-400 flex-shrink-0" size={14} />
+                      <FiFile
+                        className={`flex-shrink-0 ${
+                          allowedExtensions.length > 0 &&
+                          asset.extension &&
+                          allowedExtensions
+                            .map((ext) => ext.toLowerCase())
+                            .includes(asset.extension.toLowerCase())
+                            ? 'text-green-400'
+                            : 'text-blue-400'
+                        }`}
+                        size={14}
+                      />
                     )}
                     <span className="flex-1 truncate text-xs">{asset.name}</span>
                     {asset.extension && (
-                      <span className="text-[10px] text-gray-400 uppercase font-mono bg-gray-800/50 px-1 py-0.5 rounded">
+                      <span
+                        className={`text-[10px] uppercase font-mono px-1 py-0.5 rounded ${
+                          allowedExtensions.length > 0 &&
+                          allowedExtensions
+                            .map((ext) => ext.toLowerCase())
+                            .includes(asset.extension.toLowerCase())
+                            ? 'text-green-400 bg-green-900/20 border border-green-500/20'
+                            : 'text-gray-400 bg-gray-800/50'
+                        }`}
+                      >
                         {asset.extension}
                       </span>
                     )}
@@ -355,6 +407,12 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
                 'Select an asset to continue'
               )}
             </div>
+            {allowedExtensions.length > 0 && (
+              <div className="text-[10px] text-gray-500">
+                Showing: {allowedExtensions.join(', ')} files
+                {fileCount > 0 && ` (${fileCount} found)`}
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <button

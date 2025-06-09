@@ -465,18 +465,18 @@ export class ComponentRegistry {
       return [];
     }
 
-    const entities: EntityId[] = [];
+    const entitySet = new Set<EntityId>();
 
     // Iterate through all possible entity IDs and check if they have the component
     // This is not the most efficient approach, but it works for compatibility
     for (let eid = 0; eid < 10000; eid++) {
       // Reasonable upper bound
       if (hasComponent(this.world, bitECSComponent, eid)) {
-        entities.push(eid);
+        entitySet.add(eid);
       }
     }
 
-    return entities;
+    return Array.from(entitySet).sort((a, b) => a - b);
   }
 
   /**
