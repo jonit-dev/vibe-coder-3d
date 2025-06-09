@@ -60,21 +60,11 @@ const CameraSchema = z.object({
   hdr: z.boolean().optional(),
   toneMapping: z.enum(['none', 'linear', 'reinhard', 'cineon', 'aces']).optional(),
   toneMappingExposure: z.number().optional(),
-  // Target/LookAt functionality
-  targetEntity: z.number().optional(), // Entity ID to look at
-  lookAtTarget: z
-    .object({
-      x: z.number(),
-      y: z.number(),
-      z: z.number(),
-    })
-    .optional(),
-  enableLookAt: z.boolean().optional(),
   // Post-processing
   enablePostProcessing: z.boolean().optional(),
   postProcessingPreset: z.enum(['none', 'cinematic', 'realistic', 'stylized']).optional(),
   // Camera Following Entity System
-  enableSmoothing: z.boolean().optional(), // Renamed from enableSmoothing to enableFollowing for clarity
+  enableSmoothing: z.boolean().optional(), // Enable following behavior
   followTarget: z.number().optional(), // Entity ID to follow smoothly
   followOffset: z
     .object({
@@ -117,12 +107,6 @@ export const cameraComponent = ComponentFactory.create({
     hdr: Types.ui8,
     toneMapping: Types.ui8, // 0=none, 1=linear, 2=reinhard, 3=cineon, 4=aces
     toneMappingExposure: Types.f32,
-    // Target/LookAt
-    targetEntity: Types.ui32,
-    lookAtTargetX: Types.f32,
-    lookAtTargetY: Types.f32,
-    lookAtTargetZ: Types.f32,
-    enableLookAt: Types.ui8,
     // Post-processing
     enablePostProcessing: Types.ui8,
     postProcessingPreset: Types.ui8, // 0=none, 1=cinematic, 2=realistic, 3=stylized
@@ -168,14 +152,6 @@ export const cameraComponent = ComponentFactory.create({
       toneMapping: (['none', 'linear', 'reinhard', 'cineon', 'aces'][component.toneMapping[eid]] ||
         'none') as 'none' | 'linear' | 'reinhard' | 'cineon' | 'aces',
       toneMappingExposure: component.toneMappingExposure[eid] ?? 1.0,
-      // Target/LookAt
-      targetEntity: component.targetEntity[eid] ?? 0,
-      lookAtTarget: {
-        x: component.lookAtTargetX[eid] ?? 0.0,
-        y: component.lookAtTargetY[eid] ?? 0.0,
-        z: component.lookAtTargetZ[eid] ?? 0.0,
-      },
-      enableLookAt: Boolean(component.enableLookAt[eid] ?? 0),
       // Post-processing
       enablePostProcessing: Boolean(component.enablePostProcessing[eid] ?? 0),
       postProcessingPreset: (['none', 'cinematic', 'realistic', 'stylized'][
@@ -222,13 +198,6 @@ export const cameraComponent = ComponentFactory.create({
     component.toneMapping[eid] =
       toneMappingMap[data.toneMapping as keyof typeof toneMappingMap] ?? 0;
     component.toneMappingExposure[eid] = data.toneMappingExposure ?? 1.0;
-
-    // Target/LookAt
-    component.targetEntity[eid] = data.targetEntity ?? 0;
-    component.lookAtTargetX[eid] = data.lookAtTarget?.x ?? 0.0;
-    component.lookAtTargetY[eid] = data.lookAtTarget?.y ?? 0.0;
-    component.lookAtTargetZ[eid] = data.lookAtTarget?.z ?? 0.0;
-    component.enableLookAt[eid] = data.enableLookAt ? 1 : 0;
 
     // Post-processing
     component.enablePostProcessing[eid] = data.enablePostProcessing ? 1 : 0;

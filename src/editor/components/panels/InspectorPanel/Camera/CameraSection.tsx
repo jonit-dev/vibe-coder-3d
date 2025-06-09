@@ -4,6 +4,7 @@ import { FiCamera, FiEye, FiSettings, FiTarget } from 'react-icons/fi';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
 import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
+import { ColorPicker } from '@/editor/components/shared/ColorPicker';
 import { ComponentField } from '@/editor/components/shared/ComponentField';
 import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
 import { InspectorButton } from '@/editor/components/shared/InspectorButton';
@@ -21,6 +22,32 @@ export interface ICameraSectionProps {
   onRemove?: () => void;
   entityId: number;
 }
+
+const rgbaToHex = (rgba?: { r: number; g: number; b: number; a?: number }): string => {
+  if (!rgba) return '#000000';
+  const r = Math.round(rgba.r * 255)
+    .toString(16)
+    .padStart(2, '0');
+  const g = Math.round(rgba.g * 255)
+    .toString(16)
+    .padStart(2, '0');
+  const b = Math.round(rgba.b * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `#${r}${g}${b}`;
+};
+
+const hexToRgba = (hex: string): { r: number; g: number; b: number; a: number } => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16) / 255,
+        g: parseInt(result[2], 16) / 255,
+        b: parseInt(result[3], 16) / 255,
+        a: 1,
+      }
+    : { r: 0, g: 0, b: 0, a: 1 };
+};
 
 export const CameraSection: React.FC<ICameraSectionProps> = ({
   cameraData,
@@ -176,119 +203,18 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
           )}
 
           {cameraData.clearFlags === 'solidColor' && (
-            <div className="space-y-2">
-              <label className="text-xs text-gray-300">Background Color</label>
-              <div className="grid grid-cols-4 gap-1">
-                <SingleAxisField
-                  label="R"
-                  value={cameraData.backgroundColor?.r ?? 0}
-                  onChange={(value) =>
-                    handleFieldChange('backgroundColor', {
-                      ...cameraData.backgroundColor,
-                      r: Math.max(0, Math.min(1, value)),
-                    })
-                  }
-                  resetValue={0}
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  sensitivity={0.01}
-                  axisLabel="R"
-                  axisColor="#e74c3c"
-                />
-                <SingleAxisField
-                  label="G"
-                  value={cameraData.backgroundColor?.g ?? 0}
-                  onChange={(value) =>
-                    handleFieldChange('backgroundColor', {
-                      ...cameraData.backgroundColor,
-                      g: Math.max(0, Math.min(1, value)),
-                    })
-                  }
-                  resetValue={0}
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  sensitivity={0.01}
-                  axisLabel="G"
-                  axisColor="#27ae60"
-                />
-                <SingleAxisField
-                  label="B"
-                  value={cameraData.backgroundColor?.b ?? 0}
-                  onChange={(value) =>
-                    handleFieldChange('backgroundColor', {
-                      ...cameraData.backgroundColor,
-                      b: Math.max(0, Math.min(1, value)),
-                    })
-                  }
-                  resetValue={0}
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  sensitivity={0.01}
-                  axisLabel="B"
-                  axisColor="#3498db"
-                />
-                <SingleAxisField
-                  label="A"
-                  value={cameraData.backgroundColor?.a ?? 1}
-                  onChange={(value) =>
-                    handleFieldChange('backgroundColor', {
-                      ...cameraData.backgroundColor,
-                      a: Math.max(0, Math.min(1, value)),
-                    })
-                  }
-                  resetValue={1}
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  sensitivity={0.01}
-                  axisLabel="A"
-                  axisColor="#9b59b6"
-                />
-              </div>
-            </div>
+            <ColorPicker
+              label="Background Color"
+              value={rgbaToHex(cameraData.backgroundColor)}
+              onChange={(color) => handleFieldChange('backgroundColor', hexToRgba(color))}
+            />
           )}
         </CollapsibleSection>
 
-        {/* Camera Behavior */}
-        <CollapsibleSection title="Camera Behavior" icon={<FiTarget />} defaultExpanded={false}>
+        {/* Camera Following Behavior */}
+        <CollapsibleSection title="Camera Following" icon={<FiTarget />} defaultExpanded={false}>
           <ToggleField
-            label="Enable Look At"
-            value={cameraData.enableLookAt ?? false}
-            onChange={(value) => handleFieldChange('enableLookAt', value)}
-            resetValue={false}
-            color="cyan"
-          />
-
-          {cameraData.enableLookAt && (
-            <>
-              <ComponentField
-                label="Look At Entity"
-                type="select"
-                value={(cameraData.targetEntity ?? 0).toString()}
-                onChange={(value) => handleFieldChange('targetEntity', parseInt(value, 10))}
-                options={entityOptions}
-              />
-
-              {(!cameraData.targetEntity || cameraData.targetEntity === 0) && (
-                <Vector3Field
-                  label="Look At Position"
-                  value={[
-                    cameraData.lookAtTarget?.x ?? 0,
-                    cameraData.lookAtTarget?.y ?? 0,
-                    cameraData.lookAtTarget?.z ?? 0,
-                  ]}
-                  onChange={([x, y, z]) => handleFieldChange('lookAtTarget', { x, y, z })}
-                  resetValue={[0, 0, 0]}
-                />
-              )}
-            </>
-          )}
-
-          <ToggleField
-            label="Enable Follow Entity"
+            label="Enable Following"
             value={cameraData.enableSmoothing ?? false}
             onChange={(value) => handleFieldChange('enableSmoothing', value)}
             resetValue={false}
@@ -298,7 +224,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
           {cameraData.enableSmoothing && (
             <>
               <ComponentField
-                label="Follow Entity"
+                label="Follow Target Entity"
                 type="select"
                 value={(cameraData.followTarget ?? 0).toString()}
                 onChange={(value) => handleFieldChange('followTarget', parseInt(value, 10))}
@@ -417,26 +343,6 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
               ]}
             />
           )}
-
-          <div className="space-y-2">
-            <div className="text-xs text-gray-400">
-              Note: Culling mask is currently for future use. Layer system not yet implemented.
-            </div>
-            <ComponentField
-              label="Culling Mask (Layers)"
-              type="text"
-              value={`0x${(cameraData.cullingMask ?? 0xffffffff).toString(16).toUpperCase()}`}
-              onChange={(value: string) => {
-                const hexValue = value.replace(/^0x/i, '');
-                const numValue = parseInt(hexValue, 16);
-                if (!isNaN(numValue)) {
-                  handleFieldChange('cullingMask', numValue);
-                }
-              }}
-              placeholder="0xFFFFFFFF (all layers)"
-              resetValue="0xFFFFFFFF"
-            />
-          </div>
         </CollapsibleSection>
       </GenericComponentSection>
 
