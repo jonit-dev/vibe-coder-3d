@@ -27,6 +27,7 @@ export const CameraAdapter: React.FC<ICameraAdapterProps> = ({
     depth: data.depth ?? 0,
     isMain: data.isMain ?? false,
     clearFlags: data.clearFlags ?? 'skybox',
+    skyboxTexture: data.skyboxTexture ?? '',
     backgroundColor: data.backgroundColor ?? { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
   };
 

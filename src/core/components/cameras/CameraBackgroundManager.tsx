@@ -12,10 +12,15 @@ export const CameraBackgroundManager: React.FC = () => {
   const [backgroundColor, setBackgroundColor] = useState<
     { r: number; g: number; b: number; a: number } | undefined
   >();
-  const [forceUpdate, setForceUpdate] = useState(0);
+  const [skyboxTexture, setSkyboxTexture] = useState<string>('');
+  const [, setForceUpdate] = useState(0);
 
   const world = ECSWorld.getInstance().getWorld();
-  const lastUpdateRef = useRef<{ clearFlags: string; backgroundColor?: any }>({
+  const lastUpdateRef = useRef<{
+    clearFlags: string;
+    backgroundColor?: any;
+    skyboxTexture?: string;
+  }>({
     clearFlags: 'skybox',
   });
 
@@ -90,12 +95,15 @@ export const CameraBackgroundManager: React.FC = () => {
         if (cameraData) {
           const newClearFlags = cameraData.clearFlags || 'skybox';
           const newBackgroundColor = cameraData.backgroundColor;
+          const newSkyboxTexture = cameraData.skyboxTexture || '';
 
           console.log(
             '[CameraBackgroundManager] Processing - clearFlags:',
             newClearFlags,
             'backgroundColor:',
             newBackgroundColor,
+            'skyboxTexture:',
+            newSkyboxTexture,
           );
 
           // Check if data actually changed
@@ -103,32 +111,40 @@ export const CameraBackgroundManager: React.FC = () => {
           const backgroundColorChanged =
             JSON.stringify(lastUpdateRef.current.backgroundColor) !==
             JSON.stringify(newBackgroundColor);
+          const skyboxTextureChanged = lastUpdateRef.current.skyboxTexture !== newSkyboxTexture;
 
           console.log('[CameraBackgroundManager] Change detection:', {
             clearFlagsChanged,
             backgroundColorChanged,
+            skyboxTextureChanged,
             currentClearFlags: lastUpdateRef.current.clearFlags,
             currentBackgroundColor: lastUpdateRef.current.backgroundColor,
+            currentSkyboxTexture: lastUpdateRef.current.skyboxTexture,
             newClearFlags,
             newBackgroundColor,
+            newSkyboxTexture,
           });
 
-          if (clearFlagsChanged || backgroundColorChanged) {
+          if (clearFlagsChanged || backgroundColorChanged || skyboxTextureChanged) {
             console.log('[CameraBackgroundManager] Data changed, updating state:', {
               clearFlagsChanged,
               backgroundColorChanged,
+              skyboxTextureChanged,
               newClearFlags,
               newBackgroundColor,
+              newSkyboxTexture,
             });
 
             setClearFlags(newClearFlags);
             setBackgroundColor(newBackgroundColor);
+            setSkyboxTexture(newSkyboxTexture);
             setForceUpdate((prev) => prev + 1);
 
             // Update the ref for next comparison
             lastUpdateRef.current = {
               clearFlags: newClearFlags,
               backgroundColor: newBackgroundColor,
+              skyboxTexture: newSkyboxTexture,
             };
           } else {
             console.log('[CameraBackgroundManager] No data changes detected');
@@ -185,7 +201,7 @@ export const CameraBackgroundManager: React.FC = () => {
   }, [updateFromMainCamera]);
 
   // Use the hook to actually apply the changes to the scene
-  useCameraBackground(clearFlags, backgroundColor);
+  useCameraBackground(clearFlags, backgroundColor, skyboxTexture);
 
   return null; // This component doesn't render anything
 };

@@ -1,0 +1,44 @@
+{
+  "entities": [
+    {
+      "id": 1,
+      "name": "Main Camera",
+      "components": {
+        "Transform": {
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 5
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          }
+        },
+        "Camera": {
+          "fov": 75,
+          "near": 0.1,
+          "far": 1000,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "depth": 0,
+          "isMain": true,
+          "clearFlags": "skybox",
+          "skyboxTexture": "/assets/skyboxes/forest_day.jpg",
+          "backgroundColor": {
+            "r": 0.2,
+            "g": 0.3,
+            "b": 0.8,
+            "a": 1.0
+          }
+        }
+      }
+    }
+  ]
+}

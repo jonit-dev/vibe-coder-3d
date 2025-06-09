@@ -9,6 +9,25 @@ import { z } from 'zod';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 
+// Skybox texture mapping for BitECS storage
+const SKYBOX_TEXTURES = [
+  '', // 0 = no texture/default
+  '/assets/skyboxes/forest_day.jpg',
+  '/assets/skyboxes/mountain_sunset.jpg',
+  '/assets/skyboxes/city_night.jpg',
+  '/assets/skyboxes/ocean_horizon.jpg',
+  '/assets/skyboxes/desert_dusk.jpg',
+];
+
+const getSkyboxIndex = (path: string): number => {
+  const index = SKYBOX_TEXTURES.indexOf(path);
+  return index >= 0 ? index : 0;
+};
+
+const getSkyboxPath = (index: number): string => {
+  return SKYBOX_TEXTURES[index] || '';
+};
+
 // Camera Schema
 const CameraSchema = z.object({
   fov: z.number(),
@@ -19,6 +38,7 @@ const CameraSchema = z.object({
   depth: z.number(),
   isMain: z.boolean(),
   clearFlags: z.enum(['skybox', 'solidColor', 'depthOnly', 'dontClear']).optional(),
+  skyboxTexture: z.string().optional(), // Path to skybox texture
   backgroundColor: z
     .object({
       r: z.number().min(0).max(1),
@@ -45,6 +65,7 @@ export const cameraComponent = ComponentFactory.create({
     depth: Types.i32,
     isMain: Types.ui8,
     clearFlags: Types.ui8,
+    skyboxTexture: Types.ui32, // Store as index/hash for performance
     backgroundR: Types.f32,
     backgroundG: Types.f32,
     backgroundB: Types.f32,
@@ -64,6 +85,7 @@ export const cameraComponent = ComponentFactory.create({
       isMain: Boolean(component.isMain[eid]),
       clearFlags: (['skybox', 'solidColor', 'depthOnly', 'dontClear'][component.clearFlags[eid]] ||
         'skybox') as 'skybox' | 'solidColor' | 'depthOnly' | 'dontClear',
+      skyboxTexture: getSkyboxPath(component.skyboxTexture[eid] ?? 0),
       backgroundColor: {
         r: component.backgroundR[eid] ?? 0.0,
         g: component.backgroundG[eid] ?? 0.0,
@@ -83,6 +105,7 @@ export const cameraComponent = ComponentFactory.create({
     component.isMain[eid] = data.isMain ? 1 : 0;
     const clearFlagsMap = { skybox: 0, solidColor: 1, depthOnly: 2, dontClear: 3 };
     component.clearFlags[eid] = clearFlagsMap[data.clearFlags as keyof typeof clearFlagsMap] ?? 0;
+    component.skyboxTexture[eid] = getSkyboxIndex(data.skyboxTexture || '');
     component.backgroundR[eid] = data.backgroundColor?.r ?? 0.0;
     component.backgroundG[eid] = data.backgroundColor?.g ?? 0.0;
     component.backgroundB[eid] = data.backgroundColor?.b ?? 0.0;
@@ -98,3 +121,6 @@ export const cameraComponent = ComponentFactory.create({
 });
 
 export type CameraData = z.infer<typeof CameraSchema>;
+
+// Export skybox textures for UI components
+export { SKYBOX_TEXTURES };
