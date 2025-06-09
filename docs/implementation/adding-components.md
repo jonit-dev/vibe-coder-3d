@@ -1384,6 +1384,101 @@ componentRegistry.register(dynamicComponent);
 
 ## 🔗 Advanced Integration Patterns
 
+### ECS System Implementation Patterns
+
+When creating systems that process component data, follow these proven patterns:
+
+#### System Update Logic - Critical Pattern
+
+```typescript
+// ❌ WRONG: Only update when target moves
+const targetMoved = followState.lastTargetPosition.distanceTo(targetPosition) > 0.001;
+const needsUpdate = followState.needsInstantUpdate || targetMoved;
+
+// ✅ CORRECT: Update when camera OR target position changes
+const targetMoved = followState.lastTargetPosition.distanceTo(targetPosition) > 0.001;
+const cameraNotAtTarget = currentCameraPosition.distanceTo(desiredCameraPosition) > 0.001;
+const needsUpdate = followState.needsInstantUpdate || targetMoved || cameraNotAtTarget;
+```
+
+**Why this matters**: Systems need to continue processing until the desired state is reached, not just when inputs change. For camera following, the camera must keep moving toward the target even if the target is stationary.
+
+#### BitECS System Integration with needsUpdate Flags
+
+```typescript
+// System that processes component data and marks entities for rendering updates
+export function yourSystem(deltaTime: number): number {
+  const query = getQuery();
+  if (!query) return 0;
+
+  const entities = query(world);
+  let updatedCount = 0;
+
+  entities.forEach((eid: number) => {
+    const data = componentRegistry.getComponentData(eid, 'ComponentName');
+    if (!data || !shouldUpdate(data)) return;
+
+    // Process your component logic
+    const newTransform = calculateNewTransform(data, deltaTime);
+
+    // Update the transform component
+    componentRegistry.updateComponent(eid, 'Transform', newTransform);
+
+    // CRITICAL: Mark related systems for update
+    const relatedComponent = componentRegistry.getBitECSComponent('Camera');
+    if (relatedComponent?.needsUpdate) {
+      relatedComponent.needsUpdate[eid] = 1;
+    }
+
+    updatedCount++;
+  });
+
+  return updatedCount;
+}
+```
+
+#### Lazy Query Initialization Pattern
+
+```typescript
+// Prevents crashes when components aren't registered yet
+let componentQuery: ReturnType<typeof defineQuery> | null = null;
+
+function getComponentQuery() {
+  if (!componentQuery) {
+    const component = componentRegistry.getBitECSComponent('ComponentName');
+    if (!component) return null; // Component not ready yet
+    componentQuery = defineQuery([component]);
+  }
+  return componentQuery;
+}
+
+export function systemFunction(deltaTime: number): number {
+  const query = getComponentQuery();
+  if (!query) return 0; // Graceful early return
+
+  // ... rest of system logic
+}
+```
+
+#### System Integration with EngineLoop
+
+```typescript
+// Critical: Systems only run when EngineLoop is present in the scene
+// In ViewportPanel.tsx or similar:
+<Canvas>
+  <EngineLoop autoStart={true} debug={false} /> {/* Essential for system execution */}
+  {/* Other scene components */}
+</Canvas>
+
+// In EngineLoop.tsx, add your system:
+useFrame((state, deltaTime) => {
+  // Existing systems...
+  cameraSystem(deltaTime);
+  cameraFollowSystem(deltaTime); // Your new system
+  // Other systems...
+});
+```
+
 ### Component Evolution & Schema Updates
 
 When adding new fields to existing components, follow this pattern:
@@ -1586,6 +1681,151 @@ export function yourComponentSystem(): number {
 
 ## 🐛 Advanced Troubleshooting Patterns
 
+### ECS System Debugging Techniques
+
+#### System Execution Verification
+
+```typescript
+// Add comprehensive logging to verify system execution
+export function yourSystem(deltaTime: number): number {
+  console.log(`[YourSystem] === CALLED WITH DELTATIME: ${deltaTime} ===`);
+
+  const query = getQuery();
+  if (!query) {
+    console.warn('[YourSystem] Query not available - component not registered');
+    return 0;
+  }
+
+  const entities = query(world);
+  console.log(`[YourSystem] Processing ${entities.length} entities`);
+
+  if (entities.length === 0) {
+    console.log('[YourSystem] No entities found with required components');
+    return 0;
+  }
+
+  let updatedCount = 0;
+  entities.forEach((eid: number) => {
+    console.log(`[YourSystem] Processing entity ${eid}`);
+    // ... system logic
+    if (wasUpdated) {
+      updatedCount++;
+      console.log(`[YourSystem] Updated entity ${eid}`);
+    }
+  });
+
+  console.log(`[YourSystem] Updated ${updatedCount} entities`);
+  return updatedCount;
+}
+```
+
+#### Component Update Flow Debugging
+
+```typescript
+// Track the complete update flow from UI to system
+// 1. In UI component (e.g., inspector)
+const handleUpdate = (newData: ComponentData) => {
+  console.log('[UI] Updating component with data:', newData);
+  updateComponent('ComponentName', newData);
+};
+
+// 2. In ComponentRegistry.updateComponent
+updateComponent<TData>(entityId: EntityId, componentId: string, data: Partial<TData>): boolean {
+  console.log(`[Registry] Updating ${componentId} on entity ${entityId} with:`, data);
+
+  // ... update logic
+
+  // Verify the update
+  const updatedData = this.getComponentData(entityId, componentId);
+  console.log(`[Registry] Component now has data:`, updatedData);
+
+  return success;
+}
+
+// 3. In your system
+export function yourSystem(deltaTime: number): number {
+  entities.forEach((eid: number) => {
+    const data = componentRegistry.getComponentData(eid, 'ComponentName');
+    console.log(`[System] Processing entity ${eid} with data:`, data);
+
+    if (needsUpdate(data)) {
+      console.log(`[System] Entity ${eid} needs update`);
+      // ... process update
+    } else {
+      console.log(`[System] Entity ${eid} does not need update`);
+    }
+  });
+}
+```
+
+#### EngineLoop Integration Issues
+
+```typescript
+// Problem: Systems not running at all
+// Check: Is EngineLoop component present in the scene?
+
+// In ViewportPanel.tsx, verify this exists:
+<Canvas>
+  <EngineLoop autoStart={true} debug={false} />
+  {/* If this is missing, no systems will run! */}
+</Canvas>
+
+// In EngineLoop.tsx, verify your system is called:
+useFrame((state, deltaTime) => {
+  // Log to verify frame loop is running
+  console.log('[EngineLoop] Frame update, deltaTime:', deltaTime);
+
+  // Verify each system is called
+  const cameraUpdates = cameraSystem(deltaTime);
+  console.log('[EngineLoop] Camera system updated:', cameraUpdates);
+
+  const followUpdates = cameraFollowSystem(deltaTime);
+  console.log('[EngineLoop] Follow system updated:', followUpdates);
+});
+```
+
+#### Camera System Integration Issues
+
+```typescript
+// Specific pattern for camera/transform systems integration
+export function cameraFollowSystem(deltaTime: number): number {
+  // ... process follow logic
+
+  entities.forEach((eid: number) => {
+    if (needsUpdate) {
+      // Update transform component
+      const success = componentRegistry.updateComponent(eid, 'Transform', newTransform);
+      console.log(`[FollowSystem] Transform update success: ${success}`);
+
+      // CRITICAL: Mark camera for rendering update
+      const cameraComponent = componentRegistry.getBitECSComponent('Camera');
+      if (cameraComponent?.needsUpdate) {
+        cameraComponent.needsUpdate[eid] = 1;
+        console.log(`[FollowSystem] Marked camera ${eid} for rendering update`);
+      } else {
+        console.warn(`[FollowSystem] Could not mark camera ${eid} for update`);
+      }
+    }
+  });
+}
+
+// In cameraSystem.ts, verify the needsUpdate check:
+export function cameraSystem(deltaTime: number): number {
+  entities.forEach((eid: number) => {
+    const needsUpdate = cameraComponent.needsUpdate?.[eid];
+    console.log(`[CameraSystem] Entity ${eid} needsUpdate flag:`, needsUpdate);
+
+    if (needsUpdate) {
+      // Apply updates to Three.js camera
+      updateThreeJSCamera(eid);
+
+      // Reset flag
+      cameraComponent.needsUpdate[eid] = 0;
+    }
+  });
+}
+```
+
 ### Debugging Component Data Flow
 
 When component changes don't reflect in your systems, add comprehensive logging:
@@ -1671,13 +1911,16 @@ export function useSystemIntegration(data: ComponentData) {
 
 ### Common Integration Issues & Solutions
 
-| Issue                              | Symptoms                                           | Solution                                                                   |
-| ---------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------- |
-| **Manager not finding entities**   | "No entities found" in logs                        | Check component registration timing, ensure component is added to entities |
-| **Data not updating**              | Old values persist in system                       | Check event handlers, ensure component:updated events are firing           |
-| **External system not responding** | Component data changes but no visual/system effect | Add invalidation calls, check external system API usage                    |
-| **Performance issues**             | Excessive logging, frame drops                     | Add change detection, reduce polling frequency, optimize queries           |
-| **Event timing issues**            | Inconsistent updates, race conditions              | Use setTimeout(0) for event handling, ensure proper async patterns         |
+| Issue                              | Symptoms                                           | Solution                                                                              |
+| ---------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Manager not finding entities**   | "No entities found" in logs                        | Check component registration timing, ensure component is added to entities            |
+| **Data not updating**              | Old values persist in system                       | Check event handlers, ensure component:updated events are firing                      |
+| **External system not responding** | Component data changes but no visual/system effect | Add invalidation calls, check external system API usage                               |
+| **Performance issues**             | Excessive logging, frame drops                     | Add change detection, reduce polling frequency, optimize queries                      |
+| **Event timing issues**            | Inconsistent updates, race conditions              | Use setTimeout(0) for event handling, ensure proper async patterns                    |
+| **System not executing**           | No system logs, no entity processing               | Check EngineLoop is present in Canvas, verify system is called in useFrame            |
+| **needsUpdate flag not set**       | System processes but no visual changes             | Ensure system sets needsUpdate[eid] = 1 on related components                         |
+| **Smooth following not working**   | Camera snaps or doesn't move continuously          | Check update condition includes camera distance from target, not just target movement |
 
 ### Entity Target Selection Patterns
 
@@ -1717,6 +1960,77 @@ function findSelectedEntity(entities: number[], selectedEntityId?: number): numb
     return selectedEntityId;
   }
   return entities.length > 0 ? entities[0] : null;
+}
+```
+
+### Camera Follow System Implementation Pattern
+
+Based on real implementation experience, here's the complete pattern for camera follow systems:
+
+```typescript
+// 1. Camera Follow System Structure
+export function cameraFollowSystem(deltaTime: number): number {
+  const cameraQuery = getCameraQuery();
+  const transformQuery = getTransformQuery();
+
+  if (!cameraQuery || !transformQuery) {
+    return 0; // Components not ready
+  }
+
+  const cameraEntities = cameraQuery(world);
+  let updatedCount = 0;
+
+  cameraEntities.forEach((cameraEntityId: EntityId) => {
+    const cameraData = componentRegistry.getComponentData(cameraEntityId, 'Camera');
+    const cameraTransform = componentRegistry.getComponentData(cameraEntityId, 'Transform');
+
+    // Skip if follow not enabled
+    if (!cameraData?.enableSmoothing || !cameraData.followTarget) {
+      return;
+    }
+
+    // Get target transform
+    const targetTransform = componentRegistry.getComponentData(
+      cameraData.followTarget,
+      'Transform',
+    );
+    if (!targetTransform) return;
+
+    // Calculate positions
+    const targetPosition = new THREE.Vector3(...(targetTransform.position || [0, 0, 0]));
+    const currentCameraPos = new THREE.Vector3(...(cameraTransform.position || [0, 0, 0]));
+    const followOffset = cameraData.followOffset || { x: 0, y: 5, z: -10 };
+    const desiredCameraPos = targetPosition
+      .clone()
+      .add(new THREE.Vector3(followOffset.x, followOffset.y, followOffset.z));
+
+    // CRITICAL: Update condition must check camera distance, not just target movement
+    const cameraNotAtTarget = currentCameraPos.distanceTo(desiredCameraPos) > 0.001;
+    const needsInstantUpdate = checkInstantUpdateCondition(cameraEntityId);
+
+    if (needsInstantUpdate || cameraNotAtTarget) {
+      // Calculate new position (instant or lerped)
+      const newPosition = needsInstantUpdate
+        ? desiredCameraPos
+        : currentCameraPos.lerp(desiredCameraPos, (cameraData.smoothingSpeed || 2.0) * deltaTime);
+
+      // Update transform component
+      componentRegistry.updateComponent(cameraEntityId, 'Transform', {
+        position: [newPosition.x, newPosition.y, newPosition.z],
+        // Optional: Add lookAt rotation
+      });
+
+      // CRITICAL: Mark camera for rendering update
+      const cameraComponent = componentRegistry.getBitECSComponent('Camera');
+      if (cameraComponent?.needsUpdate) {
+        cameraComponent.needsUpdate[cameraEntityId] = 1;
+      }
+
+      updatedCount++;
+    }
+  });
+
+  return updatedCount;
 }
 ```
 

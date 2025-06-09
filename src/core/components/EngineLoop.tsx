@@ -171,7 +171,7 @@ export const EngineLoop = ({
  * Function to run all ECS systems
  * This would be expanded as more systems are added
  */
-function runECSSystems(_deltaTime: number) {
+function runECSSystems(deltaTime: number) {
   const perfStartVelocity = performance.now();
 
   // Run transform system - updates Three.js objects from ECS Transform components
@@ -184,15 +184,17 @@ function runECSSystems(_deltaTime: number) {
   materialSystem.update();
 
   // Run camera system - updates Three.js cameras from ECS Camera components
-  cameraSystem();
+  const cameraCount = cameraSystem();
 
   // For future systems, add them here in the appropriate order
   // e.g., movementSystem(ecsWorld, deltaTime);
 
   // Debug info
-  if (transformCount > 0) {
+  if (transformCount > 0 || cameraCount > 0) {
     // Uncomment for debugging:
-    // console.log(`Updated ${transformCount} transform entities`);
+    console.log(
+      `[EngineLoop] System updates - Transform: ${transformCount}, Camera: ${cameraCount}`,
+    );
   }
 }
 

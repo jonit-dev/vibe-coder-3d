@@ -47,6 +47,17 @@ const CameraSchema = z.object({
       a: z.number().min(0).max(1),
     })
     .optional(),
+  // Camera Follow Properties
+  enableSmoothing: z.boolean().optional(),
+  followTarget: z.number().optional(), // Entity ID to follow
+  followOffset: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      z: z.number(),
+    })
+    .optional(),
+  smoothingSpeed: z.number().min(0.1).max(10).optional(),
   // Viewport Rectangle for multi-camera rendering
   viewportRect: z
     .object({
@@ -63,17 +74,6 @@ const CameraSchema = z.object({
   // Post-processing
   enablePostProcessing: z.boolean().optional(),
   postProcessingPreset: z.enum(['none', 'cinematic', 'realistic', 'stylized']).optional(),
-  // Camera Following Entity System
-  enableSmoothing: z.boolean().optional(), // Enable following behavior
-  followTarget: z.number().optional(), // Entity ID to follow smoothly
-  followOffset: z
-    .object({
-      x: z.number(),
-      y: z.number(),
-      z: z.number(),
-    })
-    .optional(),
-  smoothingSpeed: z.number().min(0.1).max(10).optional(),
   rotationSmoothing: z.number().min(0.1).max(10).optional(),
 });
 

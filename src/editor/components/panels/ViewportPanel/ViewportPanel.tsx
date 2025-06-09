@@ -4,6 +4,7 @@ import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
 import { CameraBackgroundManager } from '@/core/components/cameras/CameraBackgroundManager';
+import { CameraFollowManager } from '@/core/components/cameras/CameraFollowManager';
 import { GameCameraManager } from '@/core/components/cameras/GameCameraManager';
 import { useEvent } from '@/core/hooks/useEvent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
@@ -99,12 +100,19 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
             background: 'linear-gradient(135deg, #0c0c0d 0%, #18181b 50%, #1a1a1e 100%)',
           }}
           shadows
+          onCreated={({ camera }) => {
+            // Fix camera orientation - look at origin from a good angle
+            camera.lookAt(0, 0, 0);
+          }}
         >
           {/* Camera System Connector - connects editor camera to camera system */}
           <CameraSystemConnector />
 
           {/* Game Camera Manager - handles camera switching between editor and play mode */}
           <GameCameraManager isPlaying={isPlaying} />
+
+          {/* Camera Follow Manager - handles smooth camera following behavior */}
+          <CameraFollowManager />
 
           {/* Camera Background Manager - handles scene background based on camera settings */}
           <CameraBackgroundManager />
@@ -141,7 +149,13 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
             )}
           </Physics>
 
-          <OrbitControls enabled={!isTransforming} />
+          <OrbitControls
+            enabled={!isTransforming}
+            target={[0, 0, 0]} // Look at origin
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+          />
         </Canvas>
       </div>
     </section>
