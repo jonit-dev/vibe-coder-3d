@@ -37,19 +37,15 @@ export const CameraAdapter: React.FC<ICameraAdapterProps> = ({
     hdr: data.hdr ?? false,
     toneMapping: data.toneMapping ?? 'none',
     toneMappingExposure: data.toneMappingExposure ?? 1.0,
-    // Target/LookAt functionality
-    targetEntity: data.targetEntity ?? 0,
-    lookAtTarget: data.lookAtTarget ?? { x: 0, y: 0, z: 0 },
-    enableLookAt: data.enableLookAt ?? false,
-    // Post-processing
-    enablePostProcessing: data.enablePostProcessing ?? false,
-    postProcessingPreset: data.postProcessingPreset ?? 'none',
-    // Camera Animation & Follow
+    // Follow functionality (replaces old target/lookAt)
     enableSmoothing: data.enableSmoothing ?? false,
     followTarget: data.followTarget ?? 0,
     followOffset: data.followOffset ?? { x: 0, y: 5, z: -10 },
     smoothingSpeed: data.smoothingSpeed ?? 2.0,
     rotationSmoothing: data.rotationSmoothing ?? 1.5,
+    // Post-processing
+    enablePostProcessing: data.enablePostProcessing ?? false,
+    postProcessingPreset: data.postProcessingPreset ?? 'none',
   };
 
   const handleUpdate = (updates: Partial<CameraData>) => {

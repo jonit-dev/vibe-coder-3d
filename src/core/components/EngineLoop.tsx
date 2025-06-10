@@ -171,7 +171,7 @@ export const EngineLoop = ({
  * Function to run all ECS systems
  * This would be expanded as more systems are added
  */
-function runECSSystems(deltaTime: number) {
+function runECSSystems(_deltaTime: number) {
   const perfStartVelocity = performance.now();
 
   // Run transform system - updates Three.js objects from ECS Transform components

@@ -55,7 +55,11 @@ export const ComponentList: React.FC<IComponentListProps> = ({
 
       {/* Camera Component */}
       {hasCamera && (
-        <CameraAdapter cameraComponent={getCamera()} updateComponent={updateComponent} />
+        <CameraAdapter
+          cameraComponent={getCamera()}
+          updateComponent={updateComponent}
+          entityId={selectedEntity}
+        />
       )}
 
       {/* MeshRenderer Component */}

@@ -1,10 +1,11 @@
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { registerEntityObject, unregisterEntityObject } from '@/core/systems/cameraSystem';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 
 export interface IGameCameraManagerProps {
@@ -58,10 +59,32 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
 
   // Find the main camera or use the first available camera
   const mainCamera = useMemo(() => {
-    if (cameraEntities.length === 0) return null;
+    if (cameraEntities.length === 0) {
+      console.log('[GameCameraManager] No camera entities found');
+      return null;
+    }
+
+    console.log(
+      '[GameCameraManager] Available camera entities:',
+      cameraEntities.map((e) => ({
+        entityId: e.entityId,
+        isMain: e.cameraData?.isMain,
+        followTarget: e.cameraData?.followTarget,
+        enableSmoothing: e.cameraData?.enableSmoothing,
+      })),
+    );
 
     // Try to find a camera marked as main
     const mainCam = cameraEntities.find((entity) => entity.cameraData?.isMain);
+
+    if (mainCam) {
+      console.log('[GameCameraManager] Found main camera:', mainCam.entityId);
+    } else {
+      console.log(
+        '[GameCameraManager] No main camera found, using first:',
+        cameraEntities[0]?.entityId,
+      );
+    }
 
     // Otherwise use the first camera
     return mainCam || cameraEntities[0];
@@ -70,6 +93,9 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
   // Track if we've already switched cameras for this play session
   const currentPlayState = useRef<boolean>(false);
   const currentCameraEntityId = useRef<number | null>(null);
+
+  // Store the current game camera for updates
+  const currentGameCamera = useRef<THREE.Camera | null>(null);
 
   // Handle camera switching when play mode starts/stops
   useEffect(() => {
@@ -163,13 +189,85 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     // Camera direction is now controlled by Transform component rotation
     // No more lookAt target - Unity-style behavior
 
+    // Store reference for frame updates
+    currentGameCamera.current = gameCamera;
+
+    // Register the camera with the camera system for transform updates
+    registerEntityObject(mainCamera.entityId, gameCamera);
+
     // Replace the main Three.js camera with our game camera
     set({ camera: gameCamera as any });
 
     console.log(
       `[GameCameraManager] Switched to game camera (Entity ${mainCamera.entityId}) for play mode`,
     );
+
+    // Cleanup function to unregister camera when switching back
+    return () => {
+      if (mainCamera?.entityId !== undefined) {
+        unregisterEntityObject(mainCamera.entityId);
+      }
+      currentGameCamera.current = null;
+    };
   }, [isPlaying, mainCamera]); // Removed 'set' and 'camera' from deps to prevent infinite loop
+
+  // Continuously sync camera position with ECS transform during play mode
+  useFrame(() => {
+    if (!isPlaying || !mainCamera || !currentGameCamera.current) {
+      return;
+    }
+
+    // Get latest camera transform data
+    const cameraTransformComponent = componentManager.getComponent(
+      mainCamera.entityId,
+      KnownComponentTypes.TRANSFORM,
+    );
+    const cameraTransformData = cameraTransformComponent?.data as ITransformData | undefined;
+
+    // Get camera data to check for follow target
+    const cameraData = mainCamera.cameraData;
+
+    if (!cameraTransformData) return;
+
+    const camera = currentGameCamera.current;
+    const position = cameraTransformData.position || [0, 1, -10];
+
+    // Update camera position
+    camera.position.set(position[0], position[1], position[2]);
+
+    // If camera has follow enabled and a target, make it look at the target
+    if (cameraData?.enableSmoothing && cameraData?.followTarget) {
+      // Get target entity transform
+      const targetTransformComponent = componentManager.getComponent(
+        cameraData.followTarget,
+        KnownComponentTypes.TRANSFORM,
+      );
+      const targetTransformData = targetTransformComponent?.data as ITransformData | undefined;
+
+      if (targetTransformData) {
+        const targetPosition = targetTransformData.position || [0, 0, 0];
+
+        // Make camera look at target position
+        camera.lookAt(targetPosition[0], targetPosition[1], targetPosition[2]);
+
+        console.log(`[GameCameraManager] Camera looking at target:`, {
+          cameraPos: camera.position.toArray(),
+          targetPos: targetPosition,
+        });
+      }
+    } else {
+      // No follow target, use rotation from transform
+      const rotation = cameraTransformData.rotation || [0, 0, 0];
+      camera.rotation.set(
+        (rotation[0] * Math.PI) / 180,
+        (rotation[1] * Math.PI) / 180,
+        (rotation[2] * Math.PI) / 180,
+      );
+    }
+
+    // Force matrix update
+    camera.updateMatrixWorld();
+  });
 
   // This component doesn't render anything - it just manages camera switching
   return null;

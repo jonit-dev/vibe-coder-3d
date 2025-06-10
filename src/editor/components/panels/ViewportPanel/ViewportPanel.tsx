@@ -96,9 +96,6 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
       <div className="w-full h-full">
         <Canvas
           camera={{ position: [0, 5, 10], fov: 50 }}
-          style={{
-            background: 'linear-gradient(135deg, #0c0c0d 0%, #18181b 50%, #1a1a1e 100%)',
-          }}
           shadows
           onCreated={({ camera }) => {
             // Fix camera orientation - look at origin from a good angle
@@ -150,7 +147,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
           </Physics>
 
           <OrbitControls
-            enabled={!isTransforming}
+            enabled={!isTransforming && !isPlaying}
             target={[0, 0, 0]} // Look at origin
             enablePan={true}
             enableZoom={true}
