@@ -15,6 +15,7 @@ import { useEntityMesh } from './hooks/useEntityMesh';
 import { useEntitySelection } from './hooks/useEntitySelection';
 import { useEntityTransform } from './hooks/useEntityTransform';
 import { useEntityValidation } from './hooks/useEntityValidation';
+import { useFollowedEntityCheck } from './hooks/useFollowedEntityCheck';
 import { useGizmoInteraction } from './hooks/useGizmoInteraction';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
@@ -74,6 +75,9 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       scale: scale || [1, 1, 1],
     });
 
+    // Check if this entity is being followed by the main camera (first-person view)
+    const isFollowedEntity = useFollowedEntityCheck(entityId, isPlaying);
+
     // Early return AFTER all hooks - don't render if entity doesn't exist
     if (!isValid) {
       return null;
@@ -84,8 +88,11 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       return null;
     }
 
-    // Create the mesh content
-    const meshContent = (
+    // Hide mesh rendering when this entity is being followed in play mode (first-person view)
+    const shouldHideMesh = isFollowedEntity && isPlaying;
+
+    // Create the mesh content (but hide it if being followed)
+    const meshContent = !shouldHideMesh ? (
       <EntityMesh
         meshRef={meshRef}
         meshType={meshType}
@@ -96,7 +103,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         isPlaying={isPlaying}
         entityComponents={entityComponents}
       />
-    );
+    ) : null;
 
     return (
       <group>

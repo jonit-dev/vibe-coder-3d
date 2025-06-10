@@ -61,7 +61,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
   React.useEffect(() => {
     if (selectedPreset !== 'custom') {
       const presets = {
-        'first-person': { x: 0, y: 1.7, z: 0.5 },
+        'first-person': { x: 0, y: 0, z: 0 },
         'third-person': { x: 0, y: 5, z: -10 },
         'third-person-close': { x: 0, y: 3, z: -5 },
         'top-down': { x: 0, y: 15, z: 0 },
@@ -265,25 +265,15 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
             ]}
           />
 
-          {/* Debug info */}
-          <div className="text-xs text-yellow-400 mt-1 p-1 bg-yellow-900/20 rounded">
-            Debug: controlMode = {JSON.stringify(cameraData.controlMode)} (type:{' '}
-            {typeof cameraData.controlMode})
+          {/* Show description for current mode only */}
+          <div className="text-xs text-gray-400 mt-1 p-2 bg-gray-800/30 rounded border border-gray-700/50">
+            {(cameraData.controlMode ?? 'free') === 'locked' ? (
+              <span className="text-blue-400">Camera position and rotation are fixed</span>
+            ) : (
+              <span className="text-green-400">Mouse controls orbit, scroll wheel zooms</span>
+            )}
           </div>
 
-          <div className="text-xs text-gray-400 mt-1 p-2 bg-gray-800/30 rounded border border-gray-700/50">
-            <div className="font-medium text-gray-300 mb-1">Control Mode Info:</div>
-            <div className="space-y-1">
-              <div>
-                <span className="text-blue-400">Locked:</span> Camera position and rotation are
-                fixed
-              </div>
-              <div>
-                <span className="text-green-400">Free:</span> Mouse controls orbit, scroll wheel
-                zooms
-              </div>
-            </div>
-          </div>
           <ToggleField
             label="Enable Following"
             value={cameraData.enableSmoothing ?? false}
@@ -311,7 +301,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
                     onChange={(value) => {
                       setSelectedPreset(value);
                       const presets = {
-                        'first-person': { x: 0, y: 1.7, z: 0.5 },
+                        'first-person': { x: 0, y: 0, z: 0 },
                         'third-person': { x: 0, y: 5, z: -10 },
                         'third-person-close': { x: 0, y: 3, z: -5 },
                         'top-down': { x: 0, y: 15, z: 0 },
