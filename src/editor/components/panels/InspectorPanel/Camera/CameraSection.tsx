@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiCamera, FiEye, FiSettings, FiTarget } from 'react-icons/fi';
+import { FiCamera, FiEye, FiMove, FiSettings, FiTarget } from 'react-icons/fi';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
@@ -55,7 +55,41 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
   onRemove,
   entityId,
 }) => {
+  const [selectedPreset, setSelectedPreset] = React.useState<string>('third-person');
+
+  // Detect when user manually changes offset to reset preset to "custom"
+  React.useEffect(() => {
+    if (selectedPreset !== 'custom') {
+      const presets = {
+        'first-person': { x: 0, y: 1.7, z: 0.5 },
+        'third-person': { x: 0, y: 5, z: -10 },
+        'third-person-close': { x: 0, y: 3, z: -5 },
+        'top-down': { x: 0, y: 15, z: 0 },
+        'side-scrolling': { x: -8, y: 0, z: 0 },
+        isometric: { x: 5, y: 10, z: 5 },
+        'over-shoulder': { x: 1.5, y: 1.5, z: -3 },
+        racing: { x: 0, y: 2, z: -8 },
+        rts: { x: 0, y: 20, z: -5 },
+        'fps-spectator': { x: 0, y: 2, z: -1 },
+      };
+
+      const currentPreset = presets[selectedPreset as keyof typeof presets];
+      const currentOffset = cameraData.followOffset;
+
+      if (
+        currentPreset &&
+        currentOffset &&
+        (Math.abs(currentOffset.x - currentPreset.x) > 0.1 ||
+          Math.abs(currentOffset.y - currentPreset.y) > 0.1 ||
+          Math.abs(currentOffset.z - currentPreset.z) > 0.1)
+      ) {
+        setSelectedPreset('custom');
+      }
+    }
+  }, [cameraData.followOffset, selectedPreset]);
+
   const handleFieldChange = <K extends keyof CameraData>(field: K, value: CameraData[K]) => {
+    console.log('Camera field change:', field, value, 'Current cameraData:', cameraData);
     onUpdate({ [field]: value });
   };
 
@@ -211,6 +245,43 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
           )}
         </CollapsibleSection>
 
+        {/* Camera Controls - Unity-style camera modes */}
+        <CollapsibleSection title="Camera Controls" icon={<FiMove />} defaultExpanded={false}>
+          <ComponentField
+            label="Control Mode"
+            type="select"
+            value={cameraData.controlMode ?? 'free'}
+            onChange={(value) => {
+              console.log('Control mode changing to:', value);
+              handleFieldChange('controlMode', value);
+            }}
+            options={[
+              { value: 'locked', label: 'Locked (Fixed Camera)' },
+              { value: 'free', label: 'Free (Orbit Controls)' },
+            ]}
+          />
+
+          {/* Debug info */}
+          <div className="text-xs text-yellow-400 mt-1 p-1 bg-yellow-900/20 rounded">
+            Debug: controlMode = {JSON.stringify(cameraData.controlMode)} (type:{' '}
+            {typeof cameraData.controlMode})
+          </div>
+
+          <div className="text-xs text-gray-400 mt-1 p-2 bg-gray-800/30 rounded border border-gray-700/50">
+            <div className="font-medium text-gray-300 mb-1">Control Mode Info:</div>
+            <div className="space-y-1">
+              <div>
+                <span className="text-blue-400">Locked:</span> Camera position and rotation are
+                fixed
+              </div>
+              <div>
+                <span className="text-green-400">Free:</span> Mouse controls orbit, scroll wheel
+                zooms
+              </div>
+            </div>
+          </div>
+        </CollapsibleSection>
+
         {/* Camera Following Behavior */}
         <CollapsibleSection title="Camera Following" icon={<FiTarget />} defaultExpanded={false}>
           <ToggleField
@@ -233,6 +304,44 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
 
               {cameraData.followTarget && cameraData.followTarget > 0 && (
                 <>
+                  <ComponentField
+                    label="Camera Preset"
+                    type="select"
+                    value={selectedPreset}
+                    onChange={(value) => {
+                      setSelectedPreset(value);
+                      const presets = {
+                        'first-person': { x: 0, y: 1.7, z: 0.5 },
+                        'third-person': { x: 0, y: 5, z: -10 },
+                        'third-person-close': { x: 0, y: 3, z: -5 },
+                        'top-down': { x: 0, y: 15, z: 0 },
+                        'side-scrolling': { x: -8, y: 0, z: 0 },
+                        isometric: { x: 5, y: 10, z: 5 },
+                        'over-shoulder': { x: 1.5, y: 1.5, z: -3 },
+                        racing: { x: 0, y: 2, z: -8 },
+                        rts: { x: 0, y: 20, z: -5 },
+                        'fps-spectator': { x: 0, y: 2, z: -1 },
+                      };
+
+                      if (value !== 'custom' && presets[value as keyof typeof presets]) {
+                        handleFieldChange('followOffset', presets[value as keyof typeof presets]);
+                      }
+                    }}
+                    options={[
+                      { value: 'custom', label: 'Custom' },
+                      { value: 'first-person', label: 'First Person' },
+                      { value: 'third-person', label: 'Third Person' },
+                      { value: 'third-person-close', label: 'Third Person (Close)' },
+                      { value: 'over-shoulder', label: 'Over Shoulder' },
+                      { value: 'racing', label: 'Racing Game' },
+                      { value: 'fps-spectator', label: 'FPS Spectator' },
+                      { value: 'top-down', label: 'Top Down' },
+                      { value: 'side-scrolling', label: 'Side Scrolling' },
+                      { value: 'isometric', label: 'Isometric' },
+                      { value: 'rts', label: 'RTS Camera' },
+                    ]}
+                  />
+
                   <Vector3Field
                     label="Follow Offset"
                     value={[

@@ -4,6 +4,7 @@ import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
 import { CameraBackgroundManager } from '@/core/components/cameras/CameraBackgroundManager';
+import { CameraControlsManager } from '@/core/components/cameras/CameraControlsManager';
 import { CameraFollowManager } from '@/core/components/cameras/CameraFollowManager';
 import { GameCameraManager } from '@/core/components/cameras/GameCameraManager';
 import { useEvent } from '@/core/hooks/useEvent';
@@ -114,6 +115,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
           {/* Camera Background Manager - handles scene background based on camera settings */}
           <CameraBackgroundManager />
 
+          {/* Camera Controls Manager - handles runtime camera controls */}
+          <CameraControlsManager isPlaying={isPlaying} isTransforming={isTransforming} />
+
           <ambientLight intensity={0.5} />
           <directionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
 
@@ -146,13 +150,21 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
             )}
           </Physics>
 
-          <OrbitControls
-            enabled={!isTransforming && !isPlaying}
-            target={[0, 0, 0]} // Look at origin
-            enablePan={true}
-            enableZoom={true}
-            enableRotate={true}
-          />
+          {/* OrbitControls - only for editor mode when not transforming. Play mode controls handled by CameraControlsManager */}
+          {!isPlaying && (
+            <OrbitControls
+              enabled={!isTransforming}
+              target={[0, 0, 0]} // Look at origin
+              enablePan={true}
+              enableZoom={true}
+              enableRotate={true}
+              dampingFactor={0.05}
+              enableDamping={true}
+              minDistance={1}
+              maxDistance={100}
+              key="editor-controls" // Ensure different instances
+            />
+          )}
         </Canvas>
       </div>
     </section>

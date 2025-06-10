@@ -40,45 +40,33 @@ export const CameraFollowManager: React.FC = () => {
 
   const updateCameraFollow = useCallback(() => {
     try {
-      console.log('[CameraFollowManager] === Update Camera Follow ===');
-
       // Get camera components
       const cameraComponent = componentRegistry.getBitECSComponent('Camera');
       if (!cameraComponent) {
-        console.log('[CameraFollowManager] Camera component not registered yet');
         return;
       }
 
       const transformComponent = componentRegistry.getBitECSComponent('Transform');
       if (!transformComponent) {
-        console.log('[CameraFollowManager] Transform component not registered yet');
         return;
       }
 
       // Query camera entities
       const query = defineQuery([cameraComponent]);
       const cameraEntities = query(world);
-      console.log('[CameraFollowManager] Found camera entities:', cameraEntities.length);
 
       // Find main camera with follow enabled
       let followingCamera: number | null = null;
       for (const eid of cameraEntities) {
         const cameraData = componentRegistry.getComponentData<CameraData>(eid, 'Camera');
-        console.log(`[CameraFollowManager] Camera ${eid} data:`, {
-          isMain: cameraData?.isMain,
-          enableSmoothing: cameraData?.enableSmoothing,
-          followTarget: cameraData?.followTarget,
-        });
 
         if (cameraData?.isMain && cameraData?.enableSmoothing && cameraData?.followTarget) {
           followingCamera = eid;
-          console.log(`[CameraFollowManager] Found following camera: ${eid}`);
           break;
         }
       }
 
       if (followingCamera === null) {
-        console.log('[CameraFollowManager] No camera with follow enabled found');
         followStateRef.current.isFollowing = false;
         return;
       }
@@ -120,13 +108,6 @@ export const CameraFollowManager: React.FC = () => {
         cameraTransform.position?.[1] || 0,
         cameraTransform.position?.[2] || 0,
       );
-
-      console.log('[CameraFollowManager] Follow state updated:', {
-        target: state.targetPosition.toArray(),
-        camera: state.currentCameraPosition.toArray(),
-        offset: state.followOffset,
-        smoothing: state.smoothingSpeed,
-      });
     } catch (error) {
       console.error('[CameraFollowManager] Error updating camera follow:', error);
     }
@@ -171,31 +152,43 @@ export const CameraFollowManager: React.FC = () => {
         (tempCamera.rotation.z * 180) / Math.PI,
       ];
 
-      // Update the ECS Transform component - this is the key fix!
-      const success = componentRegistry.updateComponent(state.followingCamera, 'Transform', {
-        position: [newPosition.x, newPosition.y, newPosition.z],
-        rotation: newRotation,
-      });
+      // Check if camera is in free mode - if so, update Three.js camera directly
+      const cameraData = componentRegistry.getComponentData(state.followingCamera, 'Camera');
+      const controlMode = (cameraData as any)?.controlMode ?? 'free';
+      const isFreeMode = controlMode === 'free';
 
-      if (success) {
-        // Mark camera for rendering update so camera system syncs it
-        const cameraComponent = componentRegistry.getBitECSComponent('Camera');
-        if (cameraComponent?.needsUpdate && state.followingCamera !== null) {
-          cameraComponent.needsUpdate[state.followingCamera] = 1;
-        }
-
-        // Invalidate frame to trigger re-render
+      if (isFreeMode) {
+        // In free mode: let OrbitControls handle camera positioning
+        // The CameraControlsManager will update OrbitControls target to follow the entity
+        // We just need to invalidate to trigger re-render
         invalidate();
+      } else {
+        // In locked mode: update ECS Transform component (traditional approach)
+        const success = componentRegistry.updateComponent(state.followingCamera, 'Transform', {
+          position: [newPosition.x, newPosition.y, newPosition.z],
+          rotation: newRotation,
+        });
+
+        if (success) {
+          // Mark camera for rendering update so camera system syncs it
+          const cameraComponent = componentRegistry.getBitECSComponent('Camera');
+          if (cameraComponent?.needsUpdate && state.followingCamera !== null) {
+            cameraComponent.needsUpdate[state.followingCamera] = 1;
+          }
+
+          // Invalidate frame to trigger re-render
+          invalidate();
+        }
       }
 
       // Only log occasionally to avoid spam
-      if (Math.random() < 0.05) {
-        // 5% of frames
+      if (Math.random() < 0.01) {
+        // 1% of frames
         console.log('[CameraFollowManager] Following update:', {
+          mode: isFreeMode ? 'Free' : 'Locked',
           distance: distance.toFixed(3),
           cameraPos: newPosition.toArray().map((v) => v.toFixed(2)),
           targetPos: state.targetPosition.toArray().map((v) => v.toFixed(2)),
-          rotation: newRotation.map((v) => v.toFixed(1)),
         });
       }
     } catch (error) {
@@ -216,10 +209,6 @@ export const CameraFollowManager: React.FC = () => {
 
       // Only care about the target entity we're following
       if (state.isFollowing && event.entityId === state.followTarget) {
-        console.log(
-          `[CameraFollowManager] Target entity ${event.entityId} moved, updating follow state`,
-        );
-
         // Update just the target position, don't re-query everything
         try {
           const targetTransform = componentRegistry.getComponentData<ITransformData>(
@@ -233,10 +222,6 @@ export const CameraFollowManager: React.FC = () => {
               targetTransform.position?.[1] || 0,
               targetTransform.position?.[2] || 0,
             );
-            console.log(
-              `[CameraFollowManager] Updated target position:`,
-              state.targetPosition.toArray(),
-            );
           }
         } catch (error) {
           console.error('[CameraFollowManager] Error updating target position:', error);
@@ -246,21 +231,18 @@ export const CameraFollowManager: React.FC = () => {
 
     // Only re-initialize when camera settings change (not position/rotation changes)
     if (event.componentId === 'Camera') {
-      console.log(`[CameraFollowManager] Camera settings updated for entity ${event.entityId}`);
       setTimeout(() => updateCameraFollow(), 0);
     }
   });
 
   useEvent('component:added', (event) => {
     if (event.componentId === 'Camera') {
-      console.log(`[CameraFollowManager] Camera component added to entity ${event.entityId}`);
       setTimeout(() => updateCameraFollow(), 0);
     }
   });
 
   useEvent('component:removed', (event) => {
     if (event.componentId === 'Camera') {
-      console.log(`[CameraFollowManager] Camera component removed from entity ${event.entityId}`);
       followStateRef.current.isFollowing = false;
     }
   });

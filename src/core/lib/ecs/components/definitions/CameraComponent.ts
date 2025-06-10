@@ -47,6 +47,8 @@ const CameraSchema = z.object({
       a: z.number().min(0).max(1),
     })
     .optional(),
+  // Camera Control Mode - Unity-style camera controls
+  controlMode: z.enum(['locked', 'free']).optional(),
   // Camera Follow Properties
   enableSmoothing: z.boolean().optional(),
   followTarget: z.number().optional(), // Entity ID to follow
@@ -98,6 +100,8 @@ export const cameraComponent = ComponentFactory.create({
     backgroundG: Types.f32,
     backgroundB: Types.f32,
     backgroundA: Types.f32,
+    // Camera Control Mode
+    controlMode: Types.ui8, // 0=locked, 1=free
     // Viewport Rectangle
     viewportX: Types.f32,
     viewportY: Types.f32,
@@ -140,6 +144,8 @@ export const cameraComponent = ComponentFactory.create({
         b: component.backgroundB[eid] ?? 0.0,
         a: component.backgroundA[eid] ?? 1.0,
       },
+      // Camera Control Mode
+      controlMode: (['locked', 'free'][component.controlMode[eid]] || 'free') as 'locked' | 'free',
       // Viewport Rectangle
       viewportRect: {
         x: component.viewportX[eid] ?? 0.0,
@@ -185,6 +191,11 @@ export const cameraComponent = ComponentFactory.create({
     component.backgroundG[eid] = data.backgroundColor?.g ?? 0.0;
     component.backgroundB[eid] = data.backgroundColor?.b ?? 0.0;
     component.backgroundA[eid] = data.backgroundColor?.a ?? 1.0;
+
+    // Camera Control Mode
+    const controlModeMap = { locked: 0, free: 1 };
+    component.controlMode[eid] =
+      controlModeMap[data.controlMode as keyof typeof controlModeMap] ?? 1; // Default to free (1)
 
     // Viewport Rectangle
     component.viewportX[eid] = data.viewportRect?.x ?? 0.0;

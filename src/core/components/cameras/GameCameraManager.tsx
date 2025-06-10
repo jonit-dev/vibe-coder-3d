@@ -2,9 +2,9 @@ import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
-import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
+import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { registerEntityObject, unregisterEntityObject } from '@/core/systems/cameraSystem';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 
@@ -44,7 +44,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
           KnownComponentTypes.TRANSFORM,
         );
 
-        const cameraData = cameraComponent?.data as ICameraData | undefined;
+        const cameraData = cameraComponent?.data as CameraData | undefined;
         const transformData = transformComponent?.data as ITransformData | undefined;
 
         return {
@@ -64,26 +64,13 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
       return null;
     }
 
-    console.log(
-      '[GameCameraManager] Available camera entities:',
-      cameraEntities.map((e) => ({
-        entityId: e.entityId,
-        isMain: e.cameraData?.isMain,
-        followTarget: e.cameraData?.followTarget,
-        enableSmoothing: e.cameraData?.enableSmoothing,
-      })),
-    );
-
     // Try to find a camera marked as main
     const mainCam = cameraEntities.find((entity) => entity.cameraData?.isMain);
 
     if (mainCam) {
       console.log('[GameCameraManager] Found main camera:', mainCam.entityId);
     } else {
-      console.log(
-        '[GameCameraManager] No main camera found, using first:',
-        cameraEntities[0]?.entityId,
-      );
+      console.log('[GameCameraManager] No main camera found, using first available');
     }
 
     // Otherwise use the first camera
@@ -198,9 +185,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     // Replace the main Three.js camera with our game camera
     set({ camera: gameCamera as any });
 
-    console.log(
-      `[GameCameraManager] Switched to game camera (Entity ${mainCamera.entityId}) for play mode`,
-    );
+    console.log(`[GameCameraManager] Switched to game camera (Entity ${mainCamera.entityId})`);
 
     // Cleanup function to unregister camera when switching back
     return () => {
@@ -230,38 +215,65 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     if (!cameraTransformData) return;
 
     const camera = currentGameCamera.current;
-    const position = cameraTransformData.position || [0, 1, -10];
 
-    // Update camera position
-    camera.position.set(position[0], position[1], position[2]);
+    // Check if camera controls are in free mode
+    const controlMode = (cameraData as any)?.controlMode ?? 'free';
+    const isFreeMode = controlMode === 'free';
+    const hasFollowTarget = cameraData?.enableSmoothing && cameraData?.followTarget;
 
-    // If camera has follow enabled and a target, make it look at the target
-    if (cameraData?.enableSmoothing && cameraData?.followTarget) {
+    // Debug: Log the camera behavior strategy (only occasionally to avoid spam)
+    if (Math.random() < 0.02) {
+      // 2% chance per frame
+      console.log('[GameCameraManager] Camera behavior:', {
+        controlMode,
+        enableSmoothing: cameraData?.enableSmoothing,
+        followTarget: cameraData?.followTarget,
+        hasFollowTarget,
+        strategy:
+          isFreeMode && hasFollowTarget
+            ? 'Free+Follow'
+            : isFreeMode && !hasFollowTarget
+              ? 'Free+Static'
+              : !isFreeMode && hasFollowTarget
+                ? 'Locked+Follow'
+                : 'Locked+Static',
+      });
+    }
+
+    if (!isFreeMode || !hasFollowTarget) {
+      // Update camera position if:
+      // 1. Not in free mode (locked mode should respect ECS position), OR
+      // 2. In free mode but no follow target (use ECS position as base)
+      const position = cameraTransformData.position || [0, 1, -10];
+      camera.position.set(position[0], position[1], position[2]);
+    }
+    // In free mode WITH follow target: let CameraFollowManager handle position updates
+    // and OrbitControls can modify on top of that
+
+    // Handle camera rotation/lookAt
+    if (hasFollowTarget) {
       // Get target entity transform
       const targetTransformComponent = componentManager.getComponent(
-        cameraData.followTarget,
+        cameraData.followTarget!,
         KnownComponentTypes.TRANSFORM,
       );
       const targetTransformData = targetTransformComponent?.data as ITransformData | undefined;
 
-      if (targetTransformData) {
+      if (targetTransformData && !isFreeMode) {
+        // Only force lookAt in locked mode; free mode allows orbit controls to handle rotation
         const targetPosition = targetTransformData.position || [0, 0, 0];
-
-        // Make camera look at target position
         camera.lookAt(targetPosition[0], targetPosition[1], targetPosition[2]);
-
-        console.log(`[GameCameraManager] Camera looking at target:`, {
-          cameraPos: camera.position.toArray(),
-          targetPos: targetPosition,
-        });
       }
-    } else {
-      // No follow target, use rotation from transform
+    } else if (!isFreeMode) {
+      // No follow target and not in free mode, use rotation from transform
       const rotation = cameraTransformData.rotation || [0, 0, 0];
+
+      // For first person cameras, we need to set the rotation order correctly
+      camera.rotation.order = 'YXZ'; // Yaw-Pitch-Roll order for first person
       camera.rotation.set(
-        (rotation[0] * Math.PI) / 180,
-        (rotation[1] * Math.PI) / 180,
-        (rotation[2] * Math.PI) / 180,
+        (rotation[0] * Math.PI) / 180, // Pitch (X)
+        (rotation[1] * Math.PI) / 180, // Yaw (Y)
+        (rotation[2] * Math.PI) / 180, // Roll (Z)
       );
     }
 
