@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
+import { LightData } from '@/core/lib/ecs/components/definitions/LightComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 
@@ -73,7 +74,73 @@ export const useSceneInitialization = ({
             };
             componentManager.addComponent(mainCamera.id, KnownComponentTypes.CAMERA, cameraData);
 
-            onStatusMessage('Created new scene with default Main Camera');
+            // Create default "Directional Light" entity
+            const directionalLight = entityManager.createEntity('Directional Light');
+
+            // Add Transform component for the light
+            const lightTransform: ITransformData = {
+              position: [5, 10, 5], // Unity-like default directional light position
+              rotation: [0, 0, 0],
+              scale: [1, 1, 1],
+            };
+            componentManager.addComponent(
+              directionalLight.id,
+              KnownComponentTypes.TRANSFORM,
+              lightTransform,
+            );
+
+            // Add Light component with Unity-like defaults
+            const lightData: LightData = {
+              lightType: 'directional',
+              color: { r: 1.0, g: 1.0, b: 1.0 }, // White light
+              intensity: 0.8,
+              enabled: true,
+              castShadow: true,
+              directionX: 0.0,
+              directionY: -1.0,
+              directionZ: 0.0,
+              shadowMapSize: 1024,
+              shadowBias: -0.0001,
+              shadowRadius: 1.0,
+              shadowNear: 0.1,
+              shadowFar: 50.0,
+            };
+            componentManager.addComponent(
+              directionalLight.id,
+              KnownComponentTypes.LIGHT,
+              lightData,
+            );
+
+            // Create default "Ambient Light" entity
+            const ambientLight = entityManager.createEntity('Ambient Light');
+
+            // Add Transform component for ambient light (position doesn't matter but needed for entity)
+            const ambientTransform: ITransformData = {
+              position: [0, 0, 0],
+              rotation: [0, 0, 0],
+              scale: [1, 1, 1],
+            };
+            componentManager.addComponent(
+              ambientLight.id,
+              KnownComponentTypes.TRANSFORM,
+              ambientTransform,
+            );
+
+            // Add Ambient Light component
+            const ambientLightData: LightData = {
+              lightType: 'ambient',
+              color: { r: 0.4, g: 0.4, b: 0.4 }, // Soft gray ambient
+              intensity: 0.5,
+              enabled: true,
+              castShadow: false,
+            };
+            componentManager.addComponent(
+              ambientLight.id,
+              KnownComponentTypes.LIGHT,
+              ambientLightData,
+            );
+
+            onStatusMessage('Created new scene with default Main Camera and Lights');
             hasInitialized.current = true;
           } else {
             onStatusMessage('Scene already initialized');

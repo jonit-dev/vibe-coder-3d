@@ -142,6 +142,11 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     [components],
   );
 
+  const hasLight = useMemo(
+    () => components.some((c) => c.type === KnownComponentTypes.LIGHT),
+    [components],
+  );
+
   // Legacy getter methods for compatibility
   const getTransform = useCallback(() => {
     return getComponent(KnownComponentTypes.TRANSFORM);
@@ -161,6 +166,10 @@ export const useEntityComponents = (entityId: EntityId | null) => {
 
   const getCamera = useCallback(() => {
     return getComponent(KnownComponentTypes.CAMERA);
+  }, [getComponent]);
+
+  const getLight = useCallback(() => {
+    return getComponent(KnownComponentTypes.LIGHT);
   }, [getComponent]);
 
   // Incompatible components functionality
@@ -192,11 +201,13 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     hasRigidBody,
     hasMeshCollider,
     hasCamera,
+    hasLight,
     getTransform,
     getMeshRenderer,
     getRigidBody,
     getMeshCollider,
     getCamera,
+    getLight,
     getIncompatibleComponents,
     areComponentsIncompatible,
   };

@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import type { Mesh, Texture } from 'three';
 
 import { CameraGeometry } from './CameraGeometry';
+import { LightGeometry } from './LightGeometry';
 
 interface IEntityMeshProps {
   meshRef: React.RefObject<Mesh | null>;
@@ -89,6 +90,8 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           return <planeGeometry args={[1, 1]} />;
         case 'Camera':
           return null; // Special case - uses CameraGeometry component
+        case 'Light':
+          return null; // Special case - uses LightGeometry component
         default:
           return <boxGeometry args={[1, 1, 1]} />;
       }
@@ -109,6 +112,27 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
             near={cameraData?.near}
             far={cameraData?.far}
             aspect={16 / 9} // TODO: Get actual viewport aspect ratio
+          />
+        </group>
+      );
+    }
+
+    // Special handling for light entities
+    if (meshType === 'Light') {
+      // Extract light data for dynamic visualization
+      const lightComponent = entityComponents.find((c) => c.type === 'Light');
+      const lightData = lightComponent?.data;
+
+      return (
+        <group ref={meshRef as any} userData={{ entityId }} onClick={onMeshClick}>
+          <LightGeometry
+            lightType={lightData?.lightType || 'point'}
+            showDirection={true}
+            isPlaying={isPlaying}
+            color={lightData?.color}
+            intensity={lightData?.intensity}
+            range={lightData?.range}
+            angle={lightData?.angle}
           />
         </group>
       );

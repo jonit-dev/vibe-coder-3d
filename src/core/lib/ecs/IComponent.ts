@@ -6,6 +6,7 @@ export const KnownComponentTypes = {
   RIGID_BODY: 'RigidBody',
   MESH_COLLIDER: 'MeshCollider',
   CAMERA: 'Camera',
+  LIGHT: 'Light',
 } as const;
 
 export type KnownComponentType = (typeof KnownComponentTypes)[keyof typeof KnownComponentTypes];

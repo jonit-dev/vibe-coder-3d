@@ -12,11 +12,13 @@ import { EntityId } from '../types';
 // Import all core component definitions from individual files
 import {
   cameraComponent,
+  lightComponent,
   meshColliderComponent,
   meshRendererComponent,
   rigidBodyComponent,
   transformComponent,
   type CameraData,
+  type LightData,
   type MeshColliderData,
   type MeshRendererData,
   type RigidBodyData,
@@ -33,6 +35,7 @@ export function registerCoreComponents(): void {
   componentRegistry.register(rigidBodyComponent);
   componentRegistry.register(meshColliderComponent);
   componentRegistry.register(cameraComponent);
+  componentRegistry.register(lightComponent);
 
   console.log('Core components registered successfully');
 }
@@ -110,7 +113,14 @@ export function registerExampleComponents(): void {
 }
 
 // Export type definitions for TypeScript support
-export type { CameraData, MeshColliderData, MeshRendererData, RigidBodyData, TransformData };
+export type {
+  CameraData,
+  LightData,
+  MeshColliderData,
+  MeshRendererData,
+  RigidBodyData,
+  TransformData,
+};
 
 export type HealthData = z.infer<typeof HealthSchema>;
 export type VelocityData = z.infer<typeof VelocitySchema>;

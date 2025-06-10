@@ -5,6 +5,7 @@ import { ReactNode, useEffect, useRef } from 'react';
 import { useGameLoop } from '../lib/gameLoop';
 import { materialSystem } from '../systems/MaterialSystem';
 import { cameraSystem } from '../systems/cameraSystem';
+import { lightSystem } from '../systems/lightSystem';
 import { transformSystem } from '../systems/transformSystem';
 
 // Types for component props
@@ -186,14 +187,17 @@ function runECSSystems(_deltaTime: number) {
   // Run camera system - updates Three.js cameras from ECS Camera components
   const cameraCount = cameraSystem();
 
+  // Run light system - processes light component updates
+  const lightCount = lightSystem(_deltaTime);
+
   // For future systems, add them here in the appropriate order
   // e.g., movementSystem(ecsWorld, deltaTime);
 
   // Debug info
-  if (transformCount > 0 || cameraCount > 0) {
+  if (transformCount > 0 || cameraCount > 0 || lightCount > 0) {
     // Uncomment for debugging:
     console.log(
-      `[EngineLoop] System updates - Transform: ${transformCount}, Camera: ${cameraCount}`,
+      `[EngineLoop] System updates - Transform: ${transformCount}, Camera: ${cameraCount}, Light: ${lightCount}`,
     );
   }
 }

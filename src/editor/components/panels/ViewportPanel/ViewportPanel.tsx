@@ -17,6 +17,7 @@ import { GizmoMode } from '@/editor/hooks/useEditorKeyboard';
 import { useEditorStore } from '../../../store/editorStore';
 
 import { EntityRenderer } from './EntityRenderer';
+import { LightRenderer } from './LightRenderer';
 import { AxesIndicator } from './components/AxesIndicator';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
 import { GizmoModeSelector } from './components/GizmoModeSelector';
@@ -35,6 +36,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 }) => {
   // Get all entities with a Transform from new ECS system
   const [entityIds, setEntityIds] = useState<number[]>([]);
+  const [lightIds, setLightIds] = useState<number[]>([]);
   const isPlaying = useEditorStore((state) => state.isPlaying);
   const componentManager = useComponentManager();
 
@@ -43,6 +45,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
     const updateEntities = () => {
       const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
       setEntityIds(entities);
+
+      const lights = componentManager.getEntitiesWithComponent(KnownComponentTypes.LIGHT);
+      setLightIds(lights);
     };
 
     // Initial load
@@ -55,12 +60,20 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
       const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
       setEntityIds(entities);
     }
+    if (event.componentId === KnownComponentTypes.LIGHT) {
+      const lights = componentManager.getEntitiesWithComponent(KnownComponentTypes.LIGHT);
+      setLightIds(lights);
+    }
   });
 
   useEvent('component:removed', (event) => {
     if (event.componentId === KnownComponentTypes.TRANSFORM) {
       const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
       setEntityIds(entities);
+    }
+    if (event.componentId === KnownComponentTypes.LIGHT) {
+      const lights = componentManager.getEntitiesWithComponent(KnownComponentTypes.LIGHT);
+      setLightIds(lights);
     }
   });
 
@@ -118,8 +131,10 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
           {/* Camera Controls Manager - handles runtime camera controls */}
           <CameraControlsManager isPlaying={isPlaying} isTransforming={isTransforming} />
 
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 10, 5]} intensity={0.8} castShadow />
+          {/* Dynamic Light Rendering */}
+          {lightIds.map((lightId) => (
+            <LightRenderer key={`light-${lightId}`} entityId={lightId} />
+          ))}
 
           {/* Physics wrapper - only enabled when playing */}
           <Physics paused={!isPlaying} gravity={[0, -9.81, 0]}>

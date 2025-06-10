@@ -356,6 +356,14 @@ export class ComponentRegistry {
         }
       }
 
+      // Special handling for light components - ensure needsUpdate flag is set
+      if (componentId === 'Light') {
+        const bitECSLight = this.bitECSComponents.get('Light');
+        if (bitECSLight?.needsUpdate) {
+          bitECSLight.needsUpdate[entityId] = 1;
+        }
+      }
+
       // Emit component updated event
       emit('component:updated', {
         entityId,
@@ -652,6 +660,11 @@ export function combineRenderingContributions(
     // Special handling for Camera components
     if (type === 'Camera') {
       combined.meshType = 'Camera';
+    }
+
+    // Special handling for Light components
+    if (type === 'Light') {
+      combined.meshType = 'Light';
     }
   });
 

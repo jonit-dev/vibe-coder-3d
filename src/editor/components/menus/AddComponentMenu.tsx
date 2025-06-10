@@ -7,6 +7,7 @@ import {
   FiPackage,
   FiSearch,
   FiShield,
+  FiSun,
   FiX,
   FiZap,
 } from 'react-icons/fi';
@@ -125,6 +126,14 @@ const COMPONENT_DEFINITIONS: IComponentDefinition[] = [
     name: 'Camera',
     description: 'Camera for rendering perspectives',
     icon: <FiCamera className="w-4 h-4" />,
+    category: 'Rendering',
+    incompatibleComponents: ['MeshRenderer'],
+  },
+  {
+    id: KnownComponentTypes.LIGHT,
+    name: 'Light',
+    description: 'Light source for illuminating scenes',
+    icon: <FiSun className="w-4 h-4" />,
     category: 'Rendering',
     incompatibleComponents: ['MeshRenderer'],
   },
@@ -382,6 +391,27 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
             restitution: 0.3,
             density: 1,
           },
+        };
+        break;
+      case KnownComponentTypes.LIGHT:
+        defaultData = {
+          lightType: 'directional',
+          color: { r: 1.0, g: 1.0, b: 1.0 },
+          intensity: 1.0,
+          enabled: true,
+          castShadow: true,
+          directionX: 0.0,
+          directionY: -1.0,
+          directionZ: 0.0,
+          range: 10.0,
+          decay: 1.0,
+          angle: Math.PI / 6,
+          penumbra: 0.1,
+          shadowMapSize: 1024,
+          shadowBias: -0.0001,
+          shadowRadius: 1.0,
+          shadowNear: 0.1,
+          shadowFar: 50.0,
         };
         break;
     }
@@ -799,6 +829,27 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
             restitution: 0.3,
             density: 1,
           },
+        };
+        break;
+      case KnownComponentTypes.LIGHT:
+        defaultData = {
+          lightType: 'directional',
+          color: { r: 1.0, g: 1.0, b: 1.0 },
+          intensity: 1.0,
+          enabled: true,
+          castShadow: true,
+          directionX: 0.0,
+          directionY: -1.0,
+          directionZ: 0.0,
+          range: 10.0,
+          decay: 1.0,
+          angle: Math.PI / 6,
+          penumbra: 0.1,
+          shadowMapSize: 1024,
+          shadowBias: -0.0001,
+          shadowRadius: 1.0,
+          shadowNear: 0.1,
+          shadowFar: 50.0,
         };
         break;
     }

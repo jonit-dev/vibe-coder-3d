@@ -52,7 +52,7 @@ export const meshRendererComponent = ComponentFactory.create({
   name: 'Mesh Renderer',
   category: ComponentCategory.Rendering,
   schema: MeshRendererSchema,
-  incompatibleComponents: ['Camera'], // Mesh renderers shouldn't be on camera entities
+  incompatibleComponents: ['Camera', 'Light'], // Mesh renderers shouldn't be on camera or light entities
   fields: {
     enabled: Types.ui8,
     castShadows: Types.ui8,
@@ -186,7 +186,7 @@ export const meshRendererComponent = ComponentFactory.create({
       : 0;
   },
   dependencies: ['Transform'],
-  conflicts: ['Camera'], // MeshRenderer conflicts with Camera
+  conflicts: ['Camera', 'Light'], // MeshRenderer conflicts with Camera and Light
   metadata: {
     description: 'Renders 3D mesh geometry with materials',
     version: '1.0.0',

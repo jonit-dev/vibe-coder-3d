@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { CameraAdapter } from '@/editor/components/inspector/adapters/CameraAdapter';
+import { LightAdapter } from '@/editor/components/inspector/adapters/LightAdapter';
 import { MeshColliderAdapter } from '@/editor/components/inspector/adapters/MeshColliderAdapter';
 import { MeshRendererAdapter } from '@/editor/components/inspector/adapters/MeshRendererAdapter';
 import { RigidBodyAdapter } from '@/editor/components/inspector/adapters/RigidBodyAdapter';
@@ -14,11 +15,13 @@ interface IComponentListProps {
   hasRigidBody: boolean;
   hasMeshCollider: boolean;
   hasCamera: boolean;
+  hasLight: boolean;
   getTransform: () => any;
   getMeshRenderer: () => any;
   getRigidBody: () => any;
   getMeshCollider: () => any;
   getCamera: () => any;
+  getLight: () => any;
   addComponent: (type: string, data: any) => any;
   updateComponent: (type: string, data: any) => boolean;
   removeComponent: (type: string) => boolean;
@@ -32,11 +35,13 @@ export const ComponentList: React.FC<IComponentListProps> = ({
   hasRigidBody,
   hasMeshCollider,
   hasCamera,
+  hasLight,
   getTransform,
   getMeshRenderer,
   getRigidBody,
   getMeshCollider,
   getCamera,
+  getLight,
   addComponent,
   updateComponent,
   removeComponent,
@@ -95,7 +100,24 @@ export const ComponentList: React.FC<IComponentListProps> = ({
         />
       )}
 
-      {/* TODO: Camera and Light components will be added when their adapters are implemented */}
+      {/* Camera Component */}
+      {hasCamera && (
+        <CameraAdapter
+          cameraComponent={getCamera()}
+          updateComponent={updateComponent}
+          entityId={selectedEntity}
+        />
+      )}
+
+      {/* Light Component */}
+      {hasLight && (
+        <LightAdapter
+          lightComponent={getLight()}
+          updateComponent={updateComponent}
+          removeComponent={removeComponent}
+          entityId={selectedEntity}
+        />
+      )}
     </>
   );
 };
