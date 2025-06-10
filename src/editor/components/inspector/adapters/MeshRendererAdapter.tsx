@@ -30,10 +30,10 @@ export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = ({
     material: {
       shader: data.material?.shader || 'standard',
       materialType: data.material?.materialType || 'solid',
-      color: data.material?.color || '#ffffff',
+      color: data.material?.color || '#cccccc',
       normalScale: data.material?.normalScale ?? 1,
       metalness: data.material?.metalness ?? 0.0,
-      roughness: data.material?.roughness ?? 0.5,
+      roughness: data.material?.roughness ?? 0.7,
       emissive: data.material?.emissive || '#000000',
       emissiveIntensity: data.material?.emissiveIntensity ?? 0.0,
       occlusionStrength: data.material?.occlusionStrength ?? 1.0,

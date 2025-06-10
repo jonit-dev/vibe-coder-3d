@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FiArrowUp, FiFile, FiFolder, FiImage, FiSearch, FiX } from 'react-icons/fi';
+import { scanAssetsDirectory } from '@/utils/assetScanner';
 
 interface IAssetFile {
   name: string;
@@ -35,70 +36,11 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [previewError, setPreviewError] = useState(false);
 
-  // Mock asset discovery function - in a real app, this would call an API
+  // Dynamic asset discovery function that scans the actual filesystem
   const discoverAssets = async (path: string): Promise<IAssetFile[]> => {
     setLoading(true);
     try {
-      // For now, we'll hardcode the known asset structure
-      // In a real implementation, this would be a server endpoint
-      const knownAssets: Record<string, IAssetFile[]> = {
-        '/assets': [
-          { name: 'models', path: '/assets/models', type: 'folder' },
-          { name: 'skyboxes', path: '/assets/skyboxes', type: 'folder' },
-          { name: 'textures', path: '/assets/textures', type: 'folder' },
-        ],
-        '/assets/skyboxes': [
-          {
-            name: 'city_night.jpg',
-            path: '/assets/skyboxes/city_night.jpg',
-            type: 'file',
-            extension: 'jpg',
-          },
-          {
-            name: 'desert_dusk.jpg',
-            path: '/assets/skyboxes/desert_dusk.jpg',
-            type: 'file',
-            extension: 'jpg',
-          },
-          {
-            name: 'forest_day.jpg',
-            path: '/assets/skyboxes/forest_day.jpg',
-            type: 'file',
-            extension: 'jpg',
-          },
-          {
-            name: 'mountain_sunset.jpg',
-            path: '/assets/skyboxes/mountain_sunset.jpg',
-            type: 'file',
-            extension: 'jpg',
-          },
-          {
-            name: 'ocean_horizon.jpg',
-            path: '/assets/skyboxes/ocean_horizon.jpg',
-            type: 'file',
-            extension: 'jpg',
-          },
-        ],
-        '/assets/models': [
-          { name: 'NightStalker', path: '/assets/models/NightStalker', type: 'folder' },
-        ],
-        '/assets/textures': [
-          {
-            name: 'crate-texture.png',
-            path: '/assets/textures/crate-texture.png',
-            type: 'file',
-            extension: 'png',
-          },
-        ],
-        '/assets/models/NightStalker': [
-          { name: 'glb', path: '/assets/models/NightStalker/glb', type: 'folder' },
-          { name: 'textures', path: '/assets/models/NightStalker/textures', type: 'folder' },
-          { name: 'animations', path: '/assets/models/NightStalker/animations', type: 'folder' },
-        ],
-      };
-
-      await new Promise((resolve) => setTimeout(resolve, 100)); // Simulate async
-      return knownAssets[path] || [];
+      return await scanAssetsDirectory(path);
     } finally {
       setLoading(false);
     }

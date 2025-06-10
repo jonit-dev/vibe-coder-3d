@@ -164,8 +164,8 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
             label="Color"
             value={meshRenderer.material.color}
             onChange={(value: string) => updateMaterial({ color: value })}
-            resetValue="#ffffff"
-            placeholder="#ffffff"
+            resetValue="#cccccc"
+            placeholder="#cccccc"
           />
         )}
       </CollapsibleSection>
@@ -198,7 +198,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
           max={1}
           step={0.1}
           sensitivity={0.1}
-          resetValue={0.5}
+          resetValue={0.7}
           axisLabel="ROU"
           axisColor="#34495e"
         />

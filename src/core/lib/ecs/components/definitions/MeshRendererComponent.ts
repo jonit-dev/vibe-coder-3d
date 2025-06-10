@@ -23,14 +23,14 @@ const MeshRendererSchema = z.object({
       shader: z.enum(['standard', 'unlit']).default('standard'),
       materialType: z.enum(['solid', 'texture']).default('solid'),
       // Main Maps
-      color: z.string().default('#ffffff'),
+      color: z.string().default('#cccccc'),
       albedoTexture: z.string().optional(),
       normalTexture: z.string().optional(),
       normalScale: z.number().default(1),
       // Material Properties
       metalness: z.number().default(0),
       metallicTexture: z.string().optional(),
-      roughness: z.number().default(0.5),
+      roughness: z.number().default(0.7),
       roughnessTexture: z.string().optional(),
       // Emission
       emissive: z.string().default('#000000'),
@@ -136,12 +136,12 @@ export const meshRendererComponent = ComponentFactory.create({
         b: component.materialColorB,
       },
       eid,
-      material.color || '#ffffff',
+      material.color || '#cccccc',
     );
 
     component.normalScale[eid] = material.normalScale ?? 1;
     component.metalness[eid] = material.metalness ?? 0;
-    component.roughness[eid] = material.roughness ?? 0.5;
+    component.roughness[eid] = material.roughness ?? 0.7;
 
     setRgbValues(
       {

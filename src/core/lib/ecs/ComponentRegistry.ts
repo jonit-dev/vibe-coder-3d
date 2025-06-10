@@ -604,10 +604,10 @@ export function combineRenderingContributions(
     material: {
       shader: 'standard' as 'standard' | 'unlit',
       materialType: 'solid' as 'solid' | 'texture',
-      color: '#ffffff',
+      color: '#cccccc', // Lighter gray instead of pure white
       normalScale: 1,
       metalness: 0,
-      roughness: 0.5,
+      roughness: 0.7, // Higher roughness for more diffuse look
       emissive: '#000000',
       emissiveIntensity: 0,
       occlusionStrength: 1,

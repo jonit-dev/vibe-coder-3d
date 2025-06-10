@@ -127,8 +127,8 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           >
             {geometryContent}
             <meshStandardMaterial
-              // Base color - white when using textures to not tint them
-              color="#ffffff"
+              // In texture mode, always use white to not tint textures. In solid mode, use material color.
+              color={isTextureMode ? '#ffffff' : (material.color ?? entityColor)}
               map={textures.albedoTexture as Texture | undefined}
               // PBR properties
               metalness={material.metalness ?? 0}
