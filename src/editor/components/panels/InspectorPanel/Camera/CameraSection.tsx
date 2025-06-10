@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiCamera, FiEye, FiMove, FiSettings, FiTarget } from 'react-icons/fi';
+import { FiCamera, FiEye, FiSettings, FiTarget } from 'react-icons/fi';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
@@ -245,8 +245,12 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
           )}
         </CollapsibleSection>
 
-        {/* Camera Controls - Unity-style camera modes */}
-        <CollapsibleSection title="Camera Controls" icon={<FiMove />} defaultExpanded={false}>
+        {/* Camera Following & Controls */}
+        <CollapsibleSection
+          title="Camera Following & Controls"
+          icon={<FiTarget />}
+          defaultExpanded={false}
+        >
           <ComponentField
             label="Control Mode"
             type="select"
@@ -280,10 +284,6 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
               </div>
             </div>
           </div>
-        </CollapsibleSection>
-
-        {/* Camera Following Behavior */}
-        <CollapsibleSection title="Camera Following" icon={<FiTarget />} defaultExpanded={false}>
           <ToggleField
             label="Enable Following"
             value={cameraData.enableSmoothing ?? false}
