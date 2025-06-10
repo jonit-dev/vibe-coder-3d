@@ -37,6 +37,8 @@ export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = ({
       emissive: data.material?.emissive || '#000000',
       emissiveIntensity: data.material?.emissiveIntensity ?? 0.0,
       occlusionStrength: data.material?.occlusionStrength ?? 1.0,
+      textureOffsetX: data.material?.textureOffsetX ?? 0.0,
+      textureOffsetY: data.material?.textureOffsetY ?? 0.0,
       // Texture properties
       albedoTexture: data.material?.albedoTexture,
       normalTexture: data.material?.normalTexture,

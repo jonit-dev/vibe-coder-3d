@@ -1,0 +1,107 @@
+{
+  "/assets": [
+    {
+      "name": "models",
+      "path": "/assets/models",
+      "type": "folder"
+    },
+    {
+      "name": "skyboxes",
+      "path": "/assets/skyboxes",
+      "type": "folder"
+    },
+    {
+      "name": "textures",
+      "path": "/assets/textures",
+      "type": "folder"
+    }
+  ],
+  "/assets/models": [
+    {
+      "name": "NightStalker",
+      "path": "/assets/models/NightStalker",
+      "type": "folder"
+    }
+  ],
+  "/assets/skyboxes": [
+    {
+      "name": "city_night.jpg",
+      "path": "/assets/skyboxes/city_night.jpg",
+      "type": "file",
+      "extension": "jpg"
+    },
+    {
+      "name": "desert_dusk.jpg",
+      "path": "/assets/skyboxes/desert_dusk.jpg",
+      "type": "file",
+      "extension": "jpg"
+    },
+    {
+      "name": "forest_day.jpg",
+      "path": "/assets/skyboxes/forest_day.jpg",
+      "type": "file",
+      "extension": "jpg"
+    },
+    {
+      "name": "mountain_sunset.jpg",
+      "path": "/assets/skyboxes/mountain_sunset.jpg",
+      "type": "file",
+      "extension": "jpg"
+    },
+    {
+      "name": "ocean_horizon.jpg",
+      "path": "/assets/skyboxes/ocean_horizon.jpg",
+      "type": "file",
+      "extension": "jpg"
+    }
+  ],
+  "/assets/textures": [
+    {
+      "name": "crate-texture.png",
+      "path": "/assets/textures/crate-texture.png",
+      "type": "file",
+      "extension": "png"
+    }
+  ],
+  "/assets/models/NightStalker": [
+    {
+      "name": "animations",
+      "path": "/assets/models/NightStalker/animations",
+      "type": "folder"
+    },
+    {
+      "name": "glb",
+      "path": "/assets/models/NightStalker/glb",
+      "type": "folder"
+    },
+    {
+      "name": "textures",
+      "path": "/assets/models/NightStalker/textures",
+      "type": "folder"
+    }
+  ],
+  "/assets/models/NightStalker/animations": [
+    {
+      "name": "NightStalker_Standing_Idle.glb",
+      "path": "/assets/models/NightStalker/animations/NightStalker_Standing_Idle.glb",
+      "type": "file",
+      "extension": "glb"
+    }
+  ],
+  "/assets/models/NightStalker/glb": [
+    {
+      "name": "NightStalker_Night_Stalker.glb",
+      "path": "/assets/models/NightStalker/glb/NightStalker_Night_Stalker.glb",
+      "type": "file",
+      "extension": "glb"
+    }
+  ],
+  "/assets/models/NightStalker/textures": [
+    {
+      "name": "NightStalker_texture.png",
+      "path": "/assets/models/NightStalker/textures/NightStalker_texture.png",
+      "type": "file",
+      "extension": "png"
+    }
+  ]
+}

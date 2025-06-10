@@ -611,6 +611,8 @@ export function combineRenderingContributions(
       emissive: '#000000',
       emissiveIntensity: 0,
       occlusionStrength: 1,
+      textureOffsetX: 0,
+      textureOffsetY: 0,
       // Texture properties
       albedoTexture: undefined as string | undefined,
       normalTexture: undefined as string | undefined,

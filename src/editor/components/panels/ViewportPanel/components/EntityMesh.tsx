@@ -65,6 +65,10 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
       Object.values(loadedTextures).forEach((texture) => {
         if (texture && typeof texture === 'object' && 'needsUpdate' in texture) {
           texture.needsUpdate = true;
+          // Apply texture offset
+          if ('offset' in texture) {
+            texture.offset.set(material.textureOffsetX ?? 0, material.textureOffsetY ?? 0);
+          }
         }
       });
     });

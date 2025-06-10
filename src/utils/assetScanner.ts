@@ -5,11 +5,22 @@ interface IAssetFile {
   extension?: string;
 }
 
+// Import the generated asset manifest
+import assetManifestData from '../assets-manifest.json';
+
+type AssetManifest = Record<string, IAssetFile[]>;
+const assetManifest = assetManifestData as AssetManifest;
+
 /**
- * Scans a directory path for assets by attempting to fetch the directory listing
- * Falls back to known structure if direct scanning fails
+ * Scans a directory path for assets using the pre-generated manifest
  */
 export const scanAssetsDirectory = async (path: string): Promise<IAssetFile[]> => {
+  // Use the pre-generated manifest first
+  if (assetManifest[path]) {
+    return assetManifest[path];
+  }
+
+  // If not in manifest, try dynamic discovery as fallback
   try {
     // In web environment, we can't directly access the filesystem
     // Try to use fetch to get directory listing if the dev server supports it
@@ -23,7 +34,7 @@ export const scanAssetsDirectory = async (path: string): Promise<IAssetFile[]> =
     // Fetch failed, fallback to scanning known structure
   }
 
-  // Fallback: build asset structure by attempting to fetch known files
+  // Final fallback: build asset structure by attempting to fetch known files
   return await buildAssetStructureFromAttempts(path);
 };
 

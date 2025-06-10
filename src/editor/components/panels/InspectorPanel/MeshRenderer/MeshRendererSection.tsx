@@ -33,6 +33,8 @@ export interface IMeshRendererData {
     emissiveTexture?: string;
     occlusionTexture?: string;
     occlusionStrength?: number;
+    textureOffsetX?: number;
+    textureOffsetY?: number;
   };
 }
 
@@ -157,6 +159,39 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
                 axisLabel="NRM"
                 axisColor="#8e44ad"
               />
+            )}
+
+            {/* Texture Offset Controls */}
+            {(meshRenderer.material.albedoTexture || meshRenderer.material.normalTexture) && (
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-gray-300 mb-2">Texture Offset</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <SingleAxisField
+                    label="Offset X"
+                    value={meshRenderer.material.textureOffsetX || 0}
+                    onChange={(value) => updateMaterial({ textureOffsetX: value })}
+                    min={-2}
+                    max={2}
+                    step={0.1}
+                    sensitivity={0.1}
+                    resetValue={0}
+                    axisLabel="X"
+                    axisColor="#ff6b6b"
+                  />
+                  <SingleAxisField
+                    label="Offset Y"
+                    value={meshRenderer.material.textureOffsetY || 0}
+                    onChange={(value) => updateMaterial({ textureOffsetY: value })}
+                    min={-2}
+                    max={2}
+                    step={0.1}
+                    sensitivity={0.1}
+                    resetValue={0}
+                    axisLabel="Y"
+                    axisColor="#4ecdc4"
+                  />
+                </div>
+              </div>
             )}
           </div>
         ) : (

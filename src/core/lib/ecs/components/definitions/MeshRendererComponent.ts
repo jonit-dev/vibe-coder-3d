@@ -39,6 +39,9 @@ const MeshRendererSchema = z.object({
       // Secondary Maps
       occlusionTexture: z.string().optional(),
       occlusionStrength: z.number().default(1),
+      // Texture Transform
+      textureOffsetX: z.number().default(0),
+      textureOffsetY: z.number().default(0),
     })
     .optional(),
 });
@@ -67,6 +70,8 @@ export const meshRendererComponent = ComponentFactory.create({
     emissiveB: Types.f32,
     emissiveIntensity: Types.f32,
     occlusionStrength: Types.f32,
+    textureOffsetX: Types.f32,
+    textureOffsetY: Types.f32,
     meshIdHash: Types.ui32,
     materialIdHash: Types.ui32,
     // Texture hashes
@@ -109,6 +114,8 @@ export const meshRendererComponent = ComponentFactory.create({
       ),
       emissiveIntensity: component.emissiveIntensity[eid],
       occlusionStrength: component.occlusionStrength[eid],
+      textureOffsetX: component.textureOffsetX[eid],
+      textureOffsetY: component.textureOffsetY[eid],
       // Texture properties
       albedoTexture: getStringFromHash(component.albedoTextureHash[eid]) || undefined,
       normalTexture: getStringFromHash(component.normalTextureHash[eid]) || undefined,
@@ -155,6 +162,8 @@ export const meshRendererComponent = ComponentFactory.create({
 
     component.emissiveIntensity[eid] = material.emissiveIntensity ?? 0;
     component.occlusionStrength[eid] = material.occlusionStrength ?? 1;
+    component.textureOffsetX[eid] = material.textureOffsetX ?? 0;
+    component.textureOffsetY[eid] = material.textureOffsetY ?? 0;
 
     // Store texture hashes
     component.albedoTextureHash[eid] = material.albedoTexture
