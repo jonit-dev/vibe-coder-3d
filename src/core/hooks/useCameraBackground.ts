@@ -25,12 +25,6 @@ export function useCameraBackground(
   }
 
   useEffect(() => {
-    console.log('[useCameraBackground] Hook called with params:', {
-      clearFlags,
-      backgroundColor,
-      skyboxTexture,
-    });
-
     const bgColorKey = backgroundColor
       ? `${backgroundColor.r}-${backgroundColor.g}-${backgroundColor.b}-${backgroundColor.a}`
       : null;
@@ -40,59 +34,40 @@ export function useCameraBackground(
     const bgColorChanged = currentBgColorRef.current !== bgColorKey;
     const skyboxChanged = currentSkyboxRef.current !== skyboxTexture;
 
-    console.log('[useCameraBackground] Effect triggered:', {
-      clearFlags,
-      backgroundColor,
-      skyboxTexture,
-      clearFlagsChanged,
-      bgColorChanged,
-      skyboxChanged,
-      currentClearFlags: currentClearFlagsRef.current,
-      currentBgColor: currentBgColorRef.current,
-      currentSkybox: currentSkyboxRef.current,
-    });
-
     if (!clearFlagsChanged && !bgColorChanged && !skyboxChanged) {
-      console.log('[useCameraBackground] No changes detected, skipping update');
-      return;
+      return; // No changes, skip update
     }
 
-    console.log(
-      '[useCameraBackground] Applying background - clearFlags:',
+    console.log('[useCameraBackground] Updating background:', {
       clearFlags,
-      'backgroundColor:',
-      backgroundColor,
-      'skyboxTexture:',
-      skyboxTexture,
-    );
+      backgroundColor: backgroundColor
+        ? `rgba(${backgroundColor.r}, ${backgroundColor.g}, ${backgroundColor.b}, ${backgroundColor.a})`
+        : 'none',
+      skyboxTexture: skyboxTexture || 'none',
+    });
 
     // Apply the appropriate background based on clear flags
     let appliedColor: Color | null = null;
+    let shouldInvalidate = true; // Track if we need to invalidate frame
 
     switch (clearFlags) {
       case 'solidColor':
         if (backgroundColor) {
           appliedColor = new Color(backgroundColor.r, backgroundColor.g, backgroundColor.b);
           scene.background = appliedColor;
-          console.log(
-            '[useCameraBackground] Applied solid color background:',
-            appliedColor.getHexString(),
-          );
         } else {
           appliedColor = new Color(0, 0, 0); // Black fallback
           scene.background = appliedColor;
-          console.log('[useCameraBackground] Applied black fallback for solid color');
         }
         break;
 
       case 'skybox':
         if (skyboxTexture && skyboxTexture.length > 0) {
-          console.log('[useCameraBackground] Loading skybox texture:', skyboxTexture);
+          shouldInvalidate = false; // Don't invalidate immediately, let texture loader handle it
           textureLoader.load(
             skyboxTexture,
             (texture) => {
               scene.background = texture;
-              console.log('[useCameraBackground] Applied skybox texture:', skyboxTexture);
               invalidate();
             },
             undefined,
@@ -101,30 +76,23 @@ export function useCameraBackground(
               // Fallback to neutral gray
               appliedColor = new Color('#404040');
               scene.background = appliedColor;
-              console.log('[useCameraBackground] Applied gray fallback for failed skybox');
               invalidate();
             },
           );
         } else {
           appliedColor = new Color('#404040'); // Neutral gray
           scene.background = appliedColor;
-          console.log('[useCameraBackground] Applied default skybox background (gray)');
         }
         break;
 
       case 'depthOnly':
       case 'dontClear':
         scene.background = null;
-        console.log('[useCameraBackground] Set background to null for:', clearFlags);
         break;
 
       default:
         appliedColor = new Color('#404040'); // Default to neutral gray
         scene.background = appliedColor;
-        console.log(
-          '[useCameraBackground] Applied default background (gray) for unknown clearFlags:',
-          clearFlags,
-        );
         break;
     }
 
@@ -133,11 +101,9 @@ export function useCameraBackground(
     currentBgColorRef.current = bgColorKey;
     currentSkyboxRef.current = skyboxTexture || null;
 
-    console.log('[useCameraBackground] Background update complete, refs updated');
-    console.log('[useCameraBackground] Final scene.background:', scene.background);
-
-    // Invalidate the frame to trigger a re-render
-    invalidate();
-    console.log('[useCameraBackground] Frame invalidated');
+    // Only invalidate the frame if we need to (not for async texture loading)
+    if (shouldInvalidate) {
+      invalidate();
+    }
   }, [clearFlags, backgroundColor, skyboxTexture, scene, invalidate, textureLoader]);
 }

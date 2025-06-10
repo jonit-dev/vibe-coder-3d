@@ -40,6 +40,8 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
       if (!isTextureMode) return {};
 
       const urls: Record<string, string> = {};
+
+      // Only add URLs that actually exist to prevent unnecessary loading attempts
       if (material.albedoTexture) urls.albedoTexture = material.albedoTexture;
       if (material.normalTexture) urls.normalTexture = material.normalTexture;
       if (material.metallicTexture) urls.metallicTexture = material.metallicTexture;
@@ -60,18 +62,17 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
 
     // Load all textures at once using drei's useTexture
     // This handles errors gracefully and provides better loading management
-    const textures = useTexture(textureUrls, (loadedTextures) => {
-      // onLoad callback - configure loaded textures
-      Object.values(loadedTextures).forEach((texture) => {
-        if (texture && typeof texture === 'object' && 'needsUpdate' in texture) {
+    const textures = useTexture(textureUrls);
+
+    // Configure texture offsets after textures are loaded (outside of onLoad to prevent flashing)
+    React.useEffect(() => {
+      Object.values(textures).forEach((texture) => {
+        if (texture && typeof texture === 'object' && 'offset' in texture) {
+          texture.offset.set(material.textureOffsetX ?? 0, material.textureOffsetY ?? 0);
           texture.needsUpdate = true;
-          // Apply texture offset
-          if ('offset' in texture) {
-            texture.offset.set(material.textureOffsetX ?? 0, material.textureOffsetY ?? 0);
-          }
         }
       });
-    });
+    }, [textures, material.textureOffsetX, material.textureOffsetY]);
 
     // Memoized geometry/content selection based on mesh type
     const geometryContent = useMemo(() => {
