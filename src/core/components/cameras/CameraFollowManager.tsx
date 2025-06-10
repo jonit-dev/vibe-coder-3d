@@ -9,13 +9,28 @@ import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponen
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { ECSWorld } from '@/core/lib/ecs/World';
 
+export interface ICameraFollowManagerProps {
+  isPlaying: boolean;
+}
+
 /**
  * Camera Follow Manager
  *
  * Event-driven component that handles smooth camera following behavior.
  * Updates camera transforms when target entities move or camera settings change.
+ *
+ * Behavior by mode:
+ * - Editor Mode: Camera ALWAYS follows the entity regardless of control mode
+ * - Play Mode:
+ *   - Locked = follow rigidly (no user controls)
+ *   - Free = follow but allow user controls (orbit/zoom/rotate)
+ *
+ * IMPORTANT: In both free and locked modes, this component updates the ECS Transform
+ * component of the camera entity. The GameCameraManager then syncs this transform
+ * data to the actual Three.js camera position. This ensures consistent behavior
+ * where following works in both modes.
  */
-export const CameraFollowManager: React.FC = () => {
+export const CameraFollowManager: React.FC<ICameraFollowManagerProps> = ({ isPlaying }) => {
   const { invalidate } = useThree();
   const world = ECSWorld.getInstance().getWorld();
 
@@ -152,18 +167,16 @@ export const CameraFollowManager: React.FC = () => {
         (tempCamera.rotation.z * 180) / Math.PI,
       ];
 
-      // Check if camera is in free mode - if so, update Three.js camera directly
+      // NEW LOGIC: Determine if camera should follow based on mode
       const cameraData = componentRegistry.getComponentData(state.followingCamera, 'Camera');
       const controlMode = (cameraData as any)?.controlMode ?? 'free';
-      const isFreeMode = controlMode === 'free';
 
-      if (isFreeMode) {
-        // In free mode: let OrbitControls handle camera positioning
-        // The CameraControlsManager will update OrbitControls target to follow the entity
-        // We just need to invalidate to trigger re-render
-        invalidate();
-      } else {
-        // In locked mode: update ECS Transform component (traditional approach)
+      // In Editor mode: ALWAYS follow regardless of control mode
+      // In Play mode: Only follow in locked mode (free mode uses OrbitControls which handles following via target updates)
+      const shouldFollow = !isPlaying || (isPlaying && controlMode === 'locked');
+
+      if (shouldFollow) {
+        // Update ECS Transform component for camera following
         const success = componentRegistry.updateComponent(state.followingCamera, 'Transform', {
           position: [newPosition.x, newPosition.y, newPosition.z],
           rotation: newRotation,
@@ -185,7 +198,8 @@ export const CameraFollowManager: React.FC = () => {
       if (Math.random() < 0.01) {
         // 1% of frames
         console.log('[CameraFollowManager] Following update:', {
-          mode: isFreeMode ? 'Free' : 'Locked',
+          mode: isPlaying ? `Play-${controlMode}` : 'Editor',
+          shouldFollow,
           distance: distance.toFixed(3),
           cameraPos: newPosition.toArray().map((v) => v.toFixed(2)),
           targetPos: state.targetPosition.toArray().map((v) => v.toFixed(2)),

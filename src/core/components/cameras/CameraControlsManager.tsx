@@ -4,9 +4,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useEvent } from '@/core/hooks/useEvent';
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 
 export interface ICameraControlsManagerProps {
   isPlaying: boolean;

@@ -110,7 +110,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
           <GameCameraManager isPlaying={isPlaying} />
 
           {/* Camera Follow Manager - handles smooth camera following behavior */}
-          <CameraFollowManager />
+          <CameraFollowManager isPlaying={isPlaying} />
 
           {/* Camera Background Manager - handles scene background based on camera settings */}
           <CameraBackgroundManager />

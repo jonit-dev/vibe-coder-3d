@@ -240,42 +240,43 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
       });
     }
 
-    if (!isFreeMode || !hasFollowTarget) {
-      // Update camera position if:
-      // 1. Not in free mode (locked mode should respect ECS position), OR
-      // 2. In free mode but no follow target (use ECS position as base)
+    // Update camera position from ECS transform ONLY in locked mode or when not in free mode
+    // In free mode, OrbitControls should have full control over camera position
+    if (!isFreeMode) {
       const position = cameraTransformData.position || [0, 1, -10];
       camera.position.set(position[0], position[1], position[2]);
     }
-    // In free mode WITH follow target: let CameraFollowManager handle position updates
-    // and OrbitControls can modify on top of that
 
     // Handle camera rotation/lookAt
-    if (hasFollowTarget) {
-      // Get target entity transform
-      const targetTransformComponent = componentManager.getComponent(
-        cameraData.followTarget!,
-        KnownComponentTypes.TRANSFORM,
-      );
-      const targetTransformData = targetTransformComponent?.data as ITransformData | undefined;
+    if (!isFreeMode) {
+      // In locked mode, handle rotation based on follow target or ECS transform
+      if (hasFollowTarget) {
+        // Get target entity transform
+        const targetTransformComponent = componentManager.getComponent(
+          cameraData.followTarget!,
+          KnownComponentTypes.TRANSFORM,
+        );
+        const targetTransformData = targetTransformComponent?.data as ITransformData | undefined;
 
-      if (targetTransformData && !isFreeMode) {
-        // Only force lookAt in locked mode; free mode allows orbit controls to handle rotation
-        const targetPosition = targetTransformData.position || [0, 0, 0];
-        camera.lookAt(targetPosition[0], targetPosition[1], targetPosition[2]);
+        if (targetTransformData) {
+          // Force lookAt in locked mode
+          const targetPosition = targetTransformData.position || [0, 0, 0];
+          camera.lookAt(targetPosition[0], targetPosition[1], targetPosition[2]);
+        }
+      } else {
+        // No follow target, use rotation from transform
+        const rotation = cameraTransformData.rotation || [0, 0, 0];
+
+        // For first person cameras, we need to set the rotation order correctly
+        camera.rotation.order = 'YXZ'; // Yaw-Pitch-Roll order for first person
+        camera.rotation.set(
+          (rotation[0] * Math.PI) / 180, // Pitch (X)
+          (rotation[1] * Math.PI) / 180, // Yaw (Y)
+          (rotation[2] * Math.PI) / 180, // Roll (Z)
+        );
       }
-    } else if (!isFreeMode) {
-      // No follow target and not in free mode, use rotation from transform
-      const rotation = cameraTransformData.rotation || [0, 0, 0];
-
-      // For first person cameras, we need to set the rotation order correctly
-      camera.rotation.order = 'YXZ'; // Yaw-Pitch-Roll order for first person
-      camera.rotation.set(
-        (rotation[0] * Math.PI) / 180, // Pitch (X)
-        (rotation[1] * Math.PI) / 180, // Yaw (Y)
-        (rotation[2] * Math.PI) / 180, // Roll (Z)
-      );
     }
+    // In free mode, OrbitControls handle rotation, so we don't set it here
 
     // Force matrix update
     camera.updateMatrixWorld();
