@@ -602,11 +602,22 @@ export function combineRenderingContributions(
     receiveShadow: true,
     meshType: null as string | null, // No default mesh type - only show mesh if explicitly set
     material: {
-      color: '#3399ff',
+      shader: 'standard' as 'standard' | 'unlit',
+      materialType: 'solid' as 'solid' | 'texture',
+      color: '#ffffff',
+      normalScale: 1,
       metalness: 0,
       roughness: 0.5,
       emissive: '#000000',
       emissiveIntensity: 0,
+      occlusionStrength: 1,
+      // Texture properties
+      albedoTexture: undefined as string | undefined,
+      normalTexture: undefined as string | undefined,
+      metallicTexture: undefined as string | undefined,
+      roughnessTexture: undefined as string | undefined,
+      emissiveTexture: undefined as string | undefined,
+      occlusionTexture: undefined as string | undefined,
     },
   };
 

@@ -56,6 +56,8 @@ export const MeshRendererConverter = {
     MeshRenderer.materialIdHash[eid] = storeString(data.materialId);
 
     if (data.material) {
+      MeshRenderer.materialType[eid] = data.material.materialType === 'texture' ? 1 : 0;
+
       setRgbValues(
         {
           r: MeshRenderer.materialColorR,
@@ -80,6 +82,26 @@ export const MeshRendererConverter = {
       );
 
       MeshRenderer.emissiveIntensity[eid] = data.material.emissiveIntensity ?? 0;
+
+      // Store texture hashes
+      MeshRenderer.albedoTextureHash[eid] = data.material.albedoTexture
+        ? storeString(data.material.albedoTexture)
+        : 0;
+      MeshRenderer.normalTextureHash[eid] = data.material.normalTexture
+        ? storeString(data.material.normalTexture)
+        : 0;
+      MeshRenderer.metallicTextureHash[eid] = data.material.metallicTexture
+        ? storeString(data.material.metallicTexture)
+        : 0;
+      MeshRenderer.roughnessTextureHash[eid] = data.material.roughnessTexture
+        ? storeString(data.material.roughnessTexture)
+        : 0;
+      MeshRenderer.emissiveTextureHash[eid] = data.material.emissiveTexture
+        ? storeString(data.material.emissiveTexture)
+        : 0;
+      MeshRenderer.occlusionTextureHash[eid] = data.material.occlusionTexture
+        ? storeString(data.material.occlusionTexture)
+        : 0;
     }
   },
 
@@ -90,6 +112,9 @@ export const MeshRendererConverter = {
     castShadows: Boolean(MeshRenderer.castShadows[eid]),
     receiveShadows: Boolean(MeshRenderer.receiveShadows[eid]),
     material: {
+      materialType: (MeshRenderer.materialType[eid] === 0 ? 'solid' : 'texture') as
+        | 'solid'
+        | 'texture',
       color: getRgbAsHex(
         {
           r: MeshRenderer.materialColorR,
@@ -109,6 +134,13 @@ export const MeshRendererConverter = {
         eid,
       ),
       emissiveIntensity: MeshRenderer.emissiveIntensity[eid],
+      // Texture properties
+      albedoTexture: getStringFromHash(MeshRenderer.albedoTextureHash[eid]) || undefined,
+      normalTexture: getStringFromHash(MeshRenderer.normalTextureHash[eid]) || undefined,
+      metallicTexture: getStringFromHash(MeshRenderer.metallicTextureHash[eid]) || undefined,
+      roughnessTexture: getStringFromHash(MeshRenderer.roughnessTextureHash[eid]) || undefined,
+      emissiveTexture: getStringFromHash(MeshRenderer.emissiveTextureHash[eid]) || undefined,
+      occlusionTexture: getStringFromHash(MeshRenderer.occlusionTextureHash[eid]) || undefined,
     },
   }),
 };

@@ -17,6 +17,7 @@ export const MeshRenderer = defineComponent({
   enabled: Types.ui8,
   castShadows: Types.ui8,
   receiveShadows: Types.ui8,
+  materialType: Types.ui8, // 0 = solid, 1 = texture
   // Material properties
   materialColorR: Types.f32,
   materialColorG: Types.f32,
@@ -30,6 +31,13 @@ export const MeshRenderer = defineComponent({
   // String IDs are stored as uint32 hashes for performance
   meshIdHash: Types.ui32,
   materialIdHash: Types.ui32,
+  // Texture hashes
+  albedoTextureHash: Types.ui32,
+  normalTextureHash: Types.ui32,
+  metallicTextureHash: Types.ui32,
+  roughnessTextureHash: Types.ui32,
+  emissiveTextureHash: Types.ui32,
+  occlusionTextureHash: Types.ui32,
 });
 
 export const RigidBody = defineComponent({

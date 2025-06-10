@@ -3,18 +3,15 @@ import { FiCamera, FiEye, FiSettings, FiTarget } from 'react-icons/fi';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
+import { AssetSelector } from '@/editor/components/shared/AssetSelector';
 import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
 import { ColorPicker } from '@/editor/components/shared/ColorPicker';
 import { ComponentField } from '@/editor/components/shared/ComponentField';
 import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
-import { InspectorButton } from '@/editor/components/shared/InspectorButton';
 import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
 import { ToggleField } from '@/editor/components/shared/ToggleField';
 import { Vector3Field } from '@/editor/components/shared/Vector3Field';
-import { useAssetLoader } from '@/editor/hooks/useAssetLoader';
 import { useAvailableEntities } from '@/editor/hooks/useAvailableEntities';
-
-import { AssetLoaderModal } from '../../../shared/AssetLoaderModal';
 
 export interface ICameraSectionProps {
   cameraData: CameraData;
@@ -99,15 +96,6 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
 
   // Get entity options for dropdowns, excluding the current camera entity
   const entityOptions = useAvailableEntities(entityId);
-
-  // Skybox loader
-  const skyboxLoader = useAssetLoader({
-    title: 'Select Skybox Texture',
-    basePath: '/assets/skyboxes',
-    allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'hdr'],
-    showPreview: true,
-    onSelect: (path: string) => handleFieldChange('skyboxTexture', path),
-  });
 
   return (
     <>
@@ -208,32 +196,16 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
           />
 
           {cameraData.clearFlags === 'skybox' && (
-            <div className="space-y-0.5">
-              <span className="text-[11px] font-medium text-gray-300">Skybox Texture</span>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 px-2 py-1 text-xs bg-gray-800 border border-gray-600 rounded text-white min-h-[24px] flex items-center">
-                  {cameraData.skyboxTexture ? (
-                    <span className="truncate text-gray-300">
-                      {cameraData.skyboxTexture
-                        .split('/')
-                        .pop()
-                        ?.replace(/\.(jpg|jpeg|png|webp|hdr)$/i, '')}
-                    </span>
-                  ) : (
-                    <span className="text-gray-500">No texture selected</span>
-                  )}
-                </div>
-                <InspectorButton
-                  onClick={skyboxLoader.openModal}
-                  icon={<FiEye />}
-                  variant="secondary"
-                  size="xs"
-                  title="Browse skybox textures"
-                >
-                  Browse
-                </InspectorButton>
-              </div>
-            </div>
+            <AssetSelector
+              label="Skybox Texture"
+              value={cameraData.skyboxTexture}
+              onChange={(assetPath) => handleFieldChange('skyboxTexture', assetPath)}
+              placeholder="No texture selected"
+              buttonTitle="Browse skybox textures"
+              basePath="/assets/skyboxes"
+              allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'hdr']}
+              showPreview={true}
+            />
           )}
 
           {cameraData.clearFlags === 'solidColor' && (
@@ -444,8 +416,6 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
           )}
         </CollapsibleSection>
       </GenericComponentSection>
-
-      <AssetLoaderModal {...skyboxLoader.modalProps} />
     </>
   );
 };

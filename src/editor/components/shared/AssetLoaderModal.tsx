@@ -45,6 +45,7 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
         '/assets': [
           { name: 'models', path: '/assets/models', type: 'folder' },
           { name: 'skyboxes', path: '/assets/skyboxes', type: 'folder' },
+          { name: 'textures', path: '/assets/textures', type: 'folder' },
         ],
         '/assets/skyboxes': [
           {
@@ -81,6 +82,14 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
         '/assets/models': [
           { name: 'NightStalker', path: '/assets/models/NightStalker', type: 'folder' },
         ],
+        '/assets/textures': [
+          {
+            name: 'crate-texture.png',
+            path: '/assets/textures/crate-texture.png',
+            type: 'file',
+            extension: 'png',
+          },
+        ],
         '/assets/models/NightStalker': [
           { name: 'glb', path: '/assets/models/NightStalker/glb', type: 'folder' },
           { name: 'textures', path: '/assets/models/NightStalker/textures', type: 'folder' },
@@ -102,15 +111,16 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
     }
   }, [currentPath, isOpen]);
 
-  // Reset state when modal opens
+  // Reset state when modal opens and set initial path
   useEffect(() => {
     if (isOpen) {
+      setCurrentPath(basePath); // Start at the specified basePath
       setSearchTerm('');
       setSelectedAsset('');
       setPreviewUrl('');
       setPreviewError(false);
     }
-  }, [isOpen]);
+  }, [isOpen, basePath]);
 
   // Filter and search assets
   const filteredAssets = useMemo(() => {

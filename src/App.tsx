@@ -3,6 +3,7 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
 import { initializeECS } from '@/core/lib/ecs/init';
 import Editor from '@/editor/Editor';
+import { GlobalAssetLoaderModal } from '@/editor/components/shared/GlobalAssetLoaderModal';
 
 /**
  * Main App component
@@ -33,6 +34,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Editor />} />
       </Routes>
+      {/* Global modals */}
+      <GlobalAssetLoaderModal />
     </Router>
   );
 }

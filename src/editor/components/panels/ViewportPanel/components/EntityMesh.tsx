@@ -1,5 +1,6 @@
+import { useTexture } from '@react-three/drei';
 import React, { useMemo } from 'react';
-import type { Mesh } from 'three';
+import type { Mesh, Texture } from 'three';
 
 import { CameraGeometry } from './CameraGeometry';
 
@@ -29,6 +30,44 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     if (!meshType) {
       return null;
     }
+
+    // Load textures if materialType is 'texture'
+    const material = renderingContributions.material || {};
+    const isTextureMode = material.materialType === 'texture';
+
+    // Prepare texture URLs for batch loading with useTexture
+    const textureUrls = useMemo(() => {
+      if (!isTextureMode) return {};
+
+      const urls: Record<string, string> = {};
+      if (material.albedoTexture) urls.albedoTexture = material.albedoTexture;
+      if (material.normalTexture) urls.normalTexture = material.normalTexture;
+      if (material.metallicTexture) urls.metallicTexture = material.metallicTexture;
+      if (material.roughnessTexture) urls.roughnessTexture = material.roughnessTexture;
+      if (material.emissiveTexture) urls.emissiveTexture = material.emissiveTexture;
+      if (material.occlusionTexture) urls.occlusionTexture = material.occlusionTexture;
+
+      return urls;
+    }, [
+      isTextureMode,
+      material.albedoTexture,
+      material.normalTexture,
+      material.metallicTexture,
+      material.roughnessTexture,
+      material.emissiveTexture,
+      material.occlusionTexture,
+    ]);
+
+    // Load all textures at once using drei's useTexture
+    // This handles errors gracefully and provides better loading management
+    const textures = useTexture(textureUrls, (loadedTextures) => {
+      // onLoad callback - configure loaded textures
+      Object.values(loadedTextures).forEach((texture) => {
+        if (texture && typeof texture === 'object' && 'needsUpdate' in texture) {
+          texture.needsUpdate = true;
+        }
+      });
+    });
 
     // Memoized geometry/content selection based on mesh type
     const geometryContent = useMemo(() => {
@@ -70,25 +109,90 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
       );
     }
 
-    return (
-      <mesh
-        ref={meshRef}
-        castShadow={renderingContributions.castShadow}
-        receiveShadow={renderingContributions.receiveShadow}
-        userData={{ entityId }}
-        visible={renderingContributions.visible}
-        onClick={onMeshClick}
-      >
-        {geometryContent}
-        <meshStandardMaterial
-          color={renderingContributions.material?.color ?? entityColor}
-          metalness={renderingContributions.material?.metalness ?? 0}
-          roughness={renderingContributions.material?.roughness ?? 0.5}
-          emissive={renderingContributions.material?.emissive ?? '#000000'}
-          emissiveIntensity={renderingContributions.material?.emissiveIntensity ?? 0}
-        />
-      </mesh>
-    );
+    // Material rendering based on shader and mode
+    const isStandardShader = material.shader === 'standard';
+
+    if (isStandardShader) {
+      // Standard PBR shader
+      if (isTextureMode) {
+        // Textured PBR material
+        return (
+          <mesh
+            ref={meshRef}
+            castShadow={renderingContributions.castShadow}
+            receiveShadow={renderingContributions.receiveShadow}
+            userData={{ entityId }}
+            visible={renderingContributions.visible}
+            onClick={onMeshClick}
+          >
+            {geometryContent}
+            <meshStandardMaterial
+              // Base color - white when using textures to not tint them
+              color="#ffffff"
+              map={textures.albedoTexture as Texture | undefined}
+              // PBR properties
+              metalness={material.metalness ?? 0}
+              roughness={material.roughness ?? 0.5}
+              metalnessMap={textures.metallicTexture as Texture | undefined}
+              roughnessMap={textures.roughnessTexture as Texture | undefined}
+              // Normal mapping
+              normalMap={textures.normalTexture as Texture | undefined}
+              normalScale={
+                textures.normalTexture
+                  ? [material.normalScale ?? 1, material.normalScale ?? 1]
+                  : undefined
+              }
+              // Emissive properties
+              emissive={material.emissive ?? '#000000'}
+              emissiveIntensity={material.emissiveIntensity ?? 0}
+              emissiveMap={textures.emissiveTexture as Texture | undefined}
+              // Ambient occlusion
+              aoMap={textures.occlusionTexture as Texture | undefined}
+              aoMapIntensity={material.occlusionStrength ?? 1}
+            />
+          </mesh>
+        );
+      } else {
+        // Solid color PBR material
+        return (
+          <mesh
+            ref={meshRef}
+            castShadow={renderingContributions.castShadow}
+            receiveShadow={renderingContributions.receiveShadow}
+            userData={{ entityId }}
+            visible={renderingContributions.visible}
+            onClick={onMeshClick}
+          >
+            {geometryContent}
+            <meshStandardMaterial
+              color={material.color ?? entityColor}
+              metalness={material.metalness ?? 0}
+              roughness={material.roughness ?? 0.5}
+              emissive={material.emissive ?? '#000000'}
+              emissiveIntensity={material.emissiveIntensity ?? 0}
+            />
+          </mesh>
+        );
+      }
+    } else {
+      // Unlit shader - use basic material
+      return (
+        <mesh
+          ref={meshRef}
+          castShadow={false} // Unlit materials don't cast shadows
+          receiveShadow={false}
+          userData={{ entityId }}
+          visible={renderingContributions.visible}
+          onClick={onMeshClick}
+        >
+          {geometryContent}
+          <meshBasicMaterial
+            color={material.color ?? entityColor}
+            map={isTextureMode ? (textures.albedoTexture as Texture | undefined) : undefined}
+          />
+        </mesh>
+      );
+    }
   },
 );
 

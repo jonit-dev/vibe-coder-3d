@@ -69,7 +69,6 @@ export const ComponentList: React.FC<IComponentListProps> = ({
           updateComponent={updateComponent}
           removeComponent={removeComponent}
           isPlaying={isPlaying}
-          entityId={selectedEntity}
         />
       )}
 
