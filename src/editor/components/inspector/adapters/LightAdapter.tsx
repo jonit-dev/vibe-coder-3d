@@ -38,8 +38,7 @@ export const LightAdapter: React.FC<ILightAdapterProps> = ({
     shadowMapSize: data.shadowMapSize ?? 1024,
     shadowBias: data.shadowBias ?? -0.0001,
     shadowRadius: data.shadowRadius ?? 1.0,
-    shadowNear: data.shadowNear ?? 0.1,
-    shadowFar: data.shadowFar ?? 50.0,
+    // shadowNear/shadowFar removed - see roadmap for shadow enhancements
   };
 
   const handleUpdate = (updates: Partial<LightData>) => {

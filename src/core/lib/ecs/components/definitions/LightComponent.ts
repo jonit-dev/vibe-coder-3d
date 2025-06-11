@@ -9,8 +9,8 @@ import { z } from 'zod';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 
-// Light Schema
-const LightSchema = z.object({
+// Zod schema for Light component validation
+export const LightSchema = z.object({
   lightType: z.enum(['directional', 'point', 'spot', 'ambient']),
   color: z.object({
     r: z.number().min(0).max(1),
@@ -18,25 +18,25 @@ const LightSchema = z.object({
     b: z.number().min(0).max(1),
   }),
   intensity: z.number().min(0),
-  enabled: z.boolean().optional(),
-  castShadow: z.boolean().optional(),
+  enabled: z.boolean(),
+  castShadow: z.boolean(),
   // Directional Light Properties
   directionX: z.number().optional(),
   directionY: z.number().optional(),
   directionZ: z.number().optional(),
   // Point Light Properties
-  range: z.number().min(0).optional(),
+  range: z.number().positive().optional(),
   decay: z.number().min(0).optional(),
   // Spot Light Properties
   angle: z.number().min(0).max(Math.PI).optional(),
   penumbra: z.number().min(0).max(1).optional(),
-  // Shadow Properties
-  shadowMapSize: z.number().optional(),
+  // Shadow Properties (simplified - only the reliable ones)
+  shadowMapSize: z.number().int().positive().optional(),
   shadowBias: z.number().optional(),
-  shadowRadius: z.number().optional(),
-  shadowNear: z.number().optional(),
-  shadowFar: z.number().optional(),
+  shadowRadius: z.number().positive().optional(),
 });
+
+export type LightData = z.infer<typeof LightSchema>;
 
 // Light Component Definition
 export const lightComponent = ComponentFactory.create({
@@ -63,12 +63,10 @@ export const lightComponent = ComponentFactory.create({
     // Spot Light Properties
     angle: Types.f32,
     penumbra: Types.f32,
-    // Shadow Properties
+    // Shadow Properties (simplified)
     shadowMapSize: Types.ui32,
     shadowBias: Types.f32,
     shadowRadius: Types.f32,
-    shadowNear: Types.f32,
-    shadowFar: Types.f32,
     needsUpdate: Types.ui8,
   },
   serialize: (eid: EntityId, component: any) => {
@@ -98,12 +96,10 @@ export const lightComponent = ComponentFactory.create({
       // Spot Light Properties
       angle: component.angle[eid] ?? Math.PI / 6,
       penumbra: component.penumbra[eid] ?? 0.1,
-      // Shadow Properties
+      // Shadow Properties (simplified)
       shadowMapSize: component.shadowMapSize[eid] ?? 1024,
       shadowBias: component.shadowBias[eid] ?? -0.0001,
       shadowRadius: component.shadowRadius[eid] ?? 1.0,
-      shadowNear: component.shadowNear[eid] ?? 0.1,
-      shadowFar: component.shadowFar[eid] ?? 50.0,
     };
   },
   deserialize: (eid: EntityId, data, component: any) => {
@@ -130,12 +126,10 @@ export const lightComponent = ComponentFactory.create({
     component.angle[eid] = data.angle ?? Math.PI / 6;
     component.penumbra[eid] = data.penumbra ?? 0.1;
 
-    // Shadow Properties
+    // Shadow Properties (simplified)
     component.shadowMapSize[eid] = data.shadowMapSize ?? 1024;
     component.shadowBias[eid] = data.shadowBias ?? -0.0001;
     component.shadowRadius[eid] = data.shadowRadius ?? 1.0;
-    component.shadowNear[eid] = data.shadowNear ?? 0.1;
-    component.shadowFar[eid] = data.shadowFar ?? 50.0;
 
     component.needsUpdate[eid] = 1; // Mark for update
   },
@@ -147,4 +141,4 @@ export const lightComponent = ComponentFactory.create({
   },
 });
 
-export type LightData = z.infer<typeof LightSchema>;
+export default lightComponent;

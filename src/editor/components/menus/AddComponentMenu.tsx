@@ -412,8 +412,6 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
           shadowMapSize: 1024,
           shadowBias: -0.0001,
           shadowRadius: 1.0,
-          shadowNear: 0.1,
-          shadowFar: 50.0,
         };
         break;
     }
@@ -852,8 +850,6 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
           shadowMapSize: 1024,
           shadowBias: -0.0001,
           shadowRadius: 1.0,
-          shadowNear: 0.1,
-          shadowFar: 50.0,
         };
         break;
     }

@@ -253,27 +253,7 @@ export const LightSection: React.FC<ILightSectionProps> = ({ lightData, onUpdate
                 sensitivity={0.05}
               />
 
-              <SingleAxisField
-                label="Shadow Near"
-                value={lightData.shadowNear ?? 0.1}
-                onChange={(shadowNear: number) =>
-                  updateLight({ shadowNear: Math.max(0.001, shadowNear) })
-                }
-                step={0.1}
-                min={0.001}
-                sensitivity={0.05}
-              />
-
-              <SingleAxisField
-                label="Shadow Far"
-                value={lightData.shadowFar ?? 50.0}
-                onChange={(shadowFar: number) =>
-                  updateLight({ shadowFar: Math.max(0.1, shadowFar) })
-                }
-                step={1}
-                min={0.1}
-                sensitivity={0.5}
-              />
+              {/* Shadow Near/Far removed - see roadmap for advanced shadow enhancements */}
             </>
           )}
         </CollapsibleSection>

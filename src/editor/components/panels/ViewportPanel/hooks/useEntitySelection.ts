@@ -31,7 +31,7 @@ export const useEntitySelection = ({
 
   // Memoized click handler
   const handleMeshClick = useCallback(
-    (e: any) => {
+    (e: { stopPropagation: () => void }) => {
       e.stopPropagation();
       setSelectedId(entityId);
     },

@@ -30,7 +30,7 @@ export const LightRenderer: React.FC<ILightRendererProps> = ({ entityId }) => {
       event.entityId === entityId &&
       (event.componentId === 'Light' || event.componentId === 'Transform')
     ) {
-      console.log(`[LightRenderer] Component updated for entity ${entityId}:`, event.componentId);
+      // Component updated - triggering re-render
       setUpdateTrigger((prev) => prev + 1);
     }
   });
@@ -87,8 +87,6 @@ export const LightRenderer: React.FC<ILightRendererProps> = ({ entityId }) => {
             shadow-mapSize={[lightData.shadowMapSize ?? 1024, lightData.shadowMapSize ?? 1024]}
             shadow-bias={lightData.shadowBias ?? -0.0001}
             shadow-radius={lightData.shadowRadius ?? 1.0}
-            shadow-camera-near={lightData.shadowNear ?? 0.1}
-            shadow-camera-far={lightData.shadowFar ?? 50.0}
             shadow-camera-left={-50}
             shadow-camera-right={50}
             shadow-camera-top={50}
@@ -119,8 +117,6 @@ export const LightRenderer: React.FC<ILightRendererProps> = ({ entityId }) => {
             shadow-mapSize={[lightData.shadowMapSize ?? 1024, lightData.shadowMapSize ?? 1024]}
             shadow-bias={lightData.shadowBias ?? -0.0001}
             shadow-radius={lightData.shadowRadius ?? 1.0}
-            shadow-camera-near={lightData.shadowNear ?? 0.1}
-            shadow-camera-far={lightData.shadowFar ?? 50.0}
           />
         </group>
       );
@@ -150,8 +146,6 @@ export const LightRenderer: React.FC<ILightRendererProps> = ({ entityId }) => {
             shadow-mapSize={[lightData.shadowMapSize ?? 1024, lightData.shadowMapSize ?? 1024]}
             shadow-bias={lightData.shadowBias ?? -0.0001}
             shadow-radius={lightData.shadowRadius ?? 1.0}
-            shadow-camera-near={lightData.shadowNear ?? 0.1}
-            shadow-camera-far={lightData.shadowFar ?? 50.0}
           />
         </group>
       );

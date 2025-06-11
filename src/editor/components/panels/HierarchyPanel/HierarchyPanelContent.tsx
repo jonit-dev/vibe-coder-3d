@@ -1,13 +1,60 @@
-import React, { useRef, useState } from 'react';
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragOverlay,
+  DragStartEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import React, { useMemo, useRef, useState } from 'react';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { IEntity } from '@/core/lib/ecs/IEntity';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useEditorStore } from '@/editor/store/editorStore';
-import { getEntityName } from '@core/lib/ecs';
 
 import { HierarchyContextMenu } from './HierarchyContextMenu';
 import { HierarchyItem } from './HierarchyItem';
+import { CubeIcon } from './HierarchyPanel';
+
+interface IHierarchyTreeNode {
+  entity: IEntity;
+  depth: number;
+  hasChildren: boolean;
+  isExpanded: boolean;
+}
+
+const RootDropZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'root-drop-zone',
+  });
+
+  if (!isDragging) return null;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`mt-2 py-3 px-3 border-2 border-dashed rounded text-xs text-center transition-all duration-200 ${
+        isOver
+          ? 'border-green-400 bg-green-600/20 text-green-300'
+          : 'border-gray-500 bg-gray-700/20 text-gray-400'
+      }`}
+    >
+      {isOver ? '✓ Release to make root entity' : 'Drop here to make root entity'}
+    </div>
+  );
+};
 
 export const HierarchyPanelContent: React.FC = () => {
   const entityIds = useEditorStore((s) => s.entityIds);
@@ -16,19 +63,174 @@ export const HierarchyPanelContent: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
 
+  const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
+  const [draggedEntity, setDraggedEntity] = useState<IEntity | null>(null);
+  const [dragOverEntity, setDragOverEntity] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     open: boolean;
     entityId: number | null;
     anchorRef: React.RefObject<HTMLLIElement> | null;
   }>({ open: false, entityId: null, anchorRef: null });
 
+  // Build hierarchical tree structure
+  const hierarchicalTree = useMemo(() => {
+    // Get entities from synchronized list first, then build full entity objects
+    const allEntities = entityIds
+      .map((id) => entityManager.getEntity(id))
+      .filter(Boolean) as IEntity[];
+    const entityMap = new Map(allEntities.map((e) => [e.id, e]));
+
+    // Function to build tree recursively
+    const buildTree = (entity: IEntity, depth = 0): IHierarchyTreeNode[] => {
+      const hasChildren = entity.children.length > 0;
+      const isExpanded = expandedNodes.has(entity.id);
+
+      const nodes: IHierarchyTreeNode[] = [
+        {
+          entity,
+          depth,
+          hasChildren,
+          isExpanded,
+        },
+      ];
+
+      // Add children if expanded
+      if (isExpanded && hasChildren) {
+        entity.children.forEach((childId) => {
+          const childEntity = entityMap.get(childId);
+          if (childEntity) {
+            nodes.push(...buildTree(childEntity, depth + 1));
+          }
+        });
+      }
+
+      return nodes;
+    };
+
+    // Start with root entities (those without parents)
+    const rootEntities = allEntities.filter((e) => !e.parentId);
+    const tree: IHierarchyTreeNode[] = [];
+
+    rootEntities.forEach((entity) => {
+      tree.push(...buildTree(entity));
+    });
+
+    return tree;
+  }, [entityIds, entityManager, expandedNodes]);
+
   // Store refs for each item for context menu positioning
   const itemRefs = useRef<Record<number, React.RefObject<HTMLLIElement>>>({});
-  entityIds.forEach((id) => {
-    if (!itemRefs.current[id]) {
-      itemRefs.current[id] = React.createRef<HTMLLIElement>() as React.RefObject<HTMLLIElement>;
+  hierarchicalTree.forEach(({ entity }) => {
+    if (!itemRefs.current[entity.id]) {
+      itemRefs.current[entity.id] =
+        React.createRef<HTMLLIElement>() as React.RefObject<HTMLLIElement>;
     }
   });
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before starting drag
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleToggleExpanded = (id: number) => {
+    setExpandedNodes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const activeId = parseInt(event.active.id as string);
+    const entity = entityManager.getEntity(activeId);
+    setDraggedEntity(entity || null);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const overId = event.over ? parseInt(event.over.id as string) : null;
+    setDragOverEntity(overId);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    // Reset drag state
+    setDraggedEntity(null);
+    setDragOverEntity(null);
+
+    if (!over) {
+      return;
+    }
+
+    const activeId = parseInt(active.id as string);
+
+    // Check if dropping on root zone
+    if (over.id === 'root-drop-zone') {
+      console.log(`[HierarchyPanel] Drag end: ${activeId} -> root (removing parent)`);
+      try {
+        const success = entityManager.setParent(activeId, undefined);
+        if (success) {
+          console.log(`[HierarchyPanel] ✅ Successfully made entity ${activeId} root`);
+        } else {
+          console.error(`[HierarchyPanel] ❌ Failed to make entity ${activeId} root`);
+        }
+      } catch (error) {
+        console.error(`[HierarchyPanel] ❌ Error making entity root:`, error);
+      }
+      return;
+    }
+
+    if (active.id === over.id) {
+      return;
+    }
+
+    const overId = parseInt(over.id as string);
+    console.log(`[HierarchyPanel] Drag end: ${activeId} -> ${overId}`);
+
+    // Prevent parenting to self or descendant
+    const activeEntity = entityManager.getEntity(activeId);
+    const overEntity = entityManager.getEntity(overId);
+
+    if (!activeEntity || !overEntity) {
+      console.error(`[HierarchyPanel] ❌ Entity not found: ${activeId} or ${overId}`);
+      return;
+    }
+
+    // Check if overId is a descendant of activeId (would create a cycle)
+    let current: IEntity | undefined = overEntity;
+    while (current?.parentId) {
+      if (current.parentId === activeId) {
+        console.error(`[HierarchyPanel] ❌ Cannot parent to descendant: ${activeId} -> ${overId}`);
+        return;
+      }
+      current = entityManager.getEntity(current.parentId);
+    }
+
+    // Set the dragged entity as a child of the target entity
+    try {
+      const success = entityManager.setParent(activeId, overId);
+      if (success) {
+        console.log(`[HierarchyPanel] ✅ Successfully set parent: ${activeId} -> ${overId}`);
+        // Expand the target entity to show the new child
+        setExpandedNodes((prev) => new Set([...prev, overId]));
+      } else {
+        console.error(`[HierarchyPanel] ❌ Failed to set parent: ${activeId} -> ${overId}`);
+      }
+    } catch (error) {
+      console.error(`[HierarchyPanel] ❌ Error setting parent:`, error);
+    }
+  };
 
   const handleContextMenu = (_: React.MouseEvent, id: number) => {
     setContextMenu({ open: true, entityId: id, anchorRef: itemRefs.current[id] });
@@ -112,30 +314,66 @@ export const HierarchyPanelContent: React.FC = () => {
     handleCloseMenu();
   };
 
+  const allEntityIds = hierarchicalTree.map((node) => node.entity.id.toString());
+
   return (
     <div className="p-2">
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-xs text-gray-400 font-medium">{entityIds.length} objects</span>
+        <span className="text-xs text-gray-400 font-medium">{hierarchicalTree.length} objects</span>
       </div>
 
-      <ul
-        className="space-y-0.5"
-        onContextMenu={(e) => {
-          e.preventDefault();
-        }}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
       >
-        {entityIds.map((id) => (
-          <HierarchyItem
-            key={id}
-            id={id}
-            selected={selectedId === id}
-            onSelect={setSelectedId}
-            onContextMenu={handleContextMenu}
-            ref={itemRefs.current[id]}
-            name={getEntityName(id) || `Entity ${id}`}
-          />
-        ))}
-      </ul>
+        <SortableContext items={allEntityIds} strategy={verticalListSortingStrategy}>
+          {hierarchicalTree.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <div className="mb-2">No entities in scene</div>
+              <div className="text-xs">Create objects using the + menu</div>
+            </div>
+          ) : (
+            <ul
+              className="space-y-0.5"
+              onContextMenu={(e) => {
+                e.preventDefault();
+              }}
+            >
+              {hierarchicalTree.map(({ entity, depth, hasChildren, isExpanded }) => (
+                <HierarchyItem
+                  key={entity.id}
+                  id={entity.id}
+                  selected={selectedId === entity.id}
+                  onSelect={setSelectedId}
+                  onContextMenu={handleContextMenu}
+                  ref={itemRefs.current[entity.id]}
+                  name={entity.name || `Entity ${entity.id}`}
+                  depth={depth}
+                  hasChildren={hasChildren}
+                  isExpanded={isExpanded}
+                  onToggleExpanded={handleToggleExpanded}
+                  isDragOver={dragOverEntity === entity.id}
+                />
+              ))}
+            </ul>
+          )}
+        </SortableContext>
+
+        <RootDropZone isDragging={!!draggedEntity} />
+
+        <DragOverlay>
+          {draggedEntity ? (
+            <div className="bg-gray-800/95 border border-gray-600 rounded px-3 py-2 text-xs text-gray-200 shadow-xl backdrop-blur-sm flex items-center gap-2 transform rotate-2">
+              <CubeIcon className="text-blue-400 w-3 h-3 flex-shrink-0" />
+              <span className="font-medium">{draggedEntity.name}</span>
+              <span className="text-gray-400">→ {dragOverEntity ? 'Nesting...' : 'Move'}</span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       <HierarchyContextMenu
         anchorRef={contextMenu.anchorRef as React.RefObject<HTMLElement>}
