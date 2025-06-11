@@ -78,17 +78,17 @@ export const LightRenderer: React.FC<ILightRendererProps> = ({ entityId }) => {
             color={[color.r, color.g, color.b]}
             intensity={intensity}
             position={[
-              lightData.directionX ?? 5,
-              lightData.directionY ?? 10,
-              lightData.directionZ ?? 5,
+              position.x + (lightData.directionX ?? 0) * 10,
+              position.y + (lightData.directionY ?? -1) * 10,
+              position.z + (lightData.directionZ ?? 0) * 10,
             ]}
+            target-position={[position.x, position.y, position.z]}
             castShadow={lightData.castShadow}
-            shadow-mapSize-width={lightData.shadowMapSize}
-            shadow-mapSize-height={lightData.shadowMapSize}
-            shadow-bias={lightData.shadowBias}
-            shadow-radius={lightData.shadowRadius}
-            shadow-camera-near={lightData.shadowNear}
-            shadow-camera-far={lightData.shadowFar}
+            shadow-mapSize={[lightData.shadowMapSize ?? 1024, lightData.shadowMapSize ?? 1024]}
+            shadow-bias={lightData.shadowBias ?? -0.0001}
+            shadow-radius={lightData.shadowRadius ?? 1.0}
+            shadow-camera-near={lightData.shadowNear ?? 0.1}
+            shadow-camera-far={lightData.shadowFar ?? 50.0}
             shadow-camera-left={-50}
             shadow-camera-right={50}
             shadow-camera-top={50}
@@ -113,15 +113,14 @@ export const LightRenderer: React.FC<ILightRendererProps> = ({ entityId }) => {
           <pointLight
             color={[color.r, color.g, color.b]}
             intensity={intensity}
-            distance={lightData.range}
-            decay={lightData.decay}
+            distance={lightData.range ?? 10}
+            decay={lightData.decay ?? 1}
             castShadow={lightData.castShadow}
-            shadow-mapSize-width={lightData.shadowMapSize}
-            shadow-mapSize-height={lightData.shadowMapSize}
-            shadow-bias={lightData.shadowBias}
-            shadow-radius={lightData.shadowRadius}
-            shadow-camera-near={lightData.shadowNear}
-            shadow-camera-far={lightData.shadowFar}
+            shadow-mapSize={[lightData.shadowMapSize ?? 1024, lightData.shadowMapSize ?? 1024]}
+            shadow-bias={lightData.shadowBias ?? -0.0001}
+            shadow-radius={lightData.shadowRadius ?? 1.0}
+            shadow-camera-near={lightData.shadowNear ?? 0.1}
+            shadow-camera-far={lightData.shadowFar ?? 50.0}
           />
         </group>
       );
@@ -143,17 +142,16 @@ export const LightRenderer: React.FC<ILightRendererProps> = ({ entityId }) => {
           <spotLight
             color={[color.r, color.g, color.b]}
             intensity={intensity}
-            distance={lightData.range}
-            angle={lightData.angle}
-            penumbra={lightData.penumbra}
-            decay={lightData.decay}
+            distance={lightData.range ?? 10}
+            angle={lightData.angle ?? Math.PI / 6}
+            penumbra={lightData.penumbra ?? 0.1}
+            decay={lightData.decay ?? 1}
             castShadow={lightData.castShadow}
-            shadow-mapSize-width={lightData.shadowMapSize}
-            shadow-mapSize-height={lightData.shadowMapSize}
-            shadow-bias={lightData.shadowBias}
-            shadow-radius={lightData.shadowRadius}
-            shadow-camera-near={lightData.shadowNear}
-            shadow-camera-far={lightData.shadowFar}
+            shadow-mapSize={[lightData.shadowMapSize ?? 1024, lightData.shadowMapSize ?? 1024]}
+            shadow-bias={lightData.shadowBias ?? -0.0001}
+            shadow-radius={lightData.shadowRadius ?? 1.0}
+            shadow-camera-near={lightData.shadowNear ?? 0.1}
+            shadow-camera-far={lightData.shadowFar ?? 50.0}
           />
         </group>
       );

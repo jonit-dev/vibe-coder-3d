@@ -353,6 +353,8 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
           meshId: 'cube',
           materialId: 'default',
           enabled: true,
+          castShadows: true,
+          receiveShadows: true,
           material: getDefaultMaterialData(entityId),
         };
         break;
@@ -791,6 +793,8 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
           meshId: 'cube',
           materialId: 'default',
           enabled: true,
+          castShadows: true,
+          receiveShadows: true,
           material: getDefaultMaterialData(entityId),
         };
         break;

@@ -111,10 +111,15 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
       <div className="w-full h-full">
         <Canvas
           camera={{ position: [0, 5, 10], fov: 50 }}
-          shadows
-          onCreated={({ camera }) => {
+          shadows="percentage"
+          onCreated={({ camera, gl }) => {
             // Fix camera orientation - look at origin from a good angle
             camera.lookAt(0, 0, 0);
+
+            // Ensure shadow mapping is enabled with good settings
+            gl.shadowMap.enabled = true;
+            gl.shadowMap.type = 2; // PCFSoftShadowMap
+            console.log('[ViewportPanel] Shadow mapping enabled with PCF soft shadows');
           }}
         >
           {/* Camera System Connector - connects editor camera to camera system */}
