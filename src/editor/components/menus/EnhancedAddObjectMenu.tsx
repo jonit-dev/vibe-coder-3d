@@ -8,9 +8,13 @@ import {
   TbCube,
   TbCylinder,
   TbLamp,
+  TbOctagon,
+  TbPyramid,
+  TbRectangle,
   TbShape,
   TbSphere,
   TbSquare,
+  TbTriangle,
 } from 'react-icons/tb';
 
 import { useEditorStore } from '../../store/editorStore';
@@ -73,7 +77,31 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
           <TbCircle size={18} style={{ border: '2px solid currentColor', borderRadius: '50%' }} />
         ),
       },
-      // Add more advanced shapes in the future
+      {
+        type: 'Trapezoid',
+        label: 'Trapezoid',
+        icon: <TbRectangle size={18} />,
+      },
+      {
+        type: 'Octahedron',
+        label: 'Octahedron',
+        icon: <TbOctagon size={18} />,
+      },
+      {
+        type: 'Prism',
+        label: 'Prism',
+        icon: <TbCylinder size={18} />,
+      },
+      {
+        type: 'Pyramid',
+        label: 'Pyramid',
+        icon: <TbPyramid size={18} />,
+      },
+      {
+        type: 'Capsule',
+        label: 'Capsule',
+        icon: <TbTriangle size={18} />,
+      },
     ],
   },
   {
@@ -126,8 +154,20 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
       return;
     }
 
-    // Only handle the basic shapes for now
-    const validTypes: ShapeType[] = ['Cube', 'Sphere', 'Cylinder', 'Cone', 'Torus', 'Plane'];
+    // Handle all primitive shapes
+    const validTypes: ShapeType[] = [
+      'Cube',
+      'Sphere',
+      'Cylinder',
+      'Cone',
+      'Torus',
+      'Plane',
+      'Trapezoid',
+      'Octahedron',
+      'Prism',
+      'Pyramid',
+      'Capsule',
+    ];
     if (validTypes.includes(item.type as ShapeType)) {
       onAdd(item.type as ShapeType);
     } else {

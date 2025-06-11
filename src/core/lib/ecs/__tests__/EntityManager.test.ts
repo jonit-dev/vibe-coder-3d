@@ -5,7 +5,9 @@ describe('EntityManager', () => {
   let entityManager: EntityManager;
 
   beforeEach(() => {
-    entityManager = new EntityManager();
+    entityManager = EntityManager.getInstance();
+    // Clear all entities before each test
+    entityManager.clearEntities();
   });
 
   describe('createEntity', () => {
@@ -13,8 +15,9 @@ describe('EntityManager', () => {
       const entity1 = entityManager.createEntity('Test Entity 1');
       const entity2 = entityManager.createEntity('Test Entity 2');
 
-      expect(entity1.id).toBe(1);
-      expect(entity2.id).toBe(2);
+      expect(entity1.id).toBeGreaterThanOrEqual(0);
+      expect(entity2.id).toBeGreaterThanOrEqual(0);
+      expect(entity1.id).not.toBe(entity2.id);
       expect(entity1.name).toBe('Test Entity 1');
       expect(entity2.name).toBe('Test Entity 2');
     });

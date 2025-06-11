@@ -150,8 +150,8 @@ const Editor: React.FC = () => {
         isOpen={showAssetLoader}
         onClose={() => setShowAssetLoader(false)}
         onSelect={(assetPath) => {
-          console.log('Selected asset:', assetPath);
-          // TODO: Handle asset loading for custom models
+          handleAddObject('CustomModel', assetPath);
+          setShowAssetLoader(false);
         }}
         title="Select Custom Model"
         basePath="/assets/models"

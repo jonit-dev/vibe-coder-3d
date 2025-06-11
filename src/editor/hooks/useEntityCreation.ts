@@ -54,7 +54,7 @@ export const useEntityCreation = () => {
   );
 
   const addMeshRenderer = useCallback(
-    (entityId: number, meshId: string) => {
+    (entityId: number, meshId: string, modelPath?: string) => {
       // Get color from old material component if it exists
       const materialData = getComponentData(entityId, 'material') as any;
       let color = '#3399ff'; // Default blue like old ECS system
@@ -82,6 +82,7 @@ export const useEntityCreation = () => {
         enabled: true,
         castShadows: true,
         receiveShadows: true,
+        modelPath: modelPath, // Add support for custom model paths
         material: {
           color,
           metalness: 0.0,
@@ -284,6 +285,69 @@ export const useEntityCreation = () => {
     [createEntity, componentManager, getNextNumber],
   );
 
+  const createTrapezoid = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Trapezoid ${getNextNumber('Trapezoid')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'trapezoid');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createOctahedron = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Octahedron ${getNextNumber('Octahedron')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'octahedron');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createPrism = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Prism ${getNextNumber('Prism')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'prism');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createPyramid = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Pyramid ${getNextNumber('Pyramid')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'pyramid');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createCapsule = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Capsule ${getNextNumber('Capsule')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'capsule');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createCustomModel = useCallback(
+    (modelPath: string, name?: string, parentId?: number) => {
+      // Extract filename from path for default naming
+      const filename = modelPath.split('/').pop()?.split('.')[0] || 'Model';
+      const actualName = name || `${filename} ${getNextNumber(filename)}`;
+
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'custom', modelPath);
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
   const deleteEntity = useCallback(
     (entityId: number) => {
       // Remove all components first
@@ -314,6 +378,12 @@ export const useEntityCreation = () => {
     createPointLight,
     createSpotLight,
     createAmbientLight,
+    createTrapezoid,
+    createOctahedron,
+    createPrism,
+    createPyramid,
+    createCapsule,
+    createCustomModel,
     deleteEntity,
   };
 };

@@ -25,8 +25,8 @@ export default defineConfig({
         '**/public/**',
       ],
     },
-    // Enable UI mode for better debugging
-    ui: true,
+    // Enable UI mode for better debugging (disabled by default, use yarn test:ui to enable)
+    ui: false,
     // Reporter configuration
     reporter: ['verbose', 'html'],
     // Timeout settings

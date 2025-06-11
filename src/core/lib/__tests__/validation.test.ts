@@ -1,70 +1,127 @@
 import { describe, it, expect } from 'vitest';
-import { isValidNumber, isValidArray, validateRequiredFields } from '../validation';
+import {
+  isValidPosition,
+  isValidRotation,
+  isValidScale,
+  isValidGameEvent,
+  validatePosition,
+  validateRotation,
+  validateScale,
+  validateGameEvent,
+  createValidationError,
+  getDefaultPosition,
+  getDefaultRotation,
+  getDefaultScale,
+} from '../validation';
 
 describe('validation utilities', () => {
-  describe('isValidNumber', () => {
-    it('should return true for valid numbers', () => {
-      expect(isValidNumber(42)).toBe(true);
-      expect(isValidNumber(0)).toBe(true);
-      expect(isValidNumber(-10)).toBe(true);
-      expect(isValidNumber(3.14)).toBe(true);
+  describe('isValidPosition', () => {
+    it('should return true for valid positions', () => {
+      expect(isValidPosition([0, 0, 0])).toBe(true);
+      expect(isValidPosition([1, 2, 3])).toBe(true);
+      expect(isValidPosition([-1, -2, -3])).toBe(true);
+      expect(isValidPosition([3.14, 0, -1.5])).toBe(true);
     });
 
-    it('should return false for invalid numbers', () => {
-      expect(isValidNumber(NaN)).toBe(false);
-      expect(isValidNumber(Infinity)).toBe(false);
-      expect(isValidNumber(-Infinity)).toBe(false);
-      expect(isValidNumber('42' as any)).toBe(false);
-      expect(isValidNumber(null as any)).toBe(false);
-      expect(isValidNumber(undefined as any)).toBe(false);
-    });
-  });
-
-  describe('isValidArray', () => {
-    it('should return true for valid arrays', () => {
-      expect(isValidArray([1, 2, 3])).toBe(true);
-      expect(isValidArray([])).toBe(true);
-      expect(isValidArray(['a', 'b'])).toBe(true);
-    });
-
-    it('should return false for non-arrays', () => {
-      expect(isValidArray('not array' as any)).toBe(false);
-      expect(isValidArray(42 as any)).toBe(false);
-      expect(isValidArray(null as any)).toBe(false);
-      expect(isValidArray(undefined as any)).toBe(false);
-      expect(isValidArray({} as any)).toBe(false);
-    });
-
-    it('should validate array length when specified', () => {
-      expect(isValidArray([1, 2, 3], 3)).toBe(true);
-      expect(isValidArray([1, 2], 3)).toBe(false);
-      expect(isValidArray([1, 2, 3, 4], 3)).toBe(false);
+    it('should return false for invalid positions', () => {
+      expect(isValidPosition([1, 2])).toBe(false); // only 2 elements
+      expect(isValidPosition([1, 2, 3, 4])).toBe(false); // 4 elements
+      expect(isValidPosition('not array' as any)).toBe(false);
+      expect(isValidPosition(null as any)).toBe(false);
+      expect(isValidPosition(undefined as any)).toBe(false);
+      expect(isValidPosition([1, 'not number', 3] as any)).toBe(false);
     });
   });
 
-  describe('validateRequiredFields', () => {
-    it('should pass validation for complete objects', () => {
-      const obj = { name: 'test', value: 42, flag: true };
-      expect(() => validateRequiredFields(obj, ['name', 'value', 'flag'])).not.toThrow();
+  describe('isValidRotation', () => {
+    it('should return true for valid rotations', () => {
+      expect(isValidRotation([0, 0, 0])).toBe(true);
+      expect(isValidRotation([Math.PI, 0, Math.PI / 2])).toBe(true);
+      expect(isValidRotation([-Math.PI, Math.PI, 0])).toBe(true);
     });
 
-    it('should throw for missing required fields', () => {
-      const obj = { name: 'test' };
-      expect(() => validateRequiredFields(obj, ['name', 'value'])).toThrow(
-        'Missing required field: value',
-      );
+    it('should return false for invalid rotations', () => {
+      expect(isValidRotation([1, 2])).toBe(false); // only 2 elements
+      expect(isValidRotation([1, 2, 3, 4])).toBe(false); // 4 elements
+      expect(isValidRotation('not array' as any)).toBe(false);
+      expect(isValidRotation([1, 'not number', 3] as any)).toBe(false);
+    });
+  });
+
+  describe('isValidScale', () => {
+    it('should return true for valid scales', () => {
+      expect(isValidScale([1, 1, 1])).toBe(true);
+      expect(isValidScale([2, 3, 0.5])).toBe(true);
+      expect(isValidScale([0.1, 10, 1])).toBe(true);
     });
 
-    it('should throw for null/undefined values', () => {
-      const obj = { name: 'test', value: null };
-      expect(() => validateRequiredFields(obj, ['name', 'value'])).toThrow(
-        'Field value cannot be null or undefined',
-      );
+    it('should return false for invalid scales', () => {
+      expect(isValidScale([0, 1, 1])).toBe(false); // zero scale
+      expect(isValidScale([-1, 1, 1])).toBe(false); // negative scale
+      expect(isValidScale([1, 2])).toBe(false); // only 2 elements
+      expect(isValidScale('not array' as any)).toBe(false);
+    });
+  });
+
+  describe('validatePosition', () => {
+    it('should validate correct positions', () => {
+      expect(() => validatePosition([0, 0, 0])).not.toThrow();
+      expect(() => validatePosition([1, 2, 3])).not.toThrow();
+      expect(() => validatePosition([-1, -2, -3])).not.toThrow();
     });
 
-    it('should handle empty required fields array', () => {
-      const obj = { name: 'test' };
-      expect(() => validateRequiredFields(obj, [])).not.toThrow();
+    it('should throw for invalid positions', () => {
+      expect(() => validatePosition([1, 2])).toThrow();
+      expect(() => validatePosition('not array')).toThrow();
+      expect(() => validatePosition(null)).toThrow();
+    });
+  });
+
+  describe('validateGameEvent', () => {
+    it('should validate correct game events', () => {
+      const validEvent = {
+        type: 'test-event',
+        timestamp: Date.now(),
+        data: { key: 'value' },
+      };
+      expect(() => validateGameEvent(validEvent)).not.toThrow();
+    });
+
+    it('should throw for invalid game events', () => {
+      expect(() => validateGameEvent({})).toThrow(); // missing required fields
+      expect(() => validateGameEvent({ type: 'test' })).toThrow(); // missing timestamp
+      expect(() => validateGameEvent({ timestamp: 'not number' })).toThrow(); // invalid timestamp
+    });
+  });
+
+  describe('createValidationError', () => {
+    it('should create validation error with message', () => {
+      const error = createValidationError('Test error');
+      expect(error.message).toContain('Validation Error: Test error');
+    });
+
+    it('should include path when provided', () => {
+      const error = createValidationError('Test error', 'test.path');
+      expect(error.message).toContain('at test.path');
+    });
+
+    it('should include value when provided', () => {
+      const error = createValidationError('Test error', undefined, 'test-value');
+      expect(error.message).toContain('received: "test-value"');
+    });
+  });
+
+  describe('default value helpers', () => {
+    it('should return correct default position', () => {
+      expect(getDefaultPosition()).toEqual([0, 0, 0]);
+    });
+
+    it('should return correct default rotation', () => {
+      expect(getDefaultRotation()).toEqual([0, 0, 0]);
+    });
+
+    it('should return correct default scale', () => {
+      expect(getDefaultScale()).toEqual([1, 1, 1]);
     });
   });
 });

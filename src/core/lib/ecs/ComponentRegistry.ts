@@ -639,7 +639,12 @@ export function combineRenderingContributions(
     cone: 'Cone',
     torus: 'Torus',
     plane: 'Plane',
-    capsule: 'Cube', // Fallback to cube for now
+    trapezoid: 'Trapezoid',
+    octahedron: 'Octahedron',
+    prism: 'Prism',
+    pyramid: 'Pyramid',
+    capsule: 'Capsule',
+    custom: 'custom',
   };
 
   entityComponents.forEach(({ type, data }) => {

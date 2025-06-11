@@ -39,6 +39,12 @@ export const useEditorHandlers = ({
     createTorus,
     createPlane,
     createCamera,
+    createTrapezoid,
+    createOctahedron,
+    createPrism,
+    createPyramid,
+    createCapsule,
+    createCustomModel,
   } = useEntityCreation();
 
   // Scene action hooks - get both new and legacy methods
@@ -59,7 +65,7 @@ export const useEditorHandlers = ({
 
   // Entity creation handler
   const handleAddObject = useCallback(
-    async (type: ShapeType) => {
+    async (type: ShapeType, modelPath?: string) => {
       try {
         let entity;
         switch (type) {
@@ -81,11 +87,30 @@ export const useEditorHandlers = ({
           case 'Plane':
             entity = createPlane();
             break;
+          case 'Trapezoid':
+            entity = createTrapezoid();
+            break;
+          case 'Octahedron':
+            entity = createOctahedron();
+            break;
+          case 'Prism':
+            entity = createPrism();
+            break;
+          case 'Pyramid':
+            entity = createPyramid();
+            break;
+          case 'Capsule':
+            entity = createCapsule();
+            break;
           case 'Camera':
             entity = createCamera();
             break;
           default:
-            entity = createEntity(type);
+            if (modelPath) {
+              entity = createCustomModel(modelPath);
+            } else {
+              entity = createEntity(type);
+            }
             break;
         }
 
@@ -108,7 +133,13 @@ export const useEditorHandlers = ({
       createCone,
       createTorus,
       createPlane,
+      createTrapezoid,
+      createOctahedron,
+      createPrism,
+      createPyramid,
+      createCapsule,
       createCamera,
+      createCustomModel,
       setSelectedId,
       setStatusMessage,
       setShowAddMenu,

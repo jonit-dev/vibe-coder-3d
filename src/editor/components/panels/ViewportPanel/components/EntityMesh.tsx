@@ -1,5 +1,5 @@
-import { useTexture } from '@react-three/drei';
-import React, { useMemo } from 'react';
+import { useGLTF, useTexture } from '@react-three/drei';
+import React, { Suspense, useMemo } from 'react';
 import type { Mesh, Texture } from 'three';
 
 import { CameraGeometry } from './CameraGeometry';
@@ -16,6 +16,29 @@ interface IEntityMeshProps {
   entityComponents?: Array<{ type: string; data: any }>;
 }
 
+const CustomModelMesh: React.FC<{
+  modelPath: string;
+  meshRef: React.RefObject<Mesh | null>;
+  renderingContributions: any;
+  entityId: number;
+  onMeshClick: (e: any) => void;
+}> = ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick }) => {
+  const { scene } = useGLTF(modelPath);
+
+  return (
+    <group
+      ref={meshRef as any}
+      userData={{ entityId }}
+      onClick={onMeshClick}
+      castShadow={renderingContributions.castShadow}
+      receiveShadow={renderingContributions.receiveShadow}
+      visible={renderingContributions.visible}
+    >
+      <primitive object={scene.clone()} />
+    </group>
+  );
+};
+
 export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
   ({
     meshRef,
@@ -30,6 +53,25 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     // Don't render anything if no mesh type is set
     if (!meshType) {
       return null;
+    }
+
+    // Check if this is a custom model
+    const meshRendererComponent = entityComponents.find((c) => c.type === 'MeshRenderer');
+    const modelPath = meshRendererComponent?.data?.modelPath;
+
+    // If it's a custom model with a valid path, render the custom model
+    if (meshType === 'custom' && modelPath) {
+      return (
+        <Suspense fallback={null}>
+          <CustomModelMesh
+            modelPath={modelPath}
+            meshRef={meshRef}
+            renderingContributions={renderingContributions}
+            entityId={entityId}
+            onMeshClick={onMeshClick}
+          />
+        </Suspense>
+      );
     }
 
     // Load textures if materialType is 'texture'
@@ -88,6 +130,16 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           return <torusGeometry args={[0.5, 0.2, 16, 100]} />;
         case 'Plane':
           return <planeGeometry args={[1, 1]} />;
+        case 'Trapezoid':
+          return <cylinderGeometry args={[0.3, 0.7, 1, 4]} />; // 4-sided cylinder for trapezoid approximation
+        case 'Octahedron':
+          return <octahedronGeometry args={[0.5, 0]} />;
+        case 'Prism':
+          return <cylinderGeometry args={[0.5, 0.5, 1, 6]} />; // 6-sided prism
+        case 'Pyramid':
+          return <coneGeometry args={[0.5, 1, 4]} />; // 4-sided cone for pyramid
+        case 'Capsule':
+          return <capsuleGeometry args={[0.3, 0.4, 4, 16]} />; // radius, length, capSegments, radialSegments
         case 'Camera':
           return null; // Special case - uses CameraGeometry component
         case 'Light':

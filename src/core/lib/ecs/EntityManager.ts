@@ -259,6 +259,11 @@ export class EntityManager {
     const entity = this.getEntity(entityId);
     if (!entity) return false;
 
+    // Prevent circular parent-child relationships
+    if (newParentId && this.wouldCreateCircularDependency(entityId, newParentId)) {
+      return false;
+    }
+
     // Remove from current parent
     if (entity.parentId) {
       const currentParent = this.getEntity(entity.parentId);
@@ -292,6 +297,22 @@ export class EntityManager {
     });
 
     return true;
+  }
+
+  private wouldCreateCircularDependency(entityId: EntityId, potentialParentId: EntityId): boolean {
+    let currentId = potentialParentId;
+
+    // Walk up the parent chain to see if we encounter the entityId
+    while (currentId) {
+      if (currentId === entityId) {
+        return true; // This would create a circular dependency
+      }
+
+      const parent = this.getEntity(currentId);
+      currentId = parent?.parentId;
+    }
+
+    return false;
   }
 
   getEntityCount(): number {

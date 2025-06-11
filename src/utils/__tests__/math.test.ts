@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-// Simple math utilities for testing
-export const add = (a: number, b: number): number => a + b;
-export const multiply = (a: number, b: number): number => a * b;
-export const isEven = (n: number): boolean => n % 2 === 0;
-export const clamp = (value: number, min: number, max: number): number =>
-  Math.max(min, Math.min(max, value));
+import { add, multiply, isEven, clamp } from '../math';
 
 describe('Math utilities', () => {
   describe('add', () => {
