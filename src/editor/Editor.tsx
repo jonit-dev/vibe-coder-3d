@@ -51,9 +51,9 @@ const Editor: React.FC = () => {
   // All action handlers encapsulated in custom hook
   const {
     handleAddObject,
-    handleSaveWithStatus,
-    handleLoadWithStatus,
-    handleClearWithStatus,
+    // handleSaveWithStatus,
+    // handleLoadWithStatus,
+    // handleClearWithStatus,
     triggerFileLoad,
     handlePlayWithStatus,
     handlePauseWithStatus,

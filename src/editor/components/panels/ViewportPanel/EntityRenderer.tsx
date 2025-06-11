@@ -28,6 +28,7 @@ export interface IEntityRendererProps {
   onTransformChange?: (values: [number, number, number]) => void;
   setGizmoMode?: (mode: GizmoMode) => void;
   setIsTransforming?: (isTransforming: boolean) => void;
+  allEntityIds?: number[];
 }
 
 export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
@@ -39,6 +40,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     onTransformChange,
     setGizmoMode,
     setIsTransforming,
+    allEntityIds = [],
   }) => {
     const isPlaying = useEditorStore((s) => s.isPlaying);
 
@@ -82,6 +84,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       position: position || [0, 0, 0], // Provide fallback to avoid null issues
       rotationRadians: rotationRadians || [0, 0, 0],
       scale: scale || [1, 1, 1],
+      allEntityIds,
     });
 
     // Check if this entity is being followed by the main camera (first-person view)

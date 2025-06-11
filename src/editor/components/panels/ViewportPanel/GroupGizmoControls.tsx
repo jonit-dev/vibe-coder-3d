@@ -1,5 +1,5 @@
 import { TransformControls } from '@react-three/drei';
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Object3D } from 'three';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
@@ -28,6 +28,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
 
     // Create a virtual group center object for the gizmo to attach to
     const groupCenterRef = useRef<Object3D | null>(null);
+    const [gizmoObject, setGizmoObject] = useState<Object3D | null>(null);
 
     console.log(
       `[GroupGizmoControls] Rendering with ${selectedIds.length} selected IDs:`,
@@ -269,7 +270,12 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
     return (
       <group>
         {/* Invisible object for the gizmo to attach to - positioned manually to avoid React updates */}
-        <object3D ref={groupCenterRef}>
+        <object3D
+          ref={(obj) => {
+            groupCenterRef.current = obj;
+            setGizmoObject(obj);
+          }}
+        >
           <mesh visible={false}>
             <boxGeometry args={[0.1, 0.1, 0.1]} />
             <meshBasicMaterial />
@@ -277,10 +283,10 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
         </object3D>
 
         {/* Transform controls attached to the group center */}
-        {groupCenterRef.current && (
+        {gizmoObject && (
           <TransformControls
             ref={transformRef}
-            object={groupCenterRef.current}
+            object={gizmoObject}
             mode={mode}
             size={0.75}
             translationSnap={0.25}

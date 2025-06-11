@@ -173,6 +173,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
                     isPrimary && !hasMultipleSelected ? setIsTransforming : undefined
                   }
                   setGizmoMode={isPrimary && !hasMultipleSelected ? setGizmoMode : undefined}
+                  allEntityIds={entityIds}
                 />
               );
             })}

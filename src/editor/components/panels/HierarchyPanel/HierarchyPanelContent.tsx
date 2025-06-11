@@ -4,7 +4,7 @@
  * Group Selection Features:
  * - Click: Select entity and all its children
  * - Ctrl+Click: Add entity and its children to selection, or remove if already selected
- * - Shift+Click: Add entity and its children to selection
+ * - Shift+Click: Range selection from last selected to current entity
  * - Delete Key: Delete all selected entities
  * - Escape Key: Clear selection
  * - Context menu shows different options for single vs group selection
@@ -176,10 +176,14 @@ export const HierarchyPanelContent: React.FC = () => {
       `[HierarchyPanel] Selecting entity ${entityId}, ctrl=${event?.ctrlKey}, shift=${event?.shiftKey}`,
     );
 
+    // Get flat list of entity IDs in hierarchy order for range selection
+    const allEntityIds = hierarchicalTree.map((node) => node.entity.id);
+
     groupSelection.handleHierarchySelection(entityId, {
       ctrlKey: event?.ctrlKey || false,
       shiftKey: event?.shiftKey || false,
       selectChildren: true, // Always select children in hierarchy
+      allEntityIds, // Pass hierarchy order for range selection
     });
 
     console.log(`[HierarchyPanel] After selection, selectedIds:`, groupSelection.selectedIds);

@@ -204,8 +204,6 @@ export const useEntityCreation = () => {
         shadowMapSize: 2048,
         shadowBias: -0.0001,
         shadowRadius: 1.0,
-        shadowNear: 0.1,
-        shadowFar: 50.0,
       };
       componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
 
@@ -231,8 +229,6 @@ export const useEntityCreation = () => {
         shadowMapSize: 1024,
         shadowBias: -0.0001,
         shadowRadius: 1.0,
-        shadowNear: 0.1,
-        shadowFar: 50.0,
       };
       componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
 
@@ -260,8 +256,6 @@ export const useEntityCreation = () => {
         shadowMapSize: 1024,
         shadowBias: -0.0001,
         shadowRadius: 1.0,
-        shadowNear: 0.1,
-        shadowFar: 50.0,
       };
       componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
 
@@ -281,6 +275,7 @@ export const useEntityCreation = () => {
         color: { r: 0.4, g: 0.4, b: 0.4 },
         intensity: 0.5,
         enabled: true,
+        castShadow: false,
       };
       componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
 

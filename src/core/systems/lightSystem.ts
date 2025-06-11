@@ -30,7 +30,7 @@ function getLightQuery() {
  * This system runs in the EngineLoop and handles the needsUpdate flag
  * Returns the number of lights that were processed
  */
-export function lightSystem(deltaTime: number): number {
+export function lightSystem(_deltaTime: number): number {
   // Get the query (lazy-initialized)
   const query = getLightQuery();
   if (!query) {

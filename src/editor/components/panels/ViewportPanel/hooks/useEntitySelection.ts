@@ -15,6 +15,10 @@ interface IUseEntitySelectionProps {
   scale: [number, number, number];
 }
 
+interface IUseEntitySelectionPropsWithAllEntities extends IUseEntitySelectionProps {
+  allEntityIds?: number[];
+}
+
 export const useEntitySelection = ({
   entityId,
   selected,
@@ -23,7 +27,8 @@ export const useEntitySelection = ({
   position,
   rotationRadians,
   scale,
-}: IUseEntitySelectionProps) => {
+  allEntityIds = [],
+}: IUseEntitySelectionPropsWithAllEntities) => {
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
   const groupSelection = useGroupSelection();
 
@@ -59,11 +64,12 @@ export const useEntitySelection = ({
         ctrlKey: e.ctrlKey || false,
         shiftKey: e.shiftKey || false,
         selectChildren: false, // Don't auto-select children on viewport clicks (only hierarchy does that)
+        allEntityIds, // Pass entity IDs for range selection
       });
 
       // Note: setSelectedId is managed by the group selection system now
     },
-    [entityId, setSelectedId, groupSelection],
+    [entityId, setSelectedId, groupSelection, allEntityIds],
   );
 
   // Create a pure Three.js outline that updates without React

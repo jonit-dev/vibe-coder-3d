@@ -87,6 +87,30 @@ export const useGroupSelection = () => {
     [getAllDescendants, selectedIds, removeFromSelection],
   );
 
+  // Select range of entities in hierarchy order
+  const selectRange = useCallback(
+    (startEntityId: number, endEntityId: number, allEntityIds: number[]) => {
+      const startIndex = allEntityIds.findIndex((id) => id === startEntityId);
+      const endIndex = allEntityIds.findIndex((id) => id === endEntityId);
+
+      if (startIndex === -1 || endIndex === -1) {
+        console.warn(`[useGroupSelection] Cannot find range entities in hierarchy`);
+        return;
+      }
+
+      const minIndex = Math.min(startIndex, endIndex);
+      const maxIndex = Math.max(startIndex, endIndex);
+      const rangeIds = allEntityIds.slice(minIndex, maxIndex + 1);
+
+      console.log(
+        `[useGroupSelection] Selecting range: indices ${minIndex}-${maxIndex}, entities:`,
+        rangeIds,
+      );
+      setSelectedIds(rangeIds);
+    },
+    [setSelectedIds],
+  );
+
   // Handle hierarchy selection with modifiers
   const handleHierarchySelection = useCallback(
     (
@@ -95,9 +119,15 @@ export const useGroupSelection = () => {
         ctrlKey?: boolean;
         shiftKey?: boolean;
         selectChildren?: boolean;
+        allEntityIds?: number[]; // For range selection
       } = {},
     ) => {
-      const { ctrlKey = false, shiftKey = false, selectChildren = true } = options;
+      const {
+        ctrlKey = false,
+        shiftKey = false,
+        selectChildren = true,
+        allEntityIds = [],
+      } = options;
 
       console.log(
         `[useGroupSelection] handleHierarchySelection: entityId=${entityId}, selectChildren=${selectChildren}, ctrl=${ctrlKey}, shift=${shiftKey}`,
@@ -118,12 +148,19 @@ export const useGroupSelection = () => {
           toggleSelection(entityId);
         }
       } else if (shiftKey) {
-        // Shift+click: add to selection (future enhancement)
-        if (selectChildren) {
-          console.log(`[useGroupSelection] Adding group to selection (shift)`);
-          addGroupToSelection(entityId);
+        // Shift+click: range selection from last selected to current
+        if (selectedIds.length > 0 && allEntityIds.length > 0) {
+          const lastSelected = selectedIds[selectedIds.length - 1];
+          console.log(`[useGroupSelection] Range selection from ${lastSelected} to ${entityId}`);
+          selectRange(lastSelected, entityId, allEntityIds);
         } else {
-          addToSelection(entityId);
+          // No previous selection, treat as normal selection
+          if (selectChildren) {
+            console.log(`[useGroupSelection] No previous selection, selecting with children`);
+            selectWithChildren(entityId);
+          } else {
+            addToSelection(entityId);
+          }
         }
       } else {
         // Normal click: select only this entity (and children if enabled)
@@ -150,6 +187,7 @@ export const useGroupSelection = () => {
       removeGroupFromSelection,
       toggleSelection,
       addToSelection,
+      selectRange,
     ],
   );
 
@@ -189,6 +227,7 @@ export const useGroupSelection = () => {
     selectSingle,
     addGroupToSelection,
     removeGroupFromSelection,
+    selectRange,
     handleHierarchySelection,
     isSelected,
     isPrimarySelection,
