@@ -7,6 +7,7 @@ import { CameraBackgroundManager } from '@/core/components/cameras/CameraBackgro
 import { CameraControlsManager } from '@/core/components/cameras/CameraControlsManager';
 import { CameraFollowManager } from '@/core/components/cameras/CameraFollowManager';
 import { GameCameraManager } from '@/core/components/cameras/GameCameraManager';
+import { EnvironmentLighting } from '@/core/components/lighting/EnvironmentLighting';
 import { useEvent } from '@/core/hooks/useEvent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { isValidEntityId } from '@/core/lib/ecs/utils';
@@ -127,6 +128,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 
           {/* Camera Background Manager - handles scene background based on camera settings */}
           <CameraBackgroundManager />
+
+          {/* Environment Lighting Manager - handles IBL and ambient lighting */}
+          <EnvironmentLighting />
 
           {/* Camera Controls Manager - handles runtime camera controls */}
           <CameraControlsManager isPlaying={isPlaying} isTransforming={isTransforming} />

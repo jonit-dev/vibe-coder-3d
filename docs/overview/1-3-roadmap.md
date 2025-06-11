@@ -165,11 +165,14 @@ _Goal: Complete the rendering pipeline with materials, lighting, and camera mana
     - ✅ Real-time material preview and testing
     - Material presets and template library
     - Material library and sharing system
-  - **Enhanced Lighting System:**
-    - Directional, point, and spot light management
-    - Environment lighting and IBL setup
-    - Shadow configuration and optimization
-    - Dynamic lighting controls
+  - ✅ **Enhanced Lighting System:**
+    - ✅ Directional, point, and spot light management
+    - ✅ Ambient light support
+    - ✅ Shadow configuration and optimization
+    - ✅ Dynamic lighting controls with inspector UI
+    - ✅ Three.js integration with LightRenderer component
+    - ✅ Environment lighting and IBL setup
+    - ✅ Light entity creation helpers
   - ✅ **Enhanced Camera System:**
     - ✅ Multiple camera types (perspective, orthographic, cinematic)
     - Camera animation and interpolation systems

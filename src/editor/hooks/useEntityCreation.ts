@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
+import { LightData } from '@/core/lib/ecs/components/definitions/LightComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
@@ -185,6 +186,109 @@ export const useEntityCreation = () => {
     [createEntity, componentManager, getNextNumber],
   );
 
+  const createDirectionalLight = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Directional Light ${getNextNumber('Directional Light')}`;
+      const entity = createEntity(actualName, parentId);
+
+      // Add Light component with directional light defaults
+      const defaultLightData: LightData = {
+        lightType: 'directional',
+        color: { r: 1.0, g: 1.0, b: 1.0 },
+        intensity: 1.0,
+        enabled: true,
+        castShadow: true,
+        directionX: 0.0,
+        directionY: -1.0,
+        directionZ: 0.0,
+        shadowMapSize: 2048,
+        shadowBias: -0.0001,
+        shadowRadius: 1.0,
+        shadowNear: 0.1,
+        shadowFar: 50.0,
+      };
+      componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
+
+      return entity;
+    },
+    [createEntity, componentManager, getNextNumber],
+  );
+
+  const createPointLight = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Point Light ${getNextNumber('Point Light')}`;
+      const entity = createEntity(actualName, parentId);
+
+      // Add Light component with point light defaults
+      const defaultLightData: LightData = {
+        lightType: 'point',
+        color: { r: 1.0, g: 1.0, b: 1.0 },
+        intensity: 1.0,
+        enabled: true,
+        castShadow: true,
+        range: 10.0,
+        decay: 1.0,
+        shadowMapSize: 1024,
+        shadowBias: -0.0001,
+        shadowRadius: 1.0,
+        shadowNear: 0.1,
+        shadowFar: 50.0,
+      };
+      componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
+
+      return entity;
+    },
+    [createEntity, componentManager, getNextNumber],
+  );
+
+  const createSpotLight = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Spot Light ${getNextNumber('Spot Light')}`;
+      const entity = createEntity(actualName, parentId);
+
+      // Add Light component with spot light defaults
+      const defaultLightData: LightData = {
+        lightType: 'spot',
+        color: { r: 1.0, g: 1.0, b: 1.0 },
+        intensity: 1.0,
+        enabled: true,
+        castShadow: true,
+        range: 10.0,
+        decay: 1.0,
+        angle: Math.PI / 6, // 30 degrees
+        penumbra: 0.1,
+        shadowMapSize: 1024,
+        shadowBias: -0.0001,
+        shadowRadius: 1.0,
+        shadowNear: 0.1,
+        shadowFar: 50.0,
+      };
+      componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
+
+      return entity;
+    },
+    [createEntity, componentManager, getNextNumber],
+  );
+
+  const createAmbientLight = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Ambient Light ${getNextNumber('Ambient Light')}`;
+      const entity = createEntity(actualName, parentId);
+
+      // Add Light component with ambient light defaults
+      const defaultLightData: LightData = {
+        lightType: 'ambient',
+        color: { r: 0.4, g: 0.4, b: 0.4 },
+        intensity: 0.5,
+        enabled: true,
+      };
+      componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
+
+      return entity;
+    },
+    [createEntity, componentManager, getNextNumber],
+  );
+
   const deleteEntity = useCallback(
     (entityId: number) => {
       // Remove all components first
@@ -211,6 +315,10 @@ export const useEntityCreation = () => {
     createTorus,
     createPlane,
     createCamera,
+    createDirectionalLight,
+    createPointLight,
+    createSpotLight,
+    createAmbientLight,
     deleteEntity,
   };
 };
