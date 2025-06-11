@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import * as THREE from 'three';
 
 import { AssetKeys, IModelConfig } from '@/core/types/assets';
 
@@ -8,7 +9,7 @@ type UseAssetProps = Partial<IModelConfig>;
 
 export function useAsset(key: AssetKeys, overrides?: UseAssetProps) {
   const { asset, config } = useAssetResource(key);
-  const ref = useRef<any>(null);
+  const ref = useRef<THREE.Object3D | null>(null);
 
   useEffect(() => {
     if (asset && ref.current) {
@@ -34,7 +35,7 @@ export function useAsset(key: AssetKeys, overrides?: UseAssetProps) {
   }, [asset, config, overrides]);
 
   // Only return .scene if asset has it (GLTF), otherwise undefined
-  const model = asset && 'scene' in asset ? (asset as any).scene : undefined;
+  const model = asset && 'scene' in asset ? (asset as { scene: THREE.Object3D }).scene : undefined;
 
   return { gltf: asset, model, ref, config };
 }

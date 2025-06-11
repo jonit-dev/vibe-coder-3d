@@ -25,7 +25,7 @@ export const CameraControlsManager: React.FC<ICameraControlsManagerProps> = ({
   isTransforming,
 }) => {
   const [updateTrigger, setUpdateTrigger] = useState(0);
-  const orbitControlsRef = useRef<any>(null);
+  const orbitControlsRef = useRef<typeof OrbitControls | null>(null);
 
   // Find the main camera and get its control mode
   const findMainCameraData = useCallback(() => {
@@ -91,7 +91,7 @@ export const CameraControlsManager: React.FC<ICameraControlsManagerProps> = ({
     }
 
     const { cameraData } = mainCameraData;
-    const controlMode = (cameraData as any).controlMode ?? 'free';
+    const controlMode = (cameraData as CameraData & { controlMode?: string }).controlMode ?? 'free';
 
     // Update target in free mode with follow enabled (even when transforming)
     if (controlMode === 'free' && cameraData.enableSmoothing && cameraData.followTarget) {

@@ -14,7 +14,7 @@ export const useEntityData = () => {
   );
 
   const updateComponentData = useCallback(
-    (entityId: number, componentType: string, data: any) => {
+    (entityId: number, componentType: string, data: unknown) => {
       const currentComponent = componentManager.getComponent(entityId, componentType);
       if (currentComponent) {
         componentManager.updateComponent(entityId, componentType, data);

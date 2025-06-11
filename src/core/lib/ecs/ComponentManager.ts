@@ -27,7 +27,7 @@ type ComponentEvent = {
   type: 'component-added' | 'component-updated' | 'component-removed';
   entityId: EntityId;
   componentType: ComponentType;
-  data?: any;
+  data?: unknown;
 };
 
 type ComponentEventListener = (event: ComponentEvent) => void;
@@ -207,8 +207,8 @@ export class ComponentManager {
     return true;
   }
 
-  getComponentsForEntity(entityId: EntityId): IComponent<any>[] {
-    const components: IComponent<any>[] = [];
+  getComponentsForEntity(entityId: EntityId): IComponent<unknown>[] {
+    const components: IComponent<unknown>[] = [];
 
     Object.entries(componentMap).forEach(([typeString, bitECSComponent]) => {
       if (hasComponent(this.world, bitECSComponent, entityId)) {

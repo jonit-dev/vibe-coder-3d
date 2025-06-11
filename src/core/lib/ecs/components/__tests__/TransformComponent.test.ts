@@ -47,7 +47,7 @@ describe('TransformComponent', () => {
         position: [1, 2], // Missing z component
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
-      } as ITransformData;
+      } as unknown as ITransformData;
 
       expect(() => TransformComponent.validate(invalidData)).toThrow();
     });

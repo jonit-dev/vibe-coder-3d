@@ -44,10 +44,10 @@ export function useModelDebug({ model, config, debug = false }: IUseModelDebugOp
           if (skinnedMesh.skeleton) {
             console.log(
               'Model: SkinnedMesh bones:',
-              skinnedMesh.skeleton.bones.map((b: any) => b.name),
+              skinnedMesh.skeleton.bones.map((b: THREE.Bone) => b.name),
             );
           }
-        } else if ((obj as any).isMesh) {
+        } else if ((obj as THREE.Mesh).isMesh) {
           console.log('Model: Found Mesh:', obj.name, obj);
         }
       });
@@ -188,7 +188,7 @@ export function useModelDebug({ model, config, debug = false }: IUseModelDebugOp
             {(() => {
               const clone = model.clone();
               clone.traverse((obj: THREE.Object3D) => {
-                if ((obj as any).isMesh) {
+                if ((obj as THREE.Mesh).isMesh) {
                   const mesh = obj as THREE.Mesh;
                   if (mesh.material) {
                     mesh.material = createWireframeMaterial();
@@ -278,7 +278,7 @@ function logObject3DHierarchy(obj: THREE.Object3D, depth = 0) {
     if (skeleton) {
       console.log(
         `${pad}  SkinnedMesh bones:`,
-        skeleton.bones.map((b: any) => b.name),
+        skeleton.bones.map((b: THREE.Bone) => b.name),
       );
     }
   }

@@ -6,7 +6,7 @@ import {
 } from '@/core/lib/ecs/ComponentRegistry';
 
 interface IUseEntityMeshProps {
-  entityComponents: any[];
+  entityComponents: Array<{ type: string; data: unknown }>;
   isPlaying: boolean;
 }
 

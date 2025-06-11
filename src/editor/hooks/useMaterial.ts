@@ -25,7 +25,7 @@ export const useMaterial = (selectedEntity: number | null): IUseMaterial => {
         materialData.data !== null
       ) {
         // Convert RGB array to hex color if it's an array
-        const colorValue = (materialData.data as any).color;
+        const colorValue = (materialData.data as { color?: number[] | string }).color;
         if (Array.isArray(colorValue)) {
           const [r, g, b] = colorValue;
           const hex = `#${Math.round(r * 255)

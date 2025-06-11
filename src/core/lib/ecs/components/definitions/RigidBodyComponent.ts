@@ -41,11 +41,11 @@ export const rigidBodyComponent = ComponentFactory.create({
     restitution: Types.f32,
     density: Types.f32,
   },
-  serialize: (eid: EntityId, component: any) => {
+  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => {
     const bodyType = getStringFromHash(component.bodyTypeHash[eid]) || 'dynamic';
     return {
       enabled: Boolean(component.enabled[eid]),
-      bodyType: bodyType as any,
+      bodyType: bodyType as 'dynamic' | 'kinematic' | 'static',
       type: bodyType,
       mass: component.mass[eid],
       gravityScale: component.gravityScale[eid],
@@ -57,7 +57,7 @@ export const rigidBodyComponent = ComponentFactory.create({
       },
     };
   },
-  deserialize: (eid: EntityId, data, component: any) => {
+  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
     component.enabled[eid] = data.enabled ? 1 : 0;
     component.bodyTypeHash[eid] = storeString(data.bodyType || data.type || 'dynamic');
     component.mass[eid] = data.mass ?? 1;

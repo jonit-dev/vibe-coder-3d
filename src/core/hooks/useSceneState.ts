@@ -49,7 +49,7 @@ export const useSceneState = () => {
 
   // Create a new entity with optional components
   const createEntity = useCallback(
-    (components?: Array<{ type: string; data: any }>) => {
+    (components?: Array<{ type: string; data: unknown }>) => {
       const entityId = world.addEntity();
 
       // Add components if provided

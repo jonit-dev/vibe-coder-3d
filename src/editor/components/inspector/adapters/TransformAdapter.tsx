@@ -1,11 +1,12 @@
 import React from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { TransformData } from '@/core/lib/ecs/components/definitions/TransformComponent';
 import { TransformSection } from '@/editor/components/panels/InspectorPanel/Transform/TransformSection';
 
 interface ITransformAdapterProps {
-  transformComponent: any;
-  updateComponent: (type: string, data: any) => boolean;
+  transformComponent: IComponent<TransformData> | null;
+  updateComponent: (type: string, data: TransformData) => boolean;
   removeComponent?: (type: string) => boolean;
   entityId: number;
 }

@@ -32,7 +32,7 @@ export class TransformComponent implements IComponent<ITransformData> {
 
   constructor(
     public entityId: EntityId,
-    public type: KnownComponentTypes,
+    public type: typeof KnownComponentTypes.TRANSFORM,
     public data: ITransformData,
   ) {}
 
@@ -64,7 +64,9 @@ export class TransformComponent implements IComponent<ITransformData> {
       validateRotation(data.rotation);
       validateScale(data.scale);
     } catch (error) {
-      throw new Error(`Transform validation failed: ${error.message}`);
+      throw new Error(
+        `Transform validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -90,7 +92,7 @@ export class TransformComponent implements IComponent<ITransformData> {
     };
   }
 
-  get componentType(): KnownComponentTypes {
+  get componentType(): typeof KnownComponentTypes.TRANSFORM {
     return TransformComponent.componentType;
   }
 }

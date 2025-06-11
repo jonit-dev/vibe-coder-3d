@@ -46,7 +46,7 @@ export function useEntity(entityId: number | null, componentId: string): boolean
  * @param components Array of ECS components to query for
  * @returns Array of entity IDs matching the query
  */
-export function useEntityQuery(components: any[]): number[] {
+export function useEntityQuery(components: unknown[]): number[] {
   const [entities, setEntities] = useState<number[]>([]);
   const query = defineQuery(components);
 

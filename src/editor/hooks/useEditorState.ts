@@ -21,10 +21,16 @@ interface IPhysicsState {
   setIsPlaying: (playing: boolean) => void;
 }
 
+interface IPerformanceMetrics {
+  averageFPS: number;
+  frameTime: number;
+  renderCount: number;
+}
+
 interface IAppState {
   statusMessage: string;
   setStatusMessage: (message: string) => void;
-  performanceMetrics: { averageFPS?: number };
+  performanceMetrics: IPerformanceMetrics;
 }
 
 export const useEntityState = (): IEntityState => {

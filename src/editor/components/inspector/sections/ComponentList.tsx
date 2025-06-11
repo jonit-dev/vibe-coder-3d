@@ -1,5 +1,12 @@
 import React from 'react';
 
+import { IComponent } from '@/core/lib/ecs/IComponent';
+import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
+import { LightData } from '@/core/lib/ecs/components/definitions/LightComponent';
+import { MeshColliderData } from '@/core/lib/ecs/components/definitions/MeshColliderComponent';
+import { MeshRendererData } from '@/core/lib/ecs/components/definitions/MeshRendererComponent';
+import { RigidBodyData } from '@/core/lib/ecs/components/definitions/RigidBodyComponent';
+import { TransformData } from '@/core/lib/ecs/components/definitions/TransformComponent';
 import { CameraAdapter } from '@/editor/components/inspector/adapters/CameraAdapter';
 import { LightAdapter } from '@/editor/components/inspector/adapters/LightAdapter';
 import { MeshColliderAdapter } from '@/editor/components/inspector/adapters/MeshColliderAdapter';
@@ -16,14 +23,14 @@ interface IComponentListProps {
   hasMeshCollider: boolean;
   hasCamera: boolean;
   hasLight: boolean;
-  getTransform: () => any;
-  getMeshRenderer: () => any;
-  getRigidBody: () => any;
-  getMeshCollider: () => any;
-  getCamera: () => any;
-  getLight: () => any;
-  addComponent: (type: string, data: any) => any;
-  updateComponent: (type: string, data: any) => boolean;
+  getTransform: () => IComponent<TransformData> | null;
+  getMeshRenderer: () => IComponent<MeshRendererData> | null;
+  getRigidBody: () => IComponent<RigidBodyData> | null;
+  getMeshCollider: () => IComponent<MeshColliderData> | null;
+  getCamera: () => IComponent<CameraData> | null;
+  getLight: () => IComponent<LightData> | null;
+  addComponent: (type: string, data: unknown) => IComponent<unknown> | null;
+  updateComponent: (type: string, data: unknown) => boolean;
   removeComponent: (type: string) => boolean;
 }
 

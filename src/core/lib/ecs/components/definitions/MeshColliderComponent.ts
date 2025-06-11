@@ -47,11 +47,15 @@ export const meshColliderComponent = ComponentFactory.create({
     offsetY: Types.f32,
     offsetZ: Types.f32,
   },
-  serialize: (eid: EntityId, component: any) => ({
+  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => ({
     enabled: Boolean(component.enabled[eid]),
     isTrigger: Boolean(component.isTrigger[eid]),
     colliderType: 'box',
-    center: [component.offsetX[eid], component.offsetY[eid], component.offsetZ[eid]],
+    center: [component.offsetX[eid], component.offsetY[eid], component.offsetZ[eid]] as [
+      number,
+      number,
+      number,
+    ],
     size: {
       width: component.sizeX[eid],
       height: component.sizeY[eid],
@@ -66,7 +70,7 @@ export const meshColliderComponent = ComponentFactory.create({
       density: 1,
     },
   }),
-  deserialize: (eid: EntityId, data, component: any) => {
+  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
     component.enabled[eid] = data.enabled ? 1 : 0;
     component.isTrigger[eid] = data.isTrigger ? 1 : 0;
     component.shapeType[eid] = 0; // Default to box

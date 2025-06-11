@@ -37,7 +37,11 @@ export function useCollisionEvents(options: {
 
     // Some versions of Rapier may not have the event system initialized yet
     // or may use a different approach to event handling
-    if (typeof (world as any).on !== 'function') {
+    if (
+      typeof (
+        world as { on?: (event: string, callback: (event: IRapierEvent) => void) => () => void }
+      ).on !== 'function'
+    ) {
       console.warn('Rapier world.on event function not available. Collision events will not work.');
       return;
     }

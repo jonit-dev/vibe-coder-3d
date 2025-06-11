@@ -1,11 +1,12 @@
 import React from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { MeshRendererData } from '@/core/lib/ecs/components/definitions/MeshRendererComponent';
 import { MeshRendererSection } from '@/editor/components/panels/InspectorPanel/MeshRenderer/MeshRendererSection';
 
 export interface IMeshRendererAdapterProps {
-  meshRendererComponent: any;
-  updateComponent: (type: string, data: any) => void;
+  meshRendererComponent: IComponent<MeshRendererData> | null;
+  updateComponent: (type: string, data: MeshRendererData) => void;
   removeComponent?: (type: string) => void;
   isPlaying: boolean;
 }
@@ -49,7 +50,7 @@ export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = ({
     },
   };
 
-  const handleUpdate = (newData: any) => {
+  const handleUpdate = (newData: MeshRendererData | null) => {
     if (newData === null) {
       // Remove component
       if (removeComponent) {

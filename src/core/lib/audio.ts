@@ -3,6 +3,11 @@ import { useRef } from 'react';
 
 const soundCache: Record<string, Howl> = {};
 
+// Export for testing
+export function clearSoundCache() {
+  Object.keys(soundCache).forEach((key) => delete soundCache[key]);
+}
+
 export function playSound(url: string, options?: HowlOptions): number {
   if (!soundCache[url]) {
     soundCache[url] = new Howl({ src: [url], ...options });

@@ -6,10 +6,10 @@ import { useDragAxisCamera } from './useDragAxisCamera';
 export interface IComponentFieldProps {
   label: string;
   type: 'number' | 'select' | 'checkbox' | 'text';
-  value: any;
-  onChange: (value: any) => void;
+  value: unknown;
+  onChange: (value: unknown) => void;
   onReset?: () => void;
-  resetValue?: any;
+  resetValue?: unknown;
   min?: number;
   max?: number;
   step?: number | string;

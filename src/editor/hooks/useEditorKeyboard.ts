@@ -28,7 +28,7 @@ export const useEditorKeyboard = ({
   onAddObject,
   onSave,
   onStatusMessage,
-  gizmoMode: _gizmoMode, // Currently unused but kept for future extensibility
+  gizmoMode, // Currently unused but kept for future extensibility
   setGizmoMode,
 }: IUseEditorKeyboardProps) => {
   const { deleteEntity } = useEntityCreation();
@@ -130,6 +130,7 @@ export const useEditorKeyboard = ({
     onStatusMessage,
     deleteEntity,
     setGizmoMode,
+    gizmoMode,
     groupSelection,
   ]);
 };

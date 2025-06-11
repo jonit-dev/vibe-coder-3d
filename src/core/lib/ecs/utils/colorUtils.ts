@@ -12,7 +12,9 @@ export const hexToRgb = (hex: string): [number, number, number] => {
 
 export const rgbToHex = (r: number, g: number, b: number): string => {
   const toHex = (c: number) => {
-    const hex = Math.round(c * 255).toString(16);
+    // Clamp values to 0-1 range
+    const clamped = Math.max(0, Math.min(1, c));
+    const hex = Math.round(clamped * 255).toString(16);
     return hex.length === 1 ? '0' + hex : hex;
   };
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;

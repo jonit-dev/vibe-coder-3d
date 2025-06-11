@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { EntityId } from '../lib/ecs/types';
+import {
+  TransformData,
+  MeshRendererData,
+  CameraData,
+  RigidBodyData,
+  MeshColliderData,
+} from '../lib/ecs/components/definitions';
 import { useComponentRegistry } from './useComponentRegistry';
 import { useEvent } from './useEvent';
 
@@ -56,7 +63,7 @@ export const useEntityState = (entityId: EntityId | null) => {
 
   // Easy-to-use methods
   const addComponentToEntity = useCallback(
-    (componentId: string, data: any) => {
+    <T>(componentId: string, data: T) => {
       if (entityId === null) return false;
       return addComponent(entityId, componentId, data);
     },
@@ -101,7 +108,7 @@ export const useEntityState = (entityId: EntityId | null) => {
   }, [getEntityComponentData]);
 
   const updateTransform = useCallback(
-    (data: any) => {
+    (data: Partial<TransformData>) => {
       return updateEntityComponent('Transform', data);
     },
     [updateEntityComponent],
@@ -112,7 +119,7 @@ export const useEntityState = (entityId: EntityId | null) => {
   }, [getEntityComponentData]);
 
   const updateMeshRenderer = useCallback(
-    (data: any) => {
+    (data: Partial<MeshRendererData>) => {
       return updateEntityComponent('MeshRenderer', data);
     },
     [updateEntityComponent],
@@ -123,7 +130,7 @@ export const useEntityState = (entityId: EntityId | null) => {
   }, [getEntityComponentData]);
 
   const updateCamera = useCallback(
-    (data: any) => {
+    (data: Partial<CameraData>) => {
       return updateEntityComponent('Camera', data);
     },
     [updateEntityComponent],
@@ -134,7 +141,7 @@ export const useEntityState = (entityId: EntityId | null) => {
   }, [getEntityComponentData]);
 
   const updateRigidBody = useCallback(
-    (data: any) => {
+    (data: Partial<RigidBodyData>) => {
       return updateEntityComponent('RigidBody', data);
     },
     [updateEntityComponent],
@@ -145,7 +152,7 @@ export const useEntityState = (entityId: EntityId | null) => {
   }, [getEntityComponentData]);
 
   const updateMeshCollider = useCallback(
-    (data: any) => {
+    (data: Partial<MeshColliderData>) => {
       return updateEntityComponent('MeshCollider', data);
     },
     [updateEntityComponent],

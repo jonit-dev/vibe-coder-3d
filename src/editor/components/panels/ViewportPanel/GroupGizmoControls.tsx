@@ -17,7 +17,7 @@ export interface IGroupGizmoControlsProps {
 
 export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo(
   ({ selectedIds, mode, onTransformChange, setIsTransforming }) => {
-    const transformRef = useRef<React.RefObject<any>>(null);
+    const transformRef = useRef<any>(null);
     const componentManager = useComponentManager();
     const isDragging = useRef(false);
     const lastUpdateTime = useRef(0);

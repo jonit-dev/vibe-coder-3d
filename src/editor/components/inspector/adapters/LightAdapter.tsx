@@ -3,10 +3,11 @@ import React from 'react';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { LightData } from '@/core/lib/ecs/components/definitions/LightComponent';
 import { LightSection } from '@/editor/components/panels/InspectorPanel/Light/LightSection';
+import { IComponent } from '@/core/lib/ecs/IComponent';
 
 interface ILightAdapterProps {
-  lightComponent: any;
-  updateComponent: (type: string, data: any) => boolean;
+  lightComponent: IComponent<LightData> | null;
+  updateComponent: (type: string, data: LightData) => boolean;
   removeComponent: (type: string) => boolean;
   entityId: number;
 }

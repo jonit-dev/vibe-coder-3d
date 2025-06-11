@@ -10,7 +10,8 @@ export type ShapeType =
   | 'Octahedron'
   | 'Prism'
   | 'Pyramid'
-  | 'Capsule';
+  | 'Capsule'
+  | 'CustomModel';
 
 export interface ITransform {
   position: [number, number, number];

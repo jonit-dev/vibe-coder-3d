@@ -1,33 +1,62 @@
 import { useGLTF, useTexture } from '@react-three/drei';
 import React, { Suspense, useMemo } from 'react';
 import type { Mesh, Texture } from 'three';
+import { ThreeEvent } from '@react-three/fiber';
 
 import { CameraGeometry } from './CameraGeometry';
 import { LightGeometry } from './LightGeometry';
 
+interface IRenderingContributions {
+  castShadow: boolean;
+  receiveShadow: boolean;
+  visible: boolean;
+  material?: {
+    shader?: string;
+    materialType?: string;
+    color?: string;
+    metalness?: number;
+    roughness?: number;
+    emissive?: string;
+    emissiveIntensity?: number;
+    normalScale?: number;
+    occlusionStrength?: number;
+    textureOffsetX?: number;
+    textureOffsetY?: number;
+    albedoTexture?: string;
+    normalTexture?: string;
+    metallicTexture?: string;
+    roughnessTexture?: string;
+    emissiveTexture?: string;
+    occlusionTexture?: string;
+  };
+}
+
 interface IEntityMeshProps {
   meshRef: React.RefObject<Mesh | null>;
   meshType: string | null;
-  renderingContributions: any;
+  renderingContributions: IRenderingContributions;
   entityColor: string;
   entityId: number;
-  onMeshClick: (e: any) => void;
+  onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
   isPlaying?: boolean;
-  entityComponents?: Array<{ type: string; data: any }>;
+  entityComponents?: Array<{ type: string; data: unknown }>;
 }
 
 const CustomModelMesh: React.FC<{
   modelPath: string;
   meshRef: React.RefObject<Mesh | null>;
-  renderingContributions: any;
+  renderingContributions: IRenderingContributions;
   entityId: number;
-  onMeshClick: (e: any) => void;
+  onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
 }> = ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick }) => {
+  console.log('[CustomModelMesh] Loading model from path:', modelPath);
+
   const { scene } = useGLTF(modelPath);
+  console.log('[CustomModelMesh] Model loaded successfully:', scene);
 
   return (
     <group
-      ref={meshRef as any}
+      ref={meshRef as React.RefObject<any>}
       userData={{ entityId }}
       onClick={onMeshClick}
       castShadow={renderingContributions.castShadow}
@@ -71,7 +100,21 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     if (meshType === 'custom' && modelPath) {
       console.log('[EntityMesh] Rendering custom model:', modelPath);
       return (
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <mesh
+              ref={meshRef}
+              userData={{ entityId }}
+              onClick={onMeshClick}
+              castShadow={renderingContributions.castShadow}
+              receiveShadow={renderingContributions.receiveShadow}
+              visible={renderingContributions.visible}
+            >
+              <boxGeometry args={[1, 1, 1]} />
+              <meshStandardMaterial color="yellow" />
+            </mesh>
+          }
+        >
           <CustomModelMesh
             modelPath={modelPath}
             meshRef={meshRef}
@@ -153,6 +196,8 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           return null; // Special case - uses CameraGeometry component
         case 'Light':
           return null; // Special case - uses LightGeometry component
+        case 'custom':
+          return null; // Special case - uses CustomModelMesh component
         default:
           return <boxGeometry args={[1, 1, 1]} />;
       }

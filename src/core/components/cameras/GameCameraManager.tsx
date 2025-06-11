@@ -44,8 +44,8 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
           KnownComponentTypes.TRANSFORM,
         );
 
-        const cameraData = cameraComponent?.data as CameraData | undefined;
-        const transformData = transformComponent?.data as ITransformData | undefined;
+        const cameraData = cameraComponent?.data as CameraData;
+        const transformData = transformComponent?.data as ITransformData;
 
         return {
           entityId,

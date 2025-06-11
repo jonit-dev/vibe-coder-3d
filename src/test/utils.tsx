@@ -1,6 +1,5 @@
 import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
-import { Canvas } from '@react-three/fiber';
 import { vi } from 'vitest';
 
 // Mock providers for testing

@@ -191,7 +191,7 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
 
   // Helper function to get default material data
   const getDefaultMaterialData = (entityId: number) => {
-    const materialData = getComponentData(entityId, 'material') as any;
+    const materialData = getComponentData(entityId, 'material') as Record<string, unknown> | null;
     let color = '#3399ff'; // Default blue like old ECS system
 
     if (materialData?.color) {
@@ -221,7 +221,7 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
 
   // Get components for this entity using new ECS system with reactive updates
   const [entityComponents, setEntityComponents] = useState<
-    Array<{ entityId: number; type: string; data: any }>
+    Array<{ entityId: number; type: string; data: unknown }>
   >([]);
 
   // Update components when entity changes or components are modified
@@ -680,7 +680,7 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
 
   // Helper function to get default material data
   const getDefaultMaterialData = (entityId: number) => {
-    const materialData = getComponentData(entityId, 'material') as any;
+    const materialData = getComponentData(entityId, 'material') as Record<string, unknown> | null;
     let color = '#3399ff'; // Default blue like old ECS system
 
     if (materialData?.color) {
@@ -710,7 +710,7 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
 
   // Get components for this entity using new ECS system with reactive updates
   const [entityComponents, setEntityComponents] = useState<
-    Array<{ entityId: number; type: string; data: any }>
+    Array<{ entityId: number; type: string; data: unknown }>
   >([]);
 
   // Update components when entity changes or components are modified

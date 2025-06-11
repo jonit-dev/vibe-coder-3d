@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 
 interface IUseEntityCollidersProps {
-  meshCollider: { data: any } | null | undefined;
+  meshCollider: { data: unknown } | null | undefined;
   meshType: string;
 }
 

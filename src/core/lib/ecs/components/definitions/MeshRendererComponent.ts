@@ -18,6 +18,7 @@ const MeshRendererSchema = z.object({
   enabled: z.boolean().default(true),
   castShadows: z.boolean().default(true),
   receiveShadows: z.boolean().default(true),
+  modelPath: z.string().optional(),
   material: z
     .object({
       shader: z.enum(['standard', 'unlit']).default('standard'),
@@ -74,6 +75,7 @@ export const meshRendererComponent = ComponentFactory.create({
     textureOffsetY: Types.f32,
     meshIdHash: Types.ui32,
     materialIdHash: Types.ui32,
+    modelPathHash: Types.ui32,
     // Texture hashes
     albedoTextureHash: Types.ui32,
     normalTextureHash: Types.ui32,
@@ -82,12 +84,13 @@ export const meshRendererComponent = ComponentFactory.create({
     emissiveTextureHash: Types.ui32,
     occlusionTextureHash: Types.ui32,
   },
-  serialize: (eid: EntityId, component: any) => ({
+  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => ({
     meshId: getStringFromHash(component.meshIdHash[eid]),
     materialId: getStringFromHash(component.materialIdHash[eid]),
     enabled: Boolean(component.enabled[eid]),
     castShadows: Boolean(component.castShadows[eid]),
     receiveShadows: Boolean(component.receiveShadows[eid]),
+    modelPath: getStringFromHash(component.modelPathHash[eid]),
     material: {
       shader: (component.shader[eid] === 0 ? 'standard' : 'unlit') as 'standard' | 'unlit',
       materialType: (component.materialType[eid] === 0 ? 'solid' : 'texture') as
@@ -95,9 +98,9 @@ export const meshRendererComponent = ComponentFactory.create({
         | 'texture',
       color: getRgbAsHex(
         {
-          r: component.materialColorR,
-          g: component.materialColorG,
-          b: component.materialColorB,
+          r: component.materialColorR as Float32Array,
+          g: component.materialColorG as Float32Array,
+          b: component.materialColorB as Float32Array,
         },
         eid,
       ),
@@ -106,9 +109,9 @@ export const meshRendererComponent = ComponentFactory.create({
       roughness: component.roughness[eid],
       emissive: getRgbAsHex(
         {
-          r: component.emissiveR,
-          g: component.emissiveG,
-          b: component.emissiveB,
+          r: component.emissiveR as Float32Array,
+          g: component.emissiveG as Float32Array,
+          b: component.emissiveB as Float32Array,
         },
         eid,
       ),
@@ -125,12 +128,13 @@ export const meshRendererComponent = ComponentFactory.create({
       occlusionTexture: getStringFromHash(component.occlusionTextureHash[eid]) || undefined,
     },
   }),
-  deserialize: (eid: EntityId, data, component: any) => {
+  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
     component.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
     component.castShadows[eid] = (data.castShadows ?? true) ? 1 : 0;
     component.receiveShadows[eid] = (data.receiveShadows ?? true) ? 1 : 0;
     component.meshIdHash[eid] = storeString(data.meshId || '');
     component.materialIdHash[eid] = storeString(data.materialId || '');
+    component.modelPathHash[eid] = storeString(data.modelPath || '');
 
     // Set material properties with defaults
     const material = data.material || {};
@@ -138,9 +142,9 @@ export const meshRendererComponent = ComponentFactory.create({
     component.materialType[eid] = material.materialType === 'texture' ? 1 : 0;
     setRgbValues(
       {
-        r: component.materialColorR,
-        g: component.materialColorG,
-        b: component.materialColorB,
+        r: component.materialColorR as Float32Array,
+        g: component.materialColorG as Float32Array,
+        b: component.materialColorB as Float32Array,
       },
       eid,
       material.color || '#cccccc',
@@ -152,9 +156,9 @@ export const meshRendererComponent = ComponentFactory.create({
 
     setRgbValues(
       {
-        r: component.emissiveR,
-        g: component.emissiveG,
-        b: component.emissiveB,
+        r: component.emissiveR as Float32Array,
+        g: component.emissiveG as Float32Array,
+        b: component.emissiveB as Float32Array,
       },
       eid,
       material.emissive || '#000000',

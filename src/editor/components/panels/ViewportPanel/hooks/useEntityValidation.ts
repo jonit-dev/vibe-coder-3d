@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 interface IUseEntityValidationProps {
   entityId: number;
-  transform: { data: any } | null | undefined;
+  transform: { data: unknown } | null | undefined;
   isPlaying: boolean;
 }
 

@@ -7,7 +7,7 @@ interface IWorld {
     elapsed: number;
     then: number;
   };
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export class ECSWorld {

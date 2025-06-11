@@ -169,7 +169,8 @@ export const CameraFollowManager: React.FC<ICameraFollowManagerProps> = ({ isPla
 
       // NEW LOGIC: Determine if camera should follow based on mode
       const cameraData = componentRegistry.getComponentData(state.followingCamera, 'Camera');
-      const controlMode = (cameraData as any)?.controlMode ?? 'free';
+      const controlMode =
+        (cameraData as CameraData & { controlMode?: string })?.controlMode ?? 'free';
 
       // In Editor mode: ALWAYS follow regardless of control mode
       // In Play mode: Only follow in locked mode (free mode uses OrbitControls which handles following via target updates)

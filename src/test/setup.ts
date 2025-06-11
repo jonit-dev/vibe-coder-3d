@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// Initialize ECS system for tests
+import { initializeCoreECS } from '../core/lib/ecs/init';
+initializeCoreECS();
+
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
@@ -16,7 +20,7 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
 }));
 
 // Mock requestAnimationFrame
-global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 0));
+global.requestAnimationFrame = vi.fn((cb) => setTimeout(cb, 0) as unknown as number);
 global.cancelAnimationFrame = vi.fn((id) => clearTimeout(id));
 
 // Mock WebGL context for Three.js

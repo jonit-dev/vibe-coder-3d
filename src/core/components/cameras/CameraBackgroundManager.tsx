@@ -17,7 +17,7 @@ export const CameraBackgroundManager: React.FC = () => {
   const world = ECSWorld.getInstance().getWorld();
   const lastUpdateRef = useRef<{
     clearFlags: string;
-    backgroundColor?: any;
+    backgroundColor?: { r: number; g: number; b: number; a: number };
     skyboxTexture?: string;
   }>({
     clearFlags: 'skybox',

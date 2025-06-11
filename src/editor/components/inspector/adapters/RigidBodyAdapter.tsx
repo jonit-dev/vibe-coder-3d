@@ -1,16 +1,21 @@
 import React from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { MeshColliderData } from '@/core/lib/ecs/components/definitions/MeshColliderComponent';
+import { RigidBodyData } from '@/core/lib/ecs/components/definitions/RigidBodyComponent';
 import { RigidBodySection } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
 
 interface IRigidBodyAdapterProps {
-  rigidBodyComponent: any;
-  addComponent: (type: string, data: any) => any;
-  updateComponent: (type: string, data: any) => boolean;
+  rigidBodyComponent: IComponent<RigidBodyData> | null;
+  addComponent: (
+    type: string,
+    data: RigidBodyData | MeshColliderData,
+  ) => IComponent<RigidBodyData | MeshColliderData> | null;
+  updateComponent: (type: string, data: RigidBodyData | MeshColliderData) => boolean;
   removeComponent: (type: string) => boolean;
   isPlaying: boolean;
   hasMeshCollider: boolean;
-  getMeshCollider: () => any;
+  getMeshCollider: () => IComponent<MeshColliderData> | null;
 }
 
 export const RigidBodyAdapter: React.FC<IRigidBodyAdapterProps> = ({
@@ -68,7 +73,7 @@ export const RigidBodyAdapter: React.FC<IRigidBodyAdapterProps> = ({
       }
     : null;
 
-  const handleRigidBodyUpdate = (newData: any) => {
+  const handleRigidBodyUpdate = (newData: RigidBodyData | null) => {
     if (newData === null) {
       // Remove rigid body component
       removeComponent(KnownComponentTypes.RIGID_BODY);
@@ -78,7 +83,7 @@ export const RigidBodyAdapter: React.FC<IRigidBodyAdapterProps> = ({
     }
   };
 
-  const handleMeshColliderUpdate = (newData: any) => {
+  const handleMeshColliderUpdate = (newData: MeshColliderData | null) => {
     console.log('[RigidBodyAdapter] Mesh collider update:', { newData, hasMeshCollider });
     if (newData === null) {
       // Remove mesh collider component

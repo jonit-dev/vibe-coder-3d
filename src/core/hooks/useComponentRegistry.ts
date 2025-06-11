@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { componentRegistry } from '../lib/ecs/ComponentRegistry';
+import { componentRegistry, ComponentCategory } from '../lib/ecs/ComponentRegistry';
 import { EntityId } from '../lib/ecs/types';
 
 export interface IComponentRegistryHook {
@@ -98,7 +98,9 @@ export function useComponentRegistry(): IComponentRegistryHook {
   }, []);
 
   const getComponentsByCategory = useCallback((category: string): string[] => {
-    return componentRegistry.getByCategory(category as any).map((comp) => comp.id);
+    return componentRegistry
+      .getByCategory(category as keyof typeof ComponentCategory)
+      .map((comp) => comp.id);
   }, []);
 
   const listEntityComponents = useCallback((entityId: EntityId): string[] => {

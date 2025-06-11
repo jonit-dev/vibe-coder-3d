@@ -12,7 +12,7 @@ export const KnownComponentTypes = {
 export type KnownComponentType = (typeof KnownComponentTypes)[keyof typeof KnownComponentTypes];
 
 // Generic component structure
-export interface IComponent<TData = any> {
+export interface IComponent<TData = unknown> {
   entityId: EntityId;
   type: ComponentType;
   data: TData;

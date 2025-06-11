@@ -212,6 +212,15 @@ export class EntityManager {
     });
   }
 
+  /**
+   * Refresh world reference after world reset
+   */
+  refreshWorld(): void {
+    this.world = ECSWorld.getInstance().getWorld();
+    this.entityCache.clear();
+    console.debug('[EntityManager] Refreshed world reference');
+  }
+
   getChildren(id: EntityId): IEntity[] {
     const entity = this.getEntity(id);
     if (!entity) return [];
@@ -300,16 +309,16 @@ export class EntityManager {
   }
 
   private wouldCreateCircularDependency(entityId: EntityId, potentialParentId: EntityId): boolean {
-    let currentId = potentialParentId;
+    let currentId: EntityId | null = potentialParentId;
 
     // Walk up the parent chain to see if we encounter the entityId
-    while (currentId) {
+    while (currentId !== null) {
       if (currentId === entityId) {
         return true; // This would create a circular dependency
       }
 
       const parent = this.getEntity(currentId);
-      currentId = parent?.parentId;
+      currentId = parent?.parentId ?? null;
     }
 
     return false;

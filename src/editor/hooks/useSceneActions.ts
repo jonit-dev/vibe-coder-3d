@@ -7,7 +7,7 @@ import { useEntityManager } from './useEntityManager';
 // Legacy interface for backward compatibility
 export interface ISerializedScene {
   version: number;
-  entities: any[];
+  entities: unknown[];
 }
 
 /**
@@ -26,7 +26,7 @@ export function useSceneActions() {
     const entities = entityManager.getAllEntities();
     const serializedEntities = entities.map((entity) => {
       const entityComponents = componentManager.getComponentsForEntity(entity.id);
-      const entityData: any = {
+      const entityData: Record<string, unknown> = {
         id: entity.id,
         name: entity.name,
         parentId: entity.parentId,

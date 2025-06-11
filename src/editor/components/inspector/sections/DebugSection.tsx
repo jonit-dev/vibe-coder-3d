@@ -2,7 +2,7 @@ import React from 'react';
 
 interface IDebugSectionProps {
   selectedEntity: number;
-  components: Array<{ type: string; data: any }>;
+  components: Array<{ type: string; data: unknown }>;
 }
 
 export const DebugSection: React.FC<IDebugSectionProps> = ({ selectedEntity, components }) => {

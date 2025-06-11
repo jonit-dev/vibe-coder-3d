@@ -11,7 +11,7 @@ import { useEntityManager } from './useEntityManager';
 // Legacy interface for backward compatibility
 export interface ISerializedScene {
   version: number;
-  entities: any[];
+  entities: unknown[];
 }
 
 export interface IUseSceneInitializationProps {

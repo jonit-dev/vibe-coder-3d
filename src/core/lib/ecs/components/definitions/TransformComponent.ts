@@ -33,12 +33,24 @@ export const transformComponent = ComponentFactory.create({
     scaleY: Types.f32,
     scaleZ: Types.f32,
   },
-  serialize: (eid: EntityId, component: any) => ({
-    position: [component.positionX[eid], component.positionY[eid], component.positionZ[eid]],
-    rotation: [component.rotationX[eid], component.rotationY[eid], component.rotationZ[eid]],
-    scale: [component.scaleX[eid], component.scaleY[eid], component.scaleZ[eid]],
+  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => ({
+    position: [component.positionX[eid], component.positionY[eid], component.positionZ[eid]] as [
+      number,
+      number,
+      number,
+    ],
+    rotation: [component.rotationX[eid], component.rotationY[eid], component.rotationZ[eid]] as [
+      number,
+      number,
+      number,
+    ],
+    scale: [component.scaleX[eid], component.scaleY[eid], component.scaleZ[eid]] as [
+      number,
+      number,
+      number,
+    ],
   }),
-  deserialize: (eid: EntityId, data, component: any) => {
+  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
     component.positionX[eid] = data.position[0];
     component.positionY[eid] = data.position[1];
     component.positionZ[eid] = data.position[2];

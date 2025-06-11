@@ -12,7 +12,7 @@ export default function App() {
   // Initialize the new ECS system
   useEffect(() => {
     // Use a flag to prevent double registration in development StrictMode
-    const isInitialized = (window as any).__ecsSystemInitialized;
+    const isInitialized = (window as { __ecsSystemInitialized?: boolean }).__ecsSystemInitialized;
     if (isInitialized) {
       console.log('ECS system already initialized, skipping...');
       return;
@@ -22,7 +22,7 @@ export default function App() {
       // Initialize the new component registry system
       initializeECS();
       console.log('✅ ECS System initialized successfully');
-      (window as any).__ecsSystemInitialized = true;
+      (window as { __ecsSystemInitialized?: boolean }).__ecsSystemInitialized = true;
     } catch (error) {
       console.error('❌ Failed to initialize ECS System:', error);
       console.error('Error details:', error);

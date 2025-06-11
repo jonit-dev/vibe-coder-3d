@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@/test/utils';
 
@@ -35,8 +36,6 @@ const Toast = vi.fn(({ message, type, onClose, id, duration = 5000, action }) =>
     </div>
   );
 });
-
-import React from 'react';
 
 describe('Toast', () => {
   const mockProps = {

@@ -22,7 +22,7 @@ export const useMesh = (selectedEntity: number | null): IUseMesh => {
     const updateMeshType = () => {
       const meshData = componentManager.getComponent(selectedEntity, 'mesh');
       if (meshData?.data && typeof meshData.data === 'object' && meshData.data !== null) {
-        const meshTypeValue = (meshData.data as any).meshType;
+        const meshTypeValue = (meshData.data as { meshType?: string }).meshType;
         if (meshTypeValue) {
           setMeshTypeState(meshTypeEnumToString(meshTypeValue));
         } else {

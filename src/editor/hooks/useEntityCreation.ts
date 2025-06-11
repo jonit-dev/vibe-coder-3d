@@ -56,7 +56,9 @@ export const useEntityCreation = () => {
   const addMeshRenderer = useCallback(
     (entityId: number, meshId: string, modelPath?: string) => {
       // Get color from old material component if it exists
-      const materialData = getComponentData(entityId, 'material') as any;
+      const materialData = getComponentData(entityId, 'material') as {
+        color?: number[] | string;
+      } | null;
       let color = '#3399ff'; // Default blue like old ECS system
 
       if (materialData?.color) {

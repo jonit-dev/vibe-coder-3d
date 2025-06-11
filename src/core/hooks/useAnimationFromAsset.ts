@@ -66,12 +66,17 @@ export function useAnimationFromAsset({
     }
     const newClips: THREE.AnimationClip[] = [];
     // Add model's own animations if any
-    if ('animations' in (model as any) && (model as any).animations?.length > 0) {
-      newClips.push(...(model as any).animations);
+    if (
+      'animations' in model &&
+      (model as { animations: THREE.AnimationClip[] }).animations?.length > 0
+    ) {
+      newClips.push(...(model as { animations: THREE.AnimationClip[] }).animations);
       if (debug) {
         console.log(
           '🔴 Base model animations:',
-          (model as any).animations.map((c: THREE.AnimationClip) => c.name),
+          (model as { animations: THREE.AnimationClip[] }).animations.map(
+            (c: THREE.AnimationClip) => c.name,
+          ),
         );
       }
     } else if (debug) {
@@ -83,12 +88,12 @@ export function useAnimationFromAsset({
         try {
           const loader = loaderMap[type];
           if (!loader) throw new Error(`No loader for type: ${type}`);
-          return await new Promise<any>((resolve, reject) => {
+          return await new Promise<unknown>((resolve, reject) => {
             loader.load(
               url,
-              (asset: any) => resolve(asset),
+              (asset: unknown) => resolve(asset),
               undefined,
-              (err: any) => reject(err),
+              (err: unknown) => reject(err),
             );
           });
         } catch (err) {
@@ -101,16 +106,22 @@ export function useAnimationFromAsset({
       assets.forEach((asset, index) => {
         if (!asset) return;
         let assetClips: THREE.AnimationClip[] = [];
-        if (animationAssets[index].type === 'gltf' && asset.animations) {
-          assetClips = asset.animations;
-        } else if (animationAssets[index].type === 'fbx' && asset.animations) {
-          assetClips = asset.animations;
+        if (
+          animationAssets[index].type === 'gltf' &&
+          (asset as { animations?: THREE.AnimationClip[] }).animations
+        ) {
+          assetClips = (asset as { animations: THREE.AnimationClip[] }).animations;
+        } else if (
+          animationAssets[index].type === 'fbx' &&
+          (asset as { animations?: THREE.AnimationClip[] }).animations
+        ) {
+          assetClips = (asset as { animations: THREE.AnimationClip[] }).animations;
         } else if (
           animationAssets[index].type === 'fbx' &&
           asset instanceof THREE.Object3D &&
-          (asset as any).animations
+          (asset as { animations: THREE.AnimationClip[] }).animations
         ) {
-          assetClips = (asset as any).animations;
+          assetClips = (asset as { animations: THREE.AnimationClip[] }).animations;
         }
         if (debug) {
           console.log(

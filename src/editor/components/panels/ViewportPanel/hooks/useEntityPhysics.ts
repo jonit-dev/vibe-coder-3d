@@ -4,11 +4,16 @@ import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 
+interface IPhysicsContributions {
+  enabled: boolean;
+  [key: string]: unknown;
+}
+
 export interface IUseEntityPhysicsProps {
   entityId: number;
   meshType: string;
   isPlaying: boolean;
-  physicsContributions: any;
+  physicsContributions: IPhysicsContributions;
 }
 
 export const useEntityPhysics = ({

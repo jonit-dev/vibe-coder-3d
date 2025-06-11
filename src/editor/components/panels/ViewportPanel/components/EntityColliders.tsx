@@ -1,12 +1,21 @@
 import { BallCollider, CuboidCollider } from '@react-three/rapier';
 import React from 'react';
 
+interface IColliderSize {
+  width?: number;
+  height?: number;
+  depth?: number;
+  radius?: number;
+  capsuleRadius?: number;
+  capsuleHeight?: number;
+}
+
 interface IEntityCollidersProps {
   colliderConfig: {
     type: string;
     center: [number, number, number];
     isTrigger: boolean;
-    size: any;
+    size: IColliderSize;
   } | null;
 }
 

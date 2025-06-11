@@ -19,7 +19,7 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     listEntityComponents,
   } = useComponentRegistry();
 
-  const [components, setComponents] = useState<IComponent<any>[]>([]);
+  const [components, setComponents] = useState<IComponent<unknown>[]>([]);
 
   // Update components when entity changes or components are modified
   const updateComponents = useCallback(() => {

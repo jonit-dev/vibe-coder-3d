@@ -17,7 +17,10 @@ const DEFAULT_MAX_ENTITY_SCAN = 10000;
 /**
  * Scans for all entities that have the EntityMeta component (i.e., all valid entities)
  */
-export const scanAllEntities = (world: any, maxScan = DEFAULT_MAX_ENTITY_SCAN): EntityId[] => {
+export const scanAllEntities = (
+  world: Record<string, unknown>,
+  maxScan = DEFAULT_MAX_ENTITY_SCAN,
+): EntityId[] => {
   const entities: EntityId[] = [];
 
   for (let eid = 0; eid < maxScan; eid++) {
@@ -33,8 +36,8 @@ export const scanAllEntities = (world: any, maxScan = DEFAULT_MAX_ENTITY_SCAN): 
  * Scans for entities that have a specific component
  */
 export const scanEntitiesWithComponent = (
-  world: any,
-  component: any,
+  world: Record<string, unknown>,
+  component: unknown,
   maxScan = DEFAULT_MAX_ENTITY_SCAN,
 ): EntityId[] => {
   const entities: EntityId[] = [];
@@ -51,7 +54,7 @@ export const scanEntitiesWithComponent = (
 /**
  * Checks if an entity exists (has EntityMeta component)
  */
-export const entityExists = (world: any, eid: EntityId): boolean => {
+export const entityExists = (world: Record<string, unknown>, eid: EntityId): boolean => {
   return hasComponent(world, EntityMeta, eid);
 };
 
@@ -59,7 +62,7 @@ export const entityExists = (world: any, eid: EntityId): boolean => {
  * Find the first available entity ID (useful for debugging)
  */
 export const findNextAvailableEntityId = (
-  world: any,
+  world: Record<string, unknown>,
   maxScan = DEFAULT_MAX_ENTITY_SCAN,
 ): EntityId => {
   for (let eid = 1; eid < maxScan; eid++) {

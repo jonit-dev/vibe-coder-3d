@@ -1,11 +1,12 @@
 import React from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { MeshColliderData } from '@/core/lib/ecs/components/definitions/MeshColliderComponent';
 import { MeshColliderSection } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 
 interface IMeshColliderAdapterProps {
-  meshColliderComponent: any;
-  updateComponent: (type: string, data: any) => boolean;
+  meshColliderComponent: IComponent<MeshColliderData> | null;
+  updateComponent: (type: string, data: MeshColliderData) => boolean;
   removeComponent?: (type: string) => boolean;
   isPlaying: boolean;
 }
@@ -41,7 +42,7 @@ export const MeshColliderAdapter: React.FC<IMeshColliderAdapterProps> = ({
     },
   };
 
-  const handleUpdate = (newData: any) => {
+  const handleUpdate = (newData: MeshColliderData | null) => {
     if (newData === null) {
       // Remove component
       if (removeComponent) {

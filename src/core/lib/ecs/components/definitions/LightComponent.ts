@@ -69,7 +69,7 @@ export const lightComponent = ComponentFactory.create({
     shadowRadius: Types.f32,
     needsUpdate: Types.ui8,
   },
-  serialize: (eid: EntityId, component: any) => {
+  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => {
     const lightTypeMap = ['directional', 'point', 'spot', 'ambient'];
 
     return {
@@ -102,7 +102,7 @@ export const lightComponent = ComponentFactory.create({
       shadowRadius: component.shadowRadius[eid] ?? 1.0,
     };
   },
-  deserialize: (eid: EntityId, data, component: any) => {
+  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
     const lightTypeMap = { directional: 0, point: 1, spot: 2, ambient: 3 };
     component.lightType[eid] = lightTypeMap[data.lightType as keyof typeof lightTypeMap] ?? 0;
 

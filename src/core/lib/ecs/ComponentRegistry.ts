@@ -11,12 +11,12 @@ import { ECSWorld } from './World';
 import { EntityId } from './types';
 
 // Base component descriptor interface
-export interface IComponentDescriptor<TData = any> {
+export interface IComponentDescriptor<TData = unknown> {
   id: string;
   name: string;
   category: ComponentCategory;
   schema: z.ZodSchema<TData>;
-  bitECSSchema: Record<string, any>;
+  bitECSSchema: Record<string, unknown>;
   serialize: (eid: EntityId) => TData;
   deserialize: (eid: EntityId, data: TData) => void;
   onAdd?: (eid: EntityId, data: TData) => void;
@@ -53,9 +53,9 @@ export class ComponentFactory {
     name: string;
     category: ComponentCategory;
     schema: z.ZodSchema<TData>;
-    fields: Record<string, any>; // BitECS field definitions
-    serialize: (eid: EntityId, bitECSComponent: any) => TData;
-    deserialize: (eid: EntityId, data: TData, bitECSComponent: any) => void;
+    fields: Record<string, unknown>; // BitECS field definitions
+    serialize: (eid: EntityId, bitECSComponent: unknown) => TData;
+    deserialize: (eid: EntityId, data: TData, bitECSComponent: unknown) => void;
     onAdd?: (eid: EntityId, data: TData) => void;
     onRemove?: (eid: EntityId) => void;
     dependencies?: string[];
@@ -86,18 +86,18 @@ export class ComponentFactory {
       incompatibleComponents: config.incompatibleComponents,
       metadata: config.metadata,
       _bitECSComponent: bitECSComponent, // Internal reference
-    } as IComponentDescriptor<TData> & { _bitECSComponent: any };
+    } as IComponentDescriptor<TData> & { _bitECSComponent: unknown };
   }
 
   /**
    * Creates a simple component with automatic field mapping
    */
-  static createSimple<TData extends Record<string, any>>(config: {
+  static createSimple<TData extends Record<string, unknown>>(config: {
     id: string;
     name: string;
     category: ComponentCategory;
     schema: z.ZodSchema<TData>;
-    fieldMappings: Record<keyof TData, any>; // Maps data fields to BitECS types
+    fieldMappings: Record<keyof TData, unknown>; // Maps data fields to BitECS types
     onAdd?: (eid: EntityId, data: TData) => void;
     onRemove?: (eid: EntityId) => void;
     dependencies?: string[];
@@ -113,17 +113,20 @@ export class ComponentFactory {
     return ComponentFactory.create({
       ...config,
       fields: config.fieldMappings,
-      serialize: (eid: EntityId, bitECSComponent: any) => {
+      serialize: (eid: EntityId, bitECSComponent: unknown) => {
         const result = {} as TData;
         for (const [key, _] of Object.entries(config.fieldMappings)) {
-          (result as any)[key] = bitECSComponent[key][eid];
+          (result as Record<string, unknown>)[key] = (
+            bitECSComponent as Record<string, Record<number, unknown>>
+          )[key][eid];
         }
         return result;
       },
-      deserialize: (eid: EntityId, data: TData, bitECSComponent: any) => {
+      deserialize: (eid: EntityId, data: TData, bitECSComponent: unknown) => {
         for (const [key, value] of Object.entries(data)) {
-          if (bitECSComponent[key]) {
-            bitECSComponent[key][eid] = value;
+          const component = bitECSComponent as Record<string, Record<number, unknown>>;
+          if (component[key]) {
+            component[key][eid] = value;
           }
         }
       },
@@ -135,7 +138,7 @@ export class ComponentFactory {
 export class ComponentRegistry {
   private static instance: ComponentRegistry;
   private components = new Map<string, IComponentDescriptor>();
-  private bitECSComponents = new Map<string, any>();
+  private bitECSComponents = new Map<string, unknown>();
   private world = ECSWorld.getInstance().getWorld();
 
   private constructor() {}
@@ -159,7 +162,9 @@ export class ComponentRegistry {
     this.components.set(descriptor.id, descriptor);
 
     // Store BitECS component reference
-    const bitECSComponent = (descriptor as any)._bitECSComponent;
+    const bitECSComponent = (
+      descriptor as IComponentDescriptor<TData> & { _bitECSComponent: unknown }
+    )._bitECSComponent;
     if (bitECSComponent) {
       this.bitECSComponents.set(descriptor.id, bitECSComponent);
     }
@@ -350,7 +355,9 @@ export class ComponentRegistry {
 
       // Special handling for camera components - ensure needsUpdate flag is set
       if (componentId === 'Camera') {
-        const bitECSCamera = this.bitECSComponents.get('Camera');
+        const bitECSCamera = this.bitECSComponents.get('Camera') as
+          | Record<string, Record<number, number>>
+          | undefined;
         if (bitECSCamera?.needsUpdate) {
           bitECSCamera.needsUpdate[entityId] = 1;
         }
@@ -358,7 +365,9 @@ export class ComponentRegistry {
 
       // Special handling for light components - ensure needsUpdate flag is set
       if (componentId === 'Light') {
-        const bitECSLight = this.bitECSComponents.get('Light');
+        const bitECSLight = this.bitECSComponents.get('Light') as
+          | Record<string, Record<number, number>>
+          | undefined;
         if (bitECSLight?.needsUpdate) {
           bitECSLight.needsUpdate[entityId] = 1;
         }
@@ -391,11 +400,11 @@ export class ComponentRegistry {
   getEntityComponents(entityId: EntityId): string[] {
     const entityComponents: string[] = [];
 
-    for (const [componentId, bitECSComponent] of this.bitECSComponents.entries()) {
+    this.bitECSComponents.forEach((bitECSComponent, componentId) => {
       if (hasComponent(this.world, bitECSComponent, entityId)) {
         entityComponents.push(componentId);
       }
-    }
+    });
 
     return entityComponents;
   }
@@ -403,7 +412,7 @@ export class ComponentRegistry {
   /**
    * Get BitECS component for queries
    */
-  getBitECSComponent(componentId: string): any {
+  getBitECSComponent(componentId: string): unknown {
     return this.bitECSComponents.get(componentId);
   }
 
@@ -492,7 +501,7 @@ export class ComponentRegistry {
    */
   getComponentsForEntity(
     entityId: EntityId,
-  ): Array<{ entityId: EntityId; type: string; data: any }> {
+  ): Array<{ entityId: EntityId; type: string; data: unknown }> {
     const componentIds = this.getEntityComponents(entityId);
     return componentIds.map((componentId) => ({
       entityId,
@@ -579,6 +588,14 @@ export class ComponentRegistry {
   clearComponents(): void {
     console.warn('clearComponents not fully implemented - use EntityManager.clearEntities()');
   }
+
+  /**
+   * Refresh world reference after world reset
+   */
+  refreshWorld(): void {
+    this.world = ECSWorld.getInstance().getWorld();
+    console.debug('[ComponentRegistry] Refreshed world reference');
+  }
 }
 
 // Export singleton instance
@@ -602,8 +619,8 @@ export function isComponentRemovable(componentId: string): boolean {
  * Combine rendering contributions from multiple components (legacy compatibility)
  */
 export function combineRenderingContributions(
-  entityComponents: Array<{ type: string; data: any }>,
-): any {
+  entityComponents: Array<{ type: string; data: unknown }>,
+): Record<string, unknown> {
   const combined = {
     visible: true,
     castShadow: true,
@@ -649,17 +666,18 @@ export function combineRenderingContributions(
 
   entityComponents.forEach(({ type, data }) => {
     if (type === 'MeshRenderer' && data) {
+      const meshData = data as Record<string, unknown>;
       // Map meshId to meshType
-      if (data.meshId) {
-        combined.meshType = meshIdToTypeMap[data.meshId] || 'Cube';
+      if (meshData.meshId) {
+        combined.meshType = meshIdToTypeMap[meshData.meshId as string] || 'Cube';
       }
 
-      if (data.material) {
-        Object.assign(combined.material, data.material);
+      if (meshData.material) {
+        Object.assign(combined.material, meshData.material);
       }
-      combined.visible = data.enabled ?? true;
-      combined.castShadow = data.castShadows ?? true;
-      combined.receiveShadow = data.receiveShadows ?? true;
+      combined.visible = (meshData.enabled as boolean) ?? true;
+      combined.castShadow = (meshData.castShadows as boolean) ?? true;
+      combined.receiveShadow = (meshData.receiveShadows as boolean) ?? true;
     }
 
     // Special handling for Camera components
@@ -680,8 +698,8 @@ export function combineRenderingContributions(
  * Combine physics contributions from multiple components (legacy compatibility)
  */
 export function combinePhysicsContributions(
-  entityComponents: Array<{ type: string; data: any }>,
-): any {
+  entityComponents: Array<{ type: string; data: unknown }>,
+): Record<string, unknown> {
   const combined = {
     enabled: false,
     rigidBodyProps: {
@@ -699,18 +717,21 @@ export function combinePhysicsContributions(
   // Simple implementation for now - can be enhanced later
   entityComponents.forEach(({ type, data }) => {
     if (type === 'RigidBody' && data) {
-      combined.enabled = data.enabled ?? false;
-      if (data.bodyType || data.type) {
-        combined.rigidBodyProps.type = data.bodyType || data.type;
+      const rigidBodyData = data as Record<string, unknown>;
+      combined.enabled = (rigidBodyData.enabled as boolean) ?? false;
+      if (rigidBodyData.bodyType || rigidBodyData.type) {
+        combined.rigidBodyProps.type =
+          (rigidBodyData.bodyType as string) || (rigidBodyData.type as string);
       }
-      combined.rigidBodyProps.mass = data.mass ?? 1;
-      combined.rigidBodyProps.gravityScale = data.gravityScale ?? 1;
-      combined.rigidBodyProps.canSleep = data.canSleep ?? true;
+      combined.rigidBodyProps.mass = (rigidBodyData.mass as number) ?? 1;
+      combined.rigidBodyProps.gravityScale = (rigidBodyData.gravityScale as number) ?? 1;
+      combined.rigidBodyProps.canSleep = (rigidBodyData.canSleep as boolean) ?? true;
 
-      if (data.material) {
-        combined.rigidBodyProps.friction = data.material.friction ?? 0.7;
-        combined.rigidBodyProps.restitution = data.material.restitution ?? 0.3;
-        combined.rigidBodyProps.density = data.material.density ?? 1;
+      if (rigidBodyData.material) {
+        const material = rigidBodyData.material as Record<string, number>;
+        combined.rigidBodyProps.friction = material.friction ?? 0.7;
+        combined.rigidBodyProps.restitution = material.restitution ?? 0.3;
+        combined.rigidBodyProps.density = material.density ?? 1;
       }
     }
   });

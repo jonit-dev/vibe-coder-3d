@@ -3,10 +3,11 @@ import React from 'react';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
 import { CameraSection } from '@/editor/components/panels/InspectorPanel/Camera/CameraSection';
+import { IComponent } from '@/core/lib/ecs/IComponent';
 
 interface ICameraAdapterProps {
-  cameraComponent: any;
-  updateComponent: (type: string, data: any) => boolean;
+  cameraComponent: IComponent<CameraData> | null;
+  updateComponent: (type: string, data: CameraData) => boolean;
   entityId: number;
 }
 

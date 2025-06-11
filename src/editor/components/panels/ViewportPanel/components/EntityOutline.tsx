@@ -8,7 +8,7 @@ interface IEntityOutlineProps {
   outlineGroupRef: React.RefObject<THREE.Group | null>;
   outlineMeshRef: React.RefObject<THREE.Mesh | null>;
   isPlaying: boolean;
-  entityComponents?: Array<{ type: string; data: any }>;
+  entityComponents?: Array<{ type: string; data: unknown }>;
 }
 
 export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
