@@ -27,3 +27,7 @@ Thumbs.db
 
 # Temporary directories
 /temp_model_processing
+
+# Test reports
+/html
+/coverage
