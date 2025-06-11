@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 
+import { useProjectToasts, useToastStore } from '@core/stores/toastStore';
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
 
@@ -11,12 +12,14 @@ export interface ISerializedScene {
 
 /**
  * Hook that provides scene action functions (save, load, clear)
- * Now uses the new ECS system as single source of truth
+ * Now uses the new ECS system as single source of truth with toast notifications
  */
 export function useSceneActions() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
+  const projectToasts = useProjectToasts();
+  const { removeToast } = useToastStore();
 
   // Simple scene serialization using new ECS system
   const exportScene = (): ISerializedScene => {
@@ -84,7 +87,104 @@ export function useSceneActions() {
     }
   })();
 
-  const handleSave = (): string => {
+  const handleSave = (): void => {
+    const loadingToastId = projectToasts.showOperationStart('Saving Project');
+
+    try {
+      const scene = exportScene();
+      localStorage.setItem('editorScene', JSON.stringify(scene));
+
+      // Remove loading toast and show success
+      removeToast(loadingToastId);
+      projectToasts.showOperationSuccess(
+        'Save',
+        `Successfully saved scene with ${scene.entities.length} entities`,
+      );
+    } catch (error) {
+      console.error('Failed to save scene:', error);
+      // Remove loading toast and show error
+      removeToast(loadingToastId);
+      projectToasts.showOperationError(
+        'Save',
+        error instanceof Error ? error.message : 'Unknown error occurred',
+      );
+    }
+  };
+
+  const handleLoad = async (e?: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const loadingToastId = projectToasts.showOperationStart('Loading Project');
+
+    try {
+      if (e && e.target.files && e.target.files[0]) {
+        // Load from file
+        const file = e.target.files[0];
+        const text = await file.text();
+        const scene = JSON.parse(text);
+        await importScene(scene);
+
+        // Remove loading toast and show success
+        removeToast(loadingToastId);
+        projectToasts.showOperationSuccess(
+          'Load',
+          `Successfully loaded scene with ${scene.entities?.length || 0} entities from file`,
+        );
+      } else if (savedScene) {
+        // Load from localStorage
+        await importScene(savedScene);
+
+        // Remove loading toast and show success
+        removeToast(loadingToastId);
+        projectToasts.showOperationSuccess(
+          'Load',
+          `Successfully loaded scene with ${savedScene.entities?.length || 0} entities from storage`,
+        );
+      } else {
+        // Remove loading toast and show error
+        removeToast(loadingToastId);
+        projectToasts.showOperationError('Load', 'No scene file selected and no saved scene found');
+      }
+    } catch (error) {
+      console.error('Failed to load scene:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+      // Remove loading toast and show error
+      removeToast(loadingToastId);
+      projectToasts.showOperationError('Load', errorMessage);
+    }
+  };
+
+  const handleClear = (): void => {
+    const loadingToastId = projectToasts.showOperationStart('Clearing Scene');
+
+    try {
+      // Clear ECS entities
+      const entities = entityManager.getAllEntities();
+      const clearedCount = entities.length;
+
+      entityManager.clearEntities();
+      componentManager.clearComponents();
+
+      // Remove loading toast and show success
+      removeToast(loadingToastId);
+      projectToasts.showOperationSuccess('Clear', `Successfully cleared ${clearedCount} entities`);
+    } catch (error) {
+      console.error('Failed to clear scene:', error);
+
+      // Remove loading toast and show error
+      removeToast(loadingToastId);
+      projectToasts.showOperationError(
+        'Clear',
+        error instanceof Error ? error.message : 'Unknown error occurred',
+      );
+    }
+  };
+
+  const triggerFileLoad = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Legacy methods that return strings for backward compatibility
+  const handleSaveLegacy = (): string => {
     try {
       const scene = exportScene();
       localStorage.setItem('editorScene', JSON.stringify(scene));
@@ -95,7 +195,7 @@ export function useSceneActions() {
     }
   };
 
-  const handleLoad = async (e?: React.ChangeEvent<HTMLInputElement>): Promise<string> => {
+  const handleLoadLegacy = async (e?: React.ChangeEvent<HTMLInputElement>): Promise<string> => {
     if (e && e.target.files && e.target.files[0]) {
       try {
         const file = e.target.files[0];
@@ -119,7 +219,7 @@ export function useSceneActions() {
     return 'No scene to load';
   };
 
-  const handleClear = (): string => {
+  const handleClearLegacy = (): string => {
     try {
       // Clear ECS entities
       const entities = entityManager.getAllEntities();
@@ -135,16 +235,17 @@ export function useSceneActions() {
     }
   };
 
-  const triggerFileLoad = () => {
-    fileInputRef.current?.click();
-  };
-
   return {
     fileInputRef,
     savedScene,
+    // New toast-enabled methods
     handleSave,
     handleLoad,
     handleClear,
+    // Legacy methods for backward compatibility
+    handleSaveLegacy,
+    handleLoadLegacy,
+    handleClearLegacy,
     triggerFileLoad,
     importScene,
     exportScene,

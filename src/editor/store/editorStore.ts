@@ -16,6 +16,12 @@ interface IEditorStore {
   // Entity selection state
   selectedId: number | null;
   setSelectedId: (id: number | null) => void;
+  selectedIds: number[];
+  setSelectedIds: (ids: number[]) => void;
+  addToSelection: (id: number) => void;
+  removeFromSelection: (id: number) => void;
+  toggleSelection: (id: number) => void;
+  clearSelection: () => void;
 
   // Entity list cache
   entityIds: number[];
@@ -54,10 +60,36 @@ interface IEditorStore {
   setShowViewport: (show: boolean) => void;
 }
 
-export const useEditorStore = create<IEditorStore>((set) => ({
+export const useEditorStore = create<IEditorStore>((set, get) => ({
   // Entity selection
   selectedId: null,
   setSelectedId: (id) => set({ selectedId: id }),
+  selectedIds: [],
+  setSelectedIds: (ids) => set({ selectedIds: ids, selectedId: ids.length > 0 ? ids[0] : null }),
+  addToSelection: (id) => {
+    const { selectedIds } = get();
+    if (!selectedIds.includes(id)) {
+      const newSelectedIds = [...selectedIds, id];
+      set({ selectedIds: newSelectedIds, selectedId: newSelectedIds[0] });
+    }
+  },
+  removeFromSelection: (id) => {
+    const { selectedIds } = get();
+    const newSelectedIds = selectedIds.filter((existingId) => existingId !== id);
+    set({
+      selectedIds: newSelectedIds,
+      selectedId: newSelectedIds.length > 0 ? newSelectedIds[0] : null,
+    });
+  },
+  toggleSelection: (id) => {
+    const { selectedIds } = get();
+    if (selectedIds.includes(id)) {
+      get().removeFromSelection(id);
+    } else {
+      get().addToSelection(id);
+    }
+  },
+  clearSelection: () => set({ selectedIds: [], selectedId: null }),
 
   // Entity list cache
   entityIds: [],

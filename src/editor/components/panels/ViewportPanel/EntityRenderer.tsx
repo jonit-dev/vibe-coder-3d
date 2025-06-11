@@ -23,6 +23,7 @@ type GizmoMode = 'translate' | 'rotate' | 'scale';
 export interface IEntityRendererProps {
   entityId: number;
   selected: boolean;
+  isPrimarySelection?: boolean;
   mode: GizmoMode;
   onTransformChange?: (values: [number, number, number]) => void;
   setGizmoMode?: (mode: GizmoMode) => void;
@@ -30,7 +31,15 @@ export interface IEntityRendererProps {
 }
 
 export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
-  ({ entityId, selected, mode, onTransformChange, setGizmoMode, setIsTransforming }) => {
+  ({
+    entityId,
+    selected,
+    isPrimarySelection = false,
+    mode,
+    onTransformChange,
+    setGizmoMode,
+    setIsTransforming,
+  }) => {
     const isPlaying = useEditorStore((s) => s.isPlaying);
 
     // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS!
@@ -129,8 +138,8 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
           meshContent
         )}
 
-        {/* Gizmo controls (disabled during physics) */}
-        {selected && !shouldHavePhysics && (
+        {/* Gizmo controls (disabled during physics) - only show on primary selection */}
+        {isPrimarySelection && !shouldHavePhysics && (
           <GizmoControls
             meshRef={meshRef}
             mode={mode}

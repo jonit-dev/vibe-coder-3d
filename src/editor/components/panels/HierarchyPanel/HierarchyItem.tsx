@@ -1,6 +1,6 @@
-import React, { forwardRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import React, { forwardRef } from 'react';
 import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
 
 import { EditableEntityName } from '@/editor/components/forms/EditableEntityName';
@@ -10,7 +10,7 @@ import { CubeIcon } from './HierarchyPanel';
 export interface IHierarchyItemProps {
   id: number;
   selected: boolean;
-  onSelect: (id: number) => void;
+  onSelect: (id: number, event?: React.MouseEvent) => void;
   onContextMenu: (event: React.MouseEvent, id: number) => void;
   name: string;
   depth?: number;
@@ -18,6 +18,7 @@ export interface IHierarchyItemProps {
   isExpanded?: boolean;
   onToggleExpanded?: (id: number) => void;
   isDragOver?: boolean;
+  isPartOfSelection?: boolean;
 }
 
 export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
@@ -32,6 +33,7 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
       isExpanded = false,
       onToggleExpanded,
       isDragOver = false,
+      isPartOfSelection = false,
     },
     ref,
   ) => {
@@ -45,7 +47,7 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
     const handleClick = (e: React.MouseEvent) => {
       // Only select if not editing the name
       if (!(e.target as HTMLElement).matches('input')) {
-        onSelect(id);
+        onSelect(id, e);
       }
     };
 
@@ -78,8 +80,10 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
         } ${
           selected && !isDragOver
             ? 'bg-gray-700/60 text-gray-100 border border-gray-600/40 shadow-sm'
-            : !isDragOver &&
-              'hover:bg-gray-800/50 text-gray-300 border border-transparent hover:border-gray-700/30'
+            : isPartOfSelection && !isDragOver
+              ? 'bg-blue-700/40 text-blue-100 border border-blue-600/40'
+              : !isDragOver &&
+                'hover:bg-gray-800/50 text-gray-300 border border-transparent hover:border-gray-700/30'
         }`}
         onClick={handleClick}
         onContextMenu={(e) => {
@@ -89,7 +93,11 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
         {...attributes}
       >
         {/* Indentation for hierarchy */}
-        <div style={{ width: `${depth * 16}px` }} className="flex-shrink-0" />
+        <div style={{ width: `${depth * 16}px` }} className="flex-shrink-0 relative">
+          {/* Tree line for hierarchy visualization */}
+          {depth > 0 && <div className="absolute left-2 top-0 bottom-0 w-px bg-gray-600/30"></div>}
+          {depth > 0 && <div className="absolute left-2 top-1/2 w-3 h-px bg-gray-600/30"></div>}
+        </div>
 
         {/* Expand/collapse toggle */}
         <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
@@ -109,7 +117,7 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
           {...listeners}
         >
           <CubeIcon
-            className={`${selected ? 'text-blue-300' : 'text-gray-400'} transition-colors duration-200 w-3 h-3 flex-shrink-0`}
+            className={`${selected ? 'text-blue-300' : isPartOfSelection ? 'text-blue-400' : 'text-gray-400'} transition-colors duration-200 w-3 h-3 flex-shrink-0`}
           />
           <EditableEntityName
             entityId={id}
@@ -119,9 +127,12 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
               // Prevent selection when double-clicking to edit
             }}
           />
-          {selected && (
-            <div className="ml-auto flex-shrink-0">
-              <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+          {(selected || isPartOfSelection) && (
+            <div className="ml-auto flex-shrink-0 flex gap-1">
+              {selected && <div className="w-1 h-1 bg-blue-400 rounded-full"></div>}
+              {isPartOfSelection && !selected && (
+                <div className="w-1 h-1 bg-blue-500/60 rounded-full"></div>
+              )}
             </div>
           )}
         </div>

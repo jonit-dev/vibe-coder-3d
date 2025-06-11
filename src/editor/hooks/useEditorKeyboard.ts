@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import type { ShapeType } from '../types/shapes';
 
 import { useEntityCreation } from './useEntityCreation';
+import { useGroupSelection } from './useGroupSelection';
 
 export type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -31,6 +32,7 @@ export const useEditorKeyboard = ({
   setGizmoMode,
 }: IUseEditorKeyboardProps) => {
   const { deleteEntity } = useEntityCreation();
+  const groupSelection = useGroupSelection();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -55,11 +57,43 @@ export const useEditorKeyboard = ({
         setIsChatExpanded(!isChatExpanded);
       }
 
-      // Delete: Delete selected entity
-      if (e.key === 'Delete' && selectedId != null) {
+      // Delete: Delete selected entities (supports group selection)
+      if (e.key === 'Delete') {
         e.preventDefault();
-        deleteEntity(selectedId);
-        onStatusMessage('Entity deleted');
+        const selectionInfo = groupSelection.getSelectionInfo();
+
+        if (selectionInfo.count > 0) {
+          // Delete all selected entities
+          if (selectionInfo.ids) {
+            selectionInfo.ids.forEach((id: number) => {
+              deleteEntity(id);
+            });
+          }
+          groupSelection.clearSelection();
+          onStatusMessage(
+            selectionInfo.count === 1
+              ? 'Entity deleted'
+              : `${selectionInfo.count} entities deleted`,
+          );
+        } else if (selectedId != null) {
+          // Fallback to single selection if no group selection
+          deleteEntity(selectedId);
+          onStatusMessage('Entity deleted');
+        }
+      }
+
+      // Ctrl+A: Select all entities
+      if (e.ctrlKey && e.key === 'a') {
+        e.preventDefault();
+        // This would require access to all entity IDs - we'll implement this later
+        onStatusMessage('Select all (not implemented yet)');
+      }
+
+      // Escape: Clear selection
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        groupSelection.clearSelection();
+        onStatusMessage('Selection cleared');
       }
 
       // Gizmo mode shortcuts (only when entity is selected and setGizmoMode is provided)
@@ -96,5 +130,6 @@ export const useEditorKeyboard = ({
     onStatusMessage,
     deleteEntity,
     setGizmoMode,
+    groupSelection,
   ]);
 };

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+import { ToastContainer } from '@core/components/ui/Toast';
 import { RightSidebarChat } from './components/chat/RightSidebarChat';
 import { StackedLeftPanel } from './components/layout/StackedLeftPanel';
 import { StatusBar } from './components/layout/StatusBar';
@@ -43,8 +44,9 @@ const Editor: React.FC = () => {
   // Entity synchronization with ECS system
   useEntitySynchronization({ entityIds, setEntityIds });
 
-  // Scene actions and file input ref
-  const { fileInputRef, savedScene, importScene } = useSceneActions();
+  // Scene actions and file input ref - use new toast-enabled methods
+  const { fileInputRef, savedScene, importScene, handleSave, handleLoad, handleClear } =
+    useSceneActions();
 
   // All action handlers encapsulated in custom hook
   const {
@@ -78,14 +80,14 @@ const Editor: React.FC = () => {
     onStatusMessage: setStatusMessage,
   });
 
-  // Keyboard Shortcuts
+  // Keyboard Shortcuts - use new toast methods
   useEditorKeyboard({
     selectedId,
     setSelectedId,
     isChatExpanded,
     setIsChatExpanded,
     onAddObject: handleAddObject,
-    onSave: handleSaveWithStatus,
+    onSave: handleSave, // Use new toast-enabled method
     onStatusMessage: setStatusMessage,
     gizmoMode,
     setGizmoMode,
@@ -116,11 +118,14 @@ const Editor: React.FC = () => {
       {/* Physics Integration - handles play/pause physics state */}
       <EditorPhysicsIntegration />
 
+      {/* Toast Container - shows project operation notifications */}
+      <ToastContainer />
+
       <TopBar
         entityCount={entityIds.length}
-        onSave={handleSaveWithStatus}
+        onSave={handleSave} // Use new toast-enabled method
         onLoad={triggerFileLoad}
-        onClear={handleClearWithStatus}
+        onClear={handleClear} // Use new toast-enabled method
         onAddObject={toggleAddMenu}
         addButtonRef={addButtonRef}
         isPlaying={isPlaying}
@@ -142,7 +147,7 @@ const Editor: React.FC = () => {
         type="file"
         accept="application/json"
         className="hidden"
-        onChange={handleLoadWithStatus}
+        onChange={handleLoad} // Use new toast-enabled method
       />
 
       <main className="flex-1 flex overflow-hidden">

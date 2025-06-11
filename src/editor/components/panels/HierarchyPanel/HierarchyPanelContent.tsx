@@ -1,3 +1,20 @@
+/**
+ * HierarchyPanelContent - Shows the hierarchical tree of entities with group selection support
+ *
+ * Group Selection Features:
+ * - Click: Select entity and all its children
+ * - Ctrl+Click: Add entity and its children to selection, or remove if already selected
+ * - Shift+Click: Add entity and its children to selection
+ * - Delete Key: Delete all selected entities
+ * - Escape Key: Clear selection
+ * - Context menu shows different options for single vs group selection
+ *
+ * Visual Indicators:
+ * - Primary selection: Highlighted with strong blue background
+ * - Part of group selection: Highlighted with lighter blue background
+ * - Selection count shown in header when multiple items selected
+ */
+
 import {
   closestCenter,
   DndContext,
@@ -22,6 +39,7 @@ import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { IEntity } from '@/core/lib/ecs/IEntity';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
+import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 import { HierarchyContextMenu } from './HierarchyContextMenu';
@@ -62,6 +80,7 @@ export const HierarchyPanelContent: React.FC = () => {
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
+  const groupSelection = useGroupSelection();
 
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
   const [draggedEntity, setDraggedEntity] = useState<IEntity | null>(null);
@@ -149,6 +168,20 @@ export const HierarchyPanelContent: React.FC = () => {
       }
       return newSet;
     });
+  };
+
+  const handleEntitySelect = (entityId: number, event?: React.MouseEvent) => {
+    console.log(
+      `[HierarchyPanel] Selecting entity ${entityId}, ctrl=${event?.ctrlKey}, shift=${event?.shiftKey}`,
+    );
+
+    groupSelection.handleHierarchySelection(entityId, {
+      ctrlKey: event?.ctrlKey || false,
+      shiftKey: event?.shiftKey || false,
+      selectChildren: true, // Always select children in hierarchy
+    });
+
+    console.log(`[HierarchyPanel] After selection, selectedIds:`, groupSelection.selectedIds);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -244,13 +277,24 @@ export const HierarchyPanelContent: React.FC = () => {
     if (contextMenu.entityId != null) {
       const entityToDelete = contextMenu.entityId;
 
-      // Clear selection if we're deleting the currently selected entity
-      if (selectedId === entityToDelete) {
-        setSelectedId(null);
-      }
+      // If the entity to delete is part of the current selection, delete all selected entities
+      if (groupSelection.isSelected(entityToDelete)) {
+        const selectionInfo = groupSelection.getSelectionInfo();
+        if (selectionInfo.ids) {
+          selectionInfo.ids.forEach((id: number) => {
+            entityManager.deleteEntity(id);
+          });
+        }
+        groupSelection.clearSelection();
+      } else {
+        // Delete only the targeted entity
+        entityManager.deleteEntity(entityToDelete);
 
-      // Delete the entity (this will trigger entity synchronization)
-      entityManager.deleteEntity(entityToDelete);
+        // Remove from selection if it was selected
+        if (selectedId === entityToDelete) {
+          setSelectedId(null);
+        }
+      }
     }
     handleCloseMenu();
   };
@@ -258,52 +302,127 @@ export const HierarchyPanelContent: React.FC = () => {
   const handleDuplicate = async () => {
     if (contextMenu.entityId != null) {
       try {
-        const srcEntityId = contextMenu.entityId;
-        console.log(`[HierarchyPanel] Duplicating entity ${srcEntityId}...`);
+        // Check if the entity being right-clicked is part of a group selection
+        const selectionInfo = groupSelection.getSelectionInfo();
+        const isPartOfGroupSelection =
+          groupSelection.isSelected(contextMenu.entityId) && selectionInfo.hasMultiple;
 
-        // Get the source entity
-        const srcEntity = entityManager.getEntity(srcEntityId);
-        if (!srcEntity) {
-          console.error(`[HierarchyPanel] Source entity ${srcEntityId} not found`);
-          return;
-        }
+        if (isPartOfGroupSelection && selectionInfo.ids) {
+          // Duplicate all selected entities
+          console.log(`[HierarchyPanel] Duplicating ${selectionInfo.count} selected entities...`);
+          const newEntityIds: number[] = [];
+          const entityMapping = new Map<number, number>(); // old ID -> new ID
 
-        // Create new entity with new ECS system
-        const newEntity = entityManager.createEntity(`${srcEntity.name} Copy`);
-        console.log(`[HierarchyPanel] Created new entity ${newEntity.id}`);
+          // First pass: Create all entities and components
+          for (const srcEntityId of selectionInfo.ids) {
+            const srcEntity = entityManager.getEntity(srcEntityId);
+            if (!srcEntity) {
+              console.warn(`[HierarchyPanel] Source entity ${srcEntityId} not found, skipping`);
+              continue;
+            }
 
-        // Get all components from the source entity
-        const sourceComponents = componentManager.getComponentsForEntity(srcEntityId);
-        console.log(`[HierarchyPanel] Source entity has components:`, sourceComponents);
+            // Create new entity (without parent for now)
+            const newEntity = entityManager.createEntity(`${srcEntity.name} Copy`);
+            console.log(
+              `[HierarchyPanel] Created new entity ${newEntity.id} (copy of ${srcEntityId})`,
+            );
 
-        // Copy each component to new entity
-        for (const component of sourceComponents) {
-          console.log(
-            `[HierarchyPanel] Copying component '${component.type}' to entity ${newEntity.id}`,
-          );
+            entityMapping.set(srcEntityId, newEntity.id);
+            newEntityIds.push(newEntity.id);
 
-          // For transform, offset position slightly
-          if (component.type === KnownComponentTypes.TRANSFORM && component.data) {
-            const transformData = {
-              ...component.data,
-              position: [
-                (component.data.position?.[0] || 0) + 0.5,
-                component.data.position?.[1] || 0,
-                component.data.position?.[2] || 0,
-              ],
-            };
-            componentManager.addComponent(newEntity.id, component.type, transformData);
-          } else {
-            componentManager.addComponent(newEntity.id, component.type, component.data);
+            // Get all components from the source entity
+            const sourceComponents = componentManager.getComponentsForEntity(srcEntityId);
+
+            // Copy each component to new entity
+            for (const component of sourceComponents) {
+              // For transform, offset position slightly
+              if (component.type === KnownComponentTypes.TRANSFORM && component.data) {
+                const transformData = {
+                  ...component.data,
+                  position: [
+                    (component.data.position?.[0] || 0) + 0.5,
+                    component.data.position?.[1] || 0,
+                    component.data.position?.[2] || 0,
+                  ],
+                };
+                componentManager.addComponent(newEntity.id, component.type, transformData);
+              } else {
+                componentManager.addComponent(newEntity.id, component.type, component.data);
+              }
+            }
           }
-        }
 
-        setSelectedId(newEntity.id);
-        console.log(
-          `[HierarchyPanel] ✅ Successfully duplicated entity ${srcEntityId} as ${newEntity.id}`,
-        );
+          // Second pass: Restore parent-child relationships
+          for (const srcEntityId of selectionInfo.ids) {
+            const srcEntity = entityManager.getEntity(srcEntityId);
+            const newEntityId = entityMapping.get(srcEntityId);
+
+            if (
+              srcEntity &&
+              newEntityId &&
+              srcEntity.parentId &&
+              entityMapping.has(srcEntity.parentId)
+            ) {
+              // If the parent was also duplicated, set the relationship
+              const newParentId = entityMapping.get(srcEntity.parentId);
+              if (newParentId) {
+                entityManager.setParent(newEntityId, newParentId);
+                console.log(
+                  `[HierarchyPanel] Set parent relationship: ${newEntityId} -> ${newParentId}`,
+                );
+              }
+            }
+          }
+
+          // Select all the new duplicated entities
+          groupSelection.setSelectedIds(newEntityIds);
+          console.log(
+            `[HierarchyPanel] ✅ Successfully duplicated ${selectionInfo.count} entities with relationships preserved`,
+          );
+        } else {
+          // Duplicate single entity (original logic)
+          const srcEntityId = contextMenu.entityId;
+          console.log(`[HierarchyPanel] Duplicating single entity ${srcEntityId}...`);
+
+          const srcEntity = entityManager.getEntity(srcEntityId);
+          if (!srcEntity) {
+            console.error(`[HierarchyPanel] Source entity ${srcEntityId} not found`);
+            return;
+          }
+
+          // Create new entity with new ECS system
+          const newEntity = entityManager.createEntity(`${srcEntity.name} Copy`);
+          console.log(`[HierarchyPanel] Created new entity ${newEntity.id}`);
+
+          // Get all components from the source entity
+          const sourceComponents = componentManager.getComponentsForEntity(srcEntityId);
+
+          // Copy each component to new entity
+          for (const component of sourceComponents) {
+            // For transform, offset position slightly
+            if (component.type === KnownComponentTypes.TRANSFORM && component.data) {
+              const transformData = {
+                ...component.data,
+                position: [
+                  (component.data.position?.[0] || 0) + 0.5,
+                  component.data.position?.[1] || 0,
+                  component.data.position?.[2] || 0,
+                ],
+              };
+              componentManager.addComponent(newEntity.id, component.type, transformData);
+            } else {
+              componentManager.addComponent(newEntity.id, component.type, component.data);
+            }
+          }
+
+          // Select the new entity using group selection
+          groupSelection.selectSingle(newEntity.id);
+          console.log(
+            `[HierarchyPanel] ✅ Successfully duplicated entity ${srcEntityId} as ${newEntity.id}`,
+          );
+        }
       } catch (error) {
-        console.error(`[HierarchyPanel] ❌ Failed to duplicate entity:`, error);
+        console.error(`[HierarchyPanel] ❌ Failed to duplicate entity/entities:`, error);
       }
     }
     handleCloseMenu();
@@ -316,10 +435,15 @@ export const HierarchyPanelContent: React.FC = () => {
 
   const allEntityIds = hierarchicalTree.map((node) => node.entity.id.toString());
 
+  const selectionInfo = groupSelection.getSelectionInfo();
+
   return (
     <div className="p-2">
       <div className="mb-1 flex items-center justify-between">
         <span className="text-xs text-gray-400 font-medium">{hierarchicalTree.length} objects</span>
+        {selectionInfo.hasMultiple && (
+          <span className="text-xs text-blue-400 font-medium">{selectionInfo.count} selected</span>
+        )}
       </div>
 
       <DndContext
@@ -346,8 +470,12 @@ export const HierarchyPanelContent: React.FC = () => {
                 <HierarchyItem
                   key={entity.id}
                   id={entity.id}
-                  selected={selectedId === entity.id}
-                  onSelect={setSelectedId}
+                  selected={groupSelection.isPrimarySelection(entity.id)}
+                  isPartOfSelection={
+                    groupSelection.isSelected(entity.id) &&
+                    !groupSelection.isPrimarySelection(entity.id)
+                  }
+                  onSelect={handleEntitySelect}
                   onContextMenu={handleContextMenu}
                   ref={itemRefs.current[entity.id]}
                   name={entity.name || `Entity ${entity.id}`}
@@ -382,6 +510,8 @@ export const HierarchyPanelContent: React.FC = () => {
         onRename={handleRename}
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
+        isGroupSelection={selectionInfo.hasMultiple}
+        selectedCount={selectionInfo.count}
       />
     </div>
   );

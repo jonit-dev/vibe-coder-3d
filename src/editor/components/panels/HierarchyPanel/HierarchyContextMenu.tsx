@@ -9,6 +9,8 @@ export interface IHierarchyContextMenuProps {
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  isGroupSelection?: boolean;
+  selectedCount?: number;
 }
 
 export const HierarchyContextMenu: React.FC<IHierarchyContextMenuProps> = ({
@@ -18,23 +20,27 @@ export const HierarchyContextMenu: React.FC<IHierarchyContextMenuProps> = ({
   onRename,
   onDuplicate,
   onDelete,
+  isGroupSelection = false,
+  selectedCount = 1,
 }) => {
   return (
     <DropdownMenu anchorRef={anchorRef} open={open} onClose={onClose}>
       <ul className="menu bg-base-200 rounded-box w-full">
-        <li>
-          <button className="w-full text-left" onClick={onRename}>
-            Rename
-          </button>
-        </li>
+        {!isGroupSelection && (
+          <li>
+            <button className="w-full text-left" onClick={onRename}>
+              Rename
+            </button>
+          </li>
+        )}
         <li>
           <button className="w-full text-left" onClick={onDuplicate}>
-            Duplicate
+            {isGroupSelection ? `Duplicate ${selectedCount} items` : 'Duplicate'}
           </button>
         </li>
         <li>
           <button className="w-full text-left text-red-500" onClick={onDelete}>
-            Delete
+            {isGroupSelection ? `Delete ${selectedCount} items` : 'Delete'}
           </button>
         </li>
       </ul>

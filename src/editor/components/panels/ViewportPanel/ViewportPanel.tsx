@@ -14,10 +14,12 @@ import { isValidEntityId } from '@/core/lib/ecs/utils';
 import { setSelectedCameraEntity } from '@/core/systems/cameraSystem';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { GizmoMode } from '@/editor/hooks/useEditorKeyboard';
+import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
 
 import { useEditorStore } from '../../../store/editorStore';
 
 import { EntityRenderer } from './EntityRenderer';
+import { GroupGizmoControls } from './GroupGizmoControls';
 import { LightRenderer } from './LightRenderer';
 import { AxesIndicator } from './components/AxesIndicator';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
@@ -40,6 +42,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
   const [lightIds, setLightIds] = useState<number[]>([]);
   const isPlaying = useEditorStore((state) => state.isPlaying);
   const componentManager = useComponentManager();
+  const groupSelection = useGroupSelection();
 
   // Subscribe to component changes only (entities are managed by Editor)
   useEffect(() => {
@@ -100,8 +103,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
       {/* Modern viewport header */}
       <ViewportHeader entityId={entityId} />
 
-      {/* Gizmo mode switcher - Only show when entity selected */}
-      {isValidEntityId(entityId) && (
+      {/* Gizmo mode switcher - Only show when entities selected */}
+      {groupSelection.selectedIds.length > 0 && (
         <GizmoModeSelector gizmoMode={gizmoMode} setGizmoMode={setGizmoMode} />
       )}
 
@@ -151,17 +154,38 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
             <gridHelper args={[20, 20, '#444444', '#222222']} />
 
             {/* Render all entities */}
-            {entityIds.map((id) => (
-              <EntityRenderer
-                key={id}
-                entityId={id}
-                selected={id === entityId}
+            {entityIds.map((id) => {
+              const isSelected = groupSelection.isSelected(id);
+              const isPrimary = groupSelection.isPrimarySelection(id);
+              const hasMultipleSelected = groupSelection.selectedIds.length > 1;
+
+              // console.log(`[ViewportPanel] Entity ${id}: selected=${isSelected}, isPrimary=${isPrimary}, multipleSelected=${hasMultipleSelected}`);
+
+              return (
+                <EntityRenderer
+                  key={id}
+                  entityId={id}
+                  selected={isSelected}
+                  isPrimarySelection={isPrimary && !hasMultipleSelected}
+                  mode={gizmoMode}
+                  onTransformChange={undefined}
+                  setIsTransforming={
+                    isPrimary && !hasMultipleSelected ? setIsTransforming : undefined
+                  }
+                  setGizmoMode={isPrimary && !hasMultipleSelected ? setGizmoMode : undefined}
+                />
+              );
+            })}
+
+            {/* Group Gizmo Controls - shows when multiple entities are selected */}
+            {groupSelection.selectedIds.length > 1 && (
+              <GroupGizmoControls
+                selectedIds={groupSelection.selectedIds}
                 mode={gizmoMode}
                 onTransformChange={undefined}
-                setIsTransforming={id === entityId ? setIsTransforming : undefined}
-                setGizmoMode={id === entityId ? setGizmoMode : undefined}
+                setIsTransforming={setIsTransforming}
               />
-            ))}
+            )}
 
             {/* Show empty state message when no entities exist or none selected */}
             {entityIds.length === 0 && (

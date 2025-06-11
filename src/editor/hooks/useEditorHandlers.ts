@@ -41,8 +41,16 @@ export const useEditorHandlers = ({
     createCamera,
   } = useEntityCreation();
 
-  // Scene action hooks
-  const { handleSave, handleLoad, handleClear, triggerFileLoad } = useSceneActions();
+  // Scene action hooks - get both new and legacy methods
+  const {
+    handleSave,
+    handleLoad,
+    handleClear,
+    handleSaveLegacy,
+    handleLoadLegacy,
+    handleClearLegacy,
+    triggerFileLoad,
+  } = useSceneActions();
 
   // Physics control hooks
   const { handlePlay, handlePause, handleStop } = usePhysicsControls({
@@ -107,24 +115,24 @@ export const useEditorHandlers = ({
     ],
   );
 
-  // Scene action handlers with status updates
+  // Scene action handlers with status updates (using legacy methods for status bar)
   const handleSaveWithStatus = useCallback(() => {
-    const message = handleSave();
+    const message = handleSaveLegacy();
     setStatusMessage(message);
-  }, [handleSave, setStatusMessage]);
+  }, [handleSaveLegacy, setStatusMessage]);
 
   const handleLoadWithStatus = useCallback(
     async (e?: React.ChangeEvent<HTMLInputElement>) => {
-      const message = await handleLoad(e);
+      const message = await handleLoadLegacy(e);
       setStatusMessage(message);
     },
-    [handleLoad, setStatusMessage],
+    [handleLoadLegacy, setStatusMessage],
   );
 
   const handleClearWithStatus = useCallback(() => {
-    const message = handleClear();
+    const message = handleClearLegacy();
     setStatusMessage(message);
-  }, [handleClear, setStatusMessage]);
+  }, [handleClearLegacy, setStatusMessage]);
 
   // Physics control handlers with status updates
   const handlePlayWithStatus = useCallback(() => {
@@ -162,7 +170,12 @@ export const useEditorHandlers = ({
     // Entity creation
     handleAddObject,
 
-    // Scene actions
+    // Scene actions with toasts (new methods)
+    handleSave,
+    handleLoad,
+    handleClear,
+
+    // Scene actions with status messages (legacy methods)
     handleSaveWithStatus,
     handleLoadWithStatus,
     handleClearWithStatus,

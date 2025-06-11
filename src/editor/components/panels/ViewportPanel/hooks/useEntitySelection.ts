@@ -3,6 +3,7 @@ import type { Mesh } from 'three';
 import * as THREE from 'three';
 
 import { useEditorStore } from '@/editor/store/editorStore';
+import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
 
 interface IUseEntitySelectionProps {
   entityId: number;
@@ -24,18 +25,45 @@ export const useEntitySelection = ({
   scale,
 }: IUseEntitySelectionProps) => {
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
+  const groupSelection = useGroupSelection();
 
   // Outline visualization refs
   const outlineGroupRef = useRef<THREE.Group | null>(null);
   const outlineMeshRef = useRef<THREE.Mesh | null>(null);
 
-  // Memoized click handler
+  // Memoized click handler with group selection support
   const handleMeshClick = useCallback(
-    (e: { stopPropagation: () => void }) => {
+    (e: React.MouseEvent) => {
       e.stopPropagation();
-      setSelectedId(entityId);
+
+      console.log(
+        `[useEntitySelection] Entity ${entityId} clicked, ctrl=${e.ctrlKey}, shift=${e.shiftKey}`,
+      );
+
+      // Check if this entity is already part of a group selection
+      const isPartOfGroup =
+        groupSelection.selectedIds.length > 1 && groupSelection.isSelected(entityId);
+
+      if (isPartOfGroup && !e.ctrlKey && !e.shiftKey) {
+        // If clicking on an entity that's part of a group without modifiers,
+        // keep the group selection (don't break the group)
+        console.log(
+          `[useEntitySelection] Entity ${entityId} is part of group, maintaining group selection`,
+        );
+        // Don't change selection - let the group stay selected
+        return;
+      }
+
+      // Use group selection for viewport clicks
+      groupSelection.handleHierarchySelection(entityId, {
+        ctrlKey: e.ctrlKey || false,
+        shiftKey: e.shiftKey || false,
+        selectChildren: false, // Don't auto-select children on viewport clicks (only hierarchy does that)
+      });
+
+      // Note: setSelectedId is managed by the group selection system now
     },
-    [entityId, setSelectedId],
+    [entityId, setSelectedId, groupSelection],
   );
 
   // Create a pure Three.js outline that updates without React
