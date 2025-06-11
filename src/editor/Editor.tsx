@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { ToastContainer } from '@core/components/ui/Toast';
+import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
 import { RightSidebarChat } from './components/chat/RightSidebarChat';
 import { StackedLeftPanel } from './components/layout/StackedLeftPanel';
 import { StatusBar } from './components/layout/StatusBar';
@@ -40,6 +41,9 @@ const Editor: React.FC = () => {
   const [gizmoMode, setGizmoMode] = useState<GizmoMode>('translate');
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Asset loader modal state
+  const [showAssetLoader, setShowAssetLoader] = useState(false);
 
   // Entity synchronization with ECS system
   useEntitySynchronization({ entityIds, setEntityIds });
@@ -139,6 +143,19 @@ const Editor: React.FC = () => {
       <EnhancedAddObjectMenu
         anchorRef={addButtonRef as React.RefObject<HTMLElement>}
         onAdd={handleAddObject}
+        onCustomModel={() => setShowAssetLoader(true)}
+      />
+
+      <AssetLoaderModal
+        isOpen={showAssetLoader}
+        onClose={() => setShowAssetLoader(false)}
+        onSelect={(assetPath) => {
+          console.log('Selected asset:', assetPath);
+          // TODO: Handle asset loading for custom models
+        }}
+        title="Select Custom Model"
+        basePath="/assets/models"
+        allowedExtensions={['glb', 'gltf', 'fbx', 'obj']}
       />
 
       {/* Hidden file input for loading scenes */}

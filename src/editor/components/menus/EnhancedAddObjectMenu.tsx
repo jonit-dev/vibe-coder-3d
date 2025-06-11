@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiBox, FiSun, FiZap } from 'react-icons/fi';
+import { FiBox, FiFolder, FiSun, FiZap } from 'react-icons/fi';
 import {
   TbBox,
   TbBuildingBridge,
@@ -21,6 +21,7 @@ import { IMenuCategory, IMenuItemOption, NestedDropdownMenu } from './NestedDrop
 export interface IEnhancedAddObjectMenuProps {
   anchorRef: React.RefObject<HTMLElement>;
   onAdd: (type: ShapeType) => void;
+  onCustomModel?: () => void;
 }
 
 const OBJECT_CATEGORIES: IMenuCategory[] = [
@@ -47,6 +48,17 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
         type: 'Cone',
         label: 'Cone',
         icon: <TbCone size={18} />,
+      },
+    ],
+  },
+  {
+    label: 'Assets',
+    icon: <FiFolder size={18} />,
+    items: [
+      {
+        type: 'CustomModel',
+        label: 'Custom Model...',
+        icon: <FiFolder size={18} />,
       },
     ],
   },
@@ -103,11 +115,17 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
 export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
   anchorRef,
   onAdd,
+  onCustomModel,
 }) => {
   const open = useEditorStore((s) => s.showAddMenu);
   const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
 
   const handleItemSelect = (item: IMenuItemOption) => {
+    if (item.type === 'CustomModel') {
+      onCustomModel?.();
+      return;
+    }
+
     // Only handle the basic shapes for now
     const validTypes: ShapeType[] = ['Cube', 'Sphere', 'Cylinder', 'Cone', 'Torus', 'Plane'];
     if (validTypes.includes(item.type as ShapeType)) {
