@@ -59,8 +59,17 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     const meshRendererComponent = entityComponents.find((c) => c.type === 'MeshRenderer');
     const modelPath = meshRendererComponent?.data?.modelPath;
 
+    // Debug logging
+    console.log('[EntityMesh] Debug:', {
+      entityId,
+      meshType,
+      modelPath,
+      meshRendererComponent: meshRendererComponent?.data,
+    });
+
     // If it's a custom model with a valid path, render the custom model
     if (meshType === 'custom' && modelPath) {
+      console.log('[EntityMesh] Rendering custom model:', modelPath);
       return (
         <Suspense fallback={null}>
           <CustomModelMesh

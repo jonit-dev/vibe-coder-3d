@@ -105,12 +105,15 @@ export const useEditorHandlers = ({
           case 'Camera':
             entity = createCamera();
             break;
-          default:
+          case 'CustomModel':
             if (modelPath) {
               entity = createCustomModel(modelPath);
             } else {
-              entity = createEntity(type);
+              throw new Error('CustomModel requires a modelPath');
             }
+            break;
+          default:
+            entity = createEntity(type);
             break;
         }
 

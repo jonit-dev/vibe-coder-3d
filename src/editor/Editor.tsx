@@ -150,6 +150,7 @@ const Editor: React.FC = () => {
         isOpen={showAssetLoader}
         onClose={() => setShowAssetLoader(false)}
         onSelect={(assetPath) => {
+          console.log('[Editor] Asset selected:', assetPath);
           handleAddObject('CustomModel', assetPath);
           setShowAssetLoader(false);
         }}

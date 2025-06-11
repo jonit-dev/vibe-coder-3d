@@ -76,7 +76,7 @@ export const useEntityCreation = () => {
       }
 
       // Add MeshRenderer component with proper material
-      componentManager.addComponent(entityId, KnownComponentTypes.MESH_RENDERER, {
+      const meshRendererData = {
         meshId,
         materialId: 'default',
         enabled: true,
@@ -90,7 +90,11 @@ export const useEntityCreation = () => {
           emissive: '#000000',
           emissiveIntensity: 0.0,
         },
-      });
+      };
+
+      console.log('[addMeshRenderer] Adding MeshRenderer:', { entityId, meshRendererData });
+
+      componentManager.addComponent(entityId, KnownComponentTypes.MESH_RENDERER, meshRendererData);
     },
     [componentManager, getComponentData],
   );
@@ -341,8 +345,13 @@ export const useEntityCreation = () => {
       const filename = modelPath.split('/').pop()?.split('.')[0] || 'Model';
       const actualName = name || `${filename} ${getNextNumber(filename)}`;
 
+      console.log('[createCustomModel] Creating custom model:', { modelPath, actualName });
+
       const entity = createEntity(actualName, parentId);
       addMeshRenderer(entity.id, 'custom', modelPath);
+
+      console.log('[createCustomModel] Created entity:', entity.id);
+
       return entity;
     },
     [createEntity, addMeshRenderer, getNextNumber],
