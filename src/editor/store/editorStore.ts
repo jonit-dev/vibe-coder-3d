@@ -149,5 +149,5 @@ export const useSetPerformanceMetrics = () =>
 // Expose editor store globally for component registry access
 // This avoids circular dependency issues
 if (typeof window !== 'undefined') {
-  (window as any).__editorStore = useEditorStore;
+  (window as unknown as { __editorStore: typeof useEditorStore }).__editorStore = useEditorStore;
 }

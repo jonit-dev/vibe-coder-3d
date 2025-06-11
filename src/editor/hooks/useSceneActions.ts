@@ -54,9 +54,8 @@ export function useSceneActions() {
       throw new Error('Invalid scene data');
     }
 
-    // Clear existing entities first
+    // Clear existing entities first - EntityManager handles components automatically
     entityManager.clearEntities();
-    componentManager.clearComponents();
 
     // Import entities
     for (const entityData of scene.entities) {
@@ -128,6 +127,11 @@ export function useSceneActions() {
           'Load',
           `Successfully loaded scene with ${scene.entities?.length || 0} entities from file`,
         );
+
+        // Clear the file input value to allow loading the same file again
+        if (e.target) {
+          e.target.value = '';
+        }
       } else if (savedScene) {
         // Load from localStorage
         await importScene(savedScene);
@@ -157,12 +161,12 @@ export function useSceneActions() {
     const loadingToastId = projectToasts.showOperationStart('Clearing Scene');
 
     try {
-      // Clear ECS entities
+      // Get entity count before clearing
       const entities = entityManager.getAllEntities();
       const clearedCount = entities.length;
 
+      // Clear entities - EntityManager handles components automatically
       entityManager.clearEntities();
-      componentManager.clearComponents();
 
       // Remove loading toast and show success
       removeToast(loadingToastId);
@@ -180,7 +184,13 @@ export function useSceneActions() {
   };
 
   const triggerFileLoad = () => {
-    fileInputRef.current?.click();
+    console.log('[SceneActions] Triggering file load, fileInputRef:', fileInputRef.current);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      console.error('[SceneActions] File input ref is null');
+      projectToasts.showOperationError('Load', 'File input not available');
+    }
   };
 
   // Legacy methods that return strings for backward compatibility
@@ -226,7 +236,6 @@ export function useSceneActions() {
       const clearedCount = entities.length;
 
       entityManager.clearEntities();
-      componentManager.clearComponents();
 
       return `Cleared ${clearedCount} entities`;
     } catch (error) {

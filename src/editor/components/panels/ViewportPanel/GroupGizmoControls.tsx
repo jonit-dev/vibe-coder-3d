@@ -1,5 +1,5 @@
 import { TransformControls } from '@react-three/drei';
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Object3D } from 'three';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
@@ -17,7 +17,7 @@ export interface IGroupGizmoControlsProps {
 
 export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo(
   ({ selectedIds, mode, onTransformChange, setIsTransforming }) => {
-    const transformRef = useRef<any>(null);
+    const transformRef = useRef<React.RefObject<any>>(null);
     const componentManager = useComponentManager();
     const isDragging = useRef(false);
     const lastUpdateTime = useRef(0);
@@ -27,7 +27,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
     const stableGroupCenter = useRef<[number, number, number]>([0, 0, 0]);
 
     // Create a virtual group center object for the gizmo to attach to
-    const groupCenterRef = useRef<Object3D>(null as any);
+    const groupCenterRef = useRef<Object3D | null>(null);
 
     console.log(
       `[GroupGizmoControls] Rendering with ${selectedIds.length} selected IDs:`,
@@ -277,18 +277,20 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
         </object3D>
 
         {/* Transform controls attached to the group center */}
-        <TransformControls
-          ref={transformRef}
-          object={groupCenterRef}
-          mode={mode}
-          size={0.75}
-          translationSnap={0.25}
-          rotationSnap={Math.PI / 24}
-          scaleSnap={0.1}
-          onObjectChange={handleTransformUpdate}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-        />
+        {groupCenterRef.current && (
+          <TransformControls
+            ref={transformRef}
+            object={groupCenterRef.current}
+            mode={mode}
+            size={0.75}
+            translationSnap={0.25}
+            rotationSnap={Math.PI / 24}
+            scaleSnap={0.1}
+            onObjectChange={handleTransformUpdate}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+          />
+        )}
       </group>
     );
   },

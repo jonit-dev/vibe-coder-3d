@@ -78,6 +78,7 @@ export const HierarchyPanelContent: React.FC = () => {
   const entityIds = useEditorStore((s) => s.entityIds);
   const selectedId = useEditorStore((s) => s.selectedId);
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
+  const setSelectedIds = useEditorStore((s) => s.setSelectedIds);
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
   const groupSelection = useGroupSelection();
@@ -375,7 +376,7 @@ export const HierarchyPanelContent: React.FC = () => {
           }
 
           // Select all the new duplicated entities
-          groupSelection.setSelectedIds(newEntityIds);
+          setSelectedIds(newEntityIds);
           console.log(
             `[HierarchyPanel] ✅ Successfully duplicated ${selectionInfo.count} entities with relationships preserved`,
           );
