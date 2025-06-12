@@ -1,10 +1,79 @@
 import { useGLTF, useTexture } from '@react-three/drei';
+import { ThreeEvent } from '@react-three/fiber';
 import React, { Suspense, useMemo } from 'react';
 import type { Mesh, Texture } from 'three';
-import { ThreeEvent } from '@react-three/fiber';
 
 import { CameraGeometry } from './CameraGeometry';
+import {
+  CrossGeometry,
+  DiamondGeometry,
+  HeartGeometry,
+  HelixGeometry,
+  MobiusStripGeometry,
+  RampGeometry,
+  SpiralStairsGeometry,
+  StairsGeometry,
+  StarGeometry,
+  TorusKnotGeometry,
+  TubeGeometry,
+} from './CustomGeometries';
 import { LightGeometry } from './LightGeometry';
+
+// Component data interfaces
+interface IMeshRendererData {
+  modelPath?: string;
+}
+
+interface ICameraData {
+  fov?: number;
+  near?: number;
+  far?: number;
+}
+
+interface ILightData {
+  lightType?: 'directional' | 'point' | 'spot' | 'ambient';
+  color?: string | { r: number; g: number; b: number };
+  intensity?: number;
+  range?: number;
+  angle?: number;
+}
+
+// Type guards
+const isMeshRendererData = (data: unknown): data is IMeshRendererData => {
+  return typeof data === 'object' && data !== null;
+};
+
+const isCameraData = (data: unknown): data is ICameraData => {
+  return typeof data === 'object' && data !== null;
+};
+
+const isLightData = (data: unknown): data is ILightData => {
+  return typeof data === 'object' && data !== null;
+};
+
+// Helper function to convert color string to RGB object
+const parseColorToRGB = (
+  color: string | { r: number; g: number; b: number } | undefined,
+): { r: number; g: number; b: number } | undefined => {
+  if (!color) return undefined;
+
+  if (typeof color === 'object') {
+    return color;
+  }
+
+  // Parse hex color string to RGB
+  if (typeof color === 'string') {
+    const hex = color.replace('#', '');
+    if (hex.length === 6) {
+      const r = parseInt(hex.substring(0, 2), 16) / 255;
+      const g = parseInt(hex.substring(2, 4), 16) / 255;
+      const b = parseInt(hex.substring(4, 6), 16) / 255;
+      return { r, g, b };
+    }
+  }
+
+  return undefined;
+};
 
 interface IRenderingContributions {
   castShadow: boolean;
@@ -86,7 +155,8 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
 
     // Check if this is a custom model
     const meshRendererComponent = entityComponents.find((c) => c.type === 'MeshRenderer');
-    const modelPath = meshRendererComponent?.data?.modelPath;
+    const meshRendererData = meshRendererComponent?.data;
+    const modelPath = isMeshRendererData(meshRendererData) ? meshRendererData.modelPath : undefined;
 
     // Debug logging
     console.log('[EntityMesh] Debug:', {
@@ -182,6 +252,8 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           return <torusGeometry args={[0.5, 0.2, 16, 100]} />;
         case 'Plane':
           return <planeGeometry args={[1, 1]} />;
+        case 'Wall':
+          return <boxGeometry args={[2, 1, 0.1]} />; // Wide, tall, thin wall
         case 'Trapezoid':
           return <cylinderGeometry args={[0.3, 0.7, 1, 4]} />; // 4-sided cylinder for trapezoid approximation
         case 'Octahedron':
@@ -192,6 +264,34 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           return <coneGeometry args={[0.5, 1, 4]} />; // 4-sided cone for pyramid
         case 'Capsule':
           return <capsuleGeometry args={[0.3, 0.4, 4, 16]} />; // radius, length, capSegments, radialSegments
+        case 'Helix':
+          return <HelixGeometry />;
+        case 'MobiusStrip':
+          return <MobiusStripGeometry />;
+        case 'Dodecahedron':
+          return <dodecahedronGeometry args={[0.5, 0]} />;
+        case 'Icosahedron':
+          return <icosahedronGeometry args={[0.5, 0]} />;
+        case 'Tetrahedron':
+          return <tetrahedronGeometry args={[0.5, 0]} />;
+        case 'TorusKnot':
+          return <TorusKnotGeometry />;
+        case 'Ramp':
+          return <RampGeometry />;
+        case 'Stairs':
+          return <StairsGeometry />;
+        case 'SpiralStairs':
+          return <SpiralStairsGeometry />;
+        case 'Star':
+          return <StarGeometry />;
+        case 'Heart':
+          return <HeartGeometry />;
+        case 'Diamond':
+          return <DiamondGeometry />;
+        case 'Tube':
+          return <TubeGeometry />;
+        case 'Cross':
+          return <CrossGeometry />;
         case 'Camera':
           return null; // Special case - uses CameraGeometry component
         case 'Light':
@@ -208,15 +308,16 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
       // Extract camera data for dynamic frustum
       const cameraComponent = entityComponents.find((c) => c.type === 'Camera');
       const cameraData = cameraComponent?.data;
+      const typedCameraData = isCameraData(cameraData) ? cameraData : {};
 
       return (
         <group ref={meshRef as any} userData={{ entityId }} onClick={onMeshClick}>
           <CameraGeometry
             showFrustum={true}
             isPlaying={isPlaying}
-            fov={cameraData?.fov}
-            near={cameraData?.near}
-            far={cameraData?.far}
+            fov={typedCameraData.fov}
+            near={typedCameraData.near}
+            far={typedCameraData.far}
             aspect={16 / 9} // TODO: Get actual viewport aspect ratio
           />
         </group>
@@ -228,17 +329,18 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
       // Extract light data for dynamic visualization
       const lightComponent = entityComponents.find((c) => c.type === 'Light');
       const lightData = lightComponent?.data;
+      const typedLightData = isLightData(lightData) ? lightData : {};
 
       return (
         <group ref={meshRef as any} userData={{ entityId }} onClick={onMeshClick}>
           <LightGeometry
-            lightType={lightData?.lightType || 'point'}
+            lightType={typedLightData.lightType || 'point'}
             showDirection={true}
             isPlaying={isPlaying}
-            color={lightData?.color}
-            intensity={lightData?.intensity}
-            range={lightData?.range}
-            angle={lightData?.angle}
+            color={parseColorToRGB(typedLightData.color)}
+            intensity={typedLightData.intensity}
+            range={typedLightData.range}
+            angle={typedLightData.angle}
           />
         </group>
       );

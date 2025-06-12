@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiBox, FiFolder, FiSun, FiZap } from 'react-icons/fi';
+import { FiBox, FiFolder } from 'react-icons/fi';
 import {
   TbBox,
   TbBuildingBridge,
@@ -7,18 +7,24 @@ import {
   TbCone,
   TbCube,
   TbCylinder,
-  TbLamp,
+  TbDiamond,
+  TbHeart,
+  TbHexagon,
+  TbMath,
   TbOctagon,
+  TbPlus,
   TbPyramid,
   TbRectangle,
   TbShape,
   TbSphere,
+  TbSpiral,
   TbSquare,
+  TbStar,
   TbTriangle,
 } from 'react-icons/tb';
 
 import { useEditorStore } from '../../store/editorStore';
-import type { ShapeType } from '../../types/shapes';
+import { ShapeType } from '../../types/shapes';
 
 import { IMenuCategory, IMenuItemOption, NestedDropdownMenu } from './NestedDropdownMenu';
 
@@ -34,90 +40,109 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
     icon: <TbBox size={18} />,
     items: [
       {
-        type: 'Cube',
+        type: ShapeType.Cube,
         label: 'Cube',
         icon: <TbCube size={18} />,
       },
       {
-        type: 'Sphere',
+        type: ShapeType.Sphere,
         label: 'Sphere',
         icon: <TbSphere size={18} />,
       },
       {
-        type: 'Cylinder',
+        type: ShapeType.Cylinder,
         label: 'Cylinder',
         icon: <TbCylinder size={18} />,
       },
       {
-        type: 'Cone',
+        type: ShapeType.Cone,
         label: 'Cone',
         icon: <TbCone size={18} />,
       },
-    ],
-  },
-  {
-    label: 'Assets',
-    icon: <FiFolder size={18} />,
-    items: [
       {
-        type: 'CustomModel',
-        label: 'Custom Model...',
-        icon: <FiFolder size={18} />,
+        type: ShapeType.Plane,
+        label: 'Plane',
+        icon: <TbSquare size={18} />,
       },
     ],
   },
   {
-    label: 'Advanced Shapes',
+    label: 'Geometric Shapes',
     icon: <TbShape size={18} />,
     items: [
       {
-        type: 'Torus',
+        type: ShapeType.Torus,
         label: 'Torus',
         icon: (
           <TbCircle size={18} style={{ border: '2px solid currentColor', borderRadius: '50%' }} />
         ),
       },
       {
-        type: 'Trapezoid',
+        type: ShapeType.Trapezoid,
         label: 'Trapezoid',
         icon: <TbRectangle size={18} />,
       },
       {
-        type: 'Octahedron',
-        label: 'Octahedron',
-        icon: <TbOctagon size={18} />,
-      },
-      {
-        type: 'Prism',
+        type: ShapeType.Prism,
         label: 'Prism',
         icon: <TbCylinder size={18} />,
       },
       {
-        type: 'Pyramid',
+        type: ShapeType.Pyramid,
         label: 'Pyramid',
         icon: <TbPyramid size={18} />,
       },
       {
-        type: 'Capsule',
+        type: ShapeType.Capsule,
         label: 'Capsule',
-        icon: <TbTriangle size={18} />,
+        icon: <TbRectangle size={18} />,
       },
     ],
   },
   {
-    label: 'Lighting',
-    icon: <FiSun size={18} />,
+    label: 'Polyhedra',
+    icon: <TbOctagon size={18} />,
     items: [
-      // Placeholder for future lighting objects
       {
-        type: 'DirectionalLight',
-        label: 'Directional Light',
-        icon: <TbLamp size={18} />,
+        type: ShapeType.Octahedron,
+        label: 'Octahedron',
+        icon: <TbOctagon size={18} />,
       },
       {
-        type: 'PointLight',
-        label: 'Point Light',
-        icon: <FiZap size={18} />,
+        type: ShapeType.Dodecahedron,
+        label: 'Dodecahedron',
+        icon: <TbHexagon size={18} />,
+      },
+      {
+        type: ShapeType.Icosahedron,
+        label: 'Icosahedron',
+        icon: <TbDiamond size={18} />,
+      },
+      {
+        type: ShapeType.Tetrahedron,
+        label: 'Tetrahedron',
+        icon: <TbPyramid size={18} />,
+      },
+    ],
+  },
+  {
+    label: 'Mathematical Shapes',
+    icon: <TbMath size={18} />,
+    items: [
+      {
+        type: ShapeType.TorusKnot,
+        label: 'Torus Knot',
+        icon: <TbMath size={18} />,
+      },
+      {
+        type: ShapeType.Helix,
+        label: 'Helix',
+        icon: <TbSpiral size={18} />,
+      },
+      {
+        type: ShapeType.MobiusStrip,
+        label: 'Möbius Strip',
+        icon: <TbMath size={18} />,
       },
     ],
   },
@@ -126,15 +151,66 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
     icon: <TbBuildingBridge size={18} />,
     items: [
       {
-        type: 'Plane',
-        label: 'Plane',
-        icon: <TbSquare size={18} />,
-      },
-      // Placeholder for future structural objects
-      {
-        type: 'Wall',
+        type: ShapeType.Wall,
         label: 'Wall',
-        icon: <FiBox size={18} />,
+        icon: <TbRectangle size={18} />,
+      },
+      {
+        type: ShapeType.Ramp,
+        label: 'Ramp',
+        icon: <TbTriangle size={18} />,
+      },
+      {
+        type: ShapeType.Stairs,
+        label: 'Stairs',
+        icon: <TbBox size={18} />,
+      },
+      {
+        type: ShapeType.SpiralStairs,
+        label: 'Spiral Stairs',
+        icon: <TbSpiral size={18} />,
+      },
+    ],
+  },
+  {
+    label: 'Decorative',
+    icon: <TbDiamond size={18} />,
+    items: [
+      {
+        type: ShapeType.Star,
+        label: 'Star',
+        icon: <TbStar size={18} />,
+      },
+      {
+        type: ShapeType.Heart,
+        label: 'Heart',
+        icon: <TbHeart size={18} />,
+      },
+      {
+        type: ShapeType.Diamond,
+        label: 'Diamond',
+        icon: <TbDiamond size={18} />,
+      },
+      {
+        type: ShapeType.Cross,
+        label: 'Cross',
+        icon: <TbPlus size={18} />,
+      },
+      {
+        type: ShapeType.Tube,
+        label: 'Tube',
+        icon: <TbCylinder size={18} />,
+      },
+    ],
+  },
+  {
+    label: 'Assets',
+    icon: <FiFolder size={18} />,
+    items: [
+      {
+        type: ShapeType.CustomModel,
+        label: 'Custom Model...',
+        icon: <FiFolder size={18} />,
       },
     ],
   },
@@ -156,17 +232,32 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
 
     // Handle all primitive shapes
     const validTypes: ShapeType[] = [
-      'Cube',
-      'Sphere',
-      'Cylinder',
-      'Cone',
-      'Torus',
-      'Plane',
-      'Trapezoid',
-      'Octahedron',
-      'Prism',
-      'Pyramid',
-      'Capsule',
+      ShapeType.Cube,
+      ShapeType.Sphere,
+      ShapeType.Cylinder,
+      ShapeType.Cone,
+      ShapeType.Torus,
+      ShapeType.Plane,
+      ShapeType.Wall,
+      ShapeType.Trapezoid,
+      ShapeType.Octahedron,
+      ShapeType.Prism,
+      ShapeType.Pyramid,
+      ShapeType.Capsule,
+      ShapeType.Helix,
+      ShapeType.MobiusStrip,
+      ShapeType.Dodecahedron,
+      ShapeType.Icosahedron,
+      ShapeType.Tetrahedron,
+      ShapeType.TorusKnot,
+      ShapeType.Ramp,
+      ShapeType.Stairs,
+      ShapeType.SpiralStairs,
+      ShapeType.Star,
+      ShapeType.Heart,
+      ShapeType.Diamond,
+      ShapeType.Tube,
+      ShapeType.Cross,
     ];
     if (validTypes.includes(item.type as ShapeType)) {
       onAdd(item.type as ShapeType);

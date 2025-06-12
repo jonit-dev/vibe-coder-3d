@@ -1,6 +1,8 @@
 # AI Copilot Architecture & End-to-End Workflow
 
-This document outlines the proposed architecture for the AI Copilot within Vibe Coder 3D and the envisioned end-to-end workflow from development to a playable build.
+**⚠️ PLANNED FEATURE - NOT YET IMPLEMENTED**
+
+This document outlines the planned architecture for the AI Copilot within Vibe Coder 3D and the envisioned end-to-end workflow from development to a playable build. This is a future enhancement to the current Unity-like editor.
 
 ## Core Principles
 

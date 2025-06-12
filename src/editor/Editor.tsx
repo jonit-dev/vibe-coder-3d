@@ -42,6 +42,9 @@ const Editor: React.FC = () => {
 
   const addButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Track left panel state before play mode for restoration
+  const leftPanelStateBeforePlay = useRef<boolean>(isLeftPanelCollapsed);
+
   // Asset loader modal state
   const [showAssetLoader, setShowAssetLoader] = useState(false);
 
@@ -107,6 +110,20 @@ const Editor: React.FC = () => {
       setSelectedId(null);
     }
   }, [selectedId, entityIds, setSelectedId]);
+
+  // Auto-collapse/expand left panel based on play mode
+  useEffect(() => {
+    if (isPlaying) {
+      // Save current state before collapsing for play mode
+      leftPanelStateBeforePlay.current = isLeftPanelCollapsed;
+      if (!isLeftPanelCollapsed) {
+        setIsLeftPanelCollapsed(true);
+      }
+    } else {
+      // Restore previous state when exiting play mode
+      setIsLeftPanelCollapsed(leftPanelStateBeforePlay.current);
+    }
+  }, [isPlaying, setIsLeftPanelCollapsed]);
 
   // Performance stats calculation
   const stats = useEditorStats({

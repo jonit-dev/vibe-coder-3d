@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import type { ShapeType } from '../types/shapes';
+import { ShapeType } from '../types/shapes';
 
 import { useEntityCreation } from './useEntityCreation';
 import { usePhysicsControls } from './usePhysicsControls';
@@ -38,12 +38,27 @@ export const useEditorHandlers = ({
     createCone,
     createTorus,
     createPlane,
+    createWall,
     createCamera,
     createTrapezoid,
     createOctahedron,
     createPrism,
     createPyramid,
     createCapsule,
+    createHelix,
+    createMobiusStrip,
+    createDodecahedron,
+    createIcosahedron,
+    createTetrahedron,
+    createTorusKnot,
+    createRamp,
+    createStairs,
+    createSpiralStairs,
+    createStar,
+    createHeart,
+    createDiamond,
+    createTube,
+    createCross,
     createCustomModel,
   } = useEntityCreation();
 
@@ -69,43 +84,88 @@ export const useEditorHandlers = ({
       try {
         let entity;
         switch (type) {
-          case 'Cube':
+          case ShapeType.Cube:
             entity = createCube();
             break;
-          case 'Sphere':
+          case ShapeType.Sphere:
             entity = createSphere();
             break;
-          case 'Cylinder':
+          case ShapeType.Cylinder:
             entity = createCylinder();
             break;
-          case 'Cone':
+          case ShapeType.Cone:
             entity = createCone();
             break;
-          case 'Torus':
+          case ShapeType.Torus:
             entity = createTorus();
             break;
-          case 'Plane':
+          case ShapeType.Plane:
             entity = createPlane();
             break;
-          case 'Trapezoid':
+          case ShapeType.Wall:
+            entity = createWall();
+            break;
+          case ShapeType.Trapezoid:
             entity = createTrapezoid();
             break;
-          case 'Octahedron':
+          case ShapeType.Octahedron:
             entity = createOctahedron();
             break;
-          case 'Prism':
+          case ShapeType.Prism:
             entity = createPrism();
             break;
-          case 'Pyramid':
+          case ShapeType.Pyramid:
             entity = createPyramid();
             break;
-          case 'Capsule':
+          case ShapeType.Capsule:
             entity = createCapsule();
             break;
-          case 'Camera':
+          case ShapeType.Helix:
+            entity = createHelix();
+            break;
+          case ShapeType.MobiusStrip:
+            entity = createMobiusStrip();
+            break;
+          case ShapeType.Dodecahedron:
+            entity = createDodecahedron();
+            break;
+          case ShapeType.Icosahedron:
+            entity = createIcosahedron();
+            break;
+          case ShapeType.Tetrahedron:
+            entity = createTetrahedron();
+            break;
+          case ShapeType.TorusKnot:
+            entity = createTorusKnot();
+            break;
+          case ShapeType.Ramp:
+            entity = createRamp();
+            break;
+          case ShapeType.Stairs:
+            entity = createStairs();
+            break;
+          case ShapeType.SpiralStairs:
+            entity = createSpiralStairs();
+            break;
+          case ShapeType.Star:
+            entity = createStar();
+            break;
+          case ShapeType.Heart:
+            entity = createHeart();
+            break;
+          case ShapeType.Diamond:
+            entity = createDiamond();
+            break;
+          case ShapeType.Tube:
+            entity = createTube();
+            break;
+          case ShapeType.Cross:
+            entity = createCross();
+            break;
+          case ShapeType.Camera:
             entity = createCamera();
             break;
-          case 'CustomModel':
+          case ShapeType.CustomModel:
             if (modelPath) {
               entity = createCustomModel(modelPath);
             } else {
@@ -136,11 +196,26 @@ export const useEditorHandlers = ({
       createCone,
       createTorus,
       createPlane,
+      createWall,
       createTrapezoid,
       createOctahedron,
       createPrism,
       createPyramid,
       createCapsule,
+      createHelix,
+      createMobiusStrip,
+      createDodecahedron,
+      createIcosahedron,
+      createTetrahedron,
+      createTorusKnot,
+      createRamp,
+      createStairs,
+      createSpiralStairs,
+      createStar,
+      createHeart,
+      createDiamond,
+      createTube,
+      createCross,
       createCamera,
       createCustomModel,
       setSelectedId,

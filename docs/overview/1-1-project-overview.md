@@ -1,104 +1,117 @@
-# Project Overview: Vibe Coder 3D - The AI-First Game Engine
+# Project Overview: Vibe Coder 3D - Unity-like Game Editor/Engine
 
 ## Vision
 
-Vibe Coder 3D is an **AI-first game engine** designed to revolutionize 3D experience creation through conversational development. It empowers creators by integrating a sophisticated AI Copilot directly into the engine core, enabling intuitive, natural language-driven game development while preserving complete user autonomy for fine-grained control. Think of it as **Unity3D meets GPT-4** - where you can describe your game ideas in plain English and watch them come to life.
+Vibe Coder 3D is a **Unity-like game editor and engine** built with modern web technologies, designed to provide a powerful, browser-based game development environment. It combines the familiar workflow of Unity's editor with the performance and flexibility of React Three Fiber, offering both visual editing tools and a robust runtime engine for 3D game development.
 
-Our mission is to democratize game development by eliminating technical barriers, making complex 3D development as accessible as having a conversation with an expert game developer who understands your creative vision and can implement it instantly.
+Our mission is to create a professional-grade game development platform that leverages web technologies to enable rapid prototyping, collaborative development, and seamless deployment across platforms, with planned AI-assisted features to enhance the development experience.
 
 ## Goals
 
-- **Pioneer Conversational Development:** Create the first truly AI-native game engine where natural language is the primary interface for game creation, from initial concept to final build.
-- **Intelligent Asset Generation:** Enable AI to generate, discover, and optimize 3D models, textures, materials, and audio based on simple descriptions.
-- **Context-Aware Code Generation:** Implement AI that understands your project structure and can generate entire gameplay systems, UI components, and scripts that integrate seamlessly.
-- **Preserve Creative Control:** Ensure developers maintain complete autonomy with the ability to inspect, modify, or reject any AI suggestion while learning from user preferences.
-- **Accelerate Development Velocity:** Transform weeks of traditional development into hours through AI-assisted scene building, scripting, and asset integration.
-- **Democratize Game Development:** Make professional-quality 3D game development accessible to designers, artists, and creators without deep programming knowledge.
-- **Build on Proven Technologies:** Leverage React Three Fiber, bitecs ECS, Rapier physics, and modern web standards as the foundation for AI-enhanced workflows.
-- **Enable Real-time Collaboration:** Support team development where AI assists multiple roles (designers, programmers, artists) with specialized, contextual guidance.
+- **Unity-like Editor Experience:** Provide a familiar game development interface with hierarchy panels, inspector views, and visual scene editing tools.
+- **Professional 3D Development:** Enable creation of high-quality 3D games and experiences using modern web technologies and performant rendering.
+- **Component-based Architecture:** Implement a robust Entity Component System (ECS) for scalable, maintainable game development.
+- **Visual Development Tools:** Offer intuitive scene editing, asset management, and property manipulation through a comprehensive editor interface.
+- **Modern Web Stack:** Build on proven technologies like React Three Fiber, BitECS, Rapier physics, and TypeScript for reliable development.
+- **Cross-platform Deployment:** Support game deployment across web, desktop, and mobile platforms through modern build tools.
+- **Extensible Architecture:** Design a plugin-friendly system that allows for custom components, tools, and workflow extensions.
+- **Planned AI Integration:** Future AI-assisted development features to accelerate common development tasks while preserving full developer control.
 
 ## Target Audience
 
-This project revolutionizes 3D game development for a diverse range of creators, from technical experts to creative visionaries:
+This Unity-like editor serves game developers and 3D content creators who want a powerful, web-based development environment:
 
 **Primary Audiences:**
 
-- **Creative Professionals:** Game designers, artists, and storytellers who have amazing ideas but limited programming experience
-- **Rapid Prototypers:** Entrepreneurs and indie developers who need to quickly validate game concepts and create playable demos
-- **Educational Institutions:** Students and teachers exploring game development without the steep learning curve of traditional engines
-- **Small Teams:** Indie studios where team members wear multiple hats and need AI assistance to fill knowledge gaps
+- **Indie Game Developers:** Solo developers and small teams creating 3D games who need professional-grade tools without complex setup
+- **Web Developers:** React/TypeScript developers looking to enter 3D game development with familiar technologies
+- **Rapid Prototypers:** Developers who need to quickly create and iterate on 3D game concepts and demos
+- **Educational Users:** Students and teachers learning 3D game development with modern, accessible tools
 
 **Secondary Audiences:**
 
-- **Experienced Developers:** Traditional game programmers seeking to accelerate development and explore AI-assisted workflows
-- **React Developers:** Web developers familiar with React who want to enter 3D game development with familiar patterns
-- **Content Creators:** YouTubers, streamers, and digital artists who want to create interactive 3D experiences for their audiences
+- **Game Studios:** Teams looking for browser-based collaborative development tools and rapid prototyping capabilities
+- **Creative Professionals:** Artists and designers who want to create interactive 3D experiences with visual editing tools
+- **Technical Artists:** Professionals bridging the gap between art and programming who need flexible, customizable workflows
 
 ## Core Technology
 
-Our AI-first architecture combines cutting-edge AI technologies with proven game development libraries:
-
-**AI & Intelligence Layer:**
-
-- **Large Language Models:** OpenAI GPT-4, Anthropic Claude, with fallbacks to local models
-- **Asset Generation:** Text-to-3D APIs, procedural generation, and AI-curated asset libraries
-- **Code Generation:** Context-aware TypeScript/React component generation
-- **Natural Language Processing:** Advanced prompt engineering and command parsing
+Our Unity-like editor is built on modern web technologies and proven game development libraries:
 
 **Game Engine Foundation:**
 
-- **Rendering:** React Three Fiber (R3F) built on Three.js for modern 3D graphics
-- **Physics:** Rapier.js via WebAssembly for high-performance physics simulation
-- **Entity Component System:** bitecs for scalable, data-oriented game architecture
-- **State Management:** Zustand for reactive, predictable application state
-- **Asset Pipeline:** Optimized loading and processing of 3D models, textures, and audio
+- **Rendering:** React Three Fiber (R3F) built on Three.js for high-performance 3D graphics and WebGL rendering
+- **Physics:** Rapier.js via WebAssembly for realistic physics simulation and collision detection
+- **Entity Component System:** BitECS for scalable, data-oriented game architecture with excellent performance
+- **State Management:** Zustand for reactive, predictable application state management
+- **Asset Pipeline:** Optimized loading and processing of GLTF/GLB models, textures, and audio assets
+
+**Editor Interface:**
+
+- **UI Framework:** React with TypeScript for type-safe, component-based editor interface development
+- **Styling:** Tailwind CSS for rapid, consistent UI development with utility-first approach
+- **3D Controls:** React Three Drei for interactive 3D controls, gizmos, and camera management
+- **Forms & Validation:** Type-safe component property editing with real-time validation
 
 **Development Infrastructure:**
 
-- **Build System:** Vite for lightning-fast development and optimized production builds
-- **Type Safety:** TypeScript for robust development experience and AI code generation
-- **UI Framework:** React DOM for editor interface, three-mesh-ui for in-world interfaces
-- **Networking:** Colyseus for multiplayer capabilities and real-time collaboration
+- **Build System:** Vite for lightning-fast development server and optimized production builds
+- **Package Management:** Yarn for reliable dependency management and workspace support
+- **Testing:** Vitest for unit testing with React Testing Library for component testing
+- **Code Quality:** ESLint and Prettier for consistent code formatting and quality enforcement
 
-For detailed technical specifications, see the [Technical Stack](../architecture/technical-stack.md) and [AI Copilot Architecture](../architecture/ai-copilot-architecture.md) documentation.
+**Planned Integrations:**
+
+- **AI Assistance:** Future integration with language models for development assistance
+- **Collaboration:** Planned Yjs integration for real-time collaborative editing
+- **Deployment:** Multi-platform build targets for web, desktop (Electron/Tauri), and mobile
+
+For detailed technical specifications, see the [Technical Stack](../architecture/2-2-technical-stack.md) and [Project Structure](../architecture/2-3-project-structure.md) documentation.
 
 ## Architecture
 
-The engine follows an AI-first architecture where intelligent assistance is deeply integrated at every layer:
+The editor follows a Unity-like architecture with clear separation between the core engine and development tools:
 
 **Core Layers:**
 
-- **`src/ai`:** The AI Copilot system with natural language processing, command parsing, and code generation capabilities
-- **`src/core`:** Enhanced game engine foundation with AI integration points, ECS, physics, and rendering systems
-- **`src/editor`:** AI-enhanced development environment with conversational interfaces and intelligent assistance
-- **`src/game`:** Project-specific implementations, with AI-generated and AI-assisted content seamlessly integrated
+- **`src/core`:** Game engine foundation with ECS, physics, rendering, and asset management systems
+- **`src/editor`:** Unity-like development environment with hierarchy, inspector, and viewport panels
+- **`src/config`:** Application configuration and asset metadata management
+- **`src/utils`:** Shared utilities for math operations, validation, and helper functions
 
-**AI Integration Points:**
+**Editor Interface:**
 
-- **Conversational Interface:** Natural language commands translated to engine operations
-- **Context-Aware Assistance:** AI understands project state, user preferences, and development patterns
-- **Intelligent Asset Management:** AI-powered discovery, generation, and optimization of game assets
-- **Code Generation:** Automated creation of components, systems, and game logic with full ECS integration
+- **Hierarchy Panel:** Scene tree view for organizing and managing game objects with parent-child relationships
+- **Inspector Panel:** Component property editor with type-safe forms and real-time validation
+- **Viewport Panel:** Interactive 3D scene view with gizmos, selection tools, and camera controls
+- **Asset Management:** Drag-and-drop asset loading with automatic optimization and integration
 
-This architecture ensures AI capabilities enhance rather than replace traditional development workflows. See the [AI-First Implementation Plan](../implementation/ai-first-engine-implementation-plan.md) for detailed planning and the [Project Structure](../architecture/project-structure.md) for technical organization.
+**Development Workflow:**
+
+- **Scene System:** Visual scene composition with save/load functionality and version control support
+- **Component System:** Extensible ECS architecture with visual component editing and custom component creation
+- **Build Pipeline:** Optimized builds for multiple deployment targets with asset bundling and optimization
+
+This architecture provides a familiar Unity-like development experience while leveraging modern web technologies. See the [Project Structure](../architecture/2-3-project-structure.md) for detailed organization and [Game Editor Architecture](../architecture/2-6-game-editor.md) for editor-specific design.
 
 ## Current Status
 
-**Phase: Foundation & Planning Complete** (December 2024)
+**Phase: Core Editor Functionality** (January 2025)
 
-- ✅ **Core Engine Infrastructure:** React Three Fiber, bitecs ECS, Rapier physics, and Zustand state management
-- ✅ **Editor Foundation:** Basic 3D editor with scene manipulation, hierarchy panel, and inspector
-- ✅ **Asset Pipeline:** GLTF loading, material system, and basic asset management
-- ✅ **Architecture Documentation:** Comprehensive planning for AI-first development approach
-- 🚧 **AI Integration Planning:** Detailed implementation plan for AI Copilot system
-- ⏳ **Next Phase:** Beginning AI Foundation & Command System development
+- ✅ **Core Engine Infrastructure:** React Three Fiber, BitECS, Rapier physics, and Zustand state management fully implemented
+- ✅ **Unity-like Editor Interface:** Complete hierarchy panel, inspector panel, and 3D viewport with gizmos and selection tools
+- ✅ **Component System:** Full ECS implementation with visual component editing, Transform, MeshRenderer, RigidBody, and Camera components
+- ✅ **Asset Pipeline:** GLTF/GLB loading, texture management, and asset integration with the editor
+- ✅ **Scene Management:** Save/load functionality, entity creation/deletion, and scene hierarchy management
+- 🚧 **Advanced Features:** Physics debugging, custom geometry creation, and material editing systems
+- ⏳ **Planned:** AI integration, collaboration features, and enhanced build pipeline
 
 **Immediate Priorities:**
 
-1. AI Service architecture setup and LLM integration
-2. Natural language command parsing and validation
-3. Basic conversational interface in the editor
-4. Engine API development for AI-accessible operations
+1. Enhanced physics debugging and visualization tools
+2. Custom material and shader system integration
+3. Advanced asset management and optimization
+4. Performance profiling and optimization tools
 
 ## Getting Started
 
@@ -114,28 +127,31 @@ yarn dev
 
 **For Contributors:**
 
-- Review the [AI-First Implementation Plan](../implementation/ai-first-engine-implementation-plan.md) for development roadmap
-- Check [Core Abstractions](../architecture/core-abstractions.md) for engine architecture
-- See [Game Editor Tasks](../../game-editor-tasks.md) for current development focus
+- Review the [Game Editor Architecture](../architecture/2-6-game-editor.md) for editor development focus
+- Check [Core Abstractions](../architecture/2-1-core-abstractions.md) for engine architecture
+- See [Implementation Guides](../implementation/) for current development tasks
+- Read [Adding New Shapes Guide](../implementation/adding-new-shapes-guide.md) for extending the editor
 
-**For Early Adopters:**
-The engine is currently in active development. Follow our progress and provide feedback as we build the first AI-native game development platform. Documentation and tutorials will be available as core AI features are implemented.
+**For Game Developers:**
+The editor provides a Unity-like interface for 3D game development in the browser. Use the hierarchy panel to organize your scene, the inspector to configure components, and the viewport for visual editing. The editor supports standard game development workflows with modern web deployment.
 
 ## 🔗 Related Documentation
 
 ### Next Steps
 
-- **[AI-First Vision Summary](./ai-first-vision-summary.md)** - Understand the core innovation
-- **[Roadmap](./roadmap.md)** - See the development timeline
-- **[Technical Stack](../architecture/technical-stack.md)** - Learn about our technology choices
+- **[Getting Started](./1-4-getting-started.md)** - Set up your development environment
+- **[Roadmap](./1-3-roadmap.md)** - See the development timeline and planned features
+- **[Technical Stack](../architecture/2-2-technical-stack.md)** - Learn about our technology choices
 
-### Deep Dive
+### Architecture Deep Dive
 
-- **[AI Copilot Architecture](../architecture/ai-copilot-architecture.md)** - AI system design
-- **[Core Abstractions](../architecture/core-abstractions.md)** - Engine foundation
-- **[AI-First Implementation Plan](../implementation/ai-first-engine-implementation-plan.md)** - Development roadmap
+- **[Game Editor Architecture](../architecture/2-6-game-editor.md)** - Unity-like editor design
+- **[Core Abstractions](../architecture/2-1-core-abstractions.md)** - Engine foundation
+- **[ECS System](../architecture/2-4-ecs-system.md)** - Entity Component System implementation
+- **[Project Structure](../architecture/2-3-project-structure.md)** - Codebase organization
 
-### Getting Started
+### Development Guides
 
-- **[Simple Scene](../getting-started/simple-scene.md)** - Create your first scene
-- **[Documentation Navigation](../NAVIGATION.md)** - Find your way around the docs
+- **[Adding New Shapes](../implementation/adding-new-shapes-guide.md)** - Extend the editor with custom geometry
+- **[Implementation Status](../implementation/)** - Current development progress
+- **[Documentation Navigation](../0-navigation.md)** - Find your way around the docs

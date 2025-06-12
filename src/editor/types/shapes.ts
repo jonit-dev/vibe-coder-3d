@@ -1,17 +1,49 @@
-export type ShapeType =
-  | 'Cube'
-  | 'Sphere'
-  | 'Cylinder'
-  | 'Cone'
-  | 'Torus'
-  | 'Plane'
-  | 'Camera'
-  | 'Trapezoid'
-  | 'Octahedron'
-  | 'Prism'
-  | 'Pyramid'
-  | 'Capsule'
-  | 'CustomModel';
+export enum ShapeType {
+  // Basic Shapes
+  Cube = 'Cube',
+  Sphere = 'Sphere',
+  Cylinder = 'Cylinder',
+  Cone = 'Cone',
+  Plane = 'Plane',
+
+  // Geometric Shapes
+  Torus = 'Torus',
+  Trapezoid = 'Trapezoid',
+  Prism = 'Prism',
+  Pyramid = 'Pyramid',
+  Capsule = 'Capsule',
+
+  // Polyhedra
+  Octahedron = 'Octahedron',
+  Dodecahedron = 'Dodecahedron',
+  Icosahedron = 'Icosahedron',
+  Tetrahedron = 'Tetrahedron',
+
+  // Mathematical Shapes
+  TorusKnot = 'TorusKnot',
+  Helix = 'Helix',
+  MobiusStrip = 'MobiusStrip',
+
+  // Structural
+  Wall = 'Wall',
+  Ramp = 'Ramp',
+  Stairs = 'Stairs',
+  SpiralStairs = 'SpiralStairs',
+
+  // Decorative
+  Star = 'Star',
+  Heart = 'Heart',
+  Diamond = 'Diamond',
+  Cross = 'Cross',
+  Tube = 'Tube',
+
+  // Special
+  Camera = 'Camera',
+  CustomModel = 'CustomModel',
+}
+
+// For backward compatibility, also export as type
+export type ShapeTypeValue = `${ShapeType}`;
 
 export interface ITransform {
   position: [number, number, number];

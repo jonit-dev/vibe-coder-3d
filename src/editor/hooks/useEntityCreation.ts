@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
 import { LightData } from '@/core/lib/ecs/components/definitions/LightComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 import { useComponentManager } from './useComponentManager';
@@ -59,7 +59,7 @@ export const useEntityCreation = () => {
       const materialData = getComponentData(entityId, 'material') as {
         color?: number[] | string;
       } | null;
-      let color = '#3399ff'; // Default blue like old ECS system
+      let color = '#3399ff'; // Default blue
 
       if (materialData?.color) {
         if (Array.isArray(materialData.color)) {
@@ -162,6 +162,26 @@ export const useEntityCreation = () => {
         position: [0, 0, 0],
         rotation: [-90, 0, 0], // Rotate to lay flat on the floor
         scale: [10, 10, 1], // Make it larger and thinner like a ground plane
+      };
+
+      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+
+      return entity;
+    },
+    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+  );
+
+  const createWall = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Wall ${getNextNumber('Wall')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'Wall');
+
+      // Position the wall upright (default orientation is good)
+      const transformData: ITransformData = {
+        position: [0, 0.5, 0], // Position at ground level (half height up)
+        rotation: [0, 0, 0], // Upright wall
+        scale: [1, 1, 1], // Standard scale
       };
 
       componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
@@ -341,6 +361,146 @@ export const useEntityCreation = () => {
     [createEntity, addMeshRenderer, getNextNumber],
   );
 
+  const createHelix = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Helix ${getNextNumber('Helix')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'helix');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createMobiusStrip = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Mobius Strip ${getNextNumber('Mobius Strip')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'mobiusStrip');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createDodecahedron = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Dodecahedron ${getNextNumber('Dodecahedron')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'dodecahedron');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createIcosahedron = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Icosahedron ${getNextNumber('Icosahedron')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'icosahedron');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createTetrahedron = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Tetrahedron ${getNextNumber('Tetrahedron')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'tetrahedron');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createTorusKnot = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Torus Knot ${getNextNumber('Torus Knot')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'torusKnot');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createRamp = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Ramp ${getNextNumber('Ramp')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'ramp');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createStairs = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Stairs ${getNextNumber('Stairs')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'stairs');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createSpiralStairs = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Spiral Stairs ${getNextNumber('Spiral Stairs')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'spiralStairs');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createStar = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Star ${getNextNumber('Star')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'star');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createHeart = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Heart ${getNextNumber('Heart')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'heart');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createDiamond = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Diamond ${getNextNumber('Diamond')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'diamond');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createTube = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Tube ${getNextNumber('Tube')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'tube');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
+  const createCross = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Cross ${getNextNumber('Cross')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'cross');
+      return entity;
+    },
+    [createEntity, addMeshRenderer, getNextNumber],
+  );
+
   const createCustomModel = useCallback(
     (modelPath: string, name?: string, parentId?: number) => {
       // Extract filename from path for default naming
@@ -384,6 +544,7 @@ export const useEntityCreation = () => {
     createCone,
     createTorus,
     createPlane,
+    createWall,
     createCamera,
     createDirectionalLight,
     createPointLight,
@@ -394,6 +555,20 @@ export const useEntityCreation = () => {
     createPrism,
     createPyramid,
     createCapsule,
+    createHelix,
+    createMobiusStrip,
+    createDodecahedron,
+    createIcosahedron,
+    createTetrahedron,
+    createTorusKnot,
+    createRamp,
+    createStairs,
+    createSpiralStairs,
+    createStar,
+    createHeart,
+    createDiamond,
+    createTube,
+    createCross,
     createCustomModel,
     deleteEntity,
   };

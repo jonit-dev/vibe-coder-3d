@@ -1,67 +1,128 @@
 # Project Structure
 
-This document outlines the standard folder structure for the Vibe Coder 3D project. We follow conventions common in Vite + React + TypeScript projects to ensure consistency and maintainability.
+This document outlines the current folder structure for the Vibe Coder 3D project - a Unity-like Game Editor/Engine built with Vite + React + TypeScript.
 
 ```
 vibe-coder-3d/
-├── public/              # Static assets directly served (e.g., favicons, robots.txt)
+├── public/              # Static assets directly served
+│   ├── assets/          # Game assets (models, textures, skyboxes)
+│   │   ├── models/      # 3D models (.glb files)
+│   │   ├── skyboxes/    # Environment skybox textures
+│   │   └── textures/    # Material textures
+│   └── favicon.svg      # Application favicon
 ├── src/                 # Main application source code
-│   ├── core/            # Reusable core engine/framework code
-│   │   ├── assets/      # Core assets (e.g., default materials, shaders)
-│   │   ├── components/  # Core R3F components (e.g., PhysicsBody, PlayerController)
-│   │   ├── hooks/       # Core hooks (e.g., usePhysics, useECSQuery)
-│   │   ├── lib/         # Core utilities (math, physics helpers, ECS setup)
-│   │   ├── systems/     # Core ECS systems (movement, basic AI)
-│   │   ├── state/       # Core state management (e.g., engine settings store)
+│   ├── core/            # Core game engine framework
+│   │   ├── components/  # Core R3F components (cameras, lighting, physics)
+│   │   ├── configs/     # Engine configuration files
+│   │   ├── engine/      # Core engine systems
+│   │   ├── hooks/       # Core engine hooks (ECS, assets, input)
+│   │   ├── lib/         # Core utilities and ECS system
+│   │   │   ├── ecs/     # Entity Component System implementation
+│   │   │   └── ...      # Math, physics, validation utilities
+│   │   ├── state/       # Core engine state management
+│   │   ├── stores/      # Zustand stores for UI and engine state
+│   │   ├── systems/     # Core ECS systems (camera, physics, rendering)
 │   │   └── types/       # Core type definitions
-│   ├── game/            # Game-specific implementation
-│   │   ├── assets/      # Game-specific assets (models, textures, sounds)
-│   │   ├── components/  # Game-specific components (UI, world objects)
-│   │   │   ├── ui/      # Game UI components
-│   │   │   └── world/   # Game world components
-│   │   ├── hooks/       # Game-specific hooks
-│   │   ├── systems/     # Game-specific ECS systems (quest logic, scoring)
-│   │   ├── scenes/      # Definitions for different game levels or scenes
-│   │   ├── state/       # Game-specific state (player progress, game status)
-│   │   └── config/      # Game configuration files (levels, items)
-│   ├── styles/          # Global styles, themes (shared between core/game if needed)
-│   ├── App.tsx          # Root React application component (integrates core + game)
+│   ├── editor/          # Unity-like Editor Interface
+│   │   ├── components/  # Editor UI components
+│   │   │   ├── chat/    # AI chat interface (planned)
+│   │   │   ├── forms/   # Entity/component editing forms
+│   │   │   ├── inspector/ # Inspector panel (component properties)
+│   │   │   ├── layout/  # Editor layout components
+│   │   │   ├── menus/   # Context menus and dropdowns
+│   │   │   ├── panels/  # Main editor panels
+│   │   │   │   ├── HierarchyPanel/  # Scene hierarchy tree
+│   │   │   │   ├── InspectorPanel/  # Component inspector
+│   │   │   │   └── ViewportPanel/   # 3D scene viewport
+│   │   │   ├── physics/ # Physics debugging tools
+│   │   │   └── shared/  # Reusable UI components
+│   │   ├── data/        # Editor configuration and scene data
+│   │   ├── hooks/       # Editor-specific hooks
+│   │   ├── store/       # Editor state management
+│   │   └── types/       # Editor type definitions
+│   ├── config/          # Application configuration
+│   ├── styles/          # Global styles and themes
+│   ├── test/            # Testing utilities and setup
+│   ├── utils/           # General utility functions
+│   ├── App.tsx          # Root application component (loads Editor)
 │   └── main.tsx         # Application entry point
-├── docs/                # Project documentation (Markdown files)
-│   ├── architecture/    # Architectural decisions and diagrams
-│   └── research/        # Initial research documents
-├── .env                 # Environment variables (local, untracked)
-├── .env.example         # Example environment variables
-├── .gitignore           # Specifies intentionally untracked files git should ignore
-├── index.html           # Main HTML entry point (Vite injects scripts here)
-├── package.json         # Project metadata and dependencies
-├── tsconfig.json        # TypeScript compiler options
-├── tsconfig.node.json   # TypeScript config for Node.js context (e.g., Vite config)
-└── vite.config.ts       # Vite build tool configuration
+├── docs/                # Comprehensive project documentation
+│   ├── architecture/    # Technical architecture docs
+│   ├── implementation/  # Implementation guides and status
+│   ├── overview/        # Project vision and getting started
+│   ├── patterns/        # Design patterns and best practices
+│   ├── performance/     # Performance analysis and optimization
+│   ├── research/        # Technical research and investigations
+│   └── refactoring/     # Code improvement plans
+├── __tests__/           # Test files
+├── Configuration Files
+├── package.json         # Dependencies and scripts
+├── tsconfig.json        # TypeScript configuration
+├── vite.config.ts       # Vite build configuration
+├── vitest.config.ts     # Vitest testing configuration
+└── tailwind.config.js   # Tailwind CSS configuration
 ```
 
 ## Key Directory Explanations
 
-- **`public/`**: Files in this directory are served at the root path during development and copied to the root of the build output directory as-is. Use this for assets that must retain their exact filename or path structure (like `favicon.ico`).
-- **`src/`**: Contains all the source code that is processed by Vite. This is where most of the development happens.
-  - **`core/`**: Houses the reusable 3D game framework/engine code. This should be designed to be potentially extractable into a separate package later. It contains the foundational elements built upon our chosen stack (R3F, Rapier, bitecs, etc.).
-    - `assets/`: Default or common assets used by the core engine.
-    - `components/`: Generic, reusable R3F components forming the engine's building blocks.
-    - `hooks/`: Core React hooks providing access to engine functionalities.
-    - `lib/`: Core utility functions, classes, and setup logic for libraries like ECS or physics.
-    - `systems/`: Fundamental ECS systems required for basic engine operation.
-    - `state/`: Zustand stores for managing the engine's internal state or configuration.
-    - `types/`: Shared TypeScript types specifically for the core engine API.
-  - **`game/`**: Contains the specific implementation logic, assets, and configuration for _this particular game_ built using the `core` engine.
-    - `assets/`: Assets unique to this game (character models, level textures, game sounds).
-    - `components/`: Game-specific React components, both for UI (`ui/`) and the 3D world (`world/`), often composing `core` components.
-    - `hooks/`: Custom hooks specific to the game's logic or state management.
-    - `systems/`: ECS systems that implement game-specific rules and behaviors.
-    - `scenes/`: Components or configurations defining different game levels, areas, or states.
-    - `state/`: Zustand stores for managing game-specific state (e.g., score, inventory, quest status).
-    - `config/`: Configuration files defining game parameters, level layouts, item stats, etc.
-  - **`styles/`**: Global CSS, themes, or styles potentially shared across `core` and `game`.
-  - **`App.tsx`**: The main application component that initializes the `core` engine and mounts the `game` logic and UI.
-  - **`main.tsx`**: The absolute entry point, responsible for rendering the `App` component into the DOM.
-- **`docs/`**: All project-related documentation, including architectural decisions, setup guides, and research findings.
-- **Root Configuration Files**: Files like `package.json`, `vite.config.ts`, `tsconfig.json`, and `.gitignore` configure the project's dependencies, build process, TypeScript compilation, and version control behavior.
+### Core Architecture
+
+- **`public/`**: Static assets served directly by Vite. Contains game assets like 3D models, textures, and skyboxes that can be referenced by URL in the editor and runtime.
+
+- **`src/core/`**: The foundational game engine framework built on R3F, Rapier, and BitECS. This layer provides the runtime capabilities for games created in the editor.
+  - `components/`: Core R3F components for cameras, lighting, physics bodies, and UI systems
+  - `hooks/`: Engine hooks for ECS operations, asset loading, input handling, and game loop management
+  - `lib/ecs/`: Complete Entity Component System implementation with BitECS integration
+  - `systems/`: Core ECS systems for camera management, physics synchronization, and rendering
+  - `state/` & `stores/`: Zustand-based state management for engine configuration and UI state
+
+### Editor Architecture (Unity-like)
+
+- **`src/editor/`**: Complete game development environment similar to Unity's editor interface.
+  - `components/panels/`: Main editor interface panels
+    - **HierarchyPanel**: Scene tree view for organizing game objects
+    - **InspectorPanel**: Component property editor with type-safe forms
+    - **ViewportPanel**: Interactive 3D scene view with gizmos and selection tools
+  - `components/shared/`: Reusable UI components (modals, forms, color pickers, etc.)
+  - `hooks/`: Editor-specific functionality (entity creation, selection management, scene operations)
+  - `store/`: Editor state management separate from engine state
+
+### Development Workflow
+
+- **`src/config/`**: Application configuration including asset metadata and engine settings
+- **`src/utils/`**: General utilities for math operations, asset scanning, and helper functions
+- **`docs/`**: Comprehensive documentation covering architecture, implementation guides, and research
+- **`__tests__/`**: Testing infrastructure with utilities for component and integration testing
+
+### Build Configuration
+
+- **Configuration Files**: TypeScript, Vite, Vitest, Tailwind, and ESLint configurations for development workflow
+- **Package Management**: Yarn-based dependency management with development and production builds
+
+## Architecture Philosophy
+
+### Unity-like Development Model
+
+The project follows a Unity-inspired architecture where:
+
+1. **Core Engine** provides runtime capabilities (physics, rendering, ECS)
+2. **Editor Interface** provides visual development tools
+3. **Scene System** manages game objects and components
+4. **Asset Pipeline** handles 3D models, textures, and resources
+5. **Component-based** entity customization through the inspector
+
+### Development vs Runtime Separation
+
+- **Development Time**: Full editor interface with panels, gizmos, and development tools
+- **Runtime**: Lightweight core engine that can run games built in the editor
+- **Asset Management**: Public assets accessible to both editor and runtime
+- **State Management**: Clear separation between editor state and game state
+
+### Future Extensibility
+
+The structure is designed to support:
+
+- **AI-powered development tools** (chat interface placeholder exists)
+- **Plugin system** for custom editor panels and components
+- **Build pipeline** for packaging games for different platforms
+- **Collaborative editing** through the documented Yjs integration plan
