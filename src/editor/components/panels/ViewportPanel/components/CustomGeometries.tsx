@@ -312,7 +312,7 @@ export const StairsGeometry: React.FC<{
 
 /**
  * Creates a spiral stairs geometry
- * A curved staircase that spirals upward
+ * A curved staircase that spirals upward with connected steps
  */
 export const SpiralStairsGeometry: React.FC<{
   steps?: number;
@@ -321,134 +321,172 @@ export const SpiralStairsGeometry: React.FC<{
   stepWidth?: number;
   stepHeight?: number;
   turns?: number;
-}> = ({ steps = 8, radius = 0.6, height = 1.6, stepWidth = 0.3, stepHeight = 0.2, turns = 1 }) => {
+}> = ({
+  steps = 10,
+  radius = 0.8,
+  height = 2.0,
+  stepWidth = 0.4,
+  stepHeight = 0.2,
+  turns = 1.0,
+}) => {
   const geometry = useMemo(() => {
     const geom = new THREE.BufferGeometry();
     const vertices: number[] = [];
     const indices: number[] = [];
     const uvs: number[] = [];
 
+    const innerRadius = radius * 0.2;
+    const outerRadius = radius;
     const angleStep = (turns * 2 * Math.PI) / steps;
     const heightStep = height / steps;
 
-    // Create each step as a simple wedge/box
-    for (let i = 0; i < steps; i++) {
-      const angle = i * angleStep;
-      const stepY = i * heightStep;
+    let vertexOffset = 0;
 
-      // Calculate center position on the radius
-      const centerX = Math.cos(angle) * radius * 0.7; // Closer to center
-      const centerZ = Math.sin(angle) * radius * 0.7;
+    // Create central pole - complete cylinder with caps
+    const poleSegments = 8;
 
-      // Create a wedge-shaped step that extends outward
-      const baseIndex = i * 8;
+    // Center vertices for caps
+    vertices.push(0, 0, 0); // Bottom center
+    vertices.push(0, height, 0); // Top center
+    uvs.push(0.5, 0.5);
+    uvs.push(0.5, 0.5);
+
+    const bottomCenterIndex = vertexOffset;
+    const topCenterIndex = vertexOffset + 1;
+    vertexOffset += 2;
+
+    // Create circle vertices for both top and bottom
+    const bottomVertices: number[] = [];
+    const topVertices: number[] = [];
+
+    for (let i = 0; i < poleSegments; i++) {
+      const angle = (i / poleSegments) * 2 * Math.PI;
+      const x = Math.cos(angle) * innerRadius;
+      const z = Math.sin(angle) * innerRadius;
+
+      // Bottom circle
+      vertices.push(x, 0, z);
+      uvs.push(0.5 + 0.5 * Math.cos(angle), 0.5 + 0.5 * Math.sin(angle));
+      bottomVertices.push(vertexOffset);
+      vertexOffset++;
+
+      // Top circle
+      vertices.push(x, height, z);
+      uvs.push(0.5 + 0.5 * Math.cos(angle), 0.5 + 0.5 * Math.sin(angle));
+      topVertices.push(vertexOffset);
+      vertexOffset++;
+    }
+
+    // Create side faces
+    for (let i = 0; i < poleSegments; i++) {
+      const next = (i + 1) % poleSegments;
+
+      const bottom1 = bottomVertices[i];
+      const bottom2 = bottomVertices[next];
+      const top1 = topVertices[i];
+      const top2 = topVertices[next];
+
+      // Side quad (two triangles)
+      indices.push(bottom1, top1, bottom2);
+      indices.push(bottom2, top1, top2);
+    }
+
+    // Create bottom cap
+    for (let i = 0; i < poleSegments; i++) {
+      const next = (i + 1) % poleSegments;
+      indices.push(bottomCenterIndex, bottomVertices[next], bottomVertices[i]);
+    }
+
+    // Create top cap
+    for (let i = 0; i < poleSegments; i++) {
+      const next = (i + 1) % poleSegments;
+      indices.push(topCenterIndex, topVertices[i], topVertices[next]);
+    }
+
+    // Create steps - simple rectangular treads
+    for (let step = 0; step < steps; step++) {
+      const stepAngle = step * angleStep;
+      const stepY = step * heightStep;
+      const nextStepY = stepY + stepHeight;
 
       // Step dimensions
-      const innerRadius = radius * 0.3;
-      const outerRadius = radius;
-      const stepDepth = stepWidth;
-      const halfAngle = angleStep * 0.4; // Make step slightly smaller than full angle
+      const stepDepth = outerRadius - innerRadius - 0.05;
+      const stepAngleSpan = angleStep * 0.7; // Make steps narrower to leave gaps
 
-      // Calculate the four corners of the step (wedge shape)
-      const innerX1 = Math.cos(angle - halfAngle) * innerRadius;
-      const innerZ1 = Math.sin(angle - halfAngle) * innerRadius;
-      const innerX2 = Math.cos(angle + halfAngle) * innerRadius;
-      const innerZ2 = Math.sin(angle + halfAngle) * innerRadius;
+      // Calculate step corners
+      const angle1 = stepAngle - stepAngleSpan / 2;
+      const angle2 = stepAngle + stepAngleSpan / 2;
 
-      const outerX1 = Math.cos(angle - halfAngle) * outerRadius;
-      const outerZ1 = Math.sin(angle - halfAngle) * outerRadius;
-      const outerX2 = Math.cos(angle + halfAngle) * outerRadius;
-      const outerZ2 = Math.sin(angle + halfAngle) * outerRadius;
+      const innerX1 = Math.cos(angle1) * (innerRadius + 0.05);
+      const innerZ1 = Math.sin(angle1) * (innerRadius + 0.05);
+      const innerX2 = Math.cos(angle2) * (innerRadius + 0.05);
+      const innerZ2 = Math.sin(angle2) * (innerRadius + 0.05);
 
-      // Bottom face vertices (wedge shape)
-      vertices.push(
-        innerX1,
-        stepY,
-        innerZ1, // 0: inner-left
-        innerX2,
-        stepY,
-        innerZ2, // 1: inner-right
-        outerX2,
-        stepY,
-        outerZ2, // 2: outer-right
-        outerX1,
-        stepY,
-        outerZ1, // 3: outer-left
-      );
+      const outerX1 = Math.cos(angle1) * outerRadius;
+      const outerZ1 = Math.sin(angle1) * outerRadius;
+      const outerX2 = Math.cos(angle2) * outerRadius;
+      const outerZ2 = Math.sin(angle2) * outerRadius;
 
-      // Top face vertices
-      vertices.push(
-        innerX1,
-        stepY + stepHeight,
-        innerZ1, // 4: inner-left-top
-        innerX2,
-        stepY + stepHeight,
-        innerZ2, // 5: inner-right-top
-        outerX2,
-        stepY + stepHeight,
-        outerZ2, // 6: outer-right-top
-        outerX1,
-        stepY + stepHeight,
-        outerZ1, // 7: outer-left-top
-      );
-
-      // UV coordinates
-      for (let j = 0; j < 8; j++) {
-        uvs.push(j % 2, Math.floor(j / 4));
-      }
-
-      // Create faces for the step
-      const stepIndices = [
+      // Create step geometry (8 vertices for a rectangular step)
+      const stepVertices = [
         // Bottom face
-        baseIndex + 0,
-        baseIndex + 1,
-        baseIndex + 2,
-        baseIndex + 0,
-        baseIndex + 2,
-        baseIndex + 3,
-
+        innerX1,
+        stepY,
+        innerZ1, // 0
+        innerX2,
+        stepY,
+        innerZ2, // 1
+        outerX2,
+        stepY,
+        outerZ2, // 2
+        outerX1,
+        stepY,
+        outerZ1, // 3
         // Top face
-        baseIndex + 4,
-        baseIndex + 6,
-        baseIndex + 5,
-        baseIndex + 4,
-        baseIndex + 7,
-        baseIndex + 6,
-
-        // Inner edge
-        baseIndex + 0,
-        baseIndex + 4,
-        baseIndex + 1,
-        baseIndex + 1,
-        baseIndex + 4,
-        baseIndex + 5,
-
-        // Outer edge
-        baseIndex + 2,
-        baseIndex + 6,
-        baseIndex + 3,
-        baseIndex + 3,
-        baseIndex + 6,
-        baseIndex + 7,
-
-        // Left side
-        baseIndex + 0,
-        baseIndex + 3,
-        baseIndex + 4,
-        baseIndex + 3,
-        baseIndex + 7,
-        baseIndex + 4,
-
-        // Right side
-        baseIndex + 1,
-        baseIndex + 5,
-        baseIndex + 2,
-        baseIndex + 2,
-        baseIndex + 5,
-        baseIndex + 6,
+        innerX1,
+        nextStepY,
+        innerZ1, // 4
+        innerX2,
+        nextStepY,
+        innerZ2, // 5
+        outerX2,
+        nextStepY,
+        outerZ2, // 6
+        outerX1,
+        nextStepY,
+        outerZ1, // 7
       ];
 
-      indices.push(...stepIndices);
+      vertices.push(...stepVertices);
+
+      // UV coordinates
+      for (let i = 0; i < 8; i++) {
+        uvs.push(i % 2, Math.floor(i / 4));
+      }
+
+      const base = vertexOffset;
+
+      // Step faces
+      // Top face (tread)
+      indices.push(base + 4, base + 5, base + 6, base + 4, base + 6, base + 7);
+
+      // Bottom face
+      indices.push(base, base + 3, base + 2, base, base + 2, base + 1);
+
+      // Side faces
+      // Inner edge
+      indices.push(base, base + 1, base + 5, base, base + 5, base + 4);
+
+      // Outer edge
+      indices.push(base + 2, base + 3, base + 7, base + 2, base + 7, base + 6);
+
+      // Front edge (riser)
+      indices.push(base + 1, base + 2, base + 6, base + 1, base + 6, base + 5);
+
+      // Back edge
+      indices.push(base + 3, base, base + 4, base + 3, base + 4, base + 7);
+
+      vertexOffset += 8;
     }
 
     geom.setIndex(indices);
