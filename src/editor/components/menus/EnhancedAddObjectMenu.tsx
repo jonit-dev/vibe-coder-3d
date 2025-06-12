@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiBox, FiFolder } from 'react-icons/fi';
+import { FiBox, FiFolder, FiSun, FiZap } from 'react-icons/fi';
 import {
   TbBox,
   TbBuildingBridge,
@@ -10,6 +10,7 @@ import {
   TbDiamond,
   TbHeart,
   TbHexagon,
+  TbLamp,
   TbMath,
   TbOctagon,
   TbPlus,
@@ -30,7 +31,7 @@ import { IMenuCategory, IMenuItemOption, NestedDropdownMenu } from './NestedDrop
 
 export interface IEnhancedAddObjectMenuProps {
   anchorRef: React.RefObject<HTMLElement>;
-  onAdd: (type: ShapeType) => void;
+  onAdd: (type: ShapeType | string) => void;
   onCustomModel?: () => void;
 }
 
@@ -204,6 +205,32 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
     ],
   },
   {
+    label: 'Lighting',
+    icon: <FiSun size={18} />,
+    items: [
+      {
+        type: 'DirectionalLight',
+        label: 'Directional Light',
+        icon: <TbLamp size={18} />,
+      },
+      {
+        type: 'PointLight',
+        label: 'Point Light',
+        icon: <FiZap size={18} />,
+      },
+      {
+        type: 'SpotLight',
+        label: 'Spot Light',
+        icon: <TbLamp size={18} />,
+      },
+      {
+        type: 'AmbientLight',
+        label: 'Ambient Light',
+        icon: <FiSun size={18} />,
+      },
+    ],
+  },
+  {
     label: 'Assets',
     icon: <FiFolder size={18} />,
     items: [
@@ -227,6 +254,13 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
   const handleItemSelect = (item: IMenuItemOption) => {
     if (item.type === 'CustomModel') {
       onCustomModel?.();
+      return;
+    }
+
+    // Handle light types
+    const lightTypes = ['DirectionalLight', 'PointLight', 'SpotLight', 'AmbientLight'];
+    if (lightTypes.includes(item.type as string)) {
+      onAdd(item.type as string);
       return;
     }
 

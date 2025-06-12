@@ -2,19 +2,70 @@
 
 ## Overview
 
-This document outlines the implementation plan for a comprehensive terrain system in Vibe Coder 3D. The terrain system will integrate seamlessly with the existing Unity-like editor architecture while providing specialized capabilities for large-scale landscape creation and editing.
+### Context & Goals
 
-## Architecture Decision: Hybrid Approach
+- **Landscape Creation Need**: Vibe Coder 3D currently lacks specialized tools for creating large-scale natural landscapes and environmental terrain, limiting users to basic geometric shapes for ground surfaces
+- **Unity-like Workflow**: Users expect familiar terrain creation tools similar to Unity's terrain system, with heightmap support, multi-layer texturing, and performance-optimized rendering
+- **Performance Requirements**: Large terrain systems need specialized LOD (Level of Detail) management and chunk-based rendering to maintain 60+ FPS with complex landscapes spanning hundreds of square kilometers
+- **Physics Integration**: Terrain must integrate seamlessly with the existing Rapier3D physics system using optimized `HeightfieldCollider` for realistic collision detection without performance degradation
 
-After analyzing the current Vibe Coder 3D architecture, we've chosen a **hybrid approach** that leverages the existing shape system while introducing specialized terrain subsystems. This approach provides the best balance of integration and performance optimization.
+### Current Pain Points
 
-### Why Hybrid Approach?
+- **Limited Ground Creation**: Users must create ground surfaces using scaled cubes or planes, which don't support natural landscape features like hills, valleys, or complex terrain topology
+- **No Heightmap Support**: The current system lacks ability to import real-world elevation data or create procedural terrain using noise functions and heightmaps
+- **Performance Issues with Large Surfaces**: Creating large ground areas using multiple primitive shapes causes performance bottlenecks due to excessive draw calls and physics calculations
+- **Missing Terrain Tools**: No specialized editing tools for terrain sculpting, texture blending, or environmental detail placement that are standard in modern 3D engines
 
-1. **Seamless Editor Integration**: Works with existing hierarchy, inspector, and entity management
-2. **Performance Optimization**: Enables terrain-specific optimizations without affecting other systems
-3. **Physics Compatibility**: Integrates with existing Rapier3D physics system
-4. **Familiar Workflow**: Maintains Unity-like entity creation and property editing patterns
-5. **Future Extensibility**: Clear path for advanced terrain features
+## Proposed Solution
+
+### High-level Summary
+
+- **Hybrid Integration Approach**: Extend the existing ECS component system with a specialized `Terrain` component that leverages current architecture while adding terrain-specific optimizations
+- **HeightfieldCollider Physics**: Utilize Rapier3D's native `HeightfieldCollider` for memory-efficient, high-performance terrain physics without requiring additional dependencies
+- **Multi-layer Texture System**: Implement custom shader-based texture blending supporting up to 8 terrain layers with height-based and slope-based automatic blending rules
+- **Chunk-based LOD Rendering**: Develop a streaming LOD system that dynamically loads/unloads terrain chunks based on camera distance, supporting massive terrains (1000x1000+ world units)
+- **Editor Tool Integration**: Create intuitive terrain creation and editing tools within the existing Unity-like editor interface, including heightmap import and basic sculpting capabilities
+
+### Architecture & Directory Structure
+
+```typescript
+src/
+├── core/
+│   ├── lib/
+│   │   ├── ecs/
+│   │   │   ├── components/
+│   │   │   │   ├── definitions/
+│   │   │   │   │   └── TerrainComponent.ts          # New terrain ECS component
+│   │   │   │   └── ComponentDefinitions.ts          # Register terrain component
+│   │   └── terrain/                                 # New terrain subsystem
+│   │       ├── TerrainGeometry.ts                   # Heightmap-based geometry generation
+│   │       ├── TerrainMaterial.ts                   # Multi-layer texture blending
+│   │       ├── TerrainPhysics.ts                    # HeightfieldCollider integration
+│   │       ├── TerrainLOD.ts                        # Level-of-detail management
+│   │       └── TerrainStreaming.ts                  # Chunk-based streaming system
+├── editor/
+│   ├── components/
+│   │   ├── menus/
+│   │   │   └── EnhancedAddObjectMenu.tsx            # Add terrain to menu
+│   │   ├── panels/
+│   │   │   ├── ViewportPanel/
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── TerrainGeometry.tsx          # React Three Fiber integration
+│   │   │   │   │   ├── TerrainMaterial.tsx          # Material rendering component
+│   │   │   │   │   └── TerrainCollider.tsx          # Physics visualization
+│   │   │   └── InspectorPanel/
+│   │   │       └── Terrain/                         # New terrain inspector sections
+│   │   │           ├── TerrainSection.tsx           # Basic terrain properties
+│   │   │           ├── HeightmapSection.tsx         # Heightmap import/export
+│   │   │           ├── TextureSection.tsx           # Multi-layer texturing
+│   │   │           └── LODSection.tsx               # Performance settings
+│   │   └── terrain/                                 # New terrain-specific UI
+│   │       ├── HeightmapImporter.tsx                # Heightmap file handling
+│   │       ├── TextureLayerEditor.tsx               # Layer configuration
+│   │       └── TerrainPreview.tsx                   # Real-time preview
+│   └── types/
+│       └── shapes.ts                                # Add Terrain to ShapeType enum
+```
 
 ## Implementation Phases
 

@@ -342,66 +342,73 @@ export const SpiralStairsGeometry: React.FC<{
 
     let vertexOffset = 0;
 
-    // Create central pole - complete cylinder with caps
+    // --- Create Central Pole ---
+    // This creates a complete, solid cylinder with correct normals and caps.
     const poleSegments = 8;
+    const poleVertices: number[] = [];
+    const poleIndices: number[] = [];
+    const poleUvs: number[] = [];
+    let poleVertexCount = 0;
 
-    // Center vertices for caps
-    vertices.push(0, 0, 0); // Bottom center
-    vertices.push(0, height, 0); // Top center
-    uvs.push(0.5, 0.5);
-    uvs.push(0.5, 0.5);
+    // Helper to add a vertex
+    const addVertex = (x: number, y: number, z: number, u: number, v: number) => {
+      poleVertices.push(x, y, z);
+      poleUvs.push(u, v);
+      return poleVertexCount++;
+    };
 
-    const bottomCenterIndex = vertexOffset;
-    const topCenterIndex = vertexOffset + 1;
-    vertexOffset += 2;
-
-    // Create circle vertices for both top and bottom
-    const bottomVertices: number[] = [];
-    const topVertices: number[] = [];
-
-    for (let i = 0; i < poleSegments; i++) {
+    // --- Side Vertices ---
+    const sideVertexStartIndex = poleVertexCount;
+    for (let i = 0; i <= poleSegments; i++) {
       const angle = (i / poleSegments) * 2 * Math.PI;
       const x = Math.cos(angle) * innerRadius;
       const z = Math.sin(angle) * innerRadius;
-
-      // Bottom circle
-      vertices.push(x, 0, z);
-      uvs.push(0.5 + 0.5 * Math.cos(angle), 0.5 + 0.5 * Math.sin(angle));
-      bottomVertices.push(vertexOffset);
-      vertexOffset++;
-
-      // Top circle
-      vertices.push(x, height, z);
-      uvs.push(0.5 + 0.5 * Math.cos(angle), 0.5 + 0.5 * Math.sin(angle));
-      topVertices.push(vertexOffset);
-      vertexOffset++;
+      addVertex(x, 0, z, i / poleSegments, 0); // Bottom vertex
+      addVertex(x, height, z, i / poleSegments, 1); // Top vertex
     }
 
-    // Create side faces
+    // --- Side Faces ---
     for (let i = 0; i < poleSegments; i++) {
-      const next = (i + 1) % poleSegments;
-
-      const bottom1 = bottomVertices[i];
-      const bottom2 = bottomVertices[next];
-      const top1 = topVertices[i];
-      const top2 = topVertices[next];
-
-      // Side quad (two triangles)
-      indices.push(bottom1, top1, bottom2);
-      indices.push(bottom2, top1, top2);
+      const bl = sideVertexStartIndex + i * 2;
+      const tl = sideVertexStartIndex + i * 2 + 1;
+      const br = sideVertexStartIndex + (i + 1) * 2;
+      const tr = sideVertexStartIndex + (i + 1) * 2 + 1;
+      poleIndices.push(bl, br, tl, br, tr, tl);
     }
 
-    // Create bottom cap
-    for (let i = 0; i < poleSegments; i++) {
-      const next = (i + 1) % poleSegments;
-      indices.push(bottomCenterIndex, bottomVertices[next], bottomVertices[i]);
-    }
+    // --- Cap Vertices & Faces ---
+    const createCap = (isTop: boolean) => {
+      const y = isTop ? height : 0;
+      const centerIdx = addVertex(0, y, 0, 0.5, 0.5);
+      const ringStartIndex = poleVertexCount;
 
-    // Create top cap
-    for (let i = 0; i < poleSegments; i++) {
-      const next = (i + 1) % poleSegments;
-      indices.push(topCenterIndex, topVertices[i], topVertices[next]);
-    }
+      for (let i = 0; i <= poleSegments; i++) {
+        const angle = (i / poleSegments) * 2 * Math.PI;
+        const x = Math.cos(angle) * innerRadius;
+        const z = Math.sin(angle) * innerRadius;
+        addVertex(x, y, z, 0.5 + Math.cos(angle) * 0.5, 0.5 + Math.sin(angle) * 0.5);
+      }
+
+      for (let i = 0; i < poleSegments; i++) {
+        const p1 = ringStartIndex + i;
+        const p2 = ringStartIndex + i + 1;
+        if (isTop) {
+          poleIndices.push(centerIdx, p1, p2);
+        } else {
+          poleIndices.push(centerIdx, p2, p1); // Flip winding for bottom cap
+        }
+      }
+    };
+
+    createCap(false); // Bottom cap
+    createCap(true); // Top cap
+
+    // --- Add pole to the main geometry ---
+    const baseVertexIndex = vertexOffset;
+    vertices.push(...poleVertices);
+    uvs.push(...poleUvs);
+    poleIndices.forEach((i) => indices.push(i + baseVertexIndex));
+    vertexOffset += poleVertexCount;
 
     // Create steps - simple rectangular treads
     for (let step = 0; step < steps; step++) {

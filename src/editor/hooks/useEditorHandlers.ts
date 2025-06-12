@@ -60,6 +60,10 @@ export const useEditorHandlers = ({
     createTube,
     createCross,
     createCustomModel,
+    createDirectionalLight,
+    createPointLight,
+    createSpotLight,
+    createAmbientLight,
   } = useEntityCreation();
 
   // Scene action hooks - get both new and legacy methods
@@ -80,7 +84,7 @@ export const useEditorHandlers = ({
 
   // Entity creation handler
   const handleAddObject = useCallback(
-    async (type: ShapeType, modelPath?: string) => {
+    async (type: ShapeType | string, modelPath?: string) => {
       try {
         let entity;
         switch (type) {
@@ -172,8 +176,20 @@ export const useEditorHandlers = ({
               throw new Error('CustomModel requires a modelPath');
             }
             break;
+          case 'DirectionalLight':
+            entity = createDirectionalLight();
+            break;
+          case 'PointLight':
+            entity = createPointLight();
+            break;
+          case 'SpotLight':
+            entity = createSpotLight();
+            break;
+          case 'AmbientLight':
+            entity = createAmbientLight();
+            break;
           default:
-            entity = createEntity(type);
+            entity = createEntity(type as string);
             break;
         }
 
@@ -218,6 +234,10 @@ export const useEditorHandlers = ({
       createCross,
       createCamera,
       createCustomModel,
+      createDirectionalLight,
+      createPointLight,
+      createSpotLight,
+      createAmbientLight,
       setSelectedId,
       setStatusMessage,
       setShowAddMenu,
