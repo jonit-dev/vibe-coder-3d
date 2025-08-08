@@ -763,6 +763,61 @@ export interface ITerrainColliderData extends IColliderData {
 }
 ```
 
+### Added: End-to-End Heightfield Collider Wiring (Implemented)
+
+This project now ships with a full, reactive Heightfield collider path that mirrors the procedural terrain mesh exactly and efficiently.
+
+Implementation summary:
+
+1. ECS Schema updates
+
+- File: `src/core/lib/ecs/components/definitions/MeshColliderComponent.ts`
+  - Extended `ColliderType` to include `'heightfield'`.
+  - Updated Zod enum to accept `'heightfield'`.
+  - Mapped to internal `shapeType` index.
+
+2. Inspector UI
+
+- File: `src/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection.tsx`
+  - Added “Heightfield (Terrain)” to the collider type select.
+  - Shows a short hint when heightfield is selected.
+
+3. Collider selection and config
+
+- File: `src/editor/components/panels/ViewportPanel/hooks/useEntityColliders.ts`
+  - Returns `'heightfield'` for Terrain by default (fallback) and when explicitly chosen in the MeshCollider.
+  - Provides base collider config; terrain-specific data is injected later.
+
+4. Terrain → Heightfield data generation
+
+- File: `src/editor/components/panels/ViewportPanel/utils/terrainHeightfield.ts`
+  - New utility `generateHeightfieldFromTerrain(terrain)` reuses the same multi‑octave value noise and rim shaping as the visual mesh to produce `[rows, cols, heights, scale]` expected by Rapier.
+  - Heights are normalized so the lowest point sits at world Y=0 (matching geometry).
+
+5. Runtime injection into colliders
+
+- File: `src/editor/components/panels/ViewportPanel/EntityRenderer.tsx`
+  - When the computed collider type is `'heightfield'`, we locate the entity's `Terrain` data, generate heightfield arrays, and pass them to `EntityColliders`.
+  - This ties collider rebuilds to terrain edits (size, segments, noise params). The existing `terrainColliderKey` forces the physics body to remount on changes.
+
+6. Collider rendering
+
+- File: `src/editor/components/panels/ViewportPanel/components/EntityColliders.tsx`
+  - Renders `<HeightfieldCollider>` with Rapier’s expected args: `[cols, rows, heights, { x, y, z }]`.
+
+Editor usage:
+
+- Select a terrain entity → add or open `Mesh Collider` in the Inspector → choose “Heightfield (Terrain)”.
+- Tweak terrain parameters (size, segments, noise). Collider updates automatically and matches the visible mesh.
+
+Performance notes:
+
+- Heightfield is significantly cheaper than a trimesh for large terrains. We generate densities based on segments; for very large terrains consider reducing segments to the minimum that still matches gameplay needs.
+
+Follow‑ups:
+
+- Colliders can be chunked per LOD in the future. The current single heightfield is adequate for typical editor scenes.
+
 **Physics Body Management**:
 
 ```typescript
