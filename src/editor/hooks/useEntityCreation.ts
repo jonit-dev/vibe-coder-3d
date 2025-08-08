@@ -14,6 +14,7 @@ export const useEntityCreation = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
   const setSelectedId = useEditorStore((state) => state.setSelectedId);
+  const setSelectedIds = useEditorStore((state) => state.setSelectedIds);
   const { getComponentData } = useEntityData();
 
   // Helper to get the next available number for entity naming
@@ -45,12 +46,12 @@ export const useEntityCreation = () => {
 
       componentManager.addComponent(entity.id, KnownComponentTypes.TRANSFORM, defaultTransform);
 
-      // Select the newly created entity
-      setSelectedId(entity.id);
+      // Select the newly created entity (ensure hierarchy selection highlights)
+      setSelectedIds([entity.id]);
 
       return entity;
     },
-    [entityManager, componentManager, setSelectedId],
+    [entityManager, componentManager, setSelectedIds],
   );
 
   const addMeshRenderer = useCallback(

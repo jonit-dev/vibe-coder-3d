@@ -1,9 +1,10 @@
+import type { ThreeEvent } from '@react-three/fiber';
 import { useCallback, useEffect, useRef } from 'react';
 import type { Mesh } from 'three';
 import * as THREE from 'three';
 
-import { useEditorStore } from '@/editor/store/editorStore';
 import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
+import { useEditorStore } from '@/editor/store/editorStore';
 
 interface IUseEntitySelectionProps {
   entityId: number;
@@ -38,7 +39,7 @@ export const useEntitySelection = ({
 
   // Memoized click handler with group selection support
   const handleMeshClick = useCallback(
-    (e: React.MouseEvent) => {
+    (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
 
       console.log(
@@ -61,8 +62,8 @@ export const useEntitySelection = ({
 
       // Use group selection for viewport clicks
       groupSelection.handleHierarchySelection(entityId, {
-        ctrlKey: e.ctrlKey || false,
-        shiftKey: e.shiftKey || false,
+        ctrlKey: !!e.ctrlKey,
+        shiftKey: !!e.shiftKey,
         selectChildren: false, // Don't auto-select children on viewport clicks (only hierarchy does that)
         allEntityIds, // Pass entity IDs for range selection
       });

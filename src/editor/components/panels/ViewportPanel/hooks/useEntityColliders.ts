@@ -23,6 +23,8 @@ export const useEntityColliders = ({ meshCollider, meshType }: IUseEntityCollide
           return 'hull';
         case 'mesh':
           return 'trimesh';
+        case 'heightfield':
+          return 'heightfield';
         default:
           return 'cuboid';
       }
@@ -31,7 +33,7 @@ export const useEntityColliders = ({ meshCollider, meshType }: IUseEntityCollide
     // Fallback to auto-detection based on mesh type
     switch (meshType) {
       case 'Terrain':
-        return 'trimesh';
+        return 'heightfield';
       case 'Sphere':
         return 'ball';
       case 'Cylinder':
@@ -54,12 +56,21 @@ export const useEntityColliders = ({ meshCollider, meshType }: IUseEntityCollide
       return null;
     }
 
-    return {
+    const base = {
       type: meshColliderData.colliderType,
       center: meshColliderData.center ?? [0, 0, 0],
       isTrigger: meshColliderData.isTrigger,
       size: meshColliderData.size,
-    };
+    } as any;
+
+    // For heightfield, we need to pass the terrain data
+    if (meshColliderData.colliderType === 'heightfield') {
+      // Pull terrain from entityComponents is not available here; this hook only has meshCollider.
+      // So TerrainHeightfield will be provided via fallback path in EntityRenderer when meshType is Terrain.
+      // Keep base structure; EntityRenderer will inject terrain details where needed.
+    }
+
+    return base;
   }, [meshCollider?.data]);
 
   return {

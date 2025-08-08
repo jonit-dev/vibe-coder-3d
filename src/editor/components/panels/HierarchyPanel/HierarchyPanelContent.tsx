@@ -33,7 +33,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { IEntity } from '@/core/lib/ecs/IEntity';
@@ -441,6 +441,31 @@ export const HierarchyPanelContent: React.FC = () => {
   const allEntityIds = hierarchicalTree.map((node) => node.entity.id.toString());
 
   const selectionInfo = groupSelection.getSelectionInfo();
+
+  // Auto-expand to and scroll the selected entity into view
+  useEffect(() => {
+    if (selectedId == null) return;
+
+    // Expand the chain of parents up to the root so the selected item is visible
+    const pathToRoot = new Set<number>();
+    let currentId: number | undefined | null = selectedId;
+    while (currentId != null) {
+      pathToRoot.add(currentId);
+      const entity = entityManager.getEntity(currentId);
+      if (!entity || !entity.parentId) break;
+      currentId = entity.parentId;
+    }
+    setExpandedNodes((prev) => new Set<number>([...prev, ...Array.from(pathToRoot)]));
+
+    // Scroll the selected item into view after the list renders
+    const scroll = () => {
+      const ref = itemRefs.current[selectedId]?.current;
+      ref?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    };
+    // Use rAF to ensure DOM is updated after state changes
+    const raf = requestAnimationFrame(scroll);
+    return () => cancelAnimationFrame(raf);
+  }, [selectedId, hierarchicalTree.length, entityManager]);
 
   return (
     <div className="p-2">

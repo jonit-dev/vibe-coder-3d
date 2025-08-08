@@ -1,3 +1,4 @@
+import type { ThreeEvent } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import React from 'react';
 
@@ -11,6 +12,7 @@ import { EntityMesh } from './components/EntityMesh';
 import { EntityOutline } from './components/EntityOutline';
 import { useEntityColliders } from './hooks/useEntityColliders';
 import { useEntityComponents } from './hooks/useEntityComponents';
+import type { IPhysicsContributions, IRenderingContributions } from './hooks/useEntityMesh';
 import { useEntityMesh } from './hooks/useEntityMesh';
 import { useEntitySelection } from './hooks/useEntitySelection';
 import { useEntityTransform } from './hooks/useEntityTransform';
@@ -128,39 +130,46 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     const meshContent = !shouldHideMesh ? (
       <EntityMesh
         meshRef={meshRef}
-        meshType={meshType}
-        renderingContributions={renderingContributions}
-        entityColor={entityColor}
+        meshType={meshType as string | null}
+        renderingContributions={renderingContributions as IRenderingContributions}
+        entityColor={entityColor as string}
         entityId={entityId}
-        onMeshClick={handleMeshClick}
+        onMeshClick={handleMeshClick as unknown as (e: ThreeEvent<MouseEvent>) => void}
         isPlaying={isPlaying}
         entityComponents={entityComponents}
       />
     ) : null;
+
+    // When not using physics, render mesh normally and overlay gizmo controls separately
+    const renderedNonPhysicsMesh = meshContent;
 
     return (
       <group>
         {shouldHavePhysics ? (
           <RigidBody
             key={terrainColliderKey}
-            type={physicsContributions.rigidBodyProps?.type as any}
-            mass={physicsContributions.rigidBodyProps?.mass ?? 1}
-            friction={physicsContributions.rigidBodyProps?.friction ?? 0.7}
-            restitution={physicsContributions.rigidBodyProps?.restitution ?? 0.3}
-            density={physicsContributions.rigidBodyProps?.density ?? 1}
-            gravityScale={physicsContributions.rigidBodyProps?.gravityScale ?? 1}
-            canSleep={physicsContributions.rigidBodyProps?.canSleep ?? true}
+            type={(physicsContributions as IPhysicsContributions).rigidBodyProps.type as any}
+            mass={(physicsContributions as IPhysicsContributions).rigidBodyProps.mass}
+            friction={(physicsContributions as IPhysicsContributions).rigidBodyProps.friction}
+            restitution={(physicsContributions as IPhysicsContributions).rigidBodyProps.restitution}
+            density={(physicsContributions as IPhysicsContributions).rigidBodyProps.density}
+            gravityScale={
+              (physicsContributions as IPhysicsContributions).rigidBodyProps.gravityScale
+            }
+            canSleep={(physicsContributions as IPhysicsContributions).rigidBodyProps.canSleep}
             position={position}
             rotation={rotationRadians}
             scale={scale}
-            colliders={hasCustomColliders ? false : (colliderType as any)}
+            colliders={
+              hasCustomColliders ? false : (colliderType as 'ball' | 'cuboid' | 'hull' | 'trimesh')
+            }
           >
             {/* Custom Colliders based on MeshCollider settings */}
             <EntityColliders colliderConfig={colliderConfig} />
             {meshContent}
           </RigidBody>
         ) : (
-          meshContent
+          renderedNonPhysicsMesh
         )}
 
         {/* Gizmo controls (disabled during physics) - only show on primary selection */}

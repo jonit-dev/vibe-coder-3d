@@ -10,13 +10,13 @@ import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 
 // Define collider types
-export type ColliderType = 'box' | 'sphere' | 'capsule' | 'mesh' | 'convex';
+export type ColliderType = 'box' | 'sphere' | 'capsule' | 'mesh' | 'convex' | 'heightfield';
 
 // MeshCollider Schema
 const MeshColliderSchema = z.object({
   enabled: z.boolean(),
   isTrigger: z.boolean(),
-  colliderType: z.enum(['box', 'sphere', 'capsule', 'mesh', 'convex']),
+  colliderType: z.enum(['box', 'sphere', 'capsule', 'mesh', 'convex', 'heightfield']),
   center: z.tuple([z.number(), z.number(), z.number()]),
   size: z.object({
     width: z.number(),
@@ -64,6 +64,7 @@ export const meshColliderComponent = ComponentFactory.create({
       2: 'capsule',
       3: 'mesh',
       4: 'convex',
+      5: 'heightfield',
     };
 
     return {
@@ -98,6 +99,7 @@ export const meshColliderComponent = ComponentFactory.create({
       capsule: 2,
       mesh: 3,
       convex: 4,
+      heightfield: 5,
     };
 
     component.enabled[eid] = data.enabled ? 1 : 0;

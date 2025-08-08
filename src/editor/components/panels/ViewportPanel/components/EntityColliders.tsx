@@ -1,4 +1,4 @@
-import { BallCollider, CuboidCollider } from '@react-three/rapier';
+import { BallCollider, CuboidCollider, HeightfieldCollider } from '@react-three/rapier';
 import React from 'react';
 
 interface IColliderSize {
@@ -16,6 +16,13 @@ interface IEntityCollidersProps {
     center: [number, number, number];
     isTrigger: boolean;
     size: IColliderSize;
+    // Optional terrain data for heightfield
+    terrain?: {
+      widthSegments: number;
+      depthSegments: number;
+      heights: number[];
+      scale: { x: number; y: number; z: number };
+    };
   } | null;
 }
 
@@ -42,6 +49,18 @@ export const EntityColliders: React.FC<IEntityCollidersProps> = React.memo(({ co
             size?.capsuleRadius ?? 0.5,
             (size?.capsuleHeight ?? 1) / 2,
             size?.capsuleRadius ?? 0.5,
+          ]}
+          position={center}
+          sensor={isTrigger}
+        />
+      )}
+      {type === 'heightfield' && colliderConfig.terrain && (
+        <HeightfieldCollider
+          args={[
+            colliderConfig.terrain.widthSegments,
+            colliderConfig.terrain.depthSegments,
+            colliderConfig.terrain.heights,
+            colliderConfig.terrain.scale,
           ]}
           position={center}
           sensor={isTrigger}

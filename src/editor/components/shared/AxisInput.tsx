@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { MdDragIndicator } from 'react-icons/md';
 
 export interface IAxisInputProps {
@@ -12,6 +12,7 @@ export interface IAxisInputProps {
   dragActive: boolean;
   min?: number;
   max?: number;
+  precision?: number;
 }
 
 export const AxisInput: React.FC<IAxisInputProps> = ({
@@ -25,7 +26,48 @@ export const AxisInput: React.FC<IAxisInputProps> = ({
   dragActive,
   min,
   max,
+  precision = 2,
 }) => {
+  const [text, setText] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
+
+  const formatted = useMemo(
+    () => (Number.isFinite(value) ? value.toFixed(Math.max(0, precision)) : ''),
+    [value, precision],
+  );
+
+  // Keep local text in sync when not actively editing or during drags
+  useEffect(() => {
+    if (!isEditing || dragActive) {
+      setText(formatted);
+    }
+  }, [formatted, isEditing, dragActive]);
+
+  const clamp = (n: number): number => {
+    if (min !== undefined && n < min) return min;
+    if (max !== undefined && n > max) return max;
+    return n;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextText = e.target.value;
+    setText(nextText);
+    // Allow transitional states like '-', '4.', '' while typing
+    const parsed = parseFloat(nextText);
+    if (!Number.isNaN(parsed)) {
+      onChange(clamp(parsed));
+    }
+  };
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    const parsed = parseFloat(text);
+    const finalNum = Number.isNaN(parsed) ? value : clamp(parsed);
+    onChange(finalNum);
+    setText(Number.isFinite(finalNum) ? finalNum.toFixed(Math.max(0, precision)) : '');
+  };
+
+  const handleFocus = () => setIsEditing(true);
   const getAxisColorClass = (axisColor: string) => {
     switch (axisColor) {
       case '#ff6b6b':
@@ -61,8 +103,10 @@ export const AxisInput: React.FC<IAxisInputProps> = ({
           step={step}
           min={min}
           max={max}
-          value={value.toFixed(2)}
-          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          value={text}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
         />
 
         <div

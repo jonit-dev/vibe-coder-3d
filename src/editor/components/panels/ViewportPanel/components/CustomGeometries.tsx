@@ -920,73 +920,130 @@ export const TreeGeometry: React.FC<{
 
 /**
  * Creates a rock geometry
- * An irregular rock-like shape with multiple variations
+ * A realistic boulder with natural erosion and fracture patterns
  */
 export const RockGeometry: React.FC<{
   size?: number;
-  detail?: number;
-  randomness?: number;
+  complexity?: number;
   seed?: number;
-}> = ({ size = 0.5, detail = 12, randomness = 0.4, seed = Math.random() }) => {
-  const geometry = useMemo(() => {
+}> = ({ size = 0.6, complexity = 2, seed = Math.random() }) => {
+  const rockGroup = useMemo(() => {
+    const group = new THREE.Group();
+
     // Use seed for consistent randomness
     const seededRandom = (s: number) => {
       const x = Math.sin(s) * 10000;
       return x - Math.floor(x);
     };
 
-    // Start with different base shapes for variety
-    const shapeType = Math.floor(seededRandom(seed) * 3);
-    let baseGeom: THREE.BufferGeometry;
+    // Create main rock body using a more natural approach
+    const createRockGeometry = (baseSize: number, subdivisions: number, noiseFactor: number) => {
+      // Start with a more natural base shape - a rough sphere
+      const geom = new THREE.SphereGeometry(baseSize, 8 + subdivisions * 2, 6 + subdivisions);
+      const positions = geom.attributes.position.array as Float32Array;
 
-    switch (shapeType) {
-      case 0:
-        baseGeom = new THREE.IcosahedronGeometry(size, 1);
-        break;
-      case 1:
-        baseGeom = new THREE.DodecahedronGeometry(size, 0);
-        break;
-      default:
-        baseGeom = new THREE.OctahedronGeometry(size, 1);
-        break;
-    }
+      // Apply natural rock deformation
+      for (let i = 0; i < positions.length; i += 3) {
+        const vertex = new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]);
+        const originalLength = vertex.length();
 
-    const positions = baseGeom.attributes.position.array as Float32Array;
+        // Create angular, faceted surfaces like real rocks
+        const facetNoise = Math.floor(seededRandom(seed + i * 0.1) * 6) * 0.1;
 
-    // Add complex noise for more realistic rock shape
-    for (let i = 0; i < positions.length; i += 3) {
-      const vertex = new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]);
-      const length = vertex.length();
+        // Apply multiple layers of deformation
+        // Layer 1: Large-scale boulder shape variation
+        const noise1 = (seededRandom(seed + i * 0.3) - 0.5) * noiseFactor * baseSize * 0.8;
 
-      // Multi-octave noise for natural variation
-      const noise1 = (seededRandom(seed + i) - 0.5) * randomness * size;
-      const noise2 = (seededRandom(seed + i + 1000) - 0.5) * randomness * size * 0.5;
-      const noise3 = (seededRandom(seed + i + 2000) - 0.5) * randomness * size * 0.25;
-      const totalNoise = noise1 + noise2 + noise3;
+        // Layer 2: Medium-scale surface roughness
+        const noise2 = (seededRandom(seed + i * 0.7 + 1000) - 0.5) * noiseFactor * baseSize * 0.4;
 
-      vertex.normalize().multiplyScalar(Math.max(length + totalNoise, size * 0.3));
+        // Layer 3: Small-scale surface detail
+        const noise3 = (seededRandom(seed + i * 1.1 + 2000) - 0.5) * noiseFactor * baseSize * 0.2;
 
-      // Create more dramatic flattening for bottom
-      if (vertex.y < -size * 0.2) {
-        vertex.y *= 0.5;
-        // Add some width variation to make it look settled
-        const flattenFactor = 1 + (seededRandom(seed + i + 3000) - 0.5) * 0.3;
-        vertex.x *= flattenFactor;
-        vertex.z *= flattenFactor;
+        // Layer 4: Angular faceting to simulate rock fractures
+        const facetScale = 1 + facetNoise * noiseFactor * 0.3;
+
+        const totalDeformation = noise1 + noise2 + noise3;
+        const newLength = Math.max(originalLength + totalDeformation, baseSize * 0.2) * facetScale;
+
+        vertex.normalize().multiplyScalar(newLength);
+
+        // Create natural settling - rocks are wider at bottom
+        if (vertex.y < -baseSize * 0.1) {
+          const settleAmount = Math.abs(vertex.y + baseSize * 0.1) / (baseSize * 0.5);
+          vertex.y *= 0.3 + (1 - settleAmount) * 0.4; // Flatten bottom progressively
+
+          // Spread out the base for stability
+          const spreadFactor = 1 + settleAmount * 0.4;
+          vertex.x *= spreadFactor;
+          vertex.z *= spreadFactor;
+        }
+
+        // Add some weathering dents and cracks
+        const weatheringIntensity = seededRandom(seed + i * 1.3 + 3000);
+        if (weatheringIntensity > 0.8) {
+          const dentDepth = (weatheringIntensity - 0.8) * 5 * noiseFactor * baseSize * 0.2;
+          vertex.multiplyScalar(1 - dentDepth);
+        }
+
+        positions[i] = vertex.x;
+        positions[i + 1] = vertex.y;
+        positions[i + 2] = vertex.z;
       }
 
-      positions[i] = vertex.x;
-      positions[i + 1] = vertex.y;
-      positions[i + 2] = vertex.z;
+      geom.attributes.position.needsUpdate = true;
+      geom.computeVertexNormals();
+
+      return geom;
+    };
+
+    // Create main rock body
+    const mainRockGeom = createRockGeometry(size, complexity, 1.0);
+    const rockMaterial = new THREE.MeshLambertMaterial({
+      color: new THREE.Color().setHSL(
+        0.08 + (seededRandom(seed) - 0.5) * 0.05, // Brown/gray base hue
+        0.1 + seededRandom(seed + 100) * 0.2, // Low saturation for realistic stone
+        0.25 + seededRandom(seed + 200) * 0.15, // Medium darkness
+      ),
+    });
+
+    const mainRock = new THREE.Mesh(mainRockGeom, rockMaterial);
+    group.add(mainRock);
+
+    // Add some smaller rock chunks around the base for more natural look
+    const numDebris = 1 + Math.floor(seededRandom(seed + 400) * 3);
+
+    for (let i = 0; i < numDebris; i++) {
+      const debrisSize = size * (0.15 + seededRandom(seed + 500 + i) * 0.2);
+      const debrisGeom = createRockGeometry(debrisSize, Math.max(0, complexity - 1), 1.2);
+
+      // Slightly different coloring for debris
+      const debrisMaterial = new THREE.MeshLambertMaterial({
+        color: rockMaterial.color.clone().multiplyScalar(0.8 + seededRandom(seed + 600 + i) * 0.4),
+      });
+
+      const debris = new THREE.Mesh(debrisGeom, debrisMaterial);
+
+      // Position debris around the main rock
+      const angle = seededRandom(seed + 700 + i) * Math.PI * 2;
+      const distance = size * (0.6 + seededRandom(seed + 800 + i) * 0.4);
+
+      debris.position.x = Math.cos(angle) * distance;
+      debris.position.z = Math.sin(angle) * distance;
+      debris.position.y = -size * 0.3; // Partially embedded in ground
+
+      // Random rotation
+      debris.rotation.x = (seededRandom(seed + 900 + i) - 0.5) * 0.5;
+      debris.rotation.y = seededRandom(seed + 1000 + i) * Math.PI * 2;
+      debris.rotation.z = (seededRandom(seed + 1100 + i) - 0.5) * 0.5;
+
+      group.add(debris);
     }
 
-    baseGeom.attributes.position.needsUpdate = true;
-    baseGeom.computeVertexNormals();
+    return group;
+  }, [size, complexity, seed]);
 
-    return baseGeom;
-  }, [size, detail, randomness, seed]);
-
-  return <primitive object={geometry} />;
+  return <primitive object={rockGroup} />;
 };
 
 /**

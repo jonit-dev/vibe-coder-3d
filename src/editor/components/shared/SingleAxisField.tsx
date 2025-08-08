@@ -14,6 +14,7 @@ export interface ISingleAxisFieldProps {
   max?: number;
   axisLabel?: string;
   axisColor?: string;
+  precision?: number;
 }
 
 export const SingleAxisField: React.FC<ISingleAxisFieldProps> = ({
@@ -27,6 +28,7 @@ export const SingleAxisField: React.FC<ISingleAxisFieldProps> = ({
   max,
   axisLabel,
   axisColor = '#9b59b6', // Purple default for camera fields
+  precision = 2,
 }) => {
   const [localValue, setLocalValue] = useState(value);
 
@@ -85,6 +87,7 @@ export const SingleAxisField: React.FC<ISingleAxisFieldProps> = ({
           dragActive={dragActive}
           min={min}
           max={max}
+          precision={precision}
         />
       </div>
     </div>

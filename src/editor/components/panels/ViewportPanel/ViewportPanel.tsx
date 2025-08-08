@@ -1,5 +1,5 @@
 import { OrbitControls } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 
@@ -125,6 +125,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
             console.log('[ViewportPanel] Shadow mapping enabled with PCF soft shadows');
           }}
         >
+          {/* Selection framer: centers the view on newly selected entity */}
+          <SelectionFramer selectedEntityId={entityId} />
           {/* Camera System Connector - connects editor camera to camera system */}
           <CameraSystemConnector />
 
@@ -218,4 +220,47 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
       </div>
     </section>
   );
+};
+
+// Internal helper to frame/focus the current selection in the viewport
+const SelectionFramer: React.FC<{ selectedEntityId: number | null }> = ({ selectedEntityId }) => {
+  const { camera } = useThree();
+  const componentManager = useComponentManager();
+
+  useEffect(() => {
+    if (!isValidEntityId(selectedEntityId)) return;
+
+    // Get transform to position camera target; simple heuristic
+    const transform = componentManager.getComponent(
+      selectedEntityId!,
+      KnownComponentTypes.TRANSFORM,
+    )?.data as
+      | { position?: [number, number, number]; scale?: [number, number, number] }
+      | undefined;
+
+    const pos = transform?.position ?? [0, 0, 0];
+    const scale = transform?.scale ?? [1, 1, 1];
+
+    // Compute a distance based on scale to frame object reasonably
+    const maxExtent = Math.max(Math.abs(scale[0]), Math.abs(scale[1]), Math.abs(scale[2]));
+    const distance = Math.max(3, maxExtent * 3);
+
+    // Move camera to look at the entity smoothly
+    const target = { x: pos[0], y: pos[1], z: pos[2] } as any;
+    const start = camera.position.clone();
+    const end = start.clone().set(pos[0] + distance, pos[1] + distance * 0.5, pos[2] + distance);
+
+    let t = 0;
+    const durationMs = 180;
+    const startTime = performance.now();
+    const animate = () => {
+      t = Math.min(1, (performance.now() - startTime) / durationMs);
+      camera.position.lerpVectors(start, end, t);
+      camera.lookAt(target.x, target.y, target.z);
+      if (t < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [selectedEntityId, camera, componentManager]);
+
+  return null;
 };

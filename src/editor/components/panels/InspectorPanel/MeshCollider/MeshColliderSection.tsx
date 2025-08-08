@@ -109,6 +109,7 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
           { value: 'capsule', label: 'Capsule Collider' },
           { value: 'convex', label: 'Convex Hull' },
           { value: 'mesh', label: 'Mesh Collider' },
+          { value: 'heightfield', label: 'Heightfield (Terrain)' },
         ]}
       />
 
@@ -178,6 +179,15 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
           <div className="text-xs text-blue-300">
             💡 {meshCollider.colliderType === 'mesh' ? 'Mesh' : 'Convex'} colliders use the entity's
             mesh geometry
+          </div>
+        </div>
+      )}
+
+      {meshCollider.colliderType === 'heightfield' && (
+        <div className="bg-green-500/10 border border-green-500/30 rounded p-2">
+          <div className="text-xs text-green-300">
+            ✅ Heightfield collider mirrors the terrain heightmap efficiently and updates when
+            terrain parameters change.
           </div>
         </div>
       )}

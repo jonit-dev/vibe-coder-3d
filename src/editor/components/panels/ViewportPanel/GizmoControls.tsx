@@ -1,6 +1,7 @@
 import { TransformControls } from '@react-three/drei';
 import React, { MutableRefObject, useCallback, useRef } from 'react';
 import { Object3D } from 'three';
+import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
 
 import { ComponentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
@@ -77,7 +78,7 @@ function updateTransformThroughComponentManager(
 
 export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
   ({ meshRef, mode, entityId, onTransformChange, setIsTransforming, meshType }) => {
-    const transformRef = useRef<any>(null);
+    const transformRef = useRef<TransformControlsImpl | null>(null);
     const componentManager = useComponentManager();
     const [, setForceUpdate] = React.useState(0);
     const isDragging = useRef(false);
@@ -133,11 +134,10 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
       return null;
     }
 
-    // Only use onObjectChange to avoid duplicate updates
+    // Attach controls directly to the target object
     return (
       <TransformControls
         ref={transformRef}
-        object={meshRef.current || undefined}
         mode={mode}
         size={0.75}
         translationSnap={0.25}
@@ -146,6 +146,7 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
         onObjectChange={handleTransformUpdate}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
+        object={meshRef.current as unknown as Object3D}
       />
     );
   },

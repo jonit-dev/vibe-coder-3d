@@ -213,7 +213,7 @@ export const useEditorHandlers = ({
             break;
         }
 
-        setSelectedId(entity.id);
+        // Selection is handled inside createEntity via setSelectedIds
         setStatusMessage(`Created ${type} (Entity ${entity.id})`);
         setShowAddMenu(false);
         console.log('[AddObject] Created entity:', entity);
