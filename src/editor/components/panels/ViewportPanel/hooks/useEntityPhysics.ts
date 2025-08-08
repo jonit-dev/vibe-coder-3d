@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
-import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 
 interface IPhysicsContributions {
   enabled: boolean;
@@ -22,10 +22,10 @@ export const useEntityPhysics = ({
   isPlaying,
   physicsContributions,
 }: IUseEntityPhysicsProps) => {
-  const componentManager = useComponentManager();
+  const { getComponentData } = useComponentRegistry();
 
   // Get individual component data when needed for specific logic
-  const meshCollider = componentManager.getComponent(entityId, KnownComponentTypes.MESH_COLLIDER);
+  const meshCollider = getComponentData(entityId, KnownComponentTypes.MESH_COLLIDER);
 
   // Check if this entity should have physics
   const shouldHavePhysics = useMemo(

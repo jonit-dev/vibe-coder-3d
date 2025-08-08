@@ -13,7 +13,7 @@ import { useEvent } from '@/core/hooks/useEvent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { isValidEntityId } from '@/core/lib/ecs/utils';
 import { setSelectedCameraEntity } from '@/core/systems/cameraSystem';
-import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 import { GizmoMode } from '@/editor/hooks/useEditorKeyboard';
 import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
 
@@ -42,42 +42,42 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
   const [entityIds, setEntityIds] = useState<number[]>([]);
   const [lightIds, setLightIds] = useState<number[]>([]);
   const isPlaying = useEditorStore((state) => state.isPlaying);
-  const componentManager = useComponentManager();
   const groupSelection = useGroupSelection();
+  const { getEntitiesWithComponent, getComponentData } = useComponentRegistry();
 
   // Subscribe to component changes only (entities are managed by Editor)
   useEffect(() => {
     const updateEntities = () => {
-      const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
+      const entities = getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
       setEntityIds(entities);
 
-      const lights = componentManager.getEntitiesWithComponent(KnownComponentTypes.LIGHT);
+      const lights = getEntitiesWithComponent(KnownComponentTypes.LIGHT);
       setLightIds(lights);
     };
 
     // Initial load
     updateEntities();
-  }, [componentManager]);
+  }, [getEntitiesWithComponent]);
 
   // Listen to component events using the global event system
   useEvent('component:added', (event) => {
     if (event.componentId === KnownComponentTypes.TRANSFORM) {
-      const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
+      const entities = getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
       setEntityIds(entities);
     }
     if (event.componentId === KnownComponentTypes.LIGHT) {
-      const lights = componentManager.getEntitiesWithComponent(KnownComponentTypes.LIGHT);
+      const lights = getEntitiesWithComponent(KnownComponentTypes.LIGHT);
       setLightIds(lights);
     }
   });
 
   useEvent('component:removed', (event) => {
     if (event.componentId === KnownComponentTypes.TRANSFORM) {
-      const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
+      const entities = getEntitiesWithComponent(KnownComponentTypes.TRANSFORM);
       setEntityIds(entities);
     }
     if (event.componentId === KnownComponentTypes.LIGHT) {
-      const lights = componentManager.getEntitiesWithComponent(KnownComponentTypes.LIGHT);
+      const lights = getEntitiesWithComponent(KnownComponentTypes.LIGHT);
       setLightIds(lights);
     }
   });
@@ -87,7 +87,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 
   // Check if selected entity is a camera using isValidEntityId
   const selectedEntityIsCamera = isValidEntityId(entityId)
-    ? componentManager.hasComponent(entityId, KnownComponentTypes.CAMERA)
+    ? hasComponent(entityId, KnownComponentTypes.CAMERA)
     : false;
 
   // Notify camera system when a camera entity is selected
@@ -226,9 +226,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 // Internal helper to frame/focus entity on double-click in the viewport
 const SelectionFramer: React.FC = () => {
   const { camera } = useThree();
-  const componentManager = useComponentManager();
 
-  const frameEntity = (entityId: number) => {
+  const _frameEntity = (entityId: number) => {
     console.log(`[SelectionFramer] frameEntity called with entityId: ${entityId}`);
     if (!isValidEntityId(entityId)) {
       console.log(`[SelectionFramer] Invalid entity ID: ${entityId}`);
@@ -236,18 +235,15 @@ const SelectionFramer: React.FC = () => {
     }
 
     // Get transform to position camera target
-    const transform = componentManager.getComponent(entityId, KnownComponentTypes.TRANSFORM)
-      ?.data as
-      | { position?: [number, number, number]; scale?: [number, number, number] }
-      | undefined;
+    const transformData = getComponentData(entityId, KnownComponentTypes.TRANSFORM) as { position?: [number, number, number]; scale?: [number, number, number] } | undefined;
 
-    if (!transform) {
+    if (!transformData) {
       console.log(`[SelectionFramer] No transform found for entity: ${entityId}`);
       return;
     }
 
-    const pos = transform?.position ?? [0, 0, 0];
-    const scale = transform?.scale ?? [1, 1, 1];
+    const pos = transformData?.position ?? [0, 0, 0];
+    const scale = transformData?.scale ?? [1, 1, 1];
 
     console.log(`[SelectionFramer] Entity ${entityId} position:`, pos, 'scale:', scale);
 

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useEvent } from '@/core/hooks/useEvent';
 import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
-import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 
 /**
  * Hook to check if an entity is being followed by the main camera
@@ -11,7 +11,7 @@ import { useComponentManager } from '@/editor/hooks/useComponentManager';
  */
 export const useFollowedEntityCheck = (entityId: number, isPlaying: boolean) => {
   const [isFollowedEntity, setIsFollowedEntity] = useState(false);
-  const componentManager = useComponentManager();
+  const { getComponentData, getEntitiesWithComponent } = useComponentRegistry();
 
   const checkIfFollowed = useCallback(() => {
     if (!isPlaying) {
@@ -21,14 +21,14 @@ export const useFollowedEntityCheck = (entityId: number, isPlaying: boolean) => 
 
     try {
       // Get all camera entities
-      const cameraEntities = componentManager.getEntitiesWithComponent(KnownComponentTypes.CAMERA);
+      const cameraEntities = getEntitiesWithComponent(KnownComponentTypes.CAMERA);
 
       for (const cameraEntityId of cameraEntities) {
-        const cameraComponent = componentManager.getComponent(
+        const cameraComponent = getComponentData(
           cameraEntityId,
           KnownComponentTypes.CAMERA,
         );
-        const cameraData = cameraComponent?.data as CameraData | undefined;
+        const cameraData = cameraComponent as CameraData | undefined;
 
         // Check if this camera is main, has following enabled, and targets our entity
         if (

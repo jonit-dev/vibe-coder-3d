@@ -1,6 +1,8 @@
 import { OrbitControls } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as THREE from 'three';
+import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 import { useEvent } from '@/core/hooks/useEvent';
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
@@ -25,7 +27,7 @@ export const CameraControlsManager: React.FC<ICameraControlsManagerProps> = ({
   isTransforming,
 }) => {
   const [updateTrigger, setUpdateTrigger] = useState(0);
-  const orbitControlsRef = useRef<typeof OrbitControls | null>(null);
+  const orbitControlsRef = useRef<OrbitControlsImpl | null>(null);
 
   // Find the main camera and get its control mode
   const findMainCameraData = useCallback(() => {
@@ -100,7 +102,7 @@ export const CameraControlsManager: React.FC<ICameraControlsManagerProps> = ({
         KnownComponentTypes.TRANSFORM,
       );
 
-      if (targetTransform?.position && orbitControlsRef.current.target) {
+      if (targetTransform?.position && orbitControlsRef.current?.target) {
         const newTarget = [
           targetTransform.position[0] || 0,
           targetTransform.position[1] || 0,
@@ -108,10 +110,8 @@ export const CameraControlsManager: React.FC<ICameraControlsManagerProps> = ({
         ];
 
         // Update OrbitControls target smoothly - this should work even when controls are disabled
-        orbitControlsRef.current.target.lerp(
-          { x: newTarget[0], y: newTarget[1], z: newTarget[2] },
-          0.1, // Smooth lerp factor
-        );
+        const lerpTarget = new THREE.Vector3(newTarget[0], newTarget[1], newTarget[2]);
+        orbitControlsRef.current.target.lerp(lerpTarget, 0.1);
 
         // Force OrbitControls to update even when disabled
         orbitControlsRef.current.update();

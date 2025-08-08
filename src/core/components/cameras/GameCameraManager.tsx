@@ -6,7 +6,7 @@ import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponen
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { registerEntityObject, unregisterEntityObject } from '@/core/systems/cameraSystem';
-import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 
 export interface IGameCameraManagerProps {
   isPlaying: boolean;
@@ -23,7 +23,7 @@ export interface IGameCameraManagerProps {
  * when entering/exiting play mode, just like Unity does.
  */
 export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying }) => {
-  const componentManager = useComponentManager();
+  const { getEntitiesWithComponent, getComponentData } = useComponentRegistry();
   const { set, camera } = useThree();
 
   // Store original camera for restoration when exiting play mode
@@ -34,18 +34,18 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
   const cameraEntities = useMemo(() => {
     if (!isPlaying) return [];
 
-    const entities = componentManager.getEntitiesWithComponent(KnownComponentTypes.CAMERA);
+    const entities = getEntitiesWithComponent(KnownComponentTypes.CAMERA);
 
     return entities
       .map((entityId) => {
-        const cameraComponent = componentManager.getComponent(entityId, KnownComponentTypes.CAMERA);
-        const transformComponent = componentManager.getComponent(
+        const cameraComponent = getComponentData(entityId, KnownComponentTypes.CAMERA);
+        const transformComponent = getComponentData(
           entityId,
           KnownComponentTypes.TRANSFORM,
         );
 
-        const cameraData = cameraComponent?.data as CameraData;
-        const transformData = transformComponent?.data as ITransformData;
+        const cameraData = cameraComponent as CameraData;
+        const transformData = transformComponent as ITransformData;
 
         return {
           entityId,
@@ -55,7 +55,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
         };
       })
       .filter((entity) => entity.isValid);
-  }, [componentManager, isPlaying]);
+  }, [getEntitiesWithComponent, isPlaying]);
 
   // Find the main camera or use the first available camera
   const mainCamera = useMemo(() => {
@@ -203,11 +203,11 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     }
 
     // Get latest camera transform data
-    const cameraTransformComponent = componentManager.getComponent(
+    const cameraTransformComponent = getComponentData(
       mainCamera.entityId,
       KnownComponentTypes.TRANSFORM,
     );
-    const cameraTransformData = cameraTransformComponent?.data as ITransformData | undefined;
+    const cameraTransformData = cameraTransformComponent as ITransformData | undefined;
 
     // Get camera data to check for follow target
     const cameraData = mainCamera.cameraData;
@@ -252,11 +252,11 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
       // In locked mode, handle rotation based on follow target or ECS transform
       if (hasFollowTarget) {
         // Get target entity transform
-        const targetTransformComponent = componentManager.getComponent(
+        const targetTransformComponent = getComponentData(
           cameraData.followTarget!,
           KnownComponentTypes.TRANSFORM,
         );
-        const targetTransformData = targetTransformComponent?.data as ITransformData | undefined;
+        const targetTransformData = targetTransformComponent as ITransformData | undefined;
 
         if (targetTransformData) {
           // Force lookAt in locked mode
