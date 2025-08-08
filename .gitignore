@@ -31,3 +31,6 @@ Thumbs.db
 # Test reports
 /html
 /coverage
+
+
+.serena/cache
