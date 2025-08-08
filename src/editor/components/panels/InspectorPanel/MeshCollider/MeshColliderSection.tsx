@@ -2,6 +2,7 @@ import React from 'react';
 import { FiShield } from 'react-icons/fi';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ColliderType } from '@/core/lib/ecs/components/definitions/MeshColliderComponent';
 import { CheckboxField } from '@/editor/components/shared/CheckboxField';
 import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
 import { ComponentField } from '@/editor/components/shared/ComponentField';
@@ -11,8 +12,6 @@ import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
 import { ToggleField } from '@/editor/components/shared/ToggleField';
 
 import { ColliderFields } from './ColliderFields';
-
-export type ColliderType = 'box' | 'sphere' | 'capsule' | 'mesh' | 'convex';
 
 export interface IMeshColliderData {
   enabled: boolean;

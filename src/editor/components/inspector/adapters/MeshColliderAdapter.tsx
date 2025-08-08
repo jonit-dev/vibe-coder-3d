@@ -1,7 +1,10 @@
 import React from 'react';
 
 import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
-import { MeshColliderData } from '@/core/lib/ecs/components/definitions/MeshColliderComponent';
+import {
+  MeshColliderData,
+  ColliderType,
+} from '@/core/lib/ecs/components/definitions/MeshColliderComponent';
 import { MeshColliderSection } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 
 interface IMeshColliderAdapterProps {
@@ -24,9 +27,9 @@ export const MeshColliderAdapter: React.FC<IMeshColliderAdapterProps> = ({
   // Convert ECS data to the format expected by MeshColliderSection
   const meshColliderData = {
     enabled: data.enabled ?? true,
-    colliderType: data.colliderType || 'box',
+    colliderType: (data.colliderType || 'box') as ColliderType,
     isTrigger: data.isTrigger ?? false,
-    center: data.center || [0, 0, 0],
+    center: data.center || ([0, 0, 0] as [number, number, number]),
     size: {
       width: data.size?.width || 1,
       height: data.size?.height || 1,
