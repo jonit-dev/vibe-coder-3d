@@ -57,8 +57,9 @@ export const EntityColliders: React.FC<IEntityCollidersProps> = React.memo(({ co
       {type === 'heightfield' && colliderConfig.terrain && (
         <HeightfieldCollider
           args={[
-            colliderConfig.terrain.widthSegments,
-            colliderConfig.terrain.depthSegments,
+            // react-three-rapier expects rows (samples on Z) and cols (samples on X)
+            colliderConfig.terrain.depthSegments + 1,
+            colliderConfig.terrain.widthSegments + 1,
             colliderConfig.terrain.heights,
             colliderConfig.terrain.scale,
           ]}

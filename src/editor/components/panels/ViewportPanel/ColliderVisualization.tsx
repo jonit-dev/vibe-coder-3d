@@ -1,20 +1,62 @@
 import { Edges } from '@react-three/drei';
 import React, { useMemo } from 'react';
+import * as THREE from 'three';
 
 import { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 
 export interface IColliderVisualizationProps {
   meshCollider: IMeshColliderData | null;
   visible: boolean;
+  terrainHeights?: number[];
+  terrainSegments?: [number, number];
+  terrainPositions?: Float32Array;
 }
 
 export const ColliderVisualization: React.FC<IColliderVisualizationProps> = React.memo(
-  ({ meshCollider, visible }) => {
+  ({ meshCollider, visible, terrainHeights, terrainSegments, terrainPositions }) => {
     // Memoized wireframe color
     const wireframeColor = useMemo(
       () => (meshCollider?.isTrigger ? '#00ff00' : '#ffff00'), // Green for triggers, yellow for solid
       [meshCollider?.isTrigger],
     );
+
+    // Memoized terrain geometry for heightfield colliders
+    const terrainGeometry = useMemo(() => {
+      if (!terrainHeights || !terrainSegments || !meshCollider || !terrainPositions) {
+        return null;
+      }
+
+      const [sx, sz] = terrainSegments;
+      const geometry = new THREE.PlaneGeometry(
+        meshCollider.size.width,
+        meshCollider.size.depth,
+        sx - 1,
+        sz - 1,
+      );
+
+      // Rotate to horizontal (XZ plane)
+      geometry.rotateX(-Math.PI / 2);
+
+      // Use the exact positions from TerrainGeometry with applied heights
+      const positions = new Float32Array(terrainPositions);
+
+      // Apply height data to Y coordinates
+      for (let i = 0; i < terrainHeights.length && i < positions.length / 3; i++) {
+        positions[i * 3 + 1] = terrainHeights[i]; // Y coordinate
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.attributes.position.needsUpdate = true;
+      geometry.computeVertexNormals();
+
+      return geometry;
+    }, [
+      terrainHeights,
+      terrainSegments,
+      terrainPositions,
+      meshCollider?.size.width,
+      meshCollider?.size.depth,
+    ]);
 
     // Memoized collider shape
     const colliderShape = useMemo(() => {
@@ -82,6 +124,22 @@ export const ColliderVisualization: React.FC<IColliderVisualizationProps> = Reac
             <mesh position={meshCollider.center}>
               <boxGeometry args={[1, 1, 1]} />
               <meshBasicMaterial color={wireframeColor} wireframe transparent opacity={0.3} />
+            </mesh>
+          );
+
+        case 'heightfield':
+          // For heightfield, use pre-computed terrain geometry that follows the height data
+          return terrainGeometry ? (
+            <mesh position={meshCollider.center} geometry={terrainGeometry}>
+              <meshBasicMaterial visible={false} />
+              <Edges color={wireframeColor} />
+            </mesh>
+          ) : (
+            // Fallback to flat plane if no height data
+            <mesh position={meshCollider.center} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[meshCollider.size.width, meshCollider.size.depth, 8, 8]} />
+              <meshBasicMaterial visible={false} />
+              <Edges color={wireframeColor} />
             </mesh>
           );
 
