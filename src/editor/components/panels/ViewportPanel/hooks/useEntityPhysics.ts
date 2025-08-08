@@ -56,8 +56,8 @@ export const useEntityPhysics = ({
     // Fallback to auto-detection based on mesh type
     switch (meshType) {
       case 'Terrain':
-        // Use trimesh so the collider follows the deformed terrain geometry
-        return 'trimesh';
+        // Use heightfield so the collider follows the deformed terrain geometry
+        return 'heightfield';
       case 'Sphere':
         return 'ball';
       case 'Cylinder':

@@ -24,7 +24,9 @@ export const useEntityColliders = ({ meshCollider, meshType }: IUseEntityCollide
         case 'mesh':
           return 'trimesh';
         case 'heightfield':
-          return 'heightfield';
+          // Heightfield is not a valid automatic collider shape for RigidBody.colliders.
+          // Use trimesh automatic collider and rely on the terrain mesh geometry instead.
+          return 'trimesh';
         default:
           return 'cuboid';
       }
@@ -33,7 +35,8 @@ export const useEntityColliders = ({ meshCollider, meshType }: IUseEntityCollide
     // Fallback to auto-detection based on mesh type
     switch (meshType) {
       case 'Terrain':
-        return 'heightfield';
+        // Use trimesh auto-collider for terrain (heightfield component may not be available)
+        return 'trimesh';
       case 'Sphere':
         return 'ball';
       case 'Cylinder':

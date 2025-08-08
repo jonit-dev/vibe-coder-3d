@@ -6,13 +6,13 @@ import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 
-import { useComponentManager } from './useComponentManager';
+import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 import { useEntityData } from './useEntityData';
 import { useEntityManager } from './useEntityManager';
 
 export const useEntityCreation = () => {
   const entityManager = useEntityManager();
-  const componentManager = useComponentManager();
+  const { addComponent, updateComponent, removeComponentsForEntity } = useComponentRegistry();
   const setSelectedId = useEditorStore((state) => state.setSelectedId);
   const setSelectedIds = useEditorStore((state) => state.setSelectedIds);
   const { getComponentData } = useEntityData();
@@ -44,14 +44,14 @@ export const useEntityCreation = () => {
         scale: [1, 1, 1],
       };
 
-      componentManager.addComponent(entity.id, KnownComponentTypes.TRANSFORM, defaultTransform);
+      addComponent(entity.id, KnownComponentTypes.TRANSFORM, defaultTransform);
 
       // Select the newly created entity (ensure hierarchy selection highlights)
       setSelectedIds([entity.id]);
 
       return entity;
     },
-    [entityManager, componentManager, setSelectedIds],
+    [entityManager, setSelectedIds],
   );
 
   const addMeshRenderer = useCallback(
@@ -113,9 +113,9 @@ export const useEntityCreation = () => {
 
       console.log('[addMeshRenderer] Adding MeshRenderer:', { entityId, meshRendererData });
 
-      componentManager.addComponent(entityId, KnownComponentTypes.MESH_RENDERER, meshRendererData);
+      addComponent(entityId, KnownComponentTypes.MESH_RENDERER, meshRendererData);
     },
-    [componentManager, getComponentData],
+    [addComponent, getComponentData],
   );
 
   const createCube = useCallback(
@@ -181,11 +181,11 @@ export const useEntityCreation = () => {
         scale: [10, 10, 1], // Make it larger and thinner like a ground plane
       };
 
-      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+      updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
 
       return entity;
     },
-    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+    [createEntity, addMeshRenderer, updateComponent, getNextNumber],
   );
 
   const createTerrain = useCallback(
@@ -206,10 +206,10 @@ export const useEntityCreation = () => {
         noisePersistence: 0.5,
         noiseLacunarity: 2.1,
       };
-      componentManager.addComponent(entity.id, 'Terrain', terrainDefaults);
+      addComponent(entity.id, 'Terrain', terrainDefaults);
 
       // Add a fixed rigid body so terrain participates in physics (as a static ground)
-      componentManager.addComponent(entity.id, KnownComponentTypes.RIGID_BODY, {
+      addComponent(entity.id, KnownComponentTypes.RIGID_BODY, {
         enabled: true,
         bodyType: 'fixed',
         mass: 1,
@@ -222,16 +222,34 @@ export const useEntityCreation = () => {
         },
       } as any);
 
+      // Add MeshCollider component with heightfield type for terrain
+      addComponent(entity.id, KnownComponentTypes.MESH_COLLIDER, {
+        enabled: true,
+        colliderType: 'heightfield',
+        isTrigger: false,
+        center: [0, 0, 0],
+        size: {
+          width: 20,
+          height: 1,
+          depth: 20,
+        },
+        physicsMaterial: {
+          friction: 0.9,
+          restitution: 0.0,
+          density: 1,
+        },
+      });
+
       const transformData: ITransformData = {
         position: [0, 0, 0],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       };
-      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+      updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
 
       return entity;
     },
-    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+    [createEntity, addMeshRenderer, addComponent, updateComponent, getNextNumber],
   );
 
   const createWall = useCallback(
@@ -247,11 +265,11 @@ export const useEntityCreation = () => {
         scale: [1, 1, 1], // Standard scale
       };
 
-      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+      updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
 
       return entity;
     },
-    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+    [createEntity, addMeshRenderer, updateComponent, getNextNumber],
   );
 
   const createCamera = useCallback(
@@ -269,11 +287,11 @@ export const useEntityCreation = () => {
         depth: 0,
         isMain: false,
       };
-      componentManager.addComponent(entity.id, KnownComponentTypes.CAMERA, defaultCamera);
+      addComponent(entity.id, KnownComponentTypes.CAMERA, defaultCamera);
 
       return entity;
     },
-    [createEntity, componentManager, getNextNumber],
+    [createEntity, addComponent, getNextNumber],
   );
 
   const createDirectionalLight = useCallback(
@@ -295,11 +313,11 @@ export const useEntityCreation = () => {
         shadowBias: -0.0001,
         shadowRadius: 1.0,
       };
-      componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
+      addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
 
       return entity;
     },
-    [createEntity, componentManager, getNextNumber],
+    [createEntity, addComponent, getNextNumber],
   );
 
   const createPointLight = useCallback(
@@ -320,11 +338,11 @@ export const useEntityCreation = () => {
         shadowBias: -0.0001,
         shadowRadius: 1.0,
       };
-      componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
+      addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
 
       return entity;
     },
-    [createEntity, componentManager, getNextNumber],
+    [createEntity, addComponent, getNextNumber],
   );
 
   const createSpotLight = useCallback(
@@ -347,11 +365,11 @@ export const useEntityCreation = () => {
         shadowBias: -0.0001,
         shadowRadius: 1.0,
       };
-      componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
+      addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
 
       return entity;
     },
-    [createEntity, componentManager, getNextNumber],
+    [createEntity, addComponent, getNextNumber],
   );
 
   const createAmbientLight = useCallback(
@@ -367,11 +385,11 @@ export const useEntityCreation = () => {
         enabled: true,
         castShadow: false,
       };
-      componentManager.addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
+      addComponent(entity.id, KnownComponentTypes.LIGHT, defaultLightData);
 
       return entity;
     },
-    [createEntity, componentManager, getNextNumber],
+    [createEntity, addComponent, getNextNumber],
   );
 
   const createTrapezoid = useCallback(
@@ -577,11 +595,11 @@ export const useEntityCreation = () => {
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       };
-      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+      updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
 
       return entity;
     },
-    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+    [createEntity, addMeshRenderer, updateComponent, getNextNumber],
   );
 
   const createRock = useCallback(
@@ -597,11 +615,11 @@ export const useEntityCreation = () => {
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       };
-      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+      updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
 
       return entity;
     },
-    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+    [createEntity, addMeshRenderer, updateComponent, getNextNumber],
   );
 
   const createBush = useCallback(
@@ -617,11 +635,11 @@ export const useEntityCreation = () => {
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       };
-      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+      updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
 
       return entity;
     },
-    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+    [createEntity, addMeshRenderer, updateComponent, getNextNumber],
   );
 
   const createGrass = useCallback(
@@ -637,11 +655,11 @@ export const useEntityCreation = () => {
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       };
-      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+      updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
 
       return entity;
     },
-    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+    [createEntity, addMeshRenderer, updateComponent, getNextNumber],
   );
 
   const createCustomModel = useCallback(
@@ -665,7 +683,7 @@ export const useEntityCreation = () => {
   const deleteEntity = useCallback(
     (entityId: number) => {
       // Remove all components first
-      componentManager.removeComponentsForEntity(entityId);
+      removeComponentsForEntity(entityId);
 
       // Delete entity
       entityManager.deleteEntity(entityId);
@@ -676,7 +694,7 @@ export const useEntityCreation = () => {
         setSelectedId(null);
       }
     },
-    [entityManager, componentManager, setSelectedId],
+    [entityManager, removeComponentsForEntity, setSelectedId],
   );
 
   return {
