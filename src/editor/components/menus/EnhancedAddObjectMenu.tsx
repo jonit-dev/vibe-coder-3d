@@ -182,6 +182,26 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
         label: 'Terrain',
         icon: <TbTriangle size={18} />,
       },
+      {
+        type: ShapeType.Tree,
+        label: 'Tree',
+        icon: <TbTriangle size={18} />,
+      },
+      {
+        type: ShapeType.Rock,
+        label: 'Rock',
+        icon: <TbBox size={18} />,
+      },
+      {
+        type: ShapeType.Bush,
+        label: 'Bush',
+        icon: <TbSphere size={18} />,
+      },
+      {
+        type: ShapeType.Grass,
+        label: 'Grass',
+        icon: <TbTriangle size={18} />,
+      },
     ],
   },
   {
@@ -284,6 +304,10 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
       ShapeType.Torus,
       ShapeType.Plane,
       ShapeType.Terrain,
+      ShapeType.Tree,
+      ShapeType.Rock,
+      ShapeType.Bush,
+      ShapeType.Grass,
       ShapeType.Wall,
       ShapeType.Trapezoid,
       ShapeType.Octahedron,

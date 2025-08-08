@@ -5,16 +5,20 @@ import type { Mesh, Texture } from 'three';
 
 import { CameraGeometry } from './CameraGeometry';
 import {
+  BushGeometry,
   CrossGeometry,
   DiamondGeometry,
+  GrassGeometry,
   HeartGeometry,
   HelixGeometry,
   MobiusStripGeometry,
   RampGeometry,
+  RockGeometry,
   SpiralStairsGeometry,
   StairsGeometry,
   StarGeometry,
   TorusKnotGeometry,
+  TreeGeometry,
   TubeGeometry,
 } from './CustomGeometries';
 import { LightGeometry } from './LightGeometry';
@@ -315,6 +319,14 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           return <TubeGeometry />;
         case 'Cross':
           return <CrossGeometry />;
+        case 'Tree':
+          return <TreeGeometry />;
+        case 'Rock':
+          return <RockGeometry />;
+        case 'Bush':
+          return <BushGeometry />;
+        case 'Grass':
+          return <GrassGeometry />;
         case 'Camera':
           return null; // Special case - uses CameraGeometry component
         case 'Light':

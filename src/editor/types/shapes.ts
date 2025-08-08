@@ -39,6 +39,10 @@ export enum ShapeType {
 
   // Environment
   Terrain = 'Terrain',
+  Tree = 'Tree',
+  Rock = 'Rock',
+  Bush = 'Bush',
+  Grass = 'Grass',
 
   // Special
   Camera = 'Camera',

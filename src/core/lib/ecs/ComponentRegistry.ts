@@ -677,6 +677,10 @@ export function combineRenderingContributions(
     diamond: 'Diamond',
     tube: 'Tube',
     cross: 'Cross',
+    tree: 'Tree',
+    rock: 'Rock',
+    bush: 'Bush',
+    grass: 'Grass',
     custom: 'custom',
   };
 

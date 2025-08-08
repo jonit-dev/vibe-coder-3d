@@ -39,6 +39,10 @@ export const useEditorHandlers = ({
     createTorus,
     createPlane,
     createTerrain,
+    createTree,
+    createRock,
+    createBush,
+    createGrass,
     createWall,
     createCamera,
     createTrapezoid,
@@ -109,6 +113,18 @@ export const useEditorHandlers = ({
             break;
           case ShapeType.Terrain:
             entity = createTerrain();
+            break;
+          case ShapeType.Tree:
+            entity = createTree();
+            break;
+          case ShapeType.Rock:
+            entity = createRock();
+            break;
+          case ShapeType.Bush:
+            entity = createBush();
+            break;
+          case ShapeType.Grass:
+            entity = createGrass();
             break;
           case ShapeType.Wall:
             entity = createWall();
@@ -217,6 +233,10 @@ export const useEditorHandlers = ({
       createTorus,
       createPlane,
       createTerrain,
+      createTree,
+      createRock,
+      createBush,
+      createGrass,
       createWall,
       createTrapezoid,
       createOctahedron,

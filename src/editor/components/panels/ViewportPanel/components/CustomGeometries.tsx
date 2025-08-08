@@ -764,3 +764,415 @@ export const CrossGeometry: React.FC<{
 
   return <primitive object={geometry} />;
 };
+
+/**
+ * Creates a tree geometry
+ * A detailed tree with trunk, branches, and layered canopy
+ */
+export const TreeGeometry: React.FC<{
+  trunkHeight?: number;
+  trunkRadius?: number;
+  canopyRadius?: number;
+  canopyHeight?: number;
+  seed?: number;
+}> = ({
+  trunkHeight = 1.5,
+  trunkRadius = 0.1,
+  canopyRadius = 0.8,
+  canopyHeight = 1.2,
+  seed = Math.random(),
+}) => {
+  const treeGroup = useMemo(() => {
+    const group = new THREE.Group();
+
+    // Use seed for consistent randomness
+    const seededRandom = (s: number) => {
+      const x = Math.sin(s) * 10000;
+      return x - Math.floor(x);
+    };
+
+    // Create trunk with slight taper
+    const trunkTopRadius = trunkRadius * 0.7;
+    const trunkGeometry = new THREE.CylinderGeometry(trunkTopRadius, trunkRadius, trunkHeight, 8);
+
+    // Add bark texture by modifying vertices
+    const positions = trunkGeometry.attributes.position.array as Float32Array;
+    for (let i = 0; i < positions.length; i += 3) {
+      const x = positions[i];
+      const z = positions[i + 2];
+
+      // Add bark-like bumps
+      const noise = (seededRandom(seed + i) - 0.5) * trunkRadius * 0.1;
+      const distance = Math.sqrt(x * x + z * z);
+      if (distance > 0) {
+        positions[i] = x + (x / distance) * noise;
+        positions[i + 2] = z + (z / distance) * noise;
+      }
+    }
+    trunkGeometry.attributes.position.needsUpdate = true;
+    trunkGeometry.computeVertexNormals();
+
+    const trunkMaterial = new THREE.MeshLambertMaterial({
+      color: new THREE.Color().setHSL(
+        0.08 + (seededRandom(seed) - 0.5) * 0.02, // Brown with slight variation
+        0.6 + seededRandom(seed + 100) * 0.2,
+        0.2 + seededRandom(seed + 200) * 0.1,
+      ),
+    });
+    const trunkMesh = new THREE.Mesh(trunkGeometry, trunkMaterial);
+    trunkMesh.position.y = trunkHeight / 2;
+    group.add(trunkMesh);
+
+    // Create multiple canopy layers for fuller look
+    const numCanopyLayers = 2 + Math.floor(seededRandom(seed + 300) * 2); // 2-3 layers
+
+    for (let i = 0; i < numCanopyLayers; i++) {
+      const layerRadius = canopyRadius * (0.7 + seededRandom(seed + 400 + i) * 0.4);
+      const layerHeight = trunkHeight + canopyRadius * (0.2 + i * 0.3);
+
+      // Create irregular canopy shape
+      const canopyGeometry = new THREE.SphereGeometry(layerRadius, 12, 8);
+      const canopyPositions = canopyGeometry.attributes.position.array as Float32Array;
+
+      for (let j = 0; j < canopyPositions.length; j += 3) {
+        const vertex = new THREE.Vector3(
+          canopyPositions[j],
+          canopyPositions[j + 1],
+          canopyPositions[j + 2],
+        );
+        const length = vertex.length();
+
+        // Add organic irregularity
+        const noise = (seededRandom(seed + 500 + i + j) - 0.5) * layerRadius * 0.3;
+        const newLength = Math.max(length + noise, layerRadius * 0.5);
+        vertex.normalize().multiplyScalar(newLength);
+
+        // Slightly flatten bottom of canopy
+        if (vertex.y < -layerRadius * 0.3) {
+          vertex.y *= 0.8;
+        }
+
+        canopyPositions[j] = vertex.x;
+        canopyPositions[j + 1] = vertex.y;
+        canopyPositions[j + 2] = vertex.z;
+      }
+
+      canopyGeometry.attributes.position.needsUpdate = true;
+      canopyGeometry.computeVertexNormals();
+
+      // Vary canopy color for each layer
+      const canopyMaterial = new THREE.MeshLambertMaterial({
+        color: new THREE.Color().setHSL(
+          0.25 + (seededRandom(seed + 600 + i) - 0.5) * 0.05, // Green with variation
+          0.6 + seededRandom(seed + 700 + i) * 0.3,
+          0.3 + seededRandom(seed + 800 + i) * 0.2,
+        ),
+      });
+
+      const canopyMesh = new THREE.Mesh(canopyGeometry, canopyMaterial);
+
+      // Position and slightly offset each layer
+      const offsetX = (seededRandom(seed + 900 + i) - 0.5) * trunkRadius * 2;
+      const offsetZ = (seededRandom(seed + 1000 + i) - 0.5) * trunkRadius * 2;
+
+      canopyMesh.position.set(offsetX, layerHeight, offsetZ);
+      group.add(canopyMesh);
+    }
+
+    // Add a few small branches sticking out
+    const numBranches = 2 + Math.floor(seededRandom(seed + 1100) * 3);
+
+    for (let i = 0; i < numBranches; i++) {
+      const branchLength = trunkHeight * (0.2 + seededRandom(seed + 1200 + i) * 0.2);
+      const branchRadius = trunkRadius * 0.3;
+
+      const branchGeometry = new THREE.CylinderGeometry(
+        branchRadius * 0.5,
+        branchRadius,
+        branchLength,
+        6,
+      );
+      const branchMaterial = new THREE.MeshLambertMaterial({
+        color: trunkMaterial.color.clone().multiplyScalar(0.9),
+      });
+      const branchMesh = new THREE.Mesh(branchGeometry, branchMaterial);
+
+      // Position branch at random height and angle
+      const branchHeight = trunkHeight * (0.6 + seededRandom(seed + 1300 + i) * 0.3);
+      const branchAngle = seededRandom(seed + 1400 + i) * Math.PI * 2;
+      const branchTilt = Math.PI * 0.25 + seededRandom(seed + 1500 + i) * Math.PI * 0.25;
+
+      branchMesh.position.y = branchHeight;
+      branchMesh.position.x = Math.cos(branchAngle) * trunkRadius;
+      branchMesh.position.z = Math.sin(branchAngle) * trunkRadius;
+
+      branchMesh.rotation.z = branchTilt;
+      branchMesh.rotation.y = branchAngle;
+
+      group.add(branchMesh);
+    }
+
+    return group;
+  }, [trunkHeight, trunkRadius, canopyRadius, canopyHeight, seed]);
+
+  return <primitive object={treeGroup} />;
+};
+
+/**
+ * Creates a rock geometry
+ * An irregular rock-like shape with multiple variations
+ */
+export const RockGeometry: React.FC<{
+  size?: number;
+  detail?: number;
+  randomness?: number;
+  seed?: number;
+}> = ({ size = 0.5, detail = 12, randomness = 0.4, seed = Math.random() }) => {
+  const geometry = useMemo(() => {
+    // Use seed for consistent randomness
+    const seededRandom = (s: number) => {
+      const x = Math.sin(s) * 10000;
+      return x - Math.floor(x);
+    };
+
+    // Start with different base shapes for variety
+    const shapeType = Math.floor(seededRandom(seed) * 3);
+    let baseGeom: THREE.BufferGeometry;
+
+    switch (shapeType) {
+      case 0:
+        baseGeom = new THREE.IcosahedronGeometry(size, 1);
+        break;
+      case 1:
+        baseGeom = new THREE.DodecahedronGeometry(size, 0);
+        break;
+      default:
+        baseGeom = new THREE.OctahedronGeometry(size, 1);
+        break;
+    }
+
+    const positions = baseGeom.attributes.position.array as Float32Array;
+
+    // Add complex noise for more realistic rock shape
+    for (let i = 0; i < positions.length; i += 3) {
+      const vertex = new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]);
+      const length = vertex.length();
+
+      // Multi-octave noise for natural variation
+      const noise1 = (seededRandom(seed + i) - 0.5) * randomness * size;
+      const noise2 = (seededRandom(seed + i + 1000) - 0.5) * randomness * size * 0.5;
+      const noise3 = (seededRandom(seed + i + 2000) - 0.5) * randomness * size * 0.25;
+      const totalNoise = noise1 + noise2 + noise3;
+
+      vertex.normalize().multiplyScalar(Math.max(length + totalNoise, size * 0.3));
+
+      // Create more dramatic flattening for bottom
+      if (vertex.y < -size * 0.2) {
+        vertex.y *= 0.5;
+        // Add some width variation to make it look settled
+        const flattenFactor = 1 + (seededRandom(seed + i + 3000) - 0.5) * 0.3;
+        vertex.x *= flattenFactor;
+        vertex.z *= flattenFactor;
+      }
+
+      positions[i] = vertex.x;
+      positions[i + 1] = vertex.y;
+      positions[i + 2] = vertex.z;
+    }
+
+    baseGeom.attributes.position.needsUpdate = true;
+    baseGeom.computeVertexNormals();
+
+    return baseGeom;
+  }, [size, detail, randomness, seed]);
+
+  return <primitive object={geometry} />;
+};
+
+/**
+ * Creates a bush geometry
+ * A realistic multi-layered shrub
+ */
+export const BushGeometry: React.FC<{
+  size?: number;
+  density?: number;
+  seed?: number;
+}> = ({ size = 0.4, density = 3, seed = Math.random() }) => {
+  const bushGroup = useMemo(() => {
+    const group = new THREE.Group();
+
+    // Use seed for consistent randomness
+    const seededRandom = (s: number) => {
+      const x = Math.sin(s) * 10000;
+      return x - Math.floor(x);
+    };
+
+    // Create multiple overlapping spheres for a fuller bush look
+    const numClusters = Math.max(2, Math.floor(density));
+
+    for (let i = 0; i < numClusters; i++) {
+      const clusterSize = size * (0.6 + seededRandom(seed + i) * 0.4);
+      const segments = Math.max(6, Math.floor(clusterSize * 20));
+
+      // Create base sphere geometry
+      const sphereGeom = new THREE.SphereGeometry(clusterSize, segments, segments);
+      const positions = sphereGeom.attributes.position.array as Float32Array;
+
+      // Add organic irregularity to each cluster
+      for (let j = 0; j < positions.length; j += 3) {
+        const vertex = new THREE.Vector3(positions[j], positions[j + 1], positions[j + 2]);
+        const length = vertex.length();
+
+        // Flatten vertically for bush-like shape
+        vertex.y *= 0.7;
+
+        // Add multiple layers of noise for organic look
+        const noise1 = (seededRandom(seed + i + j) - 0.5) * clusterSize * 0.3;
+        const noise2 = (seededRandom(seed + i + j + 1000) - 0.5) * clusterSize * 0.15;
+        const totalNoise = noise1 + noise2;
+
+        const newLength = Math.max(length + totalNoise, clusterSize * 0.3);
+        vertex.normalize().multiplyScalar(newLength);
+
+        // Create some drooping at the bottom
+        if (vertex.y < -clusterSize * 0.3) {
+          vertex.y *= 0.8;
+        }
+
+        positions[j] = vertex.x;
+        positions[j + 1] = vertex.y;
+        positions[j + 2] = vertex.z;
+      }
+
+      sphereGeom.attributes.position.needsUpdate = true;
+      sphereGeom.computeVertexNormals();
+
+      // Create mesh for this cluster
+      const material = new THREE.MeshLambertMaterial({
+        color: new THREE.Color().setHSL(
+          0.25 + (seededRandom(seed + i + 500) - 0.5) * 0.1, // Green with slight variation
+          0.6 + seededRandom(seed + i + 600) * 0.3, // Saturation variation
+          0.3 + seededRandom(seed + i + 700) * 0.2, // Lightness variation
+        ),
+      });
+
+      const clusterMesh = new THREE.Mesh(sphereGeom, material);
+
+      // Position clusters to create fuller bush
+      const angle = (i / numClusters) * Math.PI * 2 + seededRandom(seed + i + 800) * Math.PI;
+      const distance = seededRandom(seed + i + 900) * size * 0.3;
+      const heightOffset = (seededRandom(seed + i + 1000) - 0.5) * size * 0.2;
+
+      clusterMesh.position.x = Math.cos(angle) * distance;
+      clusterMesh.position.z = Math.sin(angle) * distance;
+      clusterMesh.position.y = heightOffset;
+
+      group.add(clusterMesh);
+    }
+
+    return group;
+  }, [size, density, seed]);
+
+  return <primitive object={bushGroup} />;
+};
+
+/**
+ * Creates grass geometry
+ * A detailed patch of grass with varied blade shapes
+ */
+export const GrassGeometry: React.FC<{
+  patchSize?: number;
+  density?: number;
+  maxHeight?: number;
+  seed?: number;
+}> = ({ patchSize = 0.5, density = 20, maxHeight = 0.6, seed = Math.random() }) => {
+  const grassGroup = useMemo(() => {
+    const group = new THREE.Group();
+
+    // Use seed for consistent randomness
+    const seededRandom = (s: number) => {
+      const x = Math.sin(s) * 10000;
+      return x - Math.floor(x);
+    };
+
+    const numBlades = Math.floor(density);
+
+    for (let i = 0; i < numBlades; i++) {
+      // Create individual grass blade geometry
+      const bladeGeom = new THREE.BufferGeometry();
+
+      // Blade parameters
+      const bladeHeight = maxHeight * (0.4 + seededRandom(seed + i) * 0.6);
+      const bladeWidth = patchSize * 0.02 * (0.5 + seededRandom(seed + i + 1000) * 0.5);
+      const segments = 3; // Number of segments for blade curve
+
+      const vertices: number[] = [];
+      const indices: number[] = [];
+      const uvs: number[] = [];
+
+      // Create curved blade with multiple segments
+      for (let j = 0; j <= segments; j++) {
+        const t = j / segments;
+        const y = t * bladeHeight;
+
+        // Create natural curve/bend
+        const bendAmount = seededRandom(seed + i + 2000) * 0.3 - 0.15;
+        const curve = Math.sin(t * Math.PI * 0.5) * bendAmount * bladeHeight;
+
+        // Blade gets narrower toward tip
+        const widthFactor = 1 - t * 0.7;
+        const currentWidth = bladeWidth * widthFactor;
+
+        // Left and right vertices for this segment
+        vertices.push(-currentWidth + curve, y, 0);
+        vertices.push(currentWidth + curve, y, 0);
+
+        // UVs
+        uvs.push(0, t, 1, t);
+
+        // Create triangles (except for last segment)
+        if (j < segments) {
+          const base = j * 2;
+          indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+        }
+      }
+
+      bladeGeom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      bladeGeom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      bladeGeom.setIndex(indices);
+      bladeGeom.computeVertexNormals();
+
+      // Create blade mesh with varied green color
+      const hue = 0.25 + (seededRandom(seed + i + 3000) - 0.5) * 0.1; // Green with variation
+      const saturation = 0.7 + seededRandom(seed + i + 4000) * 0.2;
+      const lightness = 0.3 + seededRandom(seed + i + 5000) * 0.3;
+
+      const bladeMaterial = new THREE.MeshLambertMaterial({
+        color: new THREE.Color().setHSL(hue, saturation, lightness),
+        side: THREE.DoubleSide, // Visible from both sides
+      });
+
+      const bladeMesh = new THREE.Mesh(bladeGeom, bladeMaterial);
+
+      // Position blade randomly within patch
+      const angle = seededRandom(seed + i + 6000) * Math.PI * 2;
+      const distance = seededRandom(seed + i + 7000) * patchSize * 0.4;
+      const x = Math.cos(angle) * distance;
+      const z = Math.sin(angle) * distance;
+
+      bladeMesh.position.set(x, 0, z);
+
+      // Random rotation around Y axis
+      bladeMesh.rotation.y = seededRandom(seed + i + 8000) * Math.PI * 2;
+
+      // Slight random tilt
+      bladeMesh.rotation.z = (seededRandom(seed + i + 9000) - 0.5) * 0.2;
+
+      group.add(bladeMesh);
+    }
+
+    return group;
+  }, [patchSize, density, maxHeight, seed]);
+
+  return <primitive object={grassGroup} />;
+};

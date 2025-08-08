@@ -563,6 +563,86 @@ export const useEntityCreation = () => {
     [createEntity, addMeshRenderer, getNextNumber],
   );
 
+  const createTree = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Tree ${getNextNumber('Tree')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'tree', undefined, {
+        material: { color: '#2d5016' }, // Forest green color for trees
+      });
+
+      const transformData: ITransformData = {
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      };
+      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+
+      return entity;
+    },
+    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+  );
+
+  const createRock = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Rock ${getNextNumber('Rock')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'rock', undefined, {
+        material: { color: '#6b6b6b' }, // Gray color for rocks
+      });
+
+      const transformData: ITransformData = {
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      };
+      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+
+      return entity;
+    },
+    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+  );
+
+  const createBush = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Bush ${getNextNumber('Bush')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'bush', undefined, {
+        material: { color: '#4a7c59' }, // Green color for bushes
+      });
+
+      const transformData: ITransformData = {
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      };
+      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+
+      return entity;
+    },
+    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+  );
+
+  const createGrass = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Grass ${getNextNumber('Grass')}`;
+      const entity = createEntity(actualName, parentId);
+      addMeshRenderer(entity.id, 'grass', undefined, {
+        material: { color: '#228B22' }, // Bright green color for grass
+      });
+
+      const transformData: ITransformData = {
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      };
+      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+
+      return entity;
+    },
+    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+  );
+
   const createCustomModel = useCallback(
     (modelPath: string, name?: string, parentId?: number) => {
       // Extract filename from path for default naming
@@ -632,6 +712,10 @@ export const useEntityCreation = () => {
     createDiamond,
     createTube,
     createCross,
+    createTree,
+    createRock,
+    createBush,
+    createGrass,
     createCustomModel,
     deleteEntity,
   };
