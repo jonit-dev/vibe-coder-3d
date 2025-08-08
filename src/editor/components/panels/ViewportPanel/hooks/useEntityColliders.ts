@@ -30,6 +30,8 @@ export const useEntityColliders = ({ meshCollider, meshType }: IUseEntityCollide
 
     // Fallback to auto-detection based on mesh type
     switch (meshType) {
+      case 'Terrain':
+        return 'trimesh';
       case 'Sphere':
         return 'ball';
       case 'Cylinder':

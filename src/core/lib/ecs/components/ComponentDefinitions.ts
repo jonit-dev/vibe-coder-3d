@@ -16,6 +16,7 @@ import {
   meshColliderComponent,
   meshRendererComponent,
   rigidBodyComponent,
+  terrainComponent,
   transformComponent,
   type CameraData,
   type LightData,
@@ -32,6 +33,7 @@ import {
 export function registerCoreComponents(): void {
   componentRegistry.register(transformComponent);
   componentRegistry.register(meshRendererComponent);
+  componentRegistry.register(terrainComponent);
   componentRegistry.register(rigidBodyComponent);
   componentRegistry.register(meshColliderComponent);
   componentRegistry.register(cameraComponent);

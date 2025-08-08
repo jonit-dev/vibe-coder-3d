@@ -18,6 +18,7 @@ import {
   TubeGeometry,
 } from './CustomGeometries';
 import { LightGeometry } from './LightGeometry';
+import { TerrainGeometry } from './TerrainGeometry';
 
 // Component data interfaces
 interface IMeshRendererData {
@@ -240,8 +241,30 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     }, [textures, material.textureOffsetX, material.textureOffsetY]);
 
     // Memoized geometry/content selection based on mesh type
+    const terrainData = useMemo(() => {
+      const terrain = entityComponents.find((c) => c.type === 'Terrain');
+      return (terrain?.data as any) || null;
+    }, [entityComponents]);
+
     const geometryContent = useMemo(() => {
       switch (meshType) {
+        case 'Terrain':
+          if (terrainData) {
+            return (
+              <TerrainGeometry
+                size={terrainData.size ?? [20, 20]}
+                segments={terrainData.segments ?? [129, 129]}
+                heightScale={terrainData.heightScale ?? 2}
+                noiseEnabled={terrainData.noiseEnabled ?? true}
+                noiseSeed={terrainData.noiseSeed ?? 1337}
+                noiseFrequency={terrainData.noiseFrequency ?? 0.2}
+                noiseOctaves={terrainData.noiseOctaves ?? 4}
+                noisePersistence={terrainData.noisePersistence ?? 0.5}
+                noiseLacunarity={terrainData.noiseLacunarity ?? 2.0}
+              />
+            );
+          }
+          return <planeGeometry args={[20, 20]} />;
         case 'Sphere':
           return <sphereGeometry args={[0.5, 32, 32]} />;
         case 'Cylinder':
@@ -301,7 +324,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
         default:
           return <boxGeometry args={[1, 1, 1]} />;
       }
-    }, [meshType]);
+    }, [meshType, terrainData]);
 
     // Special handling for camera entities
     if (meshType === 'Camera') {

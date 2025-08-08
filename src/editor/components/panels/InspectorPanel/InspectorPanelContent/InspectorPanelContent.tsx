@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { TerrainAdapter } from '@/editor/components/inspector/adapters/TerrainAdapter';
 import { ComponentList } from '@/editor/components/inspector/sections/ComponentList';
 import { DebugSection } from '@/editor/components/inspector/sections/DebugSection';
 import { EmptyState } from '@/editor/components/inspector/sections/EmptyState';
@@ -52,6 +53,18 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
         updateComponent={updateComponent}
         removeComponent={removeComponent}
       />
+
+      {/* Terrain (rendered outside ComponentList to minimize type churn) */}
+      {(() => {
+        const terrainComp = components.find((c) => c.type === 'Terrain') as any;
+        return terrainComp ? (
+          <TerrainAdapter
+            terrainComponent={terrainComp as any}
+            updateComponent={updateComponent as any}
+            removeComponent={removeComponent}
+          />
+        ) : null;
+      })()}
 
       {/* Debug Info */}
       <DebugSection selectedEntity={selectedEntity} components={components} />

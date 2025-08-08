@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiBox, FiFolder, FiSun, FiZap } from 'react-icons/fi';
+import { FiFolder, FiSun, FiZap } from 'react-icons/fi';
 import {
   TbBox,
   TbBuildingBridge,
@@ -174,6 +174,17 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
     ],
   },
   {
+    label: 'Environment',
+    icon: <TbTriangle size={18} />,
+    items: [
+      {
+        type: ShapeType.Terrain,
+        label: 'Terrain',
+        icon: <TbTriangle size={18} />,
+      },
+    ],
+  },
+  {
     label: 'Decorative',
     icon: <TbDiamond size={18} />,
     items: [
@@ -272,6 +283,7 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
       ShapeType.Cone,
       ShapeType.Torus,
       ShapeType.Plane,
+      ShapeType.Terrain,
       ShapeType.Wall,
       ShapeType.Trapezoid,
       ShapeType.Octahedron,

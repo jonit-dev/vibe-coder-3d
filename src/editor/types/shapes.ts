@@ -37,6 +37,9 @@ export enum ShapeType {
   Cross = 'Cross',
   Tube = 'Tube',
 
+  // Environment
+  Terrain = 'Terrain',
+
   // Special
   Camera = 'Camera',
   CustomModel = 'CustomModel',

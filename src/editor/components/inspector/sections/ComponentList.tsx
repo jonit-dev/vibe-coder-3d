@@ -12,7 +12,9 @@ import { LightAdapter } from '@/editor/components/inspector/adapters/LightAdapte
 import { MeshColliderAdapter } from '@/editor/components/inspector/adapters/MeshColliderAdapter';
 import { MeshRendererAdapter } from '@/editor/components/inspector/adapters/MeshRendererAdapter';
 import { RigidBodyAdapter } from '@/editor/components/inspector/adapters/RigidBodyAdapter';
+// TerrainAdapter is rendered outside in InspectorPanelContent
 import { TransformAdapter } from '@/editor/components/inspector/adapters/TransformAdapter';
+// Terrain adapter integration pending
 
 interface IComponentListProps {
   selectedEntity: number;
@@ -23,12 +25,14 @@ interface IComponentListProps {
   hasMeshCollider: boolean;
   hasCamera: boolean;
   hasLight: boolean;
+  // hasTerrain?: boolean;
   getTransform: () => IComponent<TransformData> | null;
   getMeshRenderer: () => IComponent<MeshRendererData> | null;
   getRigidBody: () => IComponent<RigidBodyData> | null;
   getMeshCollider: () => IComponent<MeshColliderData> | null;
   getCamera: () => IComponent<CameraData> | null;
   getLight: () => IComponent<LightData> | null;
+  // getTerrain?: () => IComponent<any> | null;
   addComponent: (type: string, data: unknown) => IComponent<unknown> | null;
   updateComponent: (type: string, data: unknown) => boolean;
   removeComponent: (type: string) => boolean;
@@ -125,6 +129,8 @@ export const ComponentList: React.FC<IComponentListProps> = ({
           entityId={selectedEntity}
         />
       )}
+
+      {/* Terrain handled in InspectorPanelContent */}
     </>
   );
 };

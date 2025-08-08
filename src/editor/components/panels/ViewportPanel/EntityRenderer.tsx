@@ -87,6 +87,27 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       allEntityIds,
     });
 
+    // When terrain params change, force-remount physics body so trimesh collider rebuilds
+    const terrainColliderKey = React.useMemo(() => {
+      const t = entityComponents.find((c) => c.type === 'Terrain')?.data as any;
+      if (!t) return undefined;
+      try {
+        return `rb-terrain-${entityId}-${[
+          ...(Array.isArray(t.size) ? t.size : []),
+          ...(Array.isArray(t.segments) ? t.segments : []),
+          t.heightScale,
+          t.noiseEnabled,
+          t.noiseSeed,
+          t.noiseFrequency,
+          t.noiseOctaves,
+          t.noisePersistence,
+          t.noiseLacunarity,
+        ].join('|')}`;
+      } catch {
+        return undefined;
+      }
+    }, [entityComponents, entityId]);
+
     // Check if this entity is being followed by the main camera (first-person view)
     const isFollowedEntity = useFollowedEntityCheck(entityId, isPlaying);
 
@@ -121,6 +142,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       <group>
         {shouldHavePhysics ? (
           <RigidBody
+            key={terrainColliderKey}
             type={physicsContributions.rigidBodyProps?.type as any}
             mass={physicsContributions.rigidBodyProps?.mass ?? 1}
             friction={physicsContributions.rigidBodyProps?.friction ?? 0.7}

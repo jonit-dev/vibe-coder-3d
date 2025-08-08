@@ -8,6 +8,7 @@ export { lightComponent, type LightData } from './LightComponent';
 export { meshColliderComponent, type MeshColliderData } from './MeshColliderComponent';
 export { meshRendererComponent, type MeshRendererData } from './MeshRendererComponent';
 export { rigidBodyComponent, type RigidBodyData } from './RigidBodyComponent';
+export { terrainComponent, type TerrainData } from './TerrainComponent';
 export { transformComponent, type TransformData } from './TransformComponent';
 
 // Re-export component registry for convenience

@@ -147,6 +147,8 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     [components],
   );
 
+  const hasTerrain = useMemo(() => components.some((c) => c.type === 'Terrain'), [components]);
+
   // Legacy getter methods for compatibility
   const getTransform = useCallback(() => {
     return getComponent(KnownComponentTypes.TRANSFORM);
@@ -170,6 +172,10 @@ export const useEntityComponents = (entityId: EntityId | null) => {
 
   const getLight = useCallback(() => {
     return getComponent(KnownComponentTypes.LIGHT);
+  }, [getComponent]);
+
+  const getTerrain = useCallback(() => {
+    return getComponent('Terrain');
   }, [getComponent]);
 
   // Incompatible components functionality
@@ -202,12 +208,14 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     hasMeshCollider,
     hasCamera,
     hasLight,
+    hasTerrain,
     getTransform,
     getMeshRenderer,
     getRigidBody,
     getMeshCollider,
     getCamera,
     getLight,
+    getTerrain,
     getIncompatibleComponents,
     areComponentsIncompatible,
   };

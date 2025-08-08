@@ -15,6 +15,8 @@ export const useEntityComponents = (entityId: number) => {
     KnownComponentTypes.MESH_RENDERER,
     KnownComponentTypes.MESH_COLLIDER,
     KnownComponentTypes.RIGID_BODY,
+    // Include Terrain so viewport reacts to terrain edits
+    'Terrain' as any,
   ];
 
   // Listen for component events using the global event system

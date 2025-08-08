@@ -656,6 +656,7 @@ export function combineRenderingContributions(
     cone: 'Cone',
     torus: 'Torus',
     plane: 'Plane',
+    terrain: 'Terrain',
     Wall: 'Wall',
     trapezoid: 'Trapezoid',
     octahedron: 'Octahedron',

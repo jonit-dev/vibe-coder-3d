@@ -54,7 +54,18 @@ export const useEntityCreation = () => {
   );
 
   const addMeshRenderer = useCallback(
-    (entityId: number, meshId: string, modelPath?: string) => {
+    (
+      entityId: number,
+      meshId: string,
+      modelPath?: string,
+      overrides?: Partial<{
+        material: {
+          color?: string;
+          shader?: 'standard' | 'unlit';
+          materialType?: 'solid' | 'texture';
+        };
+      }>,
+    ) => {
       // Get color from old material component if it exists
       const materialData = getComponentData(entityId, 'material') as {
         color?: number[] | string;
@@ -78,7 +89,7 @@ export const useEntityCreation = () => {
       }
 
       // Add MeshRenderer component with proper material
-      const meshRendererData = {
+      const meshRendererData: any = {
         meshId,
         materialId: 'default',
         enabled: true,
@@ -93,6 +104,11 @@ export const useEntityCreation = () => {
           emissiveIntensity: 0.0,
         },
       };
+
+      // Apply optional material overrides
+      if (overrides?.material) {
+        meshRendererData.material = { ...meshRendererData.material, ...overrides.material };
+      }
 
       console.log('[addMeshRenderer] Adding MeshRenderer:', { entityId, meshRendererData });
 
@@ -164,6 +180,52 @@ export const useEntityCreation = () => {
         scale: [10, 10, 1], // Make it larger and thinner like a ground plane
       };
 
+      componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+
+      return entity;
+    },
+    [createEntity, addMeshRenderer, componentManager, getNextNumber],
+  );
+
+  const createTerrain = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Terrain ${getNextNumber('Terrain')}`;
+      const entity = createEntity(actualName, parentId);
+      // Assign renderer with a neutral gray default color
+      addMeshRenderer(entity.id, 'terrain', undefined, { material: { color: '#808080' } });
+
+      const terrainDefaults = {
+        size: [20, 20] as [number, number],
+        segments: [129, 129] as [number, number],
+        heightScale: 3,
+        noiseEnabled: true,
+        noiseSeed: Math.floor(Math.random() * 100000),
+        noiseFrequency: 4,
+        noiseOctaves: 5,
+        noisePersistence: 0.5,
+        noiseLacunarity: 2.1,
+      };
+      componentManager.addComponent(entity.id, 'Terrain', terrainDefaults);
+
+      // Add a fixed rigid body so terrain participates in physics (as a static ground)
+      componentManager.addComponent(entity.id, KnownComponentTypes.RIGID_BODY, {
+        enabled: true,
+        bodyType: 'fixed',
+        mass: 1,
+        gravityScale: 1,
+        canSleep: true,
+        material: {
+          friction: 0.9,
+          restitution: 0.0,
+          density: 1,
+        },
+      } as any);
+
+      const transformData: ITransformData = {
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      };
       componentManager.updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
 
       return entity;
@@ -544,6 +606,7 @@ export const useEntityCreation = () => {
     createCone,
     createTorus,
     createPlane,
+    createTerrain,
     createWall,
     createCamera,
     createDirectionalLight,
