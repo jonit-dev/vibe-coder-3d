@@ -73,6 +73,30 @@ export const useEntitySelection = ({
     [entityId, setSelectedId, groupSelection, allEntityIds],
   );
 
+  // Memoized double-click handler for camera framing
+  const handleMeshDoubleClick = useCallback(
+    (e: ThreeEvent<MouseEvent>) => {
+      e.stopPropagation();
+
+      console.log(`[useEntitySelection] Entity ${entityId} double-clicked - framing camera`);
+
+      // Call the global frame function if it exists
+      try {
+        const windowWithFrameEntity = window as Window & {
+          __frameEntity?: (entityId: number) => void;
+        };
+        if (windowWithFrameEntity.__frameEntity) {
+          windowWithFrameEntity.__frameEntity(entityId);
+        } else {
+          console.warn('[useEntitySelection] Frame function not available on window');
+        }
+      } catch (error) {
+        console.error('[useEntitySelection] Error during camera framing:', error);
+      }
+    },
+    [entityId],
+  );
+
   // Create a pure Three.js outline that updates without React
   useEffect(() => {
     if (!outlineGroupRef.current || !selected) return;
@@ -139,5 +163,6 @@ export const useEntitySelection = ({
     outlineGroupRef,
     outlineMeshRef,
     handleMeshClick,
+    handleMeshDoubleClick,
   };
 };

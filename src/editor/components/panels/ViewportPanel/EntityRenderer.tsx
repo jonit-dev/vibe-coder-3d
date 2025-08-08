@@ -78,16 +78,17 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       meshType: meshType || 'unknown', // Provide fallback to avoid null issues
     });
 
-    const { outlineGroupRef, outlineMeshRef, handleMeshClick } = useEntitySelection({
-      entityId,
-      selected,
-      meshRef,
-      isTransforming: isTransformingLocal,
-      position: position || [0, 0, 0], // Provide fallback to avoid null issues
-      rotationRadians: rotationRadians || [0, 0, 0],
-      scale: scale || [1, 1, 1],
-      allEntityIds,
-    });
+    const { outlineGroupRef, outlineMeshRef, handleMeshClick, handleMeshDoubleClick } =
+      useEntitySelection({
+        entityId,
+        selected,
+        meshRef,
+        isTransforming: isTransformingLocal,
+        position: position || [0, 0, 0], // Provide fallback to avoid null issues
+        rotationRadians: rotationRadians || [0, 0, 0],
+        scale: scale || [1, 1, 1],
+        allEntityIds,
+      });
 
     // When terrain params change, force-remount physics body so trimesh collider rebuilds
     const terrainColliderKey = React.useMemo(() => {
@@ -135,6 +136,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         entityColor={entityColor as string}
         entityId={entityId}
         onMeshClick={handleMeshClick as unknown as (e: ThreeEvent<MouseEvent>) => void}
+        onMeshDoubleClick={handleMeshDoubleClick as unknown as (e: ThreeEvent<MouseEvent>) => void}
         isPlaying={isPlaying}
         entityComponents={entityComponents}
       />

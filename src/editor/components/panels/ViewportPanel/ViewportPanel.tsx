@@ -2,6 +2,7 @@ import { OrbitControls } from '@react-three/drei';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
+import * as THREE from 'three';
 
 import { CameraBackgroundManager } from '@/core/components/cameras/CameraBackgroundManager';
 import { CameraControlsManager } from '@/core/components/cameras/CameraControlsManager';
@@ -125,8 +126,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
             console.log('[ViewportPanel] Shadow mapping enabled with PCF soft shadows');
           }}
         >
-          {/* Selection framer: centers the view on newly selected entity */}
-          <SelectionFramer selectedEntityId={entityId} />
+          {/* Selection framer: provides frame function for double-click */}
+          <SelectionFramer />
           {/* Camera System Connector - connects editor camera to camera system */}
           <CameraSystemConnector />
 
@@ -222,45 +223,94 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
   );
 };
 
-// Internal helper to frame/focus the current selection in the viewport
-const SelectionFramer: React.FC<{ selectedEntityId: number | null }> = ({ selectedEntityId }) => {
+// Internal helper to frame/focus entity on double-click in the viewport
+const SelectionFramer: React.FC = () => {
   const { camera } = useThree();
   const componentManager = useComponentManager();
 
-  useEffect(() => {
-    if (!isValidEntityId(selectedEntityId)) return;
+  const frameEntity = (entityId: number) => {
+    console.log(`[SelectionFramer] frameEntity called with entityId: ${entityId}`);
+    if (!isValidEntityId(entityId)) {
+      console.log(`[SelectionFramer] Invalid entity ID: ${entityId}`);
+      return;
+    }
 
-    // Get transform to position camera target; simple heuristic
-    const transform = componentManager.getComponent(
-      selectedEntityId!,
-      KnownComponentTypes.TRANSFORM,
-    )?.data as
+    // Get transform to position camera target
+    const transform = componentManager.getComponent(entityId, KnownComponentTypes.TRANSFORM)
+      ?.data as
       | { position?: [number, number, number]; scale?: [number, number, number] }
       | undefined;
+
+    if (!transform) {
+      console.log(`[SelectionFramer] No transform found for entity: ${entityId}`);
+      return;
+    }
 
     const pos = transform?.position ?? [0, 0, 0];
     const scale = transform?.scale ?? [1, 1, 1];
 
-    // Compute a distance based on scale to frame object reasonably
-    const maxExtent = Math.max(Math.abs(scale[0]), Math.abs(scale[1]), Math.abs(scale[2]));
-    const distance = Math.max(3, maxExtent * 3);
+    console.log(`[SelectionFramer] Entity ${entityId} position:`, pos, 'scale:', scale);
 
-    // Move camera to look at the entity smoothly
-    const target = { x: pos[0], y: pos[1], z: pos[2] } as any;
-    const start = camera.position.clone();
-    const end = start.clone().set(pos[0] + distance, pos[1] + distance * 0.5, pos[2] + distance);
+    // Calculate object size for proper framing
+    const objectSize = Math.max(Math.abs(scale[0]), Math.abs(scale[1]), Math.abs(scale[2]));
 
+    // Calculate distance needed to frame the object properly
+    // Use camera's field of view to determine optimal distance (assume perspective camera)
+    const fov = (camera as THREE.PerspectiveCamera).fov || 60; // Default to 60 if not available
+    const fovRad = (fov * Math.PI) / 180;
+    const distance = Math.max(3, (objectSize * 2.5) / Math.tan(fovRad / 2));
+
+    console.log(`[SelectionFramer] Object size: ${objectSize}, Distance: ${distance}`);
+
+    // Target position (object center)
+    const target = new THREE.Vector3(pos[0], pos[1], pos[2]);
+
+    // Position camera in front of the object (simple approach for reliable centering)
+    // Use current camera direction but ensure good framing
+    const currentDirection = new THREE.Vector3();
+    camera.getWorldDirection(currentDirection);
+
+    // Position camera directly opposite to its current viewing direction
+    const cameraOffset = currentDirection.clone().multiplyScalar(-distance);
+    const newCameraPosition = target.clone().add(cameraOffset);
+
+    console.log(`[SelectionFramer] Target:`, target, 'New camera position:', newCameraPosition);
+
+    // Smooth animation
+    const startPosition = camera.position.clone();
     let t = 0;
-    const durationMs = 180;
+    const durationMs = 600; // Slightly longer for smoother feel
     const startTime = performance.now();
+
     const animate = () => {
       t = Math.min(1, (performance.now() - startTime) / durationMs);
-      camera.position.lerpVectors(start, end, t);
-      camera.lookAt(target.x, target.y, target.z);
-      if (t < 1) requestAnimationFrame(animate);
+
+      // Smooth ease-in-out animation
+      const easeT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+      // Interpolate camera position
+      camera.position.lerpVectors(startPosition, newCameraPosition, easeT);
+
+      // Always look directly at the target center
+      camera.lookAt(target);
+
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        console.log(`[SelectionFramer] Animation complete - camera at:`, camera.position);
+      }
     };
+
     requestAnimationFrame(animate);
-  }, [selectedEntityId, camera, componentManager]);
+  };
+
+  // No auto-framing - only on double-click
+
+  // Also store the frame function for external use
+  useEffect(() => {
+    (window as Window & { __frameEntity?: (entityId: number) => void }).__frameEntity = frameEntity;
+    console.log('[SelectionFramer] Frame function registered on window');
+  }, [camera, componentManager]);
 
   return null;
 };

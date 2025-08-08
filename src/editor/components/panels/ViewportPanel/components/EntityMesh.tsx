@@ -112,6 +112,7 @@ interface IEntityMeshProps {
   entityColor: string;
   entityId: number;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
+  onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
   isPlaying?: boolean;
   entityComponents?: Array<{ type: string; data: unknown }>;
 }
@@ -122,7 +123,8 @@ const CustomModelMesh: React.FC<{
   renderingContributions: IRenderingContributions;
   entityId: number;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
-}> = ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick }) => {
+  onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
+}> = ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick, onMeshDoubleClick }) => {
   console.log('[CustomModelMesh] Loading model from path:', modelPath);
 
   const { scene } = useGLTF(modelPath);
@@ -133,6 +135,7 @@ const CustomModelMesh: React.FC<{
       ref={meshRef as React.RefObject<any>}
       userData={{ entityId }}
       onClick={onMeshClick}
+      onDoubleClick={onMeshDoubleClick}
       castShadow={renderingContributions.castShadow}
       receiveShadow={renderingContributions.receiveShadow}
       visible={renderingContributions.visible}
@@ -150,6 +153,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     entityColor,
     entityId,
     onMeshClick,
+    onMeshDoubleClick,
     isPlaying = false,
     entityComponents = [],
   }) => {
@@ -181,6 +185,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
               ref={meshRef}
               userData={{ entityId }}
               onClick={onMeshClick}
+              onDoubleClick={onMeshDoubleClick}
               castShadow={renderingContributions.castShadow}
               receiveShadow={renderingContributions.receiveShadow}
               visible={renderingContributions.visible}
@@ -196,6 +201,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
             renderingContributions={renderingContributions}
             entityId={entityId}
             onMeshClick={onMeshClick}
+            onMeshDoubleClick={onMeshDoubleClick}
           />
         </Suspense>
       );
@@ -396,6 +402,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
             userData={{ entityId }}
             visible={renderingContributions.visible}
             onClick={onMeshClick}
+            onDoubleClick={onMeshDoubleClick}
           >
             {geometryContent}
             <meshStandardMaterial
@@ -434,6 +441,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
             userData={{ entityId }}
             visible={renderingContributions.visible}
             onClick={onMeshClick}
+            onDoubleClick={onMeshDoubleClick}
           >
             {geometryContent}
             <meshStandardMaterial
@@ -456,6 +464,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           userData={{ entityId }}
           visible={renderingContributions.visible}
           onClick={onMeshClick}
+          onDoubleClick={onMeshDoubleClick}
         >
           {geometryContent}
           <meshBasicMaterial
