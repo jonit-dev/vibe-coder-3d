@@ -236,6 +236,13 @@ export const SoundManager: React.FC = () => {
     }
   });
 
+  // Listen for sound:autoplay events from the sound system
+  useEvent('sound:autoplay', (event) => {
+    console.log(`[SoundManager] Autoplay event received for entity ${event.entityId}`);
+    updateSoundInstance(event.entityId, event.soundData);
+    triggerUpdate();
+  });
+
   // Update 3D listener position from camera
   useEffect(() => {
     const updateListener = () => {

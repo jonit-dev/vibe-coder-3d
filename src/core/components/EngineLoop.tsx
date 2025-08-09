@@ -7,12 +7,15 @@ import { materialSystem } from '../systems/MaterialSystem';
 import { cameraSystem } from '../systems/cameraSystem';
 import { lightSystem } from '../systems/lightSystem';
 import { transformSystem } from '../systems/transformSystem';
+import { updateScriptSystem } from '../systems/ScriptSystem';
+import { soundSystem } from '../systems/soundSystem';
 
 // Types for component props
 interface IEngineLoopProps {
   children?: ReactNode;
   autoStart?: boolean;
   paused?: boolean;
+  isPlaying?: boolean;
   debug?: boolean;
   useFixedTimeStep?: boolean;
   fixedTimeStep?: number;
@@ -36,6 +39,7 @@ export const EngineLoop = ({
   children,
   autoStart = true,
   paused = false,
+  isPlaying = false,
   debug = false,
   useFixedTimeStep = true,
   fixedTimeStep = 1 / 60, // Default to 60 Hz physics updates
@@ -80,26 +84,34 @@ export const EngineLoop = ({
     }
   };
 
-  // Auto-start or pause the game loop based on props
+  // Auto-start effect - only runs when autoStart changes
   useEffect(() => {
     if (autoStart && !gameLoop.isRunning) {
       gameLoop.startLoop();
     }
+  }, [autoStart]); // Only depend on autoStart
 
-    // Handle paused state
-    if (paused && !gameLoop.isPaused && gameLoop.isRunning) {
-      gameLoop.pauseLoop();
-    } else if (!paused && gameLoop.isPaused && gameLoop.isRunning) {
-      gameLoop.resumeLoop();
+  // Pause/resume effect - only runs when paused prop changes
+  useEffect(() => {
+    if (paused) {
+      if (!gameLoop.isPaused && gameLoop.isRunning) {
+        gameLoop.pauseLoop();
+      }
+    } else {
+      if (gameLoop.isPaused && gameLoop.isRunning) {
+        gameLoop.resumeLoop();
+      }
     }
+  }, [paused]); // Only depend on paused
 
-    // Clean up when component unmounts
+  // Cleanup effect - only runs on unmount
+  useEffect(() => {
     return () => {
       if (gameLoop.isRunning) {
         gameLoop.stopLoop();
       }
     };
-  }, [autoStart, paused, gameLoop]);
+  }, []); // No dependencies - only runs on mount/unmount
 
   // Main game loop
   useFrame((_, rawDeltaTime) => {
@@ -122,7 +134,7 @@ export const EngineLoop = ({
       // Run systems with fixed timestep
       while (accumulatedTimeRef.current >= fixedTimeStep) {
         // Run ECS systems with fixed timestep
-        runECSSystems(fixedTimeStep);
+        runECSSystems(fixedTimeStep, isPlaying);
 
         // Subtract the fixed time step from accumulated time
         accumulatedTimeRef.current -= fixedTimeStep;
@@ -132,7 +144,7 @@ export const EngineLoop = ({
       gameLoop.setInterpolationAlpha(accumulatedTimeRef.current / fixedTimeStep);
     } else {
       // Run systems with variable timestep
-      runECSSystems(deltaTime);
+      runECSSystems(deltaTime, isPlaying);
     }
 
     // Track overall frame performance
@@ -172,7 +184,7 @@ export const EngineLoop = ({
  * Function to run all ECS systems
  * This would be expanded as more systems are added
  */
-function runECSSystems(_deltaTime: number) {
+function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
   const perfStartVelocity = performance.now();
 
   // Run transform system - updates Three.js objects from ECS Transform components
@@ -188,16 +200,22 @@ function runECSSystems(_deltaTime: number) {
   const cameraCount = cameraSystem();
 
   // Run light system - processes light component updates
-  const lightCount = lightSystem(_deltaTime);
+  const lightCount = lightSystem(deltaTime);
+
+  // Run script system - executes user scripts with entity context
+  updateScriptSystem(deltaTime * 1000); // Convert to milliseconds
+
+  // Run sound system - handles autoplay and sound updates during play mode
+  const soundCount = soundSystem(deltaTime, isPlaying);
 
   // For future systems, add them here in the appropriate order
   // e.g., movementSystem(ecsWorld, deltaTime);
 
   // Debug info
-  if (transformCount > 0 || cameraCount > 0 || lightCount > 0) {
+  if (transformCount > 0 || cameraCount > 0 || lightCount > 0 || soundCount > 0) {
     // Uncomment for debugging:
     console.log(
-      `[EngineLoop] System updates - Transform: ${transformCount}, Camera: ${cameraCount}, Light: ${lightCount}`,
+      `[EngineLoop] System updates - Transform: ${transformCount}, Camera: ${cameraCount}, Light: ${lightCount}, Sound: ${soundCount}`,
     );
   }
 }
