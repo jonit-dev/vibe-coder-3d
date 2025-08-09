@@ -93,7 +93,7 @@ const parseColorToRGB = (
   return undefined;
 };
 
-// Custom Model Mesh Component
+// Custom Model Mesh Component - FIXED VERSION
 const CustomModelMesh: React.FC<{
   modelPath: string;
   meshRef: React.RefObject<any>;
@@ -121,14 +121,15 @@ const CustomModelMesh: React.FC<{
           : null,
       });
 
-      // Create a properly configured clone that respects parent transforms
+      // Create a properly configured clone that will be the main transform target
       const clonedScene = useMemo(() => {
         const clone = scene.clone();
-        // Ensure the cloned scene respects parent group transforms
-        clone.matrixAutoUpdate = true;
+        // IMPORTANT: The cloned scene itself will receive transforms
+        // Reset local transform to ensure it is clean for ECS control
         clone.position.set(0, 0, 0);
         clone.rotation.set(0, 0, 0);
         clone.scale.set(1, 1, 1);
+        clone.matrixAutoUpdate = true;
         console.log('[CustomModelMesh] Created cloned scene:', {
           entityId,
           cloneType: clone.type,
@@ -138,11 +139,12 @@ const CustomModelMesh: React.FC<{
         return clone;
       }, [scene, entityId]);
 
-      // Use callback ref to log when the group ref is assigned
+      // CRITICAL FIX: Create a wrapper Group that will be the transform target
+      // This Group will receive all transforms and the primitive will inherit them
       const groupRefCallback = useCallback(
         (groupRef: Group) => {
           if (groupRef && meshRef) {
-            console.log('[CustomModelMesh] Group ref assigned:', {
+            console.log('[CustomModelMesh] Group ref assigned as transform target:', {
               entityId,
               groupRefType: groupRef.type,
               groupRefConstructor: groupRef.constructor.name,
@@ -153,7 +155,9 @@ const CustomModelMesh: React.FC<{
               userData: groupRef.userData,
             });
 
-            // Assign to the passed meshRef
+            // CRITICAL: Assign the Group as the transform target
+            // The transform system will manipulate this Group directly
+            // and the primitive inside will inherit the transforms
             (meshRef as any).current = groupRef;
 
             console.log('[CustomModelMesh] meshRef assignment completed:', {
@@ -176,7 +180,13 @@ const CustomModelMesh: React.FC<{
           receiveShadow={renderingContributions.receiveShadow}
           visible={renderingContributions.visible}
         >
-          <primitive object={clonedScene} />
+          {/* The primitive inherits transforms from the parent group */}
+          <primitive
+            object={clonedScene}
+            position={[0, 0, 0]}
+            rotation={[0, 0, 0]}
+            scale={[1, 1, 1]}
+          />
         </group>
       );
     } catch (error) {
@@ -591,14 +601,18 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     }
 
     // Compare entityComponents (focus on data changes, not reference changes)
-    if (prevProps.entityComponents.length !== nextProps.entityComponents.length) {
+    // IMPORTANT: Exclude Transform component changes to prevent mesh re-rendering during gizmo transforms
+    const relevantPrevComponents = prevProps.entityComponents.filter((c) => c.type !== 'Transform');
+    const relevantNextComponents = nextProps.entityComponents.filter((c) => c.type !== 'Transform');
+
+    if (relevantPrevComponents.length !== relevantNextComponents.length) {
       return false;
     }
 
-    // Check if any component data has actually changed
-    for (let i = 0; i < prevProps.entityComponents.length; i++) {
-      const prev = prevProps.entityComponents[i];
-      const next = nextProps.entityComponents[i];
+    // Check if any relevant component data has actually changed
+    for (let i = 0; i < relevantPrevComponents.length; i++) {
+      const prev = relevantPrevComponents[i];
+      const next = relevantNextComponents[i];
 
       if (prev.type !== next.type || JSON.stringify(prev.data) !== JSON.stringify(next.data)) {
         return false;

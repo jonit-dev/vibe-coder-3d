@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Mesh } from 'three';
 
@@ -14,7 +15,7 @@ export const useEntityTransform = ({
   isTransforming,
   isPlaying,
 }: IUseEntityTransformProps) => {
-  const meshRef = useRef<Mesh | null>(null);
+  const meshRef = useRef<THREE.Object3D | null>(null);
   const lastSyncedTransform = useRef<string>('');
 
   // Extract transform data with defaults
@@ -47,8 +48,52 @@ export const useEntityTransform = ({
       // Create a more efficient hash using simple string concatenation
       const transformHash = `${position.join(',')},${rotation.join(',')},${scale.join(',')}`;
 
+      console.log(`[useEntityTransform] Transform sync attempt:`, {
+        entityId: meshRef.current?.userData?.entityId,
+        isTransforming,
+        isPlaying,
+        hasTransformData: !!transformData,
+        transformHash,
+        lastSyncedHash: lastSyncedTransform.current,
+        meshRefType: meshRef.current?.type,
+        meshRefConstructor: meshRef.current?.constructor.name,
+        currentMeshPosition: [
+          meshRef.current.position.x,
+          meshRef.current.position.y,
+          meshRef.current.position.z,
+        ],
+        targetPosition: position,
+        currentMeshRotation: [
+          meshRef.current.rotation.x,
+          meshRef.current.rotation.y,
+          meshRef.current.rotation.z,
+        ],
+        targetRotation: rotation.map((r) => r * (Math.PI / 180)),
+        currentMeshScale: [
+          meshRef.current.scale.x,
+          meshRef.current.scale.y,
+          meshRef.current.scale.z,
+        ],
+        targetScale: scale,
+      });
+
       // Only sync if the transform data actually changed
       if (lastSyncedTransform.current !== transformHash) {
+        console.log(`[useEntityTransform] Applying transform sync - BEFORE:`, {
+          entityId: meshRef.current?.userData?.entityId,
+          beforePosition: [
+            meshRef.current.position.x,
+            meshRef.current.position.y,
+            meshRef.current.position.z,
+          ],
+          beforeRotation: [
+            meshRef.current.rotation.x,
+            meshRef.current.rotation.y,
+            meshRef.current.rotation.z,
+          ],
+          beforeScale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z],
+        });
+
         meshRef.current.position.set(position[0], position[1], position[2]);
         meshRef.current.rotation.set(
           rotation[0] * (Math.PI / 180),
@@ -61,9 +106,44 @@ export const useEntityTransform = ({
         meshRef.current.updateMatrix();
         meshRef.current.updateMatrixWorld(true);
 
+        console.log(`[useEntityTransform] Applying transform sync - AFTER:`, {
+          entityId: meshRef.current?.userData?.entityId,
+          afterPosition: [
+            meshRef.current.position.x,
+            meshRef.current.position.y,
+            meshRef.current.position.z,
+          ],
+          afterRotation: [
+            meshRef.current.rotation.x,
+            meshRef.current.rotation.y,
+            meshRef.current.rotation.z,
+          ],
+          afterScale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z],
+          matrixNeedsUpdate: meshRef.current.matrixNeedsUpdate,
+          matrixWorldNeedsUpdate: meshRef.current.matrixWorldNeedsUpdate,
+        });
+
         lastSyncedTransform.current = transformHash;
-        console.debug('[useEntityTransform] Synced mesh transform from ECS');
+      } else {
+        console.log(`[useEntityTransform] Transform already synced, skipping update`);
       }
+    } else {
+      console.log(`[useEntityTransform] Transform sync skipped:`, {
+        entityId: meshRef.current?.userData?.entityId,
+        hasMeshRef: !!meshRef.current,
+        isTransforming,
+        isPlaying,
+        hasTransformData: !!transformData,
+        reason: !meshRef.current
+          ? 'No mesh ref'
+          : isTransforming
+            ? 'Currently transforming'
+            : isPlaying
+              ? 'Playing mode'
+              : !transformData
+                ? 'No transform data'
+                : 'Unknown',
+      });
     }
   }, [transformData, isTransforming, isPlaying]);
 
@@ -71,6 +151,13 @@ export const useEntityTransform = ({
   useEffect(() => {
     if (meshRef.current && !isTransforming && !isPlaying && transformData) {
       const { position, rotation, scale } = transformData;
+
+      console.log(`[useEntityTransform] IMMEDIATE sync (no hash check):`, {
+        entityId: meshRef.current?.userData?.entityId,
+        forceSyncPosition: position,
+        forceSyncRotation: rotation,
+        forceSyncScale: scale,
+      });
 
       // IMMEDIATE sync without hash checking during non-transform states
       meshRef.current.position.set(position[0], position[1], position[2]);
@@ -84,6 +171,8 @@ export const useEntityTransform = ({
       // Force matrix update
       meshRef.current.updateMatrix();
       meshRef.current.updateMatrixWorld(true);
+
+      console.log(`[useEntityTransform] IMMEDIATE sync completed`);
     }
   }, [transformData, isTransforming, isPlaying]);
 
