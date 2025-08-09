@@ -36,16 +36,26 @@ export const useAutoSelection = ({
     // Only auto-select in these cases:
     // 1. No current selection and entities are available (first time or manual clear)
     // 2. Selected entity is invalid AND it wasn't due to deletion (corrupted state)
+    // Prevent auto-selection when entity was just selected but not yet in entityIds (race condition)
+    const isNewlySelected = selectedId !== null && !previousEntityIds.current.includes(selectedId);
+
     const shouldAutoSelect =
       (selectedId === null && entityIds.length > 0 && !wasDeleted.current) ||
       (selectedId !== null &&
         !entityIds.includes(selectedId) &&
         entityIds.length > 0 &&
-        !wasDeleted.current);
+        !wasDeleted.current &&
+        !isNewlySelected);
 
     if (shouldAutoSelect) {
       console.log('[AutoSelection] Auto-selecting entity:', entityIds[0]);
       setSelectedId(entityIds[0]);
+    } else if (isNewlySelected && !entityIds.includes(selectedId)) {
+      // Newly selected entity not yet synchronized - this is expected
+      console.log(
+        '[AutoSelection] Newly selected entity not yet in list, waiting for sync:',
+        selectedId,
+      );
     } else if (selectedId !== null && !entityIds.includes(selectedId)) {
       // If selected entity no longer exists and it was due to deletion, clear selection
       console.log('[AutoSelection] Selected entity no longer exists, clearing selection');
