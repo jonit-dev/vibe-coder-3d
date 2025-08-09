@@ -43,7 +43,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
   const [lightIds, setLightIds] = useState<number[]>([]);
   const isPlaying = useEditorStore((state) => state.isPlaying);
   const groupSelection = useGroupSelection();
-  const { getEntitiesWithComponent, getComponentData } = useComponentRegistry();
+  const { getEntitiesWithComponent, hasComponent } = useComponentRegistry();
 
   // Subscribe to component changes only (entities are managed by Editor)
   useEffect(() => {
@@ -226,6 +226,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 // Internal helper to frame/focus entity on double-click in the viewport
 const SelectionFramer: React.FC = () => {
   const { camera } = useThree();
+  const { getComponentData } = useComponentRegistry();
 
   const _frameEntity = (entityId: number) => {
     console.log(`[SelectionFramer] frameEntity called with entityId: ${entityId}`);
@@ -235,7 +236,9 @@ const SelectionFramer: React.FC = () => {
     }
 
     // Get transform to position camera target
-    const transformData = getComponentData(entityId, KnownComponentTypes.TRANSFORM) as { position?: [number, number, number]; scale?: [number, number, number] } | undefined;
+    const transformData = getComponentData(entityId, KnownComponentTypes.TRANSFORM) as
+      | { position?: [number, number, number]; scale?: [number, number, number] }
+      | undefined;
 
     if (!transformData) {
       console.log(`[SelectionFramer] No transform found for entity: ${entityId}`);
@@ -304,9 +307,10 @@ const SelectionFramer: React.FC = () => {
 
   // Also store the frame function for external use
   useEffect(() => {
-    (window as Window & { __frameEntity?: (entityId: number) => void }).__frameEntity = frameEntity;
+    (window as Window & { __frameEntity?: (entityId: number) => void }).__frameEntity =
+      _frameEntity;
     console.log('[SelectionFramer] Frame function registered on window');
-  }, [camera, componentManager]);
+  }, [camera, getComponentData]);
 
   return null;
 };

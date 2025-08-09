@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { ToastContainer } from '@core/components/ui/Toast';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
 import { RightSidebarChat } from './components/chat/RightSidebarChat';
 import { StackedLeftPanel } from './components/layout/StackedLeftPanel';
@@ -24,6 +26,9 @@ import { useSceneInitialization } from './hooks/useSceneInitialization';
 export type { ISceneObject, ITransform, ShapeType } from './types/shapes';
 
 const Editor: React.FC = () => {
+  // Component registry hook for entity validation
+  const { hasComponent } = useComponentRegistry();
+
   // Grouped state management hooks - prevents unnecessary re-renders
   const { entityIds, selectedId, setEntityIds, setSelectedId } = useEntityState();
   const {
@@ -106,10 +111,16 @@ const Editor: React.FC = () => {
   // Validation: Clear selectedId if selected entity no longer exists
   useEffect(() => {
     if (selectedId !== null && !entityIds.includes(selectedId)) {
-      console.log(`[Editor] Selected entity ${selectedId} no longer exists, clearing selection`);
+      // Check if this is a newly created entity that exists in the registry but not yet in the entityIds array
+      // This prevents clearing selection of newly created entities during the sync delay
+      const entityActuallyExists = hasComponent(selectedId, KnownComponentTypes.TRANSFORM);
+
+      if (entityActuallyExists) {
+        return; // Don't clear selection for newly created entities
+      }
       setSelectedId(null);
     }
-  }, [selectedId, entityIds, setSelectedId]);
+  }, [selectedId, entityIds, setSelectedId, hasComponent]);
 
   // Auto-collapse/expand left panel based on play mode
   useEffect(() => {

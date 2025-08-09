@@ -50,16 +50,13 @@ export const useEntityComponents = (entityId: number) => {
   });
 
   // Get transform component (required for all entities)
-  const transform = getComponentData<ITransformData>(
-    entityId,
-    KnownComponentTypes.TRANSFORM,
-  );
+  const transform = getComponentData<ITransformData>(entityId, KnownComponentTypes.TRANSFORM);
 
   // Get all components for this entity - memoized with update trigger
   const entityComponents = useMemo(() => {
     if (!transform) return [];
     const componentIds = listEntityComponents(entityId);
-    return componentIds.map(componentId => ({
+    return componentIds.map((componentId) => ({
       type: componentId,
       data: getComponentData(entityId, componentId),
     }));
@@ -74,4 +71,3 @@ export const useEntityComponents = (entityId: number) => {
     meshCollider: meshCollider ? { data: meshCollider } : null,
   };
 };
-EOF < /dev/null

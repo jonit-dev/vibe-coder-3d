@@ -24,10 +24,7 @@ export const useFollowedEntityCheck = (entityId: number, isPlaying: boolean) => 
       const cameraEntities = getEntitiesWithComponent(KnownComponentTypes.CAMERA);
 
       for (const cameraEntityId of cameraEntities) {
-        const cameraComponent = getComponentData(
-          cameraEntityId,
-          KnownComponentTypes.CAMERA,
-        );
+        const cameraComponent = getComponentData(cameraEntityId, KnownComponentTypes.CAMERA);
         const cameraData = cameraComponent as CameraData | undefined;
 
         // Check if this camera is main, has following enabled, and targets our entity
@@ -51,7 +48,7 @@ export const useFollowedEntityCheck = (entityId: number, isPlaying: boolean) => 
       console.error('[useFollowedEntityCheck] Error checking follow status:', error);
       setIsFollowedEntity(false);
     }
-  }, [entityId, isPlaying, componentManager]);
+  }, [entityId, isPlaying, getComponentData, getEntitiesWithComponent]);
 
   // Check on mount and when dependencies change
   useEffect(() => {

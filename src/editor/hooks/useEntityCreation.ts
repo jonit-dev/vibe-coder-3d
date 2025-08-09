@@ -111,8 +111,6 @@ export const useEntityCreation = () => {
         meshRendererData.material = { ...meshRendererData.material, ...overrides.material };
       }
 
-      console.log('[addMeshRenderer] Adding MeshRenderer:', { entityId, meshRendererData });
-
       addComponent(entityId, KnownComponentTypes.MESH_RENDERER, meshRendererData);
     },
     [addComponent, getComponentData],
@@ -191,12 +189,9 @@ export const useEntityCreation = () => {
   const createTerrain = useCallback(
     (name?: string, parentId?: number) => {
       const actualName = name || `Terrain ${getNextNumber('Terrain')}`;
-      console.log(`[createTerrain] Creating terrain entity: ${actualName} (ID: will be assigned)`);
       const entity = createEntity(actualName, parentId);
-      console.log(`[createTerrain] Created entity with ID: ${entity.id}`);
 
       // Assign renderer with a neutral gray default color
-      console.log(`[createTerrain] Adding MeshRenderer component`);
       addMeshRenderer(entity.id, 'terrain', undefined, { material: { color: '#808080' } });
 
       const terrainDefaults = {
@@ -210,11 +205,9 @@ export const useEntityCreation = () => {
         noisePersistence: 0.5,
         noiseLacunarity: 2.1,
       };
-      console.log(`[createTerrain] Adding Terrain component with data:`, terrainDefaults);
       addComponent(entity.id, 'Terrain', terrainDefaults);
 
       // Add a fixed rigid body so terrain participates in physics (as a static ground)
-      console.log(`[createTerrain] Adding RigidBody component`);
       addComponent(entity.id, KnownComponentTypes.RIGID_BODY, {
         enabled: true,
         bodyType: 'fixed',
@@ -229,7 +222,6 @@ export const useEntityCreation = () => {
       } as any);
 
       // Add MeshCollider component with heightfield type for terrain
-      console.log(`[createTerrain] Adding MeshCollider component`);
       addComponent(entity.id, KnownComponentTypes.MESH_COLLIDER, {
         enabled: true,
         colliderType: 'heightfield',
@@ -255,10 +247,8 @@ export const useEntityCreation = () => {
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       };
-      console.log(`[createTerrain] Updating Transform component`);
       updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
 
-      console.log(`[createTerrain] Terrain creation complete. Final entity ID: ${entity.id}`);
       return entity;
     },
     [createEntity, addMeshRenderer, addComponent, updateComponent, getNextNumber],

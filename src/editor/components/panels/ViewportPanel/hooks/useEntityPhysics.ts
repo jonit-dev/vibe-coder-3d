@@ -35,7 +35,7 @@ export const useEntityPhysics = ({
 
   // Memoized collider type calculation
   const colliderType = useMemo(() => {
-    const meshColliderData = meshCollider?.data as IMeshColliderData | undefined;
+    const meshColliderData = meshCollider as IMeshColliderData | undefined;
     if (meshColliderData && meshColliderData.enabled) {
       switch (meshColliderData.colliderType) {
         case 'box':
@@ -71,7 +71,7 @@ export const useEntityPhysics = ({
       default:
         return 'cuboid';
     }
-  }, [meshCollider?.data, meshType]);
+  }, [meshCollider, meshType]);
 
   return {
     meshCollider,
