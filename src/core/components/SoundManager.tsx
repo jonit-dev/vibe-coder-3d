@@ -90,6 +90,13 @@ export const SoundManager: React.FC = () => {
               duration: howl.duration(),
               format: detectAudioFormat(soundData.audioPath),
             });
+            
+            // Handle autoplay after audio is loaded
+            if (soundData.autoplay && soundData.enabled && !soundData.isPlaying) {
+              console.log(`[SoundManager] Auto-playing sound for entity ${entityId}`);
+              const soundId = howl.play();
+              instance!.soundId = soundId;
+            }
           },
           onloaderror: (_id: number | string, error: unknown) => {
             console.error(`[SoundManager] Failed to load audio: ${soundData.audioPath}`, error);
@@ -191,11 +198,6 @@ export const SoundManager: React.FC = () => {
       }
     }
 
-    // Handle autoplay
-    if (soundData.autoplay && soundData.enabled && instance?.howl && !soundData.isPlaying) {
-      const soundId = instance.howl.play();
-      instance.soundId = soundId;
-    }
   };
 
   // Remove sound instance
