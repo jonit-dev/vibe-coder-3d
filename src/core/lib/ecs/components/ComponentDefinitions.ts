@@ -16,6 +16,8 @@ import {
   meshColliderComponent,
   meshRendererComponent,
   rigidBodyComponent,
+  scriptComponent,
+  soundComponent,
   terrainComponent,
   transformComponent,
   type CameraData,
@@ -23,6 +25,8 @@ import {
   type MeshColliderData,
   type MeshRendererData,
   type RigidBodyData,
+  type ScriptData,
+  type SoundData,
   type TransformData,
 } from './definitions';
 
@@ -38,6 +42,8 @@ export function registerCoreComponents(): void {
   componentRegistry.register(meshColliderComponent);
   componentRegistry.register(cameraComponent);
   componentRegistry.register(lightComponent);
+  componentRegistry.register(scriptComponent);
+  componentRegistry.register(soundComponent);
 
   console.log('Core components registered successfully');
 }
@@ -121,6 +127,7 @@ export type {
   MeshColliderData,
   MeshRendererData,
   RigidBodyData,
+  SoundData,
   TransformData,
 };
 

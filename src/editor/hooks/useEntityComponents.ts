@@ -147,6 +147,16 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     [components],
   );
 
+  const hasScript = useMemo(
+    () => components.some((c) => c.type === KnownComponentTypes.SCRIPT),
+    [components],
+  );
+
+  const hasSound = useMemo(
+    () => components.some((c) => c.type === KnownComponentTypes.SOUND),
+    [components],
+  );
+
   const hasTerrain = useMemo(() => components.some((c) => c.type === 'Terrain'), [components]);
 
   // Legacy getter methods for compatibility
@@ -172,6 +182,14 @@ export const useEntityComponents = (entityId: EntityId | null) => {
 
   const getLight = useCallback(() => {
     return getComponent(KnownComponentTypes.LIGHT);
+  }, [getComponent]);
+
+  const getScript = useCallback(() => {
+    return getComponent(KnownComponentTypes.SCRIPT);
+  }, [getComponent]);
+
+  const getSound = useCallback(() => {
+    return getComponent(KnownComponentTypes.SOUND);
   }, [getComponent]);
 
   const getTerrain = useCallback(() => {
@@ -208,6 +226,8 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     hasMeshCollider,
     hasCamera,
     hasLight,
+    hasScript,
+    hasSound,
     hasTerrain,
     getTransform,
     getMeshRenderer,
@@ -215,6 +235,8 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     getMeshCollider,
     getCamera,
     getLight,
+    getScript,
+    getSound,
     getTerrain,
     getIncompatibleComponents,
     areComponentsIncompatible,

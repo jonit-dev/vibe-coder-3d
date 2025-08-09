@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FiArrowUp, FiFile, FiFolder, FiImage, FiSearch, FiX, FiBox } from 'react-icons/fi';
+import { FiArrowUp, FiFile, FiFolder, FiImage, FiSearch, FiX, FiBox, FiVolume2 } from 'react-icons/fi';
 import { scanAssetsDirectory } from '@/utils/assetScanner';
 import { Model3DPreview } from './Model3DPreview';
+import { AudioPreview } from './AudioPreview';
 
 interface IAssetFile {
   name: string;
@@ -36,7 +37,7 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewError, setPreviewError] = useState(false);
-  const [previewType, setPreviewType] = useState<'image' | '3d' | 'none'>('none');
+  const [previewType, setPreviewType] = useState<'image' | '3d' | 'audio' | 'none'>('none');
 
   // Dynamic asset discovery function that scans the actual filesystem
   const discoverAssets = async (path: string): Promise<IAssetFile[]> => {
@@ -120,6 +121,11 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
         else if (['gltf', 'glb'].includes(ext)) {
           setPreviewUrl(asset.path);
           setPreviewType('3d');
+        }
+        // Check for audio extensions
+        else if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac'].includes(ext)) {
+          setPreviewUrl(asset.path);
+          setPreviewType('audio');
         }
         // No preview available for other file types
         else {
@@ -329,8 +335,14 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
             <div className="w-40 border-l border-gray-700/30 bg-gray-900/30 flex flex-col">
               <div className="p-2 border-b border-gray-700/30">
                 <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide flex items-center gap-1">
-                  {previewType === '3d' ? <FiBox size={10} /> : <FiImage size={10} />}
-                  {previewType === '3d' ? '3D Preview' : 'Preview'}
+                  {previewType === '3d' ? (
+                    <FiBox size={10} />
+                  ) : previewType === 'audio' ? (
+                    <FiVolume2 size={10} />
+                  ) : (
+                    <FiImage size={10} />
+                  )}
+                  {previewType === '3d' ? '3D Preview' : previewType === 'audio' ? 'Audio Preview' : 'Preview'}
                 </div>
               </div>
               <div className="flex-1 p-2">
@@ -338,6 +350,8 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
                   <div className="h-full">
                     {previewType === '3d' ? (
                       <Model3DPreview modelPath={previewUrl} className="h-full" />
+                    ) : previewType === 'audio' ? (
+                      <AudioPreview audioPath={previewUrl} className="h-full" />
                     ) : (
                       <div className="bg-gray-800/50 rounded-md p-2 h-full flex items-center justify-center border border-gray-700/30">
                         {!previewError ? (

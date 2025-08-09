@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+import { SoundManager } from '@/core/components/SoundManager';
 import { ToastContainer } from '@core/components/ui/Toast';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
@@ -149,6 +150,9 @@ const Editor: React.FC = () => {
     >
       {/* Physics Integration - handles play/pause physics state */}
       <EditorPhysicsIntegration />
+
+      {/* Sound Manager - handles spatial audio integration */}
+      <SoundManager />
 
       {/* Toast Container - shows project operation notifications */}
       <ToastContainer />

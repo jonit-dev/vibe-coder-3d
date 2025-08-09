@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FiBox,
   FiCamera,
+  FiCode,
   FiEye,
   FiMove,
   FiPackage,
   FiSearch,
   FiShield,
   FiSun,
+  FiVolume2,
   FiX,
   FiZap,
 } from 'react-icons/fi';
@@ -136,6 +138,20 @@ const COMPONENT_DEFINITIONS: IComponentDefinition[] = [
     icon: <FiSun className="w-4 h-4" />,
     category: 'Rendering',
     incompatibleComponents: ['MeshRenderer'],
+  },
+  {
+    id: KnownComponentTypes.SCRIPT,
+    name: 'Script',
+    description: 'Custom JavaScript/TypeScript scripting with entity access',
+    icon: <FiCode className="w-4 h-4" />,
+    category: 'Gameplay',
+  },
+  {
+    id: KnownComponentTypes.SOUND,
+    name: 'Sound',
+    description: '3D spatial audio with playback controls',
+    icon: <FiVolume2 className="w-4 h-4" />,
+    category: 'Audio',
   },
 ];
 
@@ -412,6 +428,28 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
           shadowMapSize: 1024,
           shadowBias: -0.0001,
           shadowRadius: 1.0,
+        };
+        break;
+      case KnownComponentTypes.SOUND:
+        defaultData = {
+          audioPath: '',
+          enabled: true,
+          autoplay: false,
+          loop: false,
+          volume: 1.0,
+          pitch: 1.0,
+          playbackRate: 1.0,
+          muted: false,
+          is3D: true,
+          minDistance: 1,
+          maxDistance: 10000,
+          rolloffFactor: 1,
+          coneInnerAngle: 360,
+          coneOuterAngle: 360,
+          coneOuterGain: 0,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 0,
         };
         break;
     }
@@ -850,6 +888,28 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
           shadowMapSize: 1024,
           shadowBias: -0.0001,
           shadowRadius: 1.0,
+        };
+        break;
+      case KnownComponentTypes.SOUND:
+        defaultData = {
+          audioPath: '',
+          enabled: true,
+          autoplay: false,
+          loop: false,
+          volume: 1.0,
+          pitch: 1.0,
+          playbackRate: 1.0,
+          muted: false,
+          is3D: true,
+          minDistance: 1,
+          maxDistance: 10000,
+          rolloffFactor: 1,
+          coneInnerAngle: 360,
+          coneOuterAngle: 360,
+          coneOuterGain: 0,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 0,
         };
         break;
     }

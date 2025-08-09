@@ -8,6 +8,8 @@ export { lightComponent, type LightData } from './LightComponent';
 export { meshColliderComponent, type MeshColliderData } from './MeshColliderComponent';
 export { meshRendererComponent, type MeshRendererData } from './MeshRendererComponent';
 export { rigidBodyComponent, type RigidBodyData } from './RigidBodyComponent';
+export { scriptComponent, type ScriptData } from './ScriptComponent';
+export { soundComponent, type SoundData } from './SoundComponent';
 export { terrainComponent, type TerrainData } from './TerrainComponent';
 export { transformComponent, type TransformData } from './TransformComponent';
 

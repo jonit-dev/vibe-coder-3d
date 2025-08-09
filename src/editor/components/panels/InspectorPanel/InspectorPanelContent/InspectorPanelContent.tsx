@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { ScriptAdapter } from '@/editor/components/inspector/adapters/ScriptAdapter';
+import { SoundAdapter } from '@/editor/components/inspector/adapters/SoundAdapter';
 import { TerrainAdapter } from '@/editor/components/inspector/adapters/TerrainAdapter';
 import { ComponentList } from '@/editor/components/inspector/sections/ComponentList';
 import { DebugSection } from '@/editor/components/inspector/sections/DebugSection';
@@ -17,12 +19,14 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
     hasMeshCollider,
     hasCamera,
     hasLight,
+    hasSound,
     getTransform,
     getMeshRenderer,
     getRigidBody,
     getMeshCollider,
     getCamera,
     getLight,
+    getSound,
     addComponent,
     updateComponent,
     removeComponent,
@@ -43,16 +47,43 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
         hasMeshCollider={hasMeshCollider}
         hasCamera={hasCamera}
         hasLight={hasLight}
+        hasSound={hasSound}
         getTransform={getTransform}
         getMeshRenderer={getMeshRenderer}
         getRigidBody={getRigidBody}
         getMeshCollider={getMeshCollider}
         getCamera={getCamera}
         getLight={getLight}
+        getSound={getSound}
         addComponent={addComponent}
         updateComponent={updateComponent}
         removeComponent={removeComponent}
       />
+
+      {/* Script (rendered outside ComponentList to minimize type churn) */}
+      {(() => {
+        const scriptComp = components.find((c) => c.type === 'Script') as any;
+        return scriptComp ? (
+          <ScriptAdapter
+            scriptComponent={scriptComp as any}
+            updateComponent={updateComponent as any}
+            removeComponent={removeComponent}
+          />
+        ) : null;
+      })()}
+
+      {/* Sound (rendered outside ComponentList to minimize type churn) */}
+      {(() => {
+        const soundComp = components.find((c) => c.type === 'Sound') as any;
+        return soundComp ? (
+          <SoundAdapter
+            soundComponent={soundComp as any}
+            updateComponent={updateComponent as any}
+            removeComponent={removeComponent}
+            isPlaying={isPlaying}
+          />
+        ) : null;
+      })()}
 
       {/* Terrain (rendered outside ComponentList to minimize type churn) */}
       {(() => {

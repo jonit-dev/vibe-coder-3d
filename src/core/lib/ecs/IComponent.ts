@@ -7,6 +7,8 @@ export const KnownComponentTypes = {
   MESH_COLLIDER: 'MeshCollider',
   CAMERA: 'Camera',
   LIGHT: 'Light',
+  SCRIPT: 'Script',
+  SOUND: 'Sound',
   TERRAIN: 'Terrain',
 } as const;
 
