@@ -1,9 +1,9 @@
 import { useGLTF, useTexture } from '@react-three/drei';
 import { ThreeEvent } from '@react-three/fiber';
-import React, { Suspense, useMemo } from 'react';
+import React, { Suspense, useMemo, useCallback } from 'react';
 import { ModelErrorBoundary } from '@/editor/components/shared/ModelErrorBoundary';
 import { ModelLoadingMesh } from '@/editor/components/shared/ModelLoadingMesh';
-import type { Texture } from 'three';
+import type { Texture, Group, Mesh } from 'three';
 
 import { CameraGeometry } from './CameraGeometry';
 import {
@@ -103,11 +103,23 @@ const CustomModelMesh: React.FC<{
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
 }> = React.memo(
   ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick, onMeshDoubleClick }) => {
-    console.log('[CustomModelMesh] Loading model from path:', modelPath);
+    console.log('[CustomModelMesh] Rendering with:', {
+      modelPath,
+      entityId,
+      meshRefCurrent: meshRef?.current,
+      meshRefType: meshRef?.current?.type,
+    });
 
     try {
       const { scene } = useGLTF(modelPath);
-      console.log('[CustomModelMesh] Model loaded successfully:', scene);
+      console.log('[CustomModelMesh] Model loaded successfully:', {
+        entityId,
+        sceneType: scene?.type,
+        sceneChildren: scene?.children?.length,
+        scenePosition: scene?.position
+          ? [scene.position.x, scene.position.y, scene.position.z]
+          : null,
+      });
 
       // Create a properly configured clone that respects parent transforms
       const clonedScene = useMemo(() => {
@@ -117,12 +129,46 @@ const CustomModelMesh: React.FC<{
         clone.position.set(0, 0, 0);
         clone.rotation.set(0, 0, 0);
         clone.scale.set(1, 1, 1);
+        console.log('[CustomModelMesh] Created cloned scene:', {
+          entityId,
+          cloneType: clone.type,
+          cloneChildren: clone.children.length,
+          cloneMatrixAutoUpdate: clone.matrixAutoUpdate,
+        });
         return clone;
-      }, [scene]);
+      }, [scene, entityId]);
+
+      // Use callback ref to log when the group ref is assigned
+      const groupRefCallback = useCallback(
+        (groupRef: Group) => {
+          if (groupRef && meshRef) {
+            console.log('[CustomModelMesh] Group ref assigned:', {
+              entityId,
+              groupRefType: groupRef.type,
+              groupRefConstructor: groupRef.constructor.name,
+              groupRefPosition: [groupRef.position.x, groupRef.position.y, groupRef.position.z],
+              groupRefRotation: [groupRef.rotation.x, groupRef.rotation.y, groupRef.rotation.z],
+              groupRefScale: [groupRef.scale.x, groupRef.scale.y, groupRef.scale.z],
+              groupRefChildren: groupRef.children.length,
+              userData: groupRef.userData,
+            });
+
+            // Assign to the passed meshRef
+            (meshRef as any).current = groupRef;
+
+            console.log('[CustomModelMesh] meshRef assignment completed:', {
+              entityId,
+              meshRefCurrentType: meshRef.current?.type,
+              meshRefCurrentConstructor: meshRef.current?.constructor.name,
+            });
+          }
+        },
+        [meshRef, entityId],
+      );
 
       return (
         <group
-          ref={meshRef as React.RefObject<any>}
+          ref={groupRefCallback}
           userData={{ entityId }}
           onClick={onMeshClick}
           onDoubleClick={onMeshDoubleClick}
@@ -134,12 +180,32 @@ const CustomModelMesh: React.FC<{
         </group>
       );
     } catch (error) {
-      console.error('[CustomModelMesh] Failed to load model:', modelPath, error);
+      console.error('[CustomModelMesh] Failed to load model:', {
+        entityId,
+        modelPath,
+        error: error?.message || 'Unknown error',
+        stack: error?.stack,
+      });
 
-      // Fallback to error mesh
+      // Fallback to error mesh with callback ref
+      const errorRefCallback = useCallback(
+        (errorMeshRef: Mesh) => {
+          if (errorMeshRef && meshRef) {
+            console.log('[CustomModelMesh] Error mesh ref assigned:', {
+              entityId,
+              errorMeshType: errorMeshRef.type,
+              errorMeshConstructor: errorMeshRef.constructor.name,
+            });
+
+            (meshRef as any).current = errorMeshRef;
+          }
+        },
+        [meshRef, entityId],
+      );
+
       return (
         <mesh
-          ref={meshRef}
+          ref={errorRefCallback}
           userData={{ entityId }}
           onClick={onMeshClick}
           onDoubleClick={onMeshDoubleClick}
