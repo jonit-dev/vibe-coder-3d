@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FiFolder, FiSun, FiZap } from 'react-icons/fi';
 import {
   TbBox,
@@ -12,6 +12,7 @@ import {
   TbHexagon,
   TbLamp,
   TbMath,
+  TbMountain,
   TbOctagon,
   TbPlus,
   TbPyramid,
@@ -26,6 +27,9 @@ import {
 
 import { useEditorStore } from '../../store/editorStore';
 import { ShapeType } from '../../types/shapes';
+import { TerrainWizard } from '../terrain/TerrainWizard';
+import { useEntityCreation } from '../../hooks/useEntityCreation';
+import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
 
 import { IMenuCategory, IMenuItemOption, NestedDropdownMenu } from './NestedDropdownMenu';
 
@@ -180,7 +184,7 @@ const OBJECT_CATEGORIES: IMenuCategory[] = [
       {
         type: ShapeType.Terrain,
         label: 'Terrain',
-        icon: <TbTriangle size={18} />,
+        icon: <TbMountain size={18} />,
       },
       {
         type: ShapeType.Tree,
@@ -281,10 +285,20 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
 }) => {
   const open = useEditorStore((s) => s.showAddMenu);
   const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
+  const [showTerrainWizard, setShowTerrainWizard] = useState(false);
+
+  const { createTerrain } = useEntityCreation();
 
   const handleItemSelect = (item: IMenuItemOption) => {
     if (item.type === 'CustomModel') {
       onCustomModel?.();
+      return;
+    }
+
+    // Special handling for Terrain - show wizard
+    if (item.type === ShapeType.Terrain) {
+      setShowTerrainWizard(true);
+      setShowAddMenu(false);
       return;
     }
 
@@ -337,6 +351,27 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
       // You could show a toast notification here
     }
   };
+
+  const handleTerrainWizardComplete = (terrainConfig: Partial<TerrainData>) => {
+    createTerrain(undefined, undefined, terrainConfig);
+    setShowTerrainWizard(false);
+  };
+
+  const handleTerrainWizardCancel = () => {
+    setShowTerrainWizard(false);
+  };
+
+  // Render terrain wizard modal
+  if (showTerrainWizard) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <TerrainWizard
+          onComplete={handleTerrainWizardComplete}
+          onCancel={handleTerrainWizardCancel}
+        />
+      </div>
+    );
+  }
 
   return (
     <NestedDropdownMenu

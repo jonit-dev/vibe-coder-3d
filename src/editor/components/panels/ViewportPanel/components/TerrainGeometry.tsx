@@ -1,5 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
+import { terrainWorker, type ITerrainGeometryData } from '@/core/lib/terrain/TerrainWorker';
+import { terrainProfiler } from '@/core/lib/terrain/TerrainProfiler';
+import { terrainCache } from '@/core/lib/terrain/TerrainCache';
 
 export interface ITerrainGeometryProps {
   size: [number, number];
@@ -68,7 +71,128 @@ function valueNoise2D(
   return norm > 0 ? sum / norm : 0;
 }
 
-export const TerrainGeometry: React.FC<ITerrainGeometryProps> = ({
+// Enhanced TerrainGeometry with Web Worker and Memory Management
+export const TerrainGeometry: React.FC<ITerrainGeometryProps> = (props) => {
+  const {
+    size,
+    segments,
+    heightScale,
+    noiseEnabled,
+    noiseSeed,
+    noiseFrequency,
+    noiseOctaves,
+    noisePersistence,
+    noiseLacunarity,
+  } = props;
+
+  const geometryRef = useRef<THREE.BufferGeometry | undefined>(undefined);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [geometryData, setGeometryData] = useState<ITerrainGeometryData | null>(null);
+
+  // Memory management: dispose geometry on unmount or when regenerating
+  useEffect(() => {
+    return () => {
+      if (geometryRef.current) {
+        geometryRef.current.dispose();
+      }
+    };
+  }, []);
+
+  // Generate terrain using web worker with cache
+  const generateTerrain = useCallback(async () => {
+    terrainProfiler.startProfile('terrain_generation');
+    setIsGenerating(true);
+
+    try {
+      // Dispose previous geometry
+      if (geometryRef.current) {
+        geometryRef.current.dispose();
+        geometryRef.current = undefined;
+      }
+
+      // Check cache first
+      const cachedData = terrainCache.get(props);
+      let data: ITerrainGeometryData;
+
+      if (cachedData) {
+        data = cachedData;
+        terrainProfiler.endProfile('terrain_generation');
+      } else {
+        data = await terrainWorker.generateTerrain(props);
+        terrainCache.set(props, data);
+        terrainProfiler.endProfile('terrain_generation');
+      }
+
+      // Record performance metrics
+      const [sx, sz] = segments;
+      terrainProfiler.setMetric('vertex_count', sx * sz);
+      terrainProfiler.setMetric('triangle_count', (sx - 1) * (sz - 1) * 2);
+
+      setGeometryData(data);
+    } catch (error) {
+      console.error('Terrain generation failed:', error);
+      terrainProfiler.endProfile('terrain_generation');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [
+    size,
+    segments,
+    heightScale,
+    noiseEnabled,
+    noiseSeed,
+    noiseFrequency,
+    noiseOctaves,
+    noisePersistence,
+    noiseLacunarity,
+  ]);
+
+  // Trigger generation when props change
+  useEffect(() => {
+    generateTerrain();
+  }, [generateTerrain]);
+
+  // Create THREE.js geometry from worker data
+  const geometry = useMemo(() => {
+    if (!geometryData) return null;
+
+    const geom = new THREE.BufferGeometry();
+
+    geom.setIndex(new THREE.BufferAttribute(geometryData.indices, 1));
+    geom.setAttribute('position', new THREE.BufferAttribute(geometryData.positions, 3));
+    geom.setAttribute('normal', new THREE.BufferAttribute(geometryData.normals, 3));
+    geom.setAttribute('uv', new THREE.BufferAttribute(geometryData.uvs, 2));
+
+    geom.computeBoundingBox();
+    geom.computeBoundingSphere();
+
+    geometryRef.current = geom;
+    return geom;
+  }, [geometryData]);
+
+  // Fallback geometry while generating (low-res version)
+  const fallbackGeometry = useMemo(() => {
+    const [w, d] = size;
+    const [sx, sz] = segments;
+    const plane = new THREE.PlaneGeometry(
+      w,
+      d,
+      Math.min(sx - 1, 16), // Cap at 16 segments for fallback
+      Math.min(sz - 1, 16),
+    );
+    plane.rotateX(-Math.PI / 2);
+    return plane;
+  }, [size, segments]);
+
+  if (!geometry || isGenerating) {
+    return <primitive object={fallbackGeometry} />;
+  }
+
+  return <primitive object={geometry} />;
+};
+
+// Legacy synchronous terrain generation (kept for fallback)
+export const LegacyTerrainGeometry: React.FC<ITerrainGeometryProps> = ({
   size,
   segments,
   heightScale,

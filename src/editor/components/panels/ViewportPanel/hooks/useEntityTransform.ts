@@ -15,6 +15,7 @@ export const useEntityTransform = ({
   isPlaying,
 }: IUseEntityTransformProps) => {
   const meshRef = useRef<Mesh | null>(null);
+  const lastSyncedTransform = useRef<string>('');
 
   // Extract transform data with defaults
   const transformData = useMemo(() => {
@@ -43,6 +44,35 @@ export const useEntityTransform = ({
     if (meshRef.current && !isTransforming && !isPlaying && transformData) {
       const { position, rotation, scale } = transformData;
 
+      // Create a more efficient hash using simple string concatenation
+      const transformHash = `${position.join(',')},${rotation.join(',')},${scale.join(',')}`;
+
+      // Only sync if the transform data actually changed
+      if (lastSyncedTransform.current !== transformHash) {
+        meshRef.current.position.set(position[0], position[1], position[2]);
+        meshRef.current.rotation.set(
+          rotation[0] * (Math.PI / 180),
+          rotation[1] * (Math.PI / 180),
+          rotation[2] * (Math.PI / 180),
+        );
+        meshRef.current.scale.set(scale[0], scale[1], scale[2]);
+
+        // Force matrix updates to ensure changes propagate immediately
+        meshRef.current.updateMatrix();
+        meshRef.current.updateMatrixWorld(true);
+
+        lastSyncedTransform.current = transformHash;
+        console.debug('[useEntityTransform] Synced mesh transform from ECS');
+      }
+    }
+  }, [transformData, isTransforming, isPlaying]);
+
+  // Additional immediate sync when not transforming to eliminate any race conditions
+  useEffect(() => {
+    if (meshRef.current && !isTransforming && !isPlaying && transformData) {
+      const { position, rotation, scale } = transformData;
+
+      // IMMEDIATE sync without hash checking during non-transform states
       meshRef.current.position.set(position[0], position[1], position[2]);
       meshRef.current.rotation.set(
         rotation[0] * (Math.PI / 180),
@@ -50,6 +80,10 @@ export const useEntityTransform = ({
         rotation[2] * (Math.PI / 180),
       );
       meshRef.current.scale.set(scale[0], scale[1], scale[2]);
+
+      // Force matrix update
+      meshRef.current.updateMatrix();
+      meshRef.current.updateMatrixWorld(true);
     }
   }, [transformData, isTransforming, isPlaying]);
 

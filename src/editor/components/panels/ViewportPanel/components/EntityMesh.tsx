@@ -1,7 +1,9 @@
 import { useGLTF, useTexture } from '@react-three/drei';
 import { ThreeEvent } from '@react-three/fiber';
 import React, { Suspense, useMemo } from 'react';
-import type { Mesh, Texture } from 'three';
+import { ModelErrorBoundary } from '@/editor/components/shared/ModelErrorBoundary';
+import { ModelLoadingMesh } from '@/editor/components/shared/ModelLoadingMesh';
+import type { Texture } from 'three';
 
 import { CameraGeometry } from './CameraGeometry';
 import {
@@ -23,6 +25,19 @@ import {
 } from './CustomGeometries';
 import { LightGeometry } from './LightGeometry';
 import { TerrainGeometry } from './TerrainGeometry';
+
+// Props interface
+interface IEntityMeshProps {
+  meshRef: React.RefObject<any>;
+  meshType: string | null;
+  renderingContributions: any;
+  entityColor: string;
+  entityId: number;
+  onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
+  onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
+  isPlaying?: boolean;
+  entityComponents?: any[];
+}
 
 // Component data interfaces
 interface IMeshRendererData {
@@ -66,84 +81,79 @@ const parseColorToRGB = (
     return color;
   }
 
-  // Parse hex color string to RGB
-  if (typeof color === 'string') {
-    const hex = color.replace('#', '');
-    if (hex.length === 6) {
-      const r = parseInt(hex.substring(0, 2), 16) / 255;
-      const g = parseInt(hex.substring(2, 4), 16) / 255;
-      const b = parseInt(hex.substring(4, 6), 16) / 255;
-      return { r, g, b };
-    }
+  // Handle hex color strings
+  if (typeof color === 'string' && color.startsWith('#')) {
+    const hex = color.substring(1);
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+    return { r, g, b };
   }
 
   return undefined;
 };
 
-interface IRenderingContributions {
-  castShadow: boolean;
-  receiveShadow: boolean;
-  visible: boolean;
-  material?: {
-    shader?: string;
-    materialType?: string;
-    color?: string;
-    metalness?: number;
-    roughness?: number;
-    emissive?: string;
-    emissiveIntensity?: number;
-    normalScale?: number;
-    occlusionStrength?: number;
-    textureOffsetX?: number;
-    textureOffsetY?: number;
-    albedoTexture?: string;
-    normalTexture?: string;
-    metallicTexture?: string;
-    roughnessTexture?: string;
-    emissiveTexture?: string;
-    occlusionTexture?: string;
-  };
-}
-
-interface IEntityMeshProps {
-  meshRef: React.RefObject<Mesh | null>;
-  meshType: string | null;
-  renderingContributions: IRenderingContributions;
-  entityColor: string;
-  entityId: number;
-  onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
-  onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
-  isPlaying?: boolean;
-  entityComponents?: Array<{ type: string; data: unknown }>;
-}
-
+// Custom Model Mesh Component
 const CustomModelMesh: React.FC<{
   modelPath: string;
-  meshRef: React.RefObject<Mesh | null>;
-  renderingContributions: IRenderingContributions;
+  meshRef: React.RefObject<any>;
+  renderingContributions: any;
   entityId: number;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
-}> = ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick, onMeshDoubleClick }) => {
-  console.log('[CustomModelMesh] Loading model from path:', modelPath);
+}> = React.memo(
+  ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick, onMeshDoubleClick }) => {
+    console.log('[CustomModelMesh] Loading model from path:', modelPath);
 
-  const { scene } = useGLTF(modelPath);
-  console.log('[CustomModelMesh] Model loaded successfully:', scene);
+    try {
+      const { scene } = useGLTF(modelPath);
+      console.log('[CustomModelMesh] Model loaded successfully:', scene);
 
-  return (
-    <group
-      ref={meshRef as React.RefObject<any>}
-      userData={{ entityId }}
-      onClick={onMeshClick}
-      onDoubleClick={onMeshDoubleClick}
-      castShadow={renderingContributions.castShadow}
-      receiveShadow={renderingContributions.receiveShadow}
-      visible={renderingContributions.visible}
-    >
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};
+      // Create a properly configured clone that respects parent transforms
+      const clonedScene = useMemo(() => {
+        const clone = scene.clone();
+        // Ensure the cloned scene respects parent group transforms
+        clone.matrixAutoUpdate = true;
+        clone.position.set(0, 0, 0);
+        clone.rotation.set(0, 0, 0);
+        clone.scale.set(1, 1, 1);
+        return clone;
+      }, [scene]);
+
+      return (
+        <group
+          ref={meshRef as React.RefObject<any>}
+          userData={{ entityId }}
+          onClick={onMeshClick}
+          onDoubleClick={onMeshDoubleClick}
+          castShadow={renderingContributions.castShadow}
+          receiveShadow={renderingContributions.receiveShadow}
+          visible={renderingContributions.visible}
+        >
+          <primitive object={clonedScene} />
+        </group>
+      );
+    } catch (error) {
+      console.error('[CustomModelMesh] Failed to load model:', modelPath, error);
+
+      // Fallback to error mesh
+      return (
+        <mesh
+          ref={meshRef}
+          userData={{ entityId }}
+          onClick={onMeshClick}
+          onDoubleClick={onMeshDoubleClick}
+          castShadow={renderingContributions.castShadow}
+          receiveShadow={renderingContributions.receiveShadow}
+          visible={renderingContributions.visible}
+        >
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color="#ff4444" wireframe />
+        </mesh>
+      );
+    }
+  },
+);
 
 export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
   ({
@@ -179,8 +189,9 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     if (meshType === 'custom' && modelPath) {
       console.log('[EntityMesh] Rendering custom model:', modelPath);
       return (
-        <Suspense
-          fallback={
+        <ModelErrorBoundary
+          entityId={entityId}
+          fallbackMesh={
             <mesh
               ref={meshRef}
               userData={{ entityId }}
@@ -191,19 +202,31 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
               visible={renderingContributions.visible}
             >
               <boxGeometry args={[1, 1, 1]} />
-              <meshStandardMaterial color="yellow" />
+              <meshStandardMaterial color="#ff4444" wireframe />
             </mesh>
           }
         >
-          <CustomModelMesh
-            modelPath={modelPath}
-            meshRef={meshRef}
-            renderingContributions={renderingContributions}
-            entityId={entityId}
-            onMeshClick={onMeshClick}
-            onMeshDoubleClick={onMeshDoubleClick}
-          />
-        </Suspense>
+          <Suspense
+            fallback={
+              <ModelLoadingMesh
+                meshRef={meshRef}
+                entityId={entityId}
+                renderingContributions={renderingContributions}
+                onMeshClick={onMeshClick}
+                onMeshDoubleClick={onMeshDoubleClick}
+              />
+            }
+          >
+            <CustomModelMesh
+              modelPath={modelPath}
+              meshRef={meshRef}
+              renderingContributions={renderingContributions}
+              entityId={entityId}
+              onMeshClick={onMeshClick}
+              onMeshDoubleClick={onMeshDoubleClick}
+            />
+          </Suspense>
+        </ModelErrorBoundary>
       );
     }
 
@@ -474,6 +497,52 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
         </mesh>
       );
     }
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison function to prevent unnecessary re-renders
+
+    // Compare primitive values first
+    if (
+      prevProps.entityId !== nextProps.entityId ||
+      prevProps.meshType !== nextProps.meshType ||
+      prevProps.entityColor !== nextProps.entityColor ||
+      prevProps.isPlaying !== nextProps.isPlaying
+    ) {
+      return false;
+    }
+
+    // Deep compare renderingContributions
+    const prevRC = prevProps.renderingContributions;
+    const nextRC = nextProps.renderingContributions;
+    if (
+      prevRC.meshType !== nextRC.meshType ||
+      prevRC.castShadow !== nextRC.castShadow ||
+      prevRC.receiveShadow !== nextRC.receiveShadow ||
+      prevRC.visible !== nextRC.visible ||
+      JSON.stringify(prevRC.material) !== JSON.stringify(nextRC.material)
+    ) {
+      return false;
+    }
+
+    // Compare entityComponents (focus on data changes, not reference changes)
+    if (prevProps.entityComponents.length !== nextProps.entityComponents.length) {
+      return false;
+    }
+
+    // Check if any component data has actually changed
+    for (let i = 0; i < prevProps.entityComponents.length; i++) {
+      const prev = prevProps.entityComponents[i];
+      const next = nextProps.entityComponents[i];
+
+      if (prev.type !== next.type || JSON.stringify(prev.data) !== JSON.stringify(next.data)) {
+        return false;
+      }
+    }
+
+    // Function references can be ignored for memo - they're event handlers
+    // and don't affect rendering output directly
+
+    return true; // Props are equal, skip re-render
   },
 );
 

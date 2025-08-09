@@ -226,9 +226,16 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         allEntityIds,
       });
 
-    // When terrain params change, force-remount physics body so trimesh collider rebuilds
+    // Extract terrain component data for physics key generation
+    const terrainComponent = React.useMemo(
+      () => entityComponents.find((c) => c.type === 'Terrain')?.data as any,
+      [entityComponents.find((c) => c.type === 'Terrain')?.data],
+    );
+
+    // When terrain SHAPE params change, force-remount physics body so trimesh collider rebuilds
+    // Only include parameters that affect the physical shape, NOT position/transform
     const terrainColliderKey = React.useMemo(() => {
-      const t = entityComponents.find((c) => c.type === 'Terrain')?.data as any;
+      const t = terrainComponent;
       if (!t) return undefined;
       try {
         return `rb-terrain-${entityId}-${[
@@ -245,7 +252,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       } catch {
         return undefined;
       }
-    }, [entityComponents, entityId]);
+    }, [terrainComponent, entityId]);
     // Enhanced collider config with terrain heightfield data
     const enhancedColliderConfig = React.useMemo(() => {
       // Handle terrain entities without MeshCollider component (auto-detect)

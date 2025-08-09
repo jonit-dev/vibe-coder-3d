@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 
 import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
 import { LightData } from '@/core/lib/ecs/components/definitions/LightComponent';
+import { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
@@ -187,14 +188,15 @@ export const useEntityCreation = () => {
   );
 
   const createTerrain = useCallback(
-    (name?: string, parentId?: number) => {
+    (name?: string, parentId?: number, config?: Partial<TerrainData>) => {
       const actualName = name || `Terrain ${getNextNumber('Terrain')}`;
       const entity = createEntity(actualName, parentId);
 
-      // Assign renderer with a neutral gray default color
-      addMeshRenderer(entity.id, 'terrain', undefined, { material: { color: '#808080' } });
+      // Assign renderer with terrain-appropriate color
+      const terrainColor = config?.noiseEnabled ? '#4a9f4a' : '#808080';
+      addMeshRenderer(entity.id, 'terrain', undefined, { material: { color: terrainColor } });
 
-      const terrainDefaults = {
+      const terrainDefaults: TerrainData = {
         size: [20, 20] as [number, number],
         segments: [129, 129] as [number, number],
         heightScale: 3,
@@ -204,6 +206,7 @@ export const useEntityCreation = () => {
         noiseOctaves: 5,
         noisePersistence: 0.5,
         noiseLacunarity: 2.1,
+        ...config, // Apply any provided configuration
       };
       addComponent(entity.id, 'Terrain', terrainDefaults);
 

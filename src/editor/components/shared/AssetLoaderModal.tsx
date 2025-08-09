@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FiArrowUp, FiFile, FiFolder, FiImage, FiSearch, FiX } from 'react-icons/fi';
+import { FiArrowUp, FiFile, FiFolder, FiImage, FiSearch, FiX, FiBox } from 'react-icons/fi';
 import { scanAssetsDirectory } from '@/utils/assetScanner';
+import { Model3DPreview } from './Model3DPreview';
 
 interface IAssetFile {
   name: string;
@@ -35,6 +36,7 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewError, setPreviewError] = useState(false);
+  const [previewType, setPreviewType] = useState<'image' | '3d' | 'none'>('none');
 
   // Dynamic asset discovery function that scans the actual filesystem
   const discoverAssets = async (path: string): Promise<IAssetFile[]> => {
@@ -61,6 +63,7 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
       setSelectedAsset('');
       setPreviewUrl('');
       setPreviewError(false);
+      setPreviewType('none');
     }
   }, [isOpen, basePath]);
 
@@ -99,18 +102,33 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
       setSelectedAsset('');
       setPreviewUrl('');
       setPreviewError(false);
+      setPreviewType('none');
       setSearchTerm(''); // Clear search when navigating
     } else {
       setSelectedAsset(asset.path);
       setPreviewError(false);
-      if (
-        showPreview &&
-        asset.extension &&
-        ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(asset.extension)
-      ) {
-        setPreviewUrl(asset.path);
+
+      if (showPreview && asset.extension) {
+        const ext = asset.extension.toLowerCase();
+
+        // Check for image extensions
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+          setPreviewUrl(asset.path);
+          setPreviewType('image');
+        }
+        // Check for 3D model extensions
+        else if (['gltf', 'glb'].includes(ext)) {
+          setPreviewUrl(asset.path);
+          setPreviewType('3d');
+        }
+        // No preview available for other file types
+        else {
+          setPreviewUrl('');
+          setPreviewType('none');
+        }
       } else {
         setPreviewUrl('');
+        setPreviewType('none');
       }
     }
   };
@@ -135,6 +153,7 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
     setSelectedAsset('');
     setPreviewUrl('');
     setPreviewError(false);
+    setPreviewType('none');
     setSearchTerm('');
     setCurrentPath(basePath);
     onClose();
@@ -310,25 +329,31 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
             <div className="w-40 border-l border-gray-700/30 bg-gray-900/30 flex flex-col">
               <div className="p-2 border-b border-gray-700/30">
                 <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide flex items-center gap-1">
-                  <FiImage size={10} />
-                  Preview
+                  {previewType === '3d' ? <FiBox size={10} /> : <FiImage size={10} />}
+                  {previewType === '3d' ? '3D Preview' : 'Preview'}
                 </div>
               </div>
               <div className="flex-1 p-2">
                 {previewUrl ? (
-                  <div className="bg-gray-800/50 rounded-md p-2 h-full flex items-center justify-center border border-gray-700/30">
-                    {!previewError ? (
-                      <img
-                        src={previewUrl}
-                        alt="Asset preview"
-                        className="max-h-full max-w-full object-contain rounded-sm"
-                        onError={() => setPreviewError(true)}
-                        onLoad={() => setPreviewError(false)}
-                      />
+                  <div className="h-full">
+                    {previewType === '3d' ? (
+                      <Model3DPreview modelPath={previewUrl} className="h-full" />
                     ) : (
-                      <div className="text-center text-gray-500 text-[10px]">
-                        <FiFile size={20} className="mx-auto mb-1 opacity-50" />
-                        Preview unavailable
+                      <div className="bg-gray-800/50 rounded-md p-2 h-full flex items-center justify-center border border-gray-700/30">
+                        {!previewError ? (
+                          <img
+                            src={previewUrl}
+                            alt="Asset preview"
+                            className="max-h-full max-w-full object-contain rounded-sm"
+                            onError={() => setPreviewError(true)}
+                            onLoad={() => setPreviewError(false)}
+                          />
+                        ) : (
+                          <div className="text-center text-gray-500 text-[10px]">
+                            <FiFile size={20} className="mx-auto mb-1 opacity-50" />
+                            Preview unavailable
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
