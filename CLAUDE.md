@@ -7,6 +7,7 @@
 - Keep components small; put logic in hooks.
 - Respect naming/folder conventions; explore code when unsure.
 - use tree command to explore the codebase
+- Do not generate .backup files.
 
 **Critical**
 

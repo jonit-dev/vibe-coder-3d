@@ -1,6 +1,7 @@
 import { useGLTF, useTexture } from '@react-three/drei';
-import { ThreeEvent } from '@react-three/fiber';
-import React, { Suspense, useMemo, useCallback } from 'react';
+import { ThreeEvent, useThree } from '@react-three/fiber';
+import React, { Suspense, useMemo, useCallback, useEffect } from 'react';
+import { threeJSEntityRegistry } from '@/core/lib/scripting/ThreeJSEntityRegistry';
 import { ModelErrorBoundary } from '@/editor/components/shared/ModelErrorBoundary';
 import { ModelLoadingMesh } from '@/editor/components/shared/ModelLoadingMesh';
 import type { Texture, Group, Mesh } from 'three';
@@ -121,15 +122,14 @@ const CustomModelMesh: React.FC<{
           : null,
       });
 
-      // Create a properly configured clone that will be the main transform target
+      // Create a properly configured clone that respects parent transforms
       const clonedScene = useMemo(() => {
         const clone = scene.clone();
-        // IMPORTANT: The cloned scene itself will receive transforms
-        // Reset local transform to ensure it is clean for ECS control
+        // Ensure the cloned scene respects parent group transforms
+        clone.matrixAutoUpdate = true;
         clone.position.set(0, 0, 0);
         clone.rotation.set(0, 0, 0);
         clone.scale.set(1, 1, 1);
-        clone.matrixAutoUpdate = true;
         console.log('[CustomModelMesh] Created cloned scene:', {
           entityId,
           cloneType: clone.type,
@@ -139,32 +139,33 @@ const CustomModelMesh: React.FC<{
         return clone;
       }, [scene, entityId]);
 
-      // CRITICAL FIX: Create a wrapper Group that will be the transform target
-      // This Group will receive all transforms and the primitive will inherit them
+      // Use callback ref to ensure proper Group integration with transform system
       const groupRefCallback = useCallback(
-        (groupRef: Group) => {
+        (groupRef: Group | null) => {
           if (groupRef && meshRef) {
-            console.log('[CustomModelMesh] Group ref assigned as transform target:', {
+            console.log('[CustomModelMesh] Group ref assigned:', {
               entityId,
               groupRefType: groupRef.type,
               groupRefConstructor: groupRef.constructor.name,
-              groupRefPosition: [groupRef.position.x, groupRef.position.y, groupRef.position.z],
-              groupRefRotation: [groupRef.rotation.x, groupRef.rotation.y, groupRef.rotation.z],
-              groupRefScale: [groupRef.scale.x, groupRef.scale.y, groupRef.scale.z],
-              groupRefChildren: groupRef.children.length,
-              userData: groupRef.userData,
+              groupRefMatrixAutoUpdate: groupRef.matrixAutoUpdate,
             });
 
-            // CRITICAL: Assign the Group as the transform target
-            // The transform system will manipulate this Group directly
-            // and the primitive inside will inherit the transforms
-            (meshRef as any).current = groupRef;
+            // Ensure the group can be transformed by gizmos and physics
+            groupRef.matrixAutoUpdate = true;
+            groupRef.userData = { ...groupRef.userData, entityId };
 
-            console.log('[CustomModelMesh] meshRef assignment completed:', {
+            // Assign to the passed meshRef for transform system integration
+            (meshRef as React.MutableRefObject<Group>).current = groupRef;
+
+            console.log('[CustomModelMesh] Transform integration completed:', {
               entityId,
               meshRefCurrentType: meshRef.current?.type,
-              meshRefCurrentConstructor: meshRef.current?.constructor.name,
+              meshRefMatrixAutoUpdate: meshRef.current?.matrixAutoUpdate,
             });
+          } else if (!groupRef && meshRef.current) {
+            // Cleanup when component unmounts
+            (meshRef as React.MutableRefObject<Group | null>).current = null;
+            console.log('[CustomModelMesh] Group ref cleaned up:', { entityId });
           }
         },
         [meshRef, entityId],
@@ -180,26 +181,20 @@ const CustomModelMesh: React.FC<{
           receiveShadow={renderingContributions.receiveShadow}
           visible={renderingContributions.visible}
         >
-          {/* The primitive inherits transforms from the parent group */}
-          <primitive
-            object={clonedScene}
-            position={[0, 0, 0]}
-            rotation={[0, 0, 0]}
-            scale={[1, 1, 1]}
-          />
+          <primitive object={clonedScene} />
         </group>
       );
     } catch (error) {
       console.error('[CustomModelMesh] Failed to load model:', {
         entityId,
         modelPath,
-        error: error?.message || 'Unknown error',
-        stack: error?.stack,
+        error: (error as Error)?.message || 'Unknown error',
+        stack: (error as Error)?.stack,
       });
 
       // Fallback to error mesh with callback ref
       const errorRefCallback = useCallback(
-        (errorMeshRef: Mesh) => {
+        (errorMeshRef: Mesh | null) => {
           if (errorMeshRef && meshRef) {
             console.log('[CustomModelMesh] Error mesh ref assigned:', {
               entityId,
@@ -207,7 +202,13 @@ const CustomModelMesh: React.FC<{
               errorMeshConstructor: errorMeshRef.constructor.name,
             });
 
-            (meshRef as any).current = errorMeshRef;
+            // Ensure the error mesh can be transformed
+            errorMeshRef.matrixAutoUpdate = true;
+            errorMeshRef.userData = { ...errorMeshRef.userData, entityId };
+
+            (meshRef as React.MutableRefObject<Mesh>).current = errorMeshRef;
+          } else if (!errorMeshRef && meshRef.current) {
+            (meshRef as React.MutableRefObject<Mesh | null>).current = null;
           }
         },
         [meshRef, entityId],
@@ -229,6 +230,20 @@ const CustomModelMesh: React.FC<{
       );
     }
   },
+  // Custom comparison function to prevent unnecessary re-renders
+  (prevProps, nextProps) => {
+    // Only re-render if actual data changes (return true = skip re-render, false = do re-render)
+    return (
+      prevProps.modelPath === nextProps.modelPath &&
+      prevProps.entityId === nextProps.entityId &&
+      prevProps.renderingContributions.castShadow === nextProps.renderingContributions.castShadow &&
+      prevProps.renderingContributions.receiveShadow ===
+        nextProps.renderingContributions.receiveShadow &&
+      prevProps.renderingContributions.visible === nextProps.renderingContributions.visible &&
+      JSON.stringify(prevProps.renderingContributions.material) ===
+        JSON.stringify(nextProps.renderingContributions.material)
+    );
+  },
 );
 
 export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
@@ -243,6 +258,40 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     isPlaying = false,
     entityComponents = [],
   }) => {
+    // Get Three.js scene reference for script system
+    const { scene } = useThree();
+
+    // Register/unregister entity with ThreeJSEntityRegistry for script access
+    useEffect(() => {
+      if (meshRef?.current && entityId && scene) {
+        console.log('[EntityMesh] Registering entity with ThreeJSEntityRegistry:', {
+          entityId,
+          objectType: meshRef.current.type,
+          objectId: meshRef.current.id,
+        });
+
+        threeJSEntityRegistry.registerEntity(entityId, meshRef.current, scene);
+
+        // Cleanup on unmount or when object changes
+        return () => {
+          console.log('[EntityMesh] Unregistering entity from ThreeJSEntityRegistry:', {
+            entityId,
+          });
+          threeJSEntityRegistry.unregisterEntity(entityId);
+        };
+      }
+    }, [meshRef?.current, entityId, scene]);
+
+    // Update registry when meshRef.current changes
+    useEffect(() => {
+      if (meshRef?.current && entityId && scene && threeJSEntityRegistry.hasEntity(entityId)) {
+        console.log('[EntityMesh] Updating entity in ThreeJSEntityRegistry:', {
+          entityId,
+          newObjectType: meshRef.current.type,
+        });
+        threeJSEntityRegistry.updateEntity(entityId, meshRef.current, scene);
+      }
+    }, [meshRef?.current]);
     // Don't render anything if no mesh type is set
     if (!meshType) {
       return null;

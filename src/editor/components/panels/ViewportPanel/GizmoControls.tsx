@@ -1,6 +1,6 @@
 import { TransformControls } from '@react-three/drei';
 import React, { MutableRefObject, useCallback, useRef } from 'react';
-import { Object3D } from 'three';
+import { Object3D, Group, Mesh } from 'three';
 import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
 
 import { ComponentRegistry } from '@/core/lib/ecs/ComponentRegistry';
@@ -26,6 +26,16 @@ function updateTransformThroughComponentManager(
   componentManager: ComponentRegistry,
   onTransformChange?: (values: [number, number, number]) => void,
 ) {
+  console.log(`[GizmoControls] updateTransformThroughComponentManager - START`, {
+    entityId,
+    mode,
+    meshPosition: [mesh.position.x, mesh.position.y, mesh.position.z],
+    meshRotation: [mesh.rotation.x, mesh.rotation.y, mesh.rotation.z],
+    meshScale: [mesh.scale.x, mesh.scale.y, mesh.scale.z],
+    meshType: mesh.type,
+    meshUserData: mesh.userData,
+  });
+
   // Get current transform data from ComponentManager
   const currentTransform = componentManager.getComponent<ITransformData>(
     entityId,
@@ -36,6 +46,46 @@ function updateTransformThroughComponentManager(
     rotation: [0, 0, 0] as [number, number, number],
     scale: [1, 1, 1] as [number, number, number],
   };
+
+  console.log(`[GizmoControls] Current ECS transform data:`, {
+    entityId,
+    currentTransformData: transformData,
+    hasCurrentTransform: !!currentTransform,
+  });
+
+  console.log(`[GizmoControls] DETAILED COMPARISON - mesh vs ECS:`, {
+    entityId,
+    mode,
+    meshPosition: [mesh.position.x, mesh.position.y, mesh.position.z],
+    ecsPosition: transformData.position,
+    positionDelta: [
+      mesh.position.x - transformData.position[0],
+      mesh.position.y - transformData.position[1],
+      mesh.position.z - transformData.position[2],
+    ],
+    positionDeltaAbs: [
+      Math.abs(mesh.position.x - transformData.position[0]),
+      Math.abs(mesh.position.y - transformData.position[1]),
+      Math.abs(mesh.position.z - transformData.position[2]),
+    ],
+    threshold: 0.001,
+    wouldTriggerUpdate:
+      mode === 'translate' &&
+      (Math.abs(mesh.position.x - transformData.position[0]) > 0.001 ||
+        Math.abs(mesh.position.y - transformData.position[1]) > 0.001 ||
+        Math.abs(mesh.position.z - transformData.position[2]) > 0.001),
+    // EXPANDED DEBUGGING
+    meshObject: {
+      type: mesh.type,
+      constructor: mesh.constructor.name,
+      isGroup: mesh instanceof Group,
+      isMesh: mesh instanceof Mesh,
+      children: mesh.children.length,
+      parent: mesh.parent?.type,
+      matrixAutoUpdate: mesh.matrixAutoUpdate,
+      visible: mesh.visible,
+    },
+  });
 
   const updatedTransform: ITransformData = { ...transformData };
   let hasChanges = false;
@@ -53,6 +103,16 @@ function updateTransformThroughComponentManager(
       Math.abs(newPosition[1] - transformData.position[1]) > 0.001 ||
       Math.abs(newPosition[2] - transformData.position[2]) > 0.001
     ) {
+      console.log(`[GizmoControls] Position change detected:`, {
+        entityId,
+        oldPosition: transformData.position,
+        newPosition,
+        delta: [
+          newPosition[0] - transformData.position[0],
+          newPosition[1] - transformData.position[1],
+          newPosition[2] - transformData.position[2],
+        ],
+      });
       updatedTransform.position = newPosition;
       hasChanges = true;
       if (onTransformChange) {
@@ -71,6 +131,16 @@ function updateTransformThroughComponentManager(
       Math.abs(newRotation[1] - transformData.rotation[1]) > 0.1 ||
       Math.abs(newRotation[2] - transformData.rotation[2]) > 0.1
     ) {
+      console.log(`[GizmoControls] Rotation change detected:`, {
+        entityId,
+        oldRotation: transformData.rotation,
+        newRotation,
+        delta: [
+          newRotation[0] - transformData.rotation[0],
+          newRotation[1] - transformData.rotation[1],
+          newRotation[2] - transformData.rotation[2],
+        ],
+      });
       updatedTransform.rotation = newRotation;
       hasChanges = true;
       if (onTransformChange) {
@@ -86,6 +156,16 @@ function updateTransformThroughComponentManager(
       Math.abs(newScale[1] - transformData.scale[1]) > 0.001 ||
       Math.abs(newScale[2] - transformData.scale[2]) > 0.001
     ) {
+      console.log(`[GizmoControls] Scale change detected:`, {
+        entityId,
+        oldScale: transformData.scale,
+        newScale,
+        delta: [
+          newScale[0] - transformData.scale[0],
+          newScale[1] - transformData.scale[1],
+          newScale[2] - transformData.scale[2],
+        ],
+      });
       updatedTransform.scale = newScale;
       hasChanges = true;
       if (onTransformChange) {
@@ -96,15 +176,22 @@ function updateTransformThroughComponentManager(
 
   // Only update ComponentManager if there were actual changes
   if (hasChanges) {
+    console.log(`[GizmoControls] Updating ECS with new transform:`, {
+      entityId,
+      mode,
+      updatedTransform,
+      isAddingNewComponent: !currentTransform,
+    });
+
     if (currentTransform) {
       componentManager.updateComponent(entityId, KnownComponentTypes.TRANSFORM, updatedTransform);
     } else {
       componentManager.addComponent(entityId, KnownComponentTypes.TRANSFORM, updatedTransform);
     }
 
-    console.debug(
-      `[GizmoControls] Updated ${mode} for entity ${entityId} through ComponentManager`,
-    );
+    console.log(`[GizmoControls] ECS update completed for entity ${entityId}`);
+  } else {
+    console.log(`[GizmoControls] No changes detected, skipping ECS update for entity ${entityId}`);
   }
 }
 
@@ -118,22 +205,53 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
     const transformingState = useRef(false);
     const throttleDelay = 8; // Reduced from 16ms to 8ms for 120fps (~better responsiveness)
 
+    console.log(`[GizmoControls] Component render:`, {
+      entityId,
+      mode,
+      meshType,
+      hasMeshRef: !!meshRef?.current,
+      meshRefType: meshRef?.current?.type,
+      meshRefConstructor: meshRef?.current?.constructor.name,
+    });
+
     // Force re-render when meshRef becomes available
     React.useEffect(() => {
       if (meshRef.current) {
+        console.log(`[GizmoControls] meshRef became available:`, {
+          entityId,
+          meshRefType: meshRef.current.type,
+          meshRefPosition: [
+            meshRef.current.position.x,
+            meshRef.current.position.y,
+            meshRef.current.position.z,
+          ],
+        });
         setForceUpdate((prev) => prev + 1);
       }
     }, [meshRef.current]);
 
     // Throttled update function for smooth performance
     const handleTransformUpdate = useCallback(() => {
-      if (!meshRef.current) return;
+      if (!meshRef.current) {
+        console.log(
+          `[GizmoControls] handleTransformUpdate skipped - no meshRef for entity ${entityId}`,
+        );
+        return;
+      }
 
       const now = Date.now();
       if (isDragging.current && now - lastUpdateTime.current < throttleDelay) {
+        console.log(`[GizmoControls] handleTransformUpdate throttled for entity ${entityId}`);
         return; // Skip update if too frequent during drag
       }
       lastUpdateTime.current = now;
+
+      console.log(`[GizmoControls] handleTransformUpdate executing:`, {
+        entityId,
+        mode,
+        isDragging: isDragging.current,
+        timeSinceLastUpdate: now - lastUpdateTime.current,
+      });
 
       updateTransformThroughComponentManager(
         meshRef.current,
@@ -145,18 +263,40 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
     }, [meshRef, mode, entityId, componentManager, onTransformChange, throttleDelay]);
 
     const handleDragStart = useCallback(() => {
+      console.log(`[GizmoControls] Drag START for entity ${entityId}, mode: ${mode}`);
       isDragging.current = true;
       transformingState.current = true;
       if (setIsTransforming) {
         setIsTransforming(true);
       }
-    }, [setIsTransforming]);
+    }, [setIsTransforming, entityId, mode]);
 
     const handleDragEnd = useCallback(() => {
+      console.log(`[GizmoControls] Drag END for entity ${entityId}, mode: ${mode}`);
       isDragging.current = false;
 
       // IMMEDIATE final update (no throttling) to ensure final position is synced
       if (meshRef.current) {
+        console.log(`[GizmoControls] Final transform update on drag end:`, {
+          entityId,
+          mode,
+          finalMeshPosition: [
+            meshRef.current.position.x,
+            meshRef.current.position.y,
+            meshRef.current.position.z,
+          ],
+          finalMeshRotation: [
+            meshRef.current.rotation.x,
+            meshRef.current.rotation.y,
+            meshRef.current.rotation.z,
+          ],
+          finalMeshScale: [
+            meshRef.current.scale.x,
+            meshRef.current.scale.y,
+            meshRef.current.scale.z,
+          ],
+        });
+
         updateTransformThroughComponentManager(
           meshRef.current,
           mode,
@@ -168,6 +308,7 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
 
       // Reduced delay for state updates to minimize disconnect time
       setTimeout(() => {
+        console.log(`[GizmoControls] Setting transforming to false for entity ${entityId}`);
         transformingState.current = false;
         if (setIsTransforming) {
           setIsTransforming(false);
@@ -178,13 +319,22 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
     // Don't render gizmo controls for camera entities as they contain HTML elements
     // that cause TransformControls scene graph errors
     if (meshType === 'Camera') {
+      console.log(`[GizmoControls] Skipping render for Camera entity ${entityId}`);
       return null;
     }
 
     // Don't render if mesh isn't ready
     if (!meshRef.current) {
+      console.log(`[GizmoControls] Skipping render - no meshRef for entity ${entityId}`);
       return null;
     }
+
+    console.log(`[GizmoControls] Rendering TransformControls for entity ${entityId}:`, {
+      mode,
+      meshRefType: meshRef.current.type,
+      meshRefConstructor: meshRef.current.constructor.name,
+      attachingToObject: !!meshRef.current,
+    });
 
     // Attach controls directly to the target object
     return (

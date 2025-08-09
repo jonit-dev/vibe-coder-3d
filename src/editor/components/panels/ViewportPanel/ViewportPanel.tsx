@@ -4,6 +4,8 @@ import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 import * as THREE from 'three';
 
+import { EngineLoop } from '@/core/components/EngineLoop';
+
 import { CameraBackgroundManager } from '@/core/components/cameras/CameraBackgroundManager';
 import { CameraControlsManager } from '@/core/components/cameras/CameraControlsManager';
 import { CameraFollowManager } from '@/core/components/cameras/CameraFollowManager';
@@ -145,6 +147,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 
           {/* Camera Controls Manager - handles runtime camera controls */}
           <CameraControlsManager isPlaying={isPlaying} isTransforming={isTransforming} />
+
+          {/* Engine Loop - handles script execution and system updates */}
+          <EngineLoop paused={!isPlaying} isPlaying={isPlaying} />
 
           {/* Dynamic Light Rendering */}
           {lightIds.map((lightId) => (

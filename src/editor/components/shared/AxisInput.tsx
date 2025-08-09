@@ -13,6 +13,7 @@ export interface IAxisInputProps {
   min?: number;
   max?: number;
   precision?: number;
+  disabled?: boolean;
 }
 
 export const AxisInput: React.FC<IAxisInputProps> = ({
@@ -27,6 +28,7 @@ export const AxisInput: React.FC<IAxisInputProps> = ({
   min,
   max,
   precision = 2,
+  disabled = false,
 }) => {
   const [text, setText] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
@@ -98,7 +100,9 @@ export const AxisInput: React.FC<IAxisInputProps> = ({
 
       <div className="flex-1 flex items-center space-x-1">
         <input
-          className="flex-1 bg-black/30 border border-gray-600/30 rounded-sm px-1.5 py-0.5 text-[11px] text-gray-200 focus:outline-none focus:border-cyan-500/50 focus:bg-black/50 transition-all duration-200"
+          className={`flex-1 bg-black/30 border border-gray-600/30 rounded-sm px-1.5 py-0.5 text-[11px] text-gray-200 focus:outline-none focus:border-cyan-500/50 focus:bg-black/50 transition-all duration-200 ${
+            disabled ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
           type="number"
           step={step}
           min={min}
@@ -107,14 +111,15 @@ export const AxisInput: React.FC<IAxisInputProps> = ({
           onChange={handleInputChange}
           onBlur={handleBlur}
           onFocus={handleFocus}
+          disabled={disabled}
         />
 
         <div
           className={`w-4 h-4 flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 border border-gray-600/50 rounded-sm cursor-ew-resize select-none transition-all duration-200 relative group shadow-sm ${
             dragActive ? 'ring-1 ring-cyan-500/50 scale-105' : ''
-          }`}
-          onMouseDown={onDragStart}
-          tabIndex={0}
+          } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onMouseDown={disabled ? undefined : onDragStart}
+          tabIndex={disabled ? -1 : 0}
           role="button"
           aria-label={`Drag to change ${axis} value`}
         >

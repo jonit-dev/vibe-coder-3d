@@ -334,7 +334,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     // Create the mesh content (but hide it if being followed)
     const meshContent = !shouldHideMesh ? (
       <EntityMesh
-        meshRef={meshRef}
+        meshRef={meshRef as React.RefObject<any>}
         meshType={meshType as string | null}
         renderingContributions={renderingContributions as IRenderingContributions}
         entityColor={entityColor as string}

@@ -12,6 +12,9 @@ export type CoreEvents = {
   'game:itemCollected': { itemType: string; entity: number };
   'ui:buttonClicked': { buttonId: string };
 
+  // Sound events
+  'sound:autoplay': { entityId: number; soundData: any };
+
   // Entity events
   'entity:created': { entityId: number; componentId?: string };
   'entity:destroyed': { entityId: number };
@@ -50,3 +53,4 @@ export function off<Key extends keyof CoreEvents>(
 ) {
   emitter.off(type, handler);
 }
+export const eventBus = { emit, on, off };

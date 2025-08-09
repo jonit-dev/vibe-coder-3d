@@ -29,6 +29,24 @@ export const useEntityTransform = ({
       scale: transform.data.scale || ([1, 1, 1] as [number, number, number]),
     };
   }, [transform?.data]);
+  // Track meshRef stability
+  const previousMeshRef = useRef<THREE.Object3D | null>(null);
+  const renderCounter = useRef(0);
+  renderCounter.current++;
+
+  if (meshRef.current !== previousMeshRef.current) {
+    console.log(`[useEntityTransform] meshRef changed:`, {
+      renderCount: renderCounter.current,
+      oldRef: previousMeshRef.current,
+      newRef: meshRef.current,
+      newRefType: meshRef.current?.type,
+      newRefConstructor: meshRef.current?.constructor.name,
+      transformData,
+      isTransforming,
+      isPlaying,
+    });
+    previousMeshRef.current = meshRef.current;
+  }
 
   // Convert rotation to radians for physics
   const rotationRadians = useMemo((): [number, number, number] | null => {
@@ -41,6 +59,7 @@ export const useEntityTransform = ({
   }, [transformData]);
 
   // Sync mesh transform from ComponentManager (single source of truth)
+  // CRITICAL: Only sync when transform data actually changes, not on every render
   useEffect(() => {
     if (meshRef.current && !isTransforming && !isPlaying && transformData) {
       const { position, rotation, scale } = transformData;
@@ -77,8 +96,13 @@ export const useEntityTransform = ({
         targetScale: scale,
       });
 
-      // Only sync if the transform data actually changed
-      if (lastSyncedTransform.current !== transformHash) {
+      // Only sync if the transform data actually changed AND the mesh position doesn't already match
+      const meshPositionMatches =
+        Math.abs(meshRef.current.position.x - position[0]) < 0.001 &&
+        Math.abs(meshRef.current.position.y - position[1]) < 0.001 &&
+        Math.abs(meshRef.current.position.z - position[2]) < 0.001;
+
+      if (lastSyncedTransform.current !== transformHash && !meshPositionMatches) {
         console.log(`[useEntityTransform] Applying transform sync - BEFORE:`, {
           entityId: meshRef.current?.userData?.entityId,
           beforePosition: [
@@ -119,10 +143,13 @@ export const useEntityTransform = ({
             meshRef.current.rotation.z,
           ],
           afterScale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z],
-          matrixNeedsUpdate: meshRef.current.matrixNeedsUpdate,
+          matrixAutoUpdate: meshRef.current.matrixAutoUpdate,
           matrixWorldNeedsUpdate: meshRef.current.matrixWorldNeedsUpdate,
         });
 
+        lastSyncedTransform.current = transformHash;
+      } else if (meshPositionMatches) {
+        console.log(`[useEntityTransform] Skipping sync - mesh already at correct position`);
         lastSyncedTransform.current = transformHash;
       } else {
         console.log(`[useEntityTransform] Transform already synced, skipping update`);
@@ -144,35 +171,6 @@ export const useEntityTransform = ({
                 ? 'No transform data'
                 : 'Unknown',
       });
-    }
-  }, [transformData, isTransforming, isPlaying]);
-
-  // Additional immediate sync when not transforming to eliminate any race conditions
-  useEffect(() => {
-    if (meshRef.current && !isTransforming && !isPlaying && transformData) {
-      const { position, rotation, scale } = transformData;
-
-      console.log(`[useEntityTransform] IMMEDIATE sync (no hash check):`, {
-        entityId: meshRef.current?.userData?.entityId,
-        forceSyncPosition: position,
-        forceSyncRotation: rotation,
-        forceSyncScale: scale,
-      });
-
-      // IMMEDIATE sync without hash checking during non-transform states
-      meshRef.current.position.set(position[0], position[1], position[2]);
-      meshRef.current.rotation.set(
-        rotation[0] * (Math.PI / 180),
-        rotation[1] * (Math.PI / 180),
-        rotation[2] * (Math.PI / 180),
-      );
-      meshRef.current.scale.set(scale[0], scale[1], scale[2]);
-
-      // Force matrix update
-      meshRef.current.updateMatrix();
-      meshRef.current.updateMatrixWorld(true);
-
-      console.log(`[useEntityTransform] IMMEDIATE sync completed`);
     }
   }, [transformData, isTransforming, isPlaying]);
 

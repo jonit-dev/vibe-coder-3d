@@ -203,7 +203,7 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
   const lightCount = lightSystem(deltaTime);
 
   // Run script system - executes user scripts with entity context
-  updateScriptSystem(deltaTime * 1000); // Convert to milliseconds
+  updateScriptSystem(deltaTime * 1000, isPlaying); // Convert to milliseconds
 
   // Run sound system - handles autoplay and sound updates during play mode
   const soundCount = soundSystem(deltaTime, isPlaying);
