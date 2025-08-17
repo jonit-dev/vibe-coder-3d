@@ -107,22 +107,42 @@ function entityNeedsCompilation(eid: EntityId): boolean {
 
   const codeHash = scriptComponent.codeHash[eid];
   const code = getStringFromHash(codeHash);
+  const scriptId = `entity_${eid}`;
 
-  // Check if script has execution flags that require compilation
+  // If script has execution flags enabled, it needs to be compiled even if empty
   const hasExecutionFlags =
     scriptComponent.executeOnStart[eid] ||
     scriptComponent.executeInUpdate[eid] ||
     scriptComponent.executeOnEnable[eid];
 
+  const isEmpty = !code || code.trim() === '';
+  const isCompiled = scriptExecutor.hasCompiled(scriptId);
+  const needsCompilationFlag = scriptComponent.needsCompilation[eid] === 1;
+
+  console.log(`[ScriptSystem] Checking compilation need for entity ${eid}:`, {
+    codeHash,
+    codeLength: code?.length || 0,
+    isEmpty,
+    hasExecutionFlags,
+    isCompiled,
+    needsCompilationFlag,
+    executeOnStart: scriptComponent.executeOnStart[eid],
+    executeInUpdate: scriptComponent.executeInUpdate[eid],
+    executeOnEnable: scriptComponent.executeOnEnable[eid],
+  });
+
   // Empty scripts with no execution flags don't need compilation
-  if ((!code || code.trim() === '') && !hasExecutionFlags) {
+  if (isEmpty && !hasExecutionFlags) {
+    console.log(
+      `[ScriptSystem] Entity ${eid}: Empty script with no execution flags, skipping compilation`,
+    );
     return false;
   }
 
-  const scriptId = `entity_${eid}`;
-
   // Check if script is already compiled and up to date
-  return !scriptExecutor.hasCompiled(scriptId) || scriptComponent.needsCompilation[eid] === 1;
+  const needsCompilation = !isCompiled || needsCompilationFlag;
+  console.log(`[ScriptSystem] Entity ${eid}: Needs compilation = ${needsCompilation}`);
+  return needsCompilation;
 }
 
 /**
@@ -156,43 +176,44 @@ function compileScriptForEntity(eid: EntityId): boolean {
   const code = getStringFromHash(codeHash);
   const scriptId = `entity_${eid}`;
 
+  console.log(`[ScriptSystem] Compiling script for entity ${eid}:`, {
+    codeHash,
+    codeLength: code?.length || 0,
+    codePreview: code?.substring(0, 100) || '(empty)',
+    executeOnStart: scriptComponent.executeOnStart[eid],
+    executeInUpdate: scriptComponent.executeInUpdate[eid],
+    needsCompilation: scriptComponent.needsCompilation[eid],
+  });
+
   if (!code || code.trim() === '') {
-    // For empty scripts with execution flags, compile a no-op function
-    const hasExecutionFlags =
-      scriptComponent.executeOnStart[eid] ||
-      scriptComponent.executeInUpdate[eid] ||
-      scriptComponent.executeOnEnable[eid];
+    // For empty scripts, register a no-op function so execution doesn't fail
+    console.log(`[ScriptSystem] Compiling empty script for entity ${eid} as no-op`);
+    const result: IScriptExecutionResult = scriptExecutor.compileScript(
+      '// Empty script',
+      scriptId,
+    );
 
-    if (hasExecutionFlags) {
-      const result: IScriptExecutionResult = scriptExecutor.compileScript(
-        '// Empty script',
-        scriptId,
-      );
+    // Update component with compilation results
+    scriptComponent.hasErrors[eid] = result.success ? 0 : 1;
+    scriptComponent.lastExecutionTime[eid] = result.executionTime;
+    scriptComponent.needsCompilation[eid] = 0;
 
-      // Update component with compilation results
-      scriptComponent.hasErrors[eid] = result.success ? 0 : 1;
-      scriptComponent.lastExecutionTime[eid] = result.executionTime;
-      scriptComponent.needsCompilation[eid] = 0;
-
-      if (result.success) {
-        scriptComponent.lastErrorMessageHash[eid] = 0; // Clear error
-        console.log(`[ScriptSystem] Successfully compiled empty script for entity ${eid}`);
-        return true;
-      } else {
-        const errorHash = storeString(result.error || 'Unknown compilation error');
-        scriptComponent.lastErrorMessageHash[eid] = errorHash;
-        console.error(
-          `[ScriptSystem] Failed to compile empty script for entity ${eid}:`,
-          result.error,
-        );
-        return false;
-      }
+    if (result.success) {
+      scriptComponent.lastErrorMessageHash[eid] = 0; // Clear error
+      console.log(`[ScriptSystem] Successfully compiled empty script for entity ${eid}`);
+      return true;
     } else {
-      return true; // Empty script with no execution flags is valid (no-op)
+      const errorHash = storeString(result.error || 'Unknown compilation error');
+      scriptComponent.lastErrorMessageHash[eid] = errorHash;
+      console.error(
+        `[ScriptSystem] Failed to compile empty script for entity ${eid}:`,
+        result.error,
+      );
+      return false;
     }
   }
 
-  // Handle scripts with actual code
+  console.log(`[ScriptSystem] Compiling script with content for entity ${eid}`);
   const result: IScriptExecutionResult = scriptExecutor.compileScript(code, scriptId);
 
   // Update component with compilation results

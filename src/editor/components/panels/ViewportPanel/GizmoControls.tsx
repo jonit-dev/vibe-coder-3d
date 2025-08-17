@@ -212,6 +212,12 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
       hasMeshRef: !!meshRef?.current,
       meshRefType: meshRef?.current?.type,
       meshRefConstructor: meshRef?.current?.constructor.name,
+      meshRefPosition: meshRef?.current
+        ? [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z]
+        : null,
+      meshRefChildren: meshRef?.current?.children?.length || 0,
+      meshRefFirstChildType: meshRef?.current?.children?.[0]?.type || 'none',
+      meshRefMatrixAutoUpdate: meshRef?.current?.matrixAutoUpdate,
     });
 
     // Force re-render when meshRef becomes available

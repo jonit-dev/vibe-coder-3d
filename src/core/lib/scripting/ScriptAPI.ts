@@ -288,7 +288,7 @@ export const createTransformAPI = (entityId: EntityId): ITransformAPI => {
     const newTransform: ITransformData = { ...currentTransform, ...updates };
 
     try {
-      componentManager.updateComponentData(entityId, 'Transform', newTransform);
+      componentManager.updateComponent(entityId, 'Transform', newTransform);
       console.log(`[ScriptAPI] Updated transform for entity ${entityId}:`, updates);
     } catch (error) {
       console.error(`[ScriptAPI] Failed to update transform for entity ${entityId}:`, error);
@@ -691,8 +691,7 @@ export const createThreeJSAPI = (
  * Creates a safe entity API for scripts
  */
 export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
-  // Note: This is a simplified implementation. A full implementation would need
-  // access to the entity manager and hierarchy system
+  const componentManager = ComponentManager.getInstance();
 
   return {
     id: entityId,
@@ -700,36 +699,55 @@ export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
 
     getComponent: <T = unknown>(componentType: string): T | null => {
       try {
-        // This would need to be implemented with actual component access
-        console.warn(`getComponent(${componentType}) not yet fully implemented in script context`);
-        return null;
-      } catch {
+        const data = componentManager.getComponentData<T>(entityId, componentType);
+        return data || null;
+      } catch (error) {
+        console.warn(
+          `[ScriptAPI] Failed to get component ${componentType} for entity ${entityId}:`,
+          error,
+        );
         return null;
       }
     },
 
     setComponent: <T = unknown>(componentType: string, data: Partial<T>): boolean => {
       try {
-        // This would need to be implemented with actual component access
-        console.warn(`setComponent(${componentType}) not yet fully implemented in script context`);
-        return false;
-      } catch {
+        // Check if entity has the component, if so update it, otherwise add it
+        if (componentManager.hasComponent(entityId, componentType)) {
+          return componentManager.updateComponent<T>(entityId, componentType, data);
+        } else {
+          const component = componentManager.addComponent(entityId, componentType, data as T);
+          return !!component;
+        }
+      } catch (error) {
+        console.warn(
+          `[ScriptAPI] Failed to set component ${componentType} for entity ${entityId}:`,
+          error,
+        );
         return false;
       }
     },
 
     hasComponent: (componentType: string): boolean => {
-      console.warn(`hasComponent(${componentType}) not yet fully implemented in script context`);
-      return false;
+      try {
+        return componentManager.hasComponent(entityId, componentType);
+      } catch (error) {
+        console.warn(
+          `[ScriptAPI] Failed to check component ${componentType} for entity ${entityId}:`,
+          error,
+        );
+        return false;
+      }
     },
 
     removeComponent: (componentType: string): boolean => {
       try {
+        return componentManager.removeComponent(entityId, componentType);
+      } catch (error) {
         console.warn(
-          `removeComponent(${componentType}) not yet fully implemented in script context`,
+          `[ScriptAPI] Failed to remove component ${componentType} for entity ${entityId}:`,
+          error,
         );
-        return false;
-      } catch {
         return false;
       }
     },

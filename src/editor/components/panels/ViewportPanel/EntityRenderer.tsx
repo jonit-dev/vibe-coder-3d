@@ -318,6 +318,24 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     // Check if this entity is being followed by the main camera (first-person view)
     const isFollowedEntity = useFollowedEntityCheck(entityId, isPlaying);
 
+    // Debug logging for custom models
+    React.useEffect(() => {
+      if (meshType === 'custom') {
+        console.log('[EntityRenderer] Custom model debug:', {
+          entityId,
+          meshType,
+          isPrimarySelection,
+          shouldHavePhysics,
+          willRenderGizmo: isPrimarySelection && !shouldHavePhysics,
+          meshRefCurrent: meshRef?.current,
+          meshRefType: meshRef?.current?.type,
+          meshRefPosition: meshRef?.current
+            ? [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z]
+            : null,
+        });
+      }
+    }, [meshType, entityId, isPrimarySelection, shouldHavePhysics, meshRef?.current]);
+
     // Early return AFTER all hooks - don't render if entity doesn't exist
     if (!isValid) {
       return null;
@@ -401,6 +419,8 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
             meshType={meshType}
           />
         )}
+
+        {/* Debug logging for custom models is done via useEffect instead of in JSX */}
 
         {/* Selection outline with smooth real-time updates */}
         <EntityOutline
