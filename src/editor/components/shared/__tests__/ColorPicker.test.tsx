@@ -1,17 +1,13 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 import { ColorPicker } from '../ColorPicker';
 
 describe('ColorPicker', () => {
   let mockOnChange: ReturnType<typeof vi.fn>;
-  let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {
     mockOnChange = vi.fn();
-    user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     vi.useFakeTimers();
   });
 

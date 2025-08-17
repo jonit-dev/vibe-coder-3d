@@ -36,6 +36,7 @@ export interface IEntityRendererProps {
 }
 
 import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
+import { Logger } from '@/core/lib/logger';
 
 // Deterministic hash in [0,1] based on integer grid + seed
 function hash2(ix: number, iy: number, seed: number): number {
@@ -181,6 +182,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     setIsTransforming,
     allEntityIds = [],
   }) => {
+    const logger = Logger.create('EntityRenderer');
     const isPlaying = useEditorStore((s) => s.isPlaying);
 
     // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS!
@@ -262,8 +264,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         const terrainData = terrainComponent?.data as TerrainData | undefined;
 
         if (terrainData) {
-          console.log(
-            '[EntityRenderer] Auto-creating heightfield collider for terrain without MeshCollider',
+          logger.debug('Auto-creating heightfield collider for terrain without MeshCollider',
           );
           const [w, d] = terrainData.size;
           const [sx, sz] = terrainData.segments;
@@ -289,7 +290,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         return colliderConfig;
       }
 
-      console.log('[EntityRenderer] Processing heightfield collider for terrain');
+      logger.debug('Processing heightfield collider for terrain');
 
       // Get terrain data
       const terrainComponent = entityComponents.find((c) => c.type === 'Terrain');
@@ -322,7 +323,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     // Debug logging for custom models
     React.useEffect(() => {
       if (meshType === 'custom') {
-        console.log('[EntityRenderer] Custom model debug:', {
+        logger.debug('Custom model debug:', {
           entityId,
           meshType,
           isPrimarySelection,

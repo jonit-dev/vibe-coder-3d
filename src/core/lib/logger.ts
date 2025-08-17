@@ -75,6 +75,30 @@ export class Logger {
   }
 
   /**
+   * Configure for production environment
+   */
+  static configureForProduction(): void {
+    globalConfig = {
+      level: LogLevel.WARN, // Only warnings and errors in production
+      enableColors: false,
+      enableTimestamps: true,
+      enableNamespaces: true,
+    };
+  }
+
+  /**
+   * Configure for development environment
+   */
+  static configureForDevelopment(): void {
+    globalConfig = {
+      level: LogLevel.DEBUG,
+      enableColors: true,
+      enableTimestamps: true,
+      enableNamespaces: true,
+    };
+  }
+
+  /**
    * Debug level logging
    */
   debug(message: string, ...args: any[]): void {
@@ -108,6 +132,11 @@ export class Logger {
   private log(level: LogLevel, message: string, ...args: any[]): void {
     // Check if log level is enabled
     if (level < globalConfig.level) {
+      return;
+    }
+
+    // In production, filter out debug/info logs completely
+    if (import.meta.env.PROD && level < LogLevel.WARN) {
       return;
     }
 

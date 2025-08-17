@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import type { Mesh } from 'three';
+import type { Mesh, Object3D, Group } from 'three';
 
 interface IModelLoadingMeshProps {
-  meshRef?: React.RefObject<Mesh | null>;
+  meshRef?: React.RefObject<Group | Mesh | Object3D | null>;
   entityId: number;
   renderingContributions: {
     castShadow?: boolean;

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { terrainWorker, type ITerrainGeometryData } from '@/core/lib/terrain/TerrainWorker';
 import { terrainProfiler } from '@/core/lib/terrain/TerrainProfiler';
 import { terrainCache } from '@/core/lib/terrain/TerrainCache';
+import { Logger } from '@/core/lib/logger';
 
 export interface ITerrainGeometryProps {
   size: [number, number];
@@ -72,7 +73,8 @@ function valueNoise2D(
 }
 
 // Enhanced TerrainGeometry with Web Worker and Memory Management
-export const TerrainGeometry: React.FC<ITerrainGeometryProps> = (props) => {
+export const TerrainGeometry: React.FC<ITerrainGeometryProps> = React.memo((props) => {
+  const logger = Logger.create('TerrainGeometry');
   const {
     size,
     segments,
@@ -130,7 +132,7 @@ export const TerrainGeometry: React.FC<ITerrainGeometryProps> = (props) => {
 
       setGeometryData(data);
     } catch (error) {
-      console.error('Terrain generation failed:', error);
+      logger.error('Terrain generation failed:', error);
       terrainProfiler.endProfile('terrain_generation');
     } finally {
       setIsGenerating(false);
@@ -189,7 +191,7 @@ export const TerrainGeometry: React.FC<ITerrainGeometryProps> = (props) => {
   }
 
   return <primitive object={geometry} />;
-};
+});
 
 // Legacy synchronous terrain generation (kept for fallback)
 export const LegacyTerrainGeometry: React.FC<ITerrainGeometryProps> = ({

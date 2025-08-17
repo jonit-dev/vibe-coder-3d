@@ -5,6 +5,7 @@ import * as THREE from 'three';
 
 import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
 import { useEditorStore } from '@/editor/store/editorStore';
+import { Logger } from '@/core/lib/logger';
 
 interface IUseEntitySelectionProps {
   entityId: number;
@@ -32,6 +33,7 @@ export const useEntitySelection = ({
 }: IUseEntitySelectionPropsWithAllEntities) => {
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
   const groupSelection = useGroupSelection();
+  const logger = Logger.create('useEntitySelection');
 
   // Outline visualization refs
   const outlineGroupRef = useRef<THREE.Group | null>(null);
@@ -42,8 +44,7 @@ export const useEntitySelection = ({
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
 
-      console.log(
-        `[useEntitySelection] Entity ${entityId} clicked, ctrl=${e.ctrlKey}, shift=${e.shiftKey}`,
+      logger.debug(`Entity ${entityId} clicked, ctrl=${e.ctrlKey}, shift=${e.shiftKey}`,
       );
 
       // Check if this entity is already part of a group selection
@@ -53,8 +54,7 @@ export const useEntitySelection = ({
       if (isPartOfGroup && !e.ctrlKey && !e.shiftKey) {
         // If clicking on an entity that's part of a group without modifiers,
         // keep the group selection (don't break the group)
-        console.log(
-          `[useEntitySelection] Entity ${entityId} is part of group, maintaining group selection`,
+        logger.debug(`Entity ${entityId} is part of group, maintaining group selection`,
         );
         // Don't change selection - let the group stay selected
         return;
@@ -78,7 +78,7 @@ export const useEntitySelection = ({
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
 
-      console.log(`[useEntitySelection] Entity ${entityId} double-clicked - framing camera`);
+      logger.debug(`Entity ${entityId} double-clicked - framing camera`);
 
       // Call the global frame function if it exists
       try {
@@ -88,10 +88,10 @@ export const useEntitySelection = ({
         if (windowWithFrameEntity.__frameEntity) {
           windowWithFrameEntity.__frameEntity(entityId);
         } else {
-          console.warn('[useEntitySelection] Frame function not available on window');
+          logger.warn('Frame function not available on window');
         }
       } catch (error) {
-        console.error('[useEntitySelection] Error during camera framing:', error);
+        logger.error('Error during camera framing:', error);
       }
     },
     [entityId],

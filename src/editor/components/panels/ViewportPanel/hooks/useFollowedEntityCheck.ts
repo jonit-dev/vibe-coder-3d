@@ -4,12 +4,14 @@ import { useEvent } from '@/core/hooks/useEvent';
 import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
+import { Logger } from '@/core/lib/logger';
 
 /**
  * Hook to check if an entity is being followed by the main camera
  * Returns true if the entity should be hidden during play mode (first-person view)
  */
 export const useFollowedEntityCheck = (entityId: number, isPlaying: boolean) => {
+  const logger = Logger.create('FollowedEntityCheck');
   const [isFollowedEntity, setIsFollowedEntity] = useState(false);
   const { getComponentData, getEntitiesWithComponent } = useComponentRegistry();
 
@@ -45,7 +47,7 @@ export const useFollowedEntityCheck = (entityId: number, isPlaying: boolean) => 
 
       setIsFollowedEntity(false);
     } catch (error) {
-      console.error('[useFollowedEntityCheck] Error checking follow status:', error);
+      logger.error('Error checking follow status:', error);
       setIsFollowedEntity(false);
     }
   }, [entityId, isPlaying, getComponentData, getEntitiesWithComponent]);

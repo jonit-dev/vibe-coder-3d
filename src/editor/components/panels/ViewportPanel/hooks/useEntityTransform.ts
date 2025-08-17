@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { useEffect, useMemo, useRef } from 'react';
-import type { Mesh } from 'three';
 
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { Logger } from '@/core/lib/logger';
 
 interface IUseEntityTransformProps {
   transform: { data: ITransformData } | null | undefined;
@@ -15,6 +15,7 @@ export const useEntityTransform = ({
   isTransforming,
   isPlaying,
 }: IUseEntityTransformProps) => {
+  const logger = Logger.create('EntityTransform');
   const meshRef = useRef<THREE.Object3D | null>(null);
   const lastSyncedTransform = useRef<string>('');
 
@@ -35,7 +36,7 @@ export const useEntityTransform = ({
   renderCounter.current++;
 
   if (meshRef.current !== previousMeshRef.current) {
-    console.log(`[useEntityTransform] meshRef changed:`, {
+    logger.debug(`meshRef changed:`, {
       renderCount: renderCounter.current,
       oldRef: previousMeshRef.current,
       newRef: meshRef.current,
@@ -67,7 +68,7 @@ export const useEntityTransform = ({
       // Create a more efficient hash using simple string concatenation
       const transformHash = `${position.join(',')},${rotation.join(',')},${scale.join(',')}`;
 
-      console.log(`[useEntityTransform] Transform sync attempt:`, {
+      logger.debug(`Transform sync attempt:`, {
         entityId: meshRef.current?.userData?.entityId,
         isTransforming,
         isPlaying,
@@ -102,7 +103,7 @@ export const useEntityTransform = ({
         Math.abs(meshRef.current.position.y - position[1]) < 0.001 &&
         Math.abs(meshRef.current.position.z - position[2]) < 0.001;
 
-      console.log(`[useEntityTransform] DETAILED SYNC ANALYSIS:`, {
+      logger.debug(`DETAILED SYNC ANALYSIS:`, {
         entityId: meshRef.current?.userData?.entityId,
         transformHash,
         lastSyncedHash: lastSyncedTransform.current,
@@ -125,7 +126,7 @@ export const useEntityTransform = ({
       if (lastSyncedTransform.current !== transformHash) {
         if (!meshPositionMatches) {
           // Apply transform if mesh position doesn't match ECS data
-          console.log(`[useEntityTransform] Applying transform sync - BEFORE:`, {
+          logger.debug(`Applying transform sync - BEFORE:`, {
             entityId: meshRef.current?.userData?.entityId,
             beforePosition: [
               meshRef.current.position.x,
@@ -156,7 +157,7 @@ export const useEntityTransform = ({
           meshRef.current.updateMatrix();
           meshRef.current.updateMatrixWorld(true);
 
-          console.log(`[useEntityTransform] Applying transform sync - AFTER:`, {
+          logger.debug(`Applying transform sync - AFTER:`, {
             entityId: meshRef.current?.userData?.entityId,
             afterPosition: [
               meshRef.current.position.x,
@@ -173,7 +174,7 @@ export const useEntityTransform = ({
             matrixWorldNeedsUpdate: meshRef.current.matrixWorldNeedsUpdate,
           });
         } else {
-          console.log(`[useEntityTransform] Skipping sync - mesh already at correct position`, {
+          logger.debug(`Skipping sync - mesh already at correct position`, {
             entityId: meshRef.current?.userData?.entityId,
             meshPosition: [
               meshRef.current.position.x,
@@ -187,10 +188,10 @@ export const useEntityTransform = ({
         // ALWAYS update the hash when transform data changes (this was the bug!)
         lastSyncedTransform.current = transformHash;
       } else {
-        console.log(`[useEntityTransform] Transform already synced, skipping update`);
+        logger.debug(`Transform already synced, skipping update`);
       }
     } else {
-      console.log(`[useEntityTransform] Transform sync skipped:`, {
+      logger.debug(`Transform sync skipped:`, {
         entityId: meshRef.current?.userData?.entityId,
         hasMeshRef: !!meshRef.current,
         isTransforming,
@@ -214,7 +215,7 @@ export const useEntityTransform = ({
     if (meshRef.current && transformData && !isTransforming && !isPlaying) {
       const { position, rotation, scale } = transformData;
 
-      console.log(`[useEntityTransform] Force sync on meshRef availability:`, {
+      logger.debug(`Force sync on meshRef availability:`, {
         entityId: meshRef.current?.userData?.entityId,
         meshRefType: meshRef.current?.type,
         meshRefConstructor: meshRef.current?.constructor?.name,
@@ -240,7 +241,7 @@ export const useEntityTransform = ({
       meshRef.current.updateMatrix();
       meshRef.current.updateMatrixWorld(true);
 
-      console.log(`[useEntityTransform] Force sync completed:`, {
+      logger.debug(`Force sync completed:`, {
         entityId: meshRef.current?.userData?.entityId,
         newPosition: [
           meshRef.current.position.x,

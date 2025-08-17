@@ -417,7 +417,6 @@ export const SpiralStairsGeometry: React.FC<{
       const nextStepY = stepY + stepHeight;
 
       // Step dimensions
-      const stepDepth = outerRadius - innerRadius - 0.05;
       const stepAngleSpan = angleStep * 0.7; // Make steps narrower to leave gaps
 
       // Calculate step corners

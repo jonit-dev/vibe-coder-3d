@@ -5,6 +5,7 @@ import { Object3D } from 'three';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { Logger } from '@/core/lib/logger';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -17,6 +18,7 @@ export interface IGroupGizmoControlsProps {
 
 export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo(
   ({ selectedIds, mode, onTransformChange, setIsTransforming }) => {
+    const logger = Logger.create('GroupGizmoControls');
     const transformRef = useRef<any>(null);
     const componentManager = useComponentManager();
     const isDragging = useRef(false);
@@ -30,8 +32,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
     const groupCenterRef = useRef<Object3D | null>(null);
     const [gizmoObject, setGizmoObject] = useState<Object3D | null>(null);
 
-    console.log(
-      `[GroupGizmoControls] Rendering with ${selectedIds.length} selected IDs:`,
+    logger.debug(`Rendering with ${selectedIds.length} selected IDs:`,
       selectedIds,
     );
 
@@ -68,14 +69,14 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
       if (!isDragging.current) {
         const newCenter = calculateGroupCenter();
         stableGroupCenter.current = newCenter;
-        console.log(`[GroupGizmoControls] Updated stable group center for selection:`, newCenter);
+        logger.debug(`Updated stable group center for selection:`, newCenter);
 
         // Also position the gizmo object immediately
         if (groupCenterRef.current) {
           groupCenterRef.current.position.set(newCenter[0], newCenter[1], newCenter[2]);
           groupCenterRef.current.rotation.set(0, 0, 0);
           groupCenterRef.current.scale.set(1, 1, 1);
-          console.log(`[GroupGizmoControls] Positioned gizmo at:`, newCenter);
+          logger.debug(`Positioned gizmo at:`, newCenter);
         }
       }
     }, [selectedIds, calculateGroupCenter]);
@@ -91,8 +92,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
       const currentCenter = calculateGroupCenter();
       initialGroupCenter.current = [...currentCenter];
 
-      console.log(
-        `[GroupGizmoControls] Starting drag - initial group center:`,
+      logger.debug(`Starting drag - initial group center:`,
         initialGroupCenter.current,
       );
 
@@ -105,8 +105,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
 
         if (transform?.data) {
           initialValues.current[entityId] = { ...transform.data };
-          console.log(
-            `[GroupGizmoControls] Stored initial transform for entity ${entityId}:`,
+          logger.debug(`Stored initial transform for entity ${entityId}:`,
             transform.data,
           );
         }
@@ -135,12 +134,11 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
       const deltaY = centerObj.position.y - initialGroupCenter.current[1];
       const deltaZ = centerObj.position.z - initialGroupCenter.current[2];
 
-      console.log(`[GroupGizmoControls] Delta movement: [${deltaX}, ${deltaY}, ${deltaZ}]`);
+      logger.debug(`Delta movement: [${deltaX}, ${deltaY}, ${deltaZ}]`);
 
       // Check for NaN values and skip update if found
       if (isNaN(deltaX) || isNaN(deltaY) || isNaN(deltaZ)) {
-        console.warn(
-          '[GroupGizmoControls] Detected NaN values in delta calculation, skipping update',
+        logger.warn('Detected NaN values in delta calculation, skipping update',
         );
         return;
       }
@@ -150,7 +148,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
         selectedIds.forEach((entityId) => {
           const initialTransform = initialValues.current[entityId];
           if (!initialTransform) {
-            console.warn(`[GroupGizmoControls] No initial transform for entity ${entityId}`);
+            logger.warn(`No initial transform for entity ${entityId}`);
             return;
           }
 
@@ -159,14 +157,12 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
           const newPosY = initialTransform.position[1] + deltaY;
           const newPosZ = initialTransform.position[2] + deltaZ;
 
-          console.log(
-            `[GroupGizmoControls] Entity ${entityId}: delta=[${deltaX}, ${deltaY}, ${deltaZ}], initial=[${initialTransform.position}], new=[${newPosX}, ${newPosY}, ${newPosZ}]`,
+          logger.debug(`Entity ${entityId}: delta=[${deltaX}, ${deltaY}, ${deltaZ}], initial=[${initialTransform.position}], new=[${newPosX}, ${newPosY}, ${newPosZ}]`,
           );
 
           // Validate no NaN values before updating
           if (isNaN(newPosX) || isNaN(newPosY) || isNaN(newPosZ)) {
-            console.warn(
-              `[GroupGizmoControls] Detected NaN in position for entity ${entityId}, skipping`,
+            logger.warn(`Detected NaN in position for entity ${entityId}, skipping`,
             );
             return;
           }
@@ -251,7 +247,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
         groupCenterRef.current.scale.set(1, 1, 1);
       }
 
-      console.log(`[GroupGizmoControls] Drag ended - new stable center:`, newCenter);
+      logger.debug(`Drag ended - new stable center:`, newCenter);
 
       if (setIsTransforming) {
         setIsTransforming(false);

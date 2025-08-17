@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import type { ShapeType } from '../types/shapes';
+import { ShapeType } from '../types/shapes';
 
 import { useEntityCreation } from './useEntityCreation';
 import { useGroupSelection } from './useGroupSelection';
@@ -42,7 +42,7 @@ export const useEditorKeyboard = ({
       // Ctrl+N: Add new cube
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
-        onAddObject('Cube');
+        onAddObject(ShapeType.Cube);
       }
 
       // Ctrl+S: Save scene

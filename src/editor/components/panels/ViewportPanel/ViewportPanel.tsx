@@ -28,6 +28,7 @@ import { AxesIndicator } from './components/AxesIndicator';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
 import { GizmoModeSelector } from './components/GizmoModeSelector';
 import { ViewportHeader } from './components/ViewportHeader';
+import { Logger } from '@/core/lib/logger';
 
 export interface IViewportPanelProps {
   entityId: number | null; // selected entity - can be null
@@ -40,6 +41,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
   gizmoMode,
   setGizmoMode,
 }) => {
+  const logger = Logger.create('ViewportPanel');
   // Get all entities with a Transform from new ECS system
   const [entityIds, setEntityIds] = useState<number[]>([]);
   const [lightIds, setLightIds] = useState<number[]>([]);
@@ -125,7 +127,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
             // Ensure shadow mapping is enabled with good settings
             gl.shadowMap.enabled = true;
             gl.shadowMap.type = 2; // PCFSoftShadowMap
-            console.log('[ViewportPanel] Shadow mapping enabled with PCF soft shadows');
+            logger.debug('Shadow mapping enabled with PCF soft shadows');
           }}
         >
           {/* Selection framer: provides frame function for double-click */}
@@ -167,7 +169,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
               const isPrimary = groupSelection.isPrimarySelection(id);
               const hasMultipleSelected = groupSelection.selectedIds.length > 1;
 
-              // console.log(`[ViewportPanel] Entity ${id}: selected=${isSelected}, isPrimary=${isPrimary}, multipleSelected=${hasMultipleSelected}`);
+              // logger.debug(`Entity ${id}: selected=${isSelected}, isPrimary=${isPrimary}, multipleSelected=${hasMultipleSelected}`);
 
               return (
                 <EntityRenderer
@@ -230,13 +232,14 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 
 // Internal helper to frame/focus entity on double-click in the viewport
 const SelectionFramer: React.FC = () => {
+  const logger = Logger.create('SelectionFramer');
   const { camera } = useThree();
   const { getComponentData } = useComponentRegistry();
 
   const _frameEntity = (entityId: number) => {
-    console.log(`[SelectionFramer] frameEntity called with entityId: ${entityId}`);
+    logger.debug(`frameEntity called with entityId: ${entityId}`);
     if (!isValidEntityId(entityId)) {
-      console.log(`[SelectionFramer] Invalid entity ID: ${entityId}`);
+      logger.debug(`Invalid entity ID: ${entityId}`);
       return;
     }
 
@@ -246,14 +249,14 @@ const SelectionFramer: React.FC = () => {
       | undefined;
 
     if (!transformData) {
-      console.log(`[SelectionFramer] No transform found for entity: ${entityId}`);
+      logger.debug(`No transform found for entity: ${entityId}`);
       return;
     }
 
     const pos = transformData?.position ?? [0, 0, 0];
     const scale = transformData?.scale ?? [1, 1, 1];
 
-    console.log(`[SelectionFramer] Entity ${entityId} position:`, pos, 'scale:', scale);
+    logger.debug(`Entity ${entityId} position:`, pos, 'scale:', scale);
 
     // Calculate object size for proper framing
     const objectSize = Math.max(Math.abs(scale[0]), Math.abs(scale[1]), Math.abs(scale[2]));
@@ -264,7 +267,7 @@ const SelectionFramer: React.FC = () => {
     const fovRad = (fov * Math.PI) / 180;
     const distance = Math.max(3, (objectSize * 2.5) / Math.tan(fovRad / 2));
 
-    console.log(`[SelectionFramer] Object size: ${objectSize}, Distance: ${distance}`);
+    logger.debug(`Object size: ${objectSize}, Distance: ${distance}`);
 
     // Target position (object center)
     const target = new THREE.Vector3(pos[0], pos[1], pos[2]);
@@ -278,7 +281,7 @@ const SelectionFramer: React.FC = () => {
     const cameraOffset = currentDirection.clone().multiplyScalar(-distance);
     const newCameraPosition = target.clone().add(cameraOffset);
 
-    console.log(`[SelectionFramer] Target:`, target, 'New camera position:', newCameraPosition);
+    logger.debug(`Target:`, target, 'New camera position:', newCameraPosition);
 
     // Smooth animation
     const startPosition = camera.position.clone();
@@ -301,7 +304,7 @@ const SelectionFramer: React.FC = () => {
       if (t < 1) {
         requestAnimationFrame(animate);
       } else {
-        console.log(`[SelectionFramer] Animation complete - camera at:`, camera.position);
+        logger.debug(`Animation complete - camera at:`, camera.position);
       }
     };
 
@@ -314,7 +317,7 @@ const SelectionFramer: React.FC = () => {
   useEffect(() => {
     (window as Window & { __frameEntity?: (entityId: number) => void }).__frameEntity =
       _frameEntity;
-    console.log('[SelectionFramer] Frame function registered on window');
+    logger.debug('Frame function registered on window');
   }, [camera, getComponentData]);
 
   return null;

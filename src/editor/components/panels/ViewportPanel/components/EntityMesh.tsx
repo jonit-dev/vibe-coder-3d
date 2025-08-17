@@ -3,7 +3,7 @@ import { ModelLoadingMesh } from '@/editor/components/shared/ModelLoadingMesh';
 import { useGLTF } from '@react-three/drei';
 import { ThreeEvent, useFrame } from '@react-three/fiber';
 import React, { Suspense, useCallback, useMemo } from 'react';
-import type { Group, Mesh } from 'three';
+import type { Group, Mesh, Object3D } from 'three';
 
 import { CameraEntity } from './CameraEntity';
 import { useEntityRegistration } from './hooks/useEntityRegistration';
@@ -12,17 +12,20 @@ import { LightEntity } from './LightEntity';
 import { MaterialRenderer } from './MaterialRenderer';
 import type { IEntityMeshProps } from './types';
 import { isMeshRendererData } from './utils';
+import { Logger } from '@/core/lib/logger';
+import type { IRenderingContributions } from '@/core/types/entities';
 
 // Custom Model Mesh Component - FIXED VERSION
 const CustomModelMesh: React.FC<{
   modelPath: string;
-  meshRef: React.RefObject<any>;
-  renderingContributions: any;
+  meshRef: React.RefObject<Group | Mesh | Object3D>;
+  renderingContributions: IRenderingContributions;
   entityId: number;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
 }> = React.memo(
   ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick, onMeshDoubleClick }) => {
+    const logger = Logger.create('CustomModelMesh');
     try {
       const { scene } = useGLTF(modelPath);
 
@@ -88,7 +91,7 @@ const CustomModelMesh: React.FC<{
         </group>
       );
     } catch (error) {
-      console.error('[CustomModelMesh] Failed to load model:', {
+      logger.error('Failed to load model:', {
         entityId,
         modelPath,
         error: (error as Error)?.message || 'Unknown error',
@@ -274,7 +277,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     const prevRC = prevProps.renderingContributions;
     const nextRC = nextProps.renderingContributions;
     if (
-      prevRC.meshType !== nextRC.meshType ||
+      prevProps.meshType !== nextProps.meshType ||
       prevRC.castShadow !== nextRC.castShadow ||
       prevRC.receiveShadow !== nextRC.receiveShadow ||
       prevRC.visible !== nextRC.visible ||

@@ -1,33 +1,25 @@
 import type { ThreeEvent } from '@react-three/fiber';
+import type { Group, Mesh, Object3D } from 'three';
+import type {
+  IEntityComponent,
+  IRenderingContributions,
+  IMeshRendererData,
+  ICameraData,
+  ILightData,
+} from '@/core/types/entities';
 
-// Component data interfaces
-export interface IMeshRendererData {
-  modelPath?: string;
-}
+// Re-export for backward compatibility
+export type { IMeshRendererData, ICameraData, ILightData };
 
-export interface ICameraData {
-  fov?: number;
-  near?: number;
-  far?: number;
-}
-
-export interface ILightData {
-  lightType?: 'directional' | 'point' | 'spot' | 'ambient';
-  color?: string | { r: number; g: number; b: number };
-  intensity?: number;
-  range?: number;
-  angle?: number;
-}
-
-// Props interface
+// Enhanced props interface with proper typing
 export interface IEntityMeshProps {
-  meshRef: React.RefObject<any>;
+  meshRef: React.RefObject<Group | Mesh | Object3D>;
   meshType: string | null;
-  renderingContributions: any;
+  renderingContributions: IRenderingContributions;
   entityColor: string;
   entityId: number;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
   isPlaying?: boolean;
-  entityComponents?: any[];
+  entityComponents?: IEntityComponent[];
 }

@@ -11,6 +11,7 @@ import { EntityId } from '@core/lib/ecs/types';
 import { getStringFromHash, storeString } from '@core/lib/ecs/utils/stringHashUtils';
 import { ScriptExecutor, IScriptExecutionResult } from '@core/lib/scripting/ScriptExecutor';
 import { ITimeAPI, IInputAPI } from '@core/lib/scripting/ScriptAPI';
+import { Logger } from '@core/lib/logger';
 
 // BitECS Script component type structure
 interface IBitECSScriptComponent {
@@ -37,6 +38,9 @@ interface IBitECSScriptComponent {
 // Get world instance
 const world = ECSWorld.getInstance().getWorld();
 
+// Create logger for this system
+const logger = Logger.create('ScriptSystem');
+
 // Lazy-initialize the query to avoid module-load timing issues
 let scriptQuery: ReturnType<typeof defineQuery> | null = null;
 
@@ -47,7 +51,7 @@ function getScriptQuery() {
       'Script',
     ) as IBitECSScriptComponent | null;
     if (!scriptComponent) {
-      console.warn('[ScriptSystem] Script component not yet registered, skipping update');
+      logger.warn('Script component not yet registered, skipping update');
       return null;
     }
     scriptQuery = defineQuery([scriptComponent]);
@@ -119,7 +123,7 @@ function entityNeedsCompilation(eid: EntityId): boolean {
   const isCompiled = scriptExecutor.hasCompiled(scriptId);
   const needsCompilationFlag = scriptComponent.needsCompilation[eid] === 1;
 
-  console.log(`[ScriptSystem] Checking compilation need for entity ${eid}:`, {
+  logger.debug(`Checking compilation need for entity ${eid}:`, {
     codeHash,
     codeLength: code?.length || 0,
     isEmpty,
@@ -133,15 +137,15 @@ function entityNeedsCompilation(eid: EntityId): boolean {
 
   // Empty scripts with no execution flags don't need compilation
   if (isEmpty && !hasExecutionFlags) {
-    console.log(
-      `[ScriptSystem] Entity ${eid}: Empty script with no execution flags, skipping compilation`,
+    logger.debug(
+      `Entity ${eid}: Empty script with no execution flags, skipping compilation`,
     );
     return false;
   }
 
   // Check if script is already compiled and up to date
   const needsCompilation = !isCompiled || needsCompilationFlag;
-  console.log(`[ScriptSystem] Entity ${eid}: Needs compilation = ${needsCompilation}`);
+  logger.debug(`Entity ${eid}: Needs compilation = ${needsCompilation}`);
   return needsCompilation;
 }
 
@@ -176,7 +180,7 @@ function compileScriptForEntity(eid: EntityId): boolean {
   const code = getStringFromHash(codeHash);
   const scriptId = `entity_${eid}`;
 
-  console.log(`[ScriptSystem] Compiling script for entity ${eid}:`, {
+  logger.debug(`Compiling script for entity ${eid}:`, {
     codeHash,
     codeLength: code?.length || 0,
     codePreview: code?.substring(0, 100) || '(empty)',
@@ -187,7 +191,7 @@ function compileScriptForEntity(eid: EntityId): boolean {
 
   if (!code || code.trim() === '') {
     // For empty scripts, register a no-op function so execution doesn't fail
-    console.log(`[ScriptSystem] Compiling empty script for entity ${eid} as no-op`);
+    logger.debug(`Compiling empty script for entity ${eid} as no-op`);
     const result: IScriptExecutionResult = scriptExecutor.compileScript(
       '// Empty script',
       scriptId,
@@ -200,20 +204,20 @@ function compileScriptForEntity(eid: EntityId): boolean {
 
     if (result.success) {
       scriptComponent.lastErrorMessageHash[eid] = 0; // Clear error
-      console.log(`[ScriptSystem] Successfully compiled empty script for entity ${eid}`);
+      logger.debug(`Successfully compiled empty script for entity ${eid}`);
       return true;
     } else {
       const errorHash = storeString(result.error || 'Unknown compilation error');
       scriptComponent.lastErrorMessageHash[eid] = errorHash;
-      console.error(
-        `[ScriptSystem] Failed to compile empty script for entity ${eid}:`,
+      logger.error(
+        `Failed to compile empty script for entity ${eid}:`,
         result.error,
       );
       return false;
     }
   }
 
-  console.log(`[ScriptSystem] Compiling script with content for entity ${eid}`);
+  logger.debug(`Compiling script with content for entity ${eid}`);
   const result: IScriptExecutionResult = scriptExecutor.compileScript(code, scriptId);
 
   // Update component with compilation results
@@ -224,11 +228,11 @@ function compileScriptForEntity(eid: EntityId): boolean {
   if (result.error) {
     const errorHash = storeString(result.error);
     scriptComponent.lastErrorMessageHash[eid] = errorHash;
-    console.error(`[ScriptSystem] Compilation error for entity ${eid}:`, result.error);
+    logger.error(`Compilation error for entity ${eid}:`, result.error);
     return false;
   } else {
     scriptComponent.lastErrorMessageHash[eid] = 0; // Clear error
-    console.log(`[ScriptSystem] Successfully compiled script for entity ${eid}`);
+    logger.debug(`Successfully compiled script for entity ${eid}`);
     return true;
   }
 }
@@ -249,17 +253,17 @@ function executeScriptLifecycle(
   // Skip if disabled
   if (!scriptComponent.enabled[eid]) return;
 
-  console.log(`[ScriptSystem] Attempting to execute ${method} for entity ${eid}`);
+  logger.debug(`Attempting to execute ${method} for entity ${eid}`);
 
   // Ensure script is compiled before execution
   if (!ensureScriptCompiled(eid)) {
-    console.error(`[ScriptSystem] Script compilation failed for entity ${eid}, skipping execution`);
+    logger.error(`Script compilation failed for entity ${eid}, skipping execution`);
     return; // Compilation failed
   }
 
   // Skip if script has errors after compilation attempt
   if (scriptComponent.hasErrors[eid]) {
-    console.error(`[ScriptSystem] Script has errors for entity ${eid}, skipping execution`);
+    logger.error(`Script has errors for entity ${eid}, skipping execution`);
     return;
   }
 
@@ -276,10 +280,10 @@ function executeScriptLifecycle(
       parameters = JSON.parse(parametersStr);
     }
   } catch (error) {
-    console.warn(`[ScriptSystem] Failed to parse parameters for entity ${eid}:`, error);
+    logger.warn(`Failed to parse parameters for entity ${eid}:`, error);
   }
 
-  console.log(`[ScriptSystem] Executing script ${scriptId} method ${method} with parameters:`, {
+  logger.debug(`Executing script ${scriptId} method ${method} with parameters:`, {
     maxExecutionTime,
     parameters,
     deltaTime,
@@ -297,7 +301,7 @@ function executeScriptLifecycle(
     method,
   );
 
-  console.log(`[ScriptSystem] Script execution result for entity ${eid}:`, {
+  logger.debug(`Script execution result for entity ${eid}:`, {
     method,
     success: result.success,
     executionTime: result.executionTime,
@@ -318,7 +322,7 @@ function executeScriptLifecycle(
     if (result.error) {
       const errorHash = storeString(result.error);
       scriptComponent.lastErrorMessageHash[eid] = errorHash;
-      console.error(`[ScriptSystem] Execution error for entity ${eid} (${method}):`, result.error);
+      logger.error(`Execution error for entity ${eid} (${method}):`, result.error);
     }
   } else {
     // Clear any previous errors if execution was successful
@@ -345,7 +349,7 @@ function handleNewScriptEntities(): void {
   const enteredEntities = enterQuery(query)(world);
   if (enteredEntities && enteredEntities.length > 0) {
     for (const eid of enteredEntities) {
-      console.log(`[ScriptSystem] Script component added to entity ${eid}`);
+      logger.debug(`Script component added to entity ${eid}`);
 
       // Mark for compilation if script has code and needs compilation
       if (entityNeedsCompilation(eid)) {
@@ -363,7 +367,7 @@ function handleNewScriptEntities(): void {
   const exitedEntities = exitQuery(query)(world);
   if (exitedEntities && exitedEntities.length > 0) {
     for (const eid of exitedEntities) {
-      console.log(`[ScriptSystem] Script component removed from entity ${eid}`);
+      logger.debug(`Script component removed from entity ${eid}`);
 
       // Execute onDestroy before cleanup
       executeScriptLifecycle(eid, 'onDestroy');
@@ -526,7 +530,7 @@ export function recompileAllScripts(): void {
   // Clear all cached scripts
   scriptExecutor.clearAll();
 
-  console.log('[ScriptSystem] Marked all scripts for recompilation');
+  logger.info('Marked all scripts for recompilation');
 }
 
 /**

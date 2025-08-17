@@ -7,6 +7,7 @@ import { addComponent, defineComponent, hasComponent, removeComponent } from 'bi
 import { z } from 'zod';
 
 import { emit } from '../events';
+import { Logger } from '../logger';
 import { ECSWorld } from './World';
 import { EntityId } from './types';
 
@@ -140,6 +141,7 @@ export class ComponentRegistry {
   private components = new Map<string, IComponentDescriptor>();
   private bitECSComponents = new Map<string, unknown>();
   private world = ECSWorld.getInstance().getWorld();
+  private logger = Logger.create('ComponentRegistry');
 
   private constructor() {}
 
@@ -155,7 +157,7 @@ export class ComponentRegistry {
    */
   register<TData>(descriptor: IComponentDescriptor<TData>): void {
     if (this.components.has(descriptor.id)) {
-      console.warn(`Component ${descriptor.id} is already registered`);
+      this.logger.warn(`Component ${descriptor.id} is already registered`);
       return;
     }
 
@@ -169,7 +171,7 @@ export class ComponentRegistry {
       this.bitECSComponents.set(descriptor.id, bitECSComponent);
     }
 
-    console.log(`Registered component: ${descriptor.name} (${descriptor.id})`);
+    this.logger.info(`Registered component: ${descriptor.name} (${descriptor.id})`);
   }
 
   /**

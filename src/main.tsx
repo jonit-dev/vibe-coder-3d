@@ -3,9 +3,18 @@ import { createRoot } from 'react-dom/client';
 
 import App from './App';
 import './styles/index.css';
+import { Logger } from '@/core/lib/logger';
+
+// Configure logger based on environment
+if (import.meta.env.PROD) {
+  Logger.configureForProduction();
+} else {
+  Logger.configureForDevelopment();
+}
 
 // Initialize the new ECS system
-console.log('[Main] 🚀 ECS system ready with singleton managers...');
+const logger = Logger.create('Main');
+logger.info('🚀 ECS system ready with enhanced logging...');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
