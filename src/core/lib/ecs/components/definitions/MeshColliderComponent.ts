@@ -56,7 +56,7 @@ export const meshColliderComponent = ComponentFactory.create({
     restitution: Types.f32,
     density: Types.f32,
   },
-  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => {
+  serialize: (eid: EntityId, component: any) => {
     // Map shapeType number to ColliderType string
     const shapeTypeMap: { [key: number]: ColliderType } = {
       0: 'box',
@@ -91,7 +91,7 @@ export const meshColliderComponent = ComponentFactory.create({
       },
     };
   },
-  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
+  deserialize: (eid: EntityId, data, component: any) => {
     // Map ColliderType string to shapeType number
     const colliderTypeMap: { [key in ColliderType]: number } = {
       box: 0,

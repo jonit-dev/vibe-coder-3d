@@ -25,7 +25,6 @@ import {
   type MeshColliderData,
   type MeshRendererData,
   type RigidBodyData,
-  type ScriptData,
   type SoundData,
   type TransformData,
 } from './definitions';

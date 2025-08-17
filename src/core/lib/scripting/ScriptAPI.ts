@@ -424,7 +424,7 @@ const createSafeThreeJSProxy = <T extends object>(target: T, allowedProps: strin
  * Creates Three.js API with safe access to entity's 3D objects
  */
 export const createThreeJSAPI = (
-  entityId: EntityId,
+  _entityId: EntityId,
   getMeshRef: () => THREE.Object3D | null,
   getScene: () => THREE.Scene | null,
 ): IThreeJSAPI => {

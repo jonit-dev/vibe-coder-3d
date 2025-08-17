@@ -124,7 +124,7 @@ export const cameraComponent = ComponentFactory.create({
     rotationSmoothing: Types.f32,
     needsUpdate: Types.ui8,
   },
-  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => {
+  serialize: (eid: EntityId, component: any) => {
     const serialized = {
       fov: component.fov[eid],
       near: component.near[eid],
@@ -176,7 +176,7 @@ export const cameraComponent = ComponentFactory.create({
     };
     return serialized;
   },
-  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
+  deserialize: (eid: EntityId, data, component: any) => {
     component.fov[eid] = data.fov;
     component.near[eid] = data.near;
     component.far[eid] = data.far;

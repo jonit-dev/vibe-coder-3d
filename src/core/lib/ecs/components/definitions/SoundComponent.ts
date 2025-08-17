@@ -79,7 +79,7 @@ export const soundComponent = ComponentFactory.create({
     needsUpdate: Types.ui8,
     needsReload: Types.ui8,
   },
-  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => ({
+  serialize: (eid: EntityId, component: any) => ({
     audioPath: getStringFromHash(component.audioPathHash[eid]),
     enabled: Boolean(component.enabled[eid]),
     autoplay: Boolean(component.autoplay[eid]),
@@ -105,7 +105,7 @@ export const soundComponent = ComponentFactory.create({
     
     format: getStringFromHash(component.formatHash[eid]) || undefined,
   }),
-  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
+  deserialize: (eid: EntityId, data, component: any) => {
     // Core properties
     component.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
     component.autoplay[eid] = (data.autoplay ?? false) ? 1 : 0;

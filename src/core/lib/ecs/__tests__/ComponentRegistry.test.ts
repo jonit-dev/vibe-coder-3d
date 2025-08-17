@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentRegistry, ComponentFactory, ComponentCategory } from '../ComponentRegistry';
-import { EntityManager } from '../EntityManager';
 import { ECSWorld } from '../World';
 import { z } from 'zod';
 import { Types } from 'bitecs';
@@ -73,11 +72,11 @@ describe('ComponentRegistry', () => {
           ry: Types.f32,
           rz: Types.f32,
         },
-        serialize: (eid, component) => ({
+        serialize: (eid, component: any) => ({
           position: [component.x[eid], component.y[eid], component.z[eid]],
           rotation: [component.rx[eid], component.ry[eid], component.rz[eid]],
         }),
-        deserialize: (eid, data, component) => {
+        deserialize: (eid, data, component: any) => {
           component.x[eid] = data.position[0];
           component.y[eid] = data.position[1];
           component.z[eid] = data.position[2];
@@ -238,7 +237,7 @@ describe('ComponentRegistry', () => {
       const bitECSComponent = registry.getBitECSComponent('QueryComponent');
 
       expect(bitECSComponent).toBeDefined();
-      expect(bitECSComponent.value).toBeDefined(); // Should have the field
+      expect((bitECSComponent as any).value).toBeDefined(); // Should have the field
     });
   });
 

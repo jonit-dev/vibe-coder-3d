@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
-import { useEntity, useEntityQuery } from '../useEntity';
+import { useEntity } from '../useEntity';
 
 // Mock the component registry
 vi.mock('@core/lib/ecs/ComponentRegistry', () => ({
@@ -135,8 +135,8 @@ describe('useEntity', () => {
     it('should handle null to valid entityId transition', () => {
       mockHasComponent.mockReturnValue(true);
 
-      const { result, rerender } = renderHook(({ entityId }) => useEntity(entityId, 'Transform'), {
-        initialProps: { entityId: null },
+      const { result, rerender } = renderHook(({ entityId }: { entityId: number | null }) => useEntity(entityId, 'Transform'), {
+        initialProps: { entityId: null as number | null },
       });
 
       expect(result.current).toBe(false);
@@ -151,8 +151,8 @@ describe('useEntity', () => {
     it('should handle valid to null entityId transition', () => {
       mockHasComponent.mockReturnValue(true);
 
-      const { result, rerender } = renderHook(({ entityId }) => useEntity(entityId, 'Transform'), {
-        initialProps: { entityId: 1 },
+      const { result, rerender } = renderHook(({ entityId }: { entityId: number | null }) => useEntity(entityId, 'Transform'), {
+        initialProps: { entityId: 1 as number | null },
       });
 
       expect(result.current).toBe(true);

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { addEntity } from 'bitecs';
 
 import { EntityId } from '../lib/ecs/types';
 import { ECSWorld } from '../lib/ecs/World';
@@ -50,7 +51,7 @@ export const useSceneState = () => {
   // Create a new entity with optional components
   const createEntity = useCallback(
     (components?: Array<{ type: string; data: unknown }>) => {
-      const entityId = world.addEntity();
+      const entityId = addEntity(world);
 
       // Add components if provided
       if (components) {

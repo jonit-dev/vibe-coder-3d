@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useRef } from 'react';
 
 import {
   registerTag,
@@ -142,7 +141,7 @@ describe('tags system', () => {
     });
 
     it('should return strongly typed refs', () => {
-      const ref = { current: null } as React.RefObject<HTMLDivElement>;
+      const ref = { current: null } as unknown as React.RefObject<HTMLDivElement>;
       registerTag('ui-element', ref);
 
       const nodes = getNodes<HTMLDivElement>('ui-element');

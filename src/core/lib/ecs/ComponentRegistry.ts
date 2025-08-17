@@ -3,7 +3,7 @@
  * Provides a unified way to register and manage ECS components with minimal boilerplate
  */
 
-import { addComponent, defineComponent, hasComponent, removeComponent } from 'bitecs';
+import { addComponent, defineComponent, hasComponent, removeComponent, Component } from 'bitecs';
 import { z } from 'zod';
 
 import { emit } from '../events';
@@ -138,8 +138,8 @@ export class ComponentFactory {
 // Global component registry
 export class ComponentRegistry {
   private static instance: ComponentRegistry;
-  private components = new Map<string, IComponentDescriptor>();
-  private bitECSComponents = new Map<string, unknown>();
+  private components = new Map<string, IComponentDescriptor<any>>();
+  private bitECSComponents = new Map<string, Component>();
   private world = ECSWorld.getInstance().getWorld();
   private logger = Logger.create('ComponentRegistry');
 
@@ -165,7 +165,7 @@ export class ComponentRegistry {
 
     // Store BitECS component reference
     const bitECSComponent = (
-      descriptor as IComponentDescriptor<TData> & { _bitECSComponent: unknown }
+      descriptor as IComponentDescriptor<TData> & { _bitECSComponent: Component }
     )._bitECSComponent;
     if (bitECSComponent) {
       this.bitECSComponents.set(descriptor.id, bitECSComponent);
@@ -184,7 +184,7 @@ export class ComponentRegistry {
   /**
    * Get all components in a category
    */
-  getByCategory(category: ComponentCategory): IComponentDescriptor[] {
+  getByCategory(category: ComponentCategory): IComponentDescriptor<any>[] {
     return Array.from(this.components.values()).filter((comp) => comp.category === category);
   }
 

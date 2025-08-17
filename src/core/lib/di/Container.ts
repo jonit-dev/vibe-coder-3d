@@ -16,7 +16,7 @@ interface IServiceDefinition<T = any> {
  * Simple dependency injection container to replace singleton pattern
  */
 export class Container {
-  private services = new Map<string | Constructor, IServiceDefinition>();
+  private services = new Map<string | Constructor<any>, IServiceDefinition>();
 
   /**
    * Register a service with the container
@@ -28,7 +28,7 @@ export class Container {
   ): void {
     this.services.set(token, {
       factory,
-      singleton: options.singleton,
+      singleton: options.singleton ?? true,
     });
   }
 
@@ -75,7 +75,7 @@ export class Container {
   /**
    * Check if a service is registered
    */
-  has(token: string | Constructor): boolean {
+  has(token: string | Constructor<any>): boolean {
     return this.services.has(token);
   }
 

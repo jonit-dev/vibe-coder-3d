@@ -33,7 +33,7 @@ export const transformComponent = ComponentFactory.create({
     scaleY: Types.f32,
     scaleZ: Types.f32,
   },
-  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => ({
+  serialize: (eid: EntityId, component: any) => ({
     position: [component.positionX[eid], component.positionY[eid], component.positionZ[eid]] as [
       number,
       number,
@@ -50,7 +50,7 @@ export const transformComponent = ComponentFactory.create({
       number,
     ],
   }),
-  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
+  deserialize: (eid: EntityId, data, component: any) => {
     component.positionX[eid] = data.position[0];
     component.positionY[eid] = data.position[1];
     component.positionZ[eid] = data.position[2];

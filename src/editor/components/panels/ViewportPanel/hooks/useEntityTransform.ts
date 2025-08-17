@@ -61,8 +61,9 @@ export const useEntityTransform = ({
 
   // Sync mesh transform from ComponentManager (single source of truth)
   // CRITICAL: Only sync when transform data actually changes, not on every render
+  // Allow sync during play mode to handle position restoration on stop
   useEffect(() => {
-    if (meshRef.current && !isTransforming && !isPlaying && transformData) {
+    if (meshRef.current && !isTransforming && transformData) {
       const { position, rotation, scale } = transformData;
 
       // Create a more efficient hash using simple string concatenation
@@ -201,18 +202,16 @@ export const useEntityTransform = ({
           ? 'No mesh ref'
           : isTransforming
             ? 'Currently transforming'
-            : isPlaying
-              ? 'Playing mode'
-              : !transformData
-                ? 'No transform data'
-                : 'Unknown',
+            : !transformData
+              ? 'No transform data'
+              : 'Unknown',
       });
     }
-  }, [transformData, isTransforming, isPlaying]);
+  }, [transformData, isTransforming]);
 
   // ADDITIONAL SYNC: Force sync when meshRef becomes available (important for custom models)
   useEffect(() => {
-    if (meshRef.current && transformData && !isTransforming && !isPlaying) {
+    if (meshRef.current && transformData && !isTransforming) {
       const { position, rotation, scale } = transformData;
 
       logger.debug(`Force sync on meshRef availability:`, {

@@ -87,7 +87,7 @@ export const scriptComponent = ComponentFactory.create({
     needsCompilation: Types.ui8,
     needsExecution: Types.ui8,
   },
-  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => ({
+  serialize: (eid: EntityId, component: any) => ({
     code: getStringFromHash(component.codeHash[eid]),
     language: (component.language[eid] === 0 ? 'javascript' : 'typescript') as
       | 'javascript'
@@ -119,7 +119,7 @@ export const scriptComponent = ComponentFactory.create({
     lastModified: component.lastModified[eid],
     compiledCode: getStringFromHash(component.compiledCodeHash[eid]) || '',
   }),
-  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
+  deserialize: (eid: EntityId, data, component: any) => {
     // Core properties
     component.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
     component.language[eid] = data.language === 'typescript' ? 1 : 0;
@@ -187,11 +187,12 @@ function onUpdate(deltaTime) {
     // Timestamps
     component.lastModified[eid] = data.lastModified ?? Date.now();
 
-    // Check if script needs compilation
-    const hasExecutionFlags =
-      (data.executeOnStart ?? false) ||
-      (data.executeInUpdate ?? true) ||
-      (data.executeOnEnable ?? false);
+    // Check if script needs compilation (flags indicate the script should be active)
+    if ((data.executeOnStart ?? false) ||
+        (data.executeInUpdate ?? true) ||
+        (data.executeOnEnable ?? false)) {
+      component.needsCompilation[eid] = 1;
+    }
 
     // Mark for compilation if code was provided OR if script has execution flags enabled
     // Always mark new scripts with default code for compilation

@@ -40,7 +40,7 @@ export const terrainComponent = ComponentFactory.create<TerrainData>({
     noisePersistence: Types.f32,
     noiseLacunarity: Types.f32,
   },
-  serialize: (eid: EntityId, component: Record<string, Record<number, number>>): TerrainData => ({
+  serialize: (eid: EntityId, component: any): TerrainData => ({
     size: [component.sizeX[eid], component.sizeZ[eid]],
     segments: [component.segmentsX[eid], component.segmentsZ[eid]],
     heightScale: component.heightScale[eid],
@@ -54,7 +54,7 @@ export const terrainComponent = ComponentFactory.create<TerrainData>({
   deserialize: (
     eid: EntityId,
     data: TerrainData,
-    component: Record<string, Record<number, number>>,
+    component: any,
   ) => {
     const defaults = TerrainSchema.parse(data);
     component.sizeX[eid] = defaults.size[0];

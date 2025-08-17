@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useRef } from 'react';
+import * as THREE from 'three';
 
 import * as tagsLib from '@/core/lib/tags';
 import { useTag } from '../useTag';

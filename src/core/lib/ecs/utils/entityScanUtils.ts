@@ -3,7 +3,7 @@
  * Provides efficient entity lookup and scanning operations
  */
 
-import { hasComponent } from 'bitecs';
+import { hasComponent, Component } from 'bitecs';
 
 import { EntityMeta } from '../BitECSComponents';
 import { EntityId } from '../types';
@@ -37,7 +37,7 @@ export const scanAllEntities = (
  */
 export const scanEntitiesWithComponent = (
   world: Record<string, unknown>,
-  component: unknown,
+  component: Component,
   maxScan = DEFAULT_MAX_ENTITY_SCAN,
 ): EntityId[] => {
   const entities: EntityId[] = [];

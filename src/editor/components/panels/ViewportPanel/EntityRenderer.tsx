@@ -235,13 +235,22 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       [entityComponents.find((c) => c.type === 'Terrain')?.data],
     );
 
-    // When terrain SHAPE params change, force-remount physics body so trimesh collider rebuilds
-    // Only include parameters that affect the physical shape, NOT position/transform
+    // Force-remount physics body when terrain SHAPE params change OR when physics stops
+    // Include a generation counter that increments when transitioning from playing to stopped
+    const [physicsGeneration, setPhysicsGeneration] = React.useState(0);
+    React.useEffect(() => {
+      // Only increment when transitioning from playing to not-playing (physics stop)
+      if (!isPlaying) {
+        setPhysicsGeneration(prev => prev + 1);
+      }
+    }, [isPlaying]);
+
     const terrainColliderKey = React.useMemo(() => {
       const t = terrainComponent;
-      if (!t) return undefined;
+      const baseKey = `rb-entity-${entityId}-gen-${physicsGeneration}`;
+      if (!t) return baseKey;
       try {
-        return `rb-terrain-${entityId}-${[
+        return `${baseKey}-terrain-${[
           ...(Array.isArray(t.size) ? t.size : []),
           ...(Array.isArray(t.segments) ? t.segments : []),
           t.heightScale,
@@ -253,9 +262,9 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
           t.noiseLacunarity,
         ].join('|')}`;
       } catch {
-        return undefined;
+        return baseKey;
       }
-    }, [terrainComponent, entityId]);
+    }, [terrainComponent, entityId, physicsGeneration]);
     // Enhanced collider config with terrain heightfield data
     const enhancedColliderConfig = React.useMemo(() => {
       // Handle terrain entities without MeshCollider component (auto-detect)
@@ -392,18 +401,16 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
             rotation={rotationRadians}
             scale={scale}
             colliders={
-              // If heightfield (unsupported in our rapier build), fall back to trimesh auto-collider
+              // Use false to disable auto-colliders and rely on custom colliders below
               enhancedColliderConfig?.type === 'heightfield'
-                ? 'trimesh'
+                ? false
                 : hasCustomColliders || hasEffectiveCustomColliders
                   ? false
                   : (colliderType as 'ball' | 'cuboid' | 'hull' | 'trimesh')
             }
           >
-            {/* Custom Colliders based on MeshCollider settings (skip heightfield) */}
-            {enhancedColliderConfig?.type !== 'heightfield' && (
-              <EntityColliders colliderConfig={enhancedColliderConfig} />
-            )}
+            {/* Custom Colliders - now properly handling heightfield */}
+            <EntityColliders colliderConfig={enhancedColliderConfig} />
             {meshContent}
           </RigidBody>
         ) : (

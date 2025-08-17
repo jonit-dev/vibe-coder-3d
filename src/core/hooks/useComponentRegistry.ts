@@ -99,7 +99,7 @@ export function useComponentRegistry(): IComponentRegistryHook {
 
   const getComponentsByCategory = useCallback((category: string): string[] => {
     return componentRegistry
-      .getByCategory(category as keyof typeof ComponentCategory)
+      .getByCategory(category as ComponentCategory)
       .map((comp) => comp.id);
   }, []);
 

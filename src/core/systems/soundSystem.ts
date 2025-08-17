@@ -15,7 +15,7 @@ let wasPlayingMode = false;
  * Sound system - processes sound components during play mode
  * Handles autoplay triggering and future sound system features
  */
-export function soundSystem(deltaTime: number, isPlaying?: boolean): number {
+export function soundSystem(_deltaTime: number, isPlaying?: boolean): number {
   let processedCount = 0;
 
   // Initialize on first run

@@ -84,7 +84,7 @@ export const meshRendererComponent = ComponentFactory.create({
     emissiveTextureHash: Types.ui32,
     occlusionTextureHash: Types.ui32,
   },
-  serialize: (eid: EntityId, component: Record<string, Record<number, number>>) => ({
+  serialize: (eid: EntityId, component: any) => ({
     meshId: getStringFromHash(component.meshIdHash[eid]),
     materialId: getStringFromHash(component.materialIdHash[eid]),
     enabled: Boolean(component.enabled[eid]),
@@ -128,7 +128,7 @@ export const meshRendererComponent = ComponentFactory.create({
       occlusionTexture: getStringFromHash(component.occlusionTextureHash[eid]) || undefined,
     },
   }),
-  deserialize: (eid: EntityId, data, component: Record<string, Record<number, number>>) => {
+  deserialize: (eid: EntityId, data, component: any) => {
     component.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
     component.castShadows[eid] = (data.castShadows ?? true) ? 1 : 0;
     component.receiveShadows[eid] = (data.receiveShadows ?? true) ? 1 : 0;
