@@ -1,4 +1,4 @@
-import { BallCollider, CuboidCollider, HeightfieldCollider } from '@react-three/rapier';
+import { BallCollider, CuboidCollider, TrimeshCollider } from '@react-three/rapier';
 import React from 'react';
 
 interface IColliderSize {
@@ -21,6 +21,7 @@ interface IEntityCollidersProps {
       widthSegments: number;
       depthSegments: number;
       heights: number[];
+      positions?: Float32Array;
       scale: { x: number; y: number; z: number };
     };
   } | null;
@@ -54,19 +55,64 @@ export const EntityColliders: React.FC<IEntityCollidersProps> = React.memo(({ co
           sensor={isTrigger}
         />
       )}
-      {type === 'heightfield' && colliderConfig.terrain && (
-        <HeightfieldCollider
-          args={[
-            // react-three-rapier expects rows (samples on Z) and cols (samples on X)
-            colliderConfig.terrain.depthSegments + 1,
-            colliderConfig.terrain.widthSegments + 1,
-            colliderConfig.terrain.heights,
-            colliderConfig.terrain.scale,
-          ]}
-          position={center}
-          sensor={isTrigger}
-        />
-      )}
+      {type === 'heightfield' &&
+        colliderConfig.terrain &&
+        (() => {
+          const rows = (colliderConfig.terrain.depthSegments ?? 0) + 1; // Z samples
+          const cols = (colliderConfig.terrain.widthSegments ?? 0) + 1; // X samples
+          const heights = colliderConfig.terrain.heights;
+          const basePositions = colliderConfig.terrain.positions;
+
+          const expected = rows * cols;
+          const isValidHeights =
+            Array.isArray(heights) &&
+            heights.length === expected &&
+            heights.every((h) => Number.isFinite(h));
+
+          if (basePositions && isValidHeights) {
+            const vertCount = expected;
+            const vertices = new Float32Array(vertCount * 3);
+            for (let i = 0; i < vertCount; i++) {
+              vertices[i * 3 + 0] = basePositions[i * 3 + 0];
+              vertices[i * 3 + 1] = (heights as number[])[i];
+              vertices[i * 3 + 2] = basePositions[i * 3 + 2];
+            }
+
+            // Generate grid indices
+            const quadW = cols - 1;
+            const quadH = rows - 1;
+            const triCount = quadW * quadH * 2;
+            const indices = new Uint32Array(triCount * 3);
+            let idx = 0;
+            for (let r = 0; r < quadH; r++) {
+              for (let c = 0; c < quadW; c++) {
+                const i0 = r * cols + c;
+                const i1 = i0 + 1;
+                const i2 = i0 + cols;
+                const i3 = i2 + 1;
+                // two triangles (i0,i1,i2) and (i1,i3,i2)
+                indices[idx++] = i0;
+                indices[idx++] = i1;
+                indices[idx++] = i2;
+                indices[idx++] = i1;
+                indices[idx++] = i3;
+                indices[idx++] = i2;
+              }
+            }
+
+            return (
+              <TrimeshCollider args={[vertices, indices]} position={center} sensor={isTrigger} />
+            );
+          }
+
+          // Fallback simple ground to avoid crash if positions missing
+          const halfW = (size?.width ?? cols) / 2;
+          const halfD = (size?.depth ?? rows) / 2;
+          const halfH = Math.max(0.05, (size?.height ?? 0.1) / 2);
+          return (
+            <CuboidCollider args={[halfW, halfH, halfD]} position={center} sensor={isTrigger} />
+          );
+        })()}
       {(type === 'convex' || type === 'mesh') && (
         <CuboidCollider args={[0.5, 0.5, 0.5]} position={center} sensor={isTrigger} />
       )}

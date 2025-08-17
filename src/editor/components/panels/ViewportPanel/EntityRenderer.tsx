@@ -1,13 +1,10 @@
 import type { ThreeEvent } from '@react-three/fiber';
-import { RigidBody } from '@react-three/rapier';
 import React from 'react';
-import * as THREE from 'three';
 import type { Mesh } from 'three';
 
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { useEditorStore } from '@/editor/store/editorStore';
 
-import { ColliderVisualization } from './ColliderVisualization';
 import { GizmoControls } from './GizmoControls';
 import { EntityColliders } from './components/EntityColliders';
 import { EntityMesh } from './components/EntityMesh';
@@ -21,6 +18,10 @@ import { useEntityTransform } from './hooks/useEntityTransform';
 import { useEntityValidation } from './hooks/useEntityValidation';
 import { useFollowedEntityCheck } from './hooks/useFollowedEntityCheck';
 import { useGizmoInteraction } from './hooks/useGizmoInteraction';
+import { useColliderConfiguration } from './hooks/useColliderConfiguration';
+import { useEntityRendering } from './hooks/useEntityRendering';
+import { EntityColliderVisualization } from './components/EntityColliderVisualization';
+import { EntityPhysicsBody } from './components/EntityPhysicsBody';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -37,140 +38,6 @@ export interface IEntityRendererProps {
 
 import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
 import { Logger } from '@/core/lib/logger';
-
-// Deterministic hash in [0,1] based on integer grid + seed
-function hash2(ix: number, iy: number, seed: number): number {
-  const x = ix + seed * 374761393;
-  const y = iy + seed * 668265263;
-  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
-  return n - Math.floor(n);
-}
-
-function valueNoise2D(
-  x: number,
-  y: number,
-  frequency: number,
-  octaves: number,
-  persistence: number,
-  lacunarity: number,
-  seed: number,
-): number {
-  let amp = 1;
-  let freq = frequency;
-  let sum = 0;
-  let norm = 0;
-
-  for (let o = 0; o < octaves; o++) {
-    const xi = Math.floor(x * freq);
-    const yi = Math.floor(y * freq);
-
-    // Deterministic corner values
-    const h = (ix: number, iy: number) => hash2(ix, iy, seed);
-
-    const fx = x * freq - xi;
-    const fy = y * freq - yi;
-
-    const v00 = h(xi, yi);
-    const v10 = h(xi + 1, yi);
-    const v01 = h(xi, yi + 1);
-    const v11 = h(xi + 1, yi + 1);
-
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-    const smooth = (t: number) => t * t * (3 - 2 * t);
-
-    const i1 = lerp(v00, v10, smooth(fx));
-    const i2 = lerp(v01, v11, smooth(fx));
-    const val = lerp(i1, i2, smooth(fy));
-
-    // Slight shaping to reduce harsh plateaus
-    const shaped = Math.pow(val, 1.2);
-    sum += shaped * amp;
-    norm += amp;
-    amp *= persistence;
-    freq *= lacunarity;
-  }
-
-  return norm > 0 ? sum / norm : 0;
-}
-
-function generateTerrainHeights(terrainData: TerrainData): {
-  heights: number[];
-  positions: Float32Array;
-} {
-  const [w, d] = terrainData.size;
-  const [sx, sz] = terrainData.segments;
-
-  // Create the same geometry as TerrainGeometry to get exact vertex positions
-  const plane = new THREE.PlaneGeometry(w, d, sx - 1, sz - 1);
-  plane.rotateX(-Math.PI / 2);
-  const positions = plane.attributes.position.array as Float32Array;
-  const heights: number[] = [];
-
-  if (!terrainData.noiseEnabled) {
-    // Flat terrain - all heights are 0
-    return { heights: new Array(positions.length / 3).fill(0), positions };
-  }
-
-  let minY = Number.POSITIVE_INFINITY;
-  const tempHeights: number[] = [];
-
-  // Generate heights using same algorithm as TerrainGeometry - iterate through actual vertices
-  for (let i = 0; i < positions.length / 3; i++) {
-    const px = positions[i * 3 + 0];
-    const pz = positions[i * 3 + 2];
-    const nx = px / w + 0.5;
-    const nz = pz / d + 0.5;
-
-    // Base multi-octave noise
-    let n = valueNoise2D(
-      nx,
-      nz,
-      terrainData.noiseFrequency,
-      terrainData.noiseOctaves,
-      terrainData.noisePersistence,
-      terrainData.noiseLacunarity,
-      terrainData.noiseSeed,
-    );
-
-    // Add a gentle large-scale undulation to mimic rolling terrain
-    const largeScale = valueNoise2D(
-      nx,
-      nz,
-      Math.max(1.0, terrainData.noiseFrequency * 0.25),
-      2,
-      0.6,
-      2.0,
-      terrainData.noiseSeed + 17,
-    );
-    n = n * 0.7 + largeScale * 0.3;
-
-    // Rim mountains: increase height towards edges using distance to center
-    const cx = 0.5;
-    const cz = 0.5;
-    const dx = Math.abs(nx - cx) * 2; // 0 at center, ~1 at edge
-    const dzv = Math.abs(nz - cz) * 2;
-    const edge = Math.min(1, Math.pow(Math.max(dx, dzv), 1.25));
-    const rim = edge * edge;
-    // Slight valley bias towards center to create basins
-    const valley = 1.0 - edge;
-    n = n * (0.7 + 0.3 * valley) + rim * 0.45; // lift edges, keep center lower
-
-    const y = n * terrainData.heightScale;
-    tempHeights.push(y);
-    if (y < minY) minY = y;
-  }
-
-  // Snap terrain so the lowest point sits on y = 0 (ground)
-  if (isFinite(minY) && minY !== 0) {
-    for (let i = 0; i < tempHeights.length; i++) {
-      heights.push(tempHeights[i] - minY);
-    }
-  } else {
-    heights.push(...tempHeights);
-  }
-
-  return { heights, positions };
-}
 export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
   ({
     entityId,
@@ -221,7 +88,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       useEntitySelection({
         entityId,
         selected,
-        meshRef: meshRef as React.RefObject<Mesh | null>,
+        meshRef,
         isTransforming: isTransformingLocal,
         position: position || [0, 0, 0], // Provide fallback to avoid null issues
         rotationRadians: rotationRadians || [0, 0, 0],
@@ -231,121 +98,32 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
 
     // Extract terrain component data for physics key generation
     const terrainComponent = React.useMemo(
-      () => entityComponents.find((c) => c.type === 'Terrain')?.data as any,
-      [entityComponents.find((c) => c.type === 'Terrain')?.data],
+      () => entityComponents.find((c) => c.type === 'Terrain'),
+      [entityComponents.find((c) => c.type === 'Terrain')],
     );
 
-    // Force-remount physics body when terrain SHAPE params change OR when physics stops
-    // Include a generation counter that increments when transitioning from playing to stopped
-    const [physicsGeneration, setPhysicsGeneration] = React.useState(0);
-    React.useEffect(() => {
-      // Only increment when transitioning from playing to not-playing (physics stop)
-      if (!isPlaying) {
-        setPhysicsGeneration(prev => prev + 1);
-      }
-    }, [isPlaying]);
-
-    const terrainColliderKey = React.useMemo(() => {
-      const t = terrainComponent;
-      const baseKey = `rb-entity-${entityId}-gen-${physicsGeneration}`;
-      if (!t) return baseKey;
-      try {
-        return `${baseKey}-terrain-${[
-          ...(Array.isArray(t.size) ? t.size : []),
-          ...(Array.isArray(t.segments) ? t.segments : []),
-          t.heightScale,
-          t.noiseEnabled,
-          t.noiseSeed,
-          t.noiseFrequency,
-          t.noiseOctaves,
-          t.noisePersistence,
-          t.noiseLacunarity,
-        ].join('|')}`;
-      } catch {
-        return baseKey;
-      }
-    }, [terrainComponent, entityId, physicsGeneration]);
-    // Enhanced collider config with terrain heightfield data
-    const enhancedColliderConfig = React.useMemo(() => {
-      // Handle terrain entities without MeshCollider component (auto-detect)
-      if (!colliderConfig && meshType === 'Terrain' && shouldHavePhysics) {
-        const terrainComponent = entityComponents.find((c) => c.type === 'Terrain');
-        const terrainData = terrainComponent?.data as TerrainData | undefined;
-
-        if (terrainData) {
-          logger.debug('Auto-creating heightfield collider for terrain without MeshCollider',
-          );
-          const [w, d] = terrainData.size;
-          const [sx, sz] = terrainData.segments;
-          const { heights, positions } = generateTerrainHeights(terrainData);
-
-          return {
-            type: 'heightfield',
-            center: [0, 0, 0],
-            isTrigger: false,
-            size: { width: w, height: 1, depth: d },
-            terrain: {
-              widthSegments: sx - 1,
-              depthSegments: sz - 1,
-              heights,
-              positions,
-              scale: { x: w / (sx - 1), y: 1, z: d / (sz - 1) },
-            },
-          };
-        }
-      }
-
-      if (!colliderConfig || colliderConfig.type !== 'heightfield') {
-        return colliderConfig;
-      }
-
-      logger.debug('Processing heightfield collider for terrain');
-
-      // Get terrain data
-      const terrainComponent = entityComponents.find((c) => c.type === 'Terrain');
-      const terrainData = terrainComponent?.data as TerrainData | undefined;
-
-      if (!terrainData) {
-        return colliderConfig;
-      }
-
-      // Generate heightfield data
-      const [w, d] = terrainData.size;
-      const [sx, sz] = terrainData.segments;
-      const { heights, positions } = generateTerrainHeights(terrainData);
-
-      return {
-        ...colliderConfig,
-        terrain: {
-          widthSegments: sx - 1,
-          depthSegments: sz - 1,
-          heights,
-          positions,
-          scale: { x: w / (sx - 1), y: 1, z: d / (sz - 1) },
-        },
-      };
-    }, [colliderConfig, entityComponents]);
+    const { terrainColliderKey, enhancedColliderConfig, hasEffectiveCustomColliders } =
+      useColliderConfiguration({
+        entityId,
+        isPlaying,
+        colliderConfig,
+        meshType,
+        shouldHavePhysics,
+        hasCustomColliders,
+        terrainComponent,
+      });
 
     // Check if this entity is being followed by the main camera (first-person view)
     const isFollowedEntity = useFollowedEntityCheck(entityId, isPlaying);
 
-    // Debug logging for custom models
-    React.useEffect(() => {
-      if (meshType === 'custom') {
-        logger.debug('Custom model debug:', {
-          entityId,
-          meshType,
-          isPrimarySelection,
-          shouldHavePhysics,
-          willRenderGizmo: isPrimarySelection && !shouldHavePhysics,
-          meshRefCurrent: meshRef?.current,
-          meshRefType: meshRef?.current?.type,
-          meshRefPosition: meshRef?.current
-            ? [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z]
-            : null,
-        });
-      }
-    }, [meshType, entityId, isPrimarySelection, shouldHavePhysics, meshRef?.current]);
+    const { shouldHideMesh, shouldShowGizmo } = useEntityRendering({
+      isFollowedEntity,
+      isPlaying,
+      meshType,
+      entityId,
+      isPrimarySelection,
+      shouldHavePhysics,
+    });
 
     // Early return AFTER all hooks - don't render if entity doesn't exist
     if (!isValid) {
@@ -357,16 +135,13 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       return null;
     }
 
-    // Hide mesh rendering when this entity is being followed in play mode (first-person view)
-    const shouldHideMesh = isFollowedEntity && isPlaying;
-
     // Create the mesh content (but hide it if being followed)
     const meshContent = !shouldHideMesh ? (
       <EntityMesh
-        meshRef={meshRef as React.RefObject<any>}
-        meshType={meshType as string | null}
-        renderingContributions={renderingContributions as IRenderingContributions}
-        entityColor={entityColor as string}
+        meshRef={meshRef}
+        meshType={meshType}
+        renderingContributions={renderingContributions}
+        entityColor={entityColor}
         entityId={entityId}
         onMeshClick={handleMeshClick as unknown as (e: ThreeEvent<MouseEvent>) => void}
         onMeshDoubleClick={handleMeshDoubleClick as unknown as (e: ThreeEvent<MouseEvent>) => void}
@@ -375,50 +150,24 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       />
     ) : null;
 
-    // When not using physics, render mesh normally and overlay gizmo controls separately
-    const renderedNonPhysicsMesh = meshContent;
-
-    const hasEffectiveCustomColliders = React.useMemo(
-      () => Boolean(enhancedColliderConfig && enhancedColliderConfig.type !== 'heightfield'),
-      [enhancedColliderConfig],
-    );
-
     return (
       <group>
-        {shouldHavePhysics ? (
-          <RigidBody
-            key={terrainColliderKey}
-            type={(physicsContributions as IPhysicsContributions).rigidBodyProps.type as any}
-            mass={(physicsContributions as IPhysicsContributions).rigidBodyProps.mass}
-            friction={(physicsContributions as IPhysicsContributions).rigidBodyProps.friction}
-            restitution={(physicsContributions as IPhysicsContributions).rigidBodyProps.restitution}
-            density={(physicsContributions as IPhysicsContributions).rigidBodyProps.density}
-            gravityScale={
-              (physicsContributions as IPhysicsContributions).rigidBodyProps.gravityScale
-            }
-            canSleep={(physicsContributions as IPhysicsContributions).rigidBodyProps.canSleep}
-            position={position}
-            rotation={rotationRadians}
-            scale={scale}
-            colliders={
-              // Use false to disable auto-colliders and rely on custom colliders below
-              enhancedColliderConfig?.type === 'heightfield'
-                ? false
-                : hasCustomColliders || hasEffectiveCustomColliders
-                  ? false
-                  : (colliderType as 'ball' | 'cuboid' | 'hull' | 'trimesh')
-            }
-          >
-            {/* Custom Colliders - now properly handling heightfield */}
-            <EntityColliders colliderConfig={enhancedColliderConfig} />
-            {meshContent}
-          </RigidBody>
-        ) : (
-          renderedNonPhysicsMesh
-        )}
+        <EntityPhysicsBody
+          terrainColliderKey={terrainColliderKey}
+          physicsContributions={shouldHavePhysics ? physicsContributions : undefined}
+          position={position}
+          rotationRadians={rotationRadians}
+          scale={scale}
+          enhancedColliderConfig={enhancedColliderConfig}
+          hasCustomColliders={hasCustomColliders}
+          hasEffectiveCustomColliders={hasEffectiveCustomColliders}
+          colliderType={colliderType}
+        >
+          {meshContent}
+        </EntityPhysicsBody>
 
         {/* Gizmo controls (disabled during physics) - only show on primary selection */}
-        {isPrimarySelection && !shouldHavePhysics && (
+        {shouldShowGizmo && (
           <GizmoControls
             meshRef={meshRef}
             mode={mode}
@@ -442,43 +191,14 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         />
 
         {/* Collider Visualization (Unity-style wireframes) */}
-        {selected && (
-          <group position={position} rotation={rotationRadians} scale={scale}>
-            <ColliderVisualization
-              meshCollider={
-                enhancedColliderConfig
-                  ? {
-                      enabled: true,
-                      colliderType: enhancedColliderConfig.type,
-                      isTrigger: enhancedColliderConfig.isTrigger,
-                      center: enhancedColliderConfig.center,
-                      size: enhancedColliderConfig.size,
-                      physicsMaterial: { friction: 0.7, restitution: 0.3, density: 1 },
-                    }
-                  : (meshCollider?.data as IMeshColliderData) || null
-              }
-              visible={selected}
-              terrainHeights={
-                enhancedColliderConfig?.type === 'heightfield' && enhancedColliderConfig.terrain
-                  ? enhancedColliderConfig.terrain.heights
-                  : undefined
-              }
-              terrainSegments={
-                enhancedColliderConfig?.type === 'heightfield' && enhancedColliderConfig.terrain
-                  ? [
-                      enhancedColliderConfig.terrain.widthSegments + 1,
-                      enhancedColliderConfig.terrain.depthSegments + 1,
-                    ]
-                  : undefined
-              }
-              terrainPositions={
-                enhancedColliderConfig?.type === 'heightfield' && enhancedColliderConfig.terrain
-                  ? (enhancedColliderConfig.terrain as any).positions
-                  : undefined
-              }
-            />
-          </group>
-        )}
+        <EntityColliderVisualization
+          selected={selected}
+          position={position}
+          rotationRadians={rotationRadians}
+          scale={scale}
+          enhancedColliderConfig={enhancedColliderConfig}
+          meshCollider={meshCollider}
+        />
       </group>
     );
   },
