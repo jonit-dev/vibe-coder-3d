@@ -2,6 +2,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import React from 'react';
 import * as THREE from 'three';
+import type { Mesh } from 'three';
 
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { useEditorStore } from '@/editor/store/editorStore';
@@ -218,7 +219,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       useEntitySelection({
         entityId,
         selected,
-        meshRef,
+        meshRef: meshRef as React.RefObject<Mesh | null>,
         isTransforming: isTransformingLocal,
         position: position || [0, 0, 0], // Provide fallback to avoid null issues
         rotationRadians: rotationRadians || [0, 0, 0],

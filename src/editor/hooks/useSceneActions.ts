@@ -26,7 +26,7 @@ export function useSceneActions() {
     const entities = entityManager.getAllEntities();
     const serializedEntities = entities.map((entity) => {
       const entityComponents = componentManager.getComponentsForEntity(entity.id);
-      const entityData: Record<string, unknown> = {
+      const entityData: Record<string, any> = {
         id: entity.id,
         name: entity.name,
         parentId: entity.parentId,
@@ -35,7 +35,7 @@ export function useSceneActions() {
 
       entityComponents.forEach((component) => {
         if (component.data) {
-          entityData.components[component.type] = component.data;
+          (entityData.components as Record<string, any>)[component.type] = component.data;
         }
       });
 
@@ -61,12 +61,14 @@ export function useSceneActions() {
     for (const entityData of scene.entities) {
       try {
         const entity = entityManager.createEntity(
-          entityData.name || `Entity ${entityData.id}`,
-          entityData.parentId,
+          (entityData as any).name || `Entity ${(entityData as any).id}`,
+          (entityData as any).parentId,
         );
 
         // Add components
-        for (const [componentType, componentData] of Object.entries(entityData.components)) {
+        for (const [componentType, componentData] of Object.entries(
+          (entityData as any).components || {},
+        )) {
           if (componentData) {
             componentManager.addComponent(entity.id, componentType, componentData);
           }

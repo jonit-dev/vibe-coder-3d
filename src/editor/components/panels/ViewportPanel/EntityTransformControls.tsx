@@ -1,6 +1,5 @@
 import { TransformControls } from '@react-three/drei';
 import React, { useEffect, useRef } from 'react';
-import type { Object3D } from 'three';
 import { TransformControls as TransformControlsImpl } from 'three-stdlib';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
@@ -27,8 +26,8 @@ export const EntityTransformControls: React.FC<IEntityTransformControlsProps> = 
     const controls = transformRef.current;
     if (!controls) return;
     const callback = (event: { value: boolean }) => setIsTransforming(event.value);
-    controls.addEventListener('dragging-changed', callback as unknown as EventListener);
-    return () => controls.removeEventListener('dragging-changed', callback as unknown as EventListener);
+    (controls as any).addEventListener('dragging-changed', callback);
+    return () => (controls as any).removeEventListener('dragging-changed', callback);
   }, [selected, setIsTransforming]);
 
   if (!selected) {

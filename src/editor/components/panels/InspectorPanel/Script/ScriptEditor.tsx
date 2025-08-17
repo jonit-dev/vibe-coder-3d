@@ -1,6 +1,5 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
 
 export interface IScriptEditorProps {
   code: string;
@@ -21,7 +20,7 @@ export const ScriptEditor: React.FC<IScriptEditorProps> = ({
 }) => {
   const editorRef = useRef<any>(null);
 
-  const handleEditorDidMount = (editor: any, monaco: any) => {
+  const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
   };
 

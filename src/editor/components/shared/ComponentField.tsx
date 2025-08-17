@@ -52,7 +52,7 @@ export const ComponentField: React.FC<IComponentFieldProps> = ({
 
   // Drag functionality for number inputs
   const { dragActive, onDragStart } = useDragAxisCamera(
-    type === 'number' && enableDrag ? value : 0,
+    type === 'number' && enableDrag ? Number(value) : 0,
     onChange,
     dragSensitivity,
   );
@@ -67,7 +67,7 @@ export const ComponentField: React.FC<IComponentFieldProps> = ({
             <div className="flex items-center space-x-1">
               <input
                 type="number"
-                value={value}
+                value={String(value)}
                 onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
                 className={`flex-1 ${baseInputClasses}`}
                 min={min}
@@ -100,7 +100,7 @@ export const ComponentField: React.FC<IComponentFieldProps> = ({
         return (
           <input
             type="number"
-            value={value}
+            value={String(value)}
             onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
             className={baseInputClasses}
             min={min}
@@ -114,7 +114,7 @@ export const ComponentField: React.FC<IComponentFieldProps> = ({
       case 'select':
         return (
           <select
-            value={value}
+            value={String(value)}
             onChange={(e) => onChange(e.target.value)}
             className={baseInputClasses}
             disabled={disabled}
@@ -133,7 +133,7 @@ export const ComponentField: React.FC<IComponentFieldProps> = ({
             <input
               type="checkbox"
               id={`checkbox-${label.replace(/\s+/g, '-').toLowerCase()}`}
-              checked={value}
+              checked={Boolean(value)}
               onChange={(e) => onChange(e.target.checked)}
               className="w-3 h-3 text-cyan-600 bg-gray-800 border-gray-600 rounded focus:ring-cyan-500 focus:ring-2"
               disabled={disabled}
@@ -151,7 +151,7 @@ export const ComponentField: React.FC<IComponentFieldProps> = ({
         return (
           <input
             type="text"
-            value={value}
+            value={String(value)}
             onChange={(e) => onChange(e.target.value)}
             className={baseInputClasses}
             disabled={disabled}
