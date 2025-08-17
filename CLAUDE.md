@@ -12,9 +12,19 @@
 **Critical**
 
 - React: focus on hook usage + prevent re-rendering
-- Don’t request approval—just do it.
+- Don't request approval—just do it.
 - Named exports only; no barrel `index.ts`.
 - Declare components inline: `export const …`.
-- Don’t run `yarn dev`; ask me to.
+- Don't run `yarn dev`; ask me to.
 - Prefix interfaces with I
 - Favor using Zod
+
+**Technical Debt Prevention**
+
+- NO console.log/warn/error in production code - use structured logging
+- NO singleton pattern - use dependency injection or React context
+- Components MUST be <200 lines - split if larger
+- ALWAYS use proper TypeScript types - no `any` types
+- Error handling MUST be consistent with try-catch patterns
+- React components MUST use React.memo for expensive renders
+- useEffect dependencies MUST be minimal and specific

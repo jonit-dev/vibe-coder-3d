@@ -1,5 +1,5 @@
 import { useGLTF, useTexture } from '@react-three/drei';
-import { ThreeEvent, useThree, useFrame } from '@react-three/fiber';
+import { ThreeEvent, useThree } from '@react-three/fiber';
 import React, { Suspense, useMemo, useCallback, useEffect } from 'react';
 import { threeJSEntityRegistry } from '@/core/lib/scripting/ThreeJSEntityRegistry';
 import { ModelErrorBoundary } from '@/editor/components/shared/ModelErrorBoundary';
@@ -104,56 +104,72 @@ const CustomModelMesh: React.FC<{
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
 }> = React.memo(
   ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick, onMeshDoubleClick }) => {
+    console.log('[CustomModelMesh] Rendering with:', {
+      modelPath,
+      entityId,
+      meshRefCurrent: meshRef?.current,
+      meshRefType: meshRef?.current?.type,
+    });
+
     try {
       const { scene } = useGLTF(modelPath);
+      console.log('[CustomModelMesh] Model loaded successfully:', {
+        entityId,
+        sceneType: scene?.type,
+        sceneChildren: scene?.children?.length,
+        scenePosition: scene?.position
+          ? [scene.position.x, scene.position.y, scene.position.z]
+          : null,
+      });
 
-      // Don't clone the scene - use it directly to avoid transform inheritance issues
-      const modelScene = useMemo(() => {
-        // Reset position and rotation but preserve original scale
-        scene.position.set(0, 0, 0);
-        scene.rotation.set(0, 0, 0);
-        // DON'T reset scale - preserve the model's original scale
-        scene.matrixAutoUpdate = true;
-
-        // Ensure all children respect parent transforms
-        scene.traverse((child) => {
-          child.matrixAutoUpdate = true;
+      // Create a properly configured clone that respects parent transforms
+      const clonedScene = useMemo(() => {
+        const clone = scene.clone();
+        // Ensure the cloned scene respects parent group transforms
+        clone.matrixAutoUpdate = true;
+        clone.position.set(0, 0, 0);
+        clone.rotation.set(0, 0, 0);
+        clone.scale.set(1, 1, 1);
+        console.log('[CustomModelMesh] Created cloned scene:', {
+          entityId,
+          cloneType: clone.type,
+          cloneChildren: clone.children.length,
+          cloneMatrixAutoUpdate: clone.matrixAutoUpdate,
         });
-
-        return scene;
+        return clone;
       }, [scene, entityId]);
 
       // Use callback ref to ensure proper Group integration with transform system
       const groupRefCallback = useCallback(
         (groupRef: Group | null) => {
           if (groupRef && meshRef) {
-            // CRITICAL: Ensure the group can be transformed by gizmos and physics
+            console.log('[CustomModelMesh] Group ref assigned:', {
+              entityId,
+              groupRefType: groupRef.type,
+              groupRefConstructor: groupRef.constructor.name,
+              groupRefMatrixAutoUpdate: groupRef.matrixAutoUpdate,
+            });
+
+            // Ensure the group can be transformed by gizmos and physics
             groupRef.matrixAutoUpdate = true;
             groupRef.userData = { ...groupRef.userData, entityId };
 
-            // IMPORTANT: Start the group at origin to match other mesh types
-            // The transform system will apply the actual entity position
-            groupRef.position.set(0, 0, 0);
-            groupRef.rotation.set(0, 0, 0);
-            groupRef.scale.set(1, 1, 1);
-
             // Assign to the passed meshRef for transform system integration
             (meshRef as React.MutableRefObject<Group>).current = groupRef;
+
+            console.log('[CustomModelMesh] Transform integration completed:', {
+              entityId,
+              meshRefCurrentType: meshRef.current?.type,
+              meshRefMatrixAutoUpdate: meshRef.current?.matrixAutoUpdate,
+            });
           } else if (!groupRef && meshRef.current) {
             // Cleanup when component unmounts
             (meshRef as React.MutableRefObject<Group | null>).current = null;
+            console.log('[CustomModelMesh] Group ref cleaned up:', { entityId });
           }
         },
-        [meshRef, entityId, modelScene],
+        [meshRef, entityId],
       );
-
-      // Force matrix updates using useFrame to ensure proper parent-child transform inheritance
-      useFrame(() => {
-        if (meshRef?.current) {
-          // Force matrix updates on the group to ensure transforms propagate to children
-          meshRef.current.updateMatrixWorld(true);
-        }
-      });
 
       return (
         <group
@@ -165,7 +181,7 @@ const CustomModelMesh: React.FC<{
           receiveShadow={renderingContributions.receiveShadow}
           visible={renderingContributions.visible}
         >
-          <primitive object={modelScene} />
+          <primitive object={clonedScene} />
         </group>
       );
     } catch (error) {
@@ -173,12 +189,19 @@ const CustomModelMesh: React.FC<{
         entityId,
         modelPath,
         error: (error as Error)?.message || 'Unknown error',
+        stack: (error as Error)?.stack,
       });
 
       // Fallback to error mesh with callback ref
       const errorRefCallback = useCallback(
         (errorMeshRef: Mesh | null) => {
           if (errorMeshRef && meshRef) {
+            console.log('[CustomModelMesh] Error mesh ref assigned:', {
+              entityId,
+              errorMeshType: errorMeshRef.type,
+              errorMeshConstructor: errorMeshRef.constructor.name,
+            });
+
             // Ensure the error mesh can be transformed
             errorMeshRef.matrixAutoUpdate = true;
             errorMeshRef.userData = { ...errorMeshRef.userData, entityId };
@@ -279,8 +302,17 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     const meshRendererData = meshRendererComponent?.data;
     const modelPath = isMeshRendererData(meshRendererData) ? meshRendererData.modelPath : undefined;
 
+    // Debug logging
+    console.log('[EntityMesh] Debug:', {
+      entityId,
+      meshType,
+      modelPath,
+      meshRendererComponent: meshRendererComponent?.data,
+    });
+
     // If it's a custom model with a valid path, render the custom model
     if (meshType === 'custom' && modelPath) {
+      console.log('[EntityMesh] Rendering custom model:', modelPath);
       return (
         <ModelErrorBoundary
           entityId={entityId}

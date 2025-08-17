@@ -249,13 +249,19 @@ function executeScriptLifecycle(
   // Skip if disabled
   if (!scriptComponent.enabled[eid]) return;
 
+  console.log(`[ScriptSystem] Attempting to execute ${method} for entity ${eid}`);
+
   // Ensure script is compiled before execution
   if (!ensureScriptCompiled(eid)) {
+    console.error(`[ScriptSystem] Script compilation failed for entity ${eid}, skipping execution`);
     return; // Compilation failed
   }
 
   // Skip if script has errors after compilation attempt
-  if (scriptComponent.hasErrors[eid]) return;
+  if (scriptComponent.hasErrors[eid]) {
+    console.error(`[ScriptSystem] Script has errors for entity ${eid}, skipping execution`);
+    return;
+  }
 
   const scriptId = `entity_${eid}`;
   const maxExecutionTime = scriptComponent.maxExecutionTime[eid];
@@ -273,6 +279,12 @@ function executeScriptLifecycle(
     console.warn(`[ScriptSystem] Failed to parse parameters for entity ${eid}:`, error);
   }
 
+  console.log(`[ScriptSystem] Executing script ${scriptId} method ${method} with parameters:`, {
+    maxExecutionTime,
+    parameters,
+    deltaTime,
+  });
+
   const result: IScriptExecutionResult = scriptExecutor.executeScript(
     scriptId,
     {
@@ -284,6 +296,14 @@ function executeScriptLifecycle(
     },
     method,
   );
+
+  console.log(`[ScriptSystem] Script execution result for entity ${eid}:`, {
+    method,
+    success: result.success,
+    executionTime: result.executionTime,
+    error: result.error,
+    output: result.output,
+  });
 
   // Update performance stats
   totalScriptExecutionTime += result.executionTime;

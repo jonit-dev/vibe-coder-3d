@@ -132,8 +132,43 @@ export const scriptComponent = ComponentFactory.create({
     component.lastExecutionTime[eid] = data.lastExecutionTime ?? 0;
     component.executionCount[eid] = data.executionCount ?? 0;
 
-    // String properties
-    component.codeHash[eid] = storeString(data.code || '');
+    // If no code is provided, initialize with default Hello World template
+    const defaultCode =
+      data.language === 'typescript'
+        ? `// Hello World TypeScript Script
+function onStart(): void {
+  console.log("🎮 Hello World! Script started!");
+  console.log("📍 Entity ID:", entity.id);
+  console.log("📛 Entity name:", entity.name);
+  console.log("🌍 Current position:", entity.transform.position);
+  
+  if (three.mesh) {
+    three.material.setColor("#00ff00");
+  }
+}
+
+function onUpdate(deltaTime: number): void {
+  entity.transform.rotate(0, deltaTime * 0.5, 0);
+}`
+        : `// Hello World JavaScript Script
+function onStart() {
+  console.log("🎮 Hello World! Script started!");
+  console.log("📍 Entity ID:", entity.id);
+  console.log("📛 Entity name:", entity.name);
+  console.log("🌍 Current position:", entity.transform.position);
+  
+  if (three.mesh) {
+    three.material.setColor("#00ff00");
+  }
+}
+
+function onUpdate(deltaTime) {
+  entity.transform.rotate(0, deltaTime * 0.5, 0);
+}`;
+
+    // String properties - use provided code or default template
+    const codeToStore = data.code || defaultCode;
+    component.codeHash[eid] = storeString(codeToStore);
     component.scriptNameHash[eid] = storeString(data.scriptName || 'Script');
     component.descriptionHash[eid] = storeString(data.description || '');
     component.lastErrorMessageHash[eid] = storeString(data.lastErrorMessage || '');
@@ -156,13 +191,16 @@ export const scriptComponent = ComponentFactory.create({
       (data.executeOnEnable ?? false);
 
     // Mark for compilation if code was provided OR if script has execution flags enabled
-    // Empty scripts with execution flags need to be compiled as no-op functions
-    component.needsCompilation[eid] = data.code || hasExecutionFlags ? 1 : 0;
+    // Always mark new scripts with default code for compilation
+    component.needsCompilation[eid] = 1;
+
     // Mark for execution if enabled and configured to execute on start
     component.needsExecution[eid] = data.enabled && data.executeOnStart ? 1 : 0;
   },
   onAdd: (eid: EntityId, data) => {
-    console.log(`Script component "${data.scriptName}" added to entity ${eid}`);
+    console.log(
+      `Script component "${data.scriptName}" added to entity ${eid} with default Hello World code`,
+    );
   },
   onRemove: (eid: EntityId) => {
     console.log(`Script component removed from entity ${eid}`);
