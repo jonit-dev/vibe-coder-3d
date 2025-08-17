@@ -4,16 +4,16 @@
 
 import * as THREE from 'three';
 import { EntityId } from '../ecs/types';
-import { threeJSEntityRegistry } from './ThreeJSEntityRegistry';
 import {
-  IScriptContext,
-  createMathAPI,
   createConsoleAPI,
   createEntityAPI,
+  createMathAPI,
   createThreeJSAPI,
-  ITimeAPI,
   IInputAPI,
+  IScriptContext,
+  ITimeAPI,
 } from './ScriptAPI';
+import { threeJSEntityRegistry } from './ThreeJSEntityRegistry';
 
 /**
  * Result of script execution
@@ -113,7 +113,7 @@ export class ScriptExecutor {
     const scriptsToRemove: string[] = [];
 
     // Remove scripts older than maxCacheAge
-    for (const [scriptId, timestamp] of this.compilationTimestamps) {
+    for (const [scriptId, timestamp] of Array.from(this.compilationTimestamps.entries())) {
       if (now - timestamp > this.maxCacheAge) {
         scriptsToRemove.push(scriptId);
       }
@@ -303,27 +303,24 @@ export class ScriptExecutor {
       const method = context[lifecycleMethod];
 
       if (method && typeof method === 'function') {
-        // Improved timeout protection using Promise race
-        const executionPromise = new Promise<unknown>((resolve, reject) => {
-          try {
-            if (lifecycleMethod === 'onUpdate' && context.onUpdate) {
-              resolve(context.onUpdate(options.timeInfo.deltaTime));
-            } else {
-              resolve(method());
-            }
-          } catch (error) {
-            reject(error);
+        const executionStart = performance.now();
+
+        try {
+          if (lifecycleMethod === 'onUpdate') {
+            output = (method as (deltaTime: number) => any)(options.timeInfo.deltaTime);
+          } else {
+            output = (method as () => any)();
           }
-        });
 
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => {
-            reject(new Error(`Script execution exceeded maximum time limit of ${maxTime}ms`));
-          }, maxTime);
-        });
-
-        // Race between execution and timeout
-        output = await Promise.race([executionPromise, timeoutPromise]);
+          const executionTime = performance.now() - executionStart;
+          if (executionTime > maxTime) {
+            throw new Error(
+              `Script execution exceeded maximum time limit of ${maxTime}ms (took ${executionTime.toFixed(2)}ms)`,
+            );
+          }
+        } catch (error) {
+          throw error;
+        }
       }
 
       const executionTime = performance.now() - startTime;
@@ -425,7 +422,7 @@ export class ScriptExecutor {
     const now = Date.now();
     let oldestTimestamp = now;
 
-    for (const timestamp of this.compilationTimestamps.values()) {
+    for (const timestamp of Array.from(this.compilationTimestamps.values())) {
       if (timestamp < oldestTimestamp) {
         oldestTimestamp = timestamp;
       }

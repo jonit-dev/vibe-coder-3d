@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
+import { Logger } from '@/core/lib/logger';
 
 // Script Schema
 const ScriptSchema = z.object({
@@ -46,6 +47,8 @@ const ScriptSchema = z.object({
   lastModified: z.number().default(0).describe('Timestamp of last modification'),
   compiledCode: z.string().default('').describe('Cached compiled version of the script'),
 });
+
+const logger = Logger.create('ScriptComponent');
 
 // Script Component Definition
 export const scriptComponent = ComponentFactory.create({
@@ -198,12 +201,12 @@ function onUpdate(deltaTime) {
     component.needsExecution[eid] = data.enabled && data.executeOnStart ? 1 : 0;
   },
   onAdd: (eid: EntityId, data) => {
-    console.log(
+    logger.info(
       `Script component "${data.scriptName}" added to entity ${eid} with default Hello World code`,
     );
   },
   onRemove: (eid: EntityId) => {
-    console.log(`Script component removed from entity ${eid}`);
+    logger.info(`Script component removed from entity ${eid}`);
   },
   metadata: {
     description: 'Custom JavaScript/TypeScript scripting system with secure entity access',
