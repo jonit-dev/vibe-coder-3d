@@ -16,7 +16,7 @@ export interface IComponentDescriptor<TData = unknown> {
   id: string;
   name: string;
   category: ComponentCategory;
-  schema: z.ZodSchema<TData>;
+  schema: z.ZodType<TData, any, any>;
   bitECSSchema: Record<string, unknown>;
   serialize: (eid: EntityId) => TData;
   deserialize: (eid: EntityId, data: TData) => void;
@@ -53,7 +53,7 @@ export class ComponentFactory {
     id: string;
     name: string;
     category: ComponentCategory;
-    schema: z.ZodSchema<TData>;
+    schema: z.ZodType<TData, any, any>;
     fields: Record<string, unknown>; // BitECS field definitions
     serialize: (eid: EntityId, bitECSComponent: unknown) => TData;
     deserialize: (eid: EntityId, data: TData, bitECSComponent: unknown) => void;
@@ -97,7 +97,7 @@ export class ComponentFactory {
     id: string;
     name: string;
     category: ComponentCategory;
-    schema: z.ZodSchema<TData>;
+    schema: z.ZodType<TData, any, any>;
     fieldMappings: Record<keyof TData, unknown>; // Maps data fields to BitECS types
     onAdd?: (eid: EntityId, data: TData) => void;
     onRemove?: (eid: EntityId) => void;

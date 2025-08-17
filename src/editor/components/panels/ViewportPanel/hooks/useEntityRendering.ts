@@ -1,5 +1,4 @@
 import React from 'react';
-import type { ThreeEvent } from '@react-three/fiber';
 
 interface IUseEntityRenderingProps {
   isFollowedEntity: boolean;

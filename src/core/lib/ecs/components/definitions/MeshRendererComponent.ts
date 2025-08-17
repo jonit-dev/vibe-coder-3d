@@ -137,7 +137,19 @@ export const meshRendererComponent = ComponentFactory.create({
     component.modelPathHash[eid] = storeString(data.modelPath || '');
 
     // Set material properties with defaults
-    const material = data.material || {};
+    const material = data.material || {
+      shader: 'standard' as const,
+      materialType: 'solid' as const,
+      color: '#cccccc',
+      normalScale: 1,
+      metalness: 0,
+      roughness: 0.7,
+      emissive: '#000000',
+      emissiveIntensity: 0,
+      occlusionStrength: 1,
+      textureOffsetX: 0,
+      textureOffsetY: 0,
+    };
     component.shader[eid] = material.shader === 'unlit' ? 1 : 0;
     component.materialType[eid] = material.materialType === 'texture' ? 1 : 0;
     setRgbValues(

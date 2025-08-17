@@ -42,7 +42,9 @@ export function lightSystem(_deltaTime: number): number {
 
   entities.forEach((eid: number) => {
     // Get the BitECS component to check needsUpdate flag
-    const bitECSLight = componentRegistry.getBitECSComponent('Light');
+    const bitECSLight = componentRegistry.getBitECSComponent('Light') as
+      | (Record<string, Record<number, number>> & { needsUpdate?: Record<number, number> })
+      | undefined;
     if (!bitECSLight?.needsUpdate?.[eid]) {
       return; // Skip entities that don't need updates
     }
@@ -65,7 +67,9 @@ export function lightSystem(_deltaTime: number): number {
     // This system just processes the ECS side and resets the needsUpdate flag
 
     // Reset the needsUpdate flag after processing
-    bitECSLight.needsUpdate[eid] = 0;
+    if (bitECSLight?.needsUpdate) {
+      bitECSLight.needsUpdate[eid] = 0;
+    }
     updatedCount++;
   });
 

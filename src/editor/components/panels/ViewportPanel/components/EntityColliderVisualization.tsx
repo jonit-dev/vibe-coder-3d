@@ -38,7 +38,7 @@ export const EntityColliderVisualization: React.FC<IEntityColliderVisualizationP
         ? [
             enhancedColliderConfig.terrain.widthSegments + 1,
             enhancedColliderConfig.terrain.depthSegments + 1,
-          ]
+          ] as [number, number]
         : undefined;
 
     const terrainPositions =

@@ -3,7 +3,7 @@ import React from 'react';
 import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { MeshColliderData } from '@/core/lib/ecs/components/definitions/MeshColliderComponent';
 import { RigidBodyData } from '@/core/lib/ecs/components/definitions/RigidBodyComponent';
-import { RigidBodySection } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
+import { RigidBodySection, BodyType } from '@/editor/components/panels/InspectorPanel/RigidBody/RigidBodySection';
 
 interface IRigidBodyAdapterProps {
   rigidBodyComponent: IComponent<RigidBodyData> | null;
@@ -34,14 +34,14 @@ export const RigidBodyAdapter: React.FC<IRigidBodyAdapterProps> = ({
   // Convert ECS data to the format expected by RigidBodySection
   const rigidBodyData = {
     enabled: data.enabled ?? true,
-    bodyType: data.bodyType || data.type || 'dynamic',
+    bodyType: (data.bodyType || data.type || 'dynamic') as BodyType,
     mass: data.mass || 1,
     gravityScale: data.gravityScale || 1,
     canSleep: data.canSleep ?? true,
-    linearDamping: data.linearDamping || 0,
-    angularDamping: data.angularDamping || 0,
-    initialVelocity: data.initialVelocity || [0, 0, 0],
-    initialAngularVelocity: data.initialAngularVelocity || [0, 0, 0],
+    linearDamping: 0,
+    angularDamping: 0,
+    initialVelocity: [0, 0, 0] as [number, number, number],
+    initialAngularVelocity: [0, 0, 0] as [number, number, number],
     material: {
       friction: data.material?.friction || 0.7,
       restitution: data.material?.restitution || 0.3,

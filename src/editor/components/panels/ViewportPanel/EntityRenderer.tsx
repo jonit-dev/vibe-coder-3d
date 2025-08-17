@@ -1,12 +1,10 @@
 import type { ThreeEvent } from '@react-three/fiber';
 import React from 'react';
-import type { Mesh } from 'three';
 
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 import { GizmoControls } from './GizmoControls';
-import { EntityColliders } from './components/EntityColliders';
 import { EntityMesh } from './components/EntityMesh';
 import { EntityOutline } from './components/EntityOutline';
 import { useEntityColliders } from './hooks/useEntityColliders';
@@ -36,8 +34,6 @@ export interface IEntityRendererProps {
   allEntityIds?: number[];
 }
 
-import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
-import { Logger } from '@/core/lib/logger';
 export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
   ({
     entityId,
@@ -49,7 +45,6 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     setIsTransforming,
     allEntityIds = [],
   }) => {
-    const logger = Logger.create('EntityRenderer');
     const isPlaying = useEditorStore((s) => s.isPlaying);
 
     // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS!
@@ -100,7 +95,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     const terrainComponent = React.useMemo(
       () => entityComponents.find((c) => c.type === 'Terrain'),
       [entityComponents.find((c) => c.type === 'Terrain')],
-    );
+    ) as { type: string; data: { size: [number, number]; segments: [number, number]; heightScale: number; noiseEnabled: boolean; noiseSeed: number; noiseFrequency: number; noiseOctaves: number; noisePersistence: number; noiseLacunarity: number; }; } | undefined;
 
     const { terrainColliderKey, enhancedColliderConfig, hasEffectiveCustomColliders } =
       useColliderConfiguration({
@@ -197,7 +192,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
           rotationRadians={rotationRadians}
           scale={scale}
           enhancedColliderConfig={enhancedColliderConfig}
-          meshCollider={meshCollider}
+          meshCollider={meshCollider && Object.keys(meshCollider.data || {}).length > 0 ? meshCollider as { data: IMeshColliderData } : null}
         />
       </group>
     );

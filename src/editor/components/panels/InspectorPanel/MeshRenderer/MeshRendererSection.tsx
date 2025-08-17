@@ -17,13 +17,14 @@ export interface IMeshRendererData {
   enabled: boolean;
   castShadows: boolean;
   receiveShadows: boolean;
-  material: {
-    shader?: 'standard' | 'unlit';
-    materialType?: 'solid' | 'texture';
+  modelPath?: string;
+  material?: {
+    shader: 'standard' | 'unlit';
+    materialType: 'solid' | 'texture';
     color: string;
     albedoTexture?: string;
     normalTexture?: string;
-    normalScale?: number;
+    normalScale: number;
     metalness: number;
     roughness: number;
     emissive: string;
@@ -32,9 +33,9 @@ export interface IMeshRendererData {
     roughnessTexture?: string;
     emissiveTexture?: string;
     occlusionTexture?: string;
-    occlusionStrength?: number;
-    textureOffsetX?: number;
-    textureOffsetY?: number;
+    occlusionStrength: number;
+    textureOffsetX: number;
+    textureOffsetY: number;
   };
 }
 

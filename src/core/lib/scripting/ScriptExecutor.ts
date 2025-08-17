@@ -99,19 +99,34 @@ export class ScriptExecutor {
       // Parse regular function declarations
       while ((match = functionRegex.exec(cleanCode)) !== null) {
         const [, functionName, functionBody] = match;
-        result[functionName as keyof IParsedScript] = functionBody.trim();
+        const body = functionBody.trim();
+        if (functionName === 'onStart') result.onStart = body;
+        if (functionName === 'onUpdate') result.onUpdate = body;
+        if (functionName === 'onDestroy') result.onDestroy = body;
+        if (functionName === 'onEnable') result.onEnable = body;
+        if (functionName === 'onDisable') result.onDisable = body;
       }
 
       // Parse arrow function declarations
       while ((match = arrowFunctionRegex.exec(cleanCode)) !== null) {
         const [, functionName, functionBody] = match;
-        result[functionName as keyof IParsedScript] = functionBody.trim();
+        const body = functionBody.trim();
+        if (functionName === 'onStart') result.onStart = body;
+        if (functionName === 'onUpdate') result.onUpdate = body;
+        if (functionName === 'onDestroy') result.onDestroy = body;
+        if (functionName === 'onEnable') result.onEnable = body;
+        if (functionName === 'onDisable') result.onDisable = body;
       }
 
       // Parse simple arrow function assignments
       while ((match = simpleArrowRegex.exec(cleanCode)) !== null) {
         const [, functionName, functionBody] = match;
-        result[functionName as keyof IParsedScript] = functionBody.trim();
+        const body = functionBody.trim();
+        if (functionName === 'onStart') result.onStart = body;
+        if (functionName === 'onUpdate') result.onUpdate = body;
+        if (functionName === 'onDestroy') result.onDestroy = body;
+        if (functionName === 'onEnable') result.onEnable = body;
+        if (functionName === 'onDisable') result.onDisable = body;
       }
 
       console.log('[ScriptExecutor] Parsed script functions:', {
@@ -172,7 +187,10 @@ export class ScriptExecutor {
               const axis = match[1] as 'x' | 'y' | 'z';
               const value = parseFloat(match[2]);
               if (!isNaN(value)) {
-                context.entity.position[axis] = value;
+                const [px, py, pz] = context.entity.transform.position;
+                if (axis === 'x') context.entity.transform.setPosition(value, py, pz);
+                if (axis === 'y') context.entity.transform.setPosition(px, value, pz);
+                if (axis === 'z') context.entity.transform.setPosition(px, py, value);
               }
             }
           }
@@ -190,12 +208,19 @@ export class ScriptExecutor {
               const operator = match[2];
               const value = parseFloat(match[3]);
               if (!isNaN(value)) {
+                const [rx, ry, rz] = context.entity.transform.rotation;
                 if (operator === '=') {
-                  context.entity.rotation[axis] = value;
+                  if (axis === 'x') context.entity.transform.setRotation(value, ry, rz);
+                  if (axis === 'y') context.entity.transform.setRotation(rx, value, rz);
+                  if (axis === 'z') context.entity.transform.setRotation(rx, ry, value);
                 } else if (operator === '+') {
-                  context.entity.rotation[axis] += value;
+                  if (axis === 'x') context.entity.transform.setRotation(rx + value, ry, rz);
+                  if (axis === 'y') context.entity.transform.setRotation(rx, ry + value, rz);
+                  if (axis === 'z') context.entity.transform.setRotation(rx, ry, rz + value);
                 } else if (operator === '-') {
-                  context.entity.rotation[axis] -= value;
+                  if (axis === 'x') context.entity.transform.setRotation(rx - value, ry, rz);
+                  if (axis === 'y') context.entity.transform.setRotation(rx, ry - value, rz);
+                  if (axis === 'z') context.entity.transform.setRotation(rx, ry, rz - value);
                 }
               }
             }
@@ -214,7 +239,11 @@ export class ScriptExecutor {
               const axis = match[1] as 'x' | 'y' | 'z';
               const amplitude = parseFloat(match[2]);
               if (!isNaN(amplitude)) {
-                context.entity.position[axis] = Math.sin(context.time.time) * amplitude;
+                const value = Math.sin(context.time.time) * amplitude;
+                const [px, py, pz] = context.entity.transform.position;
+                if (axis === 'x') context.entity.transform.setPosition(value, py, pz);
+                if (axis === 'y') context.entity.transform.setPosition(px, value, pz);
+                if (axis === 'z') context.entity.transform.setPosition(px, py, value);
               }
             }
           }
@@ -229,7 +258,11 @@ export class ScriptExecutor {
               const axis = match[1] as 'x' | 'y' | 'z';
               const multiplier = match[2] ? parseFloat(match[2]) : 1;
               if (!isNaN(multiplier)) {
-                context.entity.rotation[axis] += deltaTime * multiplier;
+                const [rx, ry, rz] = context.entity.transform.rotation;
+                const delta = deltaTime * multiplier;
+                if (axis === 'x') context.entity.transform.setRotation(rx + delta, ry, rz);
+                if (axis === 'y') context.entity.transform.setRotation(rx, ry + delta, rz);
+                if (axis === 'z') context.entity.transform.setRotation(rx, ry, rz + delta);
               }
             }
           }

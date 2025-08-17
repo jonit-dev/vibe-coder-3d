@@ -68,7 +68,9 @@ export function cameraSystem(): number {
     if (!cameraData) return;
 
     // Check if camera needs update (we'll use a simple flag for now)
-    const bitECSCamera = componentRegistry.getBitECSComponent('Camera');
+    const bitECSCamera = componentRegistry.getBitECSComponent('Camera') as
+      | (Record<string, Record<number, number>> & { needsUpdate?: Record<number, number> })
+      | undefined;
     if (!bitECSCamera?.needsUpdate?.[eid]) {
       return;
     }
@@ -136,14 +138,18 @@ export function markAllCamerasForUpdate(): number {
   }
 
   const entities = query(world);
-  const bitECSCamera = componentRegistry.getBitECSComponent('Camera');
+  const bitECSCamera = componentRegistry.getBitECSComponent('Camera') as
+    | (Record<string, Record<number, number>> & { needsUpdate?: Record<number, number> })
+    | undefined;
 
   if (!bitECSCamera?.needsUpdate) {
     return 0;
   }
 
   entities.forEach((eid: number) => {
-    bitECSCamera.needsUpdate[eid] = 1;
+    if (bitECSCamera?.needsUpdate) {
+      bitECSCamera.needsUpdate[eid] = 1;
+    }
   });
 
   return entities.length;

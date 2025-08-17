@@ -48,7 +48,7 @@ export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
       return (
         <RigidBody
           key={terrainColliderKey}
-          type={rigidBodyProps.type}
+          type={rigidBodyProps.type as any}
           mass={rigidBodyProps.mass}
           friction={rigidBodyProps.friction}
           restitution={rigidBodyProps.restitution}
@@ -64,7 +64,7 @@ export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
               ? false
               : hasCustomColliders || hasEffectiveCustomColliders
                 ? false
-                : colliderType
+                : (colliderType as any)
           }
         >
           {/* Custom Colliders - now properly handling heightfield */}
