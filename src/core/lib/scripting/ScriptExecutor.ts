@@ -131,7 +131,7 @@ export class ScriptExecutor {
       if (!compiledScript) {
         return {
           success: false,
-          error: 'Script not compiled. Call compileScript first.',
+          error: `Script not compiled for entity ${options.entityId}. Ensure script system is running and script has been processed.`,
           executionTime: 0,
         };
       }

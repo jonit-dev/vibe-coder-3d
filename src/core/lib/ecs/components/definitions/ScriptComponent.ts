@@ -149,9 +149,15 @@ export const scriptComponent = ComponentFactory.create({
     // Timestamps
     component.lastModified[eid] = data.lastModified ?? Date.now();
 
-    // Mark for compilation if code was provided
-    component.needsCompilation[eid] = data.code ? 1 : 0;
+    // Check if script needs compilation
+    const hasExecutionFlags =
+      (data.executeOnStart ?? false) ||
+      (data.executeInUpdate ?? true) ||
+      (data.executeOnEnable ?? false);
 
+    // Mark for compilation if code was provided OR if script has execution flags enabled
+    // Empty scripts with execution flags need to be compiled as no-op functions
+    component.needsCompilation[eid] = data.code || hasExecutionFlags ? 1 : 0;
     // Mark for execution if enabled and configured to execute on start
     component.needsExecution[eid] = data.enabled && data.executeOnStart ? 1 : 0;
   },

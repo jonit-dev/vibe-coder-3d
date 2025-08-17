@@ -108,8 +108,14 @@ function entityNeedsCompilation(eid: EntityId): boolean {
   const codeHash = scriptComponent.codeHash[eid];
   const code = getStringFromHash(codeHash);
 
-  // Empty scripts don't need compilation
-  if (!code || code.trim() === '') {
+  // Check if script has execution flags that require compilation
+  const hasExecutionFlags =
+    scriptComponent.executeOnStart[eid] ||
+    scriptComponent.executeInUpdate[eid] ||
+    scriptComponent.executeOnEnable[eid];
+
+  // Empty scripts with no execution flags don't need compilation
+  if ((!code || code.trim() === '') && !hasExecutionFlags) {
     return false;
   }
 
@@ -148,12 +154,45 @@ function compileScriptForEntity(eid: EntityId): boolean {
 
   const codeHash = scriptComponent.codeHash[eid];
   const code = getStringFromHash(codeHash);
+  const scriptId = `entity_${eid}`;
 
   if (!code || code.trim() === '') {
-    return true; // Empty script is valid (no-op)
+    // For empty scripts with execution flags, compile a no-op function
+    const hasExecutionFlags =
+      scriptComponent.executeOnStart[eid] ||
+      scriptComponent.executeInUpdate[eid] ||
+      scriptComponent.executeOnEnable[eid];
+
+    if (hasExecutionFlags) {
+      const result: IScriptExecutionResult = scriptExecutor.compileScript(
+        '// Empty script',
+        scriptId,
+      );
+
+      // Update component with compilation results
+      scriptComponent.hasErrors[eid] = result.success ? 0 : 1;
+      scriptComponent.lastExecutionTime[eid] = result.executionTime;
+      scriptComponent.needsCompilation[eid] = 0;
+
+      if (result.success) {
+        scriptComponent.lastErrorMessageHash[eid] = 0; // Clear error
+        console.log(`[ScriptSystem] Successfully compiled empty script for entity ${eid}`);
+        return true;
+      } else {
+        const errorHash = storeString(result.error || 'Unknown compilation error');
+        scriptComponent.lastErrorMessageHash[eid] = errorHash;
+        console.error(
+          `[ScriptSystem] Failed to compile empty script for entity ${eid}:`,
+          result.error,
+        );
+        return false;
+      }
+    } else {
+      return true; // Empty script with no execution flags is valid (no-op)
+    }
   }
 
-  const scriptId = `entity_${eid}`;
+  // Handle scripts with actual code
   const result: IScriptExecutionResult = scriptExecutor.compileScript(code, scriptId);
 
   // Update component with compilation results
