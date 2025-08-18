@@ -26,7 +26,7 @@ export const ColliderScalarField: React.FC<IColliderScalarFieldProps> = ({
       label={label}
       type="number"
       value={value}
-      onChange={onChange}
+      onChange={(value) => onChange(value as number)}
       resetValue={defaultValue}
       min={min}
       step={step}

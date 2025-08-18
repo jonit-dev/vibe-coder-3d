@@ -1,5 +1,6 @@
 import type { ThreeEvent } from '@react-three/fiber';
 import React from 'react';
+import * as THREE from 'three';
 
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { useEditorStore } from '@/editor/store/editorStore';
@@ -9,7 +10,6 @@ import { EntityMesh } from './components/EntityMesh';
 import { EntityOutline } from './components/EntityOutline';
 import { useEntityColliders } from './hooks/useEntityColliders';
 import { useEntityComponents } from './hooks/useEntityComponents';
-import type { IPhysicsContributions, IRenderingContributions } from './hooks/useEntityMesh';
 import { useEntityMesh } from './hooks/useEntityMesh';
 import { useEntitySelection } from './hooks/useEntitySelection';
 import { useEntityTransform } from './hooks/useEntityTransform';
@@ -133,7 +133,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     // Create the mesh content (but hide it if being followed)
     const meshContent = !shouldHideMesh ? (
       <EntityMesh
-        meshRef={meshRef}
+        meshRef={meshRef as React.RefObject<THREE.Group | THREE.Object3D | THREE.Mesh>}
         meshType={meshType}
         renderingContributions={renderingContributions}
         entityColor={entityColor}
@@ -164,7 +164,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         {/* Gizmo controls (disabled during physics) - only show on primary selection */}
         {shouldShowGizmo && (
           <GizmoControls
-            meshRef={meshRef}
+            meshRef={meshRef as React.RefObject<THREE.Group | THREE.Object3D | THREE.Mesh>}
             mode={mode}
             entityId={entityId}
             onTransformChange={onTransformChange}

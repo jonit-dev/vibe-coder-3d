@@ -3,6 +3,7 @@ import { FiLayers } from 'react-icons/fi';
 import { TbCube } from 'react-icons/tb';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { SidePanel } from '@/editor/components/layout/SidePanel';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
@@ -89,15 +90,16 @@ export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({ entityIds }) =>
 
           // For transform, offset position slightly
           if (component.type === KnownComponentTypes.TRANSFORM && component.data) {
-            const transformData = {
-              ...component.data,
+            const transformData = component.data as ITransformData;
+            const newTransformData = {
+              ...transformData,
               position: [
-                (component.data.position?.[0] || 0) + 0.5,
-                component.data.position?.[1] || 0,
-                component.data.position?.[2] || 0,
-              ],
+                (transformData.position?.[0] || 0) + 0.5,
+                transformData.position?.[1] || 0,
+                transformData.position?.[2] || 0,
+              ] as [number, number, number],
             };
-            componentManager.addComponent(newEntity.id, component.type, transformData);
+            componentManager.addComponent(newEntity.id, component.type, newTransformData);
           } else {
             componentManager.addComponent(newEntity.id, component.type, component.data);
           }

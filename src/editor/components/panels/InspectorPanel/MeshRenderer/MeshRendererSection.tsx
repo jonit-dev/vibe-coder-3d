@@ -2,6 +2,7 @@ import React from 'react';
 import { FiEye, FiImage, FiSliders } from 'react-icons/fi';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { IMeshRendererData } from '@/core/lib/ecs/components/MeshRendererComponent';
 import { AssetSelector } from '@/editor/components/shared/AssetSelector';
 import { CheckboxField } from '@/editor/components/shared/CheckboxField';
 import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
@@ -11,33 +12,6 @@ import { GenericComponentSection } from '@/editor/components/shared/GenericCompo
 import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
 import { ToggleField } from '@/editor/components/shared/ToggleField';
 
-export interface IMeshRendererData {
-  meshId: string;
-  materialId: string;
-  enabled: boolean;
-  castShadows: boolean;
-  receiveShadows: boolean;
-  modelPath?: string;
-  material?: {
-    shader: 'standard' | 'unlit';
-    materialType: 'solid' | 'texture';
-    color: string;
-    albedoTexture?: string;
-    normalTexture?: string;
-    normalScale: number;
-    metalness: number;
-    roughness: number;
-    emissive: string;
-    emissiveIntensity: number;
-    metallicTexture?: string;
-    roughnessTexture?: string;
-    emissiveTexture?: string;
-    occlusionTexture?: string;
-    occlusionStrength: number;
-    textureOffsetX: number;
-    textureOffsetY: number;
-  };
-}
 
 export interface IMeshRendererSectionProps {
   meshRenderer: IMeshRendererData | null;
@@ -61,7 +35,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   };
 
   const updateMaterial = (updates: Partial<IMeshRendererData['material']>) => {
-    if (meshRenderer) {
+    if (meshRenderer && meshRenderer.material) {
       setMeshRenderer({
         ...meshRenderer,
         material: { ...meshRenderer.material, ...updates },
@@ -69,8 +43,8 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
     }
   };
 
-  // Don't render the section if meshRenderer is null
-  if (!meshRenderer) {
+  // Don't render the section if meshRenderer is null or material is undefined
+  if (!meshRenderer || !meshRenderer.material) {
     return null;
   }
 
@@ -86,7 +60,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
     >
       <ToggleField
         label="Enabled"
-        value={meshRenderer.enabled}
+        value={meshRenderer.enabled ?? true}
         onChange={(value: boolean) => updateMeshRenderer({ enabled: value })}
         resetValue={true}
         color="cyan"
@@ -96,7 +70,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
         label="Mesh"
         type="select"
         value={meshRenderer.meshId}
-        onChange={(value) => updateMeshRenderer({ meshId: value })}
+        onChange={(value) => updateMeshRenderer({ meshId: value as string })}
         options={[
           { value: 'cube', label: 'Cube' },
           { value: 'sphere', label: 'Sphere' },
@@ -198,7 +172,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
         ) : (
           <ColorField
             label="Color"
-            value={meshRenderer.material.color}
+            value={meshRenderer.material.color || '#cccccc'}
             onChange={(value: string) => updateMaterial({ color: value })}
             resetValue="#cccccc"
             placeholder="#cccccc"
@@ -215,7 +189,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
       >
         <SingleAxisField
           label="Metalness"
-          value={meshRenderer.material.metalness}
+          value={meshRenderer.material.metalness || 0}
           onChange={(value) => updateMaterial({ metalness: Math.max(0, Math.min(1, value)) })}
           min={0}
           max={1}
@@ -228,7 +202,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
 
         <SingleAxisField
           label="Roughness"
-          value={meshRenderer.material.roughness}
+          value={meshRenderer.material.roughness || 0.7}
           onChange={(value) => updateMaterial({ roughness: Math.max(0, Math.min(1, value)) })}
           min={0}
           max={1}
@@ -244,7 +218,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
       <CollapsibleSection title="Shadow Settings" defaultExpanded={false} badge="2">
         <CheckboxField
           label="Cast Shadows"
-          value={meshRenderer.castShadows}
+          value={meshRenderer.castShadows ?? true}
           onChange={(value: boolean) => updateMeshRenderer({ castShadows: value })}
           description="Cast shadows on other objects"
           resetValue={true}
@@ -253,7 +227,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
 
         <CheckboxField
           label="Receive Shadows"
-          value={meshRenderer.receiveShadows}
+          value={meshRenderer.receiveShadows ?? true}
           onChange={(value: boolean) => updateMeshRenderer({ receiveShadows: value })}
           description="Receive shadows from other objects"
           resetValue={true}

@@ -1,6 +1,6 @@
 import type { ThreeEvent } from '@react-three/fiber';
 import { useCallback, useEffect, useRef } from 'react';
-import type { Mesh } from 'three';
+import type { Group, Mesh, Object3D } from 'three';
 import * as THREE from 'three';
 
 import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
@@ -10,7 +10,7 @@ import { Logger } from '@/core/lib/logger';
 interface IUseEntitySelectionProps {
   entityId: number;
   selected: boolean;
-  meshRef: React.RefObject<Mesh | null>;
+  meshRef: React.RefObject<Group | Mesh | Object3D | null>;
   isTransforming: boolean;
   position: [number, number, number];
   rotationRadians: [number, number, number];

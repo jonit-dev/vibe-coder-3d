@@ -16,7 +16,7 @@ export const useEntityTransform = ({
   isPlaying,
 }: IUseEntityTransformProps) => {
   const logger = Logger.create('EntityTransform');
-  const meshRef = useRef<THREE.Object3D | null>(null);
+  const meshRef = useRef<THREE.Group | THREE.Mesh | THREE.Object3D | null>(null);
   const lastSyncedTransform = useRef<string>('');
 
   // Extract transform data with defaults
@@ -31,7 +31,7 @@ export const useEntityTransform = ({
     };
   }, [transform?.data]);
   // Track meshRef stability
-  const previousMeshRef = useRef<THREE.Object3D | null>(null);
+  const previousMeshRef = useRef<THREE.Group | THREE.Mesh | THREE.Object3D | null>(null);
   const renderCounter = useRef(0);
   renderCounter.current++;
 

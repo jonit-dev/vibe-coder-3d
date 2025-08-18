@@ -19,14 +19,12 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
     hasMeshCollider,
     hasCamera,
     hasLight,
-    hasSound,
     getTransform,
     getMeshRenderer,
     getRigidBody,
     getMeshCollider,
     getCamera,
     getLight,
-    getSound,
     addComponent,
     updateComponent,
     removeComponent,
@@ -47,16 +45,14 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
         hasMeshCollider={hasMeshCollider}
         hasCamera={hasCamera}
         hasLight={hasLight}
-        hasSound={hasSound}
-        getTransform={getTransform}
-        getMeshRenderer={getMeshRenderer}
-        getRigidBody={getRigidBody}
-        getMeshCollider={getMeshCollider}
-        getCamera={getCamera}
-        getLight={getLight}
-        getSound={getSound}
+        getTransform={getTransform as any}
+        getMeshRenderer={getMeshRenderer as any}
+        getRigidBody={getRigidBody as any}
+        getMeshCollider={getMeshCollider as any}
+        getCamera={getCamera as any}
+        getLight={getLight as any}
         addComponent={addComponent}
-        updateComponent={updateComponent}
+        updateComponent={updateComponent as (type: string, data: unknown) => boolean}
         removeComponent={removeComponent}
       />
 

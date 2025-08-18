@@ -112,7 +112,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
             label="Projection"
             type="select"
             value={cameraData.projectionType ?? 'perspective'}
-            onChange={(value) => handleFieldChange('projectionType', value)}
+            onChange={(value) => handleFieldChange('projectionType', value as 'perspective' | 'orthographic')}
             options={[
               { value: 'perspective', label: 'Perspective' },
               { value: 'orthographic', label: 'Orthographic' },
@@ -186,7 +186,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
             label="Clear Flags"
             type="select"
             value={cameraData.clearFlags ?? 'skybox'}
-            onChange={(value) => handleFieldChange('clearFlags', value)}
+            onChange={(value) => handleFieldChange('clearFlags', value as 'skybox' | 'solidColor' | 'depthOnly' | 'dontClear')}
             options={[
               { value: 'skybox', label: 'Skybox' },
               { value: 'solidColor', label: 'Solid Color' },
@@ -229,7 +229,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
             value={cameraData.controlMode ?? 'free'}
             onChange={(value) => {
               console.log('Control mode changing to:', value);
-              handleFieldChange('controlMode', value);
+              handleFieldChange('controlMode', value as 'locked' | 'free');
             }}
             options={[
               { value: 'locked', label: 'Locked (Fixed Camera)' },
@@ -260,7 +260,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
                 label="Follow Target Entity"
                 type="select"
                 value={(cameraData.followTarget ?? 0).toString()}
-                onChange={(value) => handleFieldChange('followTarget', parseInt(value, 10))}
+                onChange={(value) => handleFieldChange('followTarget', parseInt(value as string, 10))}
                 options={entityOptions}
               />
 
@@ -271,7 +271,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
                     type="select"
                     value={selectedPreset}
                     onChange={(value) => {
-                      setSelectedPreset(value);
+                      setSelectedPreset(value as string);
                       const presets = {
                         'first-person': { x: 0, y: 0, z: 0 },
                         'third-person': { x: 0, y: 5, z: -10 },
@@ -367,7 +367,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
                 label="Tone Mapping"
                 type="select"
                 value={cameraData.toneMapping ?? 'none'}
-                onChange={(value) => handleFieldChange('toneMapping', value)}
+                onChange={(value) => handleFieldChange('toneMapping', value as 'none' | 'linear' | 'reinhard' | 'cineon' | 'aces')}
                 options={[
                   { value: 'none', label: 'None' },
                   { value: 'linear', label: 'Linear' },
@@ -405,7 +405,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
               label="Post-Processing Preset"
               type="select"
               value={cameraData.postProcessingPreset ?? 'none'}
-              onChange={(value) => handleFieldChange('postProcessingPreset', value)}
+              onChange={(value) => handleFieldChange('postProcessingPreset', value as 'none' | 'cinematic' | 'realistic' | 'stylized')}
               options={[
                 { value: 'none', label: 'None' },
                 { value: 'cinematic', label: 'Cinematic' },

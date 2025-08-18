@@ -28,7 +28,7 @@ export interface IRigidBodyData {
 
 export interface IMeshColliderData {
   enabled: boolean;
-  colliderType: 'box' | 'sphere' | 'capsule' | 'convex' | 'mesh';
+  colliderType: 'box' | 'sphere' | 'capsule' | 'convex' | 'mesh' | 'heightfield';
   isTrigger: boolean;
   center: [number, number, number];
   size: {

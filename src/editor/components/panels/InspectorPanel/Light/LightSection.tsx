@@ -75,7 +75,7 @@ export const LightSection: React.FC<ILightSectionProps> = ({ lightData, onUpdate
           label="Type"
           type="select"
           value={lightData.lightType}
-          onChange={(value: string) => updateLight({ lightType: value as LightData['lightType'] })}
+          onChange={(value) => updateLight({ lightType: value as LightData['lightType'] })}
           options={lightTypeOptions}
         />
       </CollapsibleSection>
@@ -224,7 +224,7 @@ export const LightSection: React.FC<ILightSectionProps> = ({ lightData, onUpdate
                 label="Shadow Map Size"
                 type="select"
                 value={lightData.shadowMapSize?.toString() ?? '1024'}
-                onChange={(value: string) => updateLight({ shadowMapSize: parseInt(value) })}
+                onChange={(value) => updateLight({ shadowMapSize: parseInt(value as string) })}
                 options={[
                   { value: '256', label: '256' },
                   { value: '512', label: '512' },

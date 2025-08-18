@@ -107,11 +107,11 @@ export const useEntityComponents = (entityId: EntityId | null) => {
   );
 
   const getComponent = useCallback(
-    <TData>(type: ComponentType): IComponent<TData> | undefined => {
-      if (entityId === null) return undefined;
+    <TData>(type: ComponentType): IComponent<TData> | null => {
+      if (entityId === null) return null;
 
       const data = getComponentData<TData>(entityId, type);
-      return data ? { entityId, type, data } : undefined;
+      return data ? { entityId, type, data } : null;
     },
     [entityId, getComponentData],
   );

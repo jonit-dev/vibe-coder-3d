@@ -37,6 +37,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { IEntity } from '@/core/lib/ecs/IEntity';
+import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
@@ -342,13 +343,14 @@ export const HierarchyPanelContent: React.FC = () => {
             for (const component of sourceComponents) {
               // For transform, offset position slightly
               if (component.type === KnownComponentTypes.TRANSFORM && component.data) {
+                const originalTransformData = component.data as ITransformData;
                 const transformData = {
-                  ...component.data,
+                  ...originalTransformData,
                   position: [
-                    (component.data.position?.[0] || 0) + 0.5,
-                    component.data.position?.[1] || 0,
-                    component.data.position?.[2] || 0,
-                  ],
+                    (originalTransformData.position?.[0] || 0) + 0.5,
+                    originalTransformData.position?.[1] || 0,
+                    originalTransformData.position?.[2] || 0,
+                  ] as [number, number, number],
                 };
                 componentManager.addComponent(newEntity.id, component.type, transformData);
               } else {
@@ -406,13 +408,14 @@ export const HierarchyPanelContent: React.FC = () => {
           for (const component of sourceComponents) {
             // For transform, offset position slightly
             if (component.type === KnownComponentTypes.TRANSFORM && component.data) {
+              const originalTransformData = component.data as ITransformData;
               const transformData = {
-                ...component.data,
+                ...originalTransformData,
                 position: [
-                  (component.data.position?.[0] || 0) + 0.5,
-                  component.data.position?.[1] || 0,
-                  component.data.position?.[2] || 0,
-                ],
+                  (originalTransformData.position?.[0] || 0) + 0.5,
+                  originalTransformData.position?.[1] || 0,
+                  originalTransformData.position?.[2] || 0,
+                ] as [number, number, number],
               };
               componentManager.addComponent(newEntity.id, component.type, transformData);
             } else {

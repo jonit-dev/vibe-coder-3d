@@ -140,7 +140,7 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
             label="Radius"
             type="number"
             value={meshCollider.size.radius}
-            onChange={(value) => updateSize({ radius: value })}
+            onChange={(value) => updateSize({ radius: value as number })}
             disabled={isPlaying}
             step={0.01}
             min={0.01}
@@ -155,7 +155,7 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
             label="Radius"
             type="number"
             value={meshCollider.size.capsuleRadius}
-            onChange={(value) => updateSize({ capsuleRadius: value })}
+            onChange={(value) => updateSize({ capsuleRadius: value as number })}
             disabled={isPlaying}
             step={0.01}
             min={0.01}
@@ -165,7 +165,7 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
             label="Height"
             type="number"
             value={meshCollider.size.capsuleHeight}
-            onChange={(value) => updateSize({ capsuleHeight: value })}
+            onChange={(value) => updateSize({ capsuleHeight: value as number })}
             disabled={isPlaying}
             step={0.01}
             min={0.01}

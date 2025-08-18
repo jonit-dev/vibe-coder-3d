@@ -92,7 +92,7 @@ export const ComponentList: React.FC<IComponentListProps> = ({
       {hasRigidBody && (
         <RigidBodyAdapter
           rigidBodyComponent={getRigidBody()}
-          addComponent={addComponent}
+          addComponent={addComponent as (type: string, data: any) => IComponent<any> | null}
           updateComponent={updateComponent}
           removeComponent={removeComponent}
           isPlaying={isPlaying}
