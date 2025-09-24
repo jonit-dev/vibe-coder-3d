@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { ProjectAssetService } from '@core';
 
 interface IAssetLoaderState {
   isOpen: boolean;
@@ -23,16 +24,17 @@ interface IAssetLoaderState {
 export const useAssetLoaderStore = create<IAssetLoaderState>((set, get) => ({
   isOpen: false,
   title: 'Select Asset',
-  basePath: '/assets',
+  basePath: ProjectAssetService.getInstance().getAssetBasePath(),
   allowedExtensions: [],
   showPreview: true,
   onSelect: undefined,
 
   openModal: (config) => {
+    const projectAssetService = ProjectAssetService.getInstance();
     set({
       isOpen: true,
       title: config.title,
-      basePath: config.basePath || '/assets',
+      basePath: config.basePath || projectAssetService.getAssetBasePath(),
       allowedExtensions: config.allowedExtensions || [],
       showPreview: config.showPreview ?? true,
       onSelect: config.onSelect,

@@ -6,6 +6,10 @@
 import { componentRegistry } from '../ecs/ComponentRegistry';
 import { EntityManager } from '../ecs/EntityManager';
 import { ECSWorld } from '../ecs/World';
+import {
+  getRegisteredScenes,
+  getScene as getExtensionScene,
+} from '../extension/GameExtensionPoints';
 import type {
   CameraData,
   LightData,
@@ -98,9 +102,28 @@ class SceneRegistryClass {
 
   /**
    * Load a scene into the world
+   * First checks local scenes, then extension scenes
    */
   async loadScene(id: string, clearExisting: boolean = true): Promise<void> {
-    const definition = this.scenes.get(id);
+    let definition = this.scenes.get(id);
+
+    // If not found in local registry, check extension scenes
+    if (!definition) {
+      const extensionScene = getExtensionScene(id);
+      if (extensionScene) {
+        // Convert extension scene descriptor to our format
+        definition = {
+          id,
+          name: id,
+          description: `Extension scene: ${id}`,
+          builder: async (_ctx) => {
+            // Call the extension scene load function
+            await extensionScene.load();
+          },
+        };
+      }
+    }
+
     if (!definition) {
       throw new Error(`Scene not found: ${id}`);
     }
@@ -147,10 +170,23 @@ class SceneRegistryClass {
   }
 
   /**
-   * List all registered scenes
+   * List all registered scenes (local and extension scenes)
    */
   listScenes(): ISceneDefinition[] {
-    return Array.from(this.scenes.values());
+    const localScenes = Array.from(this.scenes.values());
+    const extensionScenes = Array.from(getRegisteredScenes().values()).map((scene) => ({
+      id: scene.id,
+      name: scene.id,
+      description: `Extension scene: ${scene.id}`,
+      builder: async () => {
+        await scene.load();
+      },
+      metadata: {
+        tags: ['game', 'extension'],
+      },
+    }));
+
+    return [...localScenes, ...extensionScenes];
   }
 
   /**

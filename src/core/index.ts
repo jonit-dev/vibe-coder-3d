@@ -122,3 +122,47 @@ export type {
 
 // UI Store with validation
 export * from './stores/uiStore';
+
+// Extension Points for Game Projects
+export {
+  registerComponent,
+  registerSystem,
+  registerScript,
+  registerPrefab,
+  registerScene,
+  initializeGameProject,
+  getRegisteredComponents,
+  getRegisteredSystems,
+  getRegisteredScripts,
+  getRegisteredPrefabs,
+  getRegisteredScenes,
+  getCurrentProjectConfig,
+  getComponent,
+  getSystem,
+  getScript,
+  getPrefab,
+  getScene,
+  runRegisteredSystems,
+  runRegisteredScripts,
+  initializeScriptForEntity,
+  destroyScriptForEntity,
+} from './lib/extension/GameExtensionPoints';
+
+export type {
+  IGameProjectConfig,
+  IComponentDescriptor,
+  ISystemDescriptor,
+  IScriptDescriptor,
+  IPrefabDescriptor,
+  ISceneDescriptor,
+} from './lib/extension/types';
+
+// Project Asset Service
+export { ProjectAssetService } from './lib/assets';
+
+// Project Scene Serializer
+export { ProjectSceneSerializer } from './lib/serialization';
+
+// Scene Registry
+export { defineScene, loadScene, sceneRegistry } from './lib/scene/SceneRegistry';
+export type { ISceneContext, SceneBuilder } from './lib/scene/SceneRegistry';

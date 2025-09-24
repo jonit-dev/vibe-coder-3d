@@ -18,10 +18,14 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@core": ["src/core"],
       "@core/*": ["src/core/*"],
-      "@editor/*": ["src/editor/*"]
+      "@editor": ["src/editor"],
+      "@editor/*": ["src/editor/*"],
+      "@game": ["src/game"],
+      "@game/*": ["src/game/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/types"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

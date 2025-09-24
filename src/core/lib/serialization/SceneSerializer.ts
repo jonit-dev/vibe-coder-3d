@@ -147,7 +147,7 @@ export function deserializeIntoWorld(
   });
 
   // Second pass: set up hierarchy
-  entityCreationData.forEach((data, persistentId) => {
+  entityCreationData.forEach((data, _persistentId) => {
     if (data.parentPersistentId) {
       const parentEntityId = persistentIdToEntity.get(data.parentPersistentId);
       if (parentEntityId !== undefined) {
@@ -173,7 +173,7 @@ export function deserializeIntoWorld(
     Object.entries(data.components).forEach(([componentId, componentData]) => {
       // Skip if component already exists (like Transform which might be auto-added)
       if (componentRegistry.hasComponent(entityId, componentId)) {
-        componentRegistry.updateComponent(entityId, componentId, componentData);
+        componentRegistry.updateComponent(entityId, componentId, componentData as Partial<unknown>);
       } else {
         componentRegistry.addComponent(entityId, componentId, componentData);
       }

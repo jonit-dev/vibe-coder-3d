@@ -1,19 +1,15 @@
 /**
- * Scene definitions index
- * Register all available scenes
+ * Core Scene definitions index
+ * Register core/editor scenes only
  */
 
 import { registerDefaultScene } from './defaultScene';
-import { registerJSXExampleScene } from './jsxExampleScene';
-import { registerSampleScene } from './sampleScene';
 
-export { registerDefaultScene, registerSampleScene, registerJSXExampleScene };
+export { registerDefaultScene };
 
-// Register all scenes function
-export function registerAllScenes(): void {
+// Register core scenes function
+export function registerCoreScenes(): void {
   registerDefaultScene();
-  registerSampleScene();
-  registerJSXExampleScene();
 
-  console.log('[Scenes] All scenes registered');
+  console.log('[Core Scenes] Core scenes registered');
 }

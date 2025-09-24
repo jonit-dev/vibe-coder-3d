@@ -1,9 +1,9 @@
 import { useFrame } from '@react-three/fiber';
-import { defineQuery, Component, QueryModifier, IWorld } from 'bitecs';
+import { Component, defineQuery, IWorld, QueryModifier } from 'bitecs';
 import { useEffect, useState } from 'react';
 
-import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
-import { ECSWorld } from '@core/lib/ecs/World';
+import { componentRegistry } from '../lib/ecs/ComponentRegistry';
+import { ECSWorld } from '../lib/ecs/World';
 
 // Get world instance
 const world = ECSWorld.getInstance().getWorld();

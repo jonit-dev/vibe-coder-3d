@@ -27,7 +27,7 @@ export class BrowserOverridesStore implements IOverridesStore {
     try {
       // Try File System Access API first
       if ('showSaveFilePicker' in window) {
-        const fileHandle = await window.showSaveFilePicker({
+        const fileHandle = await (window as any).showSaveFilePicker({
           suggestedName: fileName,
           types: [
             {
@@ -62,7 +62,7 @@ export class BrowserOverridesStore implements IOverridesStore {
     try {
       // Try File System Access API first
       if ('showOpenFilePicker' in window) {
-        const [fileHandle] = await window.showOpenFilePicker({
+        const [fileHandle] = await (window as any).showOpenFilePicker({
           types: [
             {
               description: 'Scene Overrides',

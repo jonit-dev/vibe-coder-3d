@@ -14,7 +14,8 @@ import {
   Sphere,
   Transform,
 } from '@/core/components/jsx';
-import { defineScene } from '../SceneRegistry';
+import { defineScene } from '@core';
+import type { ISceneContext } from '@core';
 
 /**
  * JSX Scene Component - Define scenes using React/R3F style
@@ -125,8 +126,8 @@ export const JSXExampleScene: React.FC = () => {
  */
 export const registerJSXExampleScene = () => {
   defineScene(
-    'jsx-example',
-    async ({ createEntity, addComponent }) => {
+    'game.jsx-example',
+    async ({ createEntity, addComponent }: ISceneContext) => {
       // For JSX scenes, we need to render the React component to execute the ECS operations
       // This is a simplified approach - in a full implementation, we'd use a proper React renderer
 

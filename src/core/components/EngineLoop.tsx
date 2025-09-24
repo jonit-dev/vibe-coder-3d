@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { ReactNode, useEffect, useRef } from 'react';
 
 import { useGameLoop } from '../lib/gameLoop';
+import { runRegisteredSystems } from '../lib/extension/GameExtensionPoints';
 import { materialSystem } from '../systems/MaterialSystem';
 import { cameraSystem } from '../systems/cameraSystem';
 import { lightSystem } from '../systems/lightSystem';
@@ -207,6 +208,9 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
 
   // Run sound system - handles autoplay and sound updates during play mode
   const soundCount = soundSystem(deltaTime, isPlaying);
+
+  // Run registered game systems from extension points
+  runRegisteredSystems(deltaTime);
 
   // For future systems, add them here in the appropriate order
   // e.g., movementSystem(ecsWorld, deltaTime);

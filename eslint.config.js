@@ -68,6 +68,20 @@ export default [
           prefix: ['I'],
         },
       ],
+      'import/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './src/game/**/*',
+              from: './src/core/**/*',
+              except: ['**/index.ts', '**/lib/extension/**/*'],
+              message:
+                'Game code can only import from @core/* public API or @core/lib/extension/*. Use @core/* instead of deep imports.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

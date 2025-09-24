@@ -111,10 +111,10 @@ function applyPatch(
       if (currentData) {
         // Merge the override data with current data
         const mergedData = mergeComponentData(currentData, componentData);
-        componentRegistry.updateComponent(entityId, componentId, mergedData);
+        componentRegistry.updateComponent(entityId, componentId, mergedData as Partial<unknown>);
       } else {
         // Component exists but has no data, replace entirely
-        componentRegistry.updateComponent(entityId, componentId, componentData);
+        componentRegistry.updateComponent(entityId, componentId, componentData as Partial<unknown>);
       }
     } else {
       // Add new component

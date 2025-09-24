@@ -1,4 +1,4 @@
-import { useToastStore, type IToast, type ToastType } from '@core/stores/toastStore';
+import { useToastStore, type IToast, type ToastType } from '@/core/stores/toastStore';
 import React, { useEffect, useState } from 'react';
 import { FiAlertTriangle, FiCheck, FiInfo, FiLoader, FiX, FiXCircle } from 'react-icons/fi';
 

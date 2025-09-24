@@ -5,13 +5,13 @@
 
 import { defineQuery, enterQuery, exitQuery } from 'bitecs';
 
-import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
-import { ECSWorld } from '@core/lib/ecs/World';
-import { EntityId } from '@core/lib/ecs/types';
-import { getStringFromHash, storeString } from '@core/lib/ecs/utils/stringHashUtils';
-import { ScriptExecutor, IScriptExecutionResult } from '@core/lib/scripting/ScriptExecutor';
-import { ITimeAPI, IInputAPI } from '@core/lib/scripting/ScriptAPI';
-import { Logger } from '@core/lib/logger';
+import { componentRegistry } from '../lib/ecs/ComponentRegistry';
+import { ECSWorld } from '../lib/ecs/World';
+import { EntityId } from '../lib/ecs/types';
+import { getStringFromHash, storeString } from '../lib/ecs/utils/stringHashUtils';
+import { Logger } from '../lib/logger';
+import { IInputAPI, ITimeAPI } from '../lib/scripting/ScriptAPI';
+import { IScriptExecutionResult, ScriptExecutor } from '../lib/scripting/ScriptExecutor';
 
 // BitECS Script component type structure
 interface IBitECSScriptComponent {
@@ -137,9 +137,7 @@ function entityNeedsCompilation(eid: EntityId): boolean {
 
   // Empty scripts with no execution flags don't need compilation
   if (isEmpty && !hasExecutionFlags) {
-    logger.debug(
-      `Entity ${eid}: Empty script with no execution flags, skipping compilation`,
-    );
+    logger.debug(`Entity ${eid}: Empty script with no execution flags, skipping compilation`);
     return false;
   }
 
@@ -209,10 +207,7 @@ function compileScriptForEntity(eid: EntityId): boolean {
     } else {
       const errorHash = storeString(result.error || 'Unknown compilation error');
       scriptComponent.lastErrorMessageHash[eid] = errorHash;
-      logger.error(
-        `Failed to compile empty script for entity ${eid}:`,
-        result.error,
-      );
+      logger.error(`Failed to compile empty script for entity ${eid}:`, result.error);
       return false;
     }
   }

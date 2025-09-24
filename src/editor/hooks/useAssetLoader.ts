@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ProjectAssetService } from '@core';
 
 interface IUseAssetLoaderProps {
   title?: string;
@@ -10,11 +11,14 @@ interface IUseAssetLoaderProps {
 
 export const useAssetLoader = ({
   title = 'Select Asset',
-  basePath = '/assets',
+  basePath,
   allowedExtensions = [],
   showPreview = true,
   onSelect,
 }: IUseAssetLoaderProps = {}) => {
+  // Use project-scoped base path if not provided
+  const projectAssetService = ProjectAssetService.getInstance();
+  const resolvedBasePath = basePath || projectAssetService.getAssetBasePath();
   const [isOpen, setIsOpen] = useState(false);
 
   const openModal = () => setIsOpen(true);
@@ -35,7 +39,7 @@ export const useAssetLoader = ({
       onClose: closeModal,
       onSelect: handleSelect,
       title,
-      basePath,
+      basePath: resolvedBasePath,
       allowedExtensions,
       showPreview,
     },

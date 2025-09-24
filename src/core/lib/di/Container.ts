@@ -3,7 +3,7 @@
  * Provides a structured way to manage dependencies and avoid singleton pattern
  */
 
-export type Constructor<T = {}> = new (...args: any[]) => T;
+export type Constructor<T = object> = new (...args: any[]) => T;
 export type Factory<T = any> = (...args: any[]) => T;
 
 interface IServiceDefinition<T = any> {
@@ -24,7 +24,7 @@ export class Container {
   register<T>(
     token: string | Constructor<T>,
     factory: Factory<T>,
-    options: { singleton?: boolean } = { singleton: true }
+    options: { singleton?: boolean } = { singleton: true },
   ): void {
     this.services.set(token, {
       factory,
@@ -37,7 +37,7 @@ export class Container {
    */
   registerClass<T>(
     constructor: Constructor<T>,
-    options: { singleton?: boolean } = { singleton: true }
+    options: { singleton?: boolean } = { singleton: true },
   ): void {
     this.register(constructor, () => new constructor(), options);
   }

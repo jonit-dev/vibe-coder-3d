@@ -1,8 +1,8 @@
 import { defineQuery } from 'bitecs';
 import { Mesh, MeshStandardMaterial } from 'three';
 
-import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
-import { ECSWorld } from '@core/lib/ecs/World';
+import { componentRegistry } from '../lib/ecs/ComponentRegistry';
+import { ECSWorld } from '../lib/ecs/World';
 
 // Get world instance
 const world = ECSWorld.getInstance().getWorld();

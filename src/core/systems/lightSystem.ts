@@ -2,9 +2,9 @@
 // Synchronizes Light components with Three.js lights and processes updates
 import { defineQuery } from 'bitecs';
 
-import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
-import { ECSWorld } from '@core/lib/ecs/World';
-import { LightData } from '@core/lib/ecs/components/definitions/LightComponent';
+import { componentRegistry } from '../lib/ecs/ComponentRegistry';
+import { ECSWorld } from '../lib/ecs/World';
+import { LightData } from '../lib/ecs/components/definitions/LightComponent';
 
 // Get world instance
 const world = ECSWorld.getInstance().getWorld();

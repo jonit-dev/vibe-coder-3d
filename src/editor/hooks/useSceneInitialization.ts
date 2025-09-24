@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 
-import { loadScene, sceneRegistry } from '@/core/lib/scene/SceneRegistry';
-import { registerAllScenes } from '@/core/lib/scene/scenes';
+import { loadScene } from '@/core/lib/scene/SceneRegistry';
+// import { sceneRegistry } from '@/core/lib/scene/SceneRegistry'; // Will be used in future implementation
+import { registerCoreScenes } from '@/core/lib/scene/scenes';
+import { registerGameExtensions } from '@game';
 
 import { useEntityManager } from './useEntityManager';
 
@@ -29,7 +31,8 @@ export const useSceneInitialization = ({
   useEffect(() => {
     // Register scenes once
     if (!hasRegisteredScenes.current) {
-      registerAllScenes();
+      registerCoreScenes();
+      registerGameExtensions();
       hasRegisteredScenes.current = true;
     }
   }, []);

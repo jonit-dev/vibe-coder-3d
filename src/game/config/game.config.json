@@ -1,0 +1,6 @@
+{
+  "name": "Sample Game",
+  "version": "1.0.0",
+  "assetBasePath": "/assets",
+  "startupScene": "game.default"
+}

@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 
-import { componentRegistry } from '../ecs/ComponentRegistry';
+// import { componentRegistry } from '../ecs/ComponentRegistry'; // Will be used in future implementation
 import { EntityManager } from '../ecs/EntityManager';
 import { serializeWorld } from './SceneSerializer';
 
@@ -37,12 +37,16 @@ export type OverridesFile = z.infer<typeof OverridesFileSchema>;
  */
 export function diffAgainstBase(
   baseSceneId: string,
-  currentWorld?: typeof EntityManager,
+  _currentWorld?: typeof EntityManager,
 ): OverridesFile {
-  const entityManager = EntityManager.getInstance();
+  const _entityManager = EntityManager.getInstance();
 
   // Create a temporary world to load the base scene
-  const tempWorld = createTempWorldWithBaseScene(baseSceneId);
+  const _tempWorld = createTempWorldWithBaseScene(baseSceneId);
+
+  // Suppress unused variable warnings for future implementation
+  void _entityManager;
+  void _tempWorld;
   const baseSerialized = serializeWorld();
 
   // Restore current world and get its serialization
@@ -116,7 +120,7 @@ export function diffAgainstBase(
   });
 
   // Check for deleted entities
-  baseEntities.forEach((baseEntity, persistentId) => {
+  baseEntities.forEach((_baseEntity, persistentId) => {
     if (!currentEntities.has(persistentId)) {
       // Entity deleted in editor
       patches.push({
@@ -141,7 +145,7 @@ export function diffAgainstBase(
  * Create a temporary world state with just the base scene loaded
  * This is used for comparison purposes
  */
-function createTempWorldWithBaseScene(sceneId: string): any {
+function createTempWorldWithBaseScene(_sceneId: string): any {
   // For now, we'll approximate this by using the current world state
   // In a full implementation, we'd create a separate ECS world instance
   // TODO: Implement proper temporary world creation

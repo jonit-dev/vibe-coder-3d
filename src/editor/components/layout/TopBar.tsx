@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fi';
 
 import { SceneSelector } from '../shared/SceneSelector';
+import { ProjectSelector } from '../shared/ProjectSelector';
 import { ToolbarButton } from '../shared/ToolbarButton';
 import { ToolbarGroup } from '../shared/ToolbarGroup';
 
@@ -83,6 +84,8 @@ export const TopBar: React.FC<ITopBarProps> = ({
 
         {/* Center section - Scene selector and Playback controls */}
         <div className="flex items-center space-x-3">
+          <ProjectSelector />
+          <div className="h-4 w-px bg-gray-700"></div>
           <SceneSelector />
 
           <div className="h-4 w-px bg-gray-700"></div>

@@ -1,9 +1,9 @@
 import { useRef } from 'react';
 
-import { diffAgainstBase } from '@/core/lib/serialization/SceneDiff';
 import { overridesStore } from '@/core/lib/scene/overrides/OverridesStore';
 import { sceneRegistry } from '@/core/lib/scene/SceneRegistry';
-import { useProjectToasts, useToastStore } from '@core/stores/toastStore';
+import { diffAgainstBase } from '@/core/lib/serialization/SceneDiff';
+import { useProjectToasts, useToastStore } from '@/core/stores/toastStore';
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
 
@@ -83,7 +83,7 @@ export function useSceneActions() {
   };
 
   // Temporarily disabled localStorage loading to use SceneRegistry instead
-  const savedScene = null;
+  const savedScene: { entities?: unknown[] } | null = null;
 
   const handleSave = async (): Promise<void> => {
     const loadingToastId = projectToasts.showOperationStart('Saving Overrides');
@@ -117,7 +117,7 @@ export function useSceneActions() {
     }
   };
 
-  const handleLoad = async (e?: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+  const handleLoad = async (_e?: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const loadingToastId = projectToasts.showOperationStart('Loading Overrides');
 
     try {
@@ -230,7 +230,7 @@ export function useSceneActions() {
     } else if (savedScene) {
       try {
         await importScene(savedScene);
-        return `Scene loaded with ${savedScene.entities?.length || 0} entities`;
+        return `Scene loaded with ${(savedScene as any)?.entities?.length || 0} entities`;
       } catch (error) {
         console.error('Failed to load saved scene:', error);
         return 'Failed to load saved scene';

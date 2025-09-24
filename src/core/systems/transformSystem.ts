@@ -3,10 +3,10 @@
 import { defineQuery } from 'bitecs';
 import { Euler, Matrix4, Quaternion, Vector3 } from 'three';
 
-import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { ECSWorld } from '@core/lib/ecs/World';
 import { ITransformData } from '@core/lib/ecs/components/TransformComponent';
+import { componentRegistry } from '../lib/ecs/ComponentRegistry';
 
 // Get world instance
 const world = ECSWorld.getInstance().getWorld();

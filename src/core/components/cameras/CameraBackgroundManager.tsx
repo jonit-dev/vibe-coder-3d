@@ -1,11 +1,11 @@
 import { defineQuery } from 'bitecs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useCameraBackground } from '@core/hooks/useCameraBackground';
-import { useEvent } from '@core/hooks/useEvent';
-import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
-import { CameraData } from '@core/lib/ecs/components/definitions/CameraComponent';
-import { ECSWorld } from '@core/lib/ecs/World';
+import { useCameraBackground } from '../../hooks/useCameraBackground';
+import { useEvent } from '../../hooks/useEvent';
+import { componentRegistry } from '../../lib/ecs/ComponentRegistry';
+import { CameraData } from '../../lib/ecs/components/definitions/CameraComponent';
+import { ECSWorld } from '../../lib/ecs/World';
 
 export const CameraBackgroundManager: React.FC = () => {
   const [clearFlags, setClearFlags] = useState<string>('skybox');

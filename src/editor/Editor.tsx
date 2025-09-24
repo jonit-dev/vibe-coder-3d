@@ -22,6 +22,7 @@ import { useEditorStats } from './hooks/useEditorStats';
 import { useEntitySynchronization } from './hooks/useEntitySynchronization';
 import { useSceneActions } from './hooks/useSceneActions';
 import { useSceneInitialization } from './hooks/useSceneInitialization';
+import { useProjectInitialization } from './hooks/useProjectInitialization';
 
 // Import types from centralized types file
 export type { ISceneObject, ITransform, ShapeType } from './types/shapes';
@@ -91,6 +92,9 @@ const Editor: React.FC = () => {
     isChatExpanded,
     isLeftPanelCollapsed,
   });
+
+  // Project Initialization
+  useProjectInitialization();
 
   // Scene Initialization
   useSceneInitialization({

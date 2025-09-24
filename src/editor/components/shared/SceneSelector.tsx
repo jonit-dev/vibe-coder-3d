@@ -3,8 +3,9 @@ import { FiChevronDown, FiFile, FiFolder, FiPlus } from 'react-icons/fi';
 
 import { loadScene, sceneRegistry } from '@/core/lib/scene/SceneRegistry';
 import { ISceneDefinition } from '@/core/lib/scene/SceneRegistry';
-import { registerAllScenes } from '@/core/lib/scene/scenes';
-import { useProjectToasts, useToastStore } from '@/core/stores/toastStore';
+import { registerCoreScenes } from '@/core/lib/scene/scenes';
+import { registerGameExtensions } from '@game';
+import { useToastStore } from '@/core/stores/toastStore';
 
 interface ISceneSelectorProps {
   className?: string;
@@ -15,8 +16,7 @@ export const SceneSelector: React.FC<ISceneSelectorProps> = ({ className = '' })
   const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const projectToasts = useProjectToasts();
-  const { removeToast } = useToastStore();
+  const { showInfo } = useToastStore();
 
   const refreshScenes = useCallback(() => {
     const availableScenes = sceneRegistry.listScenes();
@@ -29,7 +29,8 @@ export const SceneSelector: React.FC<ISceneSelectorProps> = ({ className = '' })
   useEffect(() => {
     // Ensure scenes are registered first
     if (sceneRegistry.listScenes().length === 0) {
-      registerAllScenes();
+      registerCoreScenes();
+      registerGameExtensions();
     }
 
     // Get list of available scenes
@@ -43,7 +44,7 @@ export const SceneSelector: React.FC<ISceneSelectorProps> = ({ className = '' })
     }
 
     setIsLoading(true);
-    const loadingToastId = projectToasts.showOperationStart(`Loading scene: ${sceneId}`);
+    showInfo(`Loading scene: ${sceneId}`);
 
     try {
       // Clear saved scene from localStorage when switching scenes
@@ -53,13 +54,10 @@ export const SceneSelector: React.FC<ISceneSelectorProps> = ({ className = '' })
       setCurrentSceneId(sceneId);
       refreshScenes(); // Refresh to update current scene
 
-      // Remove loading toast and show success
-      removeToast(loadingToastId);
-      projectToasts.showOperationSuccess(`Scene loaded: ${sceneId}`);
+      showInfo(`Scene loaded: ${sceneId}`);
     } catch (error) {
       console.error('Failed to load scene:', error);
-      removeToast(loadingToastId);
-      projectToasts.showOperationError(`Failed to load scene: ${error}`);
+      showInfo(`Failed to load scene: ${error}`);
     } finally {
       setIsLoading(false);
       setIsOpen(false);
@@ -148,7 +146,7 @@ export const SceneSelector: React.FC<ISceneSelectorProps> = ({ className = '' })
               onClick={() => {
                 setIsOpen(false);
                 // TODO: Implement new scene creation
-                projectToasts.showInfo('Scene creation coming soon!');
+                showInfo('Scene creation coming soon!');
               }}
             >
               <FiPlus className="w-3.5 h-3.5" />
