@@ -1,6 +1,8 @@
 import { addComponent, addEntity, hasComponent, removeEntity } from 'bitecs';
 
 import { EntityMeta } from './BitECSComponents';
+import { componentRegistry } from './ComponentRegistry';
+import { generatePersistentId } from './components/definitions/PersistentIdComponent';
 import { getEntityName, getEntityParent, setEntityMeta } from './DataConversion';
 import { IEntity } from './IEntity';
 import { ECSWorld } from './World';
@@ -85,6 +87,12 @@ export class EntityManager {
 
     // Set entity metadata
     setEntityMeta(eid, name, parentId);
+
+    // Auto-attach PersistentId if not present
+    if (!componentRegistry.hasComponent(eid, 'PersistentId')) {
+      const persistentId = generatePersistentId();
+      componentRegistry.addComponent(eid, 'PersistentId', { id: persistentId });
+    }
 
     // Note: Transform component is now handled by the new ComponentRegistry system
     // The useEntityCreation hook will add it via componentManager.addComponent()

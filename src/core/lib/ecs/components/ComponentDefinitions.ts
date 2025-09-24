@@ -15,6 +15,7 @@ import {
   lightComponent,
   meshColliderComponent,
   meshRendererComponent,
+  persistentIdComponent,
   rigidBodyComponent,
   scriptComponent,
   soundComponent,
@@ -24,6 +25,7 @@ import {
   type LightData,
   type MeshColliderData,
   type MeshRendererData,
+  type PersistentIdData,
   type RigidBodyData,
   type SoundData,
   type TransformData,
@@ -34,6 +36,7 @@ import {
 // ============================================================================
 
 export function registerCoreComponents(): void {
+  componentRegistry.register(persistentIdComponent);
   componentRegistry.register(transformComponent);
   componentRegistry.register(meshRendererComponent);
   componentRegistry.register(terrainComponent);
@@ -125,6 +128,7 @@ export type {
   LightData,
   MeshColliderData,
   MeshRendererData,
+  PersistentIdData,
   RigidBodyData,
   SoundData,
   TransformData,

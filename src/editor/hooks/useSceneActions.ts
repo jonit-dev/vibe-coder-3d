@@ -1,5 +1,8 @@
 import { useRef } from 'react';
 
+import { diffAgainstBase } from '@/core/lib/serialization/SceneDiff';
+import { overridesStore } from '@/core/lib/scene/overrides/OverridesStore';
+import { sceneRegistry } from '@/core/lib/scene/SceneRegistry';
 import { useProjectToasts, useToastStore } from '@core/stores/toastStore';
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
@@ -79,30 +82,32 @@ export function useSceneActions() {
     }
   };
 
-  const savedScene = (() => {
-    try {
-      const saved = localStorage.getItem('editorScene');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  })();
+  // Temporarily disabled localStorage loading to use SceneRegistry instead
+  const savedScene = null;
 
-  const handleSave = (): void => {
-    const loadingToastId = projectToasts.showOperationStart('Saving Project');
+  const handleSave = async (): Promise<void> => {
+    const loadingToastId = projectToasts.showOperationStart('Saving Overrides');
 
     try {
-      const scene = exportScene();
-      localStorage.setItem('editorScene', JSON.stringify(scene));
+      const currentSceneId = sceneRegistry.getCurrentSceneId();
+      if (!currentSceneId) {
+        throw new Error('No scene loaded');
+      }
+
+      // Compute overrides against the base scene
+      const overrides = diffAgainstBase(currentSceneId);
+
+      // Save overrides file
+      await overridesStore.save(overrides);
 
       // Remove loading toast and show success
       removeToast(loadingToastId);
       projectToasts.showOperationSuccess(
         'Save',
-        `Successfully saved scene with ${scene.entities.length} entities`,
+        `Successfully saved ${overrides.patches.length} changes for ${currentSceneId}`,
       );
     } catch (error) {
-      console.error('Failed to save scene:', error);
+      console.error('Failed to save overrides:', error);
       // Remove loading toast and show error
       removeToast(loadingToastId);
       projectToasts.showOperationError(
@@ -113,44 +118,47 @@ export function useSceneActions() {
   };
 
   const handleLoad = async (e?: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const loadingToastId = projectToasts.showOperationStart('Loading Project');
+    const loadingToastId = projectToasts.showOperationStart('Loading Overrides');
 
     try {
-      if (e && e.target.files && e.target.files[0]) {
-        // Load from file
-        const file = e.target.files[0];
-        const text = await file.text();
-        const scene = JSON.parse(text);
-        await importScene(scene);
+      // Load overrides file
+      const overrides = await overridesStore.load();
 
-        // Remove loading toast and show success
+      if (!overrides) {
         removeToast(loadingToastId);
-        projectToasts.showOperationSuccess(
-          'Load',
-          `Successfully loaded scene with ${scene.entities?.length || 0} entities from file`,
-        );
-
-        // Clear the file input value to allow loading the same file again
-        if (e.target) {
-          e.target.value = '';
-        }
-      } else if (savedScene) {
-        // Load from localStorage
-        await importScene(savedScene);
-
-        // Remove loading toast and show success
-        removeToast(loadingToastId);
-        projectToasts.showOperationSuccess(
-          'Load',
-          `Successfully loaded scene with ${savedScene.entities?.length || 0} entities from storage`,
-        );
-      } else {
-        // Remove loading toast and show error
-        removeToast(loadingToastId);
-        projectToasts.showOperationError('Load', 'No scene file selected and no saved scene found');
+        projectToasts.showOperationError('Load', 'No overrides file selected');
+        return;
       }
+
+      const currentSceneId = sceneRegistry.getCurrentSceneId();
+      if (!currentSceneId) {
+        removeToast(loadingToastId);
+        projectToasts.showOperationError('Load', 'No scene currently loaded');
+        return;
+      }
+
+      if (overrides.sceneId !== currentSceneId) {
+        // Ask user if they want to switch scenes first
+        removeToast(loadingToastId);
+        projectToasts.showOperationError(
+          'Load',
+          `Overrides are for scene '${overrides.sceneId}', but current scene is '${currentSceneId}'`,
+        );
+        return;
+      }
+
+      // Apply overrides using the override applier
+      const { applyOverrides } = await import('@/core/lib/scene/overrides/OverrideApplier');
+      applyOverrides(overrides);
+
+      // Remove loading toast and show success
+      removeToast(loadingToastId);
+      projectToasts.showOperationSuccess(
+        'Load',
+        `Successfully loaded ${overrides.patches.length} overrides for ${overrides.sceneId}`,
+      );
     } catch (error) {
-      console.error('Failed to load scene:', error);
+      console.error('Failed to load overrides:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 
       // Remove loading toast and show error

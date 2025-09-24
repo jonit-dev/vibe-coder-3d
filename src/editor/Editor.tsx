@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { SoundManager } from '@/core/components/SoundManager';
-import { ToastContainer } from '@core/components/ui/Toast';
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
-import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ToastContainer } from '@core/components/ui/Toast';
 import { RightSidebarChat } from './components/chat/RightSidebarChat';
 import { StackedLeftPanel } from './components/layout/StackedLeftPanel';
 import { StatusBar } from './components/layout/StatusBar';
@@ -14,6 +13,7 @@ import { HierarchyPanelContent } from './components/panels/HierarchyPanel/Hierar
 import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent/InspectorPanelContent';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
+import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
 import { useAutoSelection } from './hooks/useAutoSelection';
 import { useEditorHandlers } from './hooks/useEditorHandlers';
 import { GizmoMode, useEditorKeyboard } from './hooks/useEditorKeyboard';
@@ -58,8 +58,15 @@ const Editor: React.FC = () => {
   useEntitySynchronization({ entityIds, setEntityIds });
 
   // Scene actions and file input ref - use new toast-enabled methods
-  const { fileInputRef, savedScene, importScene, handleSave, handleLoad, handleClear } =
-    useSceneActions();
+  const {
+    fileInputRef,
+    savedScene,
+    importScene,
+    handleSave,
+    handleLoad,
+    handleClear,
+    handleLoadLegacy,
+  } = useSceneActions();
 
   // All action handlers encapsulated in custom hook
   const {
@@ -67,7 +74,6 @@ const Editor: React.FC = () => {
     // handleSaveWithStatus,
     // handleLoadWithStatus,
     // handleClearWithStatus,
-    triggerFileLoad,
     handlePlayWithStatus,
     handlePauseWithStatus,
     handleStopWithStatus,
@@ -160,7 +166,7 @@ const Editor: React.FC = () => {
       <TopBar
         entityCount={entityIds.length}
         onSave={handleSave} // Use new toast-enabled method
-        onLoad={triggerFileLoad}
+        onLoad={handleLoad}
         onClear={handleClear} // Use new toast-enabled method
         onAddObject={toggleAddMenu}
         addButtonRef={addButtonRef}
@@ -191,13 +197,13 @@ const Editor: React.FC = () => {
         allowedExtensions={['glb', 'gltf', 'fbx', 'obj']}
       />
 
-      {/* Hidden file input for loading scenes */}
+      {/* Hidden file input for loading legacy scenes */}
       <input
         ref={fileInputRef}
         type="file"
         accept="application/json"
         className="hidden"
-        onChange={handleLoad} // Use new toast-enabled method
+        onChange={handleLoadLegacy}
       />
 
       <main className="flex-1 flex overflow-hidden">

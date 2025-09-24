@@ -13,6 +13,7 @@ import {
   FiTrash2,
 } from 'react-icons/fi';
 
+import { SceneSelector } from '../shared/SceneSelector';
 import { ToolbarButton } from '../shared/ToolbarButton';
 import { ToolbarGroup } from '../shared/ToolbarGroup';
 
@@ -46,7 +47,7 @@ export const TopBar: React.FC<ITopBarProps> = ({
   isChatOpen = false,
 }) => {
   return (
-    <header className="h-10 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-b border-cyan-900/20 shadow-lg relative overflow-hidden">
+    <header className="h-10 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-b border-cyan-900/20 shadow-lg relative z-20">
       {/* Animated background effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/5 via-purple-900/5 to-cyan-900/5 animate-pulse"></div>
 
@@ -80,23 +81,29 @@ export const TopBar: React.FC<ITopBarProps> = ({
           </div>
         </div>
 
-        {/* Center section - Playback controls */}
-        <ToolbarGroup>
-          <ToolbarButton
-            onClick={onPlay}
-            disabled={isPlaying}
-            variant="success"
-            title="Play (Space)"
-          >
-            <FiPlay className="w-4 h-4" />
-          </ToolbarButton>
-          <ToolbarButton onClick={onPause} disabled={!isPlaying} variant="warning" title="Pause">
-            <FiPause className="w-4 h-4" />
-          </ToolbarButton>
-          <ToolbarButton onClick={onStop} variant="danger" title="Stop">
-            <FiSquare className="w-4 h-4" />
-          </ToolbarButton>
-        </ToolbarGroup>
+        {/* Center section - Scene selector and Playback controls */}
+        <div className="flex items-center space-x-3">
+          <SceneSelector />
+
+          <div className="h-4 w-px bg-gray-700"></div>
+
+          <ToolbarGroup>
+            <ToolbarButton
+              onClick={onPlay}
+              disabled={isPlaying}
+              variant="success"
+              title="Play (Space)"
+            >
+              <FiPlay className="w-4 h-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={onPause} disabled={!isPlaying} variant="warning" title="Pause">
+              <FiPause className="w-4 h-4" />
+            </ToolbarButton>
+            <ToolbarButton onClick={onStop} variant="danger" title="Stop">
+              <FiSquare className="w-4 h-4" />
+            </ToolbarButton>
+          </ToolbarGroup>
+        </div>
 
         {/* Right section - File operations and settings */}
         <div className="flex items-center space-x-1">
