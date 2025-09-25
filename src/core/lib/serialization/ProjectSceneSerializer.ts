@@ -4,7 +4,8 @@
  */
 
 // import { getCurrentProjectConfig } from '../extension/GameExtensionPoints'; // Will be used in future implementation
-import { serializeWorld, deserializeIntoWorld, SerializedScene } from './SceneSerializer';
+import { serializeWorld, deserializeIntoWorld } from './SceneSerializer';
+import type { SerializedScene } from '../scene/serialization/SceneSchema';
 
 export class ProjectSceneSerializer {
   private static instance: ProjectSceneSerializer;
@@ -89,9 +90,9 @@ export class ProjectSceneSerializer {
    */
   public async validateSceneData(data: unknown): Promise<boolean> {
     try {
-      // Use the schema from SceneSerializer to validate
+      // Use the schema from SceneSchema to validate
       // This import is done dynamically to avoid circular dependencies
-      const { SerializedSceneSchema } = await import('./SceneSerializer');
+      const { SerializedSceneSchema } = await import('../scene/serialization/SceneSchema');
       SerializedSceneSchema.parse(data);
       return true;
     } catch (error) {
