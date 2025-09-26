@@ -17,9 +17,9 @@ import type {
 
 // Base entity interface
 export interface ISceneEntity {
-  id: string;
+  id: string | number; // Support both string and numeric IDs for compatibility
   name: string;
-  parentId?: string | null;
+  parentId?: string | number | null; // Support both formats for parent references
   components: Record<string, unknown>;
 }
 

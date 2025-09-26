@@ -10,6 +10,7 @@ import { getEntityName, getEntityParent, setEntityMeta } from './DataConversion'
 import { IEntity } from './IEntity';
 import { ECSWorld } from './World';
 import { EntityId } from './types';
+import { EntityQueries } from './queries/entityQueries';
 
 type EntityEvent = {
   type: 'entity-created' | 'entity-deleted' | 'entity-updated' | 'entities-cleared';
@@ -25,8 +26,11 @@ export class EntityManager {
   private eventListeners: EntityEventListener[] = [];
   private entityCache: Map<EntityId, IEntity> = new Map();
   private existingPersistentIds: Set<string> = new Set();
+  private queries: EntityQueries;
+
   private constructor() {
     // Private constructor for singleton
+    this.queries = EntityQueries.getInstance();
   }
 
   public static getInstance(): EntityManager {
@@ -211,16 +215,49 @@ export class EntityManager {
   }
 
   getAllEntities(): IEntity[] {
-    // Rebuild cache from BitECS world
+    // Rebuild cache from BitECS world using efficient indexed lookup
     this.entityCache.clear();
 
-    // Get all entities that have EntityMeta component
+    // Get all entity IDs - use scan as fallback if queries not ready
+    let entityIds: number[];
+    try {
+      entityIds = this.queries.listAllEntities();
+
+      // If queries return empty but we know entities exist, fall back to scan
+      if (entityIds.length === 0) {
+        // Quick check: do any entities actually exist?
+        let hasAnyEntity = false;
+        for (let eid = 0; eid < 100; eid++) {
+          if (hasComponent(this.world, EntityMeta, eid)) {
+            hasAnyEntity = true;
+            break;
+          }
+        }
+
+        if (hasAnyEntity) {
+          // Fall back to scan
+          entityIds = [];
+          for (let eid = 0; eid < 10000; eid++) {
+            if (hasComponent(this.world, EntityMeta, eid)) {
+              entityIds.push(eid);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // If queries not initialized, fall back to scan
+      entityIds = [];
+      for (let eid = 0; eid < 10000; eid++) {
+        if (hasComponent(this.world, EntityMeta, eid)) {
+          entityIds.push(eid);
+        }
+      }
+    }
+
     const entities: IEntity[] = [];
 
-    // Note: BitECS doesn't provide a direct way to iterate all entities,
-    // so we'll maintain our cache and scan when needed
-    for (let eid = 0; eid < 10000; eid++) {
-      // Reasonable upper bound, starting from 0 since BitECS uses 0-based IDs
+    // Build entities only for IDs that actually exist
+    entityIds.forEach((eid) => {
       if (hasComponent(this.world, EntityMeta, eid)) {
         const entity = this.buildEntityFromEid(eid);
         if (entity) {
@@ -228,14 +265,29 @@ export class EntityManager {
           this.entityCache.set(eid, entity);
         }
       }
-    }
-
-    // Build children relationships
-    entities.forEach((entity) => {
-      entity.children = entities
-        .filter((child) => child.parentId === entity.id)
-        .map((child) => child.id);
     });
+
+    // Build children relationships - use queries if available, otherwise scan
+    try {
+      const queriesAvailable = this.queries && this.queries.listAllEntities().length > 0;
+      entities.forEach((entity) => {
+        if (queriesAvailable) {
+          entity.children = this.queries.getChildren(entity.id);
+        } else {
+          // Fall back to filtering
+          entity.children = entities
+            .filter((child) => child.parentId === entity.id)
+            .map((child) => child.id);
+        }
+      });
+    } catch (error) {
+      // Fall back to filtering
+      entities.forEach((entity) => {
+        entity.children = entities
+          .filter((child) => child.parentId === entity.id)
+          .map((child) => child.id);
+      });
+    }
 
     return entities;
   }
@@ -331,7 +383,28 @@ export class EntityManager {
   }
 
   getRootEntities(): IEntity[] {
-    return this.getAllEntities().filter((entity) => !entity.parentId);
+    // Try to use efficient indexed query, fall back if queries not ready
+    try {
+      const rootEntityIds = this.queries.getRootEntities();
+
+      // If result is empty, verify with fallback to avoid race conditions
+      if (rootEntityIds.length === 0) {
+        // Quick check if any entities exist
+        for (let eid = 0; eid < 100; eid++) {
+          if (hasComponent(this.world, EntityMeta, eid)) {
+            // Entities exist, fall back to filtering all entities
+            const allEntities = this.getAllEntities();
+            return allEntities.filter(entity => entity.parentId === undefined);
+          }
+        }
+      }
+
+      return rootEntityIds.map((id) => this.getEntity(id)).filter(Boolean) as IEntity[];
+    } catch (error) {
+      // Fall back to filtering all entities if queries not available
+      const allEntities = this.getAllEntities();
+      return allEntities.filter(entity => entity.parentId === undefined);
+    }
   }
 
   updateEntityName(id: EntityId, name: string): boolean {

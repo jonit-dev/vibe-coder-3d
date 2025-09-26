@@ -1,9 +1,9 @@
-import type { ITsxSceneMetadata } from '../core/lib/serialization/tsxSerializer';
-import { generateTsxScene, sanitizeComponentName } from '../core/lib/serialization/tsxSerializer';
 import { promises as fs } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 import path from 'path';
 import { Plugin } from 'vite';
+import type { ITsxSceneMetadata } from '../core/lib/serialization/tsxSerializer';
+import { generateTsxScene, sanitizeComponentName } from '../core/lib/serialization/tsxSerializer';
 
 interface ISaveSceneRequest {
   name: string;
@@ -429,14 +429,17 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
     // Read TSX file
     const content = await fs.readFile(actualFilepath, 'utf-8');
 
-    // Extract entities data from TSX file using regex
-    const entitiesMatch = content.match(/const entities = \[([\s\S]*?)\];/);
+    // Extract entities data from TSX file using regex (supports TS export and type annotations)
+    const entitiesMatch = content.match(
+      /(?:export\s+)?const\s+(?:entities|sceneData)\s*(?::\s*[^=]+)?=\s*\[([\s\S]*?)\];/,
+    );
     if (!entitiesMatch) {
       const debugInfo = {
         fileLength: content.length,
         contentPreview: content.substring(0, 1000),
         contentEnd: content.substring(Math.max(0, content.length - 500)),
-        regexPattern: '/const entities = \\[([\\s\\S]*?)\\];/',
+        regexPattern:
+          '/(?:export\\s+)?const\\s+(?:entities|sceneData)\\s*(?::\\s*[^=]+)?=\\s*\\[([\\s\\S]*?)\\];/',
         hasEntitiesKeyword: content.includes('entities'),
         hasConstKeyword: content.includes('const'),
         hasArrayStart: content.includes('= ['),
@@ -461,8 +464,10 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
       entitiesMatch[1].substring(0, 200) + '...',
     );
 
-    // Extract metadata from TSX file
-    const metadataMatch = content.match(/export const metadata = ({[\s\S]*?});/);
+    // Extract metadata from TSX file (supports TS type annotations)
+    const metadataMatch = content.match(
+      /export\s+const\s+metadata\s*(?::\s*[^=]+)?=\s*({[\s\S]*?});/,
+    );
     let metadata = {};
     if (metadataMatch) {
       try {

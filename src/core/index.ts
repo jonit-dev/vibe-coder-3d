@@ -37,6 +37,10 @@ export { ComponentRegistry, componentRegistry } from './lib/ecs/ComponentRegistr
 export { EntityManager } from './lib/ecs/EntityManager';
 export type { ComponentType, EntityId } from './lib/ecs/types';
 export { ECSWorld as World } from './lib/ecs/World';
+export { KnownComponentTypes } from './lib/ecs/IComponent';
+
+// Export EntityQueries for debugging and advanced usage
+export { EntityQueries } from './lib/ecs/queries/entityQueries';
 
 // Rendering Utilities
 export {
@@ -57,6 +61,7 @@ export { transformSystem } from './systems/transformSystem';
 // Assets and Types with Zod validation
 export * from './types/assets';
 export * from './types/ecs';
+export * from './types/scene';
 
 // Validation utilities (excluding conflicting exports)
 export {
