@@ -77,7 +77,9 @@ const Editor: React.FC = () => {
     loadLastScene,
     currentSceneName,
     handleSaveAs,
-  } = useSceneActions();
+  } = useSceneActions({
+    onRequestSaveAs: () => setScenePersistenceModal({ isOpen: true, mode: 'save' }),
+  });
 
   // All action handlers encapsulated in custom hook
   const {
@@ -220,7 +222,7 @@ const Editor: React.FC = () => {
         availableScenes={scenePersistence.availableScenes}
         isLoading={scenePersistence.isLoading}
         error={scenePersistence.error}
-        onSave={handleSave}
+        onSave={handleSaveAs}
         onLoad={handleLoad}
         onRefresh={scenePersistence.listTsxScenes}
       />

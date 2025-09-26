@@ -21,12 +21,12 @@ const validateSceneData = (data: unknown): { isValid: boolean; error?: string } 
   return { isValid: true };
 };
 
-interface SaveSceneRequest {
+interface ISaveSceneRequest {
   name: string;
   data: unknown;
 }
 
-interface SceneFileInfo {
+interface ISceneFileInfo {
   name: string;
   modified: string;
   size: number;
@@ -50,10 +50,12 @@ export function sceneApiMiddleware(): Plugin {
     name: 'scene-api',
     configureServer(server) {
       // Ensure scenes directory exists and log location
-      fs.mkdir(SCENES_DIR, { recursive: true }).then(() => {
-        const absolutePath = path.resolve(SCENES_DIR);
-        logSceneActivity('INIT', `Scenes directory ready at: ${absolutePath}`);
-      }).catch(() => {});
+      fs.mkdir(SCENES_DIR, { recursive: true })
+        .then(() => {
+          const absolutePath = path.resolve(SCENES_DIR);
+          logSceneActivity('INIT', `Scenes directory ready at: ${absolutePath}`);
+        })
+        .catch(() => {});
 
       server.middlewares.use('/api/scene', async (req, res, next) => {
         try {
@@ -92,10 +94,12 @@ export function sceneApiMiddleware(): Plugin {
           console.error('Scene API error:', error);
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({
-            error: 'Internal server error',
-            message: error instanceof Error ? error.message : 'Unknown error'
-          }));
+          res.end(
+            JSON.stringify({
+              error: 'Internal server error',
+              message: error instanceof Error ? error.message : 'Unknown error',
+            }),
+          );
         }
       });
     },
@@ -128,10 +132,12 @@ async function handleSave(req: any, res: any): Promise<void> {
       if (!validation.isValid) {
         res.statusCode = 400;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({
-          error: 'Invalid scene data',
-          details: validation.error
-        }));
+        res.end(
+          JSON.stringify({
+            error: 'Invalid scene data',
+            details: validation.error,
+          }),
+        );
         return;
       }
 
@@ -150,20 +156,24 @@ async function handleSave(req: any, res: any): Promise<void> {
 
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({
-        success: true,
-        filename,
-        size: stats.size,
-        modified: stats.mtime.toISOString()
-      }));
+      res.end(
+        JSON.stringify({
+          success: true,
+          filename,
+          size: stats.size,
+          modified: stats.mtime.toISOString(),
+        }),
+      );
     } catch (error) {
       console.error('Save scene error:', error);
       res.statusCode = 500;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({
-        error: 'Failed to save scene',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      }));
+      res.end(
+        JSON.stringify({
+          error: 'Failed to save scene',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      );
     }
   });
 }
@@ -197,10 +207,12 @@ async function handleLoad(req: any, res: any, url: URL): Promise<void> {
     if (!validation.isValid) {
       res.statusCode = 400;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({
-        error: 'Invalid scene file',
-        details: validation.error
-      }));
+      res.end(
+        JSON.stringify({
+          error: 'Invalid scene file',
+          details: validation.error,
+        }),
+      );
       return;
     }
 
@@ -208,11 +220,13 @@ async function handleLoad(req: any, res: any, url: URL): Promise<void> {
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
-      success: true,
-      filename: sanitizedFilename,
-      data: sceneData
-    }));
+    res.end(
+      JSON.stringify({
+        success: true,
+        filename: sanitizedFilename,
+        data: sceneData,
+      }),
+    );
   } catch (error) {
     if ((error as any).code === 'ENOENT') {
       res.statusCode = 404;
@@ -222,10 +236,12 @@ async function handleLoad(req: any, res: any, url: URL): Promise<void> {
       console.error('Load scene error:', error);
       res.statusCode = 500;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({
-        error: 'Failed to load scene',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      }));
+      res.end(
+        JSON.stringify({
+          error: 'Failed to load scene',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      );
     }
   }
 }
@@ -237,7 +253,7 @@ const sanitizeComponentName = (name: string): string => {
   const sanitized = name
     .replace(/[^a-zA-Z0-9]/g, '')
     .replace(/^\d+/, '')
-    .replace(/^./, char => char.toUpperCase());
+    .replace(/^./, (char) => char.toUpperCase());
   return sanitized || 'Scene';
 };
 
@@ -261,24 +277,32 @@ import { useComponentManager } from '@/editor/hooks/useComponentManager';
  * Version: ${metadata.version}${metadata.author ? `\n * Author: ${metadata.author}` : ''}
  */`;
 
-  const entityDefinitions = entities.map(entity => {
-    const normalizedId = typeof entity.id === 'number' ? entity.id.toString() : entity.id;
-    const parentId = entity.parentId ?
-      (typeof entity.parentId === 'number' ? entity.parentId.toString() : entity.parentId)
-      : null;
+  const entityDefinitions = entities
+    .map((entity) => {
+      const normalizedId = typeof entity.id === 'number' ? entity.id.toString() : entity.id;
+      const parentId = entity.parentId
+        ? typeof entity.parentId === 'number'
+          ? entity.parentId.toString()
+          : entity.parentId
+        : null;
 
-    // Safely handle components serialization
-    const components = entity.components || {};
-    const componentsJson = JSON.stringify(components, null, 6) || '{}';
+      // Safely handle components serialization
+      const components = entity.components || {};
+      const componentsJson = JSON.stringify(components, null, 6) || '{}';
 
-    return `  {
+      return `  {
     id: "${normalizedId}",
     name: "${entity.name || `Entity ${normalizedId}`}",${parentId ? `\n    parentId: "${parentId}",` : ''}
     components: ${componentsJson.replace(/^/gm, '    ')}
   }`;
-  }).join(',\n\n');
+    })
+    .join(',\n\n');
 
-  return imports + metadataComment + '\n' + `export const ${componentName}: React.FC = () => {
+  return (
+    imports +
+    metadataComment +
+    '\n' +
+    `export const ${componentName}: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
 
@@ -307,7 +331,8 @@ ${entityDefinitions}
 
 export const metadata = ${JSON.stringify(metadata, null, 2)};
 
-export default ${componentName};`;
+export default ${componentName};`
+  );
 };
 
 /**
@@ -364,21 +389,25 @@ async function handleSaveTsx(req: any, res: any): Promise<void> {
 
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({
-        success: true,
-        filename,
-        componentName: sanitizedName,
-        size: stats.size,
-        modified: stats.mtime.toISOString()
-      }));
+      res.end(
+        JSON.stringify({
+          success: true,
+          filename,
+          componentName: sanitizedName,
+          size: stats.size,
+          modified: stats.mtime.toISOString(),
+        }),
+      );
     } catch (error) {
       console.error('Save TSX scene error:', error);
       res.statusCode = 500;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({
-        error: 'Failed to save TSX scene',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      }));
+      res.end(
+        JSON.stringify({
+          error: 'Failed to save TSX scene',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      );
     }
   });
 }
@@ -402,7 +431,7 @@ async function handleListTsx(req: any, res: any): Promise<void> {
             filename: file,
             modified: stats.mtime.toISOString(),
             size: stats.size,
-            type: 'tsx'
+            type: 'tsx',
           });
         } catch (error) {
           console.warn(`Failed to get stats for TSX file ${file}:`, error);
@@ -414,18 +443,22 @@ async function handleListTsx(req: any, res: any): Promise<void> {
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
-      success: true,
-      scenes: tsxFiles
-    }));
+    res.end(
+      JSON.stringify({
+        success: true,
+        scenes: tsxFiles,
+      }),
+    );
   } catch (error) {
     console.error('List TSX scenes error:', error);
     res.statusCode = 500;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
-      error: 'Failed to list TSX scenes',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }));
+    res.end(
+      JSON.stringify({
+        error: 'Failed to list TSX scenes',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
   }
 }
 
@@ -445,12 +478,27 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
   const sanitizedFilename = filename.endsWith('.tsx') ? filename : `${filename}.tsx`;
   const filepath = path.join(SCENES_DIR, sanitizedFilename);
 
+  // Also try the sanitized component name version
+  const sanitizedComponentName = sanitizeComponentName(filename.replace('.tsx', ''));
+  const sanitizedComponentFilename = `${sanitizedComponentName}.tsx`;
+  const sanitizedComponentFilepath = path.join(SCENES_DIR, sanitizedComponentFilename);
+
   try {
-    // Check if file exists
-    await fs.access(filepath);
+    let actualFilepath = filepath;
+    let actualFilename = sanitizedFilename;
+
+    try {
+      // Try original filename first
+      await fs.access(filepath);
+    } catch {
+      // If original fails, try sanitized component name version
+      await fs.access(sanitizedComponentFilepath);
+      actualFilepath = sanitizedComponentFilepath;
+      actualFilename = sanitizedComponentFilename;
+    }
 
     // Read TSX file
-    const content = await fs.readFile(filepath, 'utf-8');
+    const content = await fs.readFile(actualFilepath, 'utf-8');
 
     // Extract entities data from TSX file using regex
     const entitiesMatch = content.match(/const entities = \[([\s\S]*?)\];/);
@@ -463,7 +511,10 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
       return;
     }
 
-    console.log('[handleLoadTsx] Extracted entities string:', entitiesMatch[1].substring(0, 200) + '...');
+    console.log(
+      '[handleLoadTsx] Extracted entities string:',
+      entitiesMatch[1].substring(0, 200) + '...',
+    );
 
     // Extract metadata from TSX file
     const metadataMatch = content.match(/export const metadata = ({[\s\S]*?});/);
@@ -496,7 +547,10 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
       // Remove any remaining literal escape sequences
       entitiesString = entitiesString.replace(/\\"/g, '"');
 
-      console.log('[handleLoadTsx] Cleaned entities string:', entitiesString.substring(0, 300) + '...');
+      console.log(
+        '[handleLoadTsx] Cleaned entities string:',
+        entitiesString.substring(0, 300) + '...',
+      );
 
       // Try to parse as JSON
       entities = JSON.parse(`[${entitiesString}]`);
@@ -528,10 +582,12 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
 
         res.statusCode = 400;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({
-          error: 'Failed to parse entities from TSX file',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        }));
+        res.end(
+          JSON.stringify({
+            error: 'Failed to parse entities from TSX file',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          }),
+        );
         return;
       }
     }
@@ -541,18 +597,20 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
       version: (metadata as any)?.version || 4,
       name: (metadata as any)?.name || filename.replace('.tsx', ''),
       timestamp: (metadata as any)?.timestamp || new Date().toISOString(),
-      entities: entities
+      entities: entities,
     };
 
-    logSceneActivity('LOAD-TSX', `Scene '${sanitizedFilename}' loaded successfully`);
+    logSceneActivity('LOAD-TSX', `Scene '${actualFilename}' loaded successfully`);
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
-      success: true,
-      filename: sanitizedFilename,
-      data: sceneData
-    }));
+    res.end(
+      JSON.stringify({
+        success: true,
+        filename: sanitizedFilename,
+        data: sceneData,
+      }),
+    );
   } catch (error) {
     if ((error as any).code === 'ENOENT') {
       res.statusCode = 404;
@@ -562,10 +620,12 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
       console.error('Load TSX scene error:', error);
       res.statusCode = 500;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({
-        error: 'Failed to load TSX scene',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      }));
+      res.end(
+        JSON.stringify({
+          error: 'Failed to load TSX scene',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      );
     }
   }
 }
@@ -576,7 +636,7 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
 async function handleList(req: any, res: any): Promise<void> {
   try {
     const files = await fs.readdir(SCENES_DIR);
-    const sceneFiles: SceneFileInfo[] = [];
+    const sceneFiles: ISceneFileInfo[] = [];
 
     for (const file of files) {
       if (file.endsWith('.json')) {
@@ -587,7 +647,7 @@ async function handleList(req: any, res: any): Promise<void> {
           sceneFiles.push({
             name: file,
             modified: stats.mtime.toISOString(),
-            size: stats.size
+            size: stats.size,
           });
         } catch (error) {
           console.warn(`Failed to get stats for scene file ${file}:`, error);
@@ -600,17 +660,21 @@ async function handleList(req: any, res: any): Promise<void> {
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
-      success: true,
-      scenes: sceneFiles
-    }));
+    res.end(
+      JSON.stringify({
+        success: true,
+        scenes: sceneFiles,
+      }),
+    );
   } catch (error) {
     console.error('List scenes error:', error);
     res.statusCode = 500;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
-      error: 'Failed to list scenes',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }));
+    res.end(
+      JSON.stringify({
+        error: 'Failed to list scenes',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      }),
+    );
   }
 }

@@ -3,7 +3,11 @@ import { useRef, useState } from 'react';
 import { overridesStore } from '@/core/lib/scene/overrides/OverridesStore';
 import { sceneRegistry } from '@/core/lib/scene/SceneRegistry';
 import { diffAgainstBase } from '@/core/lib/serialization/SceneDiff';
-import { exportScene, importScene, type ISerializedScene } from '@/core/lib/serialization/sceneSerializer';
+import {
+  exportScene,
+  importScene,
+  type ISerializedScene,
+} from '@/core/lib/serialization/sceneSerializer';
 import { useProjectToasts, useToastStore } from '@/core/stores/toastStore';
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
@@ -12,11 +16,15 @@ import { useScenePersistence } from './useScenePersistence';
 // Re-export from serializer for backward compatibility
 export type { ISerializedScene } from '@/core/lib/serialization/sceneSerializer';
 
+interface ISceneActionsOptions {
+  onRequestSaveAs?: () => void;
+}
+
 /**
  * Hook that provides scene action functions (save, load, clear)
  * Now uses the new ECS system as single source of truth with toast notifications
  */
-export function useSceneActions() {
+export function useSceneActions(options: ISceneActionsOptions = {}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingSaveName, setPendingSaveName] = useState<string>('');
   const [currentSceneName, setCurrentSceneName] = useState<string | null>(null);
@@ -53,8 +61,15 @@ export function useSceneActions() {
       // Quick save to existing scene
       await handleSaveAs(currentSceneName);
     } else {
-      // No current scene, prompt for name (this will be "Save As" behavior)
-      projectToasts.showOperationError('Save', 'No scene loaded. Use "Save As" to save with a name.');
+      // No current scene, trigger save as dialog
+      if (options.onRequestSaveAs) {
+        options.onRequestSaveAs();
+      } else {
+        projectToasts.showOperationError(
+          'Save',
+          'No scene loaded. Use "Save As" to save with a name.',
+        );
+      }
     }
   };
 
@@ -119,10 +134,7 @@ export function useSceneActions() {
           `Successfully saved scene '${sceneName}' with ${transformedEntities.length} entities as TSX component`,
         );
       } else {
-        projectToasts.showOperationError(
-          'Save',
-          scenePersistence.error || 'Failed to save scene',
-        );
+        projectToasts.showOperationError('Save', scenePersistence.error || 'Failed to save scene');
       }
     } catch (error) {
       console.error('Failed to save scene:', error);
@@ -134,12 +146,18 @@ export function useSceneActions() {
     }
   };
 
-  const handleLoad = async (sceneNameOrEvent?: string | React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+  const handleLoad = async (
+    sceneNameOrEvent?: string | React.ChangeEvent<HTMLInputElement>,
+  ): Promise<void> => {
     const loadingToastId = projectToasts.showOperationStart('Loading Scene');
 
     try {
       // Handle file input event (legacy)
-      if (sceneNameOrEvent && typeof sceneNameOrEvent !== 'string' && sceneNameOrEvent.target?.files) {
+      if (
+        sceneNameOrEvent &&
+        typeof sceneNameOrEvent !== 'string' &&
+        sceneNameOrEvent.target?.files
+      ) {
         const file = sceneNameOrEvent.target.files[0];
         if (!file) {
           removeToast(loadingToastId);

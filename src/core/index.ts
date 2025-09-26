@@ -160,9 +160,6 @@ export type {
 // Project Asset Service
 export { ProjectAssetService } from './lib/assets';
 
-// Project Scene Serializer
-export { ProjectSceneSerializer } from './lib/serialization';
-
 // Scene Registry
 export { defineScene, loadScene, sceneRegistry } from './lib/scene/SceneRegistry';
 export type { ISceneContext, SceneBuilder } from './lib/scene/SceneRegistry';
