@@ -21,14 +21,14 @@ export interface ITsxSceneMetadata {
  */
 export const generateTsxScene = (
   entities: ITsxSceneEntity[],
-  metadata: ITsxSceneMetadata
+  metadata: ITsxSceneMetadata,
 ): string => {
   const componentName = sanitizeComponentName(metadata.name);
 
   const imports = `import React from 'react';
 import { useEffect } from 'react';
-import { useEntityManager } from '@/editor/hooks/useEntityManager';
-import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useEntityManager } from '../src/editor/hooks/useEntityManager';
+import { useComponentManager } from '../src/editor/hooks/useComponentManager';
 
 `;
 
@@ -38,18 +38,22 @@ import { useComponentManager } from '@/editor/hooks/useComponentManager';
  * Version: ${metadata.version}${metadata.author ? `\n * Author: ${metadata.author}` : ''}
  */`;
 
-  const entityDefinitions = entities.map(entity => {
-    const normalizedId = typeof entity.id === 'number' ? entity.id.toString() : entity.id;
-    const parentId = entity.parentId ?
-      (typeof entity.parentId === 'number' ? entity.parentId.toString() : entity.parentId)
-      : null;
+  const entityDefinitions = entities
+    .map((entity) => {
+      const normalizedId = typeof entity.id === 'number' ? entity.id.toString() : entity.id;
+      const parentId = entity.parentId
+        ? typeof entity.parentId === 'number'
+          ? entity.parentId.toString()
+          : entity.parentId
+        : null;
 
-    return `  {
+      return `  {
     id: "${normalizedId}",
     name: "${entity.name}",${parentId ? `\n    parentId: "${parentId}",` : ''}
     components: ${JSON.stringify(entity.components, null, 6).replace(/^/gm, '    ')}
   }`;
-  }).join(',\n\n');
+    })
+    .join(',\n\n');
 
   const componentBody = `export const ${componentName}: React.FC = () => {
   const entityManager = useEntityManager();
@@ -66,7 +70,7 @@ ${entityDefinitions}
 
     // Create entities and components
     entities.forEach((entityData) => {
-      const entity = entityManager.createEntity(entityData.name, entityData.parentId || null);
+      const entity = entityManager.createEntity(entityData.name, (entityData as any).parentId || null);
 
       // Add components
       Object.entries(entityData.components).forEach(([componentType, componentData]) => {
@@ -95,7 +99,7 @@ export default ${componentName};`;
 export const saveTsxScene = async (
   sceneName: string,
   entities: ITsxSceneEntity[],
-  metadata: Omit<ITsxSceneMetadata, 'name' | 'timestamp'> = {}
+  metadata: Omit<ITsxSceneMetadata, 'name' | 'timestamp'> = {},
 ): Promise<{ filename: string; filepath: string }> => {
   const scenesDir = './scenes';
   const sanitizedName = sanitizeComponentName(sceneName);
@@ -125,7 +129,9 @@ export const saveTsxScene = async (
  * Loads and executes a TSX scene file
  * Note: This requires dynamic import which works in dev but needs special handling in production
  */
-export const loadTsxScene = async (sceneName: string): Promise<{
+export const loadTsxScene = async (
+  sceneName: string,
+): Promise<{
   component: React.FC;
   metadata: ITsxSceneMetadata;
 }> => {
@@ -141,24 +147,28 @@ export const loadTsxScene = async (sceneName: string): Promise<{
       metadata: sceneModule.metadata,
     };
   } catch (error) {
-    throw new Error(`Failed to load TSX scene '${sceneName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to load TSX scene '${sceneName}': ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
   }
 };
 
 /**
  * Lists available TSX scene files
  */
-export const listTsxScenes = async (): Promise<Array<{
-  name: string;
-  filename: string;
-  modified: string;
-  size: number;
-}>> => {
+export const listTsxScenes = async (): Promise<
+  Array<{
+    name: string;
+    filename: string;
+    modified: string;
+    size: number;
+  }>
+> => {
   const scenesDir = './scenes';
 
   try {
     const files = await fs.readdir(scenesDir);
-    const tsxFiles = files.filter(file => file.endsWith('.tsx'));
+    const tsxFiles = files.filter((file) => file.endsWith('.tsx'));
 
     const sceneInfo = await Promise.all(
       tsxFiles.map(async (file) => {
@@ -172,10 +182,12 @@ export const listTsxScenes = async (): Promise<Array<{
           modified: stats.mtime.toISOString(),
           size: stats.size,
         };
-      })
+      }),
     );
 
-    return sceneInfo.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+    return sceneInfo.sort(
+      (a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime(),
+    );
   } catch (error) {
     console.error('Failed to list TSX scenes:', error);
     return [];
@@ -190,7 +202,7 @@ const sanitizeComponentName = (name: string): string => {
   const sanitized = name
     .replace(/[^a-zA-Z0-9]/g, '')
     .replace(/^\d+/, '') // Remove leading numbers
-    .replace(/^./, char => char.toUpperCase());
+    .replace(/^./, (char) => char.toUpperCase());
 
   // Ensure it starts with a capital letter and has at least one character
   return sanitized || 'Scene';
@@ -199,7 +211,9 @@ const sanitizeComponentName = (name: string): string => {
 /**
  * Validates TSX scene file structure
  */
-export const validateTsxScene = async (filepath: string): Promise<{ isValid: boolean; error?: string }> => {
+export const validateTsxScene = async (
+  filepath: string,
+): Promise<{ isValid: boolean; error?: string }> => {
   try {
     const content = await fs.readFile(filepath, 'utf-8');
 
@@ -219,7 +233,7 @@ export const validateTsxScene = async (filepath: string): Promise<{ isValid: boo
   } catch (error) {
     return {
       isValid: false,
-      error: `Failed to validate file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      error: `Failed to validate file: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 };
