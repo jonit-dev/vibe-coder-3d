@@ -3,6 +3,7 @@
 ## 1. Overview
 
 - **Context & Goals**
+
   - Replace O(n) and O(n²) scans with indexed, event-driven lookups to scale beyond 1k+ entities.
   - Introduce efficient parent/child adjacency structures and sparse entity iteration without fixed upper bounds.
   - Maintain compatibility with BitECS and existing editor flows; reduce GC and improve determinism.
@@ -17,6 +18,7 @@
 ## 2. Proposed Solution
 
 - **High‑level Summary**
+
   - Add `EntityIndex` for sparse entity tracking (present EIDs) maintained via entity create/delete.
   - Add `HierarchyIndex` with `parentId -> children` and `child -> parent` maps; update on parent changes.
   - Add `ComponentIndex` for fast membership sets per component type; update on add/remove.
@@ -24,7 +26,7 @@
   - Replace `getAllEntities()` scan with `EntityIndex.list()`; replace child building with `HierarchyIndex.getChildren()`.
 
 - **Architecture & Directory Structure**
-  
+
 ```text
 src/
   core/
@@ -43,17 +45,20 @@ src/
 ## 3. Implementation Plan
 
 - **Phase 1: Indices Foundation (0.5 day)**
+
   1. Implement `EntityIndex` with `add(eid)`, `delete(eid)`, `has(eid)`, `list()`.
   2. Implement `HierarchyIndex` with `setParent(child, parent?)`, `getParent(child)`, `getChildren(parent)`.
   3. Implement `ComponentIndex` with `onAdd(type, eid)`, `onRemove(type, eid)`, `list(type)`.
 
 - **Phase 2: Event Wiring (0.5 day)**
+
   1. Create `IndexEventAdapter` subscribing to `EntityManager` and `ComponentManager` events.
   2. On `entity-created/deleted`, update `EntityIndex` and `HierarchyIndex`.
   3. On `entity-updated` with parent change, call `HierarchyIndex.setParent`.
   4. On `component-added/removed`, update `ComponentIndex`.
 
 - **Phase 3: Query API (0.5 day)**
+
   1. Implement `queries/entityQueries.ts`:
      - `listAllEntities()` from `EntityIndex`.
      - `listEntitiesWithComponent(type)` via `ComponentIndex`.
@@ -63,11 +68,13 @@ src/
   2. Replace usage sites in `EntityManager` and editor hooks to use queries.
 
 - **Phase 4: Remove 0..10000 Scans (0.5 day)**
+
   1. Update `EntityManager.getAllEntities()` to use `EntityIndex` and remove numeric loops.
   2. Update `ComponentManager.getEntitiesWithComponent(s)` to use `ComponentIndex`.
   3. Remove `entityScanUtils` fixed-range helpers or keep as fallback behind index presence.
 
 - **Phase 5: Performance Polish (0.5 day)**
+
   1. Micro-benchmarks: measure list, intersection, children queries before/after.
   2. Ensure minimal allocations; reuse arrays or expose iterables where useful.
   3. Add dev-only assertions for index consistency.
@@ -96,10 +103,18 @@ src/
 // src/core/lib/ecs/indexers/EntityIndex.ts
 export class EntityIndex {
   private readonly present = new Set<number>();
-  add(entityId: number): void { this.present.add(entityId); }
-  delete(entityId: number): void { this.present.delete(entityId); }
-  has(entityId: number): boolean { return this.present.has(entityId); }
-  list(): number[] { return Array.from(this.present); }
+  add(entityId: number): void {
+    this.present.add(entityId);
+  }
+  delete(entityId: number): void {
+    this.present.delete(entityId);
+  }
+  has(entityId: number): boolean {
+    return this.present.has(entityId);
+  }
+  list(): number[] {
+    return Array.from(this.present);
+  }
 }
 ```
 
@@ -117,7 +132,10 @@ export class HierarchyIndex {
     }
     if (parentId !== undefined) {
       let children = this.parentToChildren.get(parentId);
-      if (!children) { children = new Set<number>(); this.parentToChildren.set(parentId, children); }
+      if (!children) {
+        children = new Set<number>();
+        this.parentToChildren.set(parentId, children);
+      }
       children.add(childId);
       this.childToParent.set(childId, parentId);
     } else {
@@ -125,8 +143,12 @@ export class HierarchyIndex {
     }
   }
 
-  getParent(childId: number): number | undefined { return this.childToParent.get(childId); }
-  getChildren(parentId: number): number[] { return Array.from(this.parentToChildren.get(parentId) ?? []); }
+  getParent(childId: number): number | undefined {
+    return this.childToParent.get(childId);
+  }
+  getChildren(parentId: number): number[] {
+    return Array.from(this.parentToChildren.get(parentId) ?? []);
+  }
 }
 ```
 
@@ -136,14 +158,19 @@ export class ComponentIndex {
   private readonly membership = new Map<string, Set<number>>();
   onAdd(componentType: string, eid: number): void {
     let set = this.membership.get(componentType);
-    if (!set) { set = new Set<number>(); this.membership.set(componentType, set); }
+    if (!set) {
+      set = new Set<number>();
+      this.membership.set(componentType, set);
+    }
     set.add(eid);
   }
   onRemove(componentType: string, eid: number): void {
     const set = this.membership.get(componentType);
     if (set) set.delete(eid);
   }
-  list(componentType: string): number[] { return Array.from(this.membership.get(componentType) ?? []); }
+  list(componentType: string): number[] {
+    return Array.from(this.membership.get(componentType) ?? []);
+  }
 }
 ```
 
@@ -199,7 +226,9 @@ export class EntityQueries {
     private readonly components: ComponentIndex,
   ) {}
 
-  listAllEntities(): number[] { return this.entities.list(); }
+  listAllEntities(): number[] {
+    return this.entities.list();
+  }
 
   listEntitiesWithComponent(componentType: string): number[] {
     return this.components.list(componentType);
@@ -264,6 +293,7 @@ for (const root of queries.getRootEntities()) {
 ## 7. Testing Strategy
 
 - **Unit Tests**
+
   - EntityIndex add/delete/list; HierarchyIndex setParent/getChildren/getParent; ComponentIndex add/remove/list.
   - EntityQueries intersections and BFS descendant traversal.
   - IndexEventAdapter: events produce correct updates to indices.
@@ -276,12 +306,12 @@ for (const root of queries.getRootEntities()) {
 
 ## 8. Edge Cases
 
-| Edge Case | Remediation |
-| --- | --- |
-| Reparenting loops | Guard in EntityManager (exists) and verify via `wouldCreateCircularDependency`. |
-| Entity deleted with components | ComponentManager emits remove events; ComponentIndex removes membership. |
-| Missed events (race) | Add consistency checks; periodic dev-only reconciliation in debug builds. |
-| Large scenes (10k+) | Use Set-based indices; avoid array copies in hot paths; expose iterables if needed. |
+| Edge Case                      | Remediation                                                                         |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| Reparenting loops              | Guard in EntityManager (exists) and verify via `wouldCreateCircularDependency`.     |
+| Entity deleted with components | ComponentManager emits remove events; ComponentIndex removes membership.            |
+| Missed events (race)           | Add consistency checks; periodic dev-only reconciliation in debug builds.           |
+| Large scenes (10k+)            | Use Set-based indices; avoid array copies in hot paths; expose iterables if needed. |
 
 ## 9. Sequence Diagram
 
@@ -313,12 +343,12 @@ sequenceDiagram
 
 ## 10. Risks & Mitigations
 
-| Risk | Mitigation |
-| --- | --- |
-| Index drift vs world | Event-driven updates + dev-only reconciliation checks. |
+| Risk                    | Mitigation                                                           |
+| ----------------------- | -------------------------------------------------------------------- |
+| Index drift vs world    | Event-driven updates + dev-only reconciliation checks.               |
 | Memory overhead of sets | Minimal vs scan cost; use shared instances and clear on world reset. |
-| Refactor complexity | Introduce behind a query layer; migrate call-sites incrementally. |
-| Singletons coupling | Keep indices injectable; expose factory for future DI context. |
+| Refactor complexity     | Introduce behind a query layer; migrate call-sites incrementally.    |
+| Singletons coupling     | Keep indices injectable; expose factory for future DI context.       |
 
 ## 11. Timeline
 
@@ -347,4 +377,3 @@ Replacing naive scans with event-driven indices unlocks scalability for large sc
 - BitECS world remains the ECS runtime; indices are auxiliary and source-of-truth remains ECS.
 - `EntityManager` and `ComponentManager` events are reliable and emitted for all relevant mutations.
 - Zod remains available for schema validation; Yarn/TS stack unchanged.
-
