@@ -1,17 +1,16 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import { overridesStore } from '@/core/lib/scene/overrides/OverridesStore';
 import { sceneRegistry } from '@/core/lib/scene/SceneRegistry';
 import { diffAgainstBase } from '@/core/lib/serialization/SceneDiff';
+import { exportScene, importScene, type ISerializedScene } from '@/core/lib/serialization/sceneSerializer';
 import { useProjectToasts, useToastStore } from '@/core/stores/toastStore';
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
+import { useScenePersistence } from './useScenePersistence';
 
-// Legacy interface for backward compatibility
-export interface ISerializedScene {
-  version: number;
-  entities: unknown[];
-}
+// Re-export from serializer for backward compatibility
+export type { ISerializedScene } from '@/core/lib/serialization/sceneSerializer';
 
 /**
  * Hook that provides scene action functions (save, load, clear)
@@ -19,96 +18,97 @@ export interface ISerializedScene {
  */
 export function useSceneActions() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingSaveName, setPendingSaveName] = useState<string>('');
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
   const projectToasts = useProjectToasts();
   const { removeToast } = useToastStore();
+  const scenePersistence = useScenePersistence();
 
-  // Simple scene serialization using new ECS system
-  const exportScene = (): ISerializedScene => {
+  // Enhanced scene serialization using dedicated serializer
+  const exportSceneData = (metadata?: { name?: string }): ISerializedScene => {
     const entities = entityManager.getAllEntities();
-    const serializedEntities = entities.map((entity) => {
-      const entityComponents = componentManager.getComponentsForEntity(entity.id);
-      const entityData: Record<string, any> = {
-        id: entity.id,
-        name: entity.name,
-        parentId: entity.parentId,
-        components: {},
-      };
+    const getComponentsForEntity = (entityId: string) =>
+      componentManager.getComponentsForEntity(entityId);
 
-      entityComponents.forEach((component) => {
-        if (component.data) {
-          (entityData.components as Record<string, any>)[component.type] = component.data;
-        }
-      });
-
-      return entityData;
+    return exportScene(entities, getComponentsForEntity, {
+      version: 4, // Version 4 for API persistence
+      name: metadata?.name,
+      timestamp: new Date().toISOString(),
     });
-
-    return {
-      version: 3, // Increment version for new ECS format
-      entities: serializedEntities,
-    };
   };
 
-  // Simple scene import using new ECS system
-  const importScene = async (scene: ISerializedScene): Promise<void> => {
-    if (!scene || !scene.entities) {
-      throw new Error('Invalid scene data');
-    }
-
-    // Clear existing entities first - EntityManager handles components automatically
-    entityManager.clearEntities();
-
-    // Import entities
-    for (const entityData of scene.entities) {
-      try {
-        const entity = entityManager.createEntity(
-          (entityData as any).name || `Entity ${(entityData as any).id}`,
-          (entityData as any).parentId,
-        );
-
-        // Add components
-        for (const [componentType, componentData] of Object.entries(
-          (entityData as any).components || {},
-        )) {
-          if (componentData) {
-            componentManager.addComponent(entity.id, componentType, componentData);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to import entity:', entityData, error);
-      }
-    }
+  // Enhanced scene import using dedicated serializer
+  const importSceneData = async (scene: ISerializedScene): Promise<void> => {
+    await importScene(scene, entityManager, componentManager);
   };
 
   // Temporarily disabled localStorage loading to use SceneRegistry instead
   const savedScene: { entities?: unknown[] } | null = null;
 
-  const handleSave = async (): Promise<void> => {
-    const loadingToastId = projectToasts.showOperationStart('Saving Overrides');
+  const handleSave = async (sceneName?: string): Promise<void> => {
+    const loadingToastId = projectToasts.showOperationStart('Saving Scene');
 
     try {
-      const currentSceneId = sceneRegistry.getCurrentSceneId();
-      if (!currentSceneId) {
-        throw new Error('No scene loaded');
+      // If no scene name provided, this is likely a legacy override save
+      if (!sceneName) {
+        const currentSceneId = sceneRegistry.getCurrentSceneId();
+        if (!currentSceneId) {
+          throw new Error('No scene loaded');
+        }
+
+        // Compute overrides against the base scene
+        const overrides = diffAgainstBase(currentSceneId);
+
+        // Save overrides file
+        await overridesStore.save(overrides);
+
+        removeToast(loadingToastId);
+        projectToasts.showOperationSuccess(
+          'Save',
+          `Successfully saved ${overrides.patches.length} changes for ${currentSceneId}`,
+        );
+        return;
       }
 
-      // Compute overrides against the base scene
-      const overrides = diffAgainstBase(currentSceneId);
+      // New TSX-based save - transform entities to expected format
+      const entities = entityManager.getAllEntities();
+      const transformedEntities = entities.map((entity) => {
+        const entityComponents = componentManager.getComponentsForEntity(entity.id);
+        const components: Record<string, any> = {};
 
-      // Save overrides file
-      await overridesStore.save(overrides);
+        entityComponents.forEach((component) => {
+          if (component.data) {
+            components[component.type] = component.data;
+          }
+        });
 
-      // Remove loading toast and show success
+        return {
+          id: entity.id,
+          name: entity.name,
+          parentId: entity.parentId,
+          components,
+        };
+      });
+
+      console.log('[useSceneActions] Transformed entities:', transformedEntities.length);
+      const success = await scenePersistence.saveTsxScene(sceneName, transformedEntities);
+
       removeToast(loadingToastId);
-      projectToasts.showOperationSuccess(
-        'Save',
-        `Successfully saved ${overrides.patches.length} changes for ${currentSceneId}`,
-      );
+
+      if (success) {
+        projectToasts.showOperationSuccess(
+          'Save',
+          `Successfully saved scene '${sceneName}' with ${transformedEntities.length} entities as TSX component`,
+        );
+      } else {
+        projectToasts.showOperationError(
+          'Save',
+          scenePersistence.error || 'Failed to save scene',
+        );
+      }
     } catch (error) {
-      console.error('Failed to save overrides:', error);
-      // Remove loading toast and show error
+      console.error('Failed to save scene:', error);
       removeToast(loadingToastId);
       projectToasts.showOperationError(
         'Save',
@@ -117,11 +117,55 @@ export function useSceneActions() {
     }
   };
 
-  const handleLoad = async (_e?: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const loadingToastId = projectToasts.showOperationStart('Loading Overrides');
+  const handleLoad = async (sceneNameOrEvent?: string | React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const loadingToastId = projectToasts.showOperationStart('Loading Scene');
 
     try {
-      // Load overrides file
+      // Handle file input event (legacy)
+      if (sceneNameOrEvent && typeof sceneNameOrEvent !== 'string' && sceneNameOrEvent.target?.files) {
+        const file = sceneNameOrEvent.target.files[0];
+        if (!file) {
+          removeToast(loadingToastId);
+          projectToasts.showOperationError('Load', 'No file selected');
+          return;
+        }
+
+        const text = await file.text();
+        const sceneData = JSON.parse(text);
+        await importSceneData(sceneData);
+
+        removeToast(loadingToastId);
+        projectToasts.showOperationSuccess(
+          'Load',
+          `Successfully loaded scene from file with ${sceneData.entities?.length || 0} entities`,
+        );
+        return;
+      }
+
+      // Handle scene name (API loading with TSX support)
+      if (sceneNameOrEvent && typeof sceneNameOrEvent === 'string') {
+        const sceneData = await scenePersistence.loadScene(sceneNameOrEvent);
+
+        if (!sceneData) {
+          removeToast(loadingToastId);
+          projectToasts.showOperationError(
+            'Load',
+            scenePersistence.error || 'Failed to load scene',
+          );
+          return;
+        }
+
+        await importSceneData(sceneData);
+
+        removeToast(loadingToastId);
+        projectToasts.showOperationSuccess(
+          'Load',
+          `Successfully loaded scene '${sceneNameOrEvent}' with ${sceneData.entities.length} entities`,
+        );
+        return;
+      }
+
+      // Fallback to override loading (legacy)
       const overrides = await overridesStore.load();
 
       if (!overrides) {
@@ -138,7 +182,6 @@ export function useSceneActions() {
       }
 
       if (overrides.sceneId !== currentSceneId) {
-        // Ask user if they want to switch scenes first
         removeToast(loadingToastId);
         projectToasts.showOperationError(
           'Load',
@@ -147,23 +190,21 @@ export function useSceneActions() {
         return;
       }
 
-      // Apply overrides using the override applier
       const { applyOverrides } = await import('@/core/lib/scene/overrides/OverrideApplier');
       applyOverrides(overrides);
 
-      // Remove loading toast and show success
       removeToast(loadingToastId);
       projectToasts.showOperationSuccess(
         'Load',
         `Successfully loaded ${overrides.patches.length} overrides for ${overrides.sceneId}`,
       );
     } catch (error) {
-      console.error('Failed to load overrides:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-
-      // Remove loading toast and show error
+      console.error('Failed to load scene:', error);
       removeToast(loadingToastId);
-      projectToasts.showOperationError('Load', errorMessage);
+      projectToasts.showOperationError(
+        'Load',
+        error instanceof Error ? error.message : 'Unknown error occurred',
+      );
     }
   };
 
@@ -206,7 +247,7 @@ export function useSceneActions() {
   // Legacy methods that return strings for backward compatibility
   const handleSaveLegacy = (): string => {
     try {
-      const scene = exportScene();
+      const scene = exportSceneData();
       localStorage.setItem('editorScene', JSON.stringify(scene));
       return `Scene saved with ${scene.entities.length} entities`;
     } catch (error) {
@@ -221,7 +262,7 @@ export function useSceneActions() {
         const file = e.target.files[0];
         const text = await file.text();
         const scene = JSON.parse(text);
-        await importScene(scene);
+        await importSceneData(scene);
         return `Scene loaded with ${scene.entities?.length || 0} entities`;
       } catch (error) {
         console.error('Failed to load scene from file:', error);
@@ -229,7 +270,7 @@ export function useSceneActions() {
       }
     } else if (savedScene) {
       try {
-        await importScene(savedScene);
+        await importSceneData(savedScene as ISerializedScene);
         return `Scene loaded with ${(savedScene as any)?.entities?.length || 0} entities`;
       } catch (error) {
         console.error('Failed to load saved scene:', error);
@@ -257,7 +298,9 @@ export function useSceneActions() {
   return {
     fileInputRef,
     savedScene,
-    // New toast-enabled methods
+    pendingSaveName,
+    setPendingSaveName,
+    // Enhanced methods with API support
     handleSave,
     handleLoad,
     handleClear,
@@ -266,7 +309,10 @@ export function useSceneActions() {
     handleLoadLegacy,
     handleClearLegacy,
     triggerFileLoad,
-    importScene,
-    exportScene,
+    // Exported for external use
+    importScene: importSceneData,
+    exportScene: exportSceneData,
+    // Scene persistence state and actions
+    scenePersistence,
   };
 }

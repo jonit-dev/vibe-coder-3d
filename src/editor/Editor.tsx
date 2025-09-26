@@ -14,6 +14,7 @@ import { InspectorPanelContent } from './components/panels/InspectorPanel/Inspec
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
 import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
+import { ScenePersistenceModal } from './components/shared/ScenePersistenceModal';
 import { useAutoSelection } from './hooks/useAutoSelection';
 import { useEditorHandlers } from './hooks/useEditorHandlers';
 import { GizmoMode, useEditorKeyboard } from './hooks/useEditorKeyboard';
@@ -55,6 +56,12 @@ const Editor: React.FC = () => {
   // Asset loader modal state
   const [showAssetLoader, setShowAssetLoader] = useState(false);
 
+  // Scene persistence modal state
+  const [scenePersistenceModal, setScenePersistenceModal] = useState<{
+    isOpen: boolean;
+    mode: 'save' | 'load';
+  }>({ isOpen: false, mode: 'save' });
+
   // Entity synchronization with ECS system
   useEntitySynchronization({ entityIds, setEntityIds });
 
@@ -67,6 +74,7 @@ const Editor: React.FC = () => {
     handleLoad,
     handleClear,
     handleLoadLegacy,
+    scenePersistence,
   } = useSceneActions();
 
   // All action handlers encapsulated in custom hook
@@ -169,9 +177,9 @@ const Editor: React.FC = () => {
 
       <TopBar
         entityCount={entityIds.length}
-        onSave={handleSave} // Use new toast-enabled method
-        onLoad={handleLoad}
-        onClear={handleClear} // Use new toast-enabled method
+        onSave={() => setScenePersistenceModal({ isOpen: true, mode: 'save' })}
+        onLoad={() => setScenePersistenceModal({ isOpen: true, mode: 'load' })}
+        onClear={handleClear}
         onAddObject={toggleAddMenu}
         addButtonRef={addButtonRef}
         isPlaying={isPlaying}
@@ -199,6 +207,18 @@ const Editor: React.FC = () => {
         title="Select Custom Model"
         basePath="/assets/models"
         allowedExtensions={['glb', 'gltf', 'fbx', 'obj']}
+      />
+
+      <ScenePersistenceModal
+        isOpen={scenePersistenceModal.isOpen}
+        onClose={() => setScenePersistenceModal({ isOpen: false, mode: 'save' })}
+        mode={scenePersistenceModal.mode}
+        availableScenes={scenePersistence.availableScenes}
+        isLoading={scenePersistence.isLoading}
+        error={scenePersistence.error}
+        onSave={handleSave}
+        onLoad={handleLoad}
+        onRefresh={scenePersistence.listTsxScenes}
       />
 
       {/* Hidden file input for loading legacy scenes */}

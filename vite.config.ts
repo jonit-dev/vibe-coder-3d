@@ -3,10 +3,11 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
+import { sceneApiMiddleware } from './src/plugins/vite-plugin-scene-api';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [tailwindcss(), react(), tsconfigPaths()],
+  plugins: [tailwindcss(), react(), tsconfigPaths(), sceneApiMiddleware()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
