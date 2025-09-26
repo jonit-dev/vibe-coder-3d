@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { watch } from 'fs';
-import { readdir, stat, mkdir, copyFile } from 'fs/promises';
+import { readdir, stat, mkdir, copyFile, readFile } from 'fs/promises';
 import { join, dirname, relative } from 'path';
 import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, '..');
@@ -15,6 +16,33 @@ async function ensureDir(dir) {
     await mkdir(dir, { recursive: true });
   } catch (err) {
     if (err.code !== 'EEXIST') throw err;
+  }
+}
+
+async function getFileHash(filePath) {
+  try {
+    const content = await readFile(filePath);
+    return createHash('md5').update(content).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
+async function filesAreDifferent(src, dest) {
+  try {
+    const [srcStats, destStats] = await Promise.all([stat(src), stat(dest)]);
+
+    // Quick check: different modification times
+    if (srcStats.mtime.getTime() !== destStats.mtime.getTime()) {
+      // Double-check with content hash for accuracy
+      const [srcHash, destHash] = await Promise.all([getFileHash(src), getFileHash(dest)]);
+      return srcHash !== destHash;
+    }
+
+    return false;
+  } catch {
+    // Destination doesn't exist or other error
+    return true;
   }
 }
 
@@ -35,7 +63,13 @@ async function syncDirectory(src, dest, silent = false) {
         await ensureDir(destPath);
         await syncDirectory(srcPath, destPath, silent);
       } else {
-        await copyFileWithDir(srcPath, destPath);
+        const isDifferent = await filesAreDifferent(srcPath, destPath);
+        if (isDifferent) {
+          await copyFileWithDir(srcPath, destPath);
+          if (!silent) console.log(`📋 Synced: ${relative(sourceDir, srcPath)}`);
+        } else {
+          if (!silent) console.log(`⏭️  Skipped (unchanged): ${relative(sourceDir, srcPath)}`);
+        }
       }
     }
   } catch (err) {
@@ -64,8 +98,13 @@ function startWatcher(silent = false) {
         try {
           const stats = await stat(srcPath);
           if (stats.isFile()) {
-            await copyFileWithDir(srcPath, destPath);
-            if (!silent) console.log(`📋 Synced: ${filename}`);
+            const isDifferent = await filesAreDifferent(srcPath, destPath);
+            if (isDifferent) {
+              await copyFileWithDir(srcPath, destPath);
+              if (!silent) console.log(`📋 Synced: ${filename}`);
+            } else {
+              if (!silent) console.log(`⏭️  Skipped (unchanged): ${filename}`);
+            }
           }
         } catch (err) {
           // File might have been deleted
