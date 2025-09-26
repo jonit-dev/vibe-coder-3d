@@ -1,6 +1,7 @@
 import { Plugin } from 'vite';
 import { promises as fs } from 'fs';
 import path from 'path';
+import type { IncomingMessage, ServerResponse } from 'http';
 
 // Simple validation without importing TypeScript files
 const validateSceneData = (data: unknown): { isValid: boolean; error?: string } => {
@@ -8,7 +9,7 @@ const validateSceneData = (data: unknown): { isValid: boolean; error?: string } 
     return { isValid: false, error: 'Scene data must be an object' };
   }
 
-  const scene = data as any;
+  const scene = data as Record<string, unknown>;
 
   if (typeof scene.version !== 'number') {
     return { isValid: false, error: 'Scene version must be a number' };
@@ -20,11 +21,6 @@ const validateSceneData = (data: unknown): { isValid: boolean; error?: string } 
 
   return { isValid: true };
 };
-
-interface ISaveSceneRequest {
-  name: string;
-  data: unknown;
-}
 
 interface ISceneFileInfo {
   name: string;
@@ -57,7 +53,7 @@ export function sceneApiMiddleware(): Plugin {
         })
         .catch(() => {});
 
-      server.middlewares.use('/api/scene', async (req, res, next) => {
+      server.middlewares.use('/api/scene', async (req, res) => {
         try {
           const url = new URL(req.url!, `http://${req.headers.host}`);
           const pathname = url.pathname;
@@ -109,7 +105,7 @@ export function sceneApiMiddleware(): Plugin {
 /**
  * Handle POST /api/scene/save
  */
-async function handleSave(req: any, res: any): Promise<void> {
+async function handleSave(req: IncomingMessage, res: ServerResponse): Promise<void> {
   let body = '';
 
   req.on('data', (chunk: Buffer) => {
@@ -181,7 +177,7 @@ async function handleSave(req: any, res: any): Promise<void> {
 /**
  * Handle GET /api/scene/load?name=filename
  */
-async function handleLoad(req: any, res: any, url: URL): Promise<void> {
+async function handleLoad(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
   const filename = url.searchParams.get('name');
 
   if (!filename) {
@@ -228,7 +224,7 @@ async function handleLoad(req: any, res: any, url: URL): Promise<void> {
       }),
     );
   } catch (error) {
-    if ((error as any).code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       res.statusCode = 404;
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ error: 'Scene file not found' }));
@@ -257,7 +253,7 @@ const sanitizeComponentName = (name: string): string => {
   return sanitized || 'Scene';
 };
 
-const generateTsxScene = (entities: any[], metadata: any): string => {
+const generateTsxScene = (entities: unknown[], metadata: Record<string, unknown>): string => {
   const componentName = sanitizeComponentName(metadata.name);
 
   // Debug logging
@@ -338,7 +334,7 @@ export default ${componentName};`
 /**
  * Handle POST /api/scene/save-tsx
  */
-async function handleSaveTsx(req: any, res: any): Promise<void> {
+async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise<void> {
   let body = '';
 
   req.on('data', (chunk: Buffer) => {
@@ -415,10 +411,16 @@ async function handleSaveTsx(req: any, res: any): Promise<void> {
 /**
  * Handle GET /api/scene/list-tsx
  */
-async function handleListTsx(req: any, res: any): Promise<void> {
+async function handleListTsx(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     const files = await fs.readdir(SCENES_DIR);
-    const tsxFiles: any[] = [];
+    const tsxFiles: Array<{
+      name: string;
+      filename: string;
+      modified: string;
+      size: number;
+      type: string;
+    }> = [];
 
     for (const file of files) {
       if (file.endsWith('.tsx')) {
@@ -465,7 +467,7 @@ async function handleListTsx(req: any, res: any): Promise<void> {
 /**
  * Handle GET /api/scene/load-tsx?name=filename
  */
-async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
+async function handleLoadTsx(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
   const filename = url.searchParams.get('name');
 
   if (!filename) {
@@ -594,9 +596,10 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
 
     // Create scene data structure
     const sceneData = {
-      version: (metadata as any)?.version || 4,
-      name: (metadata as any)?.name || filename.replace('.tsx', ''),
-      timestamp: (metadata as any)?.timestamp || new Date().toISOString(),
+      version: ((metadata as Record<string, unknown>)?.version as number) || 4,
+      name: ((metadata as Record<string, unknown>)?.name as string) || filename.replace('.tsx', ''),
+      timestamp:
+        ((metadata as Record<string, unknown>)?.timestamp as string) || new Date().toISOString(),
       entities: entities,
     };
 
@@ -612,7 +615,7 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
       }),
     );
   } catch (error) {
-    if ((error as any).code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       res.statusCode = 404;
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ error: 'TSX scene file not found' }));
@@ -633,7 +636,7 @@ async function handleLoadTsx(req: any, res: any, url: URL): Promise<void> {
 /**
  * Handle GET /api/scene/list
  */
-async function handleList(req: any, res: any): Promise<void> {
+async function handleList(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     const files = await fs.readdir(SCENES_DIR);
     const sceneFiles: ISceneFileInfo[] = [];

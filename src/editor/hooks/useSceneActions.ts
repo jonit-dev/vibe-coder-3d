@@ -103,7 +103,7 @@ export function useSceneActions(options: ISceneActionsOptions = {}) {
       const entities = entityManager.getAllEntities();
       const transformedEntities = entities.map((entity) => {
         const entityComponents = componentManager.getComponentsForEntity(entity.id);
-        const components: Record<string, any> = {};
+        const components: Record<string, unknown> = {};
 
         entityComponents.forEach((component) => {
           if (component.data) {
@@ -310,7 +310,7 @@ export function useSceneActions(options: ISceneActionsOptions = {}) {
     } else if (savedScene) {
       try {
         await importSceneData(savedScene as ISerializedScene);
-        return `Scene loaded with ${(savedScene as any)?.entities?.length || 0} entities`;
+        return `Scene loaded with ${(savedScene as ISerializedScene)?.entities?.length || 0} entities`;
       } catch (error) {
         console.error('Failed to load saved scene:', error);
         return 'Failed to load saved scene';
