@@ -77,15 +77,15 @@ let scriptExecutionCount = 0;
  */
 function createMockInputAPI(): IInputAPI {
   return {
-    isKeyPressed: (_key: string) => false,
-    isKeyDown: (_key: string) => false,
-    isKeyUp: (_key: string) => false,
+    isKeyPressed: (__key: string) => false,
+    isKeyDown: (__key: string) => false,
+    isKeyUp: (__key: string) => false,
     mousePosition: () => [0, 0],
-    isMouseButtonPressed: (_button: number) => false,
-    isMouseButtonDown: (_button: number) => false,
-    isMouseButtonUp: (_button: number) => false,
-    getGamepadAxis: (_gamepadIndex: number, _axisIndex: number) => 0,
-    isGamepadButtonPressed: (_gamepadIndex: number, _buttonIndex: number) => false,
+    isMouseButtonPressed: (__button: number) => false,
+    isMouseButtonDown: (__button: number) => false,
+    isMouseButtonUp: (__button: number) => false,
+    getGamepadAxis: (__gamepadIndex: number, __axisIndex: number) => 0,
+    isGamepadButtonPressed: (__gamepadIndex: number, __buttonIndex: number) => false,
   };
 }
 
@@ -425,7 +425,7 @@ function ensureAllScriptsCompiled(): void {
 /**
  * Execute scripts in update loop
  */
-function executeScripts(deltaTime: number, _isPlaying: boolean = false): void {
+function executeScripts(deltaTime: number): void {
   const query = getScriptQuery();
   if (!query) return;
 
@@ -481,7 +481,7 @@ export function updateScriptSystem(deltaTime: number, isPlaying: boolean = false
   compileScripts();
 
   // Execute scripts
-  executeScripts(deltaTime, isPlaying);
+  executeScripts(deltaTime);
 }
 
 /**

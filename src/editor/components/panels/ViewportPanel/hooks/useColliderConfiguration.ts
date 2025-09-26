@@ -18,7 +18,6 @@ export function useColliderConfiguration({
   colliderConfig,
   meshType,
   shouldHavePhysics,
-  hasCustomColliders: _hasCustomColliders,
   terrainComponent,
 }: IUseColliderConfigurationProps) {
   const { terrainColliderKey, createTerrainColliderConfig, enhanceColliderWithTerrain } =

@@ -70,7 +70,7 @@ export type SceneOverrides = z.infer<typeof SceneOverridesSchema>;
  * Get component schema for a specific component type
  * This validates against the registered component descriptors
  */
-export function getComponentSchema(_componentType: string): z.ZodType<unknown> | null {
+export function getComponentSchema(__componentType: string): z.ZodType<unknown> | null {
   // For now, return a generic schema
   // In the future, this could validate against specific component schemas
   // based on the component registry

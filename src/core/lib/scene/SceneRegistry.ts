@@ -116,7 +116,7 @@ class SceneRegistryClass {
           id,
           name: id,
           description: `Extension scene: ${id}`,
-          builder: async (_ctx) => {
+          builder: async () => {
             // Call the extension scene load function
             await extensionScene.load();
           },

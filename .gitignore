@@ -4,6 +4,9 @@
 # production
 /dist
 
+# generated assets (synced from src/game/assets)
+/public/assets
+
 # misc
 .DS_Store
 .env

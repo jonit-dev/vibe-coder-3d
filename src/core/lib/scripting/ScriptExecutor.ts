@@ -545,22 +545,18 @@ export class ScriptExecutor {
       if (functionBody) {
         const executionStart = performance.now();
 
-        try {
-          if (lifecycleMethod === 'onUpdate') {
-            output = this.executeParsedFunction(functionBody, context, options.timeInfo.deltaTime);
-          } else {
-            output = this.executeParsedFunction(functionBody, context);
-          }
+        if (lifecycleMethod === 'onUpdate') {
+          output = this.executeParsedFunction(functionBody, context, options.timeInfo.deltaTime);
+        } else {
+          output = this.executeParsedFunction(functionBody, context);
+        }
 
-          const executionTime = performance.now() - executionStart;
-          if (executionTime > maxTime) {
-            const timeStr = executionTime.toFixed(2);
-            throw new Error(
-              `Script execution exceeded maximum time limit of ${maxTime}ms (took ${timeStr}ms)`,
-            );
-          }
-        } catch (error) {
-          throw error;
+        const executionTime = performance.now() - executionStart;
+        if (executionTime > maxTime) {
+          const timeStr = executionTime.toFixed(2);
+          throw new Error(
+            `Script execution exceeded maximum time limit of ${maxTime}ms (took ${timeStr}ms)`,
+          );
         }
       }
 

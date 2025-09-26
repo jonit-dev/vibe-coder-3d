@@ -5,7 +5,7 @@ export interface ITsxSceneEntity {
   id: string | number;
   name: string;
   parentId?: string | number | null;
-  components: Record<string, any>;
+  components: Record<string, unknown>;
 }
 
 export interface ITsxSceneMetadata {
@@ -17,7 +17,7 @@ export interface ITsxSceneMetadata {
 }
 
 /**
- * Generates a TypeScript React component from scene data
+ * Generates a TypeScript React component from scene data with full type safety
  */
 export const generateTsxScene = (
   entities: ITsxSceneEntity[],
@@ -25,72 +25,81 @@ export const generateTsxScene = (
 ): string => {
   const componentName = sanitizeComponentName(metadata.name);
 
-  const imports = `import React from 'react';
+  const componentString = `import React from 'react';
 import { useEffect } from 'react';
-import { useEntityManager } from '../src/editor/hooks/useEntityManager';
-import { useComponentManager } from '../src/editor/hooks/useComponentManager';
+import { useEntityManager } from '@/editor/hooks/useEntityManager';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import type {
+  ComponentDataMap,
+  SceneEntityData,
+  SceneMetadata,
+} from '@/core/types/scene';
+import { validateSceneEntity } from '@/core/types/scene';
 
-`;
+/**
+ * Type-safe scene data interface
+ */
+interface ITypedSceneEntity {
+  id: string;
+  name: string;
+  parentId?: string | null;
+  components: {
+    [K in KnownComponentTypes]?: ComponentDataMap[K];
+  } & {
+    [key: string]: unknown; // Allow additional components
+  };
+}
 
-  const metadataComment = `/**
+/**
+ * Type-safe scene definition
+ */
+const sceneData: ITypedSceneEntity[] = ${JSON.stringify(entities, null, 2)};
+
+/**
+ * Scene metadata
+ */
+export const metadata: SceneMetadata = ${JSON.stringify(metadata, null, 2)};
+
+/**
  * ${metadata.name}${metadata.description ? `\n * ${metadata.description}` : ''}
  * Generated: ${metadata.timestamp}
  * Version: ${metadata.version}${metadata.author ? `\n * Author: ${metadata.author}` : ''}
- */`;
-
-  const entityDefinitions = entities
-    .map((entity) => {
-      const normalizedId = typeof entity.id === 'number' ? entity.id.toString() : entity.id;
-      const parentId = entity.parentId
-        ? typeof entity.parentId === 'number'
-          ? entity.parentId.toString()
-          : entity.parentId
-        : null;
-
-      return `  {
-    id: "${normalizedId}",
-    name: "${entity.name}",${parentId ? `\n    parentId: "${parentId}",` : ''}
-    components: ${JSON.stringify(entity.components, null, 6).replace(/^/gm, '    ')}
-  }`;
-    })
-    .join(',\n\n');
-
-  const componentBody = `export const ${componentName}: React.FC = () => {
+ */
+export const ${componentName}: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
 
   useEffect(() => {
-    // Define scene entities
-    const entities = [
-${entityDefinitions}
-    ];
+    // Validate scene data at runtime
+    const validatedSceneData = sceneData.map(entity => validateSceneEntity(entity));
 
     // Clear existing entities
     entityManager.clearEntities();
 
-    // Create entities and components
-    entities.forEach((entityData) => {
-      const entity = entityManager.createEntity(entityData.name, (entityData as any).parentId || null);
+    // Create entities and components with type safety
+    validatedSceneData.forEach((entityData: ITypedSceneEntity) => {
+      const entity = entityManager.createEntity(entityData.name, entityData.parentId || null);
 
-      // Add components
+      // Type-safe component addition
       Object.entries(entityData.components).forEach(([componentType, componentData]) => {
         if (componentData) {
+          // Type assertion for known component types
           componentManager.addComponent(entity.id, componentType, componentData);
         }
       });
     });
 
-    console.log(\`[TsxScene] Loaded scene '\${metadata.name}' with \${entities.length} entities\`);
+    console.log(\`[TsxScene] Loaded scene '\${metadata?.name || 'Unknown'}' with \${validatedSceneData.length} entities\`);
   }, [entityManager, componentManager]);
 
   return null; // Scene components don't render UI
 };
 
-export const metadata: ITsxSceneMetadata = ${JSON.stringify(metadata, null, 2)};
+export default ${componentName};
+`;
 
-export default ${componentName};`;
-
-  return imports + metadataComment + '\n' + componentBody;
+  return componentString;
 };
 
 /**
@@ -99,9 +108,9 @@ export default ${componentName};`;
 export const saveTsxScene = async (
   sceneName: string,
   entities: ITsxSceneEntity[],
-  metadata: Omit<ITsxSceneMetadata, 'name' | 'timestamp'> = {},
+  metadata: Partial<Omit<ITsxSceneMetadata, 'name' | 'timestamp'>> = {},
 ): Promise<{ filename: string; filepath: string }> => {
-  const scenesDir = './scenes';
+  const scenesDir = './src/game/scenes';
   const sanitizedName = sanitizeComponentName(sceneName);
   const filename = `${sanitizedName}.tsx`;
   const filepath = path.join(scenesDir, filename);
@@ -136,7 +145,7 @@ export const loadTsxScene = async (
   metadata: ITsxSceneMetadata;
 }> => {
   const sanitizedName = sanitizeComponentName(sceneName);
-  const scenePath = `../../../scenes/${sanitizedName}.tsx`;
+  const scenePath = `../../../src/game/scenes/${sanitizedName}.tsx`;
 
   try {
     // Dynamic import the scene component
@@ -164,7 +173,7 @@ export const listTsxScenes = async (): Promise<
     size: number;
   }>
 > => {
-  const scenesDir = './scenes';
+  const scenesDir = './src/game/scenes';
 
   try {
     const files = await fs.readdir(scenesDir);
@@ -197,7 +206,7 @@ export const listTsxScenes = async (): Promise<
 /**
  * Sanitizes scene name to be a valid React component name
  */
-const sanitizeComponentName = (name: string): string => {
+export const sanitizeComponentName = (name: string): string => {
   // Remove special characters and spaces, capitalize first letter
   const sanitized = name
     .replace(/[^a-zA-Z0-9]/g, '')

@@ -4,26 +4,26 @@ import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 
 /**
- * collision EXAMPLE
- * Generated: 2025-09-26T03:16:47.598Z
+ * anna
+ * Generated: 2025-09-26T04:36:48.943Z
  * Version: 1
  */
-export const CollisionEXAMPLE: React.FC = () => {
+export const Anna: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
 
   useEffect(() => {
     const entities = [
       {
-        id: '0',
+        id: '5',
         name: 'Main Camera',
         components: {
           PersistentId: {
-            id: 'mg09r1ju-puh035tep',
+            id: 'mg0cmb1x-m368nenwn',
           },
           Transform: {
-            position: [0, 1, -10],
-            rotation: [0, 0, 0],
+            position: [0.009674073196947575, 7.5, -10],
+            rotation: [26.565052032470703, -0.049576617777347565, 0.024788303300738335],
             scale: [1, 1, 1],
           },
           Camera: {
@@ -54,8 +54,8 @@ export const CollisionEXAMPLE: React.FC = () => {
             toneMappingExposure: 1,
             enablePostProcessing: false,
             postProcessingPreset: 'none',
-            enableSmoothing: false,
-            followTarget: 0,
+            enableSmoothing: true,
+            followTarget: 9,
             followOffset: {
               x: 0,
               y: 5,
@@ -68,11 +68,11 @@ export const CollisionEXAMPLE: React.FC = () => {
       },
 
       {
-        id: '1',
+        id: '6',
         name: 'Directional Light',
         components: {
           PersistentId: {
-            id: 'mg09r1k8-xm6migmx8',
+            id: 'mg0cmb1z-hig4b0ko9',
           },
           Transform: {
             position: [5, 10, 5],
@@ -104,11 +104,11 @@ export const CollisionEXAMPLE: React.FC = () => {
       },
 
       {
-        id: '2',
+        id: '7',
         name: 'Ambient Light',
         components: {
           PersistentId: {
-            id: 'mg09r1kd-6brotsduc',
+            id: 'mg0cmb21-psylr8xwm',
           },
           Transform: {
             position: [0, 0, 0],
@@ -140,11 +140,11 @@ export const CollisionEXAMPLE: React.FC = () => {
       },
 
       {
-        id: '3',
+        id: '8',
         name: 'Plane 0',
         components: {
           PersistentId: {
-            id: 'mg09r4zq-3a92vy5o2',
+            id: 'mg0cmb24-dxhnrweww',
           },
           Transform: {
             position: [0, 0, 0],
@@ -172,55 +172,23 @@ export const CollisionEXAMPLE: React.FC = () => {
               textureOffsetY: 0,
             },
           },
-          RigidBody: {
-            enabled: true,
-            bodyType: 'fixed',
-            type: 'fixed',
-            mass: 1,
-            gravityScale: 1,
-            canSleep: true,
-            material: {
-              friction: 0.699999988079071,
-              restitution: 0.30000001192092896,
-              density: 1,
-            },
-          },
-          MeshCollider: {
-            enabled: true,
-            isTrigger: false,
-            colliderType: 'box',
-            center: [0, 0, 0],
-            size: {
-              width: 1,
-              height: 1,
-              depth: 0.10000000149011612,
-              radius: 0.5,
-              capsuleRadius: 0.5,
-              capsuleHeight: 2,
-            },
-            physicsMaterial: {
-              friction: 0.699999988079071,
-              restitution: 0.30000001192092896,
-              density: 1,
-            },
-          },
         },
       },
 
       {
-        id: '4',
-        name: 'Sphere 0',
+        id: '9',
+        name: 'Trapezoid 0',
         components: {
           PersistentId: {
-            id: 'mg09r7u1-yrwt5v3uw',
+            id: 'mg0cmb25-6et46aruv',
           },
           Transform: {
-            position: [0, 3, 0],
+            position: [0, 2.5, 0],
             rotation: [0, 0, 0],
             scale: [1, 1, 1],
           },
           MeshRenderer: {
-            meshId: 'sphere',
+            meshId: 'trapezoid',
             materialId: 'default',
             enabled: true,
             castShadows: true,
@@ -229,7 +197,7 @@ export const CollisionEXAMPLE: React.FC = () => {
             material: {
               shader: 'standard',
               materialType: 'solid',
-              color: '#ff3333',
+              color: '#3399ff',
               normalScale: 1,
               metalness: 0,
               roughness: 0.5,
@@ -240,36 +208,40 @@ export const CollisionEXAMPLE: React.FC = () => {
               textureOffsetY: 0,
             },
           },
-          RigidBody: {
-            enabled: true,
-            bodyType: 'dynamic',
-            type: 'dynamic',
-            mass: 1,
-            gravityScale: 1,
-            canSleep: true,
-            material: {
-              friction: 0.699999988079071,
-              restitution: 0.30000001192092896,
-              density: 1,
-            },
+        },
+      },
+
+      {
+        id: '10',
+        name: 'Cube 0',
+        components: {
+          PersistentId: {
+            id: 'mg0cmi8j-exwx0ha0d',
           },
-          MeshCollider: {
+          Transform: {
+            position: [-3, 1.75, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1],
+          },
+          MeshRenderer: {
+            meshId: 'cube',
+            materialId: 'default',
             enabled: true,
-            isTrigger: false,
-            colliderType: 'sphere',
-            center: [0, 0, 0],
-            size: {
-              width: 1,
-              height: 1,
-              depth: 1,
-              radius: 0.5,
-              capsuleRadius: 0.5,
-              capsuleHeight: 2,
-            },
-            physicsMaterial: {
-              friction: 0.699999988079071,
-              restitution: 0.30000001192092896,
-              density: 1,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#3399ff',
+              normalScale: 1,
+              metalness: 0,
+              roughness: 0.5,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
             },
           },
         },
@@ -279,7 +251,10 @@ export const CollisionEXAMPLE: React.FC = () => {
     entityManager.clearEntities();
 
     entities.forEach((entityData) => {
-      const entity = entityManager.createEntity(entityData.name, entityData.parentId || null);
+      const entity = entityManager.createEntity(
+        entityData.name,
+        (entityData as any).parentId || null,
+      );
 
       Object.entries(entityData.components).forEach(([componentType, componentData]) => {
         if (componentData) {
@@ -297,9 +272,9 @@ export const CollisionEXAMPLE: React.FC = () => {
 };
 
 export const metadata = {
-  name: 'collision EXAMPLE',
+  name: 'anna',
   version: 1,
-  timestamp: '2025-09-26T03:16:47.598Z',
+  timestamp: '2025-09-26T04:36:48.943Z',
 };
 
-export default CollisionEXAMPLE;
+export default Anna;

@@ -10,6 +10,7 @@ export const KnownComponentTypes = {
   SCRIPT: 'Script',
   SOUND: 'Sound',
   TERRAIN: 'Terrain',
+  PERSISTENT_ID: 'PersistentId',
 } as const;
 
 export type KnownComponentType = (typeof KnownComponentTypes)[keyof typeof KnownComponentTypes];

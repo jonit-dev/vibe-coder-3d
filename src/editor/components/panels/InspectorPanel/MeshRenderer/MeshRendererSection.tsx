@@ -12,7 +12,6 @@ import { GenericComponentSection } from '@/editor/components/shared/GenericCompo
 import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
 import { ToggleField } from '@/editor/components/shared/ToggleField';
 
-
 export interface IMeshRendererSectionProps {
   meshRenderer: IMeshRendererData | null;
   setMeshRenderer: (data: IMeshRendererData | null) => void;
@@ -22,7 +21,6 @@ export interface IMeshRendererSectionProps {
 export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   meshRenderer,
   setMeshRenderer,
-  isPlaying: _isPlaying,
 }) => {
   const handleRemoveMeshRenderer = () => {
     setMeshRenderer(null);

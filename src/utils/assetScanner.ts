@@ -6,7 +6,6 @@ interface IAssetFile {
 }
 
 // Use Vite's import.meta.glob to get all asset files at build time
-// Note: This pattern may need to be updated to support multiple project paths
 const allAssets = import.meta.glob('/public/assets/**/*', {
   query: '?url',
   import: 'default',

@@ -7,8 +7,10 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "node scripts/sync-assets.js --silent & vite",
+    "dev:nosync": "vite",
+    "dev:sync": "node scripts/sync-assets.js",
+    "build": "node scripts/sync-assets.js --once --silent && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",

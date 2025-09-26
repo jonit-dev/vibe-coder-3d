@@ -1,6 +1,6 @@
 import { useGLTF, useTexture } from '@react-three/drei';
 
-import { getAssetMetadata } from '@/config/assets';
+import { getAssetMetadata } from '@/game/config/assets';
 import { AssetKeys } from '@/core/types/assets';
 
 export function useAssetResource(key: AssetKeys) {

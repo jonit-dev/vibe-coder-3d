@@ -37,8 +37,11 @@ export function useSceneActions(options: ISceneActionsOptions = {}) {
   // Enhanced scene serialization using dedicated serializer
   const exportSceneData = (metadata?: { name?: string }): ISerializedScene => {
     const entities = entityManager.getAllEntities();
-    const getComponentsForEntity = (entityId: string) =>
-      componentManager.getComponentsForEntity(entityId);
+    const getComponentsForEntity = (entityId: string | number) => {
+      // Convert entityId to number if needed for componentManager
+      const numberId = typeof entityId === 'string' ? parseInt(entityId, 10) : entityId;
+      return componentManager.getComponentsForEntity(numberId);
+    };
 
     return exportScene(entities, getComponentsForEntity, {
       version: 4, // Version 4 for API persistence
@@ -49,7 +52,29 @@ export function useSceneActions(options: ISceneActionsOptions = {}) {
 
   // Enhanced scene import using dedicated serializer
   const importSceneData = async (scene: ISerializedScene): Promise<void> => {
-    await importScene(scene, entityManager, componentManager);
+    // Wrap managers to match expected interface
+    const entityManagerAdapter = {
+      clearEntities: () => entityManager.clearEntities(),
+      createEntity: (name: string, parentId?: string | number | null) => {
+        // Convert parentId to number if needed for entityManager
+        const numberId = parentId
+          ? typeof parentId === 'string'
+            ? parseInt(parentId, 10)
+            : parentId
+          : undefined;
+        return entityManager.createEntity(name, numberId);
+      },
+    };
+
+    const componentManagerAdapter = {
+      addComponent: (entityId: string | number, componentType: string, data: unknown) => {
+        // Convert entityId to number if needed for componentManager
+        const numberId = typeof entityId === 'string' ? parseInt(entityId, 10) : entityId;
+        return componentManager.addComponent(numberId, componentType, data);
+      },
+    };
+
+    await importScene(scene, entityManagerAdapter, componentManagerAdapter);
   };
 
   // Temporarily disabled localStorage loading to use SceneRegistry instead

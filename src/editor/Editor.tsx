@@ -224,7 +224,9 @@ const Editor: React.FC = () => {
         error={scenePersistence.error}
         onSave={handleSaveAs}
         onLoad={handleLoad}
-        onRefresh={scenePersistence.listTsxScenes}
+        onRefresh={async () => {
+          await scenePersistence.listTsxScenes();
+        }}
       />
 
       {/* Hidden file input for loading legacy scenes */}

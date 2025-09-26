@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // import { componentRegistry } from '../ecs/ComponentRegistry'; // Will be used in future implementation
 import { EntityManager } from '../ecs/EntityManager';
-import { serializeWorld } from './SceneSerializer';
+import { serializeWorld } from './sceneSerializer';
 
 // Override patch for a single entity
 export const OverridePatchSchema = z.object({
@@ -37,12 +37,12 @@ export type OverridesFile = z.infer<typeof OverridesFileSchema>;
  */
 export function diffAgainstBase(
   baseSceneId: string,
-  _currentWorld?: typeof EntityManager,
+  // _currentWorld?: typeof EntityManager,
 ): OverridesFile {
   const _entityManager = EntityManager.getInstance();
 
   // Create a temporary world to load the base scene
-  const _tempWorld = createTempWorldWithBaseScene(baseSceneId);
+  const _tempWorld = createTempWorldWithBaseScene(); // baseSceneId unused for now
 
   // Suppress unused variable warnings for future implementation
   void _entityManager;
@@ -53,19 +53,19 @@ export function diffAgainstBase(
   const currentSerialized = serializeWorld();
 
   // Build maps for efficient lookup
-  const baseEntities = new Map(baseSerialized.entities.map((e) => [e.persistentId, e]));
-  const currentEntities = new Map(currentSerialized.entities.map((e) => [e.persistentId, e]));
+  const baseEntities = new Map(baseSerialized.entities.map((e) => [e.id, e]));
+  const currentEntities = new Map(currentSerialized.entities.map((e) => [e.id, e]));
 
   const patches: OverridePatch[] = [];
 
   // Check each current entity against base
-  currentEntities.forEach((currentEntity, persistentId) => {
-    const baseEntity = baseEntities.get(persistentId);
+  currentEntities.forEach((currentEntity, id) => {
+    const baseEntity = baseEntities.get(id);
 
     if (!baseEntity) {
       // Entity added in editor (new entity)
       patches.push({
-        persistentId,
+        persistentId: String(id),
         entityName: currentEntity.name,
         components: currentEntity.components,
       });
@@ -112,7 +112,7 @@ export function diffAgainstBase(
 
     if (hasChanges) {
       patches.push({
-        persistentId,
+        persistentId: String(id),
         entityName: nameChanged ? currentEntity.name : undefined,
         components: componentDeltas,
       });
@@ -120,11 +120,11 @@ export function diffAgainstBase(
   });
 
   // Check for deleted entities
-  baseEntities.forEach((_baseEntity, persistentId) => {
-    if (!currentEntities.has(persistentId)) {
+  baseEntities.forEach((_baseEntity, id) => {
+    if (!currentEntities.has(id)) {
       // Entity deleted in editor
       patches.push({
-        persistentId,
+        persistentId: String(id),
         components: { _deleted: true }, // Special marker for deletion
       });
     }
@@ -145,7 +145,7 @@ export function diffAgainstBase(
  * Create a temporary world state with just the base scene loaded
  * This is used for comparison purposes
  */
-function createTempWorldWithBaseScene(_sceneId: string): any {
+function createTempWorldWithBaseScene(/* _sceneId: string */): null {
   // For now, we'll approximate this by using the current world state
   // In a full implementation, we'd create a separate ECS world instance
   // TODO: Implement proper temporary world creation

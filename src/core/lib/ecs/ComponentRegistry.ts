@@ -116,7 +116,7 @@ export class ComponentFactory {
       fields: config.fieldMappings,
       serialize: (eid: EntityId, bitECSComponent: unknown) => {
         const result = {} as TData;
-        for (const [key, _] of Object.entries(config.fieldMappings)) {
+        for (const [key] of Object.entries(config.fieldMappings)) {
           (result as Record<string, unknown>)[key] = (
             bitECSComponent as Record<string, Record<number, unknown>>
           )[key][eid];

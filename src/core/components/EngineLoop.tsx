@@ -225,7 +225,7 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
 }
 
 // Track performance metrics
-function trackPerformance(_system: 'velocity' | 'physics' | 'overall', _startTime: number) {
+function trackPerformance(_system: 'velocity' | 'physics' | 'overall', __startTime: number) {
   // const endTime = performance.now();
   // const duration = endTime - startTime;
   // Record the duration for the specific system

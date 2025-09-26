@@ -1,4 +1,4 @@
-import { AssetKeys, IModelAssetMetadata, IModelConfig } from '@/core/types/assets';
+import { AssetKeys, IModelAssetMetadata, IModelConfig } from '@/core';
 
 // Animation keys for NightStalker
 export enum NightStalkerAnimationKeys {

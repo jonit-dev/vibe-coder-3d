@@ -178,7 +178,7 @@ export class LocalStorageOverridesStore implements IOverridesStore {
     return `scene-overrides-${sceneId}`;
   }
 
-  async save(overrides: OverridesFile, _filename?: string): Promise<void> {
+  async save(overrides: OverridesFile): Promise<void> {
     const key = this.getKey(overrides.sceneId);
     localStorage.setItem(key, JSON.stringify(overrides));
     console.log(`[OverridesStore] Saved overrides to localStorage: ${key}`);

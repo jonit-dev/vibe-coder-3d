@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiSave, FiFolder, FiTrash2, FiClock, FiHardDrive } from 'react-icons/fi';
+import { FiSave, FiFolder, FiClock, FiHardDrive } from 'react-icons/fi';
 import { Modal } from './Modal';
 import type { ISceneFileInfo } from '@/editor/hooks/useScenePersistence';
 
@@ -27,7 +27,7 @@ export const ScenePersistenceModal: React.FC<IScenePersistenceModalProps> = ({
   onRefresh,
 }) => {
   const [sceneName, setSceneName] = useState('');
-  const [saveFormat, setSaveFormat] = useState<'json' | 'tsx'>('tsx');
+  const [saveFormat] = useState<'json' | 'tsx'>('tsx');
   const [selectedScene, setSelectedScene] = useState<string>('');
 
   useEffect(() => {
@@ -90,9 +90,7 @@ export const ScenePersistenceModal: React.FC<IScenePersistenceModalProps> = ({
 
         {mode === 'save' && (
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-300">
-              Scene Name
-            </label>
+            <label className="block text-sm font-medium text-gray-300">Scene Name</label>
             <input
               type="text"
               value={sceneName}
@@ -116,7 +114,8 @@ export const ScenePersistenceModal: React.FC<IScenePersistenceModalProps> = ({
                   <span className="text-sm text-gray-300">TypeScript React Component</span>
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  Creates a reusable React component with type safety, IDE support, and better version control
+                  Creates a reusable React component with type safety, IDE support, and better
+                  version control
                 </p>
               </div>
             </div>
@@ -143,9 +142,7 @@ export const ScenePersistenceModal: React.FC<IScenePersistenceModalProps> = ({
         {mode === 'load' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-300">
-                Available Scenes
-              </label>
+              <label className="block text-sm font-medium text-gray-300">Available Scenes</label>
               <button
                 onClick={onRefresh}
                 disabled={isLoading}
@@ -180,11 +177,13 @@ export const ScenePersistenceModal: React.FC<IScenePersistenceModalProps> = ({
                             {scene.name.replace(/\.(json|tsx)$/, '')}
                           </p>
                           {scene.type && (
-                            <span className={`px-1.5 py-0.5 text-xs rounded font-mono ${
-                              scene.type === 'tsx'
-                                ? 'bg-purple-900/30 text-purple-300 border border-purple-700'
-                                : 'bg-blue-900/30 text-blue-300 border border-blue-700'
-                            }`}>
+                            <span
+                              className={`px-1.5 py-0.5 text-xs rounded font-mono ${
+                                scene.type === 'tsx'
+                                  ? 'bg-purple-900/30 text-purple-300 border border-purple-700'
+                                  : 'bg-blue-900/30 text-blue-300 border border-blue-700'
+                              }`}
+                            >
                               {scene.type.toUpperCase()}
                             </span>
                           )}

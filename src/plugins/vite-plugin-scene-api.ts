@@ -1,7 +1,14 @@
-import { Plugin } from 'vite';
+import type { ITsxSceneMetadata } from '../core/lib/serialization/tsxSerializer';
+import { generateTsxScene, sanitizeComponentName } from '../core/lib/serialization/tsxSerializer';
 import { promises as fs } from 'fs';
-import path from 'path';
 import type { IncomingMessage, ServerResponse } from 'http';
+import path from 'path';
+import { Plugin } from 'vite';
+
+interface ISaveSceneRequest {
+  name: string;
+  data: unknown;
+}
 
 // Simple validation without importing TypeScript files
 const validateSceneData = (data: unknown): { isValid: boolean; error?: string } => {
@@ -28,7 +35,7 @@ interface ISceneFileInfo {
   size: number;
 }
 
-const SCENES_DIR = './scenes';
+const SCENES_DIR = './src/game/scenes';
 
 /**
  * Logs scene API activity for development debugging
@@ -114,7 +121,7 @@ async function handleSave(req: IncomingMessage, res: ServerResponse): Promise<vo
 
   req.on('end', async () => {
     try {
-      const { name, data }: SaveSceneRequest = JSON.parse(body);
+      const { name, data }: ISaveSceneRequest = JSON.parse(body);
 
       if (!name || typeof name !== 'string') {
         res.statusCode = 400;
@@ -177,7 +184,7 @@ async function handleSave(req: IncomingMessage, res: ServerResponse): Promise<vo
 /**
  * Handle GET /api/scene/load?name=filename
  */
-async function handleLoad(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
+async function handleLoad(_req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
   const filename = url.searchParams.get('name');
 
   if (!filename) {
@@ -242,94 +249,7 @@ async function handleLoad(req: IncomingMessage, res: ServerResponse, url: URL): 
   }
 }
 
-/**
- * TSX Scene utilities - inline to avoid import issues
- */
-const sanitizeComponentName = (name: string): string => {
-  const sanitized = name
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .replace(/^\d+/, '')
-    .replace(/^./, (char) => char.toUpperCase());
-  return sanitized || 'Scene';
-};
-
-const generateTsxScene = (entities: unknown[], metadata: Record<string, unknown>): string => {
-  const componentName = sanitizeComponentName(metadata.name);
-
-  // Debug logging
-  console.log('[generateTsxScene] Input entities:', entities?.length || 0);
-  console.log('[generateTsxScene] First entity:', entities?.[0]);
-
-  const imports = `import React from 'react';
-import { useEffect } from 'react';
-import { useEntityManager } from '@/editor/hooks/useEntityManager';
-import { useComponentManager } from '@/editor/hooks/useComponentManager';
-
-`;
-
-  const metadataComment = `/**
- * ${metadata.name}${metadata.description ? `\n * ${metadata.description}` : ''}
- * Generated: ${metadata.timestamp}
- * Version: ${metadata.version}${metadata.author ? `\n * Author: ${metadata.author}` : ''}
- */`;
-
-  const entityDefinitions = entities
-    .map((entity) => {
-      const normalizedId = typeof entity.id === 'number' ? entity.id.toString() : entity.id;
-      const parentId = entity.parentId
-        ? typeof entity.parentId === 'number'
-          ? entity.parentId.toString()
-          : entity.parentId
-        : null;
-
-      // Safely handle components serialization
-      const components = entity.components || {};
-      const componentsJson = JSON.stringify(components, null, 6) || '{}';
-
-      return `  {
-    id: "${normalizedId}",
-    name: "${entity.name || `Entity ${normalizedId}`}",${parentId ? `\n    parentId: "${parentId}",` : ''}
-    components: ${componentsJson.replace(/^/gm, '    ')}
-  }`;
-    })
-    .join(',\n\n');
-
-  return (
-    imports +
-    metadataComment +
-    '\n' +
-    `export const ${componentName}: React.FC = () => {
-  const entityManager = useEntityManager();
-  const componentManager = useComponentManager();
-
-  useEffect(() => {
-    const entities = [
-${entityDefinitions}
-    ];
-
-    entityManager.clearEntities();
-
-    entities.forEach((entityData) => {
-      const entity = entityManager.createEntity(entityData.name, entityData.parentId || null);
-
-      Object.entries(entityData.components).forEach(([componentType, componentData]) => {
-        if (componentData) {
-          componentManager.addComponent(entity.id, componentType, componentData);
-        }
-      });
-    });
-
-    console.log(\`[TsxScene] Loaded scene '\${metadata?.name || 'Unknown'}' with \${entities.length} entities\`);
-  }, [entityManager, componentManager]);
-
-  return null;
-};
-
-export const metadata = ${JSON.stringify(metadata, null, 2)};
-
-export default ${componentName};`
-  );
-};
+// TSX scene generation now uses the type-safe implementation from tsxSerializer
 
 /**
  * Handle POST /api/scene/save-tsx
@@ -343,7 +263,8 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
 
   req.on('end', async () => {
     try {
-      const { name, entities, description, author } = JSON.parse(body);
+      const requestData = JSON.parse(body);
+      const { name, entities, description, author } = requestData;
 
       if (!name || typeof name !== 'string') {
         res.statusCode = 400;
@@ -363,7 +284,7 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
       console.log('[handleSaveTsx] Processing entities:', entities.length);
       console.log('[handleSaveTsx] Entity structure:', entities[0] || 'No entities');
 
-      const metadata = {
+      const metadata: ITsxSceneMetadata = {
         name,
         version: 1,
         timestamp: new Date().toISOString(),
@@ -371,11 +292,17 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
         author,
       };
 
-      const sanitizedName = sanitizeComponentName(name);
-      const filename = `${sanitizedName}.tsx`;
-      const filepath = path.join(SCENES_DIR, filename);
-
+      // Generate TSX content with type safety
       const tsxContent = generateTsxScene(entities, metadata);
+
+      const componentName =
+        metadata.name
+          .replace(/[^a-zA-Z0-9]/g, '')
+          .replace(/^\d+/, '')
+          .replace(/^./, (char) => char.toUpperCase()) || 'Scene';
+
+      const filename = `${componentName}.tsx`;
+      const filepath = path.join(SCENES_DIR, filename);
 
       await fs.writeFile(filepath, tsxContent, 'utf-8');
 
@@ -389,7 +316,7 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
         JSON.stringify({
           success: true,
           filename,
-          componentName: sanitizedName,
+          componentName,
           size: stats.size,
           modified: stats.mtime.toISOString(),
         }),
@@ -411,7 +338,7 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
 /**
  * Handle GET /api/scene/list-tsx
  */
-async function handleListTsx(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handleListTsx(_req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     const files = await fs.readdir(SCENES_DIR);
     const tsxFiles: Array<{
@@ -467,7 +394,7 @@ async function handleListTsx(req: IncomingMessage, res: ServerResponse): Promise
 /**
  * Handle GET /api/scene/load-tsx?name=filename
  */
-async function handleLoadTsx(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
+async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
   const filename = url.searchParams.get('name');
 
   if (!filename) {
@@ -548,9 +475,9 @@ async function handleLoadTsx(req: IncomingMessage, res: ServerResponse, url: URL
 
     // Parse entities array safely
     let entities = [];
+    let entitiesString = entitiesMatch[1]; // Declare outside try-catch for catch block access
     try {
       // Convert JavaScript object notation to valid JSON
-      let entitiesString = entitiesMatch[1];
 
       // First, fix the property names - add quotes around unquoted keys
       // Match word characters followed by colon (but not already quoted)
@@ -647,7 +574,7 @@ async function handleLoadTsx(req: IncomingMessage, res: ServerResponse, url: URL
 /**
  * Handle GET /api/scene/list
  */
-async function handleList(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handleList(_req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     const files = await fs.readdir(SCENES_DIR);
     const sceneFiles: ISceneFileInfo[] = [];

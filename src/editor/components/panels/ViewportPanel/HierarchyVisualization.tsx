@@ -5,10 +5,7 @@ export interface IHierarchyVisualizationProps {
   showConnections?: boolean;
 }
 
-export const HierarchyVisualization: React.FC<IHierarchyVisualizationProps> = ({
-  entityIds: _entityIds,
-  showConnections: _showConnections = true,
-}) => {
+export const HierarchyVisualization: React.FC<IHierarchyVisualizationProps> = () => {
   // Component disabled - no hierarchy visualization
   return null;
 };

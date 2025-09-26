@@ -27,16 +27,16 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     this.state = { hasError: false, errorInfo: null };
   }
 
-  static getDerivedStateFromError(_error: Error): Partial<IErrorBoundaryState> {
+  static getDerivedStateFromError(__error: Error): Partial<IErrorBoundaryState> {
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const context = this.props.context || 'React Component';
-    
+
     // Handle error with our centralized system
     const processedError = errorHandler.handle(error, context, 'high');
-    
+
     this.setState({ errorInfo: processedError });
 
     // Call custom error handler if provided
@@ -80,7 +80,10 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
  * Hook-based error boundary for functional components
  */
 export function useErrorHandler(context: string = 'Component') {
-  return React.useCallback((error: unknown, severity: IErrorInfo['severity'] = 'medium') => {
-    return errorHandler.handle(error, context, severity);
-  }, [context]);
+  return React.useCallback(
+    (error: unknown, severity: IErrorInfo['severity'] = 'medium') => {
+      return errorHandler.handle(error, context, severity);
+    },
+    [context],
+  );
 }

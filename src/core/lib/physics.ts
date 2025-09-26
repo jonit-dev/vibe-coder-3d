@@ -277,7 +277,7 @@ export function usePhysicsEvents() {
   const { world } = useRapier();
 
   const addCollisionHandler = useCallback(
-    (_handler: (event: any) => void) => {
+    (__handler: (event: unknown) => void) => {
       // Add collision event handlers
       // Note: This is a simplified version - in practice you'd want to use
       // the event system from @react-three/rapier

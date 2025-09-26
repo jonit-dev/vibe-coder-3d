@@ -1,4 +1,4 @@
-import { AssetKeys, AssetManifest } from '@/core/types/assets';
+import { AssetKeys, AssetManifest } from '@/core';
 
 import { nightStalkerModelMetadata } from './nightStalkerAssetsMetadata';
 

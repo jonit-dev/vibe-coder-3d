@@ -4,14 +4,9 @@ import { loadScene } from '@/core/lib/scene/SceneRegistry';
 // import { sceneRegistry } from '@/core/lib/scene/SceneRegistry'; // Will be used in future implementation
 import { registerCoreScenes } from '@/core/lib/scene/scenes';
 import { registerGameExtensions } from '@game';
+import { type ISerializedScene } from '@/core/lib/serialization/sceneSerializer';
 
 import { useEntityManager } from './useEntityManager';
-
-// Legacy interface for backward compatibility
-export interface ISerializedScene {
-  version: number;
-  entities: unknown[];
-}
 
 export interface IUseSceneInitializationProps {
   savedScene: ISerializedScene | null;
