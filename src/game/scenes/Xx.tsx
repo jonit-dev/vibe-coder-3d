@@ -29,7 +29,7 @@ interface ITypedSceneEntity {
  */
 const sceneData: ITypedSceneEntity[] = [
   {
-    "id": 0,
+    "id": 6,
     "name": "Main Camera",
     "components": {
       "PersistentId": {
@@ -93,7 +93,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 1,
+    "id": 7,
     "name": "Directional Light",
     "components": {
       "PersistentId": {
@@ -140,7 +140,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 2,
+    "id": 8,
     "name": "Ambient Light",
     "components": {
       "PersistentId": {
@@ -187,7 +187,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 3,
+    "id": 9,
     "name": "Cube 0",
     "components": {
       "PersistentId": {
@@ -234,7 +234,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 4,
+    "id": 10,
     "name": "Plane 0",
     "components": {
       "PersistentId": {
@@ -281,9 +281,9 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 5,
+    "id": 11,
     "name": "Cube 1",
-    "parentId": 3,
+    "parentId": 9,
     "components": {
       "PersistentId": {
         "id": "mg18ovzm-xqu28h6mg"
@@ -337,12 +337,12 @@ const sceneData: ITypedSceneEntity[] = [
 export const metadata: SceneMetadata = {
   "name": "xx",
   "version": 1,
-  "timestamp": "2025-09-26T19:34:04.255Z"
+  "timestamp": "2025-09-26T19:35:27.958Z"
 };
 
 /**
  * xx
- * Generated: 2025-09-26T19:34:04.255Z
+ * Generated: 2025-09-26T19:35:27.958Z
  * Version: 1
  */
 export const Xx: React.FC = () => {
