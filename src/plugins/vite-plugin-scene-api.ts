@@ -505,11 +505,27 @@ async function handleLoadTsx(req: IncomingMessage, res: ServerResponse, url: URL
     // Extract entities data from TSX file using regex
     const entitiesMatch = content.match(/const entities = \[([\s\S]*?)\];/);
     if (!entitiesMatch) {
+      const debugInfo = {
+        fileLength: content.length,
+        contentPreview: content.substring(0, 1000),
+        contentEnd: content.substring(Math.max(0, content.length - 500)),
+        regexPattern: '/const entities = \\[([\\s\\S]*?)\\];/',
+        hasEntitiesKeyword: content.includes('entities'),
+        hasConstKeyword: content.includes('const'),
+        hasArrayStart: content.includes('= ['),
+      };
+
       console.log('[handleLoadTsx] Could not find entities array in file');
-      console.log('[handleLoadTsx] File content preview:', content.substring(0, 500));
+      console.log('[handleLoadTsx] Debug info:', JSON.stringify(debugInfo, null, 2));
+
       res.statusCode = 400;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: 'Could not extract entities from TSX file' }));
+      res.end(
+        JSON.stringify({
+          error: 'Could not extract entities from TSX file',
+          debugInfo: debugInfo,
+        }),
+      );
       return;
     }
 
@@ -560,7 +576,22 @@ async function handleLoadTsx(req: IncomingMessage, res: ServerResponse, url: URL
       console.log('[handleLoadTsx] Successfully parsed', entities.length, 'entities');
     } catch (error) {
       console.error('[handleLoadTsx] Parse error:', error);
-      console.error('[handleLoadTsx] Failed to parse string:', entitiesMatch[1].substring(0, 500));
+
+      // Provide comprehensive debugging information
+      const debugInfo = {
+        originalString: entitiesMatch[1],
+        processedString: entitiesString,
+        originalLength: entitiesMatch[1].length,
+        processedLength: entitiesString.length,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        firstChars: entitiesMatch[1].substring(0, 200),
+        lastChars: entitiesMatch[1].substring(Math.max(0, entitiesMatch[1].length - 200)),
+        processedFirstChars: entitiesString.substring(0, 200),
+        processedLastChars: entitiesString.substring(Math.max(0, entitiesString.length - 200)),
+      };
+
+      console.error('[handleLoadTsx] Debug info:', JSON.stringify(debugInfo, null, 2));
 
       res.statusCode = 400;
       res.setHeader('Content-Type', 'application/json');
@@ -568,6 +599,7 @@ async function handleLoadTsx(req: IncomingMessage, res: ServerResponse, url: URL
         JSON.stringify({
           error: 'Failed to parse entities from TSX file',
           details: error instanceof Error ? error.message : 'Unknown error',
+          debugInfo: debugInfo,
         }),
       );
       return;
