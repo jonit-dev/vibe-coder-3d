@@ -10,6 +10,7 @@ const stringHashMap = new Map<number, string>();
  * Simple hash function for strings to convert to uint32
  */
 export const hashString = (str: string): number => {
+  if (!str || typeof str !== 'string') return 0;
   let hash = 0;
   if (str.length === 0) return hash;
   for (let i = 0; i < str.length; i++) {

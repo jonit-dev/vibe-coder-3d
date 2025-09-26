@@ -2,14 +2,15 @@
 import { useFrame } from '@react-three/fiber';
 import { ReactNode, useEffect, useRef } from 'react';
 
-import { useGameLoop } from '../lib/gameLoop';
 import { runRegisteredSystems } from '../lib/extension/GameExtensionPoints';
+import { useGameLoop } from '../lib/gameLoop';
+import { Profiler } from '../lib/perf/Profiler';
 import { materialSystem } from '../systems/MaterialSystem';
+import { updateScriptSystem } from '../systems/ScriptSystem';
 import { cameraSystem } from '../systems/cameraSystem';
 import { lightSystem } from '../systems/lightSystem';
-import { transformSystem } from '../systems/transformSystem';
-import { updateScriptSystem } from '../systems/ScriptSystem';
 import { soundSystem } from '../systems/soundSystem';
+import { transformSystem } from '../systems/transformSystem';
 
 // Types for component props
 interface IEngineLoopProps {
@@ -166,8 +167,8 @@ export const EngineLoop = ({
             const { velocity, physics, overall } = metricsRef.current;
             console.log(
               `Performance (ms): Overall: ${overall.average.toFixed(2)}, ` +
-                `Velocity: ${velocity.average.toFixed(2)}, ` +
-                `Physics: ${physics.average.toFixed(2)}`,
+              `Velocity: ${velocity.average.toFixed(2)}, ` +
+              `Physics: ${physics.average.toFixed(2)}`,
             );
           }
         }
@@ -186,34 +187,26 @@ export const EngineLoop = ({
  * This would be expanded as more systems are added
  */
 function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
-  const perfStartVelocity = performance.now();
-
   // Run transform system - updates Three.js objects from ECS Transform components
-  const transformCount = transformSystem();
-
-  // Track transform system performance
-  trackPerformance('velocity', perfStartVelocity);
+  const transformCount = Profiler.time('transformSystem', () => transformSystem());
 
   // Run material system - updates Three.js materials from ECS Material components
-  materialSystem.update();
+  Profiler.time('materialSystem', () => materialSystem.update());
 
   // Run camera system - updates Three.js cameras from ECS Camera components
-  const cameraCount = cameraSystem();
+  const cameraCount = Profiler.time('cameraSystem', () => cameraSystem());
 
   // Run light system - processes light component updates
-  const lightCount = lightSystem(deltaTime);
+  const lightCount = Profiler.time('lightSystem', () => lightSystem(deltaTime));
 
   // Run script system - executes user scripts with entity context
-  updateScriptSystem(deltaTime * 1000, isPlaying); // Convert to milliseconds
+  Profiler.time('scriptSystem', () => updateScriptSystem(deltaTime * 1000, isPlaying));
 
   // Run sound system - handles autoplay and sound updates during play mode
-  const soundCount = soundSystem(deltaTime, isPlaying);
+  const soundCount = Profiler.time('soundSystem', () => soundSystem(deltaTime, isPlaying));
 
   // Run registered game systems from extension points
-  runRegisteredSystems(deltaTime);
-
-  // For future systems, add them here in the appropriate order
-  // e.g., movementSystem(ecsWorld, deltaTime);
+  Profiler.time('registeredSystems', () => runRegisteredSystems(deltaTime));
 
   // Debug info
   if (transformCount > 0 || cameraCount > 0 || lightCount > 0 || soundCount > 0) {

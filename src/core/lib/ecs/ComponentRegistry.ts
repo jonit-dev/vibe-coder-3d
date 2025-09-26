@@ -140,8 +140,11 @@ export class ComponentRegistry {
   private static instance: ComponentRegistry;
   private components = new Map<string, IComponentDescriptor<any>>();
   private bitECSComponents = new Map<string, Component>();
-  private world = ECSWorld.getInstance().getWorld();
   private logger = Logger.create('ComponentRegistry');
+
+  private get world() {
+    return ECSWorld.getInstance().getWorld();
+  }
 
   private constructor() {}
 
@@ -150,6 +153,11 @@ export class ComponentRegistry {
       ComponentRegistry.instance = new ComponentRegistry();
     }
     return ComponentRegistry.instance;
+  }
+
+  reset(): void {
+    this.components.clear();
+    this.bitECSComponents.clear();
   }
 
   /**

@@ -3,6 +3,8 @@ import { EntityManager } from '../EntityManager';
 import { ComponentManager } from '../ComponentManager';
 import { EntityQueries } from '../queries/entityQueries';
 import { ECSWorld } from '../World';
+import { componentRegistry } from '../ComponentRegistry';
+import { initializeCoreECS } from '../init';
 
 describe('Entity Traversal Optimization Integration', () => {
   let entityManager: EntityManager;
@@ -13,12 +15,20 @@ describe('Entity Traversal Optimization Integration', () => {
     // Reset world and managers
     ECSWorld.getInstance().reset();
 
-    // Destroy existing queries instance if it exists
+    // Reset managers after world reset
+    EntityManager.getInstance().reset();
+    ComponentManager.getInstance().reset();
+    componentRegistry.reset();
+
+    // Reset queries instead of destroy/recreate
     try {
-      EntityQueries.getInstance().destroy();
+      EntityQueries.getInstance().reset();
     } catch (e) {
       // Ignore if not initialized
     }
+
+    // Re-initialize core components after reset
+    initializeCoreECS();
 
     entityManager = EntityManager.getInstance();
     componentManager = ComponentManager.getInstance();

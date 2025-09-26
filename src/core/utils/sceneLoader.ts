@@ -5,9 +5,10 @@
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type { SceneData, SceneEntityData } from '@/core/types/scene';
-import { SceneValidator, IValidationResult } from '@/core/utils/sceneValidation';
+import { IValidationResult, SceneValidator } from '@/core/utils/sceneValidation';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
+import { Profiler } from '../lib/perf/Profiler';
 
 /**
  * Scene loading options
@@ -46,134 +47,165 @@ export class SceneLoader {
     errors: string[];
     warnings: string[];
   }> {
-    const {
-      validateBeforeLoad = true,
-      clearExisting = true,
-      onProgress,
-      onError,
-      onWarning,
-    } = options;
+    return Profiler.timeAsync('sceneLoader.loadScene', async () => {
+      const {
+        validateBeforeLoad = true,
+        clearExisting = true,
+        onProgress,
+        onError,
+        onWarning,
+      } = options;
 
-    const errors: string[] = [];
-    const warnings: string[] = [];
+      const errors: string[] = [];
+      const warnings: string[] = [];
 
-    try {
-      onProgress?.(0, 'Validating scene data...');
+      try {
+        onProgress?.(0, 'Validating scene data...');
 
-      // Validate scene data if requested
-      let validatedScene: SceneData;
-      if (validateBeforeLoad) {
-        const validation = this.validator.validateScene(sceneData);
+        // Validate scene data if requested
+        let validatedScene: SceneData;
+        if (validateBeforeLoad) {
+          const validation = this.validator.validateScene(sceneData);
 
-        if (!validation.success) {
-          validation.errors.forEach((error) => {
-            errors.push(`${error.path}: ${error.message}`);
-            onError?.(`${error.path}: ${error.message}`);
+          if (!validation.success) {
+            validation.errors.forEach((error) => {
+              errors.push(`${error.path}: ${error.message}`);
+              onError?.(`${error.path}: ${error.message}`);
+            });
+            return { success: false, loadedEntities: 0, errors, warnings };
+          }
+
+          validatedScene = validation.data!;
+          validation.warnings.forEach((warning) => {
+            warnings.push(warning);
+            onWarning?.(warning);
           });
-          return { success: false, loadedEntities: 0, errors, warnings };
+        } else {
+          validatedScene = sceneData as SceneData;
         }
 
-        validatedScene = validation.data!;
-        validation.warnings.forEach((warning) => {
-          warnings.push(warning);
-          onWarning?.(warning);
-        });
-      } else {
-        validatedScene = sceneData as SceneData;
-      }
+        onProgress?.(25, `Loading ${validatedScene.entities.length} entities...`);
 
-      onProgress?.(25, `Loading ${validatedScene.entities.length} entities...`);
-
-      // Clear existing entities if requested
-      if (clearExisting) {
-        this.entityManager.clearEntities();
-      }
-
-      // Load entities
-      let loadedCount = 0;
-      for (let i = 0; i < validatedScene.entities.length; i++) {
-        const entity = validatedScene.entities[i];
-        try {
-          await this.loadEntity(entity, options);
-          loadedCount++;
-
-          const progress = 25 + (i / validatedScene.entities.length) * 75;
-          onProgress?.(
-            progress,
-            `Loading entity ${entity.name} (${i + 1}/${validatedScene.entities.length})`,
-          );
-        } catch (error) {
-          const errorMsg = `Failed to load entity '${entity.name}': ${error instanceof Error ? error.message : 'Unknown error'}`;
-          errors.push(errorMsg);
-          onError?.(errorMsg, entity.id);
+        // Clear existing entities if requested
+        if (clearExisting) {
+          this.entityManager.clearEntities();
         }
+
+        // Build ID mapping and load components in two passes to preserve hierarchy
+        // First pass: create all entities without parents and attach components (excluding PersistentId)
+        const idMap = new Map<string, number>();
+        let loadedCount = 0;
+
+        for (let i = 0; i < validatedScene.entities.length; i++) {
+          const entity = validatedScene.entities[i];
+          try {
+            // Validate entity structure
+            const entityValidation = this.validator.validateEntity(entity);
+            if (!entityValidation.success) {
+              entityValidation.errors.forEach((error) => {
+                onError?.(`${error.path}: ${error.message}`, entity.id);
+              });
+              throw new Error('Entity validation failed');
+            }
+
+            entityValidation.warnings.forEach((warning) => {
+              onWarning?.(warning, entity.id);
+            });
+
+            // Extract persisted PersistentId if present
+            const persistentId = (entity.components as any)?.PersistentId?.id as
+              | string
+              | undefined;
+
+            // Create entity WITHOUT assigning parent yet
+            const created = this.entityManager.createEntity(entity.name, undefined, persistentId);
+            idMap.set(String(entity.id), created.id);
+
+            // Attach components except PersistentId (already set at creation time if present)
+            for (const [componentType, componentData] of Object.entries(entity.components)) {
+              if (!componentData) continue;
+              if (componentType === 'PersistentId') continue;
+
+              try {
+                // Optional: validate known components here if needed
+                this.componentManager.addComponent(created.id, componentType, componentData);
+              } catch (error) {
+                const errorMsg = `Failed to add component '${componentType}': ${
+                  error instanceof Error ? error.message : 'Unknown error'
+                }`;
+                onError?.(errorMsg, entity.id);
+                throw error;
+              }
+            }
+
+            loadedCount++;
+
+            const progress = 25 + (i / validatedScene.entities.length) * 50; // reserve last 25% for parenting
+            onProgress?.(
+              progress,
+              `Creating entity ${entity.name} (${i + 1}/${validatedScene.entities.length})`,
+            );
+          } catch (error) {
+            const errorMsg = `Failed to load entity '${entity.name}': ${
+              error instanceof Error ? error.message : 'Unknown error'
+            }`;
+            errors.push(errorMsg);
+            onError?.(errorMsg, entity.id);
+          }
+        }
+
+        // Second pass: resolve and assign parent relationships using the ID map
+        for (let i = 0; i < validatedScene.entities.length; i++) {
+          const entity = validatedScene.entities[i];
+          const parentRef = entity.parentId;
+          if (parentRef === undefined || parentRef === null) continue;
+
+          const childEid = idMap.get(String(entity.id));
+          const parentEid = idMap.get(String(parentRef));
+
+          if (childEid === undefined) {
+            const warn = `Child entity not found in ID map for ${entity.name} (${entity.id})`;
+            warnings.push(warn);
+            onWarning?.(warn, entity.id);
+            continue;
+          }
+
+          if (parentEid === undefined) {
+            const warn = `Parent entity mapping missing for ${entity.name} (${entity.id}) -> parent ${parentRef}`;
+            warnings.push(warn);
+            onWarning?.(warn, entity.id);
+            continue;
+          }
+
+          this.entityManager.setParent(childEid, parentEid);
+
+          const progress = 75 + (i / validatedScene.entities.length) * 25;
+          onProgress?.(progress, `Assigning parent for ${entity.name}`);
+        }
+
+        onProgress?.(100, 'Scene loading complete');
+
+        return {
+          success: errors.length === 0,
+          loadedEntities: loadedCount,
+          errors,
+          warnings,
+        };
+      } catch (error) {
+        const errorMsg = `Scene loading failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        errors.push(errorMsg);
+        onError?.(errorMsg);
+        return { success: false, loadedEntities: 0, errors, warnings };
       }
-
-      onProgress?.(100, 'Scene loading complete');
-
-      return {
-        success: errors.length === 0,
-        loadedEntities: loadedCount,
-        errors,
-        warnings,
-      };
-    } catch (error) {
-      const errorMsg = `Scene loading failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      errors.push(errorMsg);
-      onError?.(errorMsg);
-      return { success: false, loadedEntities: 0, errors, warnings };
-    }
+    });
   }
 
   /**
    * Loads a single entity with validation
    */
-  private async loadEntity(entityData: SceneEntityData, options: ISceneLoadOptions): Promise<void> {
-    const { onError, onWarning } = options;
-
-    // Validate entity
-    const entityValidation = this.validator.validateEntity(entityData);
-    if (!entityValidation.success) {
-      entityValidation.errors.forEach((error) => {
-        onError?.(`${error.path}: ${error.message}`, entityData.id);
-      });
-      throw new Error('Entity validation failed');
-    }
-
-    entityValidation.warnings.forEach((warning) => {
-      onWarning?.(warning, entityData.id);
-    });
-
-    // Create entity
-    const parentId = entityData.parentId
-      ? typeof entityData.parentId === 'string'
-        ? parseInt(entityData.parentId, 10)
-        : entityData.parentId
-      : undefined;
-    const entity = this.entityManager.createEntity(entityData.name, parentId);
-
-    // Load components
-    for (const [componentType, componentData] of Object.entries(entityData.components)) {
-      if (!componentData) continue;
-
-      try {
-        // Validate component data
-        if (
-          Object.values(KnownComponentTypes).includes(
-            componentType as (typeof KnownComponentTypes)[keyof typeof KnownComponentTypes],
-          )
-        ) {
-          // Additional component validation could go here
-        }
-
-        // Add component
-        this.componentManager.addComponent(entity.id, componentType, componentData);
-      } catch (error) {
-        const errorMsg = `Failed to add component '${componentType}': ${error instanceof Error ? error.message : 'Unknown error'}`;
-        onError?.(errorMsg, entityData.id);
-        throw error;
-      }
-    }
+  private async loadEntity(_entityData: SceneEntityData, _options: ISceneLoadOptions): Promise<void> {
+    // Deprecated: entity loading is handled in two passes directly in loadScene
+    return Promise.resolve();
   }
 
   /**

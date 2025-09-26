@@ -8,9 +8,9 @@ import {
 } from './components/definitions/PersistentIdComponent';
 import { getEntityName, getEntityParent, setEntityMeta } from './DataConversion';
 import { IEntity } from './IEntity';
-import { ECSWorld } from './World';
-import { EntityId } from './types';
 import { EntityQueries } from './queries/entityQueries';
+import { EntityId } from './types';
+import { ECSWorld } from './World';
 
 type EntityEvent = {
   type: 'entity-created' | 'entity-deleted' | 'entity-updated' | 'entities-cleared';
@@ -22,11 +22,12 @@ type EntityEventListener = (event: EntityEvent) => void;
 
 export class EntityManager {
   private static instance: EntityManager;
-  private world = ECSWorld.getInstance().getWorld();
   private eventListeners: EntityEventListener[] = [];
   private entityCache: Map<EntityId, IEntity> = new Map();
   private existingPersistentIds: Set<string> = new Set();
   private queries: EntityQueries;
+
+  private world = ECSWorld.getInstance().getWorld();
 
   private constructor() {
     // Private constructor for singleton
@@ -38,6 +39,15 @@ export class EntityManager {
       EntityManager.instance = new EntityManager();
     }
     return EntityManager.instance;
+  }
+
+  public reset(): void {
+    this.entityCache.clear();
+    this.existingPersistentIds.clear();
+    this.eventListeners = [];
+
+    // Reset EntityQueries to rebuild indices with new world state
+    this.queries.reset();
   }
 
   // Event system for reactive updates
@@ -101,14 +111,14 @@ export class EntityManager {
       // Validate the provided persistent ID
       const validation = PersistentIdSchema.safeParse({ id: persistentId });
       if (!validation.success) {
-        throw new Error(
-          `Invalid PersistentId "${persistentId}": ${validation.error.message}`
-        );
+        throw new Error(`Invalid PersistentId "${persistentId}": ${validation.error.message}`);
       }
 
       // Check for duplicates
       if (this.existingPersistentIds.has(persistentId)) {
-        throw new Error(`Duplicate PersistentId "${persistentId}" - each entity must have a unique persistent ID`);
+        throw new Error(
+          `Duplicate PersistentId "${persistentId}" - each entity must have a unique persistent ID`,
+        );
       }
 
       finalPersistentId = persistentId;
@@ -156,7 +166,7 @@ export class EntityManager {
     entities.forEach((entity) => {
       const persistentIdData = componentRegistry.getComponentData<{ id: string }>(
         entity.id,
-        'PersistentId'
+        'PersistentId',
       );
       if (persistentIdData && persistentIdData.id) {
         this.existingPersistentIds.add(persistentIdData.id);
@@ -187,9 +197,12 @@ export class EntityManager {
       const parent = this.entityCache.get(parentId)!;
       parent.children.push(eid);
       this.entityCache.set(parentId, parent);
+      console.debug(`[EntityManager] Updated parent ${parentId} children list: ${parent.children}`);
     }
 
-    console.debug(`[EntityManager] Created entity ${eid}: "${name}" with PersistentId: ${finalPersistentId}`);
+    console.debug(
+      `[EntityManager] Created entity ${eid}: "${name}" with parentId: ${parentId}, PersistentId: ${finalPersistentId}`,
+    );
     console.debug(`[EntityManager] Entity cache size: ${this.entityCache.size}`);
 
     // Emit event for reactive updates
@@ -244,7 +257,7 @@ export class EntityManager {
           }
         }
       }
-    } catch (error) {
+    } catch {
       // If queries not initialized, fall back to scan
       entityIds = [];
       for (let eid = 0; eid < 10000; eid++) {
@@ -280,7 +293,7 @@ export class EntityManager {
             .map((child) => child.id);
         }
       });
-    } catch (error) {
+    } catch {
       // Fall back to filtering
       entities.forEach((entity) => {
         entity.children = entities
@@ -361,6 +374,10 @@ export class EntityManager {
     this.world = ECSWorld.getInstance().getWorld();
     this.entityCache.clear();
     this.rebuildPersistentIdCache();
+
+    // Reset EntityQueries to rebuild indices with new world state
+    this.queries.reset();
+
     console.debug('[EntityManager] Refreshed world reference and rebuilt persistent ID cache');
   }
 
@@ -394,16 +411,16 @@ export class EntityManager {
           if (hasComponent(this.world, EntityMeta, eid)) {
             // Entities exist, fall back to filtering all entities
             const allEntities = this.getAllEntities();
-            return allEntities.filter(entity => entity.parentId === undefined);
+            return allEntities.filter((entity) => entity.parentId === undefined);
           }
         }
       }
 
       return rootEntityIds.map((id) => this.getEntity(id)).filter(Boolean) as IEntity[];
-    } catch (error) {
+    } catch {
       // Fall back to filtering all entities if queries not available
       const allEntities = this.getAllEntities();
-      return allEntities.filter(entity => entity.parentId === undefined);
+      return allEntities.filter((entity) => entity.parentId === undefined);
     }
   }
 
@@ -500,7 +517,7 @@ export class EntityManager {
   getEntityPersistentId(entityId: EntityId): string | undefined {
     const persistentIdData = componentRegistry.getComponentData<{ id: string }>(
       entityId,
-      'PersistentId'
+      'PersistentId',
     );
     return persistentIdData?.id;
   }
@@ -533,7 +550,7 @@ export class EntityManager {
     for (const entity of entities) {
       const persistentIdData = componentRegistry.getComponentData<{ id: string }>(
         entity.id,
-        'PersistentId'
+        'PersistentId',
       );
 
       if (!persistentIdData || !persistentIdData.id) {
@@ -544,14 +561,14 @@ export class EntityManager {
       const validation = PersistentIdSchema.safeParse({ id: persistentIdData.id });
       if (!validation.success) {
         errors.push(
-          `Entity ${entity.id} ("${entity.name}") has invalid PersistentId "${persistentIdData.id}": ${validation.error.message}`
+          `Entity ${entity.id} ("${entity.name}") has invalid PersistentId "${persistentIdData.id}": ${validation.error.message}`,
         );
         continue;
       }
 
       if (seenIds.has(persistentIdData.id)) {
         errors.push(
-          `Entity ${entity.id} ("${entity.name}") has duplicate PersistentId "${persistentIdData.id}"`
+          `Entity ${entity.id} ("${entity.name}") has duplicate PersistentId "${persistentIdData.id}"`,
         );
       }
 

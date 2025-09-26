@@ -1,8 +1,8 @@
-import { EntityManager } from '../EntityManager';
 import { ComponentManager } from '../ComponentManager';
+import { EntityManager } from '../EntityManager';
+import { ComponentIndex } from '../indexers/ComponentIndex';
 import { EntityIndex } from '../indexers/EntityIndex';
 import { HierarchyIndex } from '../indexers/HierarchyIndex';
-import { ComponentIndex } from '../indexers/ComponentIndex';
 
 /**
  * IndexEventAdapter - Wires EntityManager and ComponentManager events to maintain indices
@@ -37,8 +37,14 @@ export class IndexEventAdapter {
       switch (event.type) {
         case 'entity-created':
           if (event.entityId !== undefined && event.entity) {
+            console.debug(
+              `[IndexEventAdapter] Adding entity ${event.entityId} to indices, parentId: ${event.entity.parentId}`,
+            );
             this.entities.add(event.entityId);
             this.hierarchy.setParent(event.entityId, event.entity.parentId);
+            console.debug(
+              `[IndexEventAdapter] Hierarchy after adding entity ${event.entityId}: parent=${this.hierarchy.getParent(event.entityId)}, children of parent=${this.hierarchy.getChildren(event.entity.parentId || 0)}`,
+            );
           }
           break;
 
@@ -139,7 +145,9 @@ export class IndexEventAdapter {
       this.entities.add(entity.id);
       this.hierarchy.setParent(entity.id, entity.parentId);
       if (entity.parentId !== undefined) {
-        console.debug(`[IndexEventAdapter] Setting parent: entity ${entity.id} -> parent ${entity.parentId}`);
+        console.debug(
+          `[IndexEventAdapter] Setting parent: entity ${entity.id} -> parent ${entity.parentId}`,
+        );
       }
     });
 
@@ -152,19 +160,25 @@ export class IndexEventAdapter {
       entitiesWithComponent.forEach((entityId) => {
         this.components.onAdd(componentType, entityId);
       });
-      console.debug(`[IndexEventAdapter] Added ${entitiesWithComponent.length} entities for component ${componentType}`);
+      console.debug(
+        `[IndexEventAdapter] Added ${entitiesWithComponent.length} entities for component ${componentType}`,
+      );
     });
 
     console.debug('[IndexEventAdapter] Index rebuild complete');
-    console.debug(`[IndexEventAdapter] Final: Entities: ${this.entities.size()}, Component types: ${this.components.getComponentTypes().length}`);
+    console.debug(
+      `[IndexEventAdapter] Final: Entities: ${this.entities.size()}, Component types: ${this.components.getComponentTypes().length}`,
+    );
 
     // Log hierarchy state
     const entityIds = this.entities.list();
-    const hierarchyInfo = entityIds.map(id => ({
-      id,
-      parent: this.hierarchy.getParent(id),
-      children: this.hierarchy.getChildren(id)
-    })).filter(info => info.parent !== undefined || info.children.length > 0);
+    const hierarchyInfo = entityIds
+      .map((id) => ({
+        id,
+        parent: this.hierarchy.getParent(id),
+        children: this.hierarchy.getChildren(id),
+      }))
+      .filter((info) => info.parent !== undefined || info.children.length > 0);
 
     if (hierarchyInfo.length > 0) {
       console.debug('[IndexEventAdapter] Hierarchy relationships:', hierarchyInfo);
@@ -203,15 +217,21 @@ export class IndexEventAdapter {
     allEntities.forEach((entity) => {
       const indexedParent = this.hierarchy.getParent(entity.id);
       if (indexedParent !== entity.parentId) {
-        errors.push(`Entity ${entity.id} parent mismatch: world=${entity.parentId}, index=${indexedParent}`);
+        errors.push(
+          `Entity ${entity.id} parent mismatch: world=${entity.parentId}, index=${indexedParent}`,
+        );
       }
 
       const indexedChildren = new Set(this.hierarchy.getChildren(entity.id));
       const actualChildren = new Set(entity.children);
 
-      if (indexedChildren.size !== actualChildren.size ||
-          ![...indexedChildren].every(child => actualChildren.has(child))) {
-        errors.push(`Entity ${entity.id} children mismatch: world=[${Array.from(actualChildren)}], index=[${Array.from(indexedChildren)}]`);
+      if (
+        indexedChildren.size !== actualChildren.size ||
+        ![...indexedChildren].every((child) => actualChildren.has(child))
+      ) {
+        errors.push(
+          `Entity ${entity.id} children mismatch: world=[${Array.from(actualChildren)}], index=[${Array.from(indexedChildren)}]`,
+        );
       }
     });
 
@@ -223,13 +243,17 @@ export class IndexEventAdapter {
 
       worldEntities.forEach((entityId) => {
         if (!indexEntities.has(entityId)) {
-          errors.push(`Entity ${entityId} has component ${componentType} in world but not in ComponentIndex`);
+          errors.push(
+            `Entity ${entityId} has component ${componentType} in world but not in ComponentIndex`,
+          );
         }
       });
 
       indexEntities.forEach((entityId) => {
         if (!worldEntities.has(entityId)) {
-          errors.push(`Entity ${entityId} has component ${componentType} in ComponentIndex but not in world`);
+          errors.push(
+            `Entity ${entityId} has component ${componentType} in ComponentIndex but not in world`,
+          );
         }
       });
     });

@@ -29,11 +29,11 @@ interface ITypedSceneEntity {
  */
 const sceneData: ITypedSceneEntity[] = [
   {
-    "id": 4,
+    "id": 0,
     "name": "Main Camera",
     "components": {
       "PersistentId": {
-        "id": "mg175rpu-rucg7flj5"
+        "id": "mg18oc1w-njwlllz31"
       },
       "Transform": {
         "position": [
@@ -93,11 +93,11 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 5,
+    "id": 1,
     "name": "Directional Light",
     "components": {
       "PersistentId": {
-        "id": "mg175rpx-lbt17stxy"
+        "id": "mg18oc2e-r38e4iovh"
       },
       "Transform": {
         "position": [
@@ -140,11 +140,11 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 6,
+    "id": 2,
     "name": "Ambient Light",
     "components": {
       "PersistentId": {
-        "id": "mg175rq0-svxdey6c2"
+        "id": "mg18oc2n-ed5kjhj80"
       },
       "Transform": {
         "position": [
@@ -187,15 +187,15 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 7,
+    "id": 3,
     "name": "Cube 0",
     "components": {
       "PersistentId": {
-        "id": "mg175rq5-ebnulvqwh"
+        "id": "mg18oc2r-fl772tksr"
       },
       "Transform": {
         "position": [
-          0,
+          -4.75,
           3.25,
           0
         ],
@@ -234,11 +234,11 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 8,
+    "id": 4,
     "name": "Plane 0",
     "components": {
       "PersistentId": {
-        "id": "mg1767pj-8a56tgoqo"
+        "id": "mg18oc2u-gfh49uj8t"
       },
       "Transform": {
         "position": [
@@ -279,6 +279,55 @@ const sceneData: ITypedSceneEntity[] = [
         }
       }
     }
+  },
+  {
+    "id": 5,
+    "name": "Cube 1",
+    "parentId": 3,
+    "components": {
+      "PersistentId": {
+        "id": "mg18ovzm-xqu28h6mg"
+      },
+      "Transform": {
+        "position": [
+          -4.75,
+          1.5,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "MeshRenderer": {
+        "meshId": "cube",
+        "materialId": "default",
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": "",
+        "material": {
+          "shader": "standard",
+          "materialType": "texture",
+          "color": "#3399ff",
+          "normalScale": 1,
+          "metalness": 0,
+          "roughness": 0.5,
+          "emissive": "#000000",
+          "emissiveIntensity": 0,
+          "occlusionStrength": 1,
+          "textureOffsetX": 0,
+          "textureOffsetY": 0,
+          "albedoTexture": "/assets/textures/crate-texture.png"
+        }
+      }
+    }
   }
 ];
 
@@ -288,12 +337,12 @@ const sceneData: ITypedSceneEntity[] = [
 export const metadata: SceneMetadata = {
   "name": "xx",
   "version": 1,
-  "timestamp": "2025-09-26T18:50:50.523Z"
+  "timestamp": "2025-09-26T19:34:04.255Z"
 };
 
 /**
  * xx
- * Generated: 2025-09-26T18:50:50.523Z
+ * Generated: 2025-09-26T19:34:04.255Z
  * Version: 1
  */
 export const Xx: React.FC = () => {

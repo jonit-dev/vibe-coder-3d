@@ -252,13 +252,15 @@ export const CameraConverter = {
 export const EntityMetaConverter = {
   set: (eid: EntityId, name: string, parentId?: EntityId): void => {
     EntityMeta.nameHash[eid] = storeString(name);
-    EntityMeta.parentEntity[eid] = parentId || 0;
+    EntityMeta.parentEntity[eid] = parentId ?? -1;
   },
 
   getName: (eid: EntityId): string => getStringFromHash(EntityMeta.nameHash[eid]),
 
   getParent: (eid: EntityId): EntityId | undefined => {
     const parentEid = EntityMeta.parentEntity[eid];
-    return parentEid === 0 ? undefined : parentEid;
+    // -1 stored as unsigned becomes 4294967295
+    const isNoParent = parentEid === 4294967295;
+    return isNoParent ? undefined : parentEid;
   },
 };

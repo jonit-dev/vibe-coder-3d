@@ -44,9 +44,12 @@ const componentMap = {
 
 export class ComponentManager {
   private static instance: ComponentManager;
-  private world = ECSWorld.getInstance().getWorld();
   private eventListeners: ComponentEventListener[] = [];
   private queries: EntityQueries;
+
+  private get world() {
+    return ECSWorld.getInstance().getWorld();
+  }
 
   private constructor() {
     // Private constructor for singleton
@@ -58,6 +61,10 @@ export class ComponentManager {
       ComponentManager.instance = new ComponentManager();
     }
     return ComponentManager.instance;
+  }
+
+  public reset(): void {
+    this.eventListeners = [];
   }
 
   // Event system for reactive updates

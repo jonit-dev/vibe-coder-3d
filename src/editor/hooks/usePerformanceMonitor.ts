@@ -1,9 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { Profiler, type TimingEntry } from '@/core/lib/perf/Profiler';
+import { useEffect, useRef, useState } from 'react';
 
 interface IPerformanceMetrics {
   averageFPS: number;
   frameTime: number;
   renderCount: number;
+}
+
+interface IEnhancedPerformanceMetrics extends IPerformanceMetrics {
+  profilerStats: {
+    totalMeasurements: number;
+    topOperations: TimingEntry[];
+    memoryUsage?: {
+      used: number;
+      total: number;
+      percentage: number;
+    };
+  };
 }
 
 export const usePerformanceMonitor = (enabled: boolean = false) => {
@@ -16,6 +29,12 @@ export const usePerformanceMonitor = (enabled: boolean = false) => {
   const frameTimesRef = useRef<number[]>([]);
   const lastTimeRef = useRef<number>(performance.now());
   const animationIdRef = useRef<number | undefined>(undefined);
+
+  const [profilerStats, setProfilerStats] = useState({
+    totalMeasurements: 0,
+    topOperations: [] as TimingEntry[],
+    memoryUsage: undefined as IEnhancedPerformanceMetrics['profilerStats']['memoryUsage'],
+  });
 
   useEffect(() => {
     if (!enabled) return;
@@ -39,6 +58,18 @@ export const usePerformanceMonitor = (enabled: boolean = false) => {
       metricsRef.current.averageFPS = 1000 / avgFrameTime;
       metricsRef.current.frameTime = avgFrameTime;
 
+      // Update profiler stats every 60 frames
+      if (metricsRef.current.renderCount % 60 === 0) {
+        const stats = Profiler.getStats();
+        const topOperations = Profiler.getTopOperations(3); // Top 3 operations
+
+        setProfilerStats({
+          totalMeasurements: stats.totalMeasurements,
+          topOperations,
+          memoryUsage: stats.memoryUsage,
+        });
+      }
+
       animationIdRef.current = requestAnimationFrame(updateMetrics);
     };
 
@@ -53,5 +84,6 @@ export const usePerformanceMonitor = (enabled: boolean = false) => {
 
   return {
     metrics: metricsRef.current,
+    profilerStats,
   };
 };

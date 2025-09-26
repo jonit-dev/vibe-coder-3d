@@ -86,7 +86,12 @@ export const importScene = async (
   scene: unknown,
   entityManager: {
     clearEntities: () => void;
-    createEntity: (name: string, parentId?: string | number | null) => { id: string | number };
+    // Optional persistentId third parameter for exact preservation
+    createEntity: (
+      name: string,
+      parentId?: string | number | null,
+      persistentId?: string,
+    ) => { id: string | number };
   },
   componentManager: {
     addComponent: (
@@ -121,38 +126,65 @@ export const importScene = async (
   // Clear existing entities first
   entityManager.clearEntities();
 
-  // Import entities with better error handling
+  // Two-pass import to preserve hierarchy
   const importErrors: string[] = [];
+  const idMap = new Map<string, string | number>();
 
+  // First pass: create all entities without parents, attach components except PersistentId
   for (const entityData of validatedScene.entities) {
     try {
-      // Convert IDs to the format expected by the entity manager
-      const parentId = entityData.parentId
-        ? typeof entityData.parentId === 'string'
-          ? entityData.parentId
-          : entityData.parentId.toString()
-        : null;
+      // Extract persistent ID if present
+      const persistentId = (entityData.components as any)?.PersistentId?.id as
+        | string
+        | undefined;
 
-      const entity = entityManager.createEntity(
+      const created = entityManager.createEntity(
         entityData.name || `Entity ${entityData.id}`,
-        parentId,
+        undefined,
+        persistentId,
       );
+      idMap.set(String(entityData.id), created.id);
 
-      // Add components
+      // Add non-persistent components
       const componentEntries = Object.entries(entityData.components || {});
       for (const [componentType, componentData] of componentEntries) {
-        if (componentData) {
-          componentManager.addComponent(entity.id, componentType, componentData);
-        }
+        if (!componentData) continue;
+        if (componentType === 'PersistentId') continue;
+        componentManager.addComponent(created.id, componentType, componentData);
       }
 
       console.log(
-        `[SceneSerializer] Successfully imported entity: ${entityData.name} (${entityData.id}) with ${componentEntries.length} components`,
+        `[SceneSerializer] Created entity: ${entityData.name} (${entityData.id})`,
       );
     } catch (error) {
-      const errorMessage = `Failed to import entity ${entityData.name} (${entityData.id}): ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const errorMessage = `Failed to create entity ${entityData.name} (${entityData.id}): ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`;
       console.error(`[SceneSerializer] ${errorMessage}`, entityData);
       importErrors.push(errorMessage);
+    }
+  }
+
+  // Second pass: assign parents using the id map
+  for (const entityData of validatedScene.entities) {
+    const parentRef = entityData.parentId;
+    if (parentRef === undefined || parentRef === null) continue;
+
+    const childEid = idMap.get(String(entityData.id));
+    const parentEid = idMap.get(String(parentRef));
+
+    if (childEid === undefined || parentEid === undefined) {
+      console.warn(
+        `[SceneSerializer] Skipping parent assignment: child=${entityData.id} parent=${parentRef}`,
+      );
+      continue;
+    }
+
+    // If adapter provides setParent, use it
+    if ('setParent' in (entityManager as any) && typeof (entityManager as any).setParent === 'function') {
+      (entityManager as any).setParent(childEid, parentEid);
+    } else {
+      console.warn('[SceneSerializer] Entity manager adapter has no setParent; parent not assigned');
     }
   }
 

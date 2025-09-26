@@ -449,6 +449,14 @@ export class EntityQueries {
     globalQueryInstance = null;
   }
 
+  reset(): void {
+    if (globalQueryInstance) {
+      globalQueryInstance.destroy();
+    }
+    globalQueryInstance = useEntityQueries.getState();
+    globalQueryInstance.initialize();
+  }
+
   // Debug method to dump current state
   debugState(): void {
     if (!globalQueryInstance) {

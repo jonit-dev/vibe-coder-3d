@@ -55,14 +55,19 @@ export function useSceneActions(options: ISceneActionsOptions = {}) {
     // Wrap managers to match expected interface
     const entityManagerAdapter = {
       clearEntities: () => entityManager.clearEntities(),
-      createEntity: (name: string, parentId?: string | number | null) => {
+      createEntity: (name: string, parentId?: string | number | null, persistentId?: string) => {
         // Convert parentId to number if needed for entityManager
         const numberId = parentId
           ? typeof parentId === 'string'
             ? parseInt(parentId, 10)
             : parentId
           : undefined;
-        return entityManager.createEntity(name, numberId);
+        return entityManager.createEntity(name, numberId, persistentId);
+      },
+      setParent: (childId: string | number, parentId?: string | number | null) => {
+        const child = typeof childId === 'string' ? parseInt(childId, 10) : childId;
+        const parent = parentId == null ? undefined : typeof parentId === 'string' ? parseInt(parentId, 10) : parentId;
+        entityManager.setParent(child, parent);
       },
     };
 

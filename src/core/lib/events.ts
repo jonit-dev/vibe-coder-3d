@@ -1,4 +1,5 @@
 import mitt, { Emitter } from 'mitt';
+import { BatchedEventEmitter } from './perf/BatchedEventEmitter';
 
 // Example event types (expand as needed)
 export type CoreEvents = {
@@ -25,10 +26,33 @@ export type CoreEvents = {
   'component:updated': { entityId: number; componentId: string; data: any };
 };
 
+// Legacy mitt-based emitter for backward compatibility
 export const emitter: Emitter<CoreEvents> = mitt<CoreEvents>();
 
+// Batched event emitter for high-frequency events
+const batchedEmitter = new BatchedEventEmitter<CoreEvents>({
+  coalesce: true,
+  maxBufferSize: 1000,
+  useAnimationFrame: true,
+});
+
+// Configuration flag to enable/disable batching
+export const enableEventBatching = () => {
+  // This is a simple flag - in a real implementation you might want more sophisticated control
+  return (
+    process.env.NODE_ENV === 'production' || localStorage.getItem('enableEventBatching') === 'true'
+  );
+};
+
+// Enhanced event bus that can use batching for high-frequency events
 export function emit<Key extends keyof CoreEvents>(type: Key, event: CoreEvents[Key]) {
+  // Always emit to legacy system for backward compatibility
   emitter.emit(type, event);
+
+  // Also emit to batched system if batching is enabled
+  if (enableEventBatching()) {
+    batchedEmitter.emit(type, event);
+  }
 }
 
 export function on<Key extends keyof CoreEvents>(
@@ -43,7 +67,14 @@ export function on<Key extends keyof CoreEvents>(
     }
   };
 
+  // Always register with legacy system for backward compatibility
   emitter.on(type, wrappedHandler);
+
+  // Also register with batched system if batching is enabled
+  if (enableEventBatching()) {
+    return batchedEmitter.on(type, wrappedHandler);
+  }
+
   return () => emitter.off(type, wrappedHandler);
 }
 
@@ -51,6 +82,43 @@ export function off<Key extends keyof CoreEvents>(
   type: Key,
   handler: (event: CoreEvents[Key]) => void,
 ) {
+  // Always unregister from legacy system
   emitter.off(type, handler);
+
+  // Also unregister from batched system if batching is enabled
+  if (enableEventBatching()) {
+    batchedEmitter.off(type, handler);
+  }
 }
-export const eventBus = { emit, on, off };
+
+// Flush any pending batched events immediately
+export function flushBatchedEvents() {
+  if (enableEventBatching()) {
+    batchedEmitter.flush();
+  }
+}
+
+// Get stats about batched events for debugging
+export function getBatchedEventStats() {
+  if (enableEventBatching()) {
+    return batchedEmitter.getStats();
+  }
+  return null;
+}
+
+// Clear all event handlers
+export function clearAllEvents() {
+  emitter.all.clear();
+  if (enableEventBatching()) {
+    batchedEmitter.clear();
+  }
+}
+
+export const eventBus = {
+  emit,
+  on,
+  off,
+  flushBatchedEvents,
+  getBatchedEventStats,
+  clearAllEvents,
+};

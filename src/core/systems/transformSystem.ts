@@ -1,12 +1,23 @@
 // Transform System
 // Synchronizes Transform components with Three.js objects and handles hierarchical transforms
 import { defineQuery } from 'bitecs';
-import { Euler, Matrix4, Quaternion, Vector3 } from 'three';
 
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { ECSWorld } from '@core/lib/ecs/World';
 import { ITransformData } from '@core/lib/ecs/components/TransformComponent';
 import { componentRegistry } from '../lib/ecs/ComponentRegistry';
+import {
+  acquireEuler,
+  acquireMatrix4,
+  acquireQuaternion,
+  acquireVector3,
+  arrayPool,
+  releaseEuler,
+  releaseMatrix4,
+  releaseQuaternion,
+  releaseVector3,
+} from '../lib/perf/MathPools';
+import { Profiler } from '../lib/perf/Profiler';
 
 // Get world instance
 const world = ECSWorld.getInstance().getWorld();
@@ -33,12 +44,7 @@ const entityToObject = new Map<number, any>();
 // Get entity manager
 const entityManager = EntityManager.getInstance();
 
-// Reusable objects to avoid garbage collection
-const position = new Vector3();
-const euler = new Euler();
-const quaternion = new Quaternion();
-const scale = new Vector3();
-const localMatrix = new Matrix4();
+// Pooled objects for zero-allocation transform calculations
 
 // Cache for computed world transforms
 const worldTransforms = new Map<
@@ -55,7 +61,7 @@ const worldTransforms = new Map<
 const DEG_TO_RAD = Math.PI / 180;
 
 /**
- * Computes world transform for an entity recursively
+ * Computes world transform for an entity recursively using object pools
  */
 function computeWorldTransform(eid: number): {
   position: Vector3;
@@ -72,48 +78,88 @@ function computeWorldTransform(eid: number): {
   const transformData = componentRegistry.getComponentData<ITransformData>(eid, 'Transform');
   if (!transformData) return null;
 
-  // Create local transform
-  position.set(transformData.position[0], transformData.position[1], transformData.position[2]);
+  // Acquire pooled objects for calculations
+  const position = acquireVector3(
+    transformData.position[0],
+    transformData.position[1],
+    transformData.position[2],
+  );
+  const scale = acquireVector3(
+    transformData.scale[0],
+    transformData.scale[1],
+    transformData.scale[2],
+  );
+  const euler = acquireEuler();
+  const quaternion = acquireQuaternion();
+  const localMatrix = acquireMatrix4();
 
-  const rotDeg = transformData.rotation;
-  const rotRad = [rotDeg[0] * DEG_TO_RAD, rotDeg[1] * DEG_TO_RAD, rotDeg[2] * DEG_TO_RAD];
-  euler.set(rotRad[0], rotRad[1], rotRad[2]);
-  quaternion.setFromEuler(euler);
+  try {
+    // Create local transform
+    const rotDeg = transformData.rotation;
+    const rotRad = arrayPool.acquire();
+    try {
+      rotRad[0] = rotDeg[0] * DEG_TO_RAD;
+      rotRad[1] = rotDeg[1] * DEG_TO_RAD;
+      rotRad[2] = rotDeg[2] * DEG_TO_RAD;
+      euler.set(rotRad[0], rotRad[1], rotRad[2]);
+      quaternion.setFromEuler(euler);
 
-  scale.set(transformData.scale[0], transformData.scale[1], transformData.scale[2]);
+      // Create local matrix
+      localMatrix.compose(position, quaternion, scale);
 
-  // Create local matrix
-  localMatrix.compose(position, quaternion, scale);
+      // Get entity and check for parent
+      const entity = entityManager.getEntity(eid);
+      const finalMatrix = acquireMatrix4();
+      const finalPos = acquireVector3();
+      const finalQuat = acquireQuaternion();
+      const finalScale = acquireVector3();
 
-  // Get entity and check for parent
-  const entity = entityManager.getEntity(eid);
-  const finalMatrix = localMatrix.clone();
-  const finalPos = position.clone();
-  const finalQuat = quaternion.clone();
-  const finalScale = scale.clone();
+      try {
+        finalMatrix.copy(localMatrix);
+        finalPos.copy(position);
+        finalQuat.copy(quaternion);
+        finalScale.copy(scale);
 
-  if (entity?.parentId) {
-    // Get parent's world transform
-    const parentWorldTransform = computeWorldTransform(entity.parentId);
-    if (parentWorldTransform) {
-      // Multiply by parent's world matrix
-      finalMatrix.multiplyMatrices(parentWorldTransform.matrix, localMatrix);
+        if (entity?.parentId) {
+          // Get parent's world transform
+          const parentWorldTransform = computeWorldTransform(entity.parentId);
+          if (parentWorldTransform) {
+            // Multiply by parent's world matrix
+            finalMatrix.multiplyMatrices(parentWorldTransform.matrix, localMatrix);
 
-      // Decompose final matrix
-      finalMatrix.decompose(finalPos, finalQuat, finalScale);
+            // Decompose final matrix
+            finalMatrix.decompose(finalPos, finalQuat, finalScale);
+          }
+        }
+
+        // Cache the result
+        const result = {
+          position: acquireVector3().copy(finalPos),
+          quaternion: acquireQuaternion().copy(finalQuat),
+          scale: acquireVector3().copy(finalScale),
+          matrix: acquireMatrix4().copy(finalMatrix),
+        };
+
+        worldTransforms.set(eid, result);
+        return result;
+      } finally {
+        // Release temporary objects
+        releaseMatrix4(finalMatrix);
+        releaseVector3(finalPos);
+        releaseQuaternion(finalQuat);
+        releaseVector3(finalScale);
+      }
+    } finally {
+      arrayPool.release(rotRad);
     }
+  } finally {
+    // Release pooled objects
+    releaseVector3(position);
+    releaseVector3(scale);
+    releaseEuler(euler);
+    releaseQuaternion(quaternion);
+    releaseMatrix4(localMatrix);
   }
-
-  // Cache the result
-  const result = {
-    position: finalPos.clone(),
-    quaternion: finalQuat.clone(),
-    scale: finalScale.clone(),
-    matrix: finalMatrix.clone(),
-  };
-
-  worldTransforms.set(eid, result);
-  return result;
 }
 
 /**
@@ -122,66 +168,82 @@ function computeWorldTransform(eid: number): {
  * Returns the number of transformed entities
  */
 export function transformSystem(): number {
-  // Get the query (lazy-initialized)
-  const query = getTransformQuery();
-  if (!query) {
-    return 0; // Transform component not yet registered
-  }
-
-  // Clear world transform cache
-  worldTransforms.clear();
-
-  // Get all entities with Transform components
-  const entities = query(world);
-  let updatedCount = 0;
-
-  // Process entities in hierarchical order (roots first)
-  const processedEntities = new Set<number>();
-
-  const processEntity = (eid: number) => {
-    if (processedEntities.has(eid)) return;
-
-    // Skip if no corresponding object
-    const object = entityToObject.get(eid);
-    if (!object) return;
-
-    // Get entity for hierarchy info
-    const entity = entityManager.getEntity(eid);
-    if (!entity) return;
-
-    // Process parent first if it exists
-    if (entity.parentId && !processedEntities.has(entity.parentId)) {
-      processEntity(entity.parentId);
+  return Profiler.time('transformSystem', () => {
+    // Get the query (lazy-initialized)
+    const query = getTransformQuery();
+    if (!query) {
+      return 0; // Transform component not yet registered
     }
 
-    // Compute world transform
-    const worldTransform = computeWorldTransform(eid);
-    if (!worldTransform) return;
+    // Clear world transform cache
+    worldTransforms.clear();
 
-    // Apply to Three.js object
-    object.position.copy(worldTransform.position);
-    object.quaternion.copy(worldTransform.quaternion);
-    object.scale.copy(worldTransform.scale);
+    // Get all entities with Transform components
+    const entities = query(world);
+    let updatedCount = 0;
 
-    processedEntities.add(eid);
-    updatedCount++;
+    // Process entities in hierarchical order (roots first)
+    const processedEntities = new Set<number>();
 
-    // Process children
-    entity.children.forEach((childId) => {
-      if (!processedEntities.has(childId)) {
-        processEntity(childId);
+    const processEntity = (eid: number) => {
+      if (processedEntities.has(eid)) return;
+
+      // Skip if no corresponding object
+      const object = entityToObject.get(eid);
+      if (!object) return;
+
+      // Get entity for hierarchy info
+      const entity = entityManager.getEntity(eid);
+      if (!entity) return;
+
+      // Process parent first if it exists
+      if (entity.parentId && !processedEntities.has(entity.parentId)) {
+        processEntity(entity.parentId);
+      }
+
+      // Compute world transform
+      const worldTransform = computeWorldTransform(eid);
+      if (!worldTransform) return;
+
+      // Apply to Three.js object using pooled vectors to avoid temporary allocations
+      const tempPos = acquireVector3();
+      const tempQuat = acquireQuaternion();
+      const tempScale = acquireVector3();
+
+      try {
+        tempPos.copy(worldTransform.position);
+        tempQuat.copy(worldTransform.quaternion);
+        tempScale.copy(worldTransform.scale);
+
+        object.position.copy(tempPos);
+        object.quaternion.copy(tempQuat);
+        object.scale.copy(tempScale);
+      } finally {
+        releaseVector3(tempPos);
+        releaseQuaternion(tempQuat);
+        releaseVector3(tempScale);
+      }
+
+      processedEntities.add(eid);
+      updatedCount++;
+
+      // Process children
+      entity.children.forEach((childId) => {
+        if (!processedEntities.has(childId)) {
+          processEntity(childId);
+        }
+      });
+    };
+
+    // Start with root entities first
+    entities.forEach((eid: number) => {
+      if (!processedEntities.has(eid)) {
+        processEntity(eid);
       }
     });
-  };
 
-  // Start with root entities first
-  entities.forEach((eid: number) => {
-    if (!processedEntities.has(eid)) {
-      processEntity(eid);
-    }
+    return updatedCount;
   });
-
-  return updatedCount;
 }
 
 /**
