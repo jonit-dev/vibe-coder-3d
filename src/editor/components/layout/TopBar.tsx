@@ -13,10 +13,9 @@ import {
   FiTrash2,
 } from 'react-icons/fi';
 
-import { SceneSelector } from '../shared/SceneSelector';
-import { ProjectSelector } from '../shared/ProjectSelector';
 import { ToolbarButton } from '../shared/ToolbarButton';
 import { ToolbarGroup } from '../shared/ToolbarGroup';
+import { sceneRegistry } from '@/core/lib/scene/SceneRegistry';
 
 export interface ITopBarProps {
   entityCount: number;
@@ -82,11 +81,13 @@ export const TopBar: React.FC<ITopBarProps> = ({
           </div>
         </div>
 
-        {/* Center section - Scene selector and Playback controls */}
+        {/* Center section - Active scene and Playback controls */}
         <div className="flex items-center space-x-3">
-          <ProjectSelector />
-          <div className="h-4 w-px bg-gray-700"></div>
-          <SceneSelector />
+          {/* Active scene display */}
+          <div className="px-2 py-1 bg-purple-950/30 border border-purple-800/30 rounded text-purple-300 text-xs flex items-center space-x-1">
+            <FiFolder className="w-3 h-3" />
+            <span>Scene: {sceneRegistry.getCurrentSceneId() || 'None'}</span>
+          </div>
 
           <div className="h-4 w-px bg-gray-700"></div>
 
