@@ -533,26 +533,26 @@ async function handleLoadTsx(req: IncomingMessage, res: ServerResponse, url: URL
     // Parse entities array safely
     let entities = [];
     try {
-      // Convert the JavaScript object syntax to valid JSON
+      // Convert JavaScript object notation to valid JSON
       let entitiesString = entitiesMatch[1];
 
-      // Clean up escaped characters that were literally written in the file
-      entitiesString = entitiesString.replace(/\\n/g, '\n'); // Convert literal \n to actual newlines
-      entitiesString = entitiesString.replace(/\\t/g, '\t'); // Convert literal \t to actual tabs
+      // First, fix the property names - add quotes around unquoted keys
+      // Match word characters followed by colon (but not already quoted)
+      entitiesString = entitiesString.replace(
+        /([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g,
+        '$1"$2":',
+      );
 
-      // Replace unquoted property names with quoted ones
-      entitiesString = entitiesString.replace(/(\w+):/g, '"$1":');
+      // Fix single quotes around string values - convert to double quotes
+      // This regex matches single quotes that are not escaped and converts them to double quotes
+      entitiesString = entitiesString.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
 
-      // Clean up any trailing commas
+      // Clean up any trailing commas before } or ]
       entitiesString = entitiesString.replace(/,(\s*[}\]])/g, '$1');
 
-      // Remove any remaining literal escape sequences
-      entitiesString = entitiesString.replace(/\\"/g, '"');
-
-      console.log(
-        '[handleLoadTsx] Cleaned entities string:',
-        entitiesString.substring(0, 300) + '...',
-      );
+      // Remove any comments or console.log statements that might be in the TSX
+      entitiesString = entitiesString.replace(/\/\/.*$/gm, '');
+      entitiesString = entitiesString.replace(/console\.log\([^)]*\);?/g, '');
 
       // Try to parse as JSON
       entities = JSON.parse(`[${entitiesString}]`);
@@ -562,36 +562,15 @@ async function handleLoadTsx(req: IncomingMessage, res: ServerResponse, url: URL
       console.error('[handleLoadTsx] Parse error:', error);
       console.error('[handleLoadTsx] Failed to parse string:', entitiesMatch[1].substring(0, 500));
 
-      // Try a more aggressive cleanup approach
-      try {
-        let fallbackString = entitiesMatch[1];
-
-        // Remove all escaped sequences and normalize whitespace
-        fallbackString = fallbackString.replace(/\\[nt]/g, ' ');
-        fallbackString = fallbackString.replace(/\s+/g, ' ');
-
-        // Quote property names
-        fallbackString = fallbackString.replace(/(\w+):/g, '"$1":');
-
-        // Clean trailing commas
-        fallbackString = fallbackString.replace(/,(\s*[}\]])/g, '$1');
-
-        console.log('[handleLoadTsx] Trying fallback parsing...');
-        entities = JSON.parse(`[${fallbackString}]`);
-        console.log('[handleLoadTsx] Fallback parsing successful:', entities.length, 'entities');
-      } catch (fallbackError) {
-        console.error('[handleLoadTsx] Fallback parse also failed:', fallbackError);
-
-        res.statusCode = 400;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(
-          JSON.stringify({
-            error: 'Failed to parse entities from TSX file',
-            details: error instanceof Error ? error.message : 'Unknown error',
-          }),
-        );
-        return;
-      }
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(
+        JSON.stringify({
+          error: 'Failed to parse entities from TSX file',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        }),
+      );
+      return;
     }
 
     // Create scene data structure
