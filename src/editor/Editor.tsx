@@ -74,6 +74,9 @@ const Editor: React.FC = () => {
     handleClear,
     handleLoadLegacy,
     scenePersistence,
+    loadLastScene,
+    currentSceneName,
+    handleSaveAs,
   } = useSceneActions();
 
   // All action handlers encapsulated in custom hook
@@ -107,6 +110,7 @@ const Editor: React.FC = () => {
     savedScene,
     importScene,
     onStatusMessage: setStatusMessage,
+    loadLastScene,
   });
 
   // Keyboard Shortcuts - use new toast methods
@@ -175,7 +179,8 @@ const Editor: React.FC = () => {
 
       <TopBar
         entityCount={entityIds.length}
-        onSave={() => setScenePersistenceModal({ isOpen: true, mode: 'save' })}
+        onSave={handleSave}
+        onSaveAs={() => setScenePersistenceModal({ isOpen: true, mode: 'save' })}
         onLoad={() => setScenePersistenceModal({ isOpen: true, mode: 'load' })}
         onClear={handleClear}
         onAddObject={toggleAddMenu}
@@ -186,6 +191,7 @@ const Editor: React.FC = () => {
         onStop={handleStopWithStatus}
         onToggleChat={toggleChat}
         isChatOpen={isChatExpanded}
+        currentSceneName={currentSceneName}
       />
 
       <EnhancedAddObjectMenu

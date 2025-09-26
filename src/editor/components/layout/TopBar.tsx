@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BiCube } from 'react-icons/bi';
 import {
   FiActivity,
+  FiChevronDown,
   FiCpu,
   FiFolder,
   FiMessageSquare,
@@ -15,11 +16,11 @@ import {
 
 import { ToolbarButton } from '../shared/ToolbarButton';
 import { ToolbarGroup } from '../shared/ToolbarGroup';
-import { sceneRegistry } from '@/core/lib/scene/SceneRegistry';
 
 export interface ITopBarProps {
   entityCount: number;
   onSave: () => void;
+  onSaveAs: () => void;
   onLoad: () => void;
   onClear: () => void;
   onAddObject: () => void;
@@ -30,11 +31,13 @@ export interface ITopBarProps {
   onStop?: () => void;
   onToggleChat?: () => void;
   isChatOpen?: boolean;
+  currentSceneName?: string | null;
 }
 
 export const TopBar: React.FC<ITopBarProps> = ({
   entityCount,
   onSave,
+  onSaveAs,
   onLoad,
   onClear,
   onAddObject,
@@ -45,7 +48,10 @@ export const TopBar: React.FC<ITopBarProps> = ({
   onStop,
   onToggleChat,
   isChatOpen = false,
+  currentSceneName,
 }) => {
+  const [showSaveDropdown, setShowSaveDropdown] = useState(false);
+
   return (
     <header className="h-10 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-b border-cyan-900/20 shadow-lg relative z-20">
       {/* Animated background effect */}
@@ -86,7 +92,7 @@ export const TopBar: React.FC<ITopBarProps> = ({
           {/* Active scene display */}
           <div className="px-2 py-1 bg-purple-950/30 border border-purple-800/30 rounded text-purple-300 text-xs flex items-center space-x-1">
             <FiFolder className="w-3 h-3" />
-            <span>Scene: {sceneRegistry.getCurrentSceneId() || 'None'}</span>
+            <span>Scene: {currentSceneName || 'None'}</span>
           </div>
 
           <div className="h-4 w-px bg-gray-700"></div>
@@ -122,9 +128,53 @@ export const TopBar: React.FC<ITopBarProps> = ({
               <span>Add</span>
             </button>
 
-            <ToolbarButton onClick={onSave} variant="primary" title="Save Scene (Ctrl+S)">
-              <FiSave className="w-4 h-4" />
-            </ToolbarButton>
+            {/* Save dropdown group */}
+            <div className="relative">
+              <div className="flex">
+                <ToolbarButton
+                  onClick={onSave}
+                  variant="primary"
+                  title={currentSceneName ? `Save ${currentSceneName} (Ctrl+S)` : "Save Scene (Ctrl+S)"}
+                  className="rounded-r-none border-r-0"
+                >
+                  <FiSave className="w-4 h-4" />
+                </ToolbarButton>
+                <button
+                  type="button"
+                  onClick={() => setShowSaveDropdown(!showSaveDropdown)}
+                  className="px-1 py-1.5 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-gray-200 rounded-l-none text-xs transition-colors"
+                  title="Save options"
+                >
+                  <FiChevronDown className="w-3 h-3" />
+                </button>
+              </div>
+
+              {showSaveDropdown && (
+                <div className="absolute top-full right-0 mt-1 bg-gray-900 border border-gray-700 rounded shadow-lg z-50 min-w-32">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSave();
+                      setShowSaveDropdown(false);
+                    }}
+                    disabled={!currentSceneName}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSaveAs();
+                      setShowSaveDropdown(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-800"
+                  >
+                    Save As...
+                  </button>
+                </div>
+              )}
+            </div>
 
             <ToolbarButton onClick={onLoad} variant="info" title="Load Scene">
               <FiFolder className="w-4 h-4" />

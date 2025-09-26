@@ -42,6 +42,7 @@ export const ToolbarButton: React.FC<IToolbarButtonProps> = ({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}

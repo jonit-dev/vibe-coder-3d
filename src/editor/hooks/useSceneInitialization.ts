@@ -17,12 +17,14 @@ export interface IUseSceneInitializationProps {
   savedScene: ISerializedScene | null;
   importScene: (scene: ISerializedScene) => Promise<void>;
   onStatusMessage: (message: string) => void;
+  loadLastScene: () => Promise<boolean>;
 }
 
 export const useSceneInitialization = ({
   savedScene,
   importScene,
   onStatusMessage,
+  loadLastScene,
 }: IUseSceneInitializationProps) => {
   const entityManager = useEntityManager();
   const hasInitialized = useRef(false);
@@ -55,9 +57,16 @@ export const useSceneInitialization = ({
           return;
         }
 
-        // Load default scene using SceneRegistry (ignore saved scene for now)
-        await loadScene('default', true);
-        onStatusMessage('Loaded default scene with camera and lights');
+        // Try to load the last scene first, fallback to default
+        const lastSceneLoaded = await loadLastScene();
+
+        if (lastSceneLoaded) {
+          onStatusMessage('Loaded last scene from storage');
+        } else {
+          // Fallback to default scene using SceneRegistry
+          await loadScene('default', true);
+          onStatusMessage('Loaded default scene with camera and lights');
+        }
         hasInitialized.current = true;
       } catch (error) {
         console.error('Failed to initialize scene:', error);

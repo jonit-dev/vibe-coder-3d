@@ -19,6 +19,7 @@ export type { ISerializedScene } from '@/core/lib/serialization/sceneSerializer'
 export function useSceneActions() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingSaveName, setPendingSaveName] = useState<string>('');
+  const [currentSceneName, setCurrentSceneName] = useState<string | null>(null);
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
   const projectToasts = useProjectToasts();
@@ -46,7 +47,19 @@ export function useSceneActions() {
   // Temporarily disabled localStorage loading to use SceneRegistry instead
   const savedScene: { entities?: unknown[] } | null = null;
 
-  const handleSave = async (sceneName?: string): Promise<void> => {
+  // Save current scene (no name prompt if scene already exists)
+  const handleSave = async (): Promise<void> => {
+    if (currentSceneName) {
+      // Quick save to existing scene
+      await handleSaveAs(currentSceneName);
+    } else {
+      // No current scene, prompt for name (this will be "Save As" behavior)
+      projectToasts.showOperationError('Save', 'No scene loaded. Use "Save As" to save with a name.');
+    }
+  };
+
+  // Save As with name prompt
+  const handleSaveAs = async (sceneName?: string): Promise<void> => {
     const loadingToastId = projectToasts.showOperationStart('Saving Scene');
 
     try {
@@ -97,6 +110,10 @@ export function useSceneActions() {
       removeToast(loadingToastId);
 
       if (success) {
+        // Update current scene name after successful save
+        setCurrentSceneName(sceneName);
+        localStorage.setItem('lastLoadedScene', sceneName);
+
         projectToasts.showOperationSuccess(
           'Save',
           `Successfully saved scene '${sceneName}' with ${transformedEntities.length} entities as TSX component`,
@@ -156,6 +173,10 @@ export function useSceneActions() {
         }
 
         await importSceneData(sceneData);
+
+        // Store the last loaded scene in localStorage and update current scene state
+        localStorage.setItem('lastLoadedScene', sceneNameOrEvent);
+        setCurrentSceneName(sceneNameOrEvent);
 
         removeToast(loadingToastId);
         projectToasts.showOperationSuccess(
@@ -295,6 +316,29 @@ export function useSceneActions() {
     }
   };
 
+  // Get the last loaded scene from localStorage
+  const getLastLoadedScene = (): string | null => {
+    return localStorage.getItem('lastLoadedScene');
+  };
+
+  // Load the last scene automatically
+  const loadLastScene = async (): Promise<boolean> => {
+    const lastScene = getLastLoadedScene();
+    if (lastScene) {
+      try {
+        await handleLoad(lastScene);
+        return true;
+      } catch (error) {
+        console.warn('Failed to load last scene:', lastScene, error);
+        // Clear invalid scene from localStorage
+        localStorage.removeItem('lastLoadedScene');
+        setCurrentSceneName(null);
+        return false;
+      }
+    }
+    return false;
+  };
+
   return {
     fileInputRef,
     savedScene,
@@ -314,5 +358,13 @@ export function useSceneActions() {
     exportScene: exportSceneData,
     // Scene persistence state and actions
     scenePersistence,
+    // Last scene utilities
+    getLastLoadedScene,
+    loadLastScene,
+    // Current scene state
+    currentSceneName,
+    setCurrentSceneName,
+    // Save methods
+    handleSaveAs,
   };
 }
