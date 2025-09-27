@@ -31,7 +31,13 @@ export class ConsistencyChecker {
         isConsistent: true,
         errors: [],
         warnings: ['Consistency checks disabled in production'],
-        stats: { entitiesInWorld: 0, entitiesInIndex: 0, componentTypes: 0, totalComponents: 0, hierarchyRelationships: 0 }
+        stats: {
+          entitiesInWorld: 0,
+          entitiesInIndex: 0,
+          componentTypes: 0,
+          totalComponents: 0,
+          hierarchyRelationships: 0,
+        },
       };
     }
 
@@ -59,10 +65,22 @@ export class ConsistencyChecker {
     this.checkEntityConsistency(worldEntities, indexedEntities, errors, warnings);
 
     // Check hierarchy consistency
-    stats.hierarchyRelationships = this.checkHierarchyConsistency(worldEntities, queries, errors, warnings);
+    stats.hierarchyRelationships = this.checkHierarchyConsistency(
+      worldEntities,
+      queries,
+      errors,
+      warnings,
+    );
 
     // Check component consistency
-    stats.totalComponents = this.checkComponentConsistency(worldEntities, componentTypes, componentManager, queries, errors, warnings);
+    stats.totalComponents = this.checkComponentConsistency(
+      worldEntities,
+      componentTypes,
+      componentManager,
+      queries,
+      errors,
+      warnings,
+    );
 
     // Check for orphaned data
     this.checkOrphanedData(queries, errors, warnings);
@@ -79,20 +97,20 @@ export class ConsistencyChecker {
     worldEntities: any[],
     indexedEntities: number[],
     errors: string[],
-    warnings: string[]
+    warnings: string[],
   ): void {
-    const worldSet = new Set(worldEntities.map(e => e.id));
+    const worldSet = new Set(worldEntities.map((e) => e.id));
     const indexSet = new Set(indexedEntities);
 
     // Entities in world but not in index
-    worldSet.forEach(entityId => {
+    worldSet.forEach((entityId) => {
       if (!indexSet.has(entityId)) {
         errors.push(`Entity ${entityId} exists in world but not in EntityIndex`);
       }
     });
 
     // Entities in index but not in world
-    indexSet.forEach(entityId => {
+    indexSet.forEach((entityId) => {
       if (!worldSet.has(entityId)) {
         errors.push(`Entity ${entityId} exists in EntityIndex but not in world`);
       }
@@ -107,15 +125,17 @@ export class ConsistencyChecker {
     worldEntities: any[],
     queries: EntityQueries,
     errors: string[],
-    warnings: string[]
+    _warnings: string[],
   ): number {
     let relationshipCount = 0;
 
-    worldEntities.forEach(entity => {
+    worldEntities.forEach((entity) => {
       // Check parent consistency
       const indexedParent = queries.getParent(entity.id);
       if (indexedParent !== entity.parentId) {
-        errors.push(`Entity ${entity.id} parent mismatch: world=${entity.parentId}, index=${indexedParent}`);
+        errors.push(
+          `Entity ${entity.id} parent mismatch: world=${entity.parentId}, index=${indexedParent}`,
+        );
       }
 
       // Check children consistency
@@ -123,16 +143,18 @@ export class ConsistencyChecker {
       const worldChildren = new Set(entity.children);
 
       if (indexedChildren.size !== worldChildren.size) {
-        errors.push(`Entity ${entity.id} children count mismatch: world=${worldChildren.size}, index=${indexedChildren.size}`);
+        errors.push(
+          `Entity ${entity.id} children count mismatch: world=${worldChildren.size}, index=${indexedChildren.size}`,
+        );
       }
 
-      worldChildren.forEach(childId => {
+      worldChildren.forEach((childId) => {
         if (!indexedChildren.has(childId)) {
           errors.push(`Entity ${entity.id} missing child ${childId} in HierarchyIndex`);
         }
       });
 
-      indexedChildren.forEach(childId => {
+      indexedChildren.forEach((childId) => {
         if (!worldChildren.has(childId)) {
           errors.push(`Entity ${entity.id} has extra child ${childId} in HierarchyIndex`);
         }
@@ -150,11 +172,11 @@ export class ConsistencyChecker {
     componentManager: ComponentManager,
     queries: EntityQueries,
     errors: string[],
-    warnings: string[]
+    _warnings: string[],
   ): number {
     let totalComponents = 0;
 
-    componentTypes.forEach(componentType => {
+    componentTypes.forEach((componentType) => {
       const worldEntities = componentManager.getEntitiesWithComponent(componentType);
       const indexedEntities = queries.listEntitiesWithComponent(componentType);
 
@@ -164,16 +186,20 @@ export class ConsistencyChecker {
       totalComponents += worldEntities.length;
 
       // Check for missing entities in index
-      worldSet.forEach(entityId => {
+      worldSet.forEach((entityId) => {
         if (!indexedSet.has(entityId)) {
-          errors.push(`Entity ${entityId} has component ${componentType} in world but not in ComponentIndex`);
+          errors.push(
+            `Entity ${entityId} has component ${componentType} in world but not in ComponentIndex`,
+          );
         }
       });
 
       // Check for extra entities in index
-      indexedSet.forEach(entityId => {
+      indexedSet.forEach((entityId) => {
         if (!worldSet.has(entityId)) {
-          errors.push(`Entity ${entityId} has component ${componentType} in ComponentIndex but not in world`);
+          errors.push(
+            `Entity ${entityId} has component ${componentType} in ComponentIndex but not in world`,
+          );
         }
       });
     });
@@ -184,12 +210,12 @@ export class ConsistencyChecker {
   private static checkOrphanedData(
     queries: EntityQueries,
     errors: string[],
-    warnings: string[]
+    warnings: string[],
   ): void {
     // Check for circular dependencies in hierarchy
     const allEntities = queries.listAllEntities();
 
-    allEntities.forEach(entityId => {
+    allEntities.forEach((entityId) => {
       const visited = new Set<number>();
       let current: number | undefined = entityId;
 
@@ -206,7 +232,7 @@ export class ConsistencyChecker {
 
     // Check for component types with no entities
     const componentTypes = queries.getComponentTypes();
-    componentTypes.forEach(componentType => {
+    componentTypes.forEach((componentType) => {
       const count = queries.getComponentCount(componentType);
       if (count === 0) {
         warnings.push(`Component type ${componentType} has no entities`);
@@ -234,14 +260,14 @@ export class ConsistencyChecker {
     // Log errors
     if (report.errors.length > 0) {
       console.group('🚨 Errors:');
-      report.errors.forEach(error => console.error(`  ${error}`));
+      report.errors.forEach((error) => console.error(`  ${error}`));
       console.groupEnd();
     }
 
     // Log warnings
     if (report.warnings.length > 0) {
       console.group('⚠️ Warnings:');
-      report.warnings.forEach(warning => console.warn(`  ${warning}`));
+      report.warnings.forEach((warning) => console.warn(`  ${warning}`));
       console.groupEnd();
     }
 

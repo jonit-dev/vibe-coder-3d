@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     this.state = { hasError: false, errorInfo: null };
   }
 
-  static getDerivedStateFromError(__error: Error): Partial<IErrorBoundaryState> {
+  static getDerivedStateFromError(_: Error): Partial<IErrorBoundaryState> {
     return { hasError: true };
   }
 

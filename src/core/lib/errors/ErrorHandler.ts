@@ -49,7 +49,7 @@ export class ErrorHandler implements IErrorHandler {
 
     // Add error code if available
     if (error instanceof Error && 'code' in error) {
-      errorInfo.code = (error as any).code;
+      errorInfo.code = (error as Error & { code: string }).code;
     }
 
     // Add stack trace for Error objects
@@ -155,7 +155,7 @@ export const errorHandler = new ErrorHandler();
 export function handleError(
   error: unknown,
   context: string,
-  severity: IErrorInfo['severity'] = 'medium'
+  severity: IErrorInfo['severity'] = 'medium',
 ): IErrorInfo {
   return errorHandler.handle(error, context, severity);
 }
@@ -166,7 +166,7 @@ export function handleError(
 export async function handleAsyncError<T>(
   fn: () => Promise<T>,
   context: string,
-  severity: IErrorInfo['severity'] = 'medium'
+  severity: IErrorInfo['severity'] = 'medium',
 ): Promise<T | null> {
   try {
     return await fn();
@@ -182,7 +182,7 @@ export async function handleAsyncError<T>(
 export function handleSyncError<T>(
   fn: () => T,
   context: string,
-  severity: IErrorInfo['severity'] = 'medium'
+  severity: IErrorInfo['severity'] = 'medium',
 ): T | null {
   try {
     return fn();
