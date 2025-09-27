@@ -14,7 +14,7 @@ export class ECSWorld {
   private static instance: ECSWorld;
   private world: IWorld;
 
-  private constructor() {
+  constructor() {
     this.world = createWorld();
     this.world.time = { delta: 0, elapsed: 0, then: performance.now() };
   }

@@ -599,13 +599,6 @@ export class ComponentRegistry {
     console.warn('clearComponents not fully implemented - use EntityManager.clearEntities()');
   }
 
-  /**
-   * Refresh world reference after world reset
-   */
-  refreshWorld(): void {
-    this.world = ECSWorld.getInstance().getWorld();
-    console.debug('[ComponentRegistry] Refreshed world reference');
-  }
 }
 
 // Export singleton instance

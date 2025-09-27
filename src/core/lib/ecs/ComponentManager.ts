@@ -46,14 +46,18 @@ export class ComponentManager {
   private static instance: ComponentManager;
   private eventListeners: ComponentEventListener[] = [];
   private queries: EntityQueries;
+  private world: any; // BitECS world
 
-  private get world() {
-    return ECSWorld.getInstance().getWorld();
-  }
-
-  private constructor() {
-    // Private constructor for singleton
-    this.queries = EntityQueries.getInstance();
+  constructor(world?: any, entityQueries?: EntityQueries) {
+    if (world) {
+      // Instance mode with injected world
+      this.world = world;
+      this.queries = entityQueries || new EntityQueries(world);
+    } else {
+      // Singleton mode (backward compatibility)
+      this.world = ECSWorld.getInstance().getWorld();
+      this.queries = EntityQueries.getInstance();
+    }
   }
 
   public static getInstance(): ComponentManager {

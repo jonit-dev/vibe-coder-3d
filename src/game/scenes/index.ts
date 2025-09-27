@@ -4,8 +4,7 @@
  */
 
 // Export scene files for dynamic import
-export { default as Anna } from './Anna';
-export { default as CollisionEXAMPLE } from './CollisionEXAMPLE';
+export { default as Newone } from './Newone';
 
 // Register all game scenes function
 export function registerAllScenes(): void {

@@ -312,11 +312,21 @@ let globalQueryInstance: ReturnType<typeof useEntityQueries.getState> | null = n
 
 export class EntityQueries {
   private static instance: EntityQueries;
+  private queryStore: ReturnType<typeof useEntityQueries.getState>;
 
-  private constructor() {
-    if (!globalQueryInstance) {
-      globalQueryInstance = useEntityQueries.getState();
-      globalQueryInstance.initialize();
+  constructor(world?: any) {
+    if (world) {
+      // Instance mode with injected world - create new store
+      this.queryStore = useEntityQueries.getState();
+      // TODO: Initialize with specific world when store supports it
+      this.queryStore.initialize();
+    } else {
+      // Singleton mode (backward compatibility)
+      if (!globalQueryInstance) {
+        globalQueryInstance = useEntityQueries.getState();
+        globalQueryInstance.initialize();
+      }
+      this.queryStore = globalQueryInstance;
     }
   }
 
@@ -329,143 +339,144 @@ export class EntityQueries {
 
   // Delegate methods to store
   listAllEntities(): number[] {
-    if (!globalQueryInstance) {
+    if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
-    return globalQueryInstance.listAllEntities();
+    return this.queryStore.listAllEntities();
   }
 
   listEntitiesWithComponent(componentType: string): number[] {
-    if (!globalQueryInstance) {
+    if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
-    return globalQueryInstance.listEntitiesWithComponent(componentType);
+    return this.queryStore.listEntitiesWithComponent(componentType);
   }
 
   listEntitiesWithComponents(componentTypes: string[]): number[] {
-    if (!globalQueryInstance) {
+    if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
-    return globalQueryInstance.listEntitiesWithComponents(componentTypes);
+    return this.queryStore.listEntitiesWithComponents(componentTypes);
   }
 
   listEntitiesWithAnyComponent(componentTypes: string[]): number[] {
-    if (!globalQueryInstance) {
+    if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
-    return globalQueryInstance.listEntitiesWithAnyComponent(componentTypes);
+    return this.queryStore.listEntitiesWithAnyComponent(componentTypes);
   }
 
   getRootEntities(): number[] {
-    if (!globalQueryInstance) {
+    if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
-    return globalQueryInstance.getRootEntities();
+    return this.queryStore.getRootEntities();
   }
 
   getDescendants(entityId: number): number[] {
-    if (!globalQueryInstance) {
+    if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
-    return globalQueryInstance.getDescendants(entityId);
+    return this.queryStore.getDescendants(entityId);
   }
 
   getAncestors(entityId: number): number[] {
-    if (!globalQueryInstance) return [];
-    return globalQueryInstance.getAncestors(entityId);
+    if (!this.queryStore) return [];
+    return this.queryStore.getAncestors(entityId);
   }
 
   getParent(entityId: number): number | undefined {
-    if (!globalQueryInstance) return undefined;
-    return globalQueryInstance.getParent(entityId);
+    if (!this.queryStore) return undefined;
+    return this.queryStore.getParent(entityId);
   }
 
   getChildren(entityId: number): number[] {
-    if (!globalQueryInstance) return [];
-    return globalQueryInstance.getChildren(entityId);
+    if (!this.queryStore) return [];
+    return this.queryStore.getChildren(entityId);
   }
 
   hasChildren(entityId: number): boolean {
-    if (!globalQueryInstance) return false;
-    return globalQueryInstance.hasChildren(entityId);
+    if (!this.queryStore) return false;
+    return this.queryStore.hasChildren(entityId);
   }
 
   getDepth(entityId: number): number {
-    if (!globalQueryInstance) return 0;
-    return globalQueryInstance.getDepth(entityId);
+    if (!this.queryStore) return 0;
+    return this.queryStore.getDepth(entityId);
   }
 
   hasComponent(entityId: number, componentType: string): boolean {
-    if (!globalQueryInstance) return false;
-    return globalQueryInstance.hasComponent(entityId, componentType);
+    if (!this.queryStore) return false;
+    return this.queryStore.hasComponent(entityId, componentType);
   }
 
   getComponentTypes(): string[] {
-    if (!globalQueryInstance) return [];
-    return globalQueryInstance.getComponentTypes();
+    if (!this.queryStore) return [];
+    return this.queryStore.getComponentTypes();
   }
 
   getComponentCount(componentType: string): number {
-    if (!globalQueryInstance) return 0;
-    return globalQueryInstance.getComponentCount(componentType);
+    if (!this.queryStore) return 0;
+    return this.queryStore.getComponentCount(componentType);
   }
 
   rebuildIndices(): void {
-    if (!globalQueryInstance) return;
-    globalQueryInstance.rebuildIndices();
+    if (!this.queryStore) return;
+    this.queryStore.rebuildIndices();
   }
 
   validateIndices(): string[] {
-    if (!globalQueryInstance) return [];
-    return globalQueryInstance.validateIndices();
+    if (!this.queryStore) return [];
+    return this.queryStore.validateIndices();
   }
 
   async checkConsistency(): Promise<IConsistencyReport> {
-    if (!globalQueryInstance) {
+    if (!this.queryStore) {
       return { isConsistent: false, errors: ['EntityQueries not initialized'], warnings: [], stats: { entitiesInWorld: 0, entitiesInIndex: 0, componentTypes: 0, totalComponents: 0, hierarchyRelationships: 0 } };
     }
-    return await globalQueryInstance.checkConsistency();
+    return await this.queryStore.checkConsistency();
   }
 
   async assertConsistency(): Promise<void> {
-    if (!globalQueryInstance) return;
-    await globalQueryInstance.assertConsistency();
+    if (!this.queryStore) return;
+    await this.queryStore.assertConsistency();
   }
 
   async startPeriodicChecks(intervalMs?: number): Promise<() => void> {
-    if (!globalQueryInstance) return () => {};
-    return await globalQueryInstance.startPeriodicChecks(intervalMs);
+    if (!this.queryStore) return () => {};
+    return await this.queryStore.startPeriodicChecks(intervalMs);
   }
 
   destroy(): void {
-    if (!globalQueryInstance) return;
-    globalQueryInstance.destroy();
+    if (!this.queryStore) return;
+    this.queryStore.destroy();
     globalQueryInstance = null;
   }
 
   reset(): void {
-    if (globalQueryInstance) {
-      globalQueryInstance.destroy();
+    if (this.queryStore) {
+      this.queryStore.destroy();
     }
     globalQueryInstance = useEntityQueries.getState();
     globalQueryInstance.initialize();
+    this.queryStore = globalQueryInstance;
   }
 
   // Debug method to dump current state
   debugState(): void {
-    if (!globalQueryInstance) {
+    if (!this.queryStore) {
       console.log('[EntityQueries] Not initialized');
       return;
     }
 
-    const entities = globalQueryInstance.listAllEntities();
-    const roots = globalQueryInstance.getRootEntities();
+    const entities = this.queryStore.listAllEntities();
+    const roots = this.queryStore.getRootEntities();
 
     console.log('=== EntityQueries Debug State ===');
     console.log('Total entities:', entities.length);
@@ -476,18 +487,18 @@ export class EntityQueries {
     // Show hierarchy relationships
     console.log('\nHierarchy relationships:');
     entities.forEach(id => {
-      const parent = globalQueryInstance.getParent(id);
-      const children = globalQueryInstance.getChildren(id);
+      const parent = this.queryStore.getParent(id);
+      const children = this.queryStore.getChildren(id);
       if (parent !== undefined || children.length > 0) {
         console.log(`  Entity ${id}: parent=${parent}, children=[${children.join(', ')}]`);
       }
     });
 
     // Show components
-    const componentTypes = globalQueryInstance.getComponentTypes();
+    const componentTypes = this.queryStore.getComponentTypes();
     console.log('\nComponent types:', componentTypes.length);
     componentTypes.forEach(type => {
-      const count = globalQueryInstance.getComponentCount(type);
+      const count = this.queryStore.getComponentCount(type);
       console.log(`  ${type}: ${count} entities`);
     });
 

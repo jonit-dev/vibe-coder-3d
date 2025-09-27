@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
+import { EngineProvider } from '@core/context';
 import { initializeECS } from '@/core/lib/ecs/init';
 import Editor from '@/editor/Editor';
 import { GlobalAssetLoaderModal } from '@/editor/components/shared/GlobalAssetLoaderModal';
@@ -30,12 +31,14 @@ export default function App() {
   }, []);
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Editor />} />
-      </Routes>
-      {/* Global modals */}
-      <GlobalAssetLoaderModal />
-    </Router>
+    <EngineProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Editor />} />
+        </Routes>
+        {/* Global modals */}
+        <GlobalAssetLoaderModal />
+      </Router>
+    </EngineProvider>
   );
 }

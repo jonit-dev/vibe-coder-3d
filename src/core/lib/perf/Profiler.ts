@@ -232,10 +232,8 @@ export { ProfilerImpl as ProfilerClass };
 // Global profiler instance
 export const Profiler = new ProfilerImpl();
 
-// Enable console reporting in development mode
-if (process.env.NODE_ENV === 'development') {
-  Profiler.enableConsoleReporting();
-}
+// Console reporting disabled by default
+// Uncomment to enable: Profiler.enableConsoleReporting();
 
 // Convenience functions for global usage
 export function time<T>(name: string, fn: () => T): T {

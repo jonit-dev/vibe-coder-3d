@@ -26,12 +26,18 @@ export class EntityManager {
   private entityCache: Map<EntityId, IEntity> = new Map();
   private existingPersistentIds: Set<string> = new Set();
   private queries: EntityQueries;
+  private world: any; // BitECS world
 
-  private world = ECSWorld.getInstance().getWorld();
-
-  private constructor() {
-    // Private constructor for singleton
-    this.queries = EntityQueries.getInstance();
+  constructor(world?: any) {
+    if (world) {
+      // Instance mode with injected world
+      this.world = world;
+      this.queries = new EntityQueries(world);
+    } else {
+      // Singleton mode (backward compatibility)
+      this.world = ECSWorld.getInstance().getWorld();
+      this.queries = EntityQueries.getInstance();
+    }
   }
 
   public static getInstance(): EntityManager {
@@ -371,7 +377,10 @@ export class EntityManager {
    * Refresh world reference after world reset
    */
   refreshWorld(): void {
-    this.world = ECSWorld.getInstance().getWorld();
+    // Only update world reference for singleton instances
+    if (!this.world || this.world === ECSWorld.getInstance().getWorld()) {
+      this.world = ECSWorld.getInstance().getWorld();
+    }
     this.entityCache.clear();
     this.rebuildPersistentIdCache();
 

@@ -57,19 +57,7 @@ export class Container {
    * Resolve a service from the container
    */
   resolve<T>(token: string | Constructor<T>): T {
-    const service = this.services.get(token);
-    if (!service) {
-      throw new Error(`Service not registered: ${String(token)}`);
-    }
-
-    if (service.singleton) {
-      if (!service.instance) {
-        service.instance = service.factory();
-      }
-      return service.instance;
-    }
-
-    return service.factory();
+    return this.resolveWithFallback(token);
   }
 
   /**
@@ -88,14 +76,37 @@ export class Container {
 
   /**
    * Create a child container that inherits from this one
+   * Child containers can override parent services for scoped instances
    */
   createChild(): Container {
     const child = new Container();
-    // Copy parent services to child
-    for (const [token, service] of this.services) {
-      child.services.set(token, { ...service });
-    }
+    child.parent = this;
     return child;
+  }
+
+  private parent?: Container;
+
+  /**
+   * Resolve from this container or walk up the parent chain
+   */
+  private resolveWithFallback<T>(token: string | Constructor<T>): T {
+    const service = this.services.get(token);
+    if (service) {
+      if (service.singleton) {
+        if (!service.instance) {
+          service.instance = service.factory();
+        }
+        return service.instance;
+      }
+      return service.factory();
+    }
+
+    // If not found in this container, try parent
+    if (this.parent) {
+      return this.parent.resolveWithFallback(token);
+    }
+
+    throw new Error(`Service not registered: ${String(token)}`);
   }
 }
 
