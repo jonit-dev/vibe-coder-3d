@@ -2,21 +2,21 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { KnownComponentTypes } from '@core';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type {
   ComponentDataMap,
   SceneEntityData,
   SceneMetadata,
-} from '@core';
-import { validateSceneEntity } from '@core';
+} from '@/core/types/scene';
+import { validateSceneEntity } from '@/core/types/scene';
 
 /**
  * Type-safe scene data interface
  */
 interface ITypedSceneEntity {
-  id: string | number; // Support both string and numeric IDs
+  id: string;
   name: string;
-  parentId?: string | number | null; // Support both formats for parent references
+  parentId?: string | null;
   components: {
     [K in KnownComponentTypes]?: ComponentDataMap[K];
   } & {
@@ -27,13 +27,13 @@ interface ITypedSceneEntity {
 /**
  * Type-safe scene definition
  */
-const entities: ITypedSceneEntity[] = [
+const sceneData: ITypedSceneEntity[] = [
   {
     "id": 0,
     "name": "Main Camera",
     "components": {
       "PersistentId": {
-        "id": "mg15zshk-grclamgya"
+        "id": "mg2pkfa1-fopalq1mc"
       },
       "Transform": {
         "position": [
@@ -97,7 +97,7 @@ const entities: ITypedSceneEntity[] = [
     "name": "Directional Light",
     "components": {
       "PersistentId": {
-        "id": "mg15zsi5-2j4kfmqp7"
+        "id": "mg2pkfb1-vca6ycncp"
       },
       "Transform": {
         "position": [
@@ -144,7 +144,7 @@ const entities: ITypedSceneEntity[] = [
     "name": "Ambient Light",
     "components": {
       "PersistentId": {
-        "id": "mg15zsid-xq32yzqww"
+        "id": "mg2pkfbk-srw2374ro"
       },
       "Transform": {
         "position": [
@@ -185,6 +185,148 @@ const entities: ITypedSceneEntity[] = [
         "shadowRadius": 1
       }
     }
+  },
+  {
+    "id": 3,
+    "name": "Cube 0",
+    "parentId": 5,
+    "components": {
+      "PersistentId": {
+        "id": "mg2pklar-etvc73w83"
+      },
+      "Transform": {
+        "position": [
+          0,
+          1.75,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "MeshRenderer": {
+        "meshId": "cube",
+        "materialId": "default",
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": "",
+        "material": {
+          "shader": "standard",
+          "materialType": "solid",
+          "color": "#85cc00",
+          "normalScale": 1,
+          "metalness": 0,
+          "roughness": 0.5,
+          "emissive": "#000000",
+          "emissiveIntensity": 0,
+          "occlusionStrength": 1,
+          "textureOffsetX": 0,
+          "textureOffsetY": 0
+        }
+      }
+    }
+  },
+  {
+    "id": 4,
+    "name": "Plane 0",
+    "components": {
+      "PersistentId": {
+        "id": "mg2pl0fx-t4tkx2jdh"
+      },
+      "Transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          -90,
+          0,
+          0
+        ],
+        "scale": [
+          10,
+          10,
+          1
+        ]
+      },
+      "MeshRenderer": {
+        "meshId": "plane",
+        "materialId": "default",
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": "",
+        "material": {
+          "shader": "standard",
+          "materialType": "solid",
+          "color": "#3399ff",
+          "normalScale": 1,
+          "metalness": 0,
+          "roughness": 0.5,
+          "emissive": "#000000",
+          "emissiveIntensity": 0,
+          "occlusionStrength": 1,
+          "textureOffsetX": 0,
+          "textureOffsetY": 0
+        }
+      }
+    }
+  },
+  {
+    "id": 5,
+    "name": "Cube 1",
+    "components": {
+      "PersistentId": {
+        "id": "mg2plc0m-vbkuaaarv"
+      },
+      "Transform": {
+        "position": [
+          2.5,
+          1.25,
+          -0.75
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "MeshRenderer": {
+        "meshId": "cube",
+        "materialId": "default",
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": "",
+        "material": {
+          "shader": "standard",
+          "materialType": "solid",
+          "color": "#dc0909",
+          "normalScale": 1,
+          "metalness": 0,
+          "roughness": 0.5,
+          "emissive": "#000000",
+          "emissiveIntensity": 0,
+          "occlusionStrength": 1,
+          "textureOffsetX": 0,
+          "textureOffsetY": 0
+        }
+      }
+    }
   }
 ];
 
@@ -192,34 +334,30 @@ const entities: ITypedSceneEntity[] = [
  * Scene metadata
  */
 export const metadata: SceneMetadata = {
-  "name": "piriri",
+  "name": "new-one",
   "version": 1,
-  "timestamp": "2025-09-26T18:18:40.867Z"
+  "timestamp": "2025-09-27T20:15:26.277Z"
 };
 
 /**
- * piriri
- * Generated: 2025-09-26T18:18:40.867Z
+ * new-one
+ * Generated: 2025-09-27T20:15:26.277Z
  * Version: 1
  */
-export const Piriri: React.FC = () => {
+export const Newone: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
 
   useEffect(() => {
     // Validate scene data at runtime
-    const validatedSceneData = entities.map(entity => validateSceneEntity(entity));
+    const validatedSceneData = sceneData.map(entity => validateSceneEntity(entity));
 
     // Clear existing entities
     entityManager.clearEntities();
 
     // Create entities and components with type safety
     validatedSceneData.forEach((entityData: ITypedSceneEntity) => {
-      // Convert parentId to number if it's a string, EntityManager expects numeric IDs
-      const parentId = entityData.parentId ?
-        (typeof entityData.parentId === 'string' ? parseInt(entityData.parentId, 10) : entityData.parentId) :
-        undefined;
-      const entity = entityManager.createEntity(entityData.name, parentId);
+      const entity = entityManager.createEntity(entityData.name, entityData.parentId || null);
 
       // Type-safe component addition
       Object.entries(entityData.components).forEach(([componentType, componentData]) => {
@@ -236,4 +374,4 @@ export const Piriri: React.FC = () => {
   return null; // Scene components don't render UI
 };
 
-export default Piriri;
+export default Newone;
