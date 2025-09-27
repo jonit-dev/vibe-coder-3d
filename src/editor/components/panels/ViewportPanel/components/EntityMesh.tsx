@@ -5,6 +5,8 @@ import { ThreeEvent, useFrame } from '@react-three/fiber';
 import React, { Suspense, useCallback, useMemo } from 'react';
 import type { Group, Mesh, Object3D } from 'three';
 
+import { Logger } from '@/core/lib/logger';
+import type { IRenderingContributions } from '@/core/types/entities';
 import { CameraEntity } from './CameraEntity';
 import { useEntityRegistration } from './hooks/useEntityRegistration';
 import { useTextureLoading } from './hooks/useTextureLoading';
@@ -12,8 +14,6 @@ import { LightEntity } from './LightEntity';
 import { MaterialRenderer } from './MaterialRenderer';
 import type { IEntityMeshProps } from './types';
 import { isMeshRendererData } from './utils';
-import { Logger } from '@/core/lib/logger';
-import type { IRenderingContributions } from '@/core/types/entities';
 
 // Custom Model Mesh Component - FIXED VERSION
 const CustomModelMesh: React.FC<{

@@ -50,6 +50,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
           >
             <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
             <meshStandardMaterial
+              key={`${entityId}-${isTextureMode ? 'textured' : 'solid'}-${JSON.stringify(material)}`}
               color={isTextureMode ? '#ffffff' : (material.color ?? entityColor)}
               map={textures.albedoTexture as Texture | undefined}
               metalness={material.metalness ?? 0}
@@ -84,6 +85,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
           >
             <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
             <meshStandardMaterial
+              key={`${entityId}-solid-${JSON.stringify(material)}`}
               color={material.color ?? entityColor}
               metalness={material.metalness ?? 0}
               roughness={material.roughness ?? 0.5}
@@ -107,6 +109,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
         >
           <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
           <meshBasicMaterial
+            key={`${entityId}-unlit-${isTextureMode ? 'textured' : 'solid'}-${JSON.stringify(material)}`}
             color={material.color ?? entityColor}
             map={isTextureMode ? (textures.albedoTexture as Texture | undefined) : undefined}
           />
