@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+// Import ECS components for world serialization
+import type { EntityManager } from '../ecs/EntityManager';
+import type { ComponentRegistry } from '../ecs/ComponentRegistry';
+
 // Enhanced schema for scene serialization
 export const SceneSchema = z.object({
   version: z.number(),
@@ -203,16 +207,83 @@ export const importScene = async (
 
 /**
  * Serializes current world state to scene data
+ * Can work with injected instances or fall back to singletons for backward compatibility
  */
-export function serializeWorld(): ISerializedScene {
-  // This is a placeholder implementation
-  // In a real implementation, this would serialize the current ECS world state
-  return {
-    version: 1,
-    name: 'Current World',
-    timestamp: new Date().toISOString(),
-    entities: [],
-  };
+export function serializeWorld(
+  entityManager?: EntityManager,
+  componentRegistry?: ComponentRegistry
+): ISerializedScene {
+  try {
+    // Use injected instances or fall back to singletons
+    let manager: EntityManager;
+    let registry: ComponentRegistry;
+
+    if (entityManager && componentRegistry) {
+      manager = entityManager;
+      registry = componentRegistry;
+    } else {
+      // Dynamic imports to avoid circular dependencies
+      const { EntityManager } = require('../ecs/EntityManager');
+      const { componentRegistry: defaultRegistry } = require('../ecs/ComponentRegistry');
+
+      manager = EntityManager.getInstance();
+      registry = defaultRegistry;
+    }
+
+    const allEntities = manager.getAllEntities();
+
+    console.log(`[SceneSerializer] Serializing world with ${allEntities.length} entities`);
+
+    // Convert entities to serializable format
+    const getComponentsForEntity = (entityId: string | number) => {
+      const components: Array<{ type: string; data: unknown }> = [];
+
+      try {
+        // Get component types for this specific entity
+        const componentTypes = registry.getEntityComponents(entityId);
+
+        for (const componentType of componentTypes) {
+          const componentData = registry.getComponentData(entityId, componentType);
+          if (componentData) {
+            components.push({
+              type: componentType,
+              data: componentData
+            });
+          }
+        }
+      } catch (error) {
+        console.warn(`[SceneSerializer] Failed to get components for entity ${entityId}:`, error);
+      }
+
+      return components;
+    };
+
+    // Use the existing exportScene function with the entity data
+    return exportScene(
+      allEntities.map(entity => ({
+        id: entity.id,
+        name: entity.name,
+        parentId: entity.parentId
+      })),
+      getComponentsForEntity,
+      {
+        name: 'Current World',
+        version: 4,
+        timestamp: new Date().toISOString()
+      }
+    );
+
+  } catch (error) {
+    console.error('[SceneSerializer] Failed to serialize world:', error);
+
+    // Return minimal valid scene on error
+    return {
+      version: 4,
+      name: 'Current World (Error)',
+      timestamp: new Date().toISOString(),
+      entities: [],
+    };
+  }
 }
 
 /**

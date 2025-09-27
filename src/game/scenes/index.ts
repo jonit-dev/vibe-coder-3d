@@ -4,7 +4,7 @@
  */
 
 // Export scene files for dynamic import
-export { default as Newone } from './Newone';
+// Add scene exports here as needed
 
 // Register all game scenes function
 export function registerAllScenes(): void {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from 'zod';
 import { create } from 'zustand';
 import { EntityIndex } from '../indexers/EntityIndex';
@@ -212,7 +213,6 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
     },
 
     getDepth: (entityId: number) => {
-      const state = get();
       return get().getAncestors(entityId).length;
     },
 

@@ -2,6 +2,7 @@
  * Scalable Component Registry System
  * Provides a unified way to register and manage ECS components with minimal boilerplate
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { addComponent, defineComponent, hasComponent, removeComponent, Component } from 'bitecs';
 import { z } from 'zod';

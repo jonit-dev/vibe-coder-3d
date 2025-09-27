@@ -2,6 +2,7 @@
  * Persistent ID Component Definition
  * Provides stable entity identity across save/load cycles
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Types } from 'bitecs';
 import { z } from 'zod';
