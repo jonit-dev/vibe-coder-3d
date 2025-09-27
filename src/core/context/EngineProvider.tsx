@@ -62,7 +62,7 @@ export const EngineProvider: React.FC<IEngineProviderProps> = React.memo(
       return () => {
         clearCurrentInstances();
       };
-    }, [context]);
+    }, [context.worldStore, context.entityManagerStore, context.componentManagerStore]);
 
     return <EngineContext.Provider value={context}>{children}</EngineContext.Provider>;
   },
@@ -81,17 +81,17 @@ export const useEngineContext = (): IEngineContext => {
 // Individual hooks for each store
 export const useECSWorld = () => {
   const { worldStore } = useEngineContext();
-  return worldStore();
+  return worldStore((state) => ({ world: state.world }));
 };
 
 export const useEntityManager = () => {
   const { entityManagerStore } = useEngineContext();
-  return entityManagerStore();
+  return entityManagerStore((state) => ({ entityManager: state.entityManager }));
 };
 
 export const useComponentManager = () => {
   const { componentManagerStore } = useEngineContext();
-  return componentManagerStore();
+  return componentManagerStore((state) => ({ componentManager: state.componentManager }));
 };
 
 export const useEngineContainer = () => {

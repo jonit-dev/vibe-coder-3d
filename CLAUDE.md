@@ -28,3 +28,9 @@
 - Error handling MUST be consistent with try-catch patterns
 - React components MUST use React.memo for expensive renders
 - useEffect dependencies MUST be minimal and specific
+
+**Documentation**
+
+- When discovering important patterns, architectural decisions, or learnings during development, document them in nested folder CLAUDE.md files
+- Update existing nested CLAUDE.md files when new insights are gained about that area of the codebase
+- Keep documentation focused on implementation details, gotchas, and architectural decisions specific to that folder/module

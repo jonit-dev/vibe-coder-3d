@@ -146,6 +146,10 @@ export class ComponentRegistry {
     return ECSWorld.getInstance().getWorld();
   }
 
+  public getWorld() {
+    return this.world;
+  }
+
   private constructor() {}
 
   static getInstance(): ComponentRegistry {
@@ -199,7 +203,7 @@ export class ComponentRegistry {
   /**
    * Add component to entity
    */
-  addComponent<TData>(entityId: EntityId, componentId: string, data: TData): boolean {
+  addComponent<TData>(entityId: EntityId, componentId: string, data: TData, world?: any): boolean {
     const descriptor = this.get<TData>(componentId);
     if (!descriptor) {
       console.error(`Component ${componentId} not found`);
@@ -212,8 +216,11 @@ export class ComponentRegistry {
       return false;
     }
 
+    // Use provided world or default to singleton world
+    const targetWorld = world || this.world;
+
     // Check if entity already has this component
-    if (hasComponent(this.world, bitECSComponent, entityId)) {
+    if (hasComponent(targetWorld, bitECSComponent, entityId)) {
       console.warn(`Entity ${entityId} already has component ${componentId}`);
       return false;
     }
@@ -259,7 +266,7 @@ export class ComponentRegistry {
       descriptor.schema.parse(data);
 
       // Add BitECS component
-      addComponent(this.world, bitECSComponent, entityId);
+      addComponent(targetWorld, bitECSComponent, entityId);
 
       // Set data
       descriptor.deserialize(entityId, data);
@@ -598,7 +605,6 @@ export class ComponentRegistry {
   clearComponents(): void {
     console.warn('clearComponents not fully implemented - use EntityManager.clearEntities()');
   }
-
 }
 
 // Export singleton instance

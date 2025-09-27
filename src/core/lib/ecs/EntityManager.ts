@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { addComponent, addEntity, hasComponent, removeEntity } from 'bitecs';
 
 import { EntityMeta } from './BitECSComponents';
-import { componentRegistry } from './ComponentRegistry';
+import { componentRegistry, ComponentRegistry } from './ComponentRegistry';
 import {
   generatePersistentId,
   PersistentIdSchema,
+  clearPersistentIdMaps,
 } from './components/definitions/PersistentIdComponent';
 import { getEntityName, getEntityParent, setEntityMeta } from './DataConversion';
 import { IEntity } from './IEntity';
@@ -26,17 +28,20 @@ export class EntityManager {
   private entityCache: Map<EntityId, IEntity> = new Map();
   private existingPersistentIds: Set<string> = new Set();
   private queries: EntityQueries;
-  private world: any; // BitECS world
+  private world: any; // BitECS world - using any for compatibility with bitecs
+  private componentRegistry: ComponentRegistry;
 
-  constructor(world?: any) {
+  constructor(world?: any, componentManager?: ComponentRegistry) {
     if (world) {
-      // Instance mode with injected world
+      // Instance mode with injected world and optional component manager
       this.world = world;
       this.queries = new EntityQueries(world);
+      this.componentRegistry = componentManager || componentRegistry;
     } else {
       // Singleton mode (backward compatibility)
       this.world = ECSWorld.getInstance().getWorld();
       this.queries = EntityQueries.getInstance();
+      this.componentRegistry = componentRegistry;
     }
   }
 
@@ -52,8 +57,33 @@ export class EntityManager {
     this.existingPersistentIds.clear();
     this.eventListeners = [];
 
+    // Clear persistent ID mappings
+    clearPersistentIdMaps();
+
+    // Refresh world reference in case ECSWorld singleton was reset
+    this.refreshWorld();
+
     // Reset EntityQueries to rebuild indices with new world state
     this.queries.reset();
+  }
+
+  /**
+   * Refresh world reference from singleton (used after ECSWorld reset)
+   */
+  public refreshWorld(): void {
+    // Always refresh for singleton instances (instance was created without injected world)
+    // We can't reliably check if this.world === ECSWorld.getInstance().getWorld()
+    // because the world may have been reset, so we check if we're a singleton instance
+    const currentSingletonWorld = ECSWorld.getInstance().getWorld();
+
+    // Force refresh the world reference to current singleton world
+    this.world = currentSingletonWorld;
+    // Also update queries with new world
+    this.queries = EntityQueries.getInstance();
+
+    // Clear cache and rebuild persistent ID tracking
+    this.entityCache.clear();
+    this.rebuildPersistentIdCache();
   }
 
   // Event system for reactive updates
@@ -134,7 +164,7 @@ export class EntityManager {
     }
 
     // Add the persistent ID component
-    componentRegistry.addComponent(eid, 'PersistentId', { id: finalPersistentId });
+    this.componentRegistry.addComponent(eid, 'PersistentId', { id: finalPersistentId }, this.world);
 
     // Track the persistent ID to prevent duplicates
     this.existingPersistentIds.add(finalPersistentId);
@@ -371,23 +401,6 @@ export class EntityManager {
     this.emitEvent({
       type: 'entities-cleared',
     });
-  }
-
-  /**
-   * Refresh world reference after world reset
-   */
-  refreshWorld(): void {
-    // Only update world reference for singleton instances
-    if (!this.world || this.world === ECSWorld.getInstance().getWorld()) {
-      this.world = ECSWorld.getInstance().getWorld();
-    }
-    this.entityCache.clear();
-    this.rebuildPersistentIdCache();
-
-    // Reset EntityQueries to rebuild indices with new world state
-    this.queries.reset();
-
-    console.debug('[EntityManager] Refreshed world reference and rebuilt persistent ID cache');
   }
 
   getChildren(id: EntityId): IEntity[] {

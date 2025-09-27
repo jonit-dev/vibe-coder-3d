@@ -9,9 +9,9 @@ import { z } from 'zod';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 
-// Persistent ID Schema - accepts UUID or deterministic hash strings
+// Persistent ID Schema - strict UUID validation only
 export const PersistentIdSchema = z.object({
-  id: z.string().uuid().or(z.string().min(8).max(64)),
+  id: z.string().uuid(),
 });
 
 // Helper to generate a simple hash from string to u32
@@ -57,7 +57,8 @@ export const persistentIdComponent = ComponentFactory.create({
 
 // Helper functions for working with persistent IDs
 export function generatePersistentId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`;
+  // Generate a proper UUID v4
+  return crypto.randomUUID();
 }
 
 export function getPersistentIdString(hash: number): string | undefined {
@@ -66,6 +67,14 @@ export function getPersistentIdString(hash: number): string | undefined {
 
 export function getPersistentIdHash(id: string): number | undefined {
   return hashToIdMap.get(id);
+}
+
+/**
+ * Clear all persistent ID mappings - called during system reset
+ */
+export function clearPersistentIdMaps(): void {
+  idStringMap.clear();
+  hashToIdMap.clear();
 }
 
 export type PersistentIdData = z.infer<typeof PersistentIdSchema>;

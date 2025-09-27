@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { addComponent, hasComponent, removeComponent } from 'bitecs';
 
 import { emit } from '../events';
@@ -46,7 +47,7 @@ export class ComponentManager {
   private static instance: ComponentManager;
   private eventListeners: ComponentEventListener[] = [];
   private queries: EntityQueries;
-  private world: any; // BitECS world
+  private world: any; // BitECS world - using any for BitECS compatibility
 
   constructor(world?: any, entityQueries?: EntityQueries) {
     if (world) {
@@ -69,6 +70,18 @@ export class ComponentManager {
 
   public reset(): void {
     this.eventListeners = [];
+    // Refresh world reference in case ECSWorld singleton was reset
+    this.refreshWorld();
+  }
+
+  /**
+   * Refresh world reference from singleton (used after ECSWorld reset)
+   */
+  public refreshWorld(): void {
+    // Force refresh the world reference to current singleton world
+    this.world = ECSWorld.getInstance().getWorld();
+    // Also update queries with new world
+    this.queries.refreshWorld();
   }
 
   // Event system for reactive updates
@@ -137,7 +150,7 @@ export class ComponentManager {
 
   private setComponentData<TData>(entityId: EntityId, type: ComponentType, data: TData): void {
     switch (type) {
-      case KnownComponentTypes.TRANSFORM:
+      case KnownComponentTypes.TRANSFORM: {
         // Ensure complete transform data with defaults for missing fields
         const transformData = data as Partial<ITransformData>;
         const completeTransformData: ITransformData = {
@@ -147,6 +160,7 @@ export class ComponentManager {
         };
         setTransformData(entityId, completeTransformData);
         break;
+      }
       case KnownComponentTypes.MESH_RENDERER:
         setMeshRendererData(entityId, data as IMeshRendererData);
         break;
@@ -301,7 +315,7 @@ export class ComponentManager {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       // Fall back to scan if queries not available
       const entities: EntityId[] = [];
       for (let eid = 0; eid < 10000; eid++) {
@@ -340,7 +354,7 @@ export class ComponentManager {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       // Fall back to scan+filter
       let entities = this.getEntitiesWithComponent(types[0]);
       for (let i = 1; i < types.length; i++) {

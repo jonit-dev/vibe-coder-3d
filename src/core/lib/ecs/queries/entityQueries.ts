@@ -98,8 +98,7 @@ export interface IEntityQueriesState {
 export const validateComponentQuery = (query: unknown): IComponentQuery =>
   ComponentQuerySchema.parse(query);
 
-export const safeValidateComponentQuery = (query: unknown) =>
-  ComponentQuerySchema.safeParse(query);
+export const safeValidateComponentQuery = (query: unknown) => ComponentQuerySchema.safeParse(query);
 
 /**
  * EntityQueries Store - Provides efficient entity and component queries using indices
@@ -252,7 +251,9 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
       // Log final state
       const entities = state.listAllEntities();
       const roots = state.getRootEntities();
-      console.debug(`[EntityQueries] Post-init: ${entities.length} entities, ${roots.length} roots`);
+      console.debug(
+        `[EntityQueries] Post-init: ${entities.length} entities, ${roots.length} roots`,
+      );
     },
 
     destroy: () => {
@@ -315,6 +316,7 @@ export class EntityQueries {
   private queryStore: ReturnType<typeof useEntityQueries.getState>;
 
   constructor(world?: any) {
+    // BitECS world - using any for compatibility
     if (world) {
       // Instance mode with injected world - create new store
       this.queryStore = useEntityQueries.getState();
@@ -438,7 +440,18 @@ export class EntityQueries {
 
   async checkConsistency(): Promise<IConsistencyReport> {
     if (!this.queryStore) {
-      return { isConsistent: false, errors: ['EntityQueries not initialized'], warnings: [], stats: { entitiesInWorld: 0, entitiesInIndex: 0, componentTypes: 0, totalComponents: 0, hierarchyRelationships: 0 } };
+      return {
+        isConsistent: false,
+        errors: ['EntityQueries not initialized'],
+        warnings: [],
+        stats: {
+          entitiesInWorld: 0,
+          entitiesInIndex: 0,
+          componentTypes: 0,
+          totalComponents: 0,
+          hierarchyRelationships: 0,
+        },
+      };
     }
     return await this.queryStore.checkConsistency();
   }
@@ -468,6 +481,11 @@ export class EntityQueries {
     this.queryStore = globalQueryInstance;
   }
 
+  refreshWorld(): void {
+    // For now, refreshWorld behaves the same as reset since we reinitialize everything
+    this.reset();
+  }
+
   // Debug method to dump current state
   debugState(): void {
     if (!this.queryStore) {
@@ -486,7 +504,7 @@ export class EntityQueries {
 
     // Show hierarchy relationships
     console.log('\nHierarchy relationships:');
-    entities.forEach(id => {
+    entities.forEach((id) => {
       const parent = this.queryStore.getParent(id);
       const children = this.queryStore.getChildren(id);
       if (parent !== undefined || children.length > 0) {
@@ -497,7 +515,7 @@ export class EntityQueries {
     // Show components
     const componentTypes = this.queryStore.getComponentTypes();
     console.log('\nComponent types:', componentTypes.length);
-    componentTypes.forEach(type => {
+    componentTypes.forEach((type) => {
       const count = this.queryStore.getComponentCount(type);
       console.log(`  ${type}: ${count} entities`);
     });
