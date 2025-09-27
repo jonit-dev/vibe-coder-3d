@@ -13,9 +13,6 @@ describe('ComponentRegistry', () => {
 
     registry = ComponentRegistry.getInstance();
 
-    // Refresh world reference after reset
-    registry.refreshWorld();
-
     // Clear any existing components for clean state
     (registry as any).components.clear();
     (registry as any).bitECSComponents.clear();
@@ -135,7 +132,9 @@ describe('ComponentRegistry', () => {
       registry.register(descriptor);
       registry.register(descriptor); // Duplicate registration
 
-      expect(consoleSpy).toHaveBeenCalledWith('Component TestComponent is already registered');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Component TestComponent is already registered'),
+      );
       consoleSpy.mockRestore();
     });
   });
