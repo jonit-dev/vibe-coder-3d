@@ -36,6 +36,7 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { Logger } from '@/core/lib/logger';
 import { IEntity } from '@/core/lib/ecs/IEntity';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
@@ -173,21 +174,14 @@ export const HierarchyPanelContent: React.FC = () => {
   };
 
   const handleEntitySelect = (entityId: number, event?: React.MouseEvent) => {
-    console.log(
-      `[HierarchyPanel] Selecting entity ${entityId}, ctrl=${event?.ctrlKey}, shift=${event?.shiftKey}`,
-    );
-
-    // Get flat list of entity IDs in hierarchy order for range selection
     const allEntityIds = hierarchicalTree.map((node) => node.entity.id);
 
     groupSelection.handleHierarchySelection(entityId, {
       ctrlKey: event?.ctrlKey || false,
       shiftKey: event?.shiftKey || false,
-      selectChildren: true, // Always select children in hierarchy
-      allEntityIds, // Pass hierarchy order for range selection
+      selectChildren: true,
+      allEntityIds,
     });
-
-    console.log(`[HierarchyPanel] After selection, selectedIds:`, groupSelection.selectedIds);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -214,18 +208,11 @@ export const HierarchyPanelContent: React.FC = () => {
 
     const activeId = parseInt(active.id as string);
 
-    // Check if dropping on root zone
     if (over.id === 'root-drop-zone') {
-      console.log(`[HierarchyPanel] Drag end: ${activeId} -> root (removing parent)`);
       try {
-        const success = entityManager.setParent(activeId, undefined);
-        if (success) {
-          console.log(`[HierarchyPanel] ✅ Successfully made entity ${activeId} root`);
-        } else {
-          console.error(`[HierarchyPanel] ❌ Failed to make entity ${activeId} root`);
-        }
+        entityManager.setParent(activeId, undefined);
       } catch (error) {
-        console.error(`[HierarchyPanel] ❌ Error making entity root:`, error);
+        Logger.create('HierarchyPanel').error('Error making entity root:', error);
       }
       return;
     }
@@ -235,39 +222,29 @@ export const HierarchyPanelContent: React.FC = () => {
     }
 
     const overId = parseInt(over.id as string);
-    console.log(`[HierarchyPanel] Drag end: ${activeId} -> ${overId}`);
 
-    // Prevent parenting to self or descendant
     const activeEntity = entityManager.getEntity(activeId);
     const overEntity = entityManager.getEntity(overId);
 
     if (!activeEntity || !overEntity) {
-      console.error(`[HierarchyPanel] ❌ Entity not found: ${activeId} or ${overId}`);
       return;
     }
 
-    // Check if overId is a descendant of activeId (would create a cycle)
     let current: IEntity | undefined = overEntity;
     while (current?.parentId) {
       if (current.parentId === activeId) {
-        console.error(`[HierarchyPanel] ❌ Cannot parent to descendant: ${activeId} -> ${overId}`);
         return;
       }
       current = entityManager.getEntity(current.parentId);
     }
 
-    // Set the dragged entity as a child of the target entity
     try {
       const success = entityManager.setParent(activeId, overId);
       if (success) {
-        console.log(`[HierarchyPanel] ✅ Successfully set parent: ${activeId} -> ${overId}`);
-        // Expand the target entity to show the new child
         setExpandedNodes((prev) => new Set([...prev, overId]));
-      } else {
-        console.error(`[HierarchyPanel] ❌ Failed to set parent: ${activeId} -> ${overId}`);
       }
     } catch (error) {
-      console.error(`[HierarchyPanel] ❌ Error setting parent:`, error);
+      Logger.create('HierarchyPanel').error('Error setting parent:', error);
     }
   };
 
@@ -314,8 +291,6 @@ export const HierarchyPanelContent: React.FC = () => {
           groupSelection.isSelected(contextMenu.entityId) && selectionInfo.hasMultiple;
 
         if (isPartOfGroupSelection && selectionInfo.ids) {
-          // Duplicate all selected entities
-          console.log(`[HierarchyPanel] Duplicating ${selectionInfo.count} selected entities...`);
           const newEntityIds: number[] = [];
           const entityMapping = new Map<number, number>(); // old ID -> new ID
 
@@ -323,15 +298,10 @@ export const HierarchyPanelContent: React.FC = () => {
           for (const srcEntityId of selectionInfo.ids) {
             const srcEntity = entityManager.getEntity(srcEntityId);
             if (!srcEntity) {
-              console.warn(`[HierarchyPanel] Source entity ${srcEntityId} not found, skipping`);
               continue;
             }
 
-            // Create new entity (without parent for now)
             const newEntity = entityManager.createEntity(`${srcEntity.name} Copy`);
-            console.log(
-              `[HierarchyPanel] Created new entity ${newEntity.id} (copy of ${srcEntityId})`,
-            );
 
             entityMapping.set(srcEntityId, newEntity.id);
             newEntityIds.push(newEntity.id);
@@ -374,32 +344,20 @@ export const HierarchyPanelContent: React.FC = () => {
               const newParentId = entityMapping.get(srcEntity.parentId);
               if (newParentId) {
                 entityManager.setParent(newEntityId, newParentId);
-                console.log(
-                  `[HierarchyPanel] Set parent relationship: ${newEntityId} -> ${newParentId}`,
-                );
               }
             }
           }
 
-          // Select all the new duplicated entities
           setSelectedIds(newEntityIds);
-          console.log(
-            `[HierarchyPanel] ✅ Successfully duplicated ${selectionInfo.count} entities with relationships preserved`,
-          );
         } else {
-          // Duplicate single entity (original logic)
           const srcEntityId = contextMenu.entityId;
-          console.log(`[HierarchyPanel] Duplicating single entity ${srcEntityId}...`);
 
           const srcEntity = entityManager.getEntity(srcEntityId);
           if (!srcEntity) {
-            console.error(`[HierarchyPanel] Source entity ${srcEntityId} not found`);
             return;
           }
 
-          // Create new entity with new ECS system
           const newEntity = entityManager.createEntity(`${srcEntity.name} Copy`);
-          console.log(`[HierarchyPanel] Created new entity ${newEntity.id}`);
 
           // Get all components from the source entity
           const sourceComponents = componentManager.getComponentsForEntity(srcEntityId);
@@ -423,14 +381,10 @@ export const HierarchyPanelContent: React.FC = () => {
             }
           }
 
-          // Select the new entity using group selection
           groupSelection.selectSingle(newEntity.id);
-          console.log(
-            `[HierarchyPanel] ✅ Successfully duplicated entity ${srcEntityId} as ${newEntity.id}`,
-          );
         }
       } catch (error) {
-        console.error(`[HierarchyPanel] ❌ Failed to duplicate entity/entities:`, error);
+        Logger.create('HierarchyPanel').error('Failed to duplicate entity/entities:', error);
       }
     }
     handleCloseMenu();

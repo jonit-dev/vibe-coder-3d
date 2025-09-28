@@ -62,94 +62,118 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
   const scenePersistence = useScenePersistence();
 
   // Progress handler for streaming operations
-  const handleProgress = useCallback((streamingProgress: IStreamingProgress) => {
-    const sceneProgress: ISceneProgress = {
-      isActive: streamingProgress.phase !== 'complete' && streamingProgress.phase !== 'error',
-      phase: streamingProgress.phase,
-      percentage: streamingProgress.percentage,
-      current: streamingProgress.current,
-      total: streamingProgress.total,
-      entitiesPerSecond: streamingProgress.entitiesPerSecond,
-      estimatedTimeRemaining: streamingProgress.estimatedTimeRemaining,
-      currentEntityName: streamingProgress.currentEntityName,
-    };
+  const handleProgress = useCallback(
+    (streamingProgress: IStreamingProgress) => {
+      const sceneProgress: ISceneProgress = {
+        isActive: streamingProgress.phase !== 'complete' && streamingProgress.phase !== 'error',
+        phase: streamingProgress.phase,
+        percentage: streamingProgress.percentage,
+        current: streamingProgress.current,
+        total: streamingProgress.total,
+        entitiesPerSecond: streamingProgress.entitiesPerSecond,
+        estimatedTimeRemaining: streamingProgress.estimatedTimeRemaining,
+        currentEntityName: streamingProgress.currentEntityName,
+      };
 
-    setProgress(sceneProgress);
-    options.onProgressUpdate?.(streamingProgress);
-  }, [options]);
+      setProgress(sceneProgress);
+      options.onProgressUpdate?.(streamingProgress);
+    },
+    [options],
+  );
 
   // Streaming callbacks
-  const createStreamingCallbacks = useCallback((operation: string, toastId?: string): IStreamingCallbacks => ({
-    onProgress: handleProgress,
-    onChunkProcessed: (chunkIndex, entities) => {
-      console.log(`[StreamingScene] ${operation} - Processed chunk ${chunkIndex} with ${entities.length} entities`);
-    },
-    onError: (error, entityIndex) => {
-      console.error(`[StreamingScene] ${operation} error at entity ${entityIndex}:`, error);
-      if (toastId) removeToast(toastId);
-      projectToasts.showOperationError(operation, error.message);
-    },
-    onComplete: (summary) => {
-      console.log(`[StreamingScene] ${operation} completed:`, summary);
-      if (toastId) removeToast(toastId);
-    },
-  }), [handleProgress, removeToast, projectToasts]);
+  const createStreamingCallbacks = useCallback(
+    (operation: string, toastId?: string): IStreamingCallbacks => ({
+      onProgress: handleProgress,
+      onChunkProcessed: (chunkIndex, entities) => {
+        console.log(
+          `[StreamingScene] ${operation} - Processed chunk ${chunkIndex} with ${entities.length} entities`,
+        );
+      },
+      onError: (error, entityIndex) => {
+        console.error(`[StreamingScene] ${operation} error at entity ${entityIndex}:`, error);
+        if (toastId) removeToast(toastId);
+        projectToasts.showOperationError(operation, error.message);
+      },
+      onComplete: (summary) => {
+        console.log(`[StreamingScene] ${operation} completed:`, summary);
+        if (toastId) removeToast(toastId);
+      },
+    }),
+    [handleProgress, removeToast, projectToasts],
+  );
 
   /**
    * Streaming export scene data
    */
-  const exportSceneData = useCallback(async (metadata?: { name?: string }): Promise<IStreamingScene> => {
-    const entities = entityManager.getAllEntities();
-    const getComponentsForEntity = (entityId: string | number) => {
-      const numberId = typeof entityId === 'string' ? parseInt(entityId, 10) : entityId;
-      return componentManager.getComponentsForEntity(numberId);
-    };
+  const exportSceneData = useCallback(
+    async (metadata?: { name?: string }): Promise<IStreamingScene> => {
+      const entities = entityManager.getAllEntities();
+      const getComponentsForEntity = (entityId: string | number) => {
+        const numberId = typeof entityId === 'string' ? parseInt(entityId, 10) : entityId;
+        return componentManager.getComponentsForEntity(numberId);
+      };
 
-    const callbacks = createStreamingCallbacks('Export');
+      const callbacks = createStreamingCallbacks('Export');
 
-    return await streamingSerializer.exportScene(
-      entities,
-      getComponentsForEntity,
-      {
-        version: 5, // Streaming version
-        name: metadata?.name,
-      },
-      callbacks
-    );
-  }, [entityManager, componentManager, createStreamingCallbacks]);
+      return await streamingSerializer.exportScene(
+        entities,
+        getComponentsForEntity,
+        {
+          version: 5, // Streaming version
+          name: metadata?.name,
+        },
+        callbacks,
+      );
+    },
+    [entityManager, componentManager, createStreamingCallbacks],
+  );
 
   /**
    * Streaming import scene data
    */
-  const importSceneData = useCallback(async (scene: IStreamingScene): Promise<void> => {
-    const entityManagerAdapter = {
-      clearEntities: () => entityManager.clearEntities(),
-      createEntity: (name: string, parentId?: string | number | null, persistentId?: string) => {
-        const numberId = parentId
-          ? typeof parentId === 'string'
-            ? parseInt(parentId, 10)
-            : parentId
-          : undefined;
-        return entityManager.createEntity(name, numberId, persistentId);
-      },
-      setParent: (childId: string | number, parentId?: string | number | null) => {
-        const child = typeof childId === 'string' ? parseInt(childId, 10) : childId;
-        const parent = parentId == null ? undefined : typeof parentId === 'string' ? parseInt(parentId, 10) : parentId;
-        entityManager.setParent(child, parent);
-      },
-    };
+  const importSceneData = useCallback(
+    async (scene: IStreamingScene): Promise<void> => {
+      const entityManagerAdapter = {
+        clearEntities: () => entityManager.clearEntities(),
+        createEntity: (name: string, parentId?: string | number | null, persistentId?: string) => {
+          const numberId = parentId
+            ? typeof parentId === 'string'
+              ? parseInt(parentId, 10)
+              : parentId
+            : undefined;
+          return entityManager.createEntity(name, numberId, persistentId);
+        },
+        setParent: (childId: string | number, parentId?: string | number | null) => {
+          const child = typeof childId === 'string' ? parseInt(childId, 10) : childId;
+          const parent =
+            parentId == null
+              ? undefined
+              : typeof parentId === 'string'
+                ? parseInt(parentId, 10)
+                : parentId;
+          entityManager.setParent(child, parent);
+        },
+      };
 
-    const componentManagerAdapter = {
-      addComponent: (entityId: string | number, componentType: string, data: unknown) => {
-        const numberId = typeof entityId === 'string' ? parseInt(entityId, 10) : entityId;
-        return componentManager.addComponent(numberId, componentType, data);
-      },
-    };
+      const componentManagerAdapter = {
+        addComponent: (entityId: string | number, componentType: string, data: unknown) => {
+          const numberId = typeof entityId === 'string' ? parseInt(entityId, 10) : entityId;
+          return componentManager.addComponent(numberId, componentType, data);
+        },
+      };
 
-    const callbacks = createStreamingCallbacks('Import');
+      const callbacks = createStreamingCallbacks('Import');
 
-    await streamingSerializer.importScene(scene, entityManagerAdapter, componentManagerAdapter, callbacks);
-  }, [entityManager, componentManager, createStreamingCallbacks]);
+      await streamingSerializer.importScene(
+        scene,
+        entityManagerAdapter,
+        componentManagerAdapter,
+        callbacks,
+      );
+    },
+    [entityManager, componentManager, createStreamingCallbacks],
+  );
 
   /**
    * Save current scene with streaming
@@ -161,7 +185,10 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
       if (options.onRequestSaveAs) {
         options.onRequestSaveAs();
       } else {
-        projectToasts.showOperationError('Save', 'No scene loaded. Use "Save As" to save with a name.');
+        projectToasts.showOperationError(
+          'Save',
+          'No scene loaded. Use "Save As" to save with a name.',
+        );
       }
     }
   }, [currentSceneName, options, projectToasts]);
@@ -169,182 +196,209 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
   /**
    * Save As with streaming and progress
    */
-  const handleSaveAs = useCallback(async (sceneName?: string): Promise<void> => {
-    let loadingToastId: string | undefined;
+  const handleSaveAs = useCallback(
+    async (sceneName?: string): Promise<void> => {
+      let loadingToastId: string | undefined;
 
-    try {
-      loadingToastId = projectToasts.showOperationStart('Saving Scene');
+      try {
+        loadingToastId = projectToasts.showOperationStart('Saving Scene');
 
-      if (!sceneName) {
-        // Legacy override save - keep existing logic for backward compatibility
-        const { sceneRegistry } = await import('@/core/lib/scene/SceneRegistry');
-        const { diffAgainstBase } = await import('@/core/lib/serialization/SceneDiff');
-        const { overridesStore } = await import('@/core/lib/scene/overrides/OverridesStore');
+        if (!sceneName) {
+          // Legacy override save - keep existing logic for backward compatibility
+          const { sceneRegistry } = await import('@/core/lib/scene/SceneRegistry');
+          const { diffAgainstBase } = await import('@/core/lib/serialization/SceneDiff');
+          const { overridesStore } = await import('@/core/lib/scene/overrides/OverridesStore');
 
-        const currentSceneId = sceneRegistry.getCurrentSceneId();
-        if (!currentSceneId) {
-          throw new Error('No scene loaded');
+          const currentSceneId = sceneRegistry.getCurrentSceneId();
+          if (!currentSceneId) {
+            throw new Error('No scene loaded');
+          }
+
+          const overrides = diffAgainstBase(currentSceneId);
+          await overridesStore.save(overrides);
+
+          if (loadingToastId) removeToast(loadingToastId);
+          projectToasts.showOperationSuccess(
+            'Save',
+            `Successfully saved ${overrides.patches.length} changes for ${currentSceneId}`,
+          );
+          return;
         }
 
-        const overrides = diffAgainstBase(currentSceneId);
-        await overridesStore.save(overrides);
+        // New streaming save
+        const entities = entityManager.getAllEntities();
+        const transformedEntities = entities.map((entity) => {
+          const entityComponents = componentManager.getComponentsForEntity(entity.id);
+          const components: Record<string, unknown> = {};
 
-        if (loadingToastId) removeToast(loadingToastId);
-        projectToasts.showOperationSuccess(
-          'Save',
-          `Successfully saved ${overrides.patches.length} changes for ${currentSceneId}`
-        );
-        return;
-      }
+          entityComponents.forEach((component) => {
+            if (component.data) {
+              components[component.type] = component.data;
+            }
+          });
 
-      // New streaming save
-      const entities = entityManager.getAllEntities();
-      const transformedEntities = entities.map((entity) => {
-        const entityComponents = componentManager.getComponentsForEntity(entity.id);
-        const components: Record<string, unknown> = {};
-
-        entityComponents.forEach((component) => {
-          if (component.data) {
-            components[component.type] = component.data;
-          }
+          return {
+            id: entity.id,
+            name: entity.name,
+            parentId: entity.parentId,
+            components,
+          };
         });
 
-        return {
-          id: entity.id,
-          name: entity.name,
-          parentId: entity.parentId,
-          components,
-        };
-      });
-
-      console.log(`[StreamingSceneActions] Streaming save: ${transformedEntities.length} entities`);
-      const success = await scenePersistence.saveTsxScene(sceneName, transformedEntities);
-
-      if (loadingToastId) removeToast(loadingToastId);
-
-      if (success) {
-        setCurrentSceneName(sceneName);
-        localStorage.setItem('lastLoadedScene', sceneName);
-
-        projectToasts.showOperationSuccess(
-          'Save',
-          `Successfully saved scene '${sceneName}' with ${transformedEntities.length} entities (Streaming v5)`
+        console.log(
+          `[StreamingSceneActions] Streaming save: ${transformedEntities.length} entities`,
         );
-      } else {
-        projectToasts.showOperationError('Save', scenePersistence.error || 'Failed to save scene');
+        const success = await scenePersistence.saveTsxScene(sceneName, transformedEntities);
+
+        if (loadingToastId) removeToast(loadingToastId);
+
+        if (success) {
+          setCurrentSceneName(sceneName);
+          localStorage.setItem('lastLoadedScene', sceneName);
+
+          projectToasts.showOperationSuccess(
+            'Save',
+            `Successfully saved scene '${sceneName}' with ${transformedEntities.length} entities`,
+          );
+        } else {
+          projectToasts.showOperationError(
+            'Save',
+            scenePersistence.error || 'Failed to save scene',
+          );
+        }
+      } catch (error) {
+        console.error('Failed to save scene:', error);
+        if (loadingToastId) removeToast(loadingToastId);
+        projectToasts.showOperationError(
+          'Save',
+          error instanceof Error ? error.message : 'Unknown error occurred',
+        );
       }
-    } catch (error) {
-      console.error('Failed to save scene:', error);
-      if (loadingToastId) removeToast(loadingToastId);
-      projectToasts.showOperationError(
-        'Save',
-        error instanceof Error ? error.message : 'Unknown error occurred'
-      );
-    }
-  }, [entityManager, componentManager, scenePersistence, currentSceneName, projectToasts, removeToast]);
+    },
+    [
+      entityManager,
+      componentManager,
+      scenePersistence,
+      currentSceneName,
+      projectToasts,
+      removeToast,
+    ],
+  );
 
   /**
    * Load scene with streaming
    */
-  const handleLoad = useCallback(async (sceneNameOrEvent?: string | React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    let loadingToastId: string | undefined;
+  const handleLoad = useCallback(
+    async (sceneNameOrEvent?: string | React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+      let loadingToastId: string | undefined;
 
-    try {
-      loadingToastId = projectToasts.showOperationStart('Loading Scene');
+      try {
+        loadingToastId = projectToasts.showOperationStart('Loading Scene');
 
-      // Handle file input event (streaming file load)
-      if (sceneNameOrEvent && typeof sceneNameOrEvent !== 'string' && sceneNameOrEvent.target?.files) {
-        const file = sceneNameOrEvent.target.files[0];
-        if (!file) {
+        // Handle file input event (streaming file load)
+        if (
+          sceneNameOrEvent &&
+          typeof sceneNameOrEvent !== 'string' &&
+          sceneNameOrEvent.target?.files
+        ) {
+          const file = sceneNameOrEvent.target.files[0];
+          if (!file) {
+            if (loadingToastId) removeToast(loadingToastId);
+            projectToasts.showOperationError('Load', 'No file selected');
+            return;
+          }
+
+          // Stream read the file
+          const sceneData = await readSceneStream(file, (progress) => {
+            console.log(
+              `[StreamingSceneActions] File read progress: ${progress.phase} ${progress.percentage}%`,
+            );
+          });
+
+          // Stream import the scene
+          await importSceneData(sceneData);
+
           if (loadingToastId) removeToast(loadingToastId);
-          projectToasts.showOperationError('Load', 'No file selected');
+          projectToasts.showOperationSuccess(
+            'Load',
+            `Successfully loaded scene from file with ${sceneData.entities?.length || 0} entities`,
+          );
           return;
         }
 
-        // Stream read the file
-        const sceneData = await readSceneStream(file, (progress) => {
-          console.log(`[StreamingSceneActions] File read progress: ${progress.phase} ${progress.percentage}%`);
-        });
+        // Handle scene name (API loading)
+        if (sceneNameOrEvent && typeof sceneNameOrEvent === 'string') {
+          const sceneData = await scenePersistence.loadScene(sceneNameOrEvent);
 
-        // Stream import the scene
-        await importSceneData(sceneData);
+          if (!sceneData) {
+            if (loadingToastId) removeToast(loadingToastId);
+            projectToasts.showOperationError(
+              'Load',
+              scenePersistence.error || 'Failed to load scene',
+            );
+            return;
+          }
+
+          await importSceneData(sceneData);
+
+          localStorage.setItem('lastLoadedScene', sceneNameOrEvent);
+          setCurrentSceneName(sceneNameOrEvent);
+
+          if (loadingToastId) removeToast(loadingToastId);
+          projectToasts.showOperationSuccess(
+            'Load',
+            `Successfully loaded scene '${sceneNameOrEvent}' with ${sceneData.entities.length} entities`,
+          );
+          return;
+        }
+
+        // Fallback to override loading (legacy)
+        const { overridesStore } = await import('@/core/lib/scene/overrides/OverridesStore');
+        const { sceneRegistry } = await import('@/core/lib/scene/SceneRegistry');
+
+        const overrides = await overridesStore.load();
+
+        if (!overrides) {
+          if (loadingToastId) removeToast(loadingToastId);
+          projectToasts.showOperationError('Load', 'No overrides file selected');
+          return;
+        }
+
+        const currentSceneId = sceneRegistry.getCurrentSceneId();
+        if (!currentSceneId) {
+          if (loadingToastId) removeToast(loadingToastId);
+          projectToasts.showOperationError('Load', 'No scene currently loaded');
+          return;
+        }
+
+        if (overrides.sceneId !== currentSceneId) {
+          if (loadingToastId) removeToast(loadingToastId);
+          projectToasts.showOperationError(
+            'Load',
+            `Overrides are for scene '${overrides.sceneId}', but current scene is '${currentSceneId}'`,
+          );
+          return;
+        }
+
+        const { applyOverrides } = await import('@/core/lib/scene/overrides/OverrideApplier');
+        applyOverrides(overrides);
 
         if (loadingToastId) removeToast(loadingToastId);
         projectToasts.showOperationSuccess(
           'Load',
-          `Successfully loaded scene from file with ${sceneData.entities?.length || 0} entities (Streaming v5)`
+          `Successfully loaded ${overrides.patches.length} overrides for ${overrides.sceneId}`,
         );
-        return;
-      }
-
-      // Handle scene name (API loading)
-      if (sceneNameOrEvent && typeof sceneNameOrEvent === 'string') {
-        const sceneData = await scenePersistence.loadScene(sceneNameOrEvent);
-
-        if (!sceneData) {
-          if (loadingToastId) removeToast(loadingToastId);
-          projectToasts.showOperationError('Load', scenePersistence.error || 'Failed to load scene');
-          return;
-        }
-
-        await importSceneData(sceneData);
-
-        localStorage.setItem('lastLoadedScene', sceneNameOrEvent);
-        setCurrentSceneName(sceneNameOrEvent);
-
-        if (loadingToastId) removeToast(loadingToastId);
-        projectToasts.showOperationSuccess(
-          'Load',
-          `Successfully loaded scene '${sceneNameOrEvent}' with ${sceneData.entities.length} entities (Streaming v5)`
-        );
-        return;
-      }
-
-      // Fallback to override loading (legacy)
-      const { overridesStore } = await import('@/core/lib/scene/overrides/OverridesStore');
-      const { sceneRegistry } = await import('@/core/lib/scene/SceneRegistry');
-
-      const overrides = await overridesStore.load();
-
-      if (!overrides) {
-        if (loadingToastId) removeToast(loadingToastId);
-        projectToasts.showOperationError('Load', 'No overrides file selected');
-        return;
-      }
-
-      const currentSceneId = sceneRegistry.getCurrentSceneId();
-      if (!currentSceneId) {
-        if (loadingToastId) removeToast(loadingToastId);
-        projectToasts.showOperationError('Load', 'No scene currently loaded');
-        return;
-      }
-
-      if (overrides.sceneId !== currentSceneId) {
+      } catch (error) {
+        console.error('Failed to load scene:', error);
         if (loadingToastId) removeToast(loadingToastId);
         projectToasts.showOperationError(
           'Load',
-          `Overrides are for scene '${overrides.sceneId}', but current scene is '${currentSceneId}'`
+          error instanceof Error ? error.message : 'Unknown error occurred',
         );
-        return;
       }
-
-      const { applyOverrides } = await import('@/core/lib/scene/overrides/OverrideApplier');
-      applyOverrides(overrides);
-
-      if (loadingToastId) removeToast(loadingToastId);
-      projectToasts.showOperationSuccess(
-        'Load',
-        `Successfully loaded ${overrides.patches.length} overrides for ${overrides.sceneId}`
-      );
-    } catch (error) {
-      console.error('Failed to load scene:', error);
-      if (loadingToastId) removeToast(loadingToastId);
-      projectToasts.showOperationError(
-        'Load',
-        error instanceof Error ? error.message : 'Unknown error occurred'
-      );
-    }
-  }, [importSceneData, scenePersistence, projectToasts, removeToast]);
+    },
+    [importSceneData, scenePersistence, projectToasts, removeToast],
+  );
 
   /**
    * Clear scene with streaming
@@ -359,13 +413,16 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
       entityManager.clearEntities();
 
       removeToast(loadingToastId);
-      projectToasts.showOperationSuccess('Clear', `Successfully cleared ${clearedCount} entities (Streaming)`);
+      projectToasts.showOperationSuccess(
+        'Clear',
+        `Successfully cleared ${clearedCount} entities (Streaming)`,
+      );
     } catch (error) {
       console.error('Failed to clear scene:', error);
       removeToast(loadingToastId);
       projectToasts.showOperationError(
         'Clear',
-        error instanceof Error ? error.message : 'Unknown error occurred'
+        error instanceof Error ? error.message : 'Unknown error occurred',
       );
     }
   }, [entityManager, projectToasts, removeToast]);
@@ -373,22 +430,30 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
   /**
    * Download scene as JSON with streaming
    */
-  const handleDownloadJSON = useCallback(async (filename = 'scene.json'): Promise<void> => {
-    try {
-      const scene = await exportSceneData();
-      await downloadSceneStream(scene, filename, (progress) => {
-        console.log(`[StreamingSceneActions] Download progress: ${progress.phase} ${progress.percentage}%`);
-      });
+  const handleDownloadJSON = useCallback(
+    async (filename = 'scene.json'): Promise<void> => {
+      try {
+        const scene = await exportSceneData();
+        await downloadSceneStream(scene, filename, (progress) => {
+          console.log(
+            `[StreamingSceneActions] Download progress: ${progress.phase} ${progress.percentage}%`,
+          );
+        });
 
-      projectToasts.showOperationSuccess('Download', `Scene downloaded as ${filename} (${scene.entities.length} entities)`);
-    } catch (error) {
-      console.error('Failed to download scene:', error);
-      projectToasts.showOperationError(
-        'Download',
-        error instanceof Error ? error.message : 'Failed to download scene'
-      );
-    }
-  }, [exportSceneData, projectToasts]);
+        projectToasts.showOperationSuccess(
+          'Download',
+          `Scene downloaded as ${filename} (${scene.entities.length} entities)`,
+        );
+      } catch (error) {
+        console.error('Failed to download scene:', error);
+        projectToasts.showOperationError(
+          'Download',
+          error instanceof Error ? error.message : 'Failed to download scene',
+        );
+      }
+    },
+    [exportSceneData, projectToasts],
+  );
 
   /**
    * Trigger file load dialog
@@ -434,7 +499,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
    */
   const cancelOperation = useCallback(() => {
     streamingSerializer.cancel();
-    setProgress(prev => ({ ...prev, isActive: false, phase: 'cancelled' }));
+    setProgress((prev) => ({ ...prev, isActive: false, phase: 'cancelled' }));
     projectToasts.showOperationError('Operation', 'Cancelled by user');
   }, [projectToasts]);
 
