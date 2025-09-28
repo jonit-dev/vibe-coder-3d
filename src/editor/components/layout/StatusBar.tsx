@@ -16,6 +16,14 @@ export interface IStatusBarProps {
     entities?: number;
   };
   enablePerformanceMonitoring?: boolean;
+  streamingProgress?: {
+    isActive: boolean;
+    phase: string;
+    percentage: number;
+    current: number;
+    total: number;
+    entitiesPerSecond?: number;
+  };
 }
 
 export const StatusBar: React.FC<IStatusBarProps> = ({
@@ -28,6 +36,7 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
   ],
   stats,
   enablePerformanceMonitoring = true,
+  streamingProgress,
 }) => {
   const { metrics, profilerStats } = usePerformanceMonitor(enablePerformanceMonitoring);
   const [showDetailedPerf, setShowDetailedPerf] = useState(false);
@@ -40,8 +49,28 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
         {/* Left section - Status message */}
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <div className={`w-2 h-2 rounded-full animate-pulse ${
+              streamingProgress?.isActive ? 'bg-cyan-400' : 'bg-green-400'
+            }`}></div>
             <span className="text-gray-300">{statusMessage}</span>
+            {streamingProgress?.isActive && (
+              <div className="flex items-center space-x-2 ml-4">
+                <div className="w-20 h-1 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-cyan-400 transition-all duration-200 ease-out"
+                    style={{ width: `${streamingProgress.percentage}%` }}
+                  />
+                </div>
+                <span className="text-cyan-400 text-xs">
+                  {Math.round(streamingProgress.percentage)}%
+                </span>
+                {streamingProgress.entitiesPerSecond && (
+                  <span className="text-gray-500 text-xs">
+                    ({Math.round(streamingProgress.entitiesPerSecond)} e/s)
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {(enablePerformanceMonitoring || stats) && (

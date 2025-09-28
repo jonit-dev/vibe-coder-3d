@@ -1,2 +1,2 @@
-export * from './sceneSerializer';
+export * from './StreamingSceneSerializer';
 export * from './SceneDiff';

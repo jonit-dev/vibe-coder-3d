@@ -21,7 +21,7 @@ import { GizmoMode, useEditorKeyboard } from './hooks/useEditorKeyboard';
 import { useAppState, useEntityState, usePhysicsState, useUIState } from './hooks/useEditorState';
 import { useEditorStats } from './hooks/useEditorStats';
 import { useEntitySynchronization } from './hooks/useEntitySynchronization';
-import { useSceneActions } from './hooks/useSceneActions';
+import { useStreamingSceneActions } from './hooks/useStreamingSceneActions';
 import { useSceneInitialization } from './hooks/useSceneInitialization';
 
 // Import types from centralized types file
@@ -64,21 +64,35 @@ const Editor: React.FC = () => {
   // Entity synchronization with ECS system
   useEntitySynchronization({ entityIds, setEntityIds });
 
-  // Scene actions and file input ref - use new toast-enabled methods
+  // Streaming scene actions with progress feedback
   const {
     fileInputRef,
-    savedScene,
-    importScene,
     handleSave,
     handleLoad,
     handleClear,
-    handleLoadLegacy,
-    scenePersistence,
-    loadLastScene,
+    // handleDownloadJSON,
+    // triggerFileLoad,
     currentSceneName,
     handleSaveAs,
-  } = useSceneActions({
+    progress,
+    // cancelOperation,
+    scenePersistence,
+    loadLastScene,
+    // Legacy compatibility
+    savedScene,
+    importScene,
+  } = useStreamingSceneActions({
     onRequestSaveAs: () => setScenePersistenceModal({ isOpen: true, mode: 'save' }),
+    onProgressUpdate: (streamingProgress) => {
+      // Update status message with streaming progress
+      if (streamingProgress.phase === 'processing') {
+        const { current, total, entitiesPerSecond, currentEntityName } = streamingProgress;
+        const epsText = entitiesPerSecond ? ` (${Math.round(entitiesPerSecond)} entities/sec)` : '';
+        setStatusMessage(`${streamingProgress.phase}: ${current}/${total} - ${currentEntityName}${epsText}`);
+      } else if (streamingProgress.phase === 'complete') {
+        setStatusMessage(`Operation completed: ${streamingProgress.total} entities processed`);
+      }
+    },
   });
 
   // All action handlers encapsulated in custom hook
@@ -229,13 +243,13 @@ const Editor: React.FC = () => {
         }}
       />
 
-      {/* Hidden file input for loading legacy scenes */}
+      {/* Hidden file input for streaming scene loading */}
       <input
         ref={fileInputRef}
         type="file"
         accept="application/json"
         className="hidden"
-        onChange={handleLoadLegacy}
+        onChange={handleLoad}
       />
 
       <main className="flex-1 flex overflow-hidden">
@@ -252,7 +266,11 @@ const Editor: React.FC = () => {
         <RightSidebarChat isExpanded={isChatExpanded} onToggle={toggleChat} />
       </main>
 
-      <StatusBar statusMessage={statusMessage} stats={stats} />
+      <StatusBar
+        statusMessage={statusMessage}
+        stats={stats}
+        streamingProgress={progress.isActive ? progress : undefined}
+      />
     </div>
   );
 };

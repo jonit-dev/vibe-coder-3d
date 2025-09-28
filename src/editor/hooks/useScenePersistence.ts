@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { ISerializedScene } from '@/core/lib/serialization/sceneSerializer';
+import type { IStreamingScene } from '@/core/lib/serialization/StreamingSceneSerializer';
 
 export interface ISceneFileInfo {
   name: string;
@@ -16,9 +16,9 @@ export interface IScenePersistenceState {
 }
 
 export interface IScenePersistenceActions {
-  saveScene: (name: string, data: ISerializedScene, format?: 'json' | 'tsx') => Promise<boolean>;
+  saveScene: (name: string, data: IStreamingScene, format?: 'json' | 'tsx') => Promise<boolean>;
   saveTsxScene: (name: string, entities: any[], options?: { description?: string; author?: string }) => Promise<boolean>;
-  loadScene: (name: string) => Promise<ISerializedScene | null>;
+  loadScene: (name: string) => Promise<IStreamingScene | null>;
   listScenes: () => Promise<boolean>;
   listTsxScenes: () => Promise<boolean>;
   clearError: () => void;
@@ -51,7 +51,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
   /**
    * Save scene to server via API
    */
-  const saveScene = useCallback(async (name: string, data: ISerializedScene, format: 'json' | 'tsx' = 'json'): Promise<boolean> => {
+  const saveScene = useCallback(async (name: string, data: IStreamingScene, format: 'json' | 'tsx' = 'json'): Promise<boolean> => {
     if (!name.trim()) {
       setError('Scene name cannot be empty');
       return false;
@@ -105,7 +105,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
   /**
    * Load scene from server via API (prioritizes TSX format)
    */
-  const loadScene = useCallback(async (name: string): Promise<ISerializedScene | null> => {
+  const loadScene = useCallback(async (name: string): Promise<IStreamingScene | null> => {
     if (!name.trim()) {
       setError('Scene name cannot be empty');
       return null;

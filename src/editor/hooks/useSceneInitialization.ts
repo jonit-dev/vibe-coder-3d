@@ -4,13 +4,13 @@ import { loadScene } from '@/core/lib/scene/SceneRegistry';
 // import { sceneRegistry } from '@/core/lib/scene/SceneRegistry'; // Will be used in future implementation
 import { registerCoreScenes } from '@/core/lib/scene/scenes';
 import { registerGameExtensions } from '@game';
-import { type ISerializedScene } from '@/core/lib/serialization/sceneSerializer';
+import { type IStreamingScene } from '@/core/lib/serialization/StreamingSceneSerializer';
 
 import { useEntityManager } from './useEntityManager';
 
 export interface IUseSceneInitializationProps {
-  savedScene: ISerializedScene | null;
-  importScene: (scene: ISerializedScene) => Promise<void>;
+  savedScene: IStreamingScene | null;
+  importScene: (scene: IStreamingScene) => Promise<void>;
   onStatusMessage: (message: string) => void;
   loadLastScene: () => Promise<boolean>;
 }

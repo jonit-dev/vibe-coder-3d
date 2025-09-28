@@ -2,12 +2,13 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { KnownComponentTypes } from '@core';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type {
   ComponentDataMap,
+  SceneEntityData,
   SceneMetadata,
-} from '@core';
-import { validateSceneEntity } from '@core';
+} from '@/core/types/scene';
+import { validateSceneEntity } from '@/core/types/scene';
 
 /**
  * Type-safe scene data interface
@@ -28,7 +29,7 @@ interface ITypedSceneEntity {
  */
 const sceneData: ITypedSceneEntity[] = [
   {
-    "id": 5,
+    "id": 0,
     "name": "Main Camera",
     "components": {
       "PersistentId": {
@@ -92,7 +93,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 6,
+    "id": 1,
     "name": "Directional Light",
     "components": {
       "PersistentId": {
@@ -139,7 +140,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 7,
+    "id": 2,
     "name": "Ambient Light",
     "components": {
       "PersistentId": {
@@ -186,7 +187,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 8,
+    "id": 3,
     "name": "Plane 0",
     "components": {
       "PersistentId": {
@@ -269,9 +270,9 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 9,
+    "id": 4,
     "name": "Cube 0",
-    "parentId": 8,
+    "parentId": 3,
     "components": {
       "PersistentId": {
         "id": "f4512c02-e53f-48b0-a00d-2748c4d6a293"
@@ -351,6 +352,53 @@ const sceneData: ITypedSceneEntity[] = [
         }
       }
     }
+  },
+  {
+    "id": 5,
+    "name": "Dodecahedron 0",
+    "components": {
+      "PersistentId": {
+        "id": "129ca8a7-f03b-4e59-b4e4-bd865ff3c22a"
+      },
+      "Transform": {
+        "position": [
+          0,
+          4.25,
+          -2.5
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "MeshRenderer": {
+        "meshId": "dodecahedron",
+        "materialId": "default",
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": "",
+        "material": {
+          "shader": "standard",
+          "materialType": "solid",
+          "color": "#3399ff",
+          "normalScale": 1,
+          "metalness": 0,
+          "roughness": 0.5,
+          "emissive": "#000000",
+          "emissiveIntensity": 0,
+          "occlusionStrength": 1,
+          "textureOffsetX": 0,
+          "textureOffsetY": 0
+        }
+      }
+    }
   }
 ];
 
@@ -360,12 +408,12 @@ const sceneData: ITypedSceneEntity[] = [
 export const metadata: SceneMetadata = {
   "name": "test",
   "version": 1,
-  "timestamp": "2025-09-28T00:04:25.642Z"
+  "timestamp": "2025-09-28T04:11:34.304Z"
 };
 
 /**
  * test
- * Generated: 2025-09-28T00:04:25.642Z
+ * Generated: 2025-09-28T04:11:34.304Z
  * Version: 1
  */
 export const Test: React.FC = () => {

@@ -4,7 +4,7 @@ import { ShapeType } from '../types/shapes';
 
 import { useEntityCreation } from './useEntityCreation';
 import { usePhysicsControls } from './usePhysicsControls';
-import { useSceneActions } from './useSceneActions';
+import { useStreamingSceneActions } from './useStreamingSceneActions';
 
 interface IUseEditorHandlersProps {
   setSelectedId: (id: number | null) => void;
@@ -71,16 +71,12 @@ export const useEditorHandlers = ({
     createAmbientLight,
   } = useEntityCreation();
 
-  // Scene action hooks - get both new and legacy methods
+  // Scene action hooks
   const {
     handleSave,
     handleLoad,
     handleClear,
-    handleSaveLegacy,
-    handleLoadLegacy,
-    handleClearLegacy,
-    triggerFileLoad,
-  } = useSceneActions();
+  } = useStreamingSceneActions();
 
   // Physics control hooks
   const { handlePlay, handlePause, handleStop } = usePhysicsControls({
@@ -271,23 +267,42 @@ export const useEditorHandlers = ({
   );
 
   // Scene action handlers with status updates (using legacy methods for status bar)
-  const handleSaveWithStatus = useCallback(() => {
-    const message = handleSaveLegacy();
-    setStatusMessage(message);
-  }, [handleSaveLegacy, setStatusMessage]);
+  // Streaming-aware status methods - use the new streaming actions directly
+  const handleSaveWithStatus = useCallback(async () => {
+    try {
+      await handleSave();
+      setStatusMessage('Scene saved successfully');
+    } catch (error) {
+      setStatusMessage(`Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [handleSave, setStatusMessage]);
 
   const handleLoadWithStatus = useCallback(
     async (e?: React.ChangeEvent<HTMLInputElement>) => {
-      const message = await handleLoadLegacy(e);
-      setStatusMessage(message);
+      try {
+        await handleLoad(e);
+        setStatusMessage('Scene loaded successfully');
+      } catch (error) {
+        setStatusMessage(`Load failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     },
-    [handleLoadLegacy, setStatusMessage],
+    [handleLoad, setStatusMessage],
   );
 
   const handleClearWithStatus = useCallback(() => {
-    const message = handleClearLegacy();
-    setStatusMessage(message);
-  }, [handleClearLegacy, setStatusMessage]);
+    try {
+      handleClear();
+      setStatusMessage('Scene cleared successfully');
+    } catch (error) {
+      setStatusMessage(`Clear failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [handleClear, setStatusMessage]);
+
+  // Dummy triggerFileLoad for backward compatibility
+  const triggerFileLoad = useCallback(() => {
+    // This functionality is now handled directly by the streaming scene actions
+    console.warn('triggerFileLoad is deprecated - use streaming scene actions directly');
+  }, []);
 
   // Physics control handlers with status updates
   const handlePlayWithStatus = useCallback(() => {

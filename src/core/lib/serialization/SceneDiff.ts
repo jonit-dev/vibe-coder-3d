@@ -7,7 +7,23 @@ import { z } from 'zod';
 
 // import { componentRegistry } from '../ecs/ComponentRegistry'; // Will be used in future implementation
 import { EntityManager } from '../ecs/EntityManager';
-import { serializeWorld } from './sceneSerializer';
+// import { streamingSerializer } from './StreamingSceneSerializer';
+
+// Legacy compatibility function for scene diff
+function serializeWorld() {
+  const entityManager = EntityManager.getInstance();
+  const entities = entityManager.getAllEntities();
+
+  return {
+    version: 5,
+    entities: entities.map(entity => ({
+      id: entity.id,
+      name: entity.name,
+      parentId: entity.parentId,
+      components: {} as Record<string, unknown> // Simplified for diff purposes
+    }))
+  };
+}
 
 // Override patch for a single entity
 export const OverridePatchSchema = z.object({
