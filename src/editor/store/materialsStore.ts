@@ -6,6 +6,9 @@ interface IMaterialsState {
   // Registry instance
   registry: MaterialRegistry;
 
+  // Materials cache for reactivity
+  materials: IMaterialDefinition[];
+
   // Current selection
   selectedMaterialId: string | null;
 
@@ -18,6 +21,9 @@ interface IMaterialsState {
   searchTerm: string;
   filterByShader: 'all' | 'standard' | 'unlit';
   filterByType: 'all' | 'solid' | 'texture';
+
+  // Internal methods
+  _refreshMaterials: () => void;
 
   // Actions
   setSelectedMaterial: (materialId: string | null) => void;
@@ -44,13 +50,41 @@ interface IMaterialsState {
   // Selector functions for computed properties
   getFilteredMaterials: () => IMaterialDefinition[];
   getSelectedMaterial: () => IMaterialDefinition | null | undefined;
+
+  // Debug helper
+  debugPrintMaterials: () => void;
 }
 
 export const useMaterialsStore = create<IMaterialsState>((set, get) => {
-  const registry = MaterialRegistry.getInstance();
-
   return {
-    registry,
+    get registry() {
+      return MaterialRegistry.getInstance();
+    },
+    materials: (() => {
+      const registry = MaterialRegistry.getInstance();
+
+      // Create the missing test123 material that entities reference
+      const test123Material = {
+        id: 'test123',
+        name: 'Test Material',
+        shader: 'standard' as const,
+        materialType: 'solid' as const,
+        color: '#ff6600',
+        metalness: 0.3,
+        roughness: 0.6,
+        emissive: '#000000',
+        emissiveIntensity: 0,
+        normalScale: 1,
+        occlusionStrength: 1,
+        textureOffsetX: 0,
+        textureOffsetY: 0,
+      };
+
+      registry.upsert(test123Material);
+      console.log('[MaterialsStore] Created missing test123 material for scene compatibility');
+
+      return registry.list();
+    })(), // Initialize with current materials including test123
 
     selectedMaterialId: null,
     isBrowserOpen: false,
@@ -59,6 +93,13 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     searchTerm: '',
     filterByShader: 'all',
     filterByType: 'all',
+
+    _refreshMaterials: () => {
+      const materials = MaterialRegistry.getInstance().list();
+      console.log('[MaterialsStore] _refreshMaterials called, found materials:',
+        materials.map(m => ({id: m.id, name: m.name})));
+      set({ materials });
+    },
 
     setSelectedMaterial: (materialId) => set({ selectedMaterialId: materialId }),
 
@@ -77,17 +118,24 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     setFilterByType: (filter) => set({ filterByType: filter }),
 
     createMaterial: async (material) => {
+      console.log('[MaterialsStore] Creating material:', material);
+      const registry = MaterialRegistry.getInstance();
       registry.upsert(material);
-      await registry.saveToAsset(material);
+      console.log('[MaterialsStore] Material created, refreshing cache...');
+      get()._refreshMaterials(); // Update UI reactively
+      console.log('[MaterialsStore] Materials cache updated:', get().materials.length, 'materials');
+      console.log('[MaterialsStore] All materials in registry after create:',
+        registry.list().map(m => ({id: m.id, name: m.name})));
     },
 
     updateMaterial: async (materialId, updates) => {
+      const registry = MaterialRegistry.getInstance();
       const existing = registry.get(materialId);
       if (!existing) throw new Error(`Material not found: ${materialId}`);
 
       const updated: IMaterialDefinition = { ...existing, ...updates };
       registry.upsert(updated);
-      await registry.saveToAsset(updated);
+      get()._refreshMaterials(); // Update UI reactively
     },
 
     deleteMaterial: async (materialId) => {
@@ -95,10 +143,12 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
         throw new Error('Cannot delete the default material');
       }
 
-      registry.remove(materialId);
+      MaterialRegistry.getInstance().remove(materialId);
+      get()._refreshMaterials(); // Update UI reactively
     },
 
     duplicateMaterial: async (materialId) => {
+      const registry = MaterialRegistry.getInstance();
       const original = registry.get(materialId);
       if (!original) throw new Error(`Material not found: ${materialId}`);
 
@@ -109,7 +159,7 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
       };
 
       registry.upsert(duplicate);
-      await registry.saveToAsset(duplicate);
+      get()._refreshMaterials(); // Update UI reactively
 
       return duplicate;
     },
@@ -127,9 +177,9 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     },
 
     get filteredMaterials() {
-      const { searchTerm, filterByShader, filterByType, registry } = get();
+      const { searchTerm, filterByShader, filterByType, materials } = get();
 
-      return registry.list().filter((material) => {
+      return materials.filter((material) => {
         // Search filter
         if (searchTerm) {
           const searchLower = searchTerm.toLowerCase();
@@ -156,14 +206,14 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     },
 
     get selectedMaterial() {
-      const { selectedMaterialId, registry } = get();
-      return selectedMaterialId ? registry.get(selectedMaterialId) : null;
+      const { selectedMaterialId, materials } = get();
+      return selectedMaterialId ? materials.find(m => m.id === selectedMaterialId) || null : null;
     },
 
     getFilteredMaterials: () => {
-      const { searchTerm, filterByShader, filterByType, registry } = get();
+      const { searchTerm, filterByShader, filterByType, materials } = get();
 
-      return registry.list().filter((material) => {
+      return materials.filter((material) => {
         // Search filter
         if (searchTerm) {
           const searchLower = searchTerm.toLowerCase();
@@ -190,8 +240,8 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     },
 
     getSelectedMaterial: () => {
-      const { selectedMaterialId, registry } = get();
-      return selectedMaterialId ? registry.get(selectedMaterialId) : null;
+      const { selectedMaterialId, materials } = get();
+      return selectedMaterialId ? materials.find(m => m.id === selectedMaterialId) || null : null;
     },
   };
 });

@@ -19,7 +19,10 @@ import {
   type IStreamingProgress,
   type IStreamingCallbacks,
 } from '@/core/lib/serialization/StreamingSceneSerializer';
+import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
+import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import { useProjectToasts, useToastStore } from '@/core/stores/toastStore';
+import { useMaterialsStore } from '@/editor/store/materialsStore';
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
 import { useScenePersistence } from './useScenePersistence';
@@ -114,16 +117,23 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         return componentManager.getComponentsForEntity(numberId);
       };
 
+      // Get materials from MaterialRegistry
+      const getMaterials = () => {
+        const materialRegistry = MaterialRegistry.getInstance();
+        return materialRegistry.list();
+      };
+
       const callbacks = createStreamingCallbacks('Export');
 
       return await streamingSerializer.exportScene(
         entities,
         getComponentsForEntity,
         {
-          version: 5, // Streaming version
+          version: 6, // Bumped version for materials support
           name: metadata?.name,
         },
         callbacks,
+        getMaterials,
       );
     },
     [entityManager, componentManager, createStreamingCallbacks],
@@ -163,14 +173,42 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         },
       };
 
+      // Material manager adapter
+      const materialManagerAdapter = {
+        clearMaterials: () => {
+          console.log('[MaterialManagerAdapter] Clearing materials');
+          const materialRegistry = MaterialRegistry.getInstance();
+          materialRegistry.clearMaterials();
+        },
+        upsertMaterial: (material: IMaterialDefinition) => {
+          console.log('[MaterialManagerAdapter] Upserting material:', material.id, material.name);
+          const materialRegistry = MaterialRegistry.getInstance();
+          materialRegistry.upsert(material);
+        },
+      };
+
       const callbacks = createStreamingCallbacks('Import');
+
+      // Debug: Log scene materials before import
+      console.log('[SceneImport] Scene data:', {
+        entities: scene.entities?.length || 0,
+        materials: scene.materials?.length || 0,
+        materialIds: scene.materials?.map(m => m.id) || []
+      });
 
       await streamingSerializer.importScene(
         scene,
         entityManagerAdapter,
         componentManagerAdapter,
         callbacks,
+        materialManagerAdapter,
       );
+
+      // Refresh the materials store cache after importing
+      console.log('[SceneImport] Refreshing materials store cache...');
+      useMaterialsStore.getState()._refreshMaterials();
+      console.log('[SceneImport] Materials in store after refresh:',
+        useMaterialsStore.getState().materials.map(m => ({id: m.id, name: m.name})));
     },
     [entityManager, componentManager, createStreamingCallbacks],
   );
@@ -245,10 +283,16 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
           };
         });
 
+        // Get materials for TSX scene
+        const materialRegistry = MaterialRegistry.getInstance();
+        const materials = materialRegistry.list();
+
         console.log(
-          `[StreamingSceneActions] Streaming save: ${transformedEntities.length} entities`,
+          `[StreamingSceneActions] Streaming save: ${transformedEntities.length} entities, ${materials.length} materials`,
         );
-        const success = await scenePersistence.saveTsxScene(sceneName, transformedEntities);
+        console.log('[StreamingSceneActions] Materials being saved:', materials.map(m => ({id: m.id, name: m.name})));
+        console.log('[StreamingSceneActions] Full material details:', JSON.stringify(materials, null, 2));
+        const success = await scenePersistence.saveTsxScene(sceneName, transformedEntities, materials);
 
         if (loadingToastId) removeToast(loadingToastId);
 
@@ -410,12 +454,18 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
       const entities = entityManager.getAllEntities();
       const clearedCount = entities.length;
 
+      // Clear entities and materials
       entityManager.clearEntities();
+      const materialRegistry = MaterialRegistry.getInstance();
+      materialRegistry.clearMaterials();
+
+      // Refresh the materials store cache after clearing
+      useMaterialsStore.getState()._refreshMaterials();
 
       removeToast(loadingToastId);
       projectToasts.showOperationSuccess(
         'Clear',
-        `Successfully cleared ${clearedCount} entities (Streaming)`,
+        `Successfully cleared ${clearedCount} entities and materials (Streaming)`,
       );
     } catch (error) {
       console.error('Failed to clear scene:', error);

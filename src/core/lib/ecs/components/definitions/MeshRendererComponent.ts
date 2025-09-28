@@ -58,6 +58,7 @@ export const meshRendererComponent = ComponentFactory.create({
     enabled: Types.ui8,
     castShadows: Types.ui8,
     receiveShadows: Types.ui8,
+    hasOverrides: Types.ui8, // Flag to track if this entity has material overrides
     shader: Types.ui8, // 0 = standard, 1 = unlit
     materialType: Types.ui8, // 0 = solid, 1 = texture
     materialColorR: Types.f32,
@@ -84,50 +85,39 @@ export const meshRendererComponent = ComponentFactory.create({
     emissiveTextureHash: Types.ui32,
     occlusionTextureHash: Types.ui32,
   },
-  serialize: (eid: EntityId, component: any) => ({
-    meshId: getStringFromHash(component.meshIdHash[eid]),
-    materialId: getStringFromHash(component.materialIdHash[eid]),
-    enabled: Boolean(component.enabled[eid]),
-    castShadows: Boolean(component.castShadows[eid]),
-    receiveShadows: Boolean(component.receiveShadows[eid]),
-    modelPath: getStringFromHash(component.modelPathHash[eid]),
-    material: {
-      shader: (component.shader[eid] === 0 ? 'standard' : 'unlit') as 'standard' | 'unlit',
-      materialType: (component.materialType[eid] === 0 ? 'solid' : 'texture') as
-        | 'solid'
-        | 'texture',
-      color: getRgbAsHex(
+  serialize: (eid: EntityId, component: any) => {
+    const result: any = {
+      meshId: getStringFromHash(component.meshIdHash[eid]),
+      materialId: getStringFromHash(component.materialIdHash[eid]),
+      enabled: Boolean(component.enabled[eid]),
+      castShadows: Boolean(component.castShadows[eid]),
+      receiveShadows: Boolean(component.receiveShadows[eid]),
+      modelPath: getStringFromHash(component.modelPathHash[eid]),
+    };
+
+    // Check if this entity has material overrides by checking if any override flag is set
+    // We'll use a special flag in the component to track this
+    const hasOverrides = Boolean(component.hasOverrides?.[eid]);
+
+    if (hasOverrides) {
+      const color = getRgbAsHex(
         {
           r: component.materialColorR as Float32Array,
           g: component.materialColorG as Float32Array,
           b: component.materialColorB as Float32Array,
         },
         eid,
-      ),
-      normalScale: component.normalScale[eid],
-      metalness: component.metalness[eid],
-      roughness: component.roughness[eid],
-      emissive: getRgbAsHex(
-        {
-          r: component.emissiveR as Float32Array,
-          g: component.emissiveG as Float32Array,
-          b: component.emissiveB as Float32Array,
-        },
-        eid,
-      ),
-      emissiveIntensity: component.emissiveIntensity[eid],
-      occlusionStrength: component.occlusionStrength[eid],
-      textureOffsetX: component.textureOffsetX[eid],
-      textureOffsetY: component.textureOffsetY[eid],
-      // Texture properties
-      albedoTexture: getStringFromHash(component.albedoTextureHash[eid]) || undefined,
-      normalTexture: getStringFromHash(component.normalTextureHash[eid]) || undefined,
-      metallicTexture: getStringFromHash(component.metallicTextureHash[eid]) || undefined,
-      roughnessTexture: getStringFromHash(component.roughnessTextureHash[eid]) || undefined,
-      emissiveTexture: getStringFromHash(component.emissiveTextureHash[eid]) || undefined,
-      occlusionTexture: getStringFromHash(component.occlusionTextureHash[eid]) || undefined,
-    },
-  }),
+      );
+
+      result.material = {
+        color,
+        metalness: component.metalness[eid],
+        roughness: component.roughness[eid],
+      };
+    }
+
+    return result;
+  },
   deserialize: (eid: EntityId, data, component: any) => {
     component.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
     component.castShadows[eid] = (data.castShadows ?? true) ? 1 : 0;
@@ -136,70 +126,49 @@ export const meshRendererComponent = ComponentFactory.create({
     component.materialIdHash[eid] = storeString(data.materialId || '');
     component.modelPathHash[eid] = storeString(data.modelPath || '');
 
-    // Set material properties with defaults
-    const material = data.material || {
-      shader: 'standard' as const,
-      materialType: 'solid' as const,
-      color: '#cccccc',
-      normalScale: 1,
-      metalness: 0,
-      roughness: 0.7,
-      emissive: '#000000',
-      emissiveIntensity: 0,
-      occlusionStrength: 1,
-      textureOffsetX: 0,
-      textureOffsetY: 0,
-    };
-    component.shader[eid] = material.shader === 'unlit' ? 1 : 0;
-    component.materialType[eid] = material.materialType === 'texture' ? 1 : 0;
-    setRgbValues(
-      {
-        r: component.materialColorR as Float32Array,
-        g: component.materialColorG as Float32Array,
-        b: component.materialColorB as Float32Array,
-      },
-      eid,
-      material.color || '#cccccc',
-    );
+    // Set the hasOverrides flag based on whether material data is provided
+    component.hasOverrides[eid] = data.material ? 1 : 0;
 
-    component.normalScale[eid] = material.normalScale ?? 1;
-    component.metalness[eid] = material.metalness ?? 0;
-    component.roughness[eid] = material.roughness ?? 0.7;
+    if (data.material) {
+      const material = data.material;
 
-    setRgbValues(
-      {
-        r: component.emissiveR as Float32Array,
-        g: component.emissiveG as Float32Array,
-        b: component.emissiveB as Float32Array,
-      },
-      eid,
-      material.emissive || '#000000',
-    );
+      // Set override values
+      setRgbValues(
+        {
+          r: component.materialColorR as Float32Array,
+          g: component.materialColorG as Float32Array,
+          b: component.materialColorB as Float32Array,
+        },
+        eid,
+        material.color || '#cccccc',
+      );
+      component.metalness[eid] = material.metalness ?? 0;
+      component.roughness[eid] = material.roughness ?? 0.7;
 
-    component.emissiveIntensity[eid] = material.emissiveIntensity ?? 0;
-    component.occlusionStrength[eid] = material.occlusionStrength ?? 1;
-    component.textureOffsetX[eid] = material.textureOffsetX ?? 0;
-    component.textureOffsetY[eid] = material.textureOffsetY ?? 0;
+      component.textureOffsetX[eid] = material.textureOffsetX ?? 0;
+      component.textureOffsetY[eid] = material.textureOffsetY ?? 0;
 
-    // Store texture hashes
-    component.albedoTextureHash[eid] = material.albedoTexture
-      ? storeString(material.albedoTexture)
-      : 0;
-    component.normalTextureHash[eid] = material.normalTexture
-      ? storeString(material.normalTexture)
-      : 0;
-    component.metallicTextureHash[eid] = material.metallicTexture
-      ? storeString(material.metallicTexture)
-      : 0;
-    component.roughnessTextureHash[eid] = material.roughnessTexture
-      ? storeString(material.roughnessTexture)
-      : 0;
-    component.emissiveTextureHash[eid] = material.emissiveTexture
-      ? storeString(material.emissiveTexture)
-      : 0;
-    component.occlusionTextureHash[eid] = material.occlusionTexture
-      ? storeString(material.occlusionTexture)
-      : 0;
+      // Store texture hashes
+      component.albedoTextureHash[eid] = material.albedoTexture
+        ? storeString(material.albedoTexture)
+        : 0;
+      component.normalTextureHash[eid] = material.normalTexture
+        ? storeString(material.normalTexture)
+        : 0;
+      component.metallicTextureHash[eid] = material.metallicTexture
+        ? storeString(material.metallicTexture)
+        : 0;
+      component.roughnessTextureHash[eid] = material.roughnessTexture
+        ? storeString(material.roughnessTexture)
+        : 0;
+      component.emissiveTextureHash[eid] = material.emissiveTexture
+        ? storeString(material.emissiveTexture)
+        : 0;
+      component.occlusionTextureHash[eid] = material.occlusionTexture
+        ? storeString(material.occlusionTexture)
+        : 0;
+    }
+    // Note: When no overrides, we don't set any material values - let the viewport get them from registry
   },
   dependencies: ['Transform'],
   conflicts: ['Camera', 'Light'], // MeshRenderer conflicts with Camera and Light

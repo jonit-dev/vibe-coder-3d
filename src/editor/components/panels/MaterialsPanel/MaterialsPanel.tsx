@@ -1,5 +1,4 @@
 import React from 'react';
-import { FiImage } from 'react-icons/fi';
 
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import { MaterialBrowserModal } from '@/editor/components/materials/MaterialBrowserModal';
@@ -56,12 +55,7 @@ export const MaterialsPanel: React.FC<IMaterialsPanelProps> = ({
       <Modal
         isOpen={isExpanded}
         onClose={onToggle}
-        title={
-          <div className="flex items-center space-x-2">
-            <FiImage className="w-5 h-5 text-cyan-400" />
-            <span>Materials</span>
-          </div>
-        }
+        title="Materials"
         maxWidth="w-[500px]"
         maxHeight="max-h-[80vh]"
       >

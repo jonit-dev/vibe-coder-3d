@@ -20,6 +20,7 @@ export interface IScenePersistenceActions {
   saveTsxScene: (
     name: string,
     entities: unknown[],
+    materials?: unknown[],
     options?: { description?: string; author?: string },
   ) => Promise<boolean>;
   loadScene: (name: string) => Promise<IStreamingScene | null>;
@@ -73,7 +74,12 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
         const endpoint = format === 'tsx' ? '/api/scene/save-tsx' : '/api/scene/save';
         const payload =
           format === 'tsx'
-            ? { name: name.trim(), entities: data.entities, description: data.name }
+            ? {
+                name: name.trim(),
+                entities: data.entities,
+                materials: data.materials || [],
+                description: data.name
+              }
             : { name: name.trim(), data };
 
         const response = await fetch(endpoint, {
@@ -213,6 +219,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
     async (
       name: string,
       entities: unknown[],
+      materials: unknown[] = [],
       options: { description?: string; author?: string } = {},
     ): Promise<boolean> => {
       if (!name.trim()) {
@@ -224,6 +231,13 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
       clearError();
 
       try {
+        console.log('[ScenePersistence] Saving TSX scene with:', {
+          name: name.trim(),
+          entities: entities.length,
+          materials: materials.length,
+          materialIds: materials.map((m: any) => m.id)
+        });
+
         const response = await fetch('/api/scene/save-tsx', {
           method: 'POST',
           headers: {
@@ -232,6 +246,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
           body: JSON.stringify({
             name: name.trim(),
             entities,
+            materials,
             description: options.description,
             author: options.author,
           }),

@@ -3,18 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IMaterialDefinition } from '../Material.types';
 import { MaterialRegistry } from '../MaterialRegistry';
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
-
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock,
-});
-
 // Mock MaterialConverter
 vi.mock('../MaterialConverter', () => ({
   createThreeMaterialFrom: vi.fn((def) => {
@@ -32,12 +20,6 @@ describe('MaterialRegistry', () => {
   let testMaterial: IMaterialDefinition;
 
   beforeEach(() => {
-    // Clear localStorage mock
-    localStorageMock.getItem.mockClear();
-    localStorageMock.setItem.mockClear();
-    localStorageMock.removeItem.mockClear();
-    localStorageMock.clear.mockClear();
-
     // Get fresh instance
     (MaterialRegistry as any).instance = null;
     registry = MaterialRegistry.getInstance();
@@ -139,37 +121,78 @@ describe('MaterialRegistry', () => {
     });
   });
 
-  describe('asset persistence', () => {
-    it('should save material to localStorage', async () => {
-      await registry.saveToAsset(testMaterial);
+  describe('scene-based persistence', () => {
+    it('should clear all materials except default', () => {
+      // Add some test materials
+      registry.upsert(testMaterial);
+      const anotherMaterial = { ...testMaterial, id: 'another-material', name: 'Another Material' };
+      registry.upsert(anotherMaterial);
 
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'material_test-material',
-        JSON.stringify(testMaterial, null, 2),
-      );
+      expect(registry.list()).toHaveLength(3); // default + 2 test materials
+
+      registry.clearMaterials();
+
+      const materials = registry.list();
+      expect(materials).toHaveLength(1);
+      expect(materials[0].id).toBe('default');
     });
 
-    it('should load material from localStorage', async () => {
-      localStorageMock.getItem.mockReturnValue(JSON.stringify(testMaterial));
+    it('should restore default material if it was removed during clear', () => {
+      // Remove default material manually (shouldn't happen in normal operation)
+      registry.remove('default');
+      expect(registry.get('default')).toBeUndefined();
 
-      const loaded = await registry.loadFromAsset('test-material');
+      registry.clearMaterials();
 
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('material_test-material');
-      expect(loaded).toEqual(testMaterial);
+      const defaultMaterial = registry.get('default');
+      expect(defaultMaterial).toBeDefined();
+      expect(defaultMaterial?.name).toBe('Default Material');
     });
 
-    it('should return null when loading non-existent material', async () => {
-      localStorageMock.getItem.mockReturnValue(null);
+    it('should load multiple materials', () => {
+      const materials: IMaterialDefinition[] = [
+        testMaterial,
+        {
+          id: 'material-2',
+          name: 'Material 2',
+          shader: 'unlit',
+          materialType: 'texture',
+          color: '#00ff00',
+          metalness: 0,
+          roughness: 1,
+          emissive: '#000000',
+          emissiveIntensity: 0,
+          normalScale: 1,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+        },
+      ];
 
-      const loaded = await registry.loadFromAsset('non-existent');
-      expect(loaded).toBeNull();
+      registry.loadMaterials(materials);
+
+      expect(registry.get('test-material')).toEqual(testMaterial);
+      expect(registry.get('material-2')).toEqual(materials[1]);
+      expect(registry.list()).toHaveLength(3); // default + 2 loaded materials
     });
 
-    it('should handle JSON parse errors gracefully', async () => {
-      localStorageMock.getItem.mockReturnValue('invalid json');
+    it('should handle loading empty materials array', () => {
+      registry.upsert(testMaterial);
+      expect(registry.list()).toHaveLength(2); // default + test material
 
-      const loaded = await registry.loadFromAsset('test-material');
-      expect(loaded).toBeNull();
+      registry.loadMaterials([]);
+
+      expect(registry.list()).toHaveLength(2); // unchanged
+    });
+
+    it('should update existing materials when loading', () => {
+      registry.upsert(testMaterial);
+
+      const updatedMaterial = { ...testMaterial, color: '#00ff00' };
+      registry.loadMaterials([updatedMaterial]);
+
+      const retrieved = registry.get('test-material');
+      expect(retrieved?.color).toBe('#00ff00');
     });
   });
 

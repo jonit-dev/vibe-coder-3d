@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useMaterialsStore } from '@/editor/store/materialsStore';
+import type { MeshRendererData } from '@/core/lib/ecs/components/definitions/MeshRendererComponent';
 
 import {
   combinePhysicsContributions,
@@ -63,10 +65,76 @@ export const useEntityMesh = ({
 }: IUseEntityMeshProps): IUseEntityMeshResult => {
   const [entityColor, setEntityColor] = useState<string>('#3388ff');
 
-  // Combine contributions from all components
-  const renderingContributions = useMemo<IRenderingContributions>(() => {
+  // Get materials from store for reactivity
+  const materials = useMaterialsStore(state => state.materials);
+
+  // Debug: Log materials when they change
+  React.useEffect(() => {
+    console.log('[useEntityMesh] Materials updated:', materials.map(m => ({id: m.id, name: m.name})));
+  }, [materials]);
+
+  // Combine contributions from components (geometry, visibility, overrides)
+  const baseContributions = useMemo<IRenderingContributions>(() => {
     return combineRenderingContributions(entityComponents) as unknown as IRenderingContributions;
   }, [entityComponents]);
+
+  // Merge base material asset (by materialId) with inline overrides for rendering
+  const renderingContributions = useMemo<IRenderingContributions>(() => {
+    // Read MeshRenderer data directly for materialId and overrides
+    const meshRenderer = entityComponents.find((c) => c.type === 'MeshRenderer')
+      ?.data as MeshRendererData | undefined;
+    const materialId = meshRenderer?.materialId || 'default';
+
+    // Get the material definition from the reactive materials list
+    const baseDef = materials.find(m => m.id === materialId);
+
+    if (!baseDef && materialId !== 'default') {
+      console.warn(`Material not found in registry: ${materialId}`, {
+        availableMaterials: materials.map(m => m.id)
+      });
+    }
+
+    // Debug: Log material lookup for non-default materials
+    if (materialId !== 'default') {
+      console.log(`[useEntityMesh] Material lookup for ${materialId}:`, {
+        found: !!baseDef,
+        color: baseDef?.color,
+        hasOverrides: !!meshRenderer?.material
+      });
+    }
+
+    // Build base material from asset (fallbacks ensure stability)
+    const baseMaterial = {
+      shader: baseDef?.shader ?? 'standard',
+      materialType: baseDef?.materialType ?? 'solid',
+      color: baseDef?.color ?? '#cccccc',
+      normalScale: baseDef?.normalScale ?? 1,
+      metalness: baseDef?.metalness ?? 0,
+      roughness: baseDef?.roughness ?? 0.7,
+      emissive: baseDef?.emissive ?? '#000000',
+      emissiveIntensity: baseDef?.emissiveIntensity ?? 0,
+      occlusionStrength: baseDef?.occlusionStrength ?? 1,
+      textureOffsetX: baseDef?.textureOffsetX ?? 0,
+      textureOffsetY: baseDef?.textureOffsetY ?? 0,
+      albedoTexture: baseDef?.albedoTexture,
+      normalTexture: baseDef?.normalTexture,
+      metallicTexture: baseDef?.metallicTexture,
+      roughnessTexture: baseDef?.roughnessTexture,
+      emissiveTexture: baseDef?.emissiveTexture,
+      occlusionTexture: baseDef?.occlusionTexture,
+    } as IRenderingContributions['material'];
+
+    // Apply only real overrides (not defaults) from MeshRenderer.material
+    const overrides = meshRenderer?.material || {};
+
+    return {
+      ...baseContributions,
+      material: {
+        ...baseMaterial,
+        ...overrides,
+      },
+    };
+  }, [entityComponents, baseContributions, materials]);
 
   const physicsContributions = useMemo<IPhysicsContributions>(() => {
     return combinePhysicsContributions(entityComponents) as unknown as IPhysicsContributions;
@@ -75,7 +143,7 @@ export const useEntityMesh = ({
   // Use meshType directly from renderingContributions (no state delay)
   const meshType = renderingContributions.meshType;
 
-  // Update color from rendering contributions
+  // Update color from effective material
   useEffect(() => {
     if (renderingContributions.material?.color) {
       setEntityColor(renderingContributions.material.color);

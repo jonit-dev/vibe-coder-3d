@@ -60,7 +60,7 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
 
     try {
       materialRegistry.upsert(material);
-      await materialRegistry.saveToAsset(material);
+      // Materials now persist via scene saves
       setHasUnsavedChanges(false);
       onSave?.(material);
     } catch (error) {

@@ -2,6 +2,8 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
+import { useMaterialsStore } from '@/editor/store/materialsStore';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type {
   ComponentDataMap,
@@ -29,7 +31,7 @@ interface ITypedSceneEntity {
  */
 const sceneData: ITypedSceneEntity[] = [
   {
-    "id": 5,
+    "id": 0,
     "name": "Main Camera",
     "components": {
       "PersistentId": {
@@ -93,7 +95,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 6,
+    "id": 1,
     "name": "Directional Light",
     "components": {
       "PersistentId": {
@@ -140,7 +142,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 7,
+    "id": 2,
     "name": "Ambient Light",
     "components": {
       "PersistentId": {
@@ -187,7 +189,7 @@ const sceneData: ITypedSceneEntity[] = [
     }
   },
   {
-    "id": 8,
+    "id": 3,
     "name": "Cube 0",
     "components": {
       "PersistentId": {
@@ -218,23 +220,15 @@ const sceneData: ITypedSceneEntity[] = [
         "receiveShadows": true,
         "modelPath": "",
         "material": {
-          "shader": "standard",
-          "materialType": "solid",
           "color": "#3399ff",
-          "normalScale": 1,
           "metalness": 0,
-          "roughness": 0.5,
-          "emissive": "#000000",
-          "emissiveIntensity": 0,
-          "occlusionStrength": 1,
-          "textureOffsetX": 0,
-          "textureOffsetY": 0
+          "roughness": 0.5
         }
       }
     }
   },
   {
-    "id": 9,
+    "id": 4,
     "name": "Sphere 0",
     "components": {
       "PersistentId": {
@@ -259,26 +253,49 @@ const sceneData: ITypedSceneEntity[] = [
       },
       "MeshRenderer": {
         "meshId": "sphere",
-        "materialId": "default",
+        "materialId": "test123",
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
-        "material": {
-          "shader": "standard",
-          "materialType": "solid",
-          "color": "#3399ff",
-          "normalScale": 1,
-          "metalness": 0,
-          "roughness": 0.5,
-          "emissive": "#000000",
-          "emissiveIntensity": 0,
-          "occlusionStrength": 1,
-          "textureOffsetX": 0,
-          "textureOffsetY": 0
-        }
+        "modelPath": ""
       }
     }
+  }
+];
+
+/**
+ * Scene materials
+ */
+const sceneMaterials = [
+  {
+    "id": "default",
+    "name": "Default Material",
+    "shader": "standard",
+    "materialType": "solid",
+    "color": "#cccccc",
+    "metalness": 0,
+    "roughness": 0.7,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "normalScale": 1,
+    "occlusionStrength": 1,
+    "textureOffsetX": 0,
+    "textureOffsetY": 0
+  },
+  {
+    "id": "test123",
+    "name": "Test Material",
+    "shader": "standard",
+    "materialType": "solid",
+    "color": "#ff6600",
+    "metalness": 0.3,
+    "roughness": 0.6,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "normalScale": 1,
+    "occlusionStrength": 1,
+    "textureOffsetX": 0,
+    "textureOffsetY": 0
   }
 ];
 
@@ -288,19 +305,33 @@ const sceneData: ITypedSceneEntity[] = [
 export const metadata: SceneMetadata = {
   "name": "x1",
   "version": 1,
-  "timestamp": "2025-09-28T13:28:15.700Z"
+  "timestamp": "2025-09-28T22:20:46.716Z"
 };
 
 /**
  * x1
- * Generated: 2025-09-28T13:28:15.700Z
+ * Generated: 2025-09-28T22:20:46.716Z
  * Version: 1
  */
 export const X1: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
+  const materialsStore = useMaterialsStore();
 
   useEffect(() => {
+    // Load materials first
+    const materialRegistry = MaterialRegistry.getInstance();
+    materialRegistry.clearMaterials();
+
+    sceneMaterials.forEach(material => {
+      materialRegistry.upsert(material);
+    });
+
+    // Refresh materials store cache
+    materialsStore._refreshMaterials();
+
+    console.log(`[TsxScene] Loaded ${sceneMaterials.length} materials`);
+
     // Validate scene data at runtime
     const validatedSceneData = sceneData.map(entity => validateSceneEntity(entity));
 
@@ -320,8 +351,8 @@ export const X1: React.FC = () => {
       });
     });
 
-    console.log(`[TsxScene] Loaded scene '${metadata?.name || 'Unknown'}' with ${validatedSceneData.length} entities`);
-  }, [entityManager, componentManager]);
+    console.log(`[TsxScene] Loaded scene '${metadata?.name || 'Unknown'}' with ${validatedSceneData.length} entities and ${sceneMaterials.length} materials`);
+  }, [entityManager, componentManager, materialsStore]);
 
   return null; // Scene components don't render UI
 };

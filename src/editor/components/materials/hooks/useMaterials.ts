@@ -130,8 +130,8 @@ export const useMaterials = (options: IUseMaterialsOptions = {}) => {
   );
 
   const handleCreate = useCallback(
-    (material: IMaterialDefinition) => {
-      createMaterial(material);
+    async (material: IMaterialDefinition) => {
+      await createMaterial(material);
       closeCreate();
     },
     [createMaterial, closeCreate],
@@ -139,7 +139,7 @@ export const useMaterials = (options: IUseMaterialsOptions = {}) => {
 
   return {
     // State
-    materials: store.registry.list(),
+    materials: store.materials,
     selectedMaterialId: store.selectedMaterialId,
     selectedMaterial: store.getSelectedMaterial(),
     isBrowserOpen: store.isBrowserOpen,

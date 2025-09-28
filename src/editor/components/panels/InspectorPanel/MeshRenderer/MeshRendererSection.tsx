@@ -82,6 +82,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
 
   // Handle material selection from browser
   const handleMaterialSelect = (materialId: string) => {
+    console.log('handleMaterialSelect called with materialId:', materialId);
     // Clear overrides when selecting a new material to see the actual material
     updateMeshRenderer({
       materialId,
@@ -205,7 +206,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
                   }
                 }}
                 resetValue={false}
-                color="yellow"
+                color="orange"
               />
 
               {overridesEnabled && (

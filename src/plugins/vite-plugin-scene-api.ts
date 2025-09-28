@@ -316,7 +316,14 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
   req.on('end', async () => {
     try {
       const requestData = JSON.parse(body);
-      const { name, entities, description, author } = requestData;
+      const { name, entities, materials = [], description, author } = requestData;
+
+      console.log('[handleSaveTsx] Request data contains:', {
+        name,
+        entitiesCount: entities?.length || 0,
+        materialsCount: materials?.length || 0,
+        materialIds: materials?.map((m: any) => m.id) || []
+      });
 
       if (!name || typeof name !== 'string') {
         res.statusCode = 400;
@@ -417,7 +424,8 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
       };
 
       // Generate TSX content with type safety
-      const tsxContent = generateTsxScene(entities, metadata);
+      console.log('[handleSaveTsx] Generating TSX with materials:', materials.length);
+      const tsxContent = generateTsxScene(entities, metadata, materials);
 
       const componentName =
         metadata.name

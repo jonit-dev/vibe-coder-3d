@@ -28,26 +28,12 @@ export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = ({
     enabled: data.enabled ?? true,
     castShadows: data.castShadows ?? true,
     receiveShadows: data.receiveShadows ?? true,
-    material: {
-      shader: data.material?.shader || 'standard',
-      materialType: data.material?.materialType || 'solid',
-      color: data.material?.color || '#cccccc',
-      normalScale: data.material?.normalScale ?? 1,
-      metalness: data.material?.metalness ?? 0.0,
-      roughness: data.material?.roughness ?? 0.7,
-      emissive: data.material?.emissive || '#000000',
-      emissiveIntensity: data.material?.emissiveIntensity ?? 0.0,
-      occlusionStrength: data.material?.occlusionStrength ?? 1.0,
-      textureOffsetX: data.material?.textureOffsetX ?? 0.0,
-      textureOffsetY: data.material?.textureOffsetY ?? 0.0,
-      // Texture properties
-      albedoTexture: data.material?.albedoTexture,
-      normalTexture: data.material?.normalTexture,
-      metallicTexture: data.material?.metallicTexture,
-      roughnessTexture: data.material?.roughnessTexture,
-      emissiveTexture: data.material?.emissiveTexture,
-      occlusionTexture: data.material?.occlusionTexture,
-    },
+    // Only include material overrides if they exist
+    material: data.material ? {
+      color: data.material.color,
+      metalness: data.material.metalness,
+      roughness: data.material.roughness,
+    } : undefined,
   };
 
   const handleUpdate = (newData: MeshRendererData | null) => {

@@ -20,6 +20,8 @@ const STREAM_CONFIG = {
   PROGRESS_UPDATE_INTERVAL: 50, // Progress updates every N entities
 } as const;
 
+import type { IMaterialDefinition } from '@/core/materials/Material.types';
+
 // Core interfaces
 export interface IStreamingEntity {
   id: string | number;
@@ -34,6 +36,7 @@ export interface IStreamingScene {
   timestamp: string;
   totalEntities: number;
   entities: IStreamingEntity[];
+  materials: IMaterialDefinition[];
 }
 
 export interface IStreamingProgress {
@@ -53,6 +56,9 @@ export interface IStreamingCallbacks {
   onComplete?: (summary: { totalEntities: number; timeElapsed: number }) => void;
 }
 
+// Import material schema
+import { MaterialDefinitionSchema } from '@/core/materials/Material.types';
+
 // Zod schema for validation
 const StreamingEntitySchema = z.object({
   id: z.union([z.string(), z.number()]),
@@ -68,11 +74,13 @@ const StreamingSceneSchema = z
     timestamp: z.string().optional(), // Optional for backward compatibility
     totalEntities: z.number().optional(), // Optional for backward compatibility
     entities: z.array(StreamingEntitySchema),
+    materials: z.array(MaterialDefinitionSchema).optional().default([]), // Optional for backward compatibility
   })
   .transform((data) => ({
     ...data,
     timestamp: data.timestamp || new Date().toISOString(),
     totalEntities: data.totalEntities ?? data.entities.length,
+    materials: data.materials || [],
   }));
 
 /**
@@ -130,6 +138,7 @@ export class StreamingSceneSerializer {
     getComponentsForEntity: (entityId: string | number) => Array<{ type: string; data: unknown }>,
     metadata: { name?: string; version?: number } = {},
     callbacks: IStreamingCallbacks = {},
+    getMaterials?: () => IMaterialDefinition[],
   ): Promise<IStreamingScene> {
     const startTime = performance.now();
     this.abortController = new AbortController();
@@ -213,12 +222,16 @@ export class StreamingSceneSerializer {
         percentage: 100,
       });
 
+      // Get materials if provider function is available
+      const materials = getMaterials ? getMaterials() : [];
+
       const scene: IStreamingScene = {
-        version: metadata.version || 5, // Bumped version for streaming format
+        version: metadata.version || 6, // Bumped version for materials support
         name: metadata.name,
         timestamp: new Date().toISOString(),
         totalEntities: streamingEntities.length,
         entities: streamingEntities,
+        materials,
       };
 
       // Validate the serialized scene
@@ -274,6 +287,10 @@ export class StreamingSceneSerializer {
       ) => void;
     },
     callbacks: IStreamingCallbacks = {},
+    materialManager?: {
+      clearMaterials: () => void;
+      upsertMaterial: (material: IMaterialDefinition) => void;
+    },
   ): Promise<void> {
     const startTime = performance.now();
     this.abortController = new AbortController();
@@ -289,9 +306,17 @@ export class StreamingSceneSerializer {
         percentage: 0,
       });
 
-      // Clear existing entities
+      // Clear existing entities and materials
       entityManager.clearEntities();
       this.processor.clear();
+
+      // Import materials first if manager is provided
+      if (materialManager && validatedScene.materials.length > 0) {
+        materialManager.clearMaterials();
+        for (const material of validatedScene.materials) {
+          materialManager.upsertMaterial(material);
+        }
+      }
 
       const idMap = new Map<string, string | number>();
       let processed = 0;

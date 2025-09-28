@@ -2,9 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { FiCopy, FiEdit, FiPlus, FiSearch, FiTrash2 } from 'react-icons/fi';
 
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
-import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
 import { Modal } from '@/editor/components/shared/Modal';
 import { MaterialPreviewSphere } from './MaterialPreviewSphere';
+import { useMaterialsStore } from '@/editor/store/materialsStore';
 
 export interface IMaterialBrowserModalProps {
   isOpen: boolean;
@@ -27,16 +27,19 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMaterials, setSelectedMaterials] = useState<Set<string>>(new Set());
-  const materialRegistry = MaterialRegistry.getInstance();
+  const store = useMaterialsStore();
 
   const materials = useMemo(() => {
-    return materialRegistry.list().filter(material =>
+    const allMaterials = store.materials;
+    console.log('MaterialBrowserModal: Available materials:', allMaterials.map(m => ({ id: m.id, name: m.name })));
+    return allMaterials.filter(material =>
       material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       material.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, materialRegistry]);
+  }, [searchTerm, store.materials]);
 
   const handleMaterialClick = (materialId: string) => {
+    console.log('MaterialBrowserModal: handleMaterialClick called with materialId:', materialId);
     if (allowMultiSelect) {
       const newSelected = new Set(selectedMaterials);
       if (newSelected.has(materialId)) {
@@ -52,35 +55,28 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
   };
 
   const handleDuplicate = async (materialId: string) => {
-    const original = materialRegistry.get(materialId);
-    if (!original) return;
-
-    const duplicate: IMaterialDefinition = {
-      ...original,
-      id: `${original.id}_copy_${Date.now()}`,
-      name: `${original.name} (Copy)`,
-    };
-
-    materialRegistry.upsert(duplicate);
-    await materialRegistry.saveToAsset(duplicate);
-
-    // Auto-select the duplicate
-    onSelect(duplicate.id);
-    onClose();
+    try {
+      const duplicate = await store.duplicateMaterial(materialId);
+      // Auto-select the duplicate
+      onSelect(duplicate.id);
+      onClose();
+    } catch (error) {
+      console.error('Failed to duplicate material:', error);
+      alert('Failed to duplicate material');
+    }
   };
 
   const handleDelete = async (materialId: string) => {
-    if (materialId === 'default') {
-      alert('Cannot delete the default material');
-      return;
-    }
-
     if (confirm('Are you sure you want to delete this material?')) {
-      materialRegistry.remove(materialId);
-
-      // If this was the selected material, clear selection
-      if (selectedMaterialId === materialId) {
-        onSelect('default');
+      try {
+        await store.deleteMaterial(materialId);
+        // If this was the selected material, clear selection
+        if (selectedMaterialId === materialId) {
+          onSelect('default');
+        }
+      } catch (error) {
+        console.error('Failed to delete material:', error);
+        alert(error instanceof Error ? error.message : 'Failed to delete material');
       }
     }
   };
@@ -220,6 +216,14 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
             <div className="text-center text-gray-400 py-12">
               <div className="text-lg mb-2">No materials found</div>
               {searchTerm && <div className="text-sm">Try a different search term</div>}
+            </div>
+          )}
+
+          {/* Show helpful message when only default material exists */}
+          {materials.length === 1 && materials[0].id === 'default' && !searchTerm && (
+            <div className="text-center text-gray-400 py-8 border border-dashed border-gray-600 rounded-lg mt-4">
+              <div className="text-sm mb-2">💡 Only the default material exists</div>
+              <div className="text-xs text-gray-500">Click "Create" to add custom materials</div>
             </div>
           )}
         </div>

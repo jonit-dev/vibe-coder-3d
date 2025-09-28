@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import type { IMaterialDefinition } from '@/core/materials/Material.types';
 
 export interface ITsxSceneEntity {
   id: string | number;
@@ -22,13 +23,22 @@ export interface ITsxSceneMetadata {
 export const generateTsxScene = (
   entities: ITsxSceneEntity[],
   metadata: ITsxSceneMetadata,
+  materials: IMaterialDefinition[] = [],
 ): string => {
+  console.log('[TSXSerializer] generateTsxScene called with:', {
+    entities: entities.length,
+    materials: materials.length,
+    materialIds: materials.map(m => m.id)
+  });
+
   const componentName = sanitizeComponentName(metadata.name);
 
   const componentString = `import React from 'react';
 import { useEffect } from 'react';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
+import { useMaterialsStore } from '@/editor/store/materialsStore';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type {
   ComponentDataMap,
@@ -57,6 +67,11 @@ interface ITypedSceneEntity {
 const sceneData: ITypedSceneEntity[] = ${JSON.stringify(entities, null, 2)};
 
 /**
+ * Scene materials
+ */
+const sceneMaterials = ${JSON.stringify(materials, null, 2)};
+
+/**
  * Scene metadata
  */
 export const metadata: SceneMetadata = ${JSON.stringify(metadata, null, 2)};
@@ -69,8 +84,22 @@ export const metadata: SceneMetadata = ${JSON.stringify(metadata, null, 2)};
 export const ${componentName}: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
+  const materialsStore = useMaterialsStore();
 
   useEffect(() => {
+    // Load materials first
+    const materialRegistry = MaterialRegistry.getInstance();
+    materialRegistry.clearMaterials();
+
+    sceneMaterials.forEach(material => {
+      materialRegistry.upsert(material);
+    });
+
+    // Refresh materials store cache
+    materialsStore._refreshMaterials();
+
+    console.log(\`[TsxScene] Loaded \${sceneMaterials.length} materials\`);
+
     // Validate scene data at runtime
     const validatedSceneData = sceneData.map(entity => validateSceneEntity(entity));
 
@@ -90,8 +119,8 @@ export const ${componentName}: React.FC = () => {
       });
     });
 
-    console.log(\`[TsxScene] Loaded scene '\${metadata?.name || 'Unknown'}' with \${validatedSceneData.length} entities\`);
-  }, [entityManager, componentManager]);
+    console.log(\`[TsxScene] Loaded scene '\${metadata?.name || 'Unknown'}' with \${validatedSceneData.length} entities and \${sceneMaterials.length} materials\`);
+  }, [entityManager, componentManager, materialsStore]);
 
   return null; // Scene components don't render UI
 };
@@ -108,6 +137,7 @@ export default ${componentName};
 export const saveTsxScene = async (
   sceneName: string,
   entities: ITsxSceneEntity[],
+  materials: IMaterialDefinition[] = [],
   metadata: Partial<Omit<ITsxSceneMetadata, 'name' | 'timestamp'>> = {},
 ): Promise<{ filename: string; filepath: string }> => {
   const scenesDir = './src/game/scenes';
@@ -123,7 +153,7 @@ export const saveTsxScene = async (
     author: metadata.author,
   };
 
-  const tsxContent = generateTsxScene(entities, fullMetadata);
+  const tsxContent = generateTsxScene(entities, fullMetadata, materials);
 
   // Ensure directory exists
   await fs.mkdir(scenesDir, { recursive: true });

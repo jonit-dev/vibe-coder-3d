@@ -14,36 +14,29 @@ export class MaterialRegistry {
   private assetPathToId = new Map<string, string>();
 
   private constructor() {
-    // Load existing materials on initialization
-    this.loadExistingMaterials();
+    // Initialize with default material only
+    this.initializeDefaults();
   }
 
-  private async loadExistingMaterials(): Promise<void> {
-    try {
-      // For now, just create a default material if none exist
-      // In the future, this could scan /public/assets/materials/ directory
-      const defaultMaterial: IMaterialDefinition = {
-        id: 'default',
-        name: 'Default Material',
-        shader: 'standard',
-        materialType: 'solid',
-        color: '#cccccc',
-        metalness: 0,
-        roughness: 0.7,
-        emissive: '#000000',
-        emissiveIntensity: 0,
-        normalScale: 1,
-        occlusionStrength: 1,
-        textureOffsetX: 0,
-        textureOffsetY: 0,
-      };
+  private initializeDefaults(): void {
+    // Create default material
+    const defaultMaterial: IMaterialDefinition = {
+      id: 'default',
+      name: 'Default Material',
+      shader: 'standard',
+      materialType: 'solid',
+      color: '#cccccc',
+      metalness: 0,
+      roughness: 0.7,
+      emissive: '#000000',
+      emissiveIntensity: 0,
+      normalScale: 1,
+      occlusionStrength: 1,
+      textureOffsetX: 0,
+      textureOffsetY: 0,
+    };
 
-      if (!this.idToDef.has('default')) {
-        this.upsert(defaultMaterial);
-      }
-    } catch (error) {
-      console.warn('[MaterialRegistry] Failed to load existing materials:', error);
-    }
+    this.upsert(defaultMaterial);
   }
 
   list(): IMaterialDefinition[] {
@@ -166,34 +159,25 @@ export class MaterialRegistry {
     }
   }
 
-  // Asset persistence methods - using localStorage for client-side storage
-  async saveToAsset(def: IMaterialDefinition): Promise<void> {
-    try {
-      const assetKey = `material_${def.id}`;
-      localStorage.setItem(assetKey, JSON.stringify(def, null, 2));
+  // Scene-based persistence methods
+  clearMaterials(): void {
+    // Keep default material, remove all others
+    const defaultMaterial = this.idToDef.get('default');
+    this.idToDef.clear();
+    this.idToThree.clear();
+    this.assetPathToId.clear();
 
-      // Also update the asset path mapping
-      this.assetPathToId.set(`/assets/materials/${def.id}.mat.json`, def.id);
-    } catch (error) {
-      console.error('[MaterialRegistry] Failed to save material asset:', error);
-      throw error;
+    if (defaultMaterial) {
+      this.upsert(defaultMaterial);
+    } else {
+      this.initializeDefaults();
     }
   }
 
-  async loadFromAsset(id: string): Promise<IMaterialDefinition | null> {
-    try {
-      const assetKey = `material_${id}`;
-      const storedData = localStorage.getItem(assetKey);
-
-      if (!storedData) {
-        return null;
-      }
-
-      const def = JSON.parse(storedData) as IMaterialDefinition;
-      return def;
-    } catch (error) {
-      console.error('[MaterialRegistry] Failed to load material asset:', error);
-      return null;
+  loadMaterials(materials: IMaterialDefinition[]): void {
+    // Load materials into registry (called during scene import)
+    for (const material of materials) {
+      this.upsert(material);
     }
   }
 
