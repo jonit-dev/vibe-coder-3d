@@ -1,4 +1,4 @@
-import { Profiler, type TimingEntry } from '@/core/lib/perf/Profiler';
+import { Profiler, type ITimingEntry } from '@/core/lib/perf/Profiler';
 import { useEffect, useRef, useState } from 'react';
 
 interface IPerformanceMetrics {
@@ -10,7 +10,7 @@ interface IPerformanceMetrics {
 interface IEnhancedPerformanceMetrics extends IPerformanceMetrics {
   profilerStats: {
     totalMeasurements: number;
-    topOperations: TimingEntry[];
+    topOperations: ITimingEntry[];
     memoryUsage?: {
       used: number;
       total: number;
@@ -32,7 +32,7 @@ export const usePerformanceMonitor = (enabled: boolean = false) => {
 
   const [profilerStats, setProfilerStats] = useState({
     totalMeasurements: 0,
-    topOperations: [] as TimingEntry[],
+    topOperations: [] as ITimingEntry[],
     memoryUsage: undefined as IEnhancedPerformanceMetrics['profilerStats']['memoryUsage'],
   });
 

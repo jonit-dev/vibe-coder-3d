@@ -222,9 +222,12 @@ export function serializeWorld(
       manager = entityManager;
       registry = componentRegistry;
     } else {
-      // Dynamic imports to avoid circular dependencies
+      // Lazy loading to avoid circular dependencies
+      // These imports are deferred until needed
+      /* eslint-disable @typescript-eslint/no-require-imports */
       const { EntityManager } = require('../ecs/EntityManager');
       const { componentRegistry: defaultRegistry } = require('../ecs/ComponentRegistry');
+      /* eslint-enable @typescript-eslint/no-require-imports */
 
       manager = EntityManager.getInstance();
       registry = defaultRegistry;
@@ -240,10 +243,10 @@ export function serializeWorld(
 
       try {
         // Get component types for this specific entity
-        const componentTypes = registry.getEntityComponents(entityId);
+        const componentTypes = registry.getEntityComponents(Number(entityId));
 
         for (const componentType of componentTypes) {
-          const componentData = registry.getComponentData(entityId, componentType);
+          const componentData = registry.getComponentData(Number(entityId), componentType);
           if (componentData) {
             components.push({
               type: componentType,

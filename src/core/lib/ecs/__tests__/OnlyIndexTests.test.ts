@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // Test only the index classes without any dependencies
 describe('Index Classes (Isolated)', () => {

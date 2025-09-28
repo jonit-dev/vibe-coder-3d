@@ -99,8 +99,8 @@ describe('Engine Instance Isolation', () => {
         scale: [2, 2, 2],
       });
 
-      const transformA = instanceA.componentManager.getComponentData(entityA.id, 'Transform');
-      const transformB = instanceB.componentManager.getComponentData(entityB.id, 'Transform');
+      const transformA = instanceA.componentManager.getComponentData(entityA.id, 'Transform') as any;
+      const transformB = instanceB.componentManager.getComponentData(entityB.id, 'Transform') as any;
 
       expect(transformA?.position).toEqual([1, 2, 3]);
       expect(transformB?.position).toEqual([4, 5, 6]);
@@ -164,7 +164,7 @@ describe('Engine Instance Isolation', () => {
     });
 
     it('should not affect other instances when one is disposed', () => {
-      const entityA = instanceA.entityManager.createEntity('Entity A');
+      instanceA.entityManager.createEntity('Entity A');
       const entityB = instanceB.entityManager.createEntity('Entity B');
 
       instanceA.dispose();

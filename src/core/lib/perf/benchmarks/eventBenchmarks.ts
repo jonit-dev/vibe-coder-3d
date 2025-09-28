@@ -7,7 +7,7 @@ import mitt from 'mitt';
 import { BatchedEventEmitter } from '../BatchedEventEmitter';
 import { Profiler } from '../Profiler';
 
-interface TestEvents {
+interface ITestEvents extends Record<string | symbol, unknown> {
   'test:event1': { data: number };
   'test:event2': { data: string };
   'test:event3': { data: { complex: object } };
@@ -16,12 +16,12 @@ interface TestEvents {
 
 // Traditional mitt emitter
 function createMittEmitter(): any {
-  return mitt<TestEvents>();
+  return mitt<ITestEvents>();
 }
 
 // Batched event emitter
-function createBatchedEmitter(): BatchedEventEmitter<TestEvents> {
-  return new BatchedEventEmitter<TestEvents>({
+function createBatchedEmitter(): BatchedEventEmitter<ITestEvents> {
+  return new BatchedEventEmitter<ITestEvents>({
     coalesce: true,
     maxBufferSize: 1000,
     useAnimationFrame: false, // Disable for benchmarking
@@ -85,7 +85,7 @@ export function benchmarkEventCoalescing(eventCount: number): void {
     for (let i = 0; i < eventCount; i++) {
       batchedEmitter.emit('test:rapid', { id: 1, timestamp: Date.now() });
     }
-    emitter.flush();
+    batchedEmitter.flush();
   });
 
   console.log(`Coalescing test: sent ${eventCount} events, received ${receivedCount}`);
@@ -148,7 +148,7 @@ export function benchmarkMixedEvents(eventCount: number): void {
           break;
       }
     }
-    emitter.flush();
+    batchedEmitter.flush();
   });
 
   console.log(`Mixed events: E1=${event1Count}, E2=${event2Count}, E3=${event3Count}`);

@@ -3,8 +3,8 @@
  * Provides enhanced scene loading with validation and type safety
  */
 
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
-import type { SceneData, SceneEntityData } from '@/core/types/scene';
+import { KnownComponentTypes as _KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import type { SceneData } from '@/core/types/scene';
 import { IValidationResult, SceneValidator } from '@/core/utils/sceneValidation';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
@@ -200,13 +200,6 @@ export class SceneLoader {
     });
   }
 
-  /**
-   * Loads a single entity with validation
-   */
-  private async loadEntity(_entityData: SceneEntityData, _options: ISceneLoadOptions): Promise<void> {
-    // Deprecated: entity loading is handled in two passes directly in loadScene
-    return Promise.resolve();
-  }
 
   /**
    * Validates scene data without loading

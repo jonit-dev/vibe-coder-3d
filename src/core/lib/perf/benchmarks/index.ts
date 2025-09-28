@@ -32,8 +32,8 @@ export interface IBenchmarkResult {
 }
 
 export function detectPerformanceRegressions(
-  baseline: Map<string, BenchmarkResult>,
-  current: Map<string, BenchmarkResult>,
+  baseline: Map<string, IBenchmarkResult>,
+  current: Map<string, IBenchmarkResult>,
   threshold: number = 0.1, // 10% threshold
 ): { regressions: string[]; improvements: string[] } {
   const regressions: string[] = [];

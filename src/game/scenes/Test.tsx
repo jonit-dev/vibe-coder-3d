@@ -2,13 +2,12 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { KnownComponentTypes } from '@core';
 import type {
   ComponentDataMap,
-  SceneEntityData,
   SceneMetadata,
-} from '@/core/types/scene';
-import { validateSceneEntity } from '@/core/types/scene';
+} from '@core';
+import { validateSceneEntity } from '@core';
 
 /**
  * Type-safe scene data interface

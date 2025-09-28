@@ -4,7 +4,7 @@
  * Can be run in CI/CD pipelines to gate deployments
  */
 
-import { Profiler, TimingEntry } from './Profiler';
+import { Profiler, ITimingEntry } from './Profiler';
 import { runEventBenchmarks } from './benchmarks/eventBenchmarks';
 import { runTransformBenchmarks } from './benchmarks/transformBenchmarks';
 
@@ -35,7 +35,7 @@ const MEMORY_THRESHOLDS = {
   maxMemoryIncrease: 10, // Allow 10MB increase from baseline
 };
 
-interface PerformanceCheckResult {
+interface IPerformanceCheckResult {
   passed: boolean;
   score: number;
   maxScore: number;
@@ -52,15 +52,14 @@ interface PerformanceCheckResult {
 }
 
 class PerformanceChecker {
-  private baselineTimings: Map<string, TimingEntry> = new Map();
-  private currentTimings: Map<string, TimingEntry> = new Map();
+  private currentTimings: Map<string, ITimingEntry> = new Map();
 
   constructor() {
     // In a real implementation, you would load baseline timings from a file or database
     // For now, we'll establish baseline on first run
   }
 
-  async runPerformanceChecks(): Promise<PerformanceCheckResult> {
+  async runPerformanceChecks(): Promise<IPerformanceCheckResult> {
     console.log('🔍 Running Performance Checks...');
 
     // Clear previous results
@@ -101,7 +100,7 @@ class PerformanceChecker {
     }
   }
 
-  private validatePerformance(): PerformanceCheckResult {
+  private validatePerformance(): IPerformanceCheckResult {
     const failures: string[] = [];
     const warnings: string[] = [];
     let score = 0;
@@ -175,7 +174,7 @@ class PerformanceChecker {
     return null;
   }
 
-  private reportResults(result: PerformanceCheckResult): void {
+  private reportResults(result: IPerformanceCheckResult): void {
     console.log('📊 Performance Check Results:');
     console.log(
       `Score: ${result.score}/${result.maxScore} (${((result.score / result.maxScore) * 100).toFixed(1)}%)`,
@@ -183,12 +182,12 @@ class PerformanceChecker {
 
     if (result.warnings.length > 0) {
       console.warn('⚠️  Warnings:');
-      result.warnings.forEach((warning) => console.warn(`  - ${warning}`));
+      result.warnings.forEach((warning: string) => console.warn(`  - ${warning}`));
     }
 
     if (result.failures.length > 0) {
       console.error('❌ Failures:');
-      result.failures.forEach((failure) => console.error(`  - ${failure}`));
+      result.failures.forEach((failure: string) => console.error(`  - ${failure}`));
     }
 
     if (result.passed) {

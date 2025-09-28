@@ -30,7 +30,7 @@ export {
 // Event batching
 export {
   BatchedEventEmitter,
-  type BatchedEventEmitterOptions,
+  type IBatchedEventEmitterOptions,
   type IBatchedEventEmitter,
 } from './BatchedEventEmitter';
 

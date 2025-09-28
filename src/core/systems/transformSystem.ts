@@ -1,6 +1,7 @@
 // Transform System
 // Synchronizes Transform components with Three.js objects and handles hierarchical transforms
 import { defineQuery } from 'bitecs';
+import { Vector3, Quaternion, Matrix4 } from 'three';
 
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { ECSWorld } from '@core/lib/ecs/World';

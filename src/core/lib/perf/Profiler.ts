@@ -8,7 +8,7 @@ export interface IProfiler {
   timeAsync<T>(name: string, fn: () => Promise<T>): Promise<T>;
   mark(name: string): void;
   measure(name: string, startMark?: string, endMark?: string): number;
-  getStats(): ProfilerStats;
+  getStats(): IProfilerStats;
   clear(): void;
   enableConsoleReporting(interval?: number): void;
   disableConsoleReporting(): void;
@@ -26,7 +26,7 @@ export interface ITimingEntry {
 }
 
 export interface IProfilerStats {
-  timings: Map<string, TimingEntry>;
+  timings: Map<string, ITimingEntry>;
   marks: Map<string, number>;
   totalMeasurements: number;
   memoryUsage?: {

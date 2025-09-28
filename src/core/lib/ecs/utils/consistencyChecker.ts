@@ -148,7 +148,7 @@ export class ConsistencyChecker {
         );
       }
 
-      worldChildren.forEach((childId) => {
+      worldChildren.forEach((childId: any) => {
         if (!indexedChildren.has(childId)) {
           errors.push(`Entity ${entity.id} missing child ${childId} in HierarchyIndex`);
         }
@@ -167,7 +167,7 @@ export class ConsistencyChecker {
   }
 
   private static checkComponentConsistency(
-    worldEntities: any[],
+    _worldEntities: any[],
     componentTypes: string[],
     componentManager: ComponentManager,
     queries: EntityQueries,

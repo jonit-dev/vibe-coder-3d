@@ -203,7 +203,7 @@ describe('Singleton Elimination Integration', () => {
       }
 
       // Verify each instance has correct data
-      instances.forEach((instance, index) => {
+      instances.forEach((instance) => {
         expect(instance.entityManager.getEntityCount()).toBe(10);
         expect(instance.componentManager.getEntitiesWithComponent('Transform')).toHaveLength(10);
       });

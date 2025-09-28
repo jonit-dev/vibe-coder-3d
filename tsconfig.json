@@ -27,5 +27,6 @@
     }
   },
   "include": ["src", "src/types"],
+  "exclude": ["src/game/scenes"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

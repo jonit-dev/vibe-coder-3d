@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { Container } from '@core/lib/di/Container';
 
 import { createEngineInstance, isEngineInstance } from '../createEngineInstance';

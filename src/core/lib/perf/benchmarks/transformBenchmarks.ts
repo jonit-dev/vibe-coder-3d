@@ -18,30 +18,30 @@ import { Profiler } from '../Profiler';
 
 const DEG_TO_RAD = Math.PI / 180;
 
-interface MockTransformData {
+interface IMockTransformData {
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
   parentId?: number;
 }
 
-interface MockEntity {
+interface IMockEntity {
   id: number;
   parentId?: number;
   children: number[];
-  transformData: MockTransformData;
+  transformData: IMockTransformData;
 }
 
 // Mock transform data for benchmarking
-const mockTransformData = (id: number): MockTransformData => ({
+const mockTransformData = (id: number): IMockTransformData => ({
   position: [id * 0.1, id * 0.2, id * 0.3],
   rotation: [id * 5, id * 3, id * 7],
   scale: [1 + id * 0.01, 1 + id * 0.02, 1 + id * 0.03],
 });
 
 // Create mock entity hierarchy
-function createMockEntities(count: number): MockEntity[] {
-  const entities: MockEntity[] = [];
+function createMockEntities(count: number): IMockEntity[] {
+  const entities: IMockEntity[] = [];
 
   for (let i = 0; i < count; i++) {
     entities.push({
@@ -64,7 +64,7 @@ function createMockEntities(count: number): MockEntity[] {
 }
 
 // Traditional transform calculation (without pooling)
-function computeTransformTraditional(data: MockTransformData): {
+function computeTransformTraditional(data: IMockTransformData): {
   position: Vector3;
   quaternion: Quaternion;
   scale: Vector3;
@@ -91,7 +91,7 @@ function computeTransformTraditional(data: MockTransformData): {
 }
 
 // Pooled transform calculation
-function computeTransformPooled(data: MockTransformData): {
+function computeTransformPooled(data: IMockTransformData): {
   position: Vector3;
   quaternion: Quaternion;
   scale: Vector3;
@@ -166,8 +166,7 @@ export function benchmarkMemoryAllocations(): void {
     for (let i = 0; i < iterations; i++) {
       const v1 = new Vector3(i, i, i);
       const v2 = new Vector3(i * 2, i * 2, i * 2);
-      const result = v1.clone().add(v2);
-      // Objects would be GC'd here
+      v1.clone().add(v2); // Objects would be GC'd here
     }
   });
 

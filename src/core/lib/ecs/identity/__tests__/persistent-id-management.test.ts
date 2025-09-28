@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { EntityManager } from '../../EntityManager';
 import { ComponentRegistry } from '../../ComponentRegistry';
 import { ECSWorld } from '../../World';
-import { PersistentIdService } from '../PersistentIdService';
 
 describe('PersistentId Integration', () => {
   let entityManager: EntityManager;

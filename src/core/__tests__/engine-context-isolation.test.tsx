@@ -2,63 +2,14 @@
  * Tests for EngineProvider isolation and independent loop controls
  * Verifies that multiple engine instances operate independently
  */
-import { act, render, renderHook } from '@testing-library/react';
-import React from 'react';
-import { shallow } from 'zustand/shallow';
+import { act, renderHook } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 
 import { EngineProvider } from '@core/context/EngineProvider';
 import { useGameEngineControls } from '@core/hooks/useGameEngineControls';
 import { useLoopStore } from '@core/context/EngineProvider';
 
-// Stable selector to prevent infinite re-renders
-const loopStateSelector = (s: any) => ({
-  isRunning: s.isRunning,
-  isPaused: s.isPaused,
-});
 
-// Test component that uses engine controls
-const TestComponent = ({
-  testId,
-  onStateChange,
-}: {
-  testId: string;
-  onStateChange?: (state: any) => void;
-}) => {
-  const controls = useGameEngineControls();
-  const loopStore = useLoopStore();
-  const state = loopStore(loopStateSelector, shallow);
-
-  const stateRef = React.useRef(state);
-  const onStateChangeRef = React.useRef(onStateChange);
-  onStateChangeRef.current = onStateChange;
-
-  React.useEffect(() => {
-    if (
-      stateRef.current.isRunning !== state.isRunning ||
-      stateRef.current.isPaused !== state.isPaused
-    ) {
-      stateRef.current = state;
-      onStateChangeRef.current?.(state);
-    }
-  }, [state.isRunning, state.isPaused]);
-
-  return (
-    <div data-testid={testId}>
-      <button onClick={controls.startEngine} data-testid={`${testId}-start`}>
-        Start
-      </button>
-      <button onClick={controls.pauseEngine} data-testid={`${testId}-pause`}>
-        Pause
-      </button>
-      <button onClick={controls.stopEngine} data-testid={`${testId}-stop`}>
-        Stop
-      </button>
-      <div data-testid={`${testId}-status`}>
-        {state.isRunning ? (state.isPaused ? 'Paused' : 'Running') : 'Stopped'}
-      </div>
-    </div>
-  );
-};
 
 describe('EngineProvider Isolation', () => {
   it('should create isolated loop stores for each provider', () => {
