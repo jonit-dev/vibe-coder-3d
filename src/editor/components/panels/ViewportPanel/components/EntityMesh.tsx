@@ -243,21 +243,43 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
       );
     }
 
-    // Render material-based mesh
+    // Render material-based mesh with Suspense to handle texture loading
     return (
-      <MaterialRenderer
-        meshRef={meshRef}
-        meshType={meshType}
-        entityComponents={entityComponents}
-        renderingContributions={renderingContributions}
-        entityColor={entityColor}
-        entityId={entityId}
-        onMeshClick={onMeshClick}
-        onMeshDoubleClick={onMeshDoubleClick}
-        textures={textures}
-        isTextureMode={isTextureMode}
-        material={material}
-      />
+      <Suspense
+        fallback={
+          <mesh
+            ref={meshRef}
+            userData={{ entityId }}
+            onClick={onMeshClick}
+            onDoubleClick={onMeshDoubleClick}
+            castShadow={renderingContributions.castShadow}
+            receiveShadow={renderingContributions.receiveShadow}
+            visible={renderingContributions.visible}
+          >
+            {/* Simple geometry fallback while textures load */}
+            {meshType === 'cube' && <boxGeometry args={[1, 1, 1]} />}
+            {meshType === 'sphere' && <sphereGeometry args={[0.5, 32, 16]} />}
+            {meshType === 'plane' && <planeGeometry args={[1, 1]} />}
+            {meshType === 'cylinder' && <cylinderGeometry args={[0.5, 0.5, 1, 32]} />}
+            {(!['cube', 'sphere', 'plane', 'cylinder'].includes(meshType)) && <boxGeometry args={[1, 1, 1]} />}
+            <meshStandardMaterial color={material.color ?? entityColor} />
+          </mesh>
+        }
+      >
+        <MaterialRenderer
+          meshRef={meshRef}
+          meshType={meshType}
+          entityComponents={entityComponents}
+          renderingContributions={renderingContributions}
+          entityColor={entityColor}
+          entityId={entityId}
+          onMeshClick={onMeshClick}
+          onMeshDoubleClick={onMeshDoubleClick}
+          textures={textures}
+          isTextureMode={isTextureMode}
+          material={material}
+        />
+      </Suspense>
     );
   },
   (prevProps, nextProps) => {

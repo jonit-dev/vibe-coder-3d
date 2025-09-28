@@ -10,7 +10,7 @@ interface ISaveSceneRequest {
   data: unknown;
 }
 
-// Simple validation without importing TypeScript files
+// Enhanced validation to prevent corrupted scene saves
 const validateSceneData = (data: unknown): { isValid: boolean; error?: string } => {
   if (!data || typeof data !== 'object') {
     return { isValid: false, error: 'Scene data must be an object' };
@@ -24,6 +24,58 @@ const validateSceneData = (data: unknown): { isValid: boolean; error?: string } 
 
   if (!Array.isArray(scene.entities)) {
     return { isValid: false, error: 'Scene entities must be an array' };
+  }
+
+  // Enhanced validation
+  try {
+    const entities = scene.entities;
+
+    // Validate scene size limits
+    if (entities.length > 10000) {
+      return { isValid: false, error: 'Scene too large: maximum 10,000 entities allowed' };
+    }
+
+    // Validate each entity structure
+    for (let i = 0; i < entities.length; i++) {
+      const entity = entities[i];
+
+      if (!entity || typeof entity !== 'object') {
+        return { isValid: false, error: `Entity ${i} is not a valid object` };
+      }
+
+      if (typeof (entity as any).id === 'undefined' || (typeof (entity as any).id !== 'string' && typeof (entity as any).id !== 'number')) {
+        return { isValid: false, error: `Entity ${i} missing valid id field` };
+      }
+
+      if (!(entity as any).name || typeof (entity as any).name !== 'string') {
+        return { isValid: false, error: `Entity ${i} missing valid name field` };
+      }
+
+      if (!(entity as any).components || typeof (entity as any).components !== 'object') {
+        return { isValid: false, error: `Entity ${i} missing valid components object` };
+      }
+    }
+
+    // Validate JSON serializability
+    try {
+      JSON.stringify(scene);
+    } catch (jsonError) {
+      return { isValid: false, error: 'Scene contains non-serializable data (circular references or invalid types)' };
+    }
+
+    // Validate essential scene structure (warn if missing camera/lights)
+    const hasCamera = entities.some((entity: any) => entity.components && entity.components.Camera);
+    const hasLight = entities.some((entity: any) => entity.components && entity.components.Light);
+
+    if (!hasCamera) {
+      console.warn('[validateSceneData] Warning: Scene has no camera entities');
+    }
+    if (!hasLight) {
+      console.warn('[validateSceneData] Warning: Scene has no light entities');
+    }
+
+  } catch (validationError) {
+    return { isValid: false, error: 'Scene validation failed: ' + (validationError instanceof Error ? validationError.message : 'Unknown error') };
   }
 
   return { isValid: true };
@@ -277,6 +329,78 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
         res.statusCode = 400;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ error: 'Entities array is required' }));
+        return;
+      }
+
+      // Enhanced validation to prevent corrupted scene saves
+      try {
+        // Validate scene size limits
+        if (entities.length > 10000) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: 'Scene too large: maximum 10,000 entities allowed' }));
+          return;
+        }
+
+        // Validate each entity structure
+        for (let i = 0; i < entities.length; i++) {
+          const entity = entities[i];
+
+          if (!entity || typeof entity !== 'object') {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: `Entity ${i} is not a valid object` }));
+            return;
+          }
+
+          if (typeof entity.id === 'undefined' || (typeof entity.id !== 'string' && typeof entity.id !== 'number')) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: `Entity ${i} missing valid id field` }));
+            return;
+          }
+
+          if (!entity.name || typeof entity.name !== 'string') {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: `Entity ${i} missing valid name field` }));
+            return;
+          }
+
+          if (!entity.components || typeof entity.components !== 'object') {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: `Entity ${i} missing valid components object` }));
+            return;
+          }
+        }
+
+        // Validate JSON serializability
+        try {
+          JSON.stringify(entities);
+        } catch (jsonError) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: 'Scene contains non-serializable data (circular references or invalid types)' }));
+          return;
+        }
+
+        // Validate essential scene structure (warn if missing camera/lights)
+        const hasCamera = entities.some(entity => entity.components && entity.components.Camera);
+        const hasLight = entities.some(entity => entity.components && entity.components.Light);
+
+        if (!hasCamera) {
+          console.warn('[handleSaveTsx] Warning: Scene has no camera entities');
+        }
+        if (!hasLight) {
+          console.warn('[handleSaveTsx] Warning: Scene has no light entities');
+        }
+
+      } catch (validationError) {
+        console.error('[handleSaveTsx] Validation error:', validationError);
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: 'Scene validation failed: ' + (validationError instanceof Error ? validationError.message : 'Unknown error') }));
         return;
       }
 

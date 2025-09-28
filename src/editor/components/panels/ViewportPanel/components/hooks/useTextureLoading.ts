@@ -30,14 +30,23 @@ export const useTextureLoading = (material: any) => {
   ]);
 
   // Load all textures at once using drei's useTexture
-  const textures = useTexture(textureUrls);
+  // Note: useTexture will suspend until textures are loaded, causing brief flicker
+  const textures = Object.keys(textureUrls).length > 0 ? useTexture(textureUrls) : {};
 
   // Configure texture offsets after textures are loaded
   React.useEffect(() => {
+    if (Object.keys(textures).length === 0) return;
+
     Object.values(textures).forEach((texture) => {
       if (texture && typeof texture === 'object' && 'offset' in texture) {
-        texture.offset.set(material.textureOffsetX ?? 0, material.textureOffsetY ?? 0);
-        texture.needsUpdate = true;
+        const offsetX = material.textureOffsetX ?? 0;
+        const offsetY = material.textureOffsetY ?? 0;
+
+        // Only update if the offset actually changed
+        if (texture.offset.x !== offsetX || texture.offset.y !== offsetY) {
+          texture.offset.set(offsetX, offsetY);
+          texture.needsUpdate = true;
+        }
       }
     });
   }, [textures, material.textureOffsetX, material.textureOffsetY]);

@@ -35,66 +35,40 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
     const isStandardShader = material.shader === 'standard';
 
     if (isStandardShader) {
-      // Standard PBR shader
-      if (isTextureMode) {
-        // Textured PBR material
-        return (
-          <mesh
-            ref={meshRef}
-            castShadow={renderingContributions.castShadow}
-            receiveShadow={renderingContributions.receiveShadow}
-            userData={{ entityId }}
-            visible={renderingContributions.visible}
-            onClick={onMeshClick}
-            onDoubleClick={onMeshDoubleClick}
-          >
-            <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
-            <meshStandardMaterial
-              key={`${entityId}-${isTextureMode ? 'textured' : 'solid'}-${JSON.stringify(material)}`}
-              color={isTextureMode ? '#ffffff' : (material.color ?? entityColor)}
-              map={textures.albedoTexture as Texture | undefined}
-              metalness={material.metalness ?? 0}
-              roughness={material.roughness ?? 0.5}
-              metalnessMap={textures.metallicTexture as Texture | undefined}
-              roughnessMap={textures.roughnessTexture as Texture | undefined}
-              normalMap={textures.normalTexture as Texture | undefined}
-              normalScale={
-                textures.normalTexture
-                  ? [material.normalScale ?? 1, material.normalScale ?? 1]
-                  : undefined
-              }
-              emissive={material.emissive ?? '#000000'}
-              emissiveIntensity={material.emissiveIntensity ?? 0}
-              emissiveMap={textures.emissiveTexture as Texture | undefined}
-              aoMap={textures.occlusionTexture as Texture | undefined}
-              aoMapIntensity={material.occlusionStrength ?? 1}
-            />
-          </mesh>
-        );
-      } else {
-        // Solid color PBR material
-        return (
-          <mesh
-            ref={meshRef}
-            castShadow={renderingContributions.castShadow}
-            receiveShadow={renderingContributions.receiveShadow}
-            userData={{ entityId }}
-            visible={renderingContributions.visible}
-            onClick={onMeshClick}
-            onDoubleClick={onMeshDoubleClick}
-          >
-            <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
-            <meshStandardMaterial
-              key={`${entityId}-solid-${JSON.stringify(material)}`}
-              color={material.color ?? entityColor}
-              metalness={material.metalness ?? 0}
-              roughness={material.roughness ?? 0.5}
-              emissive={material.emissive ?? '#000000'}
-              emissiveIntensity={material.emissiveIntensity ?? 0}
-            />
-          </mesh>
-        );
-      }
+      // Standard PBR material - use single key to prevent recreation when switching between textured/solid
+      return (
+        <mesh
+          ref={meshRef}
+          castShadow={renderingContributions.castShadow}
+          receiveShadow={renderingContributions.receiveShadow}
+          userData={{ entityId }}
+          visible={renderingContributions.visible}
+          onClick={onMeshClick}
+          onDoubleClick={onMeshDoubleClick}
+        >
+          <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
+          <meshStandardMaterial
+            key={`${entityId}-standard`}
+            color={isTextureMode ? '#ffffff' : (material.color ?? entityColor)}
+            map={textures.albedoTexture as Texture | undefined}
+            metalness={material.metalness ?? 0}
+            roughness={material.roughness ?? 0.5}
+            metalnessMap={textures.metallicTexture as Texture | undefined}
+            roughnessMap={textures.roughnessTexture as Texture | undefined}
+            normalMap={textures.normalTexture as Texture | undefined}
+            normalScale={
+              textures.normalTexture
+                ? [material.normalScale ?? 1, material.normalScale ?? 1]
+                : undefined
+            }
+            emissive={material.emissive ?? '#000000'}
+            emissiveIntensity={material.emissiveIntensity ?? 0}
+            emissiveMap={textures.emissiveTexture as Texture | undefined}
+            aoMap={textures.occlusionTexture as Texture | undefined}
+            aoMapIntensity={material.occlusionStrength ?? 1}
+          />
+        </mesh>
+      );
     } else {
       // Unlit shader - use basic material
       return (
@@ -109,7 +83,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
         >
           <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
           <meshBasicMaterial
-            key={`${entityId}-unlit-${isTextureMode ? 'textured' : 'solid'}-${JSON.stringify(material)}`}
+            key={`${entityId}-unlit`}
             color={material.color ?? entityColor}
             map={isTextureMode ? (textures.albedoTexture as Texture | undefined) : undefined}
           />
