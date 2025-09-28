@@ -14,8 +14,8 @@ import { z } from 'zod';
 
 // Streaming configuration
 const STREAM_CONFIG = {
-  CHUNK_SIZE: 100,           // Entities per chunk
-  CHUNK_DELAY: 16,           // 16ms = ~60fps (1 frame)
+  CHUNK_SIZE: 100, // Entities per chunk
+  CHUNK_DELAY: 16, // 16ms = ~60fps (1 frame)
   MAX_MEMORY_ENTITIES: 1000, // Entities to keep in memory
   PROGRESS_UPDATE_INTERVAL: 50, // Progress updates every N entities
 } as const;
@@ -61,17 +61,19 @@ const StreamingEntitySchema = z.object({
   components: z.record(z.unknown()),
 });
 
-const StreamingSceneSchema = z.object({
-  version: z.number(),
-  name: z.string().optional(),
-  timestamp: z.string().optional(), // Optional for backward compatibility
-  totalEntities: z.number().optional(), // Optional for backward compatibility
-  entities: z.array(StreamingEntitySchema),
-}).transform((data) => ({
-  ...data,
-  timestamp: data.timestamp || new Date().toISOString(),
-  totalEntities: data.totalEntities ?? data.entities.length,
-}));
+const StreamingSceneSchema = z
+  .object({
+    version: z.number(),
+    name: z.string().optional(),
+    timestamp: z.string().optional(), // Optional for backward compatibility
+    totalEntities: z.number().optional(), // Optional for backward compatibility
+    entities: z.array(StreamingEntitySchema),
+  })
+  .transform((data) => ({
+    ...data,
+    timestamp: data.timestamp || new Date().toISOString(),
+    totalEntities: data.totalEntities ?? data.entities.length,
+  }));
 
 /**
  * Performance-optimized entity processor with memory management
@@ -109,7 +111,7 @@ class EntityProcessor {
     const entriesToRemove = this.entityCache.size - STREAM_CONFIG.MAX_MEMORY_ENTITIES + 100;
     const keysToRemove = Array.from(this.entityCache.keys()).slice(0, entriesToRemove);
 
-    keysToRemove.forEach(key => this.entityCache.delete(key));
+    keysToRemove.forEach((key) => this.entityCache.delete(key));
   }
 }
 
@@ -127,7 +129,7 @@ export class StreamingSceneSerializer {
     entities: Array<{ id: string | number; name: string; parentId?: string | number | null }>,
     getComponentsForEntity: (entityId: string | number) => Array<{ type: string; data: unknown }>,
     metadata: { name?: string; version?: number } = {},
-    callbacks: IStreamingCallbacks = {}
+    callbacks: IStreamingCallbacks = {},
   ): Promise<IStreamingScene> {
     const startTime = performance.now();
     this.abortController = new AbortController();
@@ -200,7 +202,7 @@ export class StreamingSceneSerializer {
 
         // Yield control to prevent blocking
         if (STREAM_CONFIG.CHUNK_DELAY > 0) {
-          await new Promise(resolve => setTimeout(resolve, STREAM_CONFIG.CHUNK_DELAY));
+          await new Promise((resolve) => setTimeout(resolve, STREAM_CONFIG.CHUNK_DELAY));
         }
       }
 
@@ -239,7 +241,6 @@ export class StreamingSceneSerializer {
       });
 
       return scene;
-
     } catch (error) {
       callbacks.onProgress?.({
         phase: 'error',
@@ -258,13 +259,21 @@ export class StreamingSceneSerializer {
     scene: unknown,
     entityManager: {
       clearEntities: () => void;
-      createEntity: (name: string, parentId?: string | number | null, persistentId?: string) => { id: string | number };
+      createEntity: (
+        name: string,
+        parentId?: string | number | null,
+        persistentId?: string,
+      ) => { id: string | number };
       setParent?: (childId: string | number, parentId?: string | number | null) => void;
     },
     componentManager: {
-      addComponent: (entityId: string | number, componentType: string, componentData: unknown) => void;
+      addComponent: (
+        entityId: string | number,
+        componentType: string,
+        componentData: unknown,
+      ) => void;
     },
-    callbacks: IStreamingCallbacks = {}
+    callbacks: IStreamingCallbacks = {},
   ): Promise<void> {
     const startTime = performance.now();
     this.abortController = new AbortController();
@@ -298,12 +307,13 @@ export class StreamingSceneSerializer {
         for (const entityData of chunk) {
           try {
             // Extract persistent ID if present
-            const persistentId = (entityData.components as any)?.PersistentId?.id as string | undefined;
+            const persistentId = (entityData.components as Record<string, unknown>)?.PersistentId
+              ?.id as string | undefined;
 
             const created = entityManager.createEntity(
               entityData.name || `Entity ${entityData.id}`,
               undefined, // No parent in first pass
-              persistentId
+              persistentId,
             );
 
             idMap.set(String(entityData.id), created.id);
@@ -344,7 +354,7 @@ export class StreamingSceneSerializer {
 
         // Yield control
         if (STREAM_CONFIG.CHUNK_DELAY > 0) {
-          await new Promise(resolve => setTimeout(resolve, STREAM_CONFIG.CHUNK_DELAY));
+          await new Promise((resolve) => setTimeout(resolve, STREAM_CONFIG.CHUNK_DELAY));
         }
       }
 
@@ -374,7 +384,6 @@ export class StreamingSceneSerializer {
         total: validatedScene.entities.length,
         percentage: 100,
       });
-
     } catch (error) {
       callbacks.onProgress?.({
         phase: 'error',
@@ -402,7 +411,7 @@ export class StreamingSceneSerializer {
       return { isValid: true };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return { isValid: false, error: error.errors.map(e => e.message).join(', ') };
+        return { isValid: false, error: error.errors.map((e) => e.message).join(', ') };
       }
       return { isValid: false, error: 'Unknown validation error' };
     }
@@ -418,7 +427,7 @@ export const streamingSerializer = new StreamingSceneSerializer();
 export async function downloadSceneStream(
   scene: IStreamingScene,
   filename: string,
-  onProgress?: (progress: { phase: string; percentage: number }) => void
+  onProgress?: (progress: { phase: string; percentage: number }) => void,
 ): Promise<void> {
   try {
     onProgress?.({ phase: 'preparing', percentage: 0 });
@@ -453,7 +462,7 @@ export async function downloadSceneStream(
  */
 export function readSceneStream(
   file: File,
-  onProgress?: (progress: { phase: string; percentage: number }) => void
+  onProgress?: (progress: { phase: string; percentage: number }) => void,
 ): Promise<IStreamingScene> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

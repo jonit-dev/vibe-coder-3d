@@ -49,9 +49,11 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
         {/* Left section - Status message */}
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full animate-pulse ${
-              streamingProgress?.isActive ? 'bg-cyan-400' : 'bg-green-400'
-            }`}></div>
+            <div
+              className={`w-2 h-2 rounded-full animate-pulse ${
+                streamingProgress?.isActive ? 'bg-cyan-400' : 'bg-green-400'
+              }`}
+            ></div>
             <span className="text-gray-300">{statusMessage}</span>
             {streamingProgress?.isActive && (
               <div className="flex items-center space-x-2 ml-4">
@@ -119,14 +121,12 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
                         title="Click for detailed performance view"
                       >
                         <FiActivity className="w-3 h-3" />
-                        <span className="text-xs">
-                          {profilerStats.totalMeasurements} ops
-                        </span>
+                        <span className="text-xs">{profilerStats.totalMeasurements} ops</span>
                       </button>
 
                       {profilerStats.topOperations.length > 0 && (
                         <div className="flex items-center space-x-2">
-                          {profilerStats.topOperations.slice(0, 2).map((op, _index) => (
+                          {profilerStats.topOperations.slice(0, 2).map((op) => (
                             <span key={op.name} className="text-cyan-400 text-xs font-mono">
                               {op.name.split('.')[0]}: {op.averageTime.toFixed(1)}ms
                             </span>
@@ -213,7 +213,7 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
             <div className="space-y-2">
               <div className="text-gray-400 font-medium">Top Operations</div>
               <div className="space-y-1">
-                {profilerStats.topOperations.map((op, _index) => (
+                {profilerStats.topOperations.map((op) => (
                   <div key={op.name} className="flex justify-between">
                     <span className="text-gray-500 truncate mr-2">{op.name.split('.')[0]}:</span>
                     <span className="text-cyan-400">{op.averageTime.toFixed(1)}ms</span>
@@ -237,7 +237,9 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Usage:</span>
-                      <span className="text-purple-400">{profilerStats.memoryUsage.percentage}%</span>
+                      <span className="text-purple-400">
+                        {profilerStats.memoryUsage.percentage}%
+                      </span>
                     </div>
                   </>
                 ) : (
