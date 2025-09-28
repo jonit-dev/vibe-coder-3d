@@ -1,9 +1,14 @@
-import React from 'react';
-import { FiEye, FiImage, FiSliders } from 'react-icons/fi';
+import React, { useState } from 'react';
+import { FiEdit, FiEye, FiImage } from 'react-icons/fi';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { IMeshRendererData } from '@/core/lib/ecs/components/MeshRendererComponent';
-import { AssetSelector } from '@/editor/components/shared/AssetSelector';
+import type { IMaterialDefinition } from '@/core/materials/Material.types';
+import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
+import { MaterialBrowserModal } from '@/editor/components/materials/MaterialBrowserModal';
+import { MaterialCreateModal } from '@/editor/components/materials/MaterialCreateModal';
+import { MaterialInspector } from '@/editor/components/materials/MaterialInspector';
+import { useMaterials } from '@/editor/components/materials/hooks/useMaterials';
 import { CheckboxField } from '@/editor/components/shared/CheckboxField';
 import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
 import { ColorField } from '@/editor/components/shared/ColorField';
@@ -22,216 +27,296 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   meshRenderer,
   setMeshRenderer,
 }) => {
+  const materialRegistry = MaterialRegistry.getInstance();
+  const {
+    isBrowserOpen,
+    isCreateOpen,
+    isInspectorOpen,
+    openBrowser,
+    closeBrowser,
+    openCreate,
+    closeCreate,
+    openInspector,
+    closeInspector,
+    handleBrowserSelect,
+    handleCreate,
+  } = useMaterials({
+    selectedMaterialId: meshRenderer?.materialId,
+  });
+
+  // Local state for overrides toggle (kept independent from derived ECS data)
+  const [overridesEnabled, setOverridesEnabled] = useState(!!meshRenderer?.material);
+
   const handleRemoveMeshRenderer = () => {
     setMeshRenderer(null);
   };
 
   const updateMeshRenderer = (updates: Partial<IMeshRendererData>) => {
+    console.log('updateMeshRenderer called with:', updates);
     if (meshRenderer) {
-      setMeshRenderer({ ...meshRenderer, ...updates });
+      const newMeshRenderer = { ...meshRenderer, ...updates };
+      console.log('Setting new mesh renderer:', newMeshRenderer);
+      setMeshRenderer(newMeshRenderer);
+    } else {
+      console.log('No meshRenderer to update');
     }
   };
 
-  const updateMaterial = (updates: Partial<IMeshRendererData['material']>) => {
-    if (meshRenderer && meshRenderer.material) {
-      setMeshRenderer({
-        ...meshRenderer,
-        material: { ...meshRenderer.material, ...updates },
-      });
-    }
+  // For backward compatibility: if no materialId, use 'default'
+  const currentMaterialId = meshRenderer?.materialId || 'default';
+  const currentMaterial = materialRegistry.get(currentMaterialId);
+
+  // Base overrides template derived from current material (used when enabling overrides)
+  const baseOverridesTemplate = React.useMemo(() => {
+    const base = (currentMaterial as IMaterialDefinition | undefined) || {
+      color: '#cccccc',
+      metalness: 0,
+      roughness: 0.7,
+    };
+    return {
+      color: base.color ?? '#cccccc',
+      metalness: base.metalness ?? 0,
+      roughness: base.roughness ?? 0.7,
+    };
+  }, [currentMaterial]);
+
+  // Handle material selection from browser
+  const handleMaterialSelect = (materialId: string) => {
+    // Clear overrides when selecting a new material to see the actual material
+    updateMeshRenderer({
+      materialId,
+      material: undefined // Clear overrides
+    });
+    // Keep UI consistent with cleared overrides
+    setOverridesEnabled(false);
+    handleBrowserSelect(materialId);
   };
 
-  // Don't render the section if meshRenderer is null or material is undefined
-  if (!meshRenderer || !meshRenderer.material) {
+  // Handle material inspector save
+  const handleMaterialSave = (updatedMaterial: IMaterialDefinition) => {
+    // Material is saved in the inspector, just update the mesh renderer to use it
+    updateMeshRenderer({ materialId: updatedMaterial.id });
+  };
+
+  // Don't render the section if meshRenderer is null
+  if (!meshRenderer) {
     return null;
   }
 
-  const isTextureMode = meshRenderer.material.materialType === 'texture';
+  // Effective overrides for UI (use existing overrides or fall back to template while enabling)
+  const effectiveOverrides = React.useMemo(
+    () => (meshRenderer.material ? meshRenderer.material : baseOverridesTemplate),
+    [meshRenderer.material, baseOverridesTemplate]
+  );
 
   return (
-    <GenericComponentSection
-      title="Mesh Renderer"
-      icon={<FiEye />}
-      headerColor="cyan"
-      componentId={KnownComponentTypes.MESH_RENDERER}
-      onRemove={handleRemoveMeshRenderer}
-    >
-      <ToggleField
-        label="Enabled"
-        value={meshRenderer.enabled ?? true}
-        onChange={(value: boolean) => updateMeshRenderer({ enabled: value })}
-        resetValue={true}
-        color="cyan"
-      />
+    <>
+      <GenericComponentSection
+        title="Mesh Renderer"
+        icon={<FiEye />}
+        headerColor="cyan"
+        componentId={KnownComponentTypes.MESH_RENDERER}
+        onRemove={handleRemoveMeshRenderer}
+      >
+        <ToggleField
+          label="Enabled"
+          value={meshRenderer.enabled ?? true}
+          onChange={(value: boolean) => updateMeshRenderer({ enabled: value })}
+          resetValue={true}
+          color="cyan"
+        />
 
-      <ComponentField
-        label="Mesh"
-        type="select"
-        value={meshRenderer.meshId}
-        onChange={(value) => updateMeshRenderer({ meshId: value as string })}
-        options={[
-          { value: 'cube', label: 'Cube' },
-          { value: 'sphere', label: 'Sphere' },
-          { value: 'plane', label: 'Plane' },
-          { value: 'cylinder', label: 'Cylinder' },
-          { value: 'cone', label: 'Cone' },
-          { value: 'torus', label: 'Torus' },
-          { value: 'capsule', label: 'Capsule' },
-        ]}
-      />
-
-      {/* Material Type Section */}
-      <CollapsibleSection title="Material" icon={<FiImage />} defaultExpanded={true} badge="Color">
         <ComponentField
-          label="Type"
+          label="Mesh"
           type="select"
-          value={meshRenderer.material.materialType || 'solid'}
-          onChange={(value) => updateMaterial({ materialType: value as 'solid' | 'texture' })}
+          value={meshRenderer.meshId}
+          onChange={(value) => updateMeshRenderer({ meshId: value as string })}
           options={[
-            { value: 'solid', label: 'Solid Color' },
-            { value: 'texture', label: 'Texture' },
+            { value: 'cube', label: 'Cube' },
+            { value: 'sphere', label: 'Sphere' },
+            { value: 'plane', label: 'Plane' },
+            { value: 'cylinder', label: 'Cylinder' },
+            { value: 'cone', label: 'Cone' },
+            { value: 'torus', label: 'Torus' },
+            { value: 'capsule', label: 'Capsule' },
           ]}
         />
 
-        {isTextureMode ? (
-          <div className="space-y-3">
-            <AssetSelector
-              label="Albedo Texture"
-              value={meshRenderer.material.albedoTexture}
-              onChange={(assetPath) => updateMaterial({ albedoTexture: assetPath })}
-              placeholder="No texture selected"
-              buttonTitle="Select Texture"
-              basePath="/assets/textures"
-              allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
-              showPreview={true}
-            />
-
-            <AssetSelector
-              label="Normal Map"
-              value={meshRenderer.material.normalTexture}
-              onChange={(assetPath) => updateMaterial({ normalTexture: assetPath })}
-              placeholder="No normal map"
-              buttonTitle="Select Normal Map"
-              basePath="/assets/textures"
-              allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
-              showPreview={true}
-            />
-
-            {meshRenderer.material.normalTexture && (
-              <SingleAxisField
-                label="Normal Strength"
-                value={meshRenderer.material.normalScale || 1}
-                onChange={(value) =>
-                  updateMaterial({ normalScale: Math.max(0, Math.min(2, value)) })
-                }
-                min={0}
-                max={2}
-                step={0.1}
-                sensitivity={0.1}
-                resetValue={1}
-                axisLabel="NRM"
-                axisColor="#8e44ad"
-              />
-            )}
-
-            {/* Texture Offset Controls */}
-            {(meshRenderer.material.albedoTexture || meshRenderer.material.normalTexture) && (
-              <div className="space-y-2">
-                <div className="text-xs font-medium text-gray-300 mb-2">Texture Offset</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <SingleAxisField
-                    label="Offset X"
-                    value={meshRenderer.material.textureOffsetX || 0}
-                    onChange={(value) => updateMaterial({ textureOffsetX: value })}
-                    min={-2}
-                    max={2}
-                    step={0.1}
-                    sensitivity={0.1}
-                    resetValue={0}
-                    axisLabel="X"
-                    axisColor="#ff6b6b"
-                  />
-                  <SingleAxisField
-                    label="Offset Y"
-                    value={meshRenderer.material.textureOffsetY || 0}
-                    onChange={(value) => updateMaterial({ textureOffsetY: value })}
-                    min={-2}
-                    max={2}
-                    step={0.1}
-                    sensitivity={0.1}
-                    resetValue={0}
-                    axisLabel="Y"
-                    axisColor="#4ecdc4"
-                  />
-                </div>
+        {/* Material Section - Now uses materialId */}
+        <CollapsibleSection title="Material" icon={<FiImage />} defaultExpanded={true} badge="Asset">
+          <div className="space-y-2">
+            <div className="text-[11px] font-medium text-gray-300">Material</div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-white">{currentMaterial?.name || 'Unknown Material'}</span>
+              <div className="flex space-x-1">
+                <button
+                  onClick={openBrowser}
+                  className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded"
+                >
+                  Browse
+                </button>
+                <button
+                  onClick={() => openInspector(currentMaterialId)}
+                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                >
+                  <FiEdit size={14} />
+                </button>
               </div>
+            </div>
+            {currentMaterialId === 'default' && (
+              <div className="text-xs text-gray-500">Default material</div>
             )}
           </div>
-        ) : (
-          <ColorField
-            label="Color"
-            value={meshRenderer.material.color || '#cccccc'}
-            onChange={(value: string) => updateMaterial({ color: value })}
-            resetValue="#cccccc"
-            placeholder="#cccccc"
+
+          {/* Material Overrides Section */}
+          <CollapsibleSection
+            title="Overrides"
+            defaultExpanded={false}
+            badge={overridesEnabled ? "ENABLED" : "DISABLED"}
+          >
+            <div className="space-y-3">
+              <ToggleField
+                label="Enable Overrides"
+                value={overridesEnabled}
+                onChange={(enabled: boolean) => {
+                  console.log('Toggle changed:', {
+                    enabled,
+                    currentHasOverrides: !!meshRenderer.material,
+                    localState: overridesEnabled
+                  });
+
+                  // Update local state immediately for responsive UI
+                  setOverridesEnabled(enabled);
+
+                  if (enabled) {
+                    // Enable overrides - initialize with base material values
+                    const baseMaterial = currentMaterial || { color: '#cccccc', metalness: 0, roughness: 0.7 };
+                    const newMaterial = {
+                      color: baseMaterial.color,
+                      metalness: baseMaterial.metalness,
+                      roughness: baseMaterial.roughness
+                    };
+                    console.log('Enabling overrides with material:', newMaterial);
+                    updateMeshRenderer({ material: newMaterial });
+                  } else {
+                    // Disable overrides - clear them
+                    console.log('Disabling overrides');
+                    updateMeshRenderer({ material: undefined });
+                  }
+                }}
+                resetValue={false}
+                color="yellow"
+              />
+
+              {overridesEnabled && (
+                <div className="space-y-3">
+                  <div className="text-xs text-yellow-400">⚠️ Overriding base material properties for this object only</div>
+
+                  <ColorField
+                    label="Color Override"
+                    value={effectiveOverrides.color || '#cccccc'}
+                    onChange={(value: string) => {
+                      updateMeshRenderer({
+                        material: { ...(meshRenderer.material ?? {}), color: value }
+                      });
+                    }}
+                    resetValue="#cccccc"
+                    placeholder="#cccccc"
+                  />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <SingleAxisField
+                      label="Metalness"
+                      value={effectiveOverrides.metalness ?? 0}
+                      onChange={(value) => {
+                        updateMeshRenderer({
+                          material: { ...(meshRenderer.material ?? {}), metalness: Math.max(0, Math.min(1, value)) }
+                        });
+                      }}
+                      min={0}
+                      max={1}
+                      step={0.1}
+                      sensitivity={0.1}
+                      resetValue={0}
+                      axisLabel="MET"
+                      axisColor="#95a5a6"
+                    />
+
+                    <SingleAxisField
+                      label="Roughness"
+                      value={effectiveOverrides.roughness ?? 0.7}
+                      onChange={(value) => {
+                        updateMeshRenderer({
+                          material: { ...(meshRenderer.material ?? {}), roughness: Math.max(0, Math.min(1, value)) }
+                        });
+                      }}
+                      min={0}
+                      max={1}
+                      step={0.1}
+                      sensitivity={0.1}
+                      resetValue={0.7}
+                      axisLabel="ROU"
+                      axisColor="#34495e"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+        </CollapsibleSection>
+
+        {/* Shadow Settings */}
+        <CollapsibleSection title="Shadow Settings" defaultExpanded={false} badge="2">
+          <CheckboxField
+            label="Cast Shadows"
+            value={meshRenderer.castShadows ?? true}
+            onChange={(value: boolean) => updateMeshRenderer({ castShadows: value })}
+            description="Cast shadows on other objects"
+            resetValue={true}
+            color="purple"
           />
-        )}
-      </CollapsibleSection>
 
-      {/* Material Properties Section */}
-      <CollapsibleSection
-        title="Material Properties"
-        icon={<FiSliders />}
-        defaultExpanded={false}
-        badge="PBR"
-      >
-        <SingleAxisField
-          label="Metalness"
-          value={meshRenderer.material.metalness || 0}
-          onChange={(value) => updateMaterial({ metalness: Math.max(0, Math.min(1, value)) })}
-          min={0}
-          max={1}
-          step={0.1}
-          sensitivity={0.1}
-          resetValue={0}
-          axisLabel="MET"
-          axisColor="#95a5a6"
-        />
+          <CheckboxField
+            label="Receive Shadows"
+            value={meshRenderer.receiveShadows ?? true}
+            onChange={(value: boolean) => updateMeshRenderer({ receiveShadows: value })}
+            description="Receive shadows from other objects"
+            resetValue={true}
+            color="purple"
+          />
+        </CollapsibleSection>
+      </GenericComponentSection>
 
-        <SingleAxisField
-          label="Roughness"
-          value={meshRenderer.material.roughness || 0.7}
-          onChange={(value) => updateMaterial({ roughness: Math.max(0, Math.min(1, value)) })}
-          min={0}
-          max={1}
-          step={0.1}
-          sensitivity={0.1}
-          resetValue={0.7}
-          axisLabel="ROU"
-          axisColor="#34495e"
-        />
-      </CollapsibleSection>
+      {/* Material Browser Modal */}
+      <MaterialBrowserModal
+        isOpen={isBrowserOpen}
+        onClose={closeBrowser}
+        onSelect={handleMaterialSelect}
+        selectedMaterialId={currentMaterialId}
+        onEdit={(materialId) => {
+          closeBrowser();
+          openInspector(materialId);
+        }}
+        onCreate={() => {
+          closeBrowser();
+          openCreate();
+        }}
+      />
 
-      {/* Shadow Settings */}
-      <CollapsibleSection title="Shadow Settings" defaultExpanded={false} badge="2">
-        <CheckboxField
-          label="Cast Shadows"
-          value={meshRenderer.castShadows ?? true}
-          onChange={(value: boolean) => updateMeshRenderer({ castShadows: value })}
-          description="Cast shadows on other objects"
-          resetValue={true}
-          color="purple"
-        />
+      {/* Material Create Modal */}
+      <MaterialCreateModal
+        isOpen={isCreateOpen}
+        onClose={closeCreate}
+        onCreate={handleCreate}
+      />
 
-        <CheckboxField
-          label="Receive Shadows"
-          value={meshRenderer.receiveShadows ?? true}
-          onChange={(value: boolean) => updateMeshRenderer({ receiveShadows: value })}
-          description="Receive shadows from other objects"
-          resetValue={true}
-          color="purple"
-        />
-      </CollapsibleSection>
-    </GenericComponentSection>
+      {/* Material Inspector Modal */}
+      <MaterialInspector
+        materialId={currentMaterialId}
+        isOpen={isInspectorOpen}
+        onClose={closeInspector}
+        onSave={handleMaterialSave}
+      />
+    </>
   );
 };

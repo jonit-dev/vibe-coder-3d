@@ -13,9 +13,11 @@ interface IUseEditorHandlersProps {
   setIsPlaying: (playing: boolean) => void;
   setIsChatExpanded: (expanded: boolean) => void;
   setIsLeftPanelCollapsed: (collapsed: boolean) => void;
+  setIsMaterialsExpanded: (expanded: boolean) => void;
   showAddMenu: boolean;
   isChatExpanded: boolean;
   isLeftPanelCollapsed: boolean;
+  isMaterialsExpanded: boolean;
 }
 
 export const useEditorHandlers = ({
@@ -25,9 +27,11 @@ export const useEditorHandlers = ({
   setIsPlaying,
   setIsChatExpanded,
   setIsLeftPanelCollapsed,
+  setIsMaterialsExpanded,
   showAddMenu,
   isChatExpanded,
   isLeftPanelCollapsed,
+  isMaterialsExpanded,
 }: IUseEditorHandlersProps) => {
   // Entity creation hooks
   const {
@@ -328,6 +332,11 @@ export const useEditorHandlers = ({
     [isLeftPanelCollapsed, setIsLeftPanelCollapsed],
   );
 
+  const toggleMaterials = useCallback(
+    () => setIsMaterialsExpanded(!isMaterialsExpanded),
+    [isMaterialsExpanded, setIsMaterialsExpanded],
+  );
+
   return {
     // Entity creation
     handleAddObject,
@@ -352,5 +361,6 @@ export const useEditorHandlers = ({
     toggleAddMenu,
     toggleChat,
     toggleLeftPanel,
+    toggleMaterials,
   };
 };

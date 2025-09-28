@@ -12,6 +12,8 @@ interface IUIState {
   setIsChatExpanded: (expanded: boolean) => void;
   isLeftPanelCollapsed: boolean;
   setIsLeftPanelCollapsed: (collapsed: boolean) => void;
+  isMaterialsExpanded: boolean;
+  setIsMaterialsExpanded: (expanded: boolean) => void;
   showAddMenu: boolean;
   setShowAddMenu: (show: boolean) => void;
 }
@@ -52,6 +54,8 @@ export const useUIState = (): IUIState => {
   const setIsChatExpanded = useEditorStore((state) => state.setIsChatExpanded);
   const isLeftPanelCollapsed = useEditorStore((state) => state.isLeftPanelCollapsed);
   const setIsLeftPanelCollapsed = useEditorStore((state) => state.setIsLeftPanelCollapsed);
+  const isMaterialsExpanded = useEditorStore((state) => state.isMaterialsExpanded);
+  const setIsMaterialsExpanded = useEditorStore((state) => state.setIsMaterialsExpanded);
   const showAddMenu = useEditorStore((state) => state.showAddMenu);
   const setShowAddMenu = useEditorStore((state) => state.setShowAddMenu);
 
@@ -60,6 +64,8 @@ export const useUIState = (): IUIState => {
     setIsChatExpanded,
     isLeftPanelCollapsed,
     setIsLeftPanelCollapsed,
+    isMaterialsExpanded,
+    setIsMaterialsExpanded,
     showAddMenu,
     setShowAddMenu,
   };

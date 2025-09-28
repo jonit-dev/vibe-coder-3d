@@ -11,6 +11,7 @@ import { TopBar } from './components/layout/TopBar';
 import { EnhancedAddObjectMenu } from './components/menus/EnhancedAddObjectMenu';
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
 import { LazyInspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent/LazyInspectorPanelContent';
+import { MaterialsPanel } from './components/panels/MaterialsPanel/MaterialsPanel';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
 import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
@@ -43,6 +44,10 @@ const Editor: React.FC = () => {
   } = useUIState();
   const { isPlaying, setIsPlaying } = usePhysicsState();
   const { statusMessage, setStatusMessage, performanceMetrics } = useAppState();
+  const {
+    isMaterialsExpanded,
+    setIsMaterialsExpanded,
+  } = useUIState();
 
   // Gizmo mode state for viewport
   const [gizmoMode, setGizmoMode] = useState<GizmoMode>('translate');
@@ -109,6 +114,7 @@ const Editor: React.FC = () => {
     toggleAddMenu,
     toggleChat,
     toggleLeftPanel,
+    toggleMaterials,
   } = useEditorHandlers({
     setSelectedId,
     setStatusMessage,
@@ -116,9 +122,11 @@ const Editor: React.FC = () => {
     setIsPlaying,
     setIsChatExpanded,
     setIsLeftPanelCollapsed,
+    setIsMaterialsExpanded,
     showAddMenu,
     isChatExpanded,
     isLeftPanelCollapsed,
+    isMaterialsExpanded,
   });
 
   // Memoized refresh function to prevent excessive API calls
@@ -214,6 +222,8 @@ const Editor: React.FC = () => {
         onStop={handleStopWithStatus}
         onToggleChat={toggleChat}
         isChatOpen={isChatExpanded}
+        onToggleMaterials={toggleMaterials}
+        isMaterialsOpen={isMaterialsExpanded}
         currentSceneName={currentSceneName}
       />
 
@@ -268,6 +278,8 @@ const Editor: React.FC = () => {
         <ViewportPanel entityId={selectedId} gizmoMode={gizmoMode} setGizmoMode={setGizmoMode} />
 
         <RightSidebarChat isExpanded={isChatExpanded} onToggle={toggleChat} />
+
+        <MaterialsPanel isExpanded={isMaterialsExpanded} onToggle={toggleMaterials} />
       </main>
 
       <StatusBar

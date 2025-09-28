@@ -5,6 +5,7 @@ import {
   FiChevronDown,
   FiCpu,
   FiFolder,
+  FiImage,
   FiMessageSquare,
   FiPause,
   FiPlay,
@@ -31,6 +32,8 @@ export interface ITopBarProps {
   onStop?: () => void;
   onToggleChat?: () => void;
   isChatOpen?: boolean;
+  onToggleMaterials?: () => void;
+  isMaterialsOpen?: boolean;
   currentSceneName?: string | null;
 }
 
@@ -48,6 +51,8 @@ export const TopBar: React.FC<ITopBarProps> = ({
   onStop,
   onToggleChat,
   isChatOpen = false,
+  onToggleMaterials,
+  isMaterialsOpen = false,
   currentSceneName,
 }) => {
   const [showSaveDropdown, setShowSaveDropdown] = useState(false);
@@ -188,6 +193,17 @@ export const TopBar: React.FC<ITopBarProps> = ({
           <ToolbarButton variant="default">
             <FiSettings className="w-4 h-4" />
           </ToolbarButton>
+
+          {onToggleMaterials && (
+            <ToolbarButton
+              onClick={onToggleMaterials}
+              variant="primary"
+              active={isMaterialsOpen}
+              title="Toggle Materials Panel"
+            >
+              <FiImage className="w-4 h-4" />
+            </ToolbarButton>
+          )}
 
           <ToolbarButton
             onClick={onToggleChat}

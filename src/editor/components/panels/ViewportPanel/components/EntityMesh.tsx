@@ -137,10 +137,10 @@ const CustomModelMesh: React.FC<{
       prevProps.entityId === nextProps.entityId &&
       prevProps.renderingContributions.castShadow === nextProps.renderingContributions.castShadow &&
       prevProps.renderingContributions.receiveShadow ===
-        nextProps.renderingContributions.receiveShadow &&
+      nextProps.renderingContributions.receiveShadow &&
       prevProps.renderingContributions.visible === nextProps.renderingContributions.visible &&
       JSON.stringify(prevProps.renderingContributions.material) ===
-        JSON.stringify(nextProps.renderingContributions.material)
+      JSON.stringify(nextProps.renderingContributions.material)
     );
   },
 );
@@ -262,7 +262,15 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
             {meshType === 'plane' && <planeGeometry args={[1, 1]} />}
             {meshType === 'cylinder' && <cylinderGeometry args={[0.5, 0.5, 1, 32]} />}
             {(!['cube', 'sphere', 'plane', 'cylinder'].includes(meshType)) && <boxGeometry args={[1, 1, 1]} />}
-            <meshStandardMaterial color={material.color ?? entityColor} />
+            <meshStandardMaterial
+              color={
+                typeof material.color === 'string'
+                  ? material.color
+                  : typeof material.color === 'object' && material.color !== null
+                    ? `rgb(${material.color.r}, ${material.color.g}, ${material.color.b})`
+                    : entityColor
+              }
+            />
           </mesh>
         }
       >

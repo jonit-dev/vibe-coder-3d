@@ -1,6 +1,5 @@
 import type { ThreeEvent } from '@react-three/fiber';
 import React from 'react';
-import type { Texture } from 'three';
 
 import { GeometryRenderer } from './GeometryRenderer';
 
@@ -29,10 +28,13 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
     onMeshClick,
     onMeshDoubleClick,
     textures,
-    isTextureMode,
+    // isTextureMode, // Not used in new material system
     material,
   }) => {
-    const isStandardShader = material.shader === 'standard';
+    // Use the provided material directly
+    const materialDef = material;
+
+    const isStandardShader = materialDef.shader === 'standard';
 
     if (isStandardShader) {
       // Standard PBR material - use single key to prevent recreation when switching between textured/solid
@@ -49,23 +51,23 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
           <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
           <meshStandardMaterial
             key={`${entityId}-standard`}
-            color={isTextureMode ? '#ffffff' : (material.color ?? entityColor)}
-            map={textures.albedoTexture as Texture | undefined}
-            metalness={material.metalness ?? 0}
-            roughness={material.roughness ?? 0.5}
-            metalnessMap={textures.metallicTexture as Texture | undefined}
-            roughnessMap={textures.roughnessTexture as Texture | undefined}
-            normalMap={textures.normalTexture as Texture | undefined}
+            color={materialDef.albedoTexture ? '#ffffff' : (materialDef.color ?? entityColor)}
+            map={textures.albedoTexture as any}
+            metalness={materialDef.metalness ?? 0}
+            roughness={materialDef.roughness ?? 0.7}
+            metalnessMap={textures.metallicTexture as any}
+            roughnessMap={textures.roughnessTexture as any}
+            normalMap={textures.normalTexture as any}
             normalScale={
               textures.normalTexture
-                ? [material.normalScale ?? 1, material.normalScale ?? 1]
+                ? [materialDef.normalScale ?? 1, materialDef.normalScale ?? 1]
                 : undefined
             }
-            emissive={material.emissive ?? '#000000'}
-            emissiveIntensity={material.emissiveIntensity ?? 0}
-            emissiveMap={textures.emissiveTexture as Texture | undefined}
-            aoMap={textures.occlusionTexture as Texture | undefined}
-            aoMapIntensity={material.occlusionStrength ?? 1}
+            emissive={materialDef.emissive ?? '#000000'}
+            emissiveIntensity={materialDef.emissiveIntensity ?? 0}
+            emissiveMap={textures.emissiveTexture as any}
+            aoMap={textures.occlusionTexture as any}
+            aoMapIntensity={materialDef.occlusionStrength ?? 1}
           />
         </mesh>
       );
@@ -84,8 +86,8 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
           <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
           <meshBasicMaterial
             key={`${entityId}-unlit`}
-            color={material.color ?? entityColor}
-            map={isTextureMode ? (textures.albedoTexture as Texture | undefined) : undefined}
+            color={materialDef.color ?? entityColor}
+            map={materialDef.albedoTexture ? (textures.albedoTexture as any) : undefined}
           />
         </mesh>
       );
