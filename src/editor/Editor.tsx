@@ -10,7 +10,7 @@ import { StatusBar } from './components/layout/StatusBar';
 import { TopBar } from './components/layout/TopBar';
 import { EnhancedAddObjectMenu } from './components/menus/EnhancedAddObjectMenu';
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
-import { InspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent/InspectorPanelContent';
+import { LazyInspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent/LazyInspectorPanelContent';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
 import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
@@ -88,7 +88,9 @@ const Editor: React.FC = () => {
       if (streamingProgress.phase === 'processing') {
         const { current, total, entitiesPerSecond, currentEntityName } = streamingProgress;
         const epsText = entitiesPerSecond ? ` (${Math.round(entitiesPerSecond)} entities/sec)` : '';
-        setStatusMessage(`${streamingProgress.phase}: ${current}/${total} - ${currentEntityName}${epsText}`);
+        setStatusMessage(
+          `${streamingProgress.phase}: ${current}/${total} - ${currentEntityName}${epsText}`,
+        );
       } else if (streamingProgress.phase === 'complete') {
         setStatusMessage(`Operation completed: ${streamingProgress.total} entities processed`);
       }
@@ -220,7 +222,6 @@ const Editor: React.FC = () => {
         isOpen={showAssetLoader}
         onClose={() => setShowAssetLoader(false)}
         onSelect={(assetPath) => {
-          console.log('[Editor] Asset selected:', assetPath);
           handleAddObject('CustomModel', assetPath);
           setShowAssetLoader(false);
         }}
@@ -255,7 +256,7 @@ const Editor: React.FC = () => {
       <main className="flex-1 flex overflow-hidden">
         <StackedLeftPanel
           hierarchyContent={<HierarchyPanelContent />}
-          inspectorContent={<InspectorPanelContent />}
+          inspectorContent={<LazyInspectorPanelContent />}
           isCollapsed={isLeftPanelCollapsed}
           onToggleCollapse={toggleLeftPanel}
         />

@@ -306,14 +306,14 @@ export class StreamingSceneSerializer {
 
         for (const entityData of chunk) {
           try {
-            // Extract persistent ID if present
-            const persistentId = (entityData.components as Record<string, unknown>)?.PersistentId
-              ?.id as string | undefined;
+            const persistentId = (entityData.components as Record<string, unknown>)
+              ?.PersistentId as { id?: string } | undefined;
+            const persistentIdValue = persistentId?.id;
 
             const created = entityManager.createEntity(
-              entityData.name || `Entity ${entityData.id}`,
-              undefined, // No parent in first pass
-              persistentId,
+              entityData.name || `Entity ${String(entityData.id)}`,
+              undefined,
+              persistentIdValue,
             );
 
             idMap.set(String(entityData.id), created.id);

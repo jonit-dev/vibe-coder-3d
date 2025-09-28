@@ -55,7 +55,7 @@ interface IHierarchyTreeNode {
   isExpanded: boolean;
 }
 
-const RootDropZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
+const RootDropZone: React.FC<{ isDragging: boolean }> = React.memo(({ isDragging }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: 'root-drop-zone',
   });
@@ -74,9 +74,9 @@ const RootDropZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
       {isOver ? '✓ Release to make root entity' : 'Drop here to make root entity'}
     </div>
   );
-};
+});
 
-export const HierarchyPanelContent: React.FC = () => {
+export const HierarchyPanelContent: React.FC = React.memo(() => {
   const entityIds = useEditorStore((s) => s.entityIds);
   const selectedId = useEditorStore((s) => s.selectedId);
   const setSelectedId = useEditorStore((s) => s.setSelectedId);
@@ -502,4 +502,4 @@ export const HierarchyPanelContent: React.FC = () => {
       />
     </div>
   );
-};
+});

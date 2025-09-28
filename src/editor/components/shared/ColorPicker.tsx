@@ -47,8 +47,7 @@ export const ColorPicker: React.FC<IColorPickerProps> = ({ value, onChange, labe
   );
 
   const handleColorChange = useCallback(
-    (color: string, eventType?: string) => {
-      console.log(`[ColorPicker] ${eventType || 'change'} event with color:`, color);
+    (color: string) => {
       throttledOnChange(color);
     },
     [throttledOnChange],
@@ -73,7 +72,7 @@ export const ColorPicker: React.FC<IColorPickerProps> = ({ value, onChange, labe
       // Use throttled update during mouse move
       const currentValue = colorInputRef.current.value;
       if (currentValue !== localValue) {
-        handleColorChange(currentValue, 'onMouseMove');
+        handleColorChange(currentValue);
       }
     }
   }, [localValue, handleColorChange]);
@@ -96,8 +95,8 @@ export const ColorPicker: React.FC<IColorPickerProps> = ({ value, onChange, labe
             ref={colorInputRef}
             type="color"
             value={localValue}
-            onChange={(e) => handleColorChange(e.target.value, 'onChange')}
-            onInput={(e) => handleColorChange((e.target as HTMLInputElement).value, 'onInput')}
+            onChange={(e) => handleColorChange(e.target.value)}
+            onInput={(e) => handleColorChange((e.target as HTMLInputElement).value)}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseMove={handleMouseMove}

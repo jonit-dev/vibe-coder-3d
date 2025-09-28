@@ -36,14 +36,10 @@ export const useGroupSelection = () => {
     [entityManager],
   );
 
-  // Select entity with all its children (Unity-like behavior)
   const selectWithChildren = useCallback(
     (entityId: number) => {
-      console.log(`[useGroupSelection] selectWithChildren for entity ${entityId}`);
       const descendants = getAllDescendants(entityId);
-      console.log(`[useGroupSelection] Found descendants:`, descendants);
       const allSelected = [entityId, ...descendants];
-      console.log(`[useGroupSelection] Setting selectedIds to:`, allSelected);
       setSelectedIds(allSelected);
     },
     [getAllDescendants, setSelectedIds],
@@ -94,18 +90,12 @@ export const useGroupSelection = () => {
       const endIndex = allEntityIds.findIndex((id) => id === endEntityId);
 
       if (startIndex === -1 || endIndex === -1) {
-        console.warn(`[useGroupSelection] Cannot find range entities in hierarchy`);
         return;
       }
 
       const minIndex = Math.min(startIndex, endIndex);
       const maxIndex = Math.max(startIndex, endIndex);
       const rangeIds = allEntityIds.slice(minIndex, maxIndex + 1);
-
-      console.log(
-        `[useGroupSelection] Selecting range: indices ${minIndex}-${maxIndex}, entities:`,
-        rangeIds,
-      );
       setSelectedIds(rangeIds);
     },
     [setSelectedIds],
@@ -129,19 +119,12 @@ export const useGroupSelection = () => {
         allEntityIds = [],
       } = options;
 
-      console.log(
-        `[useGroupSelection] handleHierarchySelection: entityId=${entityId}, selectChildren=${selectChildren}, ctrl=${ctrlKey}, shift=${shiftKey}`,
-      );
-      console.log(`[useGroupSelection] Current selectedIds:`, selectedIds);
-
       if (ctrlKey) {
         // Ctrl+click: toggle selection
         if (selectChildren) {
           if (selectedIds.includes(entityId)) {
-            console.log(`[useGroupSelection] Removing group from selection`);
             removeGroupFromSelection(entityId);
           } else {
-            console.log(`[useGroupSelection] Adding group to selection`);
             addGroupToSelection(entityId);
           }
         } else {
@@ -151,33 +134,21 @@ export const useGroupSelection = () => {
         // Shift+click: range selection from last selected to current
         if (selectedIds.length > 0 && allEntityIds.length > 0) {
           const lastSelected = selectedIds[selectedIds.length - 1];
-          console.log(`[useGroupSelection] Range selection from ${lastSelected} to ${entityId}`);
           selectRange(lastSelected, entityId, allEntityIds);
         } else {
-          // No previous selection, treat as normal selection
           if (selectChildren) {
-            console.log(`[useGroupSelection] No previous selection, selecting with children`);
             selectWithChildren(entityId);
           } else {
             addToSelection(entityId);
           }
         }
       } else {
-        // Normal click: select only this entity (and children if enabled)
         if (selectChildren) {
-          console.log(`[useGroupSelection] Selecting entity with children`);
           selectWithChildren(entityId);
         } else {
-          console.log(
-            `[useGroupSelection] Selecting single entity - this will break group selection`,
-          );
           selectSingle(entityId);
         }
       }
-
-      console.log(
-        `[useGroupSelection] After selection operation, new selectedIds should be updated`,
-      );
     },
     [
       selectedIds,

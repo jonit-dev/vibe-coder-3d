@@ -72,11 +72,7 @@ export const useEditorHandlers = ({
   } = useEntityCreation();
 
   // Scene action hooks
-  const {
-    handleSave,
-    handleLoad,
-    handleClear,
-  } = useStreamingSceneActions();
+  const { handleSave, handleLoad, handleClear } = useStreamingSceneActions();
 
   // Physics control hooks
   const { handlePlay, handlePause, handleStop } = usePhysicsControls({
@@ -209,13 +205,10 @@ export const useEditorHandlers = ({
             break;
         }
 
-        // Set the selected entity ID
         setSelectedId(entity.id);
         setStatusMessage(`Created ${type} (Entity ${entity.id})`);
         setShowAddMenu(false);
-        console.log('[AddObject] Created entity:', entity);
       } catch (error) {
-        console.error('[AddObject] Failed to create entity:', error);
         setStatusMessage(
           `Failed to create ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
@@ -283,7 +276,9 @@ export const useEditorHandlers = ({
         await handleLoad(e);
         setStatusMessage('Scene loaded successfully');
       } catch (error) {
-        setStatusMessage(`Load failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setStatusMessage(
+          `Load failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
     },
     [handleLoad, setStatusMessage],
@@ -299,10 +294,7 @@ export const useEditorHandlers = ({
   }, [handleClear, setStatusMessage]);
 
   // Dummy triggerFileLoad for backward compatibility
-  const triggerFileLoad = useCallback(() => {
-    // This functionality is now handled directly by the streaming scene actions
-    console.warn('triggerFileLoad is deprecated - use streaming scene actions directly');
-  }, []);
+  const triggerFileLoad = useCallback(() => {}, []);
 
   // Physics control handlers with status updates
   const handlePlayWithStatus = useCallback(() => {
