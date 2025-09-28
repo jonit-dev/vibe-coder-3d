@@ -502,6 +502,9 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
       entitiesString = entitiesString.replace(/\/\/.*$/gm, '');
       entitiesString = entitiesString.replace(/console\.log\([^)]*\);?/g, '');
 
+      // Remove trailing comma at the very end of the string (before wrapping in brackets)
+      entitiesString = entitiesString.replace(/,\s*$/, '');
+
       // Try to parse as JSON
       entities = JSON.parse(`[${entitiesString}]`);
 

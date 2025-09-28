@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { SoundManager } from '@/core/components/SoundManager';
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
@@ -121,6 +121,11 @@ const Editor: React.FC = () => {
     isLeftPanelCollapsed,
   });
 
+  // Memoized refresh function to prevent excessive API calls
+  const handleRefreshScenes = useCallback(async () => {
+    await scenePersistence.listTsxScenes();
+  }, [scenePersistence.listTsxScenes]);
+
   // Project Initialization
 
   // Scene Initialization
@@ -239,9 +244,7 @@ const Editor: React.FC = () => {
         error={scenePersistence.error}
         onSave={handleSaveAs}
         onLoad={handleLoad}
-        onRefresh={async () => {
-          await scenePersistence.listTsxScenes();
-        }}
+        onRefresh={handleRefreshScenes}
       />
 
       {/* Hidden file input for streaming scene loading */}
