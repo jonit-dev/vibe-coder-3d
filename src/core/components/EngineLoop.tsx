@@ -2,8 +2,8 @@
 import { useFrame } from '@react-three/fiber';
 import { ReactNode, useEffect, useRef } from 'react';
 
+import { useEngineContext } from '@core/context/EngineProvider';
 import { runRegisteredSystems } from '../lib/extension/GameExtensionPoints';
-import { useGameLoop } from '../lib/gameLoop';
 import { Profiler } from '../lib/perf/Profiler';
 import { materialSystem } from '../systems/MaterialSystem';
 import { updateScriptSystem } from '../systems/ScriptSystem';
@@ -48,8 +48,14 @@ export const EngineLoop = ({
   maxTimeStep = 1 / 30, // Cap for large time steps to prevent tunneling
   perfMonitoring = debug,
 }: IEngineLoopProps) => {
-  // Get access to the game loop state
-  const gameLoop = useGameLoop();
+  // Get access to the game loop state from context
+  // This component should only be used within an EngineProvider
+  const { loopStore } = useEngineContext();
+
+  // Helper function to get loop state
+  const getLoopState = () => {
+    return loopStore.getState();
+  };
 
   // Reference for accumulated time when using fixed timestep
   const accumulatedTimeRef = useRef(0);
@@ -81,27 +87,30 @@ export const EngineLoop = ({
     }
 
     // Update average every 60 frames
-    if (gameLoop.frameCount % 60 === 0) {
+    const state = getLoopState();
+    if (state.frameCount % 60 === 0) {
       metrics.average = metrics.samples.reduce((sum, val) => sum + val, 0) / metrics.samples.length;
     }
   };
 
   // Auto-start effect - only runs when autoStart changes
   useEffect(() => {
-    if (autoStart && !gameLoop.isRunning) {
-      gameLoop.startLoop();
+    const state = getLoopState();
+    if (autoStart && !state.isRunning) {
+      state.startLoop();
     }
   }, [autoStart]); // Only depend on autoStart
 
   // Pause/resume effect - only runs when paused prop changes
   useEffect(() => {
+    const state = getLoopState();
     if (paused) {
-      if (!gameLoop.isPaused && gameLoop.isRunning) {
-        gameLoop.pauseLoop();
+      if (!state.isPaused && state.isRunning) {
+        state.pauseLoop();
       }
     } else {
-      if (gameLoop.isPaused && gameLoop.isRunning) {
-        gameLoop.resumeLoop();
+      if (state.isPaused && state.isRunning) {
+        state.resumeLoop();
       }
     }
   }, [paused]); // Only depend on paused
@@ -109,16 +118,19 @@ export const EngineLoop = ({
   // Cleanup effect - only runs on unmount
   useEffect(() => {
     return () => {
-      if (gameLoop.isRunning) {
-        gameLoop.stopLoop();
+      const state = getLoopState();
+      if (state.isRunning) {
+        state.stopLoop();
       }
     };
   }, []); // No dependencies - only runs on mount/unmount
 
   // Main game loop
   useFrame((_, rawDeltaTime) => {
+    const state = getLoopState();
+
     // Skip if not running or paused
-    if (!gameLoop.isRunning || gameLoop.isPaused) return;
+    if (!state.isRunning || state.isPaused) return;
 
     // Cap delta time to prevent large jumps
     const deltaTime = Math.min(rawDeltaTime, maxTimeStep);
@@ -127,7 +139,7 @@ export const EngineLoop = ({
     const frameStart = perfMonitoring ? performance.now() : 0;
 
     // Update the game loop state
-    gameLoop.update(deltaTime);
+    state.update(deltaTime);
 
     if (useFixedTimeStep) {
       // Accumulate time for fixed timestep
@@ -143,7 +155,7 @@ export const EngineLoop = ({
       }
 
       // Set interpolation alpha for smooth rendering between physics steps
-      gameLoop.setInterpolationAlpha(accumulatedTimeRef.current / fixedTimeStep);
+      state.setInterpolationAlpha(accumulatedTimeRef.current / fixedTimeStep);
     } else {
       // Run systems with variable timestep
       runECSSystems(deltaTime, isPlaying);
@@ -160,15 +172,16 @@ export const EngineLoop = ({
     if (debug) {
       // Set up a periodic log of performance
       const interval = setInterval(() => {
-        if (gameLoop.isRunning && !gameLoop.isPaused) {
-          console.log(`FPS: ${gameLoop.fps}, Frame: ${gameLoop.frameCount}`);
+        const state = getLoopState();
+        if (state.isRunning && !state.isPaused) {
+          console.log(`FPS: ${state.fps}, Frame: ${state.frameCount}`);
 
           if (perfMonitoring) {
             const { velocity, physics, overall } = metricsRef.current;
             console.log(
               `Performance (ms): Overall: ${overall.average.toFixed(2)}, ` +
-              `Velocity: ${velocity.average.toFixed(2)}, ` +
-              `Physics: ${physics.average.toFixed(2)}`,
+                `Velocity: ${velocity.average.toFixed(2)}, ` +
+                `Physics: ${physics.average.toFixed(2)}`,
             );
           }
         }
@@ -176,7 +189,7 @@ export const EngineLoop = ({
 
       return () => clearInterval(interval);
     }
-  }, [debug, gameLoop, perfMonitoring]);
+  }, [debug, perfMonitoring]);
 
   // Render children - typically the actual game scene
   return <>{children}</>;
@@ -215,13 +228,4 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
       `[EngineLoop] System updates - Transform: ${transformCount}, Camera: ${cameraCount}, Light: ${lightCount}, Sound: ${soundCount}`,
     );
   }
-}
-
-// Track performance metrics
-function trackPerformance(_system: 'velocity' | 'physics' | 'overall', __startTime: number) {
-  // const endTime = performance.now();
-  // const duration = endTime - startTime;
-  // Record the duration for the specific system
-  // This logic can be expanded to store/average metrics
-  // console.log(`Performance [${system}]: ${duration.toFixed(2)}ms`);
 }

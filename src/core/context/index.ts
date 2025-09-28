@@ -6,6 +6,7 @@ export {
   useComponentManager,
   useEngineContainer,
   useEngineContext,
+  useLoopStore,
 } from './EngineProvider';
 
 export type { ECSWorldStore } from './ECSWorldStore';

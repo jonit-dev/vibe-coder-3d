@@ -6,6 +6,11 @@ import {
   setCurrentInstances,
 } from '@core/lib/ecs/adapters/SingletonAdapter';
 import { createEngineInstance } from '@core/lib/ecs/factories/createEngineInstance';
+import {
+  createLoopStore,
+  IGameLoopStore,
+  ILoopStoreOptions,
+} from '@core/lib/gameLoop/createLoopStore';
 
 import { ComponentManagerStore, createComponentManagerStore } from './ComponentManagerStore';
 import { ECSWorldStore, createECSWorldStore } from './ECSWorldStore';
@@ -16,6 +21,7 @@ interface IEngineContext {
   worldStore: ECSWorldStore;
   entityManagerStore: EntityManagerStore;
   componentManagerStore: ComponentManagerStore;
+  loopStore: IGameLoopStore;
 }
 
 const EngineContext = createContext<IEngineContext | null>(null);
@@ -23,10 +29,11 @@ const EngineContext = createContext<IEngineContext | null>(null);
 interface IEngineProviderProps {
   children: React.ReactNode;
   container?: Container;
+  loopOptions?: ILoopStoreOptions;
 }
 
 export const EngineProvider: React.FC<IEngineProviderProps> = React.memo(
-  ({ children, container: parentContainer }) => {
+  ({ children, container: parentContainer, loopOptions }) => {
     const context = useMemo(() => {
       // Create engine instance with all services
       const engineInstance = createEngineInstance(parentContainer);
@@ -35,6 +42,7 @@ export const EngineProvider: React.FC<IEngineProviderProps> = React.memo(
       const worldStore = createECSWorldStore();
       const entityManagerStore = createEntityManagerStore();
       const componentManagerStore = createComponentManagerStore();
+      const loopStore = createLoopStore(loopOptions);
 
       // Initialize stores with the engine instance services
       worldStore.getState().setWorld(engineInstance.world);
@@ -46,8 +54,9 @@ export const EngineProvider: React.FC<IEngineProviderProps> = React.memo(
         worldStore,
         entityManagerStore,
         componentManagerStore,
+        loopStore,
       };
-    }, [parentContainer]);
+    }, [parentContainer, loopOptions]);
 
     // Set up singleton adapter bridge
     useEffect(() => {
@@ -97,4 +106,9 @@ export const useComponentManager = () => {
 export const useEngineContainer = () => {
   const { container } = useEngineContext();
   return container;
+};
+
+export const useLoopStore = () => {
+  const { loopStore } = useEngineContext();
+  return loopStore;
 };

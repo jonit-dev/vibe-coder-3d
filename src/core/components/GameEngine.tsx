@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { z } from 'zod';
 
 import { EngineLoop } from '@core/components/EngineLoop';
-import { useGameEngine } from '@core/hooks/useGameEngine';
+import { useGameEngineControls } from '@core/hooks/useGameEngineControls';
 
 // Zod schema for GameEngine component props
 export const GameEnginePropsSchema = z.object({
@@ -44,7 +44,7 @@ export function GameEngine({
   children,
 }: IGameEngineProps) {
   // Get controls from the hook
-  const { startEngine, stopEngine } = useGameEngine();
+  const { startEngine, stopEngine } = useGameEngineControls();
 
   // Auto-start the engine if required
   useEffect(() => {
