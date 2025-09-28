@@ -70,6 +70,12 @@ graph TD
     Implementation --> TSyringeRemoval[4-6 TSyringe Removal Status]
     Implementation --> HierarchySystem[4-7 Unity-Like Hierarchy System]
     Implementation --> ScriptSystem[4-8 Unity-Like Script System]
+    Implementation --> InGameUI[4-9 In-Game UI System]
+    Implementation --> ParticleSystem[4-10 Particle System]
+    Implementation --> CommandSystem[4-11 Command System]
+    Implementation --> AssetPipeline[4-12 Asset Pipeline]
+    Implementation --> CollisionDetection[4-13 Collision Detection System]
+    Implementation --> NetworkingSystem[4-14 Networking System]
 
     %% Supporting Documentation
     Patterns[🎨 Patterns] --> GamePatterns[5-1 Game Patterns]
