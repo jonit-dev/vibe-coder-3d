@@ -23,13 +23,13 @@ describe('materialsStore integration', () => {
   });
 
   it('should have MaterialBrowserModal component', () => {
-    import('../../../components/materials/MaterialBrowserModal').then((module) => {
+    import('../../components/materials/MaterialBrowserModal').then((module) => {
       expect(module.MaterialBrowserModal).toBeDefined();
     });
   });
 
   it('should have useEntityMesh hook', () => {
-    import('../../../components/panels/ViewportPanel/hooks/useEntityMesh').then((module) => {
+    import('../../components/panels/ViewportPanel/hooks/useEntityMesh').then((module) => {
       expect(module.useEntityMesh).toBeDefined();
     });
   });

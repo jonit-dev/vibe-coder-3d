@@ -5,10 +5,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useStreamingSceneActions } from '../useStreamingSceneActions';
-import type { IMaterialDefinition } from '@/core/materials/Material.types';
+import type { IMaterialDefinition } from '@core/materials/Material.types';
 
 // Mock all dependencies
-vi.mock('@/core/lib/serialization/StreamingSceneSerializer', () => ({
+vi.mock('@core/lib/serialization/StreamingSceneSerializer', () => ({
   streamingSerializer: {
     exportScene: vi.fn(),
     importScene: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock('@/core/lib/serialization/StreamingSceneSerializer', () => ({
   readSceneStream: vi.fn(),
 }));
 
-vi.mock('@/core/materials/MaterialRegistry', () => ({
+vi.mock('@core/materials/MaterialRegistry', () => ({
   MaterialRegistry: {
     getInstance: vi.fn(() => ({
       list: vi.fn(() => mockMaterials),
@@ -28,7 +28,7 @@ vi.mock('@/core/materials/MaterialRegistry', () => ({
   },
 }));
 
-vi.mock('@/core/stores/toastStore', () => ({
+vi.mock('@core/stores/toastStore', () => ({
   useProjectToasts: () => ({
     showOperationStart: vi.fn(() => 'toast-id'),
     showOperationSuccess: vi.fn(),
@@ -112,8 +112,10 @@ describe('useStreamingSceneActions - Materials Integration', () => {
     vi.clearAllMocks();
 
     // Get mocked instances
-    const { streamingSerializer: serializer } = require('@/core/lib/serialization/StreamingSceneSerializer');
-    const { MaterialRegistry } = require('@/core/materials/MaterialRegistry');
+    const {
+      streamingSerializer: serializer,
+    } = require('@core/lib/serialization/StreamingSceneSerializer');
+    const { MaterialRegistry } = require('@core/materials/MaterialRegistry');
 
     streamingSerializer = serializer;
     materialRegistry = MaterialRegistry.getInstance();
@@ -239,7 +241,7 @@ describe('useStreamingSceneActions - Materials Integration', () => {
 
       streamingSerializer.exportScene.mockResolvedValue(mockScene);
 
-      const { downloadSceneStream } = require('@/core/lib/serialization/StreamingSceneSerializer');
+      const { downloadSceneStream } = require('@core/lib/serialization/StreamingSceneSerializer');
       downloadSceneStream.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useStreamingSceneActions());
@@ -268,7 +270,7 @@ describe('useStreamingSceneActions - Materials Integration', () => {
         materials: mockMaterials,
       };
 
-      const { readSceneStream } = require('@/core/lib/serialization/StreamingSceneSerializer');
+      const { readSceneStream } = require('@core/lib/serialization/StreamingSceneSerializer');
       readSceneStream.mockResolvedValue(mockScene);
       streamingSerializer.importScene.mockResolvedValue(undefined);
 

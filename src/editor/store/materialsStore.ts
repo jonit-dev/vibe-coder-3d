@@ -217,6 +217,8 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     get filteredMaterials() {
       const { searchTerm, filterByShader, filterByType, materials } = get();
 
+      if (!materials) return [];
+
       return materials.filter((material) => {
         // Search filter
         if (searchTerm) {

@@ -12,7 +12,7 @@ const mockGetEntity = vi.fn();
 let mockSelectedIds: number[] = [];
 
 // Mock the dependencies
-vi.mock('@/editor/store/editorStore', () => ({
+vi.mock('@editor/store/editorStore', () => ({
   useEditorStore: (selector: any) => {
     const mockStore = {
       selectedIds: mockSelectedIds,

@@ -4,24 +4,29 @@ import { create } from 'zustand';
 
 import type { IMaterialDefinition } from '../../../core/materials/Material.types';
 
-// Mock MaterialRegistry completely
-const mockRegistry = {
-  list: vi.fn(),
-  get: vi.fn(),
-  upsert: vi.fn(),
-  remove: vi.fn(),
-};
+// Mock MaterialRegistry completely - create singleton inside factory
+vi.mock('../../../core/materials/MaterialRegistry', () => {
+  const mockInstance = {
+    list: vi.fn(() => []),
+    get: vi.fn(() => undefined),
+    upsert: vi.fn(),
+    remove: vi.fn(),
+  };
 
-vi.mock('../../../core/materials/MaterialRegistry', () => ({
-  MaterialRegistry: {
-    getInstance: () => mockRegistry,
-  },
-}));
+  return {
+    MaterialRegistry: {
+      getInstance: () => mockInstance,
+    },
+  };
+});
 
 // Import after mocking
 import { useMaterialsStore } from '../materialsStore';
+import { MaterialRegistry } from '../../../core/materials/MaterialRegistry';
 
 describe('materialsStore', () => {
+  let mockRegistry: ReturnType<typeof MaterialRegistry.getInstance>;
+
   const testMaterial: IMaterialDefinition = {
     id: 'test-material',
     name: 'Test Material',
@@ -39,9 +44,10 @@ describe('materialsStore', () => {
   };
 
   beforeEach(() => {
+    mockRegistry = MaterialRegistry.getInstance();
     vi.clearAllMocks();
-    mockRegistry.list.mockReturnValue([]);
-    mockRegistry.get.mockReturnValue(undefined);
+    (mockRegistry.list as any).mockReturnValue([]);
+    (mockRegistry.get as any).mockReturnValue(undefined);
   });
 
   describe('material CRUD operations', () => {

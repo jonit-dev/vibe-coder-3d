@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { IMaterialDefinition } from '@/core/materials/Material.types';
+import type { IMaterialDefinition } from '@core/materials/Material.types';
 import { MaterialBrowserModal } from '../MaterialBrowserModal';
 
 // Mock the materials store
@@ -62,7 +62,7 @@ const mockStore = {
   deleteMaterial: vi.fn(),
 };
 
-vi.mock('@/editor/store/materialsStore', () => ({
+vi.mock('@editor/store/materialsStore', () => ({
   useMaterialsStore: () => mockStore,
 }));
 
@@ -74,7 +74,7 @@ vi.mock('../MaterialPreviewSphere', () => ({
 }));
 
 // Mock Modal component
-vi.mock('@/editor/components/shared/Modal', () => ({
+vi.mock('@editor/components/shared/Modal', () => ({
   Modal: ({ children, isOpen, title }: any) =>
     isOpen ? (
       <div data-testid="modal">

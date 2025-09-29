@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useMaterialsStore } from '../materialsStore';
-import type { IMaterialDefinition } from '@/core/materials/Material.types';
+import type { IMaterialDefinition } from '@core/materials/Material.types';
 
 // Mock MaterialRegistry
 const mockRegistry = {
@@ -19,7 +19,7 @@ const mockMaterialRegistry = {
   getInstance: vi.fn(() => mockRegistry),
 };
 
-vi.mock('@/core/materials/MaterialRegistry', () => ({
+vi.mock('@core/materials/MaterialRegistry', () => ({
   MaterialRegistry: mockMaterialRegistry,
 }));
 
@@ -122,7 +122,7 @@ describe('materialsStore - Scene-based Persistence', () => {
     it('should prevent deletion of default material', async () => {
       const store = useMaterialsStore.getState();
       await expect(store.deleteMaterial('default')).rejects.toThrow(
-        'Cannot delete the default material'
+        'Cannot delete the default material',
       );
 
       expect(mockRegistry.remove).not.toHaveBeenCalled();
@@ -134,8 +134,9 @@ describe('materialsStore - Scene-based Persistence', () => {
       const store = useMaterialsStore.getState();
       mockRegistry.get.mockReturnValue(undefined);
 
-      await expect(store.updateMaterial('non-existent', { color: '#ff0000' }))
-        .rejects.toThrow('Material not found: non-existent');
+      await expect(store.updateMaterial('non-existent', { color: '#ff0000' })).rejects.toThrow(
+        'Material not found: non-existent',
+      );
 
       expect(mockRegistry.upsert).not.toHaveBeenCalled();
     });
@@ -144,8 +145,9 @@ describe('materialsStore - Scene-based Persistence', () => {
       const store = useMaterialsStore.getState();
       mockRegistry.get.mockReturnValue(undefined);
 
-      await expect(store.duplicateMaterial('non-existent'))
-        .rejects.toThrow('Material not found: non-existent');
+      await expect(store.duplicateMaterial('non-existent')).rejects.toThrow(
+        'Material not found: non-existent',
+      );
 
       expect(mockRegistry.upsert).not.toHaveBeenCalled();
     });
@@ -326,9 +328,7 @@ describe('materialsStore - Scene-based Persistence', () => {
 
       store.assignToSelection('test-material');
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Assign material test-material to selected entities'
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Assign material test-material to selected entities');
 
       consoleSpy.mockRestore();
     });
@@ -339,9 +339,7 @@ describe('materialsStore - Scene-based Persistence', () => {
 
       store.assignToAll('test-material');
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Assign material test-material to all entities'
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Assign material test-material to all entities');
 
       consoleSpy.mockRestore();
     });

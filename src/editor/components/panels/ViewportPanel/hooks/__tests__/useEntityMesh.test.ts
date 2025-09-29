@@ -118,7 +118,7 @@ describe('useEntityMesh', () => {
       receiveShadow: true,
       visible: true,
       meshType: 'cube',
-      material: {}
+      material: {},
     });
 
     mockCombinePhysicsContributions.mockReturnValue({
@@ -130,8 +130,8 @@ describe('useEntityMesh', () => {
         restitution: 0.3,
         density: 1,
         gravityScale: 1,
-        canSleep: true
-      }
+        canSleep: true,
+      },
     });
   });
 
@@ -473,7 +473,7 @@ describe('useEntityMesh', () => {
       } as IMaterialDefinition;
 
       // Mock store to return incomplete material
-      vi.mocked(require('../../../store/materialsStore')).useMaterialsStore = vi.fn(
+      vi.mocked(require('../../../../../store/materialsStore')).useMaterialsStore = vi.fn(
         (selector: any) => {
           if (typeof selector === 'function') {
             return selector({ materials: [incompleteMaterial] });

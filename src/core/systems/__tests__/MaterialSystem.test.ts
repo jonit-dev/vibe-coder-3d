@@ -7,12 +7,7 @@ import { ECSWorld } from '../../lib/ecs/World';
 import { MaterialRegistry } from '../../materials/MaterialRegistry';
 import { MaterialSystem } from '../MaterialSystem';
 import type { IMaterialDefinition } from '../../materials/Material.types';
-
-const mockWorld = {};
-const mockComponentRegistry = {
-  getBitECSComponent: vi.fn(() => ({})),
-  getComponentData: vi.fn(),
-};
+import { componentRegistry } from '../../lib/ecs/ComponentRegistry';
 
 vi.mock('bitecs', () => ({
   defineQuery: vi.fn(() => () => []),
@@ -21,13 +16,16 @@ vi.mock('bitecs', () => ({
 vi.mock('../../lib/ecs/World', () => ({
   ECSWorld: {
     getInstance: () => ({
-      getWorld: () => mockWorld,
+      getWorld: () => ({}),
     }),
   },
 }));
 
 vi.mock('../../lib/ecs/ComponentRegistry', () => ({
-  componentRegistry: mockComponentRegistry,
+  componentRegistry: {
+    getBitECSComponent: vi.fn(() => ({})),
+    getComponentData: vi.fn(),
+  },
   ComponentFactory: {
     create: vi.fn(),
   },
@@ -94,7 +92,7 @@ describe('MaterialSystem', () => {
     };
 
     vi.mocked(MaterialRegistry.getInstance().get).mockReturnValue(mockBaseMaterial);
-    mockComponentRegistry.getComponentData.mockReturnValue({
+    vi.mocked(componentRegistry.getComponentData).mockReturnValue({
       materialId: 'test',
       material: {
         textureOffsetX: 0.1,

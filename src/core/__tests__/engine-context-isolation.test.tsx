@@ -5,11 +5,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 
-import { EngineProvider } from '@core/context/EngineProvider';
+import { EngineProvider, useLoopStore } from '@core/context/EngineProvider';
 import { useGameEngineControls } from '@core/hooks/useGameEngineControls';
-import { useLoopStore } from '@core/context/EngineProvider';
-
-
 
 describe('EngineProvider Isolation', () => {
   it('should create isolated loop stores for each provider', () => {

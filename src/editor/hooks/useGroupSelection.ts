@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import { useEditorStore } from '@/editor/store/editorStore';
+import { useEditorStore } from '@editor/store/editorStore';
 import { useEntityManager } from './useEntityManager';
 
 export const useGroupSelection = () => {

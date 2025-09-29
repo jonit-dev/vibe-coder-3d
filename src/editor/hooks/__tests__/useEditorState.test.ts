@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useEditorStore } from '@/editor/store/editorStore';
+import { useEditorStore } from '@editor/store/editorStore';
 import { useEntityState, useUIState, usePhysicsState, useAppState } from '../useEditorState';
 
 describe('useEditorState hooks', () => {

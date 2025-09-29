@@ -14,6 +14,7 @@ vi.mock('three', async () => {
     ...actual,
     Texture: vi.fn().mockImplementation(() => ({
       offset: { set: vi.fn() },
+      repeat: { set: vi.fn() },
     })),
   };
 });
@@ -91,7 +92,10 @@ describe('MaterialConverter', () => {
         occlusionTexture: 'occlusion.jpg',
       };
 
-      const material = createThreeMaterialFrom(materialWithTextures, textures) as MeshStandardMaterial;
+      const material = createThreeMaterialFrom(
+        materialWithTextures,
+        textures,
+      ) as MeshStandardMaterial;
 
       expect(material.map).toBe(mockTexture);
       expect(material.normalMap).toBe(mockTexture);
@@ -142,7 +146,10 @@ describe('MaterialConverter', () => {
         normalScale: 2.0,
       };
 
-      const material = createThreeMaterialFrom(materialWithNormal, textures) as MeshStandardMaterial;
+      const material = createThreeMaterialFrom(
+        materialWithNormal,
+        textures,
+      ) as MeshStandardMaterial;
 
       expect(material.normalScale.x).toBe(2.0);
       expect(material.normalScale.y).toBe(2.0);
