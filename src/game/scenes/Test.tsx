@@ -2,9 +2,15 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { KnownComponentTypes } from '@core';
-import type { ComponentDataMap, SceneMetadata } from '@core';
-import { validateSceneEntity } from '@core';
+import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
+import { useMaterialsStore } from '@/editor/store/materialsStore';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import type {
+  ComponentDataMap,
+  SceneEntityData,
+  SceneMetadata,
+} from '@/core/types/scene';
+import { validateSceneEntity } from '@/core/types/scene';
 
 /**
  * Type-safe scene data interface
@@ -25,320 +31,320 @@ interface ITypedSceneEntity {
  */
 const sceneData: ITypedSceneEntity[] = [
   {
-    id: 0,
-    name: 'Main Camera',
-    components: {
-      PersistentId: {
-        id: '1d26c95e-a5f2-4ad2-bd7a-f12227e03d89',
+    "id": 0,
+    "name": "Main Camera",
+    "components": {
+      "PersistentId": {
+        "id": "d0818146-fd9a-4db1-ac68-5e06ec415266"
       },
-      Transform: {
-        position: [0, 1, -10],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
+      "Transform": {
+        "position": [
+          0,
+          1,
+          -10
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
       },
-      Camera: {
-        fov: 20,
-        near: 0.10000000149011612,
-        far: 100,
-        projectionType: 'perspective',
-        orthographicSize: 10,
-        depth: 0,
-        isMain: true,
-        clearFlags: 'skybox',
-        skyboxTexture: '',
-        backgroundColor: {
-          r: 0,
-          g: 0,
-          b: 0,
-          a: 0,
+      "Camera": {
+        "fov": 20,
+        "near": 0.10000000149011612,
+        "far": 100,
+        "projectionType": "perspective",
+        "orthographicSize": 10,
+        "depth": 0,
+        "isMain": true,
+        "clearFlags": "skybox",
+        "skyboxTexture": "",
+        "backgroundColor": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 0
         },
-        controlMode: 'free',
-        viewportRect: {
-          x: 0,
-          y: 0,
-          width: 1,
-          height: 1,
+        "controlMode": "free",
+        "viewportRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
         },
-        hdr: false,
-        toneMapping: 'none',
-        toneMappingExposure: 1,
-        enablePostProcessing: false,
-        postProcessingPreset: 'none',
-        enableSmoothing: false,
-        followTarget: 0,
-        followOffset: {
-          x: 0,
-          y: 5,
-          z: -10,
+        "hdr": false,
+        "toneMapping": "none",
+        "toneMappingExposure": 1,
+        "enablePostProcessing": false,
+        "postProcessingPreset": "none",
+        "enableSmoothing": false,
+        "followTarget": 0,
+        "followOffset": {
+          "x": 0,
+          "y": 5,
+          "z": -10
         },
-        smoothingSpeed: 2,
-        rotationSmoothing: 1.5,
-      },
-    },
+        "smoothingSpeed": 2,
+        "rotationSmoothing": 1.5
+      }
+    }
   },
   {
-    id: 1,
-    name: 'Directional Light',
-    components: {
-      PersistentId: {
-        id: 'f60fbb6c-1201-4ad4-9383-5e545c8360e2',
+    "id": 1,
+    "name": "Directional Light",
+    "components": {
+      "PersistentId": {
+        "id": "b5308e4b-5377-49c2-9db5-efc29dbf3a1f"
       },
-      Transform: {
-        position: [5, 10, 5],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
+      "Transform": {
+        "position": [
+          5,
+          10,
+          5
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
       },
-      Light: {
-        lightType: 'directional',
-        color: {
-          r: 1,
-          g: 1,
-          b: 1,
+      "Light": {
+        "lightType": "directional",
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
         },
-        intensity: 0.800000011920929,
-        enabled: true,
-        castShadow: true,
-        directionX: 0,
-        directionY: -1,
-        directionZ: 0,
-        range: 10,
-        decay: 1,
-        angle: 0.5235987901687622,
-        penumbra: 0.10000000149011612,
-        shadowMapSize: 1024,
-        shadowBias: -0.00009999999747378752,
-        shadowRadius: 1,
-      },
-    },
+        "intensity": 0.800000011920929,
+        "enabled": true,
+        "castShadow": true,
+        "directionX": 0,
+        "directionY": -1,
+        "directionZ": 0,
+        "range": 10,
+        "decay": 1,
+        "angle": 0.5235987901687622,
+        "penumbra": 0.10000000149011612,
+        "shadowMapSize": 1024,
+        "shadowBias": -0.00009999999747378752,
+        "shadowRadius": 1
+      }
+    }
   },
   {
-    id: 2,
-    name: 'Ambient Light',
-    components: {
-      PersistentId: {
-        id: '36dcd0a4-3f59-42ee-ae0d-5ff1d06d91c7',
+    "id": 2,
+    "name": "Ambient Light",
+    "components": {
+      "PersistentId": {
+        "id": "d1b66a4e-98f0-40aa-9ac9-d5c79f4f0c29"
       },
-      Transform: {
-        position: [0, 0, 0],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
+      "Transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
       },
-      Light: {
-        lightType: 'ambient',
-        color: {
-          r: 0.4000000059604645,
-          g: 0.4000000059604645,
-          b: 0.4000000059604645,
+      "Light": {
+        "lightType": "ambient",
+        "color": {
+          "r": 0.4000000059604645,
+          "g": 0.4000000059604645,
+          "b": 0.4000000059604645
         },
-        intensity: 0.5,
-        enabled: true,
-        castShadow: false,
-        directionX: 0,
-        directionY: -1,
-        directionZ: 0,
-        range: 10,
-        decay: 1,
-        angle: 0.5235987901687622,
-        penumbra: 0.10000000149011612,
-        shadowMapSize: 1024,
-        shadowBias: -0.00009999999747378752,
-        shadowRadius: 1,
-      },
-    },
+        "intensity": 0.5,
+        "enabled": true,
+        "castShadow": false,
+        "directionX": 0,
+        "directionY": -1,
+        "directionZ": 0,
+        "range": 10,
+        "decay": 1,
+        "angle": 0.5235987901687622,
+        "penumbra": 0.10000000149011612,
+        "shadowMapSize": 1024,
+        "shadowBias": -0.00009999999747378752,
+        "shadowRadius": 1
+      }
+    }
   },
   {
-    id: 3,
-    name: 'Plane 0',
-    components: {
-      PersistentId: {
-        id: '49a03d3d-02d0-4446-9b01-0ca46153fa7b',
+    "id": 3,
+    "name": "Cube 0",
+    "components": {
+      "PersistentId": {
+        "id": "6f929dcb-4f03-4ba7-a318-14f978ee1240"
       },
-      Transform: {
-        position: [0, 0, 0],
-        rotation: [-90, 0, 0],
-        scale: [10, 10, 1],
+      "Transform": {
+        "position": [
+          0,
+          3,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
       },
-      MeshRenderer: {
-        meshId: 'plane',
-        materialId: 'default',
-        enabled: true,
-        castShadows: true,
-        receiveShadows: true,
-        modelPath: '',
-        material: {
-          shader: 'standard',
-          materialType: 'solid',
-          color: '#3399ff',
-          normalScale: 1,
-          metalness: 0,
-          roughness: 0.5,
-          emissive: '#000000',
-          emissiveIntensity: 0,
-          occlusionStrength: 1,
-          textureOffsetX: 0,
-          textureOffsetY: 0,
-        },
-      },
-      RigidBody: {
-        enabled: true,
-        bodyType: 'fixed',
-        type: 'fixed',
-        mass: 1,
-        gravityScale: 1,
-        canSleep: true,
-        material: {
-          friction: 0.699999988079071,
-          restitution: 0.30000001192092896,
-          density: 1,
-        },
-      },
-      MeshCollider: {
-        enabled: true,
-        isTrigger: false,
-        colliderType: 'box',
-        center: [0, 0, 0],
-        size: {
-          width: 1,
-          height: 1,
-          depth: 0.10000000149011612,
-          radius: 0.5,
-          capsuleRadius: 0.5,
-          capsuleHeight: 2,
-        },
-        physicsMaterial: {
-          friction: 0.699999988079071,
-          restitution: 0.30000001192092896,
-          density: 1,
-        },
-      },
-    },
+      "MeshRenderer": {
+        "meshId": "cube",
+        "materialId": "dss",
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": ""
+      }
+    }
   },
   {
-    id: 4,
-    name: 'Cube 0',
-    parentId: 3,
-    components: {
-      PersistentId: {
-        id: 'f4512c02-e53f-48b0-a00d-2748c4d6a293',
+    "id": 4,
+    "name": "Sphere 0",
+    "components": {
+      "PersistentId": {
+        "id": "e5ce401b-fbf4-47cb-98ca-e3743eaaa56c"
       },
-      Transform: {
-        position: [0, 2.75, 0],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
+      "Transform": {
+        "position": [
+          -2.5,
+          1.5,
+          -0.25
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
       },
-      MeshRenderer: {
-        meshId: 'cube',
-        materialId: 'default',
-        enabled: true,
-        castShadows: true,
-        receiveShadows: true,
-        modelPath: '',
-        material: {
-          shader: 'standard',
-          materialType: 'solid',
-          color: '#3399ff',
-          normalScale: 1,
-          metalness: 0,
-          roughness: 0.5,
-          emissive: '#000000',
-          emissiveIntensity: 0,
-          occlusionStrength: 1,
-          textureOffsetX: 0,
-          textureOffsetY: 0,
-        },
-      },
-      RigidBody: {
-        enabled: true,
-        bodyType: 'dynamic',
-        type: 'dynamic',
-        mass: 1,
-        gravityScale: 1,
-        canSleep: true,
-        material: {
-          friction: 0.699999988079071,
-          restitution: 0.30000001192092896,
-          density: 1,
-        },
-      },
-      MeshCollider: {
-        enabled: true,
-        isTrigger: false,
-        colliderType: 'box',
-        center: [0, 0, 0],
-        size: {
-          width: 1,
-          height: 1,
-          depth: 1,
-          radius: 0.5,
-          capsuleRadius: 0.5,
-          capsuleHeight: 2,
-        },
-        physicsMaterial: {
-          friction: 0.699999988079071,
-          restitution: 0.30000001192092896,
-          density: 1,
-        },
-      },
-    },
+      "MeshRenderer": {
+        "meshId": "sphere",
+        "materialId": "test123",
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": ""
+      }
+    }
+  }
+];
+
+/**
+ * Scene materials
+ */
+const sceneMaterials = [
+  {
+    "id": "default",
+    "name": "Default Material",
+    "shader": "standard",
+    "materialType": "solid",
+    "color": "#cccccc",
+    "metalness": 0,
+    "roughness": 0.7,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "normalScale": 1,
+    "occlusionStrength": 1,
+    "textureOffsetX": 0,
+    "textureOffsetY": 0
   },
   {
-    id: 5,
-    name: 'Dodecahedron 0',
-    components: {
-      PersistentId: {
-        id: '129ca8a7-f03b-4e59-b4e4-bd865ff3c22a',
-      },
-      Transform: {
-        position: [0, 4.25, -2.5],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
-      },
-      MeshRenderer: {
-        meshId: 'dodecahedron',
-        materialId: 'default',
-        enabled: true,
-        castShadows: true,
-        receiveShadows: true,
-        modelPath: '',
-        material: {
-          shader: 'standard',
-          materialType: 'solid',
-          color: '#3399ff',
-          normalScale: 1,
-          metalness: 0,
-          roughness: 0.5,
-          emissive: '#000000',
-          emissiveIntensity: 0,
-          occlusionStrength: 1,
-          textureOffsetX: 0,
-          textureOffsetY: 0,
-        },
-      },
-    },
+    "id": "test123",
+    "name": "Test Material",
+    "shader": "standard",
+    "materialType": "solid",
+    "color": "#ff6600",
+    "metalness": 0.3,
+    "roughness": 0.6,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "normalScale": 1,
+    "occlusionStrength": 1,
+    "textureOffsetX": 0,
+    "textureOffsetY": 0
   },
+  {
+    "id": "dss",
+    "name": "dss",
+    "shader": "standard",
+    "materialType": "texture",
+    "color": "#cccccc",
+    "metalness": 0,
+    "roughness": 0.7,
+    "emissive": "#000000",
+    "emissiveIntensity": 0,
+    "normalScale": 1,
+    "occlusionStrength": 1,
+    "textureOffsetX": 0,
+    "textureOffsetY": 0,
+    "albedoTexture": "/assets/textures/crate-texture.png"
+  }
 ];
 
 /**
  * Scene metadata
  */
 export const metadata: SceneMetadata = {
-  name: 'test',
-  version: 1,
-  timestamp: '2025-09-28T04:11:34.304Z',
+  "name": "test",
+  "version": 1,
+  "timestamp": "2025-09-29T00:02:22.826Z"
 };
 
 /**
  * test
- * Generated: 2025-09-28T04:11:34.304Z
+ * Generated: 2025-09-29T00:02:22.826Z
  * Version: 1
  */
 export const Test: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
+  const materialsStore = useMaterialsStore();
 
   useEffect(() => {
+    // Load materials first - don't clear, just upsert
+    const materialRegistry = MaterialRegistry.getInstance();
+
+    // Upsert scene materials (this will add or update them)
+    sceneMaterials.forEach(material => {
+      materialRegistry.upsert(material);
+    });
+
+    // Refresh materials store cache
+    materialsStore._refreshMaterials();
+
+    console.log(`[TsxScene] Loaded ${sceneMaterials.length} materials`);
+
     // Validate scene data at runtime
-    const validatedSceneData = sceneData.map((entity) => validateSceneEntity(entity));
+    const validatedSceneData = sceneData.map(entity => validateSceneEntity(entity));
 
     // Clear existing entities
     entityManager.clearEntities();
@@ -356,10 +362,8 @@ export const Test: React.FC = () => {
       });
     });
 
-    console.log(
-      `[TsxScene] Loaded scene '${metadata?.name || 'Unknown'}' with ${validatedSceneData.length} entities`,
-    );
-  }, [entityManager, componentManager]);
+    console.log(`[TsxScene] Loaded scene '${metadata?.name || 'Unknown'}' with ${validatedSceneData.length} entities and ${sceneMaterials.length} materials`);
+  }, [entityManager, componentManager, materialsStore]);
 
   return null; // Scene components don't render UI
 };

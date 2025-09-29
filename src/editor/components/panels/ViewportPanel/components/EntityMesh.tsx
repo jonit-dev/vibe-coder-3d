@@ -159,6 +159,11 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
   }) => {
     // Use custom hooks for entity management
     useEntityRegistration(meshRef, entityId);
+
+    // Load material and textures - must be called before any conditional returns
+    const material = renderingContributions.material || {};
+    const { textures, isTextureMode } = useTextureLoading(material);
+
     // Don't render anything if no mesh type is set
     if (!meshType) {
       return null;
@@ -212,10 +217,6 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
         </ModelErrorBoundary>
       );
     }
-
-    // Load material and textures
-    const material = renderingContributions.material || {};
-    const { textures, isTextureMode } = useTextureLoading(material);
 
     // Special handling for camera entities
     if (meshType === 'Camera') {

@@ -9,6 +9,11 @@ export interface IModalProps {
   maxWidth?: string;
   maxHeight?: string;
   backdropOpacity?: string;
+  // When true, the modal body (between header/footer) scrolls; otherwise, delegate scroll to children
+  scrollBody?: boolean;
+  // Optional class names to customize container/body styling
+  containerClassName?: string;
+  bodyClassName?: string;
 }
 
 export const Modal: React.FC<IModalProps> = ({
@@ -19,17 +24,20 @@ export const Modal: React.FC<IModalProps> = ({
   maxWidth = 'w-96',
   maxHeight = 'max-h-[80vh]',
   backdropOpacity = 'bg-black/40',
+  scrollBody = false,
+  containerClassName = '',
+  bodyClassName = '',
 }) => {
   if (!isOpen) return null;
 
   return (
     <div className={`fixed inset-0 ${backdropOpacity} flex items-center justify-center z-[100]`}>
       <div
-        className={`bg-gray-800 rounded-lg border border-gray-600 ${maxWidth} ${maxHeight} flex flex-col shadow-xl`}
+        className={`bg-gray-800 rounded-lg border border-gray-600 ${maxWidth} ${maxHeight} flex flex-col shadow-xl overflow-hidden ${containerClassName}`}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between p-3 border-b border-gray-600">
+          <div className="flex items-center justify-between p-3 border-b border-gray-600 flex-shrink-0">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">{title}</h3>
             <button
               onClick={onClose}
@@ -41,7 +49,7 @@ export const Modal: React.FC<IModalProps> = ({
         )}
 
         {/* Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
+        <div className={`flex-1 flex flex-col min-h-0 ${scrollBody ? 'overflow-y-auto' : 'overflow-hidden'} ${bodyClassName}`}>{children}</div>
       </div>
     </div>
   );

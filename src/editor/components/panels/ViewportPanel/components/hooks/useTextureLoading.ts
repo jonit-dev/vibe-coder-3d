@@ -31,7 +31,10 @@ export const useTextureLoading = (material: any) => {
 
   // Load all textures at once using drei's useTexture
   // Note: useTexture will suspend until textures are loaded, causing brief flicker
-  const textures = Object.keys(textureUrls).length > 0 ? useTexture(textureUrls) : {};
+  // Always call useTexture to avoid conditional hook usage
+  const hasTextures = Object.keys(textureUrls).length > 0;
+  const loadedTextures = useTexture(hasTextures ? textureUrls : {});
+  const textures = hasTextures ? loadedTextures : {};
 
   // Configure texture offsets after textures are loaded
   React.useEffect(() => {

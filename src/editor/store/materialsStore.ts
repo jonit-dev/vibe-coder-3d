@@ -56,15 +56,13 @@ interface IMaterialsState {
 }
 
 export const useMaterialsStore = create<IMaterialsState>((set, get) => {
-  return {
-    get registry() {
-      return MaterialRegistry.getInstance();
-    },
-    materials: (() => {
-      const registry = MaterialRegistry.getInstance();
+  // Initialize registry with common test materials if they're missing
+  const registry = MaterialRegistry.getInstance();
 
-      // Create the missing test123 material that entities reference
-      const test123Material = {
+  // Ensure test materials exist for scene compatibility
+  const ensureTestMaterials = () => {
+    if (!registry.get('test123')) {
+      registry.upsert({
         id: 'test123',
         name: 'Test Material',
         shader: 'standard' as const,
@@ -78,13 +76,36 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
         occlusionStrength: 1,
         textureOffsetX: 0,
         textureOffsetY: 0,
-      };
+      });
+    }
 
-      registry.upsert(test123Material);
-      console.log('[MaterialsStore] Created missing test123 material for scene compatibility');
+    if (!registry.get('dss')) {
+      registry.upsert({
+        id: 'dss',
+        name: 'dss',
+        shader: 'standard' as const,
+        materialType: 'texture' as const,
+        color: '#cccccc',
+        metalness: 0,
+        roughness: 0.7,
+        emissive: '#000000',
+        emissiveIntensity: 0,
+        normalScale: 1,
+        occlusionStrength: 1,
+        textureOffsetX: 0,
+        textureOffsetY: 0,
+        albedoTexture: '/assets/textures/crate-texture.png',
+      });
+    }
+  };
 
-      return registry.list();
-    })(), // Initialize with current materials including test123
+  ensureTestMaterials();
+
+  return {
+    get registry() {
+      return MaterialRegistry.getInstance();
+    },
+    materials: registry.list(), // Initialize with current materials including test materials
 
     selectedMaterialId: null,
     isBrowserOpen: false,
@@ -95,9 +116,10 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     filterByType: 'all',
 
     _refreshMaterials: () => {
-      const materials = MaterialRegistry.getInstance().list();
+      const registry = MaterialRegistry.getInstance();
+      const materials = registry.list();
       console.log('[MaterialsStore] _refreshMaterials called, found materials:',
-        materials.map(m => ({id: m.id, name: m.name})));
+        materials.map(m => ({id: m.id, name: m.name, materialType: m.materialType})));
       set({ materials });
     },
 
@@ -125,7 +147,7 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
       get()._refreshMaterials(); // Update UI reactively
       console.log('[MaterialsStore] Materials cache updated:', get().materials.length, 'materials');
       console.log('[MaterialsStore] All materials in registry after create:',
-        registry.list().map(m => ({id: m.id, name: m.name})));
+        registry.list().map(m => ({id: m.id, name: m.name, materialType: m.materialType, albedoTexture: m.albedoTexture})));
     },
 
     updateMaterial: async (materialId, updates) => {

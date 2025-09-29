@@ -18,6 +18,8 @@ export interface IInternalTabsProps {
   contentClassName?: string;
   variant?: 'default' | 'pills' | 'underline';
   size?: 'sm' | 'md' | 'lg';
+  // When true, content area scrolls; otherwise, parent manages scrolling
+  scrollContent?: boolean;
 }
 
 export const InternalTabs: React.FC<IInternalTabsProps> = ({
@@ -29,6 +31,7 @@ export const InternalTabs: React.FC<IInternalTabsProps> = ({
   contentClassName = '',
   variant = 'default',
   size = 'md',
+  scrollContent = true,
 }) => {
   const activeTabData = tabs.find(tab => tab.id === activeTab);
 
@@ -63,14 +66,14 @@ export const InternalTabs: React.FC<IInternalTabsProps> = ({
   };
 
   const getContentStyles = () => {
-    const baseStyles = 'flex-1 overflow-y-auto';
+    const baseStyles = `flex-1 min-h-0 ${scrollContent ? 'overflow-y-auto' : 'overflow-hidden'}`;
     return `${baseStyles} ${contentClassName}`;
   };
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* Tab Navigation */}
-      <div className={`flex space-x-1 p-1 ${variant === 'underline' ? 'border-b border-gray-600' : 'bg-gray-800 rounded-lg'}`}>
+      <div className={`flex space-x-1 p-1 flex-shrink-0 ${variant === 'underline' ? 'border-b border-gray-600' : 'bg-gray-800 rounded-lg'}`}>
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab;
 

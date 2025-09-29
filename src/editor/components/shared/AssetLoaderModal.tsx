@@ -70,6 +70,12 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
 
   // Filter and search assets
   const filteredAssets = useMemo(() => {
+    console.log('AssetLoaderModal filtering:', {
+      allowedExtensions,
+      assetsCount: assets.length,
+      basePath: currentPath
+    });
+
     let filtered = assets.filter((asset) => {
       // Always show folders for navigation
       if (asset.type === 'folder') return true;
@@ -79,9 +85,24 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
 
       // Strict filtering: only show files with allowed extensions
       const fileExtension = asset.extension?.toLowerCase();
-      return (
-        fileExtension && allowedExtensions.map((ext) => ext.toLowerCase()).includes(fileExtension)
+
+      // Normalize extensions - remove dots if present
+      const normalizedAllowedExtensions = allowedExtensions.map((ext) =>
+        ext.toLowerCase().replace(/^\./, '')
       );
+
+      const matches = fileExtension && normalizedAllowedExtensions.includes(fileExtension);
+
+      if (asset.type === 'file') {
+        console.log('Checking file:', {
+          name: asset.name,
+          extension: fileExtension,
+          normalizedAllowedExtensions,
+          matches
+        });
+      }
+
+      return matches;
     });
 
     // Apply search filter
@@ -181,7 +202,7 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[110]">
       <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-md border border-gray-700/50 rounded-lg w-[480px] max-h-[85vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="bg-gradient-to-r from-gray-800/70 to-gray-700/70 border-b border-cyan-500/30 px-4 py-3 rounded-t-lg">
@@ -301,7 +322,7 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
                           allowedExtensions.length > 0 &&
                           asset.extension &&
                           allowedExtensions
-                            .map((ext) => ext.toLowerCase())
+                            .map((ext) => ext.toLowerCase().replace(/^\./, ''))
                             .includes(asset.extension.toLowerCase())
                             ? 'text-green-400'
                             : 'text-blue-400'
@@ -315,7 +336,7 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
                         className={`text-[10px] uppercase font-mono px-1 py-0.5 rounded ${
                           allowedExtensions.length > 0 &&
                           allowedExtensions
-                            .map((ext) => ext.toLowerCase())
+                            .map((ext) => ext.toLowerCase().replace(/^\./, ''))
                             .includes(asset.extension.toLowerCase())
                             ? 'text-green-400 bg-green-900/20 border border-green-500/20'
                             : 'text-gray-400 bg-gray-800/50'
