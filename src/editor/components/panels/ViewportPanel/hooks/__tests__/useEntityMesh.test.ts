@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-import type { IMaterialDefinition } from '@/core/materials/Material.types';
-import type { MeshRendererData } from '@/core/lib/ecs/components/definitions/MeshRendererComponent';
+import type { IMaterialDefinition } from '../../../../core/materials/Material.types';
+import type { MeshRendererData } from '../../../../core/lib/ecs/components/definitions/MeshRendererComponent';
 import { useEntityMesh } from '../useEntityMesh';
 
 // Mock the materials store
@@ -21,6 +21,8 @@ const mockMaterials: IMaterialDefinition[] = [
     occlusionStrength: 1,
     textureOffsetX: 0,
     textureOffsetY: 0,
+    textureRepeatX: 1,
+    textureRepeatY: 1,
   },
   {
     id: 'test123',
@@ -36,6 +38,8 @@ const mockMaterials: IMaterialDefinition[] = [
     occlusionStrength: 1,
     textureOffsetX: 0,
     textureOffsetY: 0,
+    textureRepeatX: 1,
+    textureRepeatY: 1,
   },
   {
     id: 'textured-material',
@@ -56,7 +60,7 @@ const mockMaterials: IMaterialDefinition[] = [
   },
 ];
 
-vi.mock('@/editor/store/materialsStore', () => ({
+vi.mock('../../../store/materialsStore', () => ({
   useMaterialsStore: (selector: any) => {
     if (typeof selector === 'function') {
       return selector({ materials: mockMaterials });
@@ -65,12 +69,17 @@ vi.mock('@/editor/store/materialsStore', () => ({
   },
 }));
 
-// Mock React (for useEffect)
+// Mock React (for useEffect) - don't auto-execute to prevent infinite loops
 vi.mock('react', async () => {
   const actual = await vi.importActual('react');
   return {
     ...actual,
-    useEffect: vi.fn((fn) => fn()),
+    useEffect: vi.fn((fn, deps) => {
+      // Only run on mount, not on every render
+      if (!deps || deps.length === 0) {
+        fn();
+      }
+    }),
   };
 });
 
@@ -78,7 +87,7 @@ vi.mock('react', async () => {
 const mockCombineRenderingContributions = vi.fn();
 const mockCombinePhysicsContributions = vi.fn();
 
-vi.mock('@/core/lib/ecs/ComponentRegistry', () => ({
+vi.mock('../../../../core/lib/ecs/ComponentRegistry', () => ({
   combineRenderingContributions: mockCombineRenderingContributions,
   combinePhysicsContributions: mockCombinePhysicsContributions,
 }));
@@ -103,25 +112,26 @@ describe('useEntityMesh', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Default mock implementations
+    // Set up default mock returns
     mockCombineRenderingContributions.mockReturnValue({
       castShadow: true,
       receiveShadow: true,
       visible: true,
       meshType: 'cube',
+      material: {}
     });
 
     mockCombinePhysicsContributions.mockReturnValue({
       enabled: false,
       rigidBodyProps: {
-        type: 'fixed',
+        type: 'dynamic',
         mass: 1,
         friction: 0.7,
         restitution: 0.3,
         density: 1,
         gravityScale: 1,
-        canSleep: true,
-      },
+        canSleep: true
+      }
     });
   });
 
@@ -463,7 +473,7 @@ describe('useEntityMesh', () => {
       } as IMaterialDefinition;
 
       // Mock store to return incomplete material
-      vi.mocked(require('@/editor/store/materialsStore')).useMaterialsStore = vi.fn(
+      vi.mocked(require('../../../store/materialsStore')).useMaterialsStore = vi.fn(
         (selector: any) => {
           if (typeof selector === 'function') {
             return selector({ materials: [incompleteMaterial] });

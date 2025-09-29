@@ -43,7 +43,7 @@ export function registerCoreComponents(): void {
   const stepTracker = componentLogger.createStepTracker('Core Components Registration');
 
   stepTracker.step('PersistentId Component');
-  componentRegistry.register(persistentIdComponent);
+  componentRegistry.register(persistentIdComponent.get());
 
   stepTracker.step('Transform Component');
   componentRegistry.register(transformComponent);

@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { emit } from '@/core/lib/events';
+import { emit } from '../../lib/events';
 import { useEvent } from '../useEvent';
 
 describe('useEvent', () => {

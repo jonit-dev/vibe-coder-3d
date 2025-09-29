@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StreamingSceneSerializer, type IStreamingScene } from '../StreamingSceneSerializer';
-import type { IMaterialDefinition } from '@/core/materials/Material.types';
+import type { IMaterialDefinition } from '../../core/materials/Material.types';
 
 describe('StreamingSceneSerializer - Materials Integration', () => {
   let serializer: StreamingSceneSerializer;

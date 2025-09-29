@@ -11,13 +11,13 @@ describe('materialsStore integration', () => {
 
   it('should validate material type definitions', () => {
     // Import and validate the material types exist
-    import('@/core/materials/Material.types').then((module) => {
+    import('../../../core/materials/Material.types').then((module) => {
       expect(module).toBeDefined();
     });
   });
 
   it('should have MaterialRegistry available', () => {
-    import('@/core/materials/MaterialRegistry').then((module) => {
+    import('../../../core/materials/MaterialRegistry').then((module) => {
       expect(module.MaterialRegistry).toBeDefined();
     });
   });

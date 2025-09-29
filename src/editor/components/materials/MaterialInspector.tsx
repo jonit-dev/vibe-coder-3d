@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { FiRefreshCw, FiSave, FiSettings, FiImage, FiMap } from 'react-icons/fi';
+import { FiImage, FiMap, FiRefreshCw, FiSave, FiSettings } from 'react-icons/fi';
 
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
 import { AssetSelector } from '@/editor/components/shared/AssetSelector';
-import { ColorField } from '@/editor/components/shared/ColorField';
 import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
+import { ColorField } from '@/editor/components/shared/ColorField';
 import { ComponentField } from '@/editor/components/shared/ComponentField';
+import { InternalTabs, useInternalTabs } from '@/editor/components/shared/InternalTabs';
 import { Modal } from '@/editor/components/shared/Modal';
 import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
-import { InternalTabs, useInternalTabs } from '@/editor/components/shared/InternalTabs';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
 import { MaterialPreviewSphere } from './MaterialPreviewSphere';
 
@@ -57,7 +57,7 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
 
       // Auto-switch to texture mode when any texture is added
       const textureFields = ['albedoTexture', 'normalTexture', 'metallicTexture',
-                            'roughnessTexture', 'emissiveTexture', 'occlusionTexture'];
+        'roughnessTexture', 'emissiveTexture', 'occlusionTexture'];
       const addingTexture = textureFields.some(field =>
         updates[field as keyof typeof updates] && !prev[field as keyof typeof prev]
       );
@@ -429,11 +429,11 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
       icon: <FiMap size={14} />,
       badge:
         material.albedoTexture ||
-        material.normalTexture ||
-        material.metallicTexture ||
-        material.roughnessTexture ||
-        material.emissiveTexture ||
-        material.occlusionTexture
+          material.normalTexture ||
+          material.metallicTexture ||
+          material.roughnessTexture ||
+          material.emissiveTexture ||
+          material.occlusionTexture
           ? '●'
           : undefined,
     },
@@ -444,10 +444,11 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title={`Edit Material: ${material.name}`}
-      maxWidth="w-[700px]"
-      maxHeight="max-h-[75vh]"
+      size="lg"
+      maxHeight="h-[75dvh]"
+      scrollBody={false}
     >
-      <div className="flex flex-col h-full max-h-[70vh]">
+      <div className="flex flex-col h-full min-h-0">
         {/* Header Section */}
         <div className="flex-shrink-0 border-b border-gray-600">
           {/* Preview */}

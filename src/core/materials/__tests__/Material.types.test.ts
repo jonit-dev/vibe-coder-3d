@@ -58,6 +58,8 @@ describe('Material.types', () => {
       occlusionStrength: 1,
       textureOffsetX: 0,
       textureOffsetY: 0,
+      textureRepeatX: 1,
+      textureRepeatY: 1,
     };
 
     it('should validate complete material definition', () => {
@@ -87,6 +89,8 @@ describe('Material.types', () => {
         occlusionStrength: 1,
         textureOffsetX: 0,
         textureOffsetY: 0,
+        textureRepeatX: 1,
+        textureRepeatY: 1,
       });
     });
 

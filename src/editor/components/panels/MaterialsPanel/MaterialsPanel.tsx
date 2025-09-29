@@ -56,7 +56,7 @@ export const MaterialsPanel: React.FC<IMaterialsPanelProps> = ({
         isOpen={isExpanded}
         onClose={onToggle}
         title="Materials"
-        maxWidth="w-[500px]"
+        size="md"
         maxHeight="max-h-[80vh]"
       >
         {/* Header Actions */}

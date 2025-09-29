@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act } from '@testing-library/react';
 import { create } from 'zustand';
 
-import type { IMaterialDefinition } from '@/core/materials/Material.types';
+import type { IMaterialDefinition } from '../../../core/materials/Material.types';
 
 // Mock MaterialRegistry completely
 const mockRegistry = {
@@ -12,7 +12,7 @@ const mockRegistry = {
   remove: vi.fn(),
 };
 
-vi.mock('@/core/materials/MaterialRegistry', () => ({
+vi.mock('../../../core/materials/MaterialRegistry', () => ({
   MaterialRegistry: {
     getInstance: () => mockRegistry,
   },

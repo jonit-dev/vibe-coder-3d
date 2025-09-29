@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useRef } from 'react';
 import * as THREE from 'three';
 
-import * as tagsLib from '@/core/lib/tags';
+import * as tagsLib from '../../lib/tags';
 import { useTag } from '../useTag';
 
 // Mock the tags library
-vi.mock('@/core/lib/tags', () => ({
+vi.mock('../../lib/tags', () => ({
   registerTag: vi.fn(),
   unregisterTag: vi.fn(),
 }));

@@ -120,10 +120,11 @@ export const MaterialCreateModal: React.FC<IMaterialCreateModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title="Create Material"
-      maxWidth="w-[650px]"
-      maxHeight="h-[80vh]"
+      size="lg"
+      maxHeight="h-[80dvh]"
+      scrollBody={false}
     >
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full min-h-0">
         <MaterialNameForm
           materialName={formState.materialName}
           materialId={formState.materialId}
@@ -137,7 +138,7 @@ export const MaterialCreateModal: React.FC<IMaterialCreateModalProps> = ({
             activeTab={activeTab}
             onTabChange={changeTab}
             variant="underline"
-            scrollContent={false}
+            scrollContent={true}
             className="h-full"
           />
         </div>

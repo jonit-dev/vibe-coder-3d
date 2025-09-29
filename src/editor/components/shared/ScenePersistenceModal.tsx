@@ -78,7 +78,7 @@ export const ScenePersistenceModal: React.FC<IScenePersistenceModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={mode === 'save' ? 'Save Scene' : 'Load Scene'}
-      maxWidth="w-[500px]"
+      size="md"
       maxHeight="max-h-[600px]"
     >
       <div className="p-4 space-y-4">

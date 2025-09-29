@@ -72,7 +72,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      maxWidth="w-[95vw]"
+      size="full"
       maxHeight="h-[95vh]"
       backdropOpacity="bg-black/60"
     >

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 
-import { createEngineInstance } from '@core/lib/ecs/factories/createEngineInstance';
+import { createEngineInstance } from '../lib/ecs/factories/createEngineInstance';
 import {
   getWorldSingleton,
   getEntityManagerSingleton,
   getComponentManagerSingleton,
-} from '@core/lib/ecs/adapters/SingletonAdapter';
+} from '../lib/ecs/adapters/SingletonAdapter';
 
 describe('Singleton Elimination Integration', () => {
   describe('Factory Function', () => {

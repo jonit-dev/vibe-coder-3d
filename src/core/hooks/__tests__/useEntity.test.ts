@@ -1,11 +1,11 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { componentRegistry } from '../../lib/ecs/ComponentRegistry';
 import { useEntity } from '../useEntity';
 
 // Mock the component registry
-vi.mock('@core/lib/ecs/ComponentRegistry', () => ({
+vi.mock('../../lib/ecs/ComponentRegistry', () => ({
   componentRegistry: {
     hasComponent: vi.fn(),
   },

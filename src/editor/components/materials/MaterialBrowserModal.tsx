@@ -175,7 +175,7 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={allowMultiSelect ? 'Select Materials' : 'Select Material'}
-      maxWidth="w-[900px]"
+      size="xl"
       maxHeight="max-h-[85vh]"
     >
       <div className="flex flex-col h-full p-4">

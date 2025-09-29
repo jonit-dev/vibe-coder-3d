@@ -30,8 +30,12 @@ function hashStringToU32(str: string): number {
 const idStringMap = new Map<number, string>();
 const hashToIdMap = new Map<string, number>();
 
-// Persistent ID Component Definition
-export const persistentIdComponent = ComponentFactory.create({
+// Create component definition lazily to avoid circular dependency issues
+let _persistentIdComponent: any = null;
+
+function createPersistentIdComponent() {
+  if (!_persistentIdComponent) {
+    _persistentIdComponent = ComponentFactory.create({
   id: 'PersistentId',
   name: 'Persistent Id',
   category: ComponentCategory.Core,
@@ -55,6 +59,16 @@ export const persistentIdComponent = ComponentFactory.create({
     version: '1.0.0',
   },
 });
+  }
+  return _persistentIdComponent;
+}
+
+// Export getter for component
+export const persistentIdComponent = {
+  get() {
+    return createPersistentIdComponent();
+  }
+};
 
 // Helper functions for working with persistent IDs
 export function generatePersistentId(): string {
