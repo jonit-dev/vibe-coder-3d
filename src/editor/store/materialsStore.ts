@@ -118,8 +118,6 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     _refreshMaterials: () => {
       const registry = MaterialRegistry.getInstance();
       const materials = registry.list();
-      console.log('[MaterialsStore] _refreshMaterials called, found materials:',
-        materials.map(m => ({id: m.id, name: m.name, materialType: m.materialType})));
       set({ materials });
     },
 
@@ -140,14 +138,9 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     setFilterByType: (filter) => set({ filterByType: filter }),
 
     createMaterial: async (material) => {
-      console.log('[MaterialsStore] Creating material:', material);
       const registry = MaterialRegistry.getInstance();
       registry.upsert(material);
-      console.log('[MaterialsStore] Material created, refreshing cache...');
       get()._refreshMaterials(); // Update UI reactively
-      console.log('[MaterialsStore] Materials cache updated:', get().materials.length, 'materials');
-      console.log('[MaterialsStore] All materials in registry after create:',
-        registry.list().map(m => ({id: m.id, name: m.name, materialType: m.materialType, albedoTexture: m.albedoTexture})));
     },
 
     updateMaterial: async (materialId, updates) => {
@@ -229,7 +222,7 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
 
     get selectedMaterial() {
       const { selectedMaterialId, materials } = get();
-      return selectedMaterialId ? materials.find(m => m.id === selectedMaterialId) || null : null;
+      return selectedMaterialId ? materials.find((m) => m.id === selectedMaterialId) || null : null;
     },
 
     getFilteredMaterials: () => {
@@ -263,7 +256,7 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
 
     getSelectedMaterial: () => {
       const { selectedMaterialId, materials } = get();
-      return selectedMaterialId ? materials.find(m => m.id === selectedMaterialId) || null : null;
+      return selectedMaterialId ? materials.find((m) => m.id === selectedMaterialId) || null : null;
     },
   };
 });
