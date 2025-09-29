@@ -27,6 +27,8 @@ export const MaterialDefinitionSchema = z.object({
   occlusionStrength: z.number().default(1),
   textureOffsetX: z.number().default(0),
   textureOffsetY: z.number().default(0),
+  textureRepeatX: z.number().default(1),
+  textureRepeatY: z.number().default(1),
 });
 
 export type IMaterialDefinition = z.infer<typeof MaterialDefinitionSchema>;

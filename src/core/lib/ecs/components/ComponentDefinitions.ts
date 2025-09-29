@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory, componentRegistry } from '../ComponentRegistry';
 import { EntityId } from '../types';
+import { Logger } from '@core/lib/logger';
 
 // Import all core component definitions from individual files
 import {
@@ -35,18 +36,44 @@ import {
 // REGISTER ALL CORE COMPONENTS
 // ============================================================================
 
+// Create logger for component registration timing
+const componentLogger = Logger.create('ECS:Components');
+
 export function registerCoreComponents(): void {
+  const stepTracker = componentLogger.createStepTracker('Core Components Registration');
+
+  stepTracker.step('PersistentId Component');
   componentRegistry.register(persistentIdComponent);
+
+  stepTracker.step('Transform Component');
   componentRegistry.register(transformComponent);
+
+  stepTracker.step('MeshRenderer Component');
   componentRegistry.register(meshRendererComponent);
+
+  stepTracker.step('Terrain Component');
   componentRegistry.register(terrainComponent);
+
+  stepTracker.step('RigidBody Component');
   componentRegistry.register(rigidBodyComponent);
+
+  stepTracker.step('MeshCollider Component');
   componentRegistry.register(meshColliderComponent);
+
+  stepTracker.step('Camera Component');
   componentRegistry.register(cameraComponent);
+
+  stepTracker.step('Light Component');
   componentRegistry.register(lightComponent);
+
+  stepTracker.step('Script Component');
   componentRegistry.register(scriptComponent);
+
+  stepTracker.step('Sound Component');
   componentRegistry.register(soundComponent);
 
+  stepTracker.complete();
+  componentLogger.milestone('Core Components Registered', { componentsCount: 10 });
 }
 
 // ============================================================================
@@ -115,9 +142,16 @@ const velocityComponent = ComponentFactory.createSimple({
 
 // Register example components
 export function registerExampleComponents(): void {
+  const stepTracker = componentLogger.createStepTracker('Example Components Registration');
+
+  stepTracker.step('Health Component');
   componentRegistry.register(healthComponent);
+
+  stepTracker.step('Velocity Component');
   componentRegistry.register(velocityComponent);
 
+  stepTracker.complete();
+  componentLogger.milestone('Example Components Registered', { componentsCount: 2 });
 }
 
 // Export type definitions for TypeScript support

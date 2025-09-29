@@ -16,7 +16,7 @@ export interface ICameraGeometryProps {
  * Simple 2D camera icon using react-icons with dynamic frustum
  * Clean, flat design like modern game engines
  */
-export const CameraGeometry: React.FC<ICameraGeometryProps> = ({
+export const CameraGeometry: React.FC<ICameraGeometryProps> = React.memo(({
   size = 0.75,
   showFrustum = true,
   isPlaying = false,
@@ -149,4 +149,4 @@ export const CameraGeometry: React.FC<ICameraGeometryProps> = ({
       )}
     </group>
   );
-};
+});

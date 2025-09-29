@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const AxesIndicator: React.FC = () => {
+export const AxesIndicator: React.FC = React.memo(() => {
   return (
     <div className="absolute bottom-4 right-4 z-10 bg-black/30 backdrop-blur-sm border border-gray-700/50 rounded-lg px-3 py-2">
       <div className="flex items-center space-x-2 text-sm font-medium">
@@ -19,4 +19,4 @@ export const AxesIndicator: React.FC = () => {
       </div>
     </div>
   );
-};
+});

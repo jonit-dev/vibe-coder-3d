@@ -5,6 +5,14 @@ import { EngineProvider } from '@core/context';
 import { initializeECS } from '@/core/lib/ecs/init';
 import Editor from '@/editor/Editor';
 import { GlobalAssetLoaderModal } from '@/editor/components/shared/GlobalAssetLoaderModal';
+import { Logger } from '@core/lib/logger';
+
+// Create logger for startup timing
+const startupLogger = Logger.create('App:Startup');
+
+// Record app start time globally
+(window as any).__appStartTime = performance.now();
+startupLogger.milestone('App Start');
 
 /**
  * Main App component
@@ -18,14 +26,13 @@ export default function App() {
       return;
     }
 
-    try {
-      // Initialize the new component registry system
-      initializeECS();
-      (window as { __ecsSystemInitialized?: boolean }).__ecsSystemInitialized = true;
-    } catch (error) {
-      // ECS initialization failed - this is a critical error
-      throw error;
-    }
+    // Track ECS initialization
+    const completeECSInit = startupLogger.startTracker('ECS System Initialization');
+    initializeECS();
+    (window as { __ecsSystemInitialized?: boolean }).__ecsSystemInitialized = true;
+    completeECSInit();
+
+    startupLogger.milestone('App Initialization Complete');
   }, []);
 
   return (

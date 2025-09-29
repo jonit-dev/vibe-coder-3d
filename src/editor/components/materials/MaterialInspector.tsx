@@ -5,6 +5,7 @@ import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
 import { AssetSelector } from '@/editor/components/shared/AssetSelector';
 import { ColorField } from '@/editor/components/shared/ColorField';
+import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
 import { ComponentField } from '@/editor/components/shared/ComponentField';
 import { Modal } from '@/editor/components/shared/Modal';
 import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
@@ -54,6 +55,17 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
 
       let updated = { ...prev, ...updates };
 
+      // Auto-switch to texture mode when any texture is added
+      const textureFields = ['albedoTexture', 'normalTexture', 'metallicTexture',
+                            'roughnessTexture', 'emissiveTexture', 'occlusionTexture'];
+      const addingTexture = textureFields.some(field =>
+        updates[field as keyof typeof updates] && !prev[field as keyof typeof prev]
+      );
+
+      if (addingTexture && prev.materialType !== 'texture') {
+        updated.materialType = 'texture';
+      }
+
       // When switching from texture to solid, clear texture-specific properties
       if (updates.materialType === 'solid' && prev.materialType === 'texture') {
         updated = {
@@ -69,6 +81,8 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
           occlusionStrength: 1,
           textureOffsetX: 0,
           textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
         };
       }
 
@@ -211,119 +225,177 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
 
   const texturesTab = (
     <div className="space-y-3 p-4">
-      <AssetSelector
-        label="Albedo Texture"
-        value={material.albedoTexture}
-        onChange={(assetPath) => updateMaterial({ albedoTexture: assetPath })}
-        placeholder="No texture selected"
-        buttonTitle="Select Texture"
-        basePath="/assets/textures"
-        allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
-        showPreview={true}
-      />
+      {/* Main Texture */}
+      <CollapsibleSection
+        title="Main Texture"
+        defaultExpanded={true}
+        icon={<FiImage size={12} />}
+        badge={material.albedoTexture ? '●' : undefined}
+      >
+        <AssetSelector
+          label="Albedo Texture"
+          value={material.albedoTexture}
+          onChange={(assetPath) => updateMaterial({ albedoTexture: assetPath })}
+          placeholder="No texture selected"
+          buttonTitle="Select Texture"
+          basePath="/assets/textures"
+          allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
+          showPreview={true}
+        />
+      </CollapsibleSection>
 
       {material.shader === 'standard' && (
         <>
-          <AssetSelector
-            label="Normal Map"
-            value={material.normalTexture}
-            onChange={(assetPath) => updateMaterial({ normalTexture: assetPath })}
-            placeholder="No normal map"
-            buttonTitle="Select Normal Map"
-            basePath="/assets/textures"
-            allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
-            showPreview={true}
-          />
+          {/* Surface Maps */}
+          <CollapsibleSection
+            title="Surface Maps"
+            defaultExpanded={false}
+            icon={<FiMap size={12} />}
+            badge={[material.normalTexture, material.metallicTexture, material.roughnessTexture].filter(Boolean).length || undefined}
+          >
+            <div className="space-y-3">
+              <AssetSelector
+                label="Normal Map"
+                value={material.normalTexture}
+                onChange={(assetPath) => updateMaterial({ normalTexture: assetPath })}
+                placeholder="No normal map"
+                buttonTitle="Select Normal Map"
+                basePath="/assets/textures"
+                allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
+                showPreview={true}
+              />
 
-          {material.normalTexture && (
-            <SingleAxisField
-              label="Normal Strength"
-              value={material.normalScale}
-              onChange={(value) => updateMaterial({ normalScale: value })}
-              min={0}
-              max={5}
-              step={0.1}
-              disabled={readOnly}
-            />
-          )}
+              {material.normalTexture && (
+                <SingleAxisField
+                  label="Normal Strength"
+                  value={material.normalScale}
+                  onChange={(value) => updateMaterial({ normalScale: value })}
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  disabled={readOnly}
+                />
+              )}
 
-          <AssetSelector
-            label="Metallic Map"
-            value={material.metallicTexture}
-            onChange={(assetPath) => updateMaterial({ metallicTexture: assetPath })}
-            placeholder="No metallic map"
-            buttonTitle="Select Metallic Map"
-            basePath="/assets/textures"
-            allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
-            showPreview={true}
-          />
+              <AssetSelector
+                label="Metallic Map"
+                value={material.metallicTexture}
+                onChange={(assetPath) => updateMaterial({ metallicTexture: assetPath })}
+                placeholder="No metallic map"
+                buttonTitle="Select Metallic Map"
+                basePath="/assets/textures"
+                allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
+                showPreview={true}
+              />
 
-          <AssetSelector
-            label="Roughness Map"
-            value={material.roughnessTexture}
-            onChange={(assetPath) => updateMaterial({ roughnessTexture: assetPath })}
-            placeholder="No roughness map"
-            buttonTitle="Select Roughness Map"
-            basePath="/assets/textures"
-            allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
-            showPreview={true}
-          />
+              <AssetSelector
+                label="Roughness Map"
+                value={material.roughnessTexture}
+                onChange={(assetPath) => updateMaterial({ roughnessTexture: assetPath })}
+                placeholder="No roughness map"
+                buttonTitle="Select Roughness Map"
+                basePath="/assets/textures"
+                allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
+                showPreview={true}
+              />
+            </div>
+          </CollapsibleSection>
 
-          <AssetSelector
-            label="Emissive Map"
-            value={material.emissiveTexture}
-            onChange={(assetPath) => updateMaterial({ emissiveTexture: assetPath })}
-            placeholder="No emissive map"
-            buttonTitle="Select Emissive Map"
-            basePath="/assets/textures"
-            allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
-            showPreview={true}
-          />
+          {/* Effect Maps */}
+          <CollapsibleSection
+            title="Effect Maps"
+            defaultExpanded={false}
+            badge={[material.emissiveTexture, material.occlusionTexture].filter(Boolean).length || undefined}
+          >
+            <div className="space-y-3">
+              <AssetSelector
+                label="Emissive Map"
+                value={material.emissiveTexture}
+                onChange={(assetPath) => updateMaterial({ emissiveTexture: assetPath })}
+                placeholder="No emissive map"
+                buttonTitle="Select Emissive Map"
+                basePath="/assets/textures"
+                allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
+                showPreview={true}
+              />
 
-          <AssetSelector
-            label="Occlusion Map"
-            value={material.occlusionTexture}
-            onChange={(assetPath) => updateMaterial({ occlusionTexture: assetPath })}
-            placeholder="No occlusion map"
-            buttonTitle="Select Occlusion Map"
-            basePath="/assets/textures"
-            allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
-            showPreview={true}
-          />
+              <AssetSelector
+                label="Occlusion Map"
+                value={material.occlusionTexture}
+                onChange={(assetPath) => updateMaterial({ occlusionTexture: assetPath })}
+                placeholder="No occlusion map"
+                buttonTitle="Select Occlusion Map"
+                basePath="/assets/textures"
+                allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'tga', 'bmp']}
+                showPreview={true}
+              />
 
-          {material.occlusionTexture && (
-            <SingleAxisField
-              label="Occlusion Strength"
-              value={material.occlusionStrength}
-              onChange={(value) => updateMaterial({ occlusionStrength: value })}
-              min={0}
-              max={2}
-              step={0.1}
-              disabled={readOnly}
-            />
-          )}
+              {material.occlusionTexture && (
+                <SingleAxisField
+                  label="Occlusion Strength"
+                  value={material.occlusionStrength}
+                  onChange={(value) => updateMaterial({ occlusionStrength: value })}
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  disabled={readOnly}
+                />
+              )}
+            </div>
+          </CollapsibleSection>
 
-          <div className="grid grid-cols-2 gap-3">
-            <SingleAxisField
-              label="Texture Offset X"
-              value={material.textureOffsetX}
-              onChange={(value) => updateMaterial({ textureOffsetX: value })}
-              min={-10}
-              max={10}
-              step={0.01}
-              disabled={readOnly}
-            />
+          {/* Texture Transform */}
+          <CollapsibleSection
+            title="Texture Transform"
+            defaultExpanded={false}
+            badge={material.textureRepeatX !== 1 || material.textureRepeatY !== 1 || material.textureOffsetX !== 0 || material.textureOffsetY !== 0 ? '●' : undefined}
+          >
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <SingleAxisField
+                  label="Offset X"
+                  value={material.textureOffsetX}
+                  onChange={(value) => updateMaterial({ textureOffsetX: value })}
+                  min={-10}
+                  max={10}
+                  step={0.01}
+                  disabled={readOnly}
+                />
 
-            <SingleAxisField
-              label="Texture Offset Y"
-              value={material.textureOffsetY}
-              onChange={(value) => updateMaterial({ textureOffsetY: value })}
-              min={-10}
-              max={10}
-              step={0.01}
-              disabled={readOnly}
-            />
-          </div>
+                <SingleAxisField
+                  label="Offset Y"
+                  value={material.textureOffsetY}
+                  onChange={(value) => updateMaterial({ textureOffsetY: value })}
+                  min={-10}
+                  max={10}
+                  step={0.01}
+                  disabled={readOnly}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <SingleAxisField
+                  label="Repeat X"
+                  value={material.textureRepeatX}
+                  onChange={(value) => updateMaterial({ textureRepeatX: value })}
+                  min={0.1}
+                  max={100}
+                  step={0.1}
+                  disabled={readOnly}
+                />
+
+                <SingleAxisField
+                  label="Repeat Y"
+                  value={material.textureRepeatY}
+                  onChange={(value) => updateMaterial({ textureRepeatY: value })}
+                  min={0.1}
+                  max={100}
+                  step={0.1}
+                  disabled={readOnly}
+                />
+              </div>
+            </div>
+          </CollapsibleSection>
         </>
       )}
 
@@ -427,6 +499,7 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
             variant="underline"
             size="md"
             className="h-full"
+            scrollContent={true}
           />
         </div>
 

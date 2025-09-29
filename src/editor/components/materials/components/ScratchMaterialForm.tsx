@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiImage, FiLayers, FiSettings } from 'react-icons/fi';
+import { FiImage, FiLayers, FiMove, FiSettings } from 'react-icons/fi';
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import { AssetSelector } from '@/editor/components/shared/AssetSelector';
 import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
@@ -249,6 +249,81 @@ export const ScratchMaterialForm: React.FC<IScratchMaterialFormProps> = ({
                 />
               </>
             )}
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* Texture Transform */}
+      {formState.materialType === 'texture' && (
+        <CollapsibleSection
+          title="Texture Transform"
+          icon={<FiMove />}
+          defaultExpanded={false}
+        >
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">
+                  Offset X: {formState.textureOffsetX.toFixed(2)}
+                </label>
+                <input
+                  type="range"
+                  min="-10"
+                  max="10"
+                  step="0.01"
+                  value={formState.textureOffsetX}
+                  onChange={(e) => formActions.setTextureOffsetX(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">
+                  Offset Y: {formState.textureOffsetY.toFixed(2)}
+                </label>
+                <input
+                  type="range"
+                  min="-10"
+                  max="10"
+                  step="0.01"
+                  value={formState.textureOffsetY}
+                  onChange={(e) => formActions.setTextureOffsetY(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">
+                  Repeat X: {formState.textureRepeatX.toFixed(1)}
+                </label>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="100"
+                  step="0.1"
+                  value={formState.textureRepeatX}
+                  onChange={(e) => formActions.setTextureRepeatX(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">
+                  Repeat Y: {formState.textureRepeatY.toFixed(1)}
+                </label>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="100"
+                  step="0.1"
+                  value={formState.textureRepeatY}
+                  onChange={(e) => formActions.setTextureRepeatY(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                />
+              </div>
+            </div>
           </div>
         </CollapsibleSection>
       )}

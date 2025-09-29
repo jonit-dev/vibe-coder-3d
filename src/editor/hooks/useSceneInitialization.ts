@@ -5,6 +5,7 @@ import { loadScene } from '@/core/lib/scene/SceneRegistry';
 import { registerCoreScenes } from '@/core/lib/scene/scenes';
 import { registerGameExtensions } from '@game';
 import { type IStreamingScene } from '@/core/lib/serialization/StreamingSceneSerializer';
+import { Logger } from '@core/lib/logger';
 
 import { useEntityManager } from './useEntityManager';
 
@@ -21,6 +22,7 @@ export const useSceneInitialization = ({
   onStatusMessage,
   loadLastScene,
 }: IUseSceneInitializationProps) => {
+  const logger = Logger.create('SceneInitialization');
   const entityManager = useEntityManager();
   const hasInitialized = useRef(false);
   const hasRegisteredScenes = useRef(false);
@@ -28,11 +30,15 @@ export const useSceneInitialization = ({
   useEffect(() => {
     // Register scenes once
     if (!hasRegisteredScenes.current) {
+      const stepTracker = logger.createStepTracker('Scene Registration');
+      stepTracker.step('Core Scenes Registration');
       registerCoreScenes();
+      stepTracker.step('Game Extensions Registration');
       registerGameExtensions();
+      stepTracker.complete();
       hasRegisteredScenes.current = true;
     }
-  }, []);
+  }, [logger]);
 
   useEffect(() => {
     // Prevent multiple initializations
@@ -41,32 +47,42 @@ export const useSceneInitialization = ({
     }
 
     const initializeScene = async () => {
+      const stepTracker = logger.createStepTracker('Scene Initialization');
       try {
+        stepTracker.step('Checking Existing Entities');
         // Check if scene is already populated to prevent infinite loop
         const existingEntities = entityManager.getAllEntities();
 
         // Skip if already initialized with entities
         if (existingEntities.length > 0) {
+          stepTracker.step('Scene Already Initialized');
           onStatusMessage('Scene already initialized');
           hasInitialized.current = true;
+          stepTracker.complete();
           return;
         }
 
+        stepTracker.step('Loading Last Scene');
         // Try to load the last scene first, fallback to default
         const lastSceneLoaded = await loadLastScene();
 
         if (lastSceneLoaded) {
+          stepTracker.step('Last Scene Loaded Successfully');
           onStatusMessage('Loaded last scene from storage');
         } else {
+          stepTracker.step('Loading Default Scene');
           // Fallback to default scene using SceneRegistry
           await loadScene('default', true);
+          stepTracker.step('Default Scene Load Complete');
           onStatusMessage('Loaded default scene with camera and lights');
         }
         hasInitialized.current = true;
+        stepTracker.complete();
       } catch (error) {
-        console.error('Failed to initialize scene:', error);
+        logger.error('Failed to initialize scene', { error });
         onStatusMessage('Failed to load scene');
         hasInitialized.current = true;
+        stepTracker.complete();
       }
     };
 

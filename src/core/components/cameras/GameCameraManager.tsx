@@ -60,7 +60,6 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
   // Find the main camera or use the first available camera
   const mainCamera = useMemo(() => {
     if (cameraEntities.length === 0) {
-
       return null;
     }
 
@@ -68,9 +67,9 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     const mainCam = cameraEntities.find((entity) => entity.cameraData?.isMain);
 
     if (mainCam) {
-
+      return mainCam;
     } else {
-
+      return cameraEntities[0];
     }
 
     // Otherwise use the first camera

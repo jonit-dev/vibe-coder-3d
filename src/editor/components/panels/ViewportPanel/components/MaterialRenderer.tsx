@@ -34,6 +34,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
     // Use the provided material directly
     const materialDef = material;
 
+
     const isStandardShader = materialDef.shader === 'standard';
 
     if (isStandardShader) {
@@ -50,9 +51,9 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
         >
           <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
           <meshStandardMaterial
-            key={`${entityId}-standard`}
-            color={materialDef.albedoTexture ? '#ffffff' : (materialDef.color ?? entityColor)}
-            map={textures.albedoTexture as any}
+            key={`${entityId}-standard-${!!textures.albedoTexture}`}
+            color={textures.albedoTexture ? '#ffffff' : (materialDef.color ?? entityColor)}
+            map={textures.albedoTexture}
             metalness={materialDef.metalness ?? 0}
             roughness={materialDef.roughness ?? 0.7}
             metalnessMap={textures.metallicTexture as any}

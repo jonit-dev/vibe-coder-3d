@@ -12,7 +12,7 @@ interface IEntityTransformControlsProps {
   children: React.ReactNode;
 }
 
-export const EntityTransformControls: React.FC<IEntityTransformControlsProps> = ({
+export const EntityTransformControls: React.FC<IEntityTransformControlsProps> = React.memo(({
   selected,
   mode,
   onObjectChange,
@@ -45,4 +45,4 @@ export const EntityTransformControls: React.FC<IEntityTransformControlsProps> = 
       <group>{children}</group>
     </TransformControls>
   );
-};
+});

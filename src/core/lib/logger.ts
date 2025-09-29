@@ -230,6 +230,84 @@ export class Logger {
     this.debug(`${label} took ${(end - start).toFixed(2)}ms`);
     return result;
   }
+
+  /**
+   * Start tracking a named operation (returns a function to end tracking)
+   */
+  startTracker(operationName: string): () => void {
+    const startTime = performance.now();
+    const appStartTime = (window as any).__appStartTime;
+
+    this.info(`${operationName} started`, {
+      timestamp: startTime,
+      timeFromAppStart: appStartTime ? `${(startTime - appStartTime).toFixed(2)}ms` : 'unknown'
+    });
+
+    return () => {
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      this.info(`${operationName} completed`, {
+        duration: `${duration.toFixed(2)}ms`,
+        timeFromAppStart: appStartTime ? `${(endTime - appStartTime).toFixed(2)}ms` : 'unknown'
+      });
+    };
+  }
+
+  /**
+   * Track multiple sequential steps in a process
+   */
+  createStepTracker(processName: string) {
+    const startTime = performance.now();
+    const appStartTime = (window as any).__appStartTime;
+    let lastStepTime = startTime;
+    let stepCount = 0;
+
+    this.info(`${processName} process started`, {
+      timestamp: startTime,
+      timeFromAppStart: appStartTime ? `${(startTime - appStartTime).toFixed(2)}ms` : 'unknown'
+    });
+
+    return {
+      step: (stepName: string) => {
+        const now = performance.now();
+        const stepDuration = now - lastStepTime;
+        const totalDuration = now - startTime;
+        stepCount++;
+
+        this.info(`${processName} - Step ${stepCount}: ${stepName}`, {
+          stepDuration: `${stepDuration.toFixed(2)}ms`,
+          totalDuration: `${totalDuration.toFixed(2)}ms`,
+          timeFromAppStart: appStartTime ? `${(now - appStartTime).toFixed(2)}ms` : 'unknown'
+        });
+
+        lastStepTime = now;
+      },
+      complete: () => {
+        const endTime = performance.now();
+        const totalDuration = endTime - startTime;
+
+        this.info(`${processName} process completed`, {
+          totalSteps: stepCount,
+          totalDuration: `${totalDuration.toFixed(2)}ms`,
+          timeFromAppStart: appStartTime ? `${(endTime - appStartTime).toFixed(2)}ms` : 'unknown'
+        });
+      }
+    };
+  }
+
+  /**
+   * Track performance milestones (cumulative timing from app start)
+   */
+  milestone(milestoneName: string, additionalData?: Record<string, any>) {
+    const now = performance.now();
+    const appStartTime = (window as any).__appStartTime;
+
+    this.info(`🏁 MILESTONE: ${milestoneName}`, {
+      timeFromAppStart: appStartTime ? `${(now - appStartTime).toFixed(2)}ms` : 'unknown',
+      timestamp: now,
+      ...additionalData
+    });
+  }
 }
 
 // Export default logger instance for quick usage

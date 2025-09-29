@@ -17,6 +17,10 @@ export interface IMaterialFormState {
   roughnessTexture?: string;
   emissiveTexture?: string;
   occlusionTexture?: string;
+  textureOffsetX: number;
+  textureOffsetY: number;
+  textureRepeatX: number;
+  textureRepeatY: number;
 }
 
 export interface IMaterialFormActions {
@@ -35,6 +39,10 @@ export interface IMaterialFormActions {
   setRoughnessTexture: (texture?: string) => void;
   setEmissiveTexture: (texture?: string) => void;
   setOcclusionTexture: (texture?: string) => void;
+  setTextureOffsetX: (offset: number) => void;
+  setTextureOffsetY: (offset: number) => void;
+  setTextureRepeatX: (repeat: number) => void;
+  setTextureRepeatY: (repeat: number) => void;
   resetForm: () => void;
   createPreviewMaterial: () => IMaterialDefinition;
 }
@@ -55,6 +63,10 @@ const initialState: IMaterialFormState = {
   roughnessTexture: undefined,
   emissiveTexture: undefined,
   occlusionTexture: undefined,
+  textureOffsetX: 0,
+  textureOffsetY: 0,
+  textureRepeatX: 1,
+  textureRepeatY: 1,
 };
 
 export const useMaterialForm = (): [IMaterialFormState, IMaterialFormActions] => {
@@ -76,6 +88,10 @@ export const useMaterialForm = (): [IMaterialFormState, IMaterialFormActions] =>
     setRoughnessTexture: (roughnessTexture?: string) => setState(prev => ({ ...prev, roughnessTexture })),
     setEmissiveTexture: (emissiveTexture?: string) => setState(prev => ({ ...prev, emissiveTexture })),
     setOcclusionTexture: (occlusionTexture?: string) => setState(prev => ({ ...prev, occlusionTexture })),
+    setTextureOffsetX: (textureOffsetX: number) => setState(prev => ({ ...prev, textureOffsetX })),
+    setTextureOffsetY: (textureOffsetY: number) => setState(prev => ({ ...prev, textureOffsetY })),
+    setTextureRepeatX: (textureRepeatX: number) => setState(prev => ({ ...prev, textureRepeatX })),
+    setTextureRepeatY: (textureRepeatY: number) => setState(prev => ({ ...prev, textureRepeatY })),
 
     resetForm: () => setState(initialState),
 
@@ -91,8 +107,10 @@ export const useMaterialForm = (): [IMaterialFormState, IMaterialFormActions] =>
       emissiveIntensity: state.emissiveIntensity,
       normalScale: 1,
       occlusionStrength: 1,
-      textureOffsetX: 0,
-      textureOffsetY: 0,
+      textureOffsetX: state.textureOffsetX,
+      textureOffsetY: state.textureOffsetY,
+      textureRepeatX: state.textureRepeatX,
+      textureRepeatY: state.textureRepeatY,
       albedoTexture: state.albedoTexture,
       normalTexture: state.normalTexture,
       metallicTexture: state.metallicTexture,

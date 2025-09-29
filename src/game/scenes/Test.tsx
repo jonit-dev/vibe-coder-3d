@@ -11,6 +11,7 @@ import type {
   SceneMetadata,
 } from '@/core/types/scene';
 import { validateSceneEntity } from '@/core/types/scene';
+import { Logger } from '@core/lib/logger';
 
 /**
  * Type-safe scene data interface
@@ -358,6 +359,9 @@ export const metadata: SceneMetadata = {
   "timestamp": "2025-09-29T02:04:57.649Z"
 };
 
+// Create logger for scene timing
+const sceneLogger = Logger.create('Scene:Test');
+
 /**
  * test
  * Generated: 2025-09-29T02:04:57.649Z
@@ -369,34 +373,49 @@ export const Test: React.FC = () => {
   const materialsStore = useMaterialsStore();
 
   useEffect(() => {
+    const stepTracker = sceneLogger.createStepTracker('Test Scene Loading');
+
     // Load materials first
+    stepTracker.step('Material Registry Setup');
     const materialRegistry = MaterialRegistry.getInstance();
     materialRegistry.clearMaterials();
 
+    stepTracker.step('Material Registration');
     sceneMaterials.forEach(material => {
       materialRegistry.upsert(material);
     });
 
-    // Refresh materials store cache
+    stepTracker.step('Materials Store Refresh');
     materialsStore._refreshMaterials();
 
-    // Validate scene data at runtime
+    stepTracker.step('Scene Data Validation');
     const validatedSceneData = sceneData.map(entity => validateSceneEntity(entity));
 
-    // Clear existing entities
+    stepTracker.step('Entity Manager Clear');
     entityManager.clearEntities();
 
-    // Create entities and components with type safety
+    stepTracker.step('Entity Creation');
+    let entityCount = 0;
+    let componentCount = 0;
+
     validatedSceneData.forEach((entityData: ITypedSceneEntity) => {
       const entity = entityManager.createEntity(entityData.name, entityData.parentId || null);
+      entityCount++;
 
       // Type-safe component addition
       Object.entries(entityData.components).forEach(([componentType, componentData]) => {
         if (componentData) {
-          // Type assertion for known component types
           componentManager.addComponent(entity.id, componentType, componentData);
+          componentCount++;
         }
       });
+    });
+
+    stepTracker.complete();
+    sceneLogger.milestone('Test Scene Fully Loaded', {
+      entitiesCreated: entityCount,
+      componentsAdded: componentCount,
+      materialsLoaded: sceneMaterials.length
     });
 
   }, [entityManager, componentManager, materialsStore]);

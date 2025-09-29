@@ -29,6 +29,8 @@ export interface IRenderingContributions {
     occlusionStrength?: number;
     textureOffsetX?: number;
     textureOffsetY?: number;
+    textureRepeatX?: number;
+    textureRepeatY?: number;
     albedoTexture?: string;
     normalTexture?: string;
     metallicTexture?: string;
@@ -103,6 +105,8 @@ export const useEntityMesh = ({
       occlusionStrength: baseDef?.occlusionStrength ?? 1,
       textureOffsetX: baseDef?.textureOffsetX ?? 0,
       textureOffsetY: baseDef?.textureOffsetY ?? 0,
+      textureRepeatX: baseDef?.textureRepeatX ?? 1,
+      textureRepeatY: baseDef?.textureRepeatY ?? 1,
       albedoTexture: baseDef?.albedoTexture,
       normalTexture: baseDef?.normalTexture,
       metallicTexture: baseDef?.metallicTexture,
@@ -114,11 +118,20 @@ export const useEntityMesh = ({
     // Apply only real overrides (not defaults) from MeshRenderer.material
     const overrides = meshRenderer?.material || {};
 
+
+    // Filter out undefined values from overrides to prevent overwriting base values
+    const filteredOverrides = Object.entries(overrides).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as any);
+
     return {
       ...baseContributions,
       material: {
         ...baseMaterial,
-        ...overrides,
+        ...filteredOverrides,
       },
     };
   }, [entityComponents, baseContributions, materials]);

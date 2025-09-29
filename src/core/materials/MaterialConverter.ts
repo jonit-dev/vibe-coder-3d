@@ -22,27 +22,39 @@ export function createThreeMaterialFrom(
     // Attach textures if available
     if (def.albedoTexture && textures[def.albedoTexture]) {
       material.map = textures[def.albedoTexture];
+      material.map.offset.set(def.textureOffsetX, def.textureOffsetY);
+      material.map.repeat.set(def.textureRepeatX, def.textureRepeatY);
     }
 
     if (def.normalTexture && textures[def.normalTexture]) {
       material.normalMap = textures[def.normalTexture];
+      material.normalMap.offset.set(def.textureOffsetX, def.textureOffsetY);
+      material.normalMap.repeat.set(def.textureRepeatX, def.textureRepeatY);
       material.normalScale.set(def.normalScale, def.normalScale);
     }
 
     if (def.metallicTexture && textures[def.metallicTexture]) {
       material.metalnessMap = textures[def.metallicTexture];
+      material.metalnessMap.offset.set(def.textureOffsetX, def.textureOffsetY);
+      material.metalnessMap.repeat.set(def.textureRepeatX, def.textureRepeatY);
     }
 
     if (def.roughnessTexture && textures[def.roughnessTexture]) {
       material.roughnessMap = textures[def.roughnessTexture];
+      material.roughnessMap.offset.set(def.textureOffsetX, def.textureOffsetY);
+      material.roughnessMap.repeat.set(def.textureRepeatX, def.textureRepeatY);
     }
 
     if (def.emissiveTexture && textures[def.emissiveTexture]) {
       material.emissiveMap = textures[def.emissiveTexture];
+      material.emissiveMap.offset.set(def.textureOffsetX, def.textureOffsetY);
+      material.emissiveMap.repeat.set(def.textureRepeatX, def.textureRepeatY);
     }
 
     if (def.occlusionTexture && textures[def.occlusionTexture]) {
       material.aoMap = textures[def.occlusionTexture];
+      material.aoMap.offset.set(def.textureOffsetX, def.textureOffsetY);
+      material.aoMap.repeat.set(def.textureRepeatX, def.textureRepeatY);
       material.aoMapIntensity = def.occlusionStrength;
     }
 
@@ -69,13 +81,11 @@ export function createThreeMaterialFrom(
     // Attach texture if available
     if (def.albedoTexture && textures[def.albedoTexture]) {
       material.map = textures[def.albedoTexture];
+      material.map.offset.set(def.textureOffsetX, def.textureOffsetY);
+      material.map.repeat.set(def.textureRepeatX, def.textureRepeatY);
     }
   }
 
-  // Set texture offset if specified
-  if (material.map) {
-    material.map.offset.set(def.textureOffsetX, def.textureOffsetY);
-  }
 
   return material;
 }

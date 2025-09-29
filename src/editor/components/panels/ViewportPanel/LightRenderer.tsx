@@ -14,7 +14,7 @@ export interface ILightRendererProps {
   entityId: number;
 }
 
-export const LightRenderer: React.FC<ILightRendererProps> = ({ entityId }) => {
+export const LightRenderer: React.FC<ILightRendererProps> = React.memo(({ entityId }) => {
   const componentManager = useComponentManager();
   const lightRef = useRef<Group>(null);
   const isPlaying = useEditorStore((state) => state.isPlaying);
@@ -169,4 +169,4 @@ export const LightRenderer: React.FC<ILightRendererProps> = ({ entityId }) => {
     default:
       return null;
   }
-};
+});

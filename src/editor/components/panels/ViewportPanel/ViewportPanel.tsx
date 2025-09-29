@@ -3,6 +3,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 import * as THREE from 'three';
+import { Logger } from '@core/lib/logger';
 
 import { EngineLoop } from '@/core/components/EngineLoop';
 
@@ -28,7 +29,6 @@ import { AxesIndicator } from './components/AxesIndicator';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
 import { GizmoModeSelector } from './components/GizmoModeSelector';
 import { ViewportHeader } from './components/ViewportHeader';
-import { Logger } from '@/core/lib/logger';
 
 export interface IViewportPanelProps {
   entityId: number | null; // selected entity - can be null
@@ -36,12 +36,21 @@ export interface IViewportPanelProps {
   setGizmoMode: (mode: GizmoMode) => void;
 }
 
-export const ViewportPanel: React.FC<IViewportPanelProps> = ({
+export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(({
   entityId,
   gizmoMode,
   setGizmoMode,
 }) => {
   const logger = Logger.create('ViewportPanel');
+
+  // Track viewport initialization
+  useEffect(() => {
+    logger.milestone('Viewport Panel Mounted');
+    return () => {
+      logger.milestone('Viewport Panel Unmounted');
+    };
+  }, []);
+
   // Get all entities with a Transform from new ECS system
   const [entityIds, setEntityIds] = useState<number[]>([]);
   const [lightIds, setLightIds] = useState<number[]>([]);
@@ -127,7 +136,13 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
             // Ensure shadow mapping is enabled with good settings
             gl.shadowMap.enabled = true;
             gl.shadowMap.type = 2; // PCFSoftShadowMap
-            logger.debug('Shadow mapping enabled with PCF soft shadows');
+
+            // Track when 3D canvas is ready
+            logger.milestone('3D Canvas Created and Ready', {
+              shadowMapping: true,
+              cameraPosition: camera.position.toArray(),
+              viewportSize: `${gl.domElement.width}x${gl.domElement.height}`
+            });
           }}
         >
           {/* Selection framer: provides frame function for double-click */}
@@ -152,6 +167,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
 
           {/* Engine Loop - handles script execution and system updates */}
           <EngineLoop paused={!isPlaying} isPlaying={isPlaying} />
+
+          {/* Scene Readiness Tracker */}
+          <SceneReadinessTracker entityCount={entityIds.length} lightCount={lightIds.length} />
 
           {/* Dynamic Light Rendering */}
           {lightIds.map((lightId) => (
@@ -228,6 +246,31 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = ({
       </div>
     </section>
   );
+});
+
+// Scene Readiness Tracker - monitors when scene is fully loaded and rendered
+const SceneReadinessTracker: React.FC<{ entityCount: number; lightCount: number }> = ({
+  entityCount,
+  lightCount
+}) => {
+  const logger = Logger.create('ViewportPanel:Readiness');
+
+  useEffect(() => {
+    if (entityCount > 0 || lightCount > 0) {
+      // Use a timeout to ensure all React Three Fiber objects are created
+      const timer = setTimeout(() => {
+        logger.milestone('Scene Fully Rendered', {
+          entitiesRendered: entityCount,
+          lightsRendered: lightCount,
+          totalObjects: entityCount + lightCount
+        });
+      }, 100); // Small delay to ensure rendering completion
+
+      return () => clearTimeout(timer);
+    }
+  }, [entityCount, lightCount, logger]);
+
+  return null;
 };
 
 // Internal helper to frame/focus entity on double-click in the viewport

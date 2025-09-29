@@ -18,7 +18,7 @@ export interface ILightGeometryProps {
  * Light icon and visual representations for different light types
  * Similar to CameraGeometry but for lights
  */
-export const LightGeometry: React.FC<ILightGeometryProps> = ({
+export const LightGeometry: React.FC<ILightGeometryProps> = React.memo(({
   lightType,
   size = 0.75,
   showDirection = true,
@@ -222,4 +222,4 @@ export const LightGeometry: React.FC<ILightGeometryProps> = ({
       )}
     </group>
   );
-};
+});

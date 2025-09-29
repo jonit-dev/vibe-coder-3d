@@ -11,6 +11,7 @@ import { emit } from '../events';
 import { Logger } from '../logger';
 import { ECSWorld } from './World';
 import { EntityId } from './types';
+import { EntityQueries } from './queries/entityQueries';
 
 // Base component descriptor interface
 export interface IComponentDescriptor<TData = unknown> {
@@ -142,6 +143,9 @@ export class ComponentRegistry {
   private components = new Map<string, IComponentDescriptor<any>>();
   private bitECSComponents = new Map<string, Component>();
   private logger = Logger.create('ComponentRegistry');
+  // Cache for entity queries to avoid repeated scans
+  private entityQueryCache = new Map<string, { entities: EntityId[]; timestamp: number }>();
+  private readonly CACHE_TTL = 100; // Cache for 100ms
 
   private get world() {
     return ECSWorld.getInstance().getWorld();
@@ -205,6 +209,7 @@ export class ComponentRegistry {
    * Add component to entity
    */
   addComponent<TData>(entityId: EntityId, componentId: string, data: TData, world?: any): boolean {
+
     const descriptor = this.get<TData>(componentId);
     if (!descriptor) {
       console.error(`Component ${componentId} not found`);
@@ -282,6 +287,9 @@ export class ComponentRegistry {
         data,
       });
 
+      // Invalidate cache for this component type
+      this.entityQueryCache.delete(componentId);
+
       return true;
     } catch (error) {
       console.error(`Failed to add component ${componentId} to entity ${entityId}:`, error);
@@ -317,6 +325,9 @@ export class ComponentRegistry {
         entityId,
         componentId,
       });
+
+      // Invalidate cache for this component type
+      this.entityQueryCache.delete(componentId);
 
       return true;
     } catch (error) {
@@ -495,23 +506,40 @@ export class ComponentRegistry {
    * Get all entities that have a specific component (legacy compatibility)
    */
   getEntitiesWithComponent(componentId: string): EntityId[] {
-    const bitECSComponent = this.bitECSComponents.get(componentId);
-    if (!bitECSComponent) {
-      return [];
+    // Check cache first
+    const cached = this.entityQueryCache.get(componentId);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+      return cached.entities;
     }
 
-    const entitySet = new Set<EntityId>();
+    // Try to use efficient EntityQueries system first
+    const queries = EntityQueries.getInstance();
+    let result = queries.listEntitiesWithComponent(componentId);
 
-    // Iterate through all possible entity IDs and check if they have the component
-    // This is not the most efficient approach, but it works for compatibility
-    for (let eid = 0; eid < 10000; eid++) {
-      // Reasonable upper bound
-      if (hasComponent(this.world, bitECSComponent, eid)) {
-        entitySet.add(eid);
+    // If EntityQueries returns empty, fall back to manual scan
+    // This handles cases where indices aren't built yet
+    if (result.length === 0) {
+      const bitECSComponent = this.bitECSComponents.get(componentId);
+      if (bitECSComponent) {
+        const entitySet = new Set<EntityId>();
+
+        // Use a smaller upper bound for better performance
+        // Most scenes won't have more than 1000 entities
+        for (let eid = 0; eid < 1000; eid++) {
+          if (hasComponent(this.world, bitECSComponent, eid)) {
+            entitySet.add(eid);
+          }
+        }
+
+        result = Array.from(entitySet).sort((a, b) => a - b);
       }
     }
 
-    return Array.from(entitySet).sort((a, b) => a - b);
+    // Cache the result
+    this.entityQueryCache.set(componentId, { entities: result, timestamp: now });
+
+    return result;
   }
 
   /**

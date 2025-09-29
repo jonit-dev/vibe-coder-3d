@@ -109,7 +109,7 @@ export function useComponentRegistry(): IComponentRegistryHook {
 
   const getEntitiesWithComponent = useCallback((componentId: string): EntityId[] => {
     return componentRegistry.getEntitiesWithComponent(componentId);
-  }, []);
+  }, []); // Already memoized, no dependencies
 
   const removeComponentsForEntity = useCallback((entityId: EntityId): void => {
     return componentRegistry.removeComponentsForEntity(entityId);

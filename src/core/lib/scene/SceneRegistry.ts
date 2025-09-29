@@ -10,6 +10,7 @@ import {
   getRegisteredScenes,
   getScene as getExtensionScene,
 } from '../extension/GameExtensionPoints';
+import { Logger } from '../logger';
 import type {
   CameraData,
   LightData,
@@ -66,6 +67,7 @@ class SceneRegistryClass {
   private static instance: SceneRegistryClass;
   private scenes = new Map<string, ISceneDefinition>();
   private currentSceneId: string | null = null;
+  private logger = Logger.create('SceneRegistry');
 
   private constructor() {}
 
@@ -105,10 +107,14 @@ class SceneRegistryClass {
    * First checks local scenes, then extension scenes
    */
   async loadScene(id: string, clearExisting: boolean = true): Promise<void> {
+    const stepTracker = this.logger.createStepTracker(`Load Scene: ${id}`);
+
+    stepTracker.step('Scene Definition Lookup');
     let definition = this.scenes.get(id);
 
     // If not found in local registry, check extension scenes
     if (!definition) {
+      stepTracker.step('Extension Scene Lookup');
       const extensionScene = getExtensionScene(id);
       if (extensionScene) {
         // Convert extension scene descriptor to our format
@@ -125,17 +131,21 @@ class SceneRegistryClass {
     }
 
     if (!definition) {
+      stepTracker.complete();
       throw new Error(`Scene not found: ${id}`);
     }
 
+    stepTracker.step('ECS System Setup');
     const entityManager = EntityManager.getInstance();
     const world = ECSWorld.getInstance().getWorld();
 
     // Clear existing entities if requested
     if (clearExisting) {
+      stepTracker.step('Clearing Existing Entities');
       entityManager.clearEntities();
     }
 
+    stepTracker.step('Context Creation');
     // Create context with helper functions
     const context: ISceneContext = {
       world,
@@ -154,12 +164,13 @@ class SceneRegistryClass {
       },
     };
 
+    stepTracker.step('Scene Builder Execution');
     // Execute the scene builder
-
     await definition.builder(context);
 
+    stepTracker.step('Scene Load Complete');
     this.currentSceneId = id;
-
+    stepTracker.complete();
   }
 
   /**

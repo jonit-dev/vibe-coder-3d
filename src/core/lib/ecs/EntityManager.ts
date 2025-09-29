@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { addComponent, addEntity, hasComponent, removeEntity } from 'bitecs';
 
+import { Logger } from '../logger';
 import { EntityMeta } from './BitECSComponents';
 import { componentRegistry, ComponentRegistry } from './ComponentRegistry';
 import {
@@ -30,6 +31,7 @@ export class EntityManager {
   private queries: EntityQueries;
   private world: any; // BitECS world - using any for compatibility with bitecs
   private componentRegistry: ComponentRegistry;
+  private logger = Logger.create('EntityManager');
 
   constructor(world?: any, componentManager?: ComponentRegistry) {
     if (world) {
@@ -211,6 +213,7 @@ export class EntityManager {
   }
 
   createEntity(name: string, parentId?: EntityId, persistentId?: string): IEntity {
+
     const eid = addEntity(this.world);
 
     // Add required components (only EntityMeta - Transform will be added by ComponentRegistry)
@@ -233,13 +236,13 @@ export class EntityManager {
       const parent = this.entityCache.get(parentId)!;
       parent.children.push(eid);
       this.entityCache.set(parentId, parent);
-      console.debug(`[EntityManager] Updated parent ${parentId} children list: ${parent.children}`);
+      this.logger.debug(`Updated parent ${parentId} children list: ${parent.children}`);
     }
 
-    console.debug(
-      `[EntityManager] Created entity ${eid}: "${name}" with parentId: ${parentId}, PersistentId: ${finalPersistentId}`,
+    this.logger.debug(
+      `Created entity ${eid}: "${name}" with parentId: ${parentId}, PersistentId: ${finalPersistentId}`,
     );
-    console.debug(`[EntityManager] Entity cache size: ${this.entityCache.size}`);
+    this.logger.debug(`Entity cache size: ${this.entityCache.size}`);
 
     // Emit event for reactive updates
     this.emitEvent({

@@ -11,6 +11,7 @@ import {
   IGameLoopStore,
   ILoopStoreOptions,
 } from '@core/lib/gameLoop/createLoopStore';
+import { Logger } from '@core/lib/logger';
 
 import { ComponentManagerStore, createComponentManagerStore } from './ComponentManagerStore';
 import { ECSWorldStore, createECSWorldStore } from './ECSWorldStore';
@@ -32,9 +33,22 @@ interface IEngineProviderProps {
   loopOptions?: ILoopStoreOptions;
 }
 
+// Global singleton to prevent duplicate engine initialization
+let globalEngineInstance: IEngineContext | null = null;
+
 export const EngineProvider: React.FC<IEngineProviderProps> = React.memo(
   ({ children, container: parentContainer, loopOptions }) => {
+    const logger = Logger.create('EngineProvider');
+
     const context = useMemo(() => {
+      // Use existing global instance if available
+      if (globalEngineInstance) {
+        logger.debug('Reusing existing engine instance');
+        return globalEngineInstance;
+      }
+
+      logger.info('Creating new engine instance');
+
       // Create engine instance with all services
       const engineInstance = createEngineInstance(parentContainer);
 
@@ -49,14 +63,20 @@ export const EngineProvider: React.FC<IEngineProviderProps> = React.memo(
       entityManagerStore.getState().setEntityManager(engineInstance.entityManager);
       componentManagerStore.getState().setComponentManager(engineInstance.componentManager);
 
-      return {
+      const context = {
         container: engineInstance.container,
         worldStore,
         entityManagerStore,
         componentManagerStore,
         loopStore,
       };
-    }, [parentContainer, loopOptions]);
+
+      // Store as global singleton
+      globalEngineInstance = context;
+      logger.milestone('Engine Instance Created');
+
+      return context;
+    }, [parentContainer, loopOptions, logger]);
 
     // Set up singleton adapter bridge
     useEffect(() => {

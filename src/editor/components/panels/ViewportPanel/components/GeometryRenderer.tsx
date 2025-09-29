@@ -51,6 +51,10 @@ export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
             );
           }
           return <planeGeometry args={[20, 20]} />;
+        case 'cube':
+        case 'Cube':
+          return <boxGeometry args={[1, 1, 1]} />;
+        case 'sphere':
         case 'Sphere':
           return <sphereGeometry args={[0.5, 32, 32]} />;
         case 'Cylinder':

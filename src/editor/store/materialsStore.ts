@@ -76,6 +76,8 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
         occlusionStrength: 1,
         textureOffsetX: 0,
         textureOffsetY: 0,
+        textureRepeatX: 1,
+        textureRepeatY: 1,
       });
     }
 
@@ -94,6 +96,8 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
         occlusionStrength: 1,
         textureOffsetX: 0,
         textureOffsetY: 0,
+        textureRepeatX: 1,
+        textureRepeatY: 1,
         albedoTexture: '/assets/textures/crate-texture.png',
       });
     }

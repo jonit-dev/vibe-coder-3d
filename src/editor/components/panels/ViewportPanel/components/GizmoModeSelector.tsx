@@ -7,7 +7,7 @@ export interface IGizmoModeSelectorProps {
   setGizmoMode: (mode: GizmoMode) => void;
 }
 
-export const GizmoModeSelector: React.FC<IGizmoModeSelectorProps> = ({
+export const GizmoModeSelector: React.FC<IGizmoModeSelectorProps> = React.memo(({
   gizmoMode,
   setGizmoMode,
 }) => {
@@ -51,4 +51,4 @@ export const GizmoModeSelector: React.FC<IGizmoModeSelectorProps> = ({
       </button>
     </div>
   );
-};
+});

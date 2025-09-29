@@ -4,11 +4,16 @@
  */
 
 import { defineScene } from '../SceneRegistry';
+import { Logger } from '../../logger';
 
 export const registerDefaultScene = () =>
   defineScene(
     'default',
     ({ createEntity, addComponent }) => {
+      const logger = Logger.create('DefaultScene');
+      const stepTracker = logger.createStepTracker('Default Scene Creation');
+
+      stepTracker.step('Creating Main Camera');
       // Create Main Camera
       const mainCamera = createEntity('Main Camera');
 
@@ -32,6 +37,7 @@ export const registerDefaultScene = () =>
         backgroundColor: { r: 0.0, g: 0.0, b: 0.0, a: 0 },
       });
 
+      stepTracker.step('Creating Directional Light');
       // Create Directional Light
       const directionalLight = createEntity('Directional Light');
 
@@ -57,6 +63,7 @@ export const registerDefaultScene = () =>
         shadowRadius: 1.0,
       });
 
+      stepTracker.step('Creating Ambient Light');
       // Create Ambient Light
       const ambientLight = createEntity('Ambient Light');
 
@@ -75,6 +82,8 @@ export const registerDefaultScene = () =>
         enabled: true,
         castShadow: false,
       });
+
+      stepTracker.complete();
     },
     {
       name: 'Default Scene',

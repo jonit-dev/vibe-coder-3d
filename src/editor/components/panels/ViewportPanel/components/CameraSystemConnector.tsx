@@ -1,5 +1,5 @@
 import { useThree } from '@react-three/fiber';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 import { setEditorCamera } from '@/core/systems/cameraSystem';
 
@@ -7,7 +7,7 @@ import { setEditorCamera } from '@/core/systems/cameraSystem';
  * Component that connects the editor camera to the camera system
  * Must be used inside a Canvas context
  */
-export const CameraSystemConnector: React.FC = () => {
+export const CameraSystemConnector: React.FC = React.memo(() => {
   const { camera } = useThree();
 
   // Connect the editor camera to the camera system
@@ -21,4 +21,4 @@ export const CameraSystemConnector: React.FC = () => {
 
   // This component doesn't render anything
   return null;
-};
+});
