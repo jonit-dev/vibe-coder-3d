@@ -16,6 +16,8 @@ export interface IMeshRendererData {
     occlusionStrength?: number;
     textureOffsetX?: number;
     textureOffsetY?: number;
+    textureRepeatX?: number;
+    textureRepeatY?: number;
     // Texture properties
     albedoTexture?: string;
     normalTexture?: string;

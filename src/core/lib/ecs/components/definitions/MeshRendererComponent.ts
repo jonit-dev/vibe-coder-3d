@@ -43,6 +43,8 @@ const MeshRendererSchema = z.object({
       // Texture Transform
       textureOffsetX: z.number().default(0),
       textureOffsetY: z.number().default(0),
+      textureRepeatX: z.number().default(1),
+      textureRepeatY: z.number().default(1),
     })
     .optional(),
 });
@@ -74,6 +76,8 @@ export const meshRendererComponent = ComponentFactory.create({
     occlusionStrength: Types.f32,
     textureOffsetX: Types.f32,
     textureOffsetY: Types.f32,
+    textureRepeatX: Types.f32,
+    textureRepeatY: Types.f32,
     meshIdHash: Types.ui32,
     materialIdHash: Types.ui32,
     modelPathHash: Types.ui32,
@@ -109,10 +113,35 @@ export const meshRendererComponent = ComponentFactory.create({
         eid,
       );
 
+      const emissive = getRgbAsHex(
+        {
+          r: component.emissiveR as Float32Array,
+          g: component.emissiveG as Float32Array,
+          b: component.emissiveB as Float32Array,
+        },
+        eid,
+      );
+
       result.material = {
+        shader: component.shader[eid] === 0 ? 'standard' : 'unlit',
+        materialType: component.materialType[eid] === 0 ? 'solid' : 'texture',
         color,
         metalness: component.metalness[eid],
         roughness: component.roughness[eid],
+        emissive,
+        emissiveIntensity: component.emissiveIntensity[eid],
+        normalScale: component.normalScale[eid],
+        occlusionStrength: component.occlusionStrength[eid],
+        textureOffsetX: component.textureOffsetX[eid],
+        textureOffsetY: component.textureOffsetY[eid],
+        textureRepeatX: component.textureRepeatX[eid],
+        textureRepeatY: component.textureRepeatY[eid],
+        albedoTexture: getStringFromHash(component.albedoTextureHash[eid]),
+        normalTexture: getStringFromHash(component.normalTextureHash[eid]),
+        metallicTexture: getStringFromHash(component.metallicTextureHash[eid]),
+        roughnessTexture: getStringFromHash(component.roughnessTextureHash[eid]),
+        emissiveTexture: getStringFromHash(component.emissiveTextureHash[eid]),
+        occlusionTexture: getStringFromHash(component.occlusionTextureHash[eid]),
       };
     }
 
@@ -132,6 +161,10 @@ export const meshRendererComponent = ComponentFactory.create({
     if (data.material) {
       const material = data.material;
 
+      // Set shader and material type
+      component.shader[eid] = material.shader === 'unlit' ? 1 : 0;
+      component.materialType[eid] = material.materialType === 'texture' ? 1 : 0;
+
       // Set override values
       setRgbValues(
         {
@@ -142,11 +175,26 @@ export const meshRendererComponent = ComponentFactory.create({
         eid,
         material.color || '#cccccc',
       );
+
+      setRgbValues(
+        {
+          r: component.emissiveR as Float32Array,
+          g: component.emissiveG as Float32Array,
+          b: component.emissiveB as Float32Array,
+        },
+        eid,
+        material.emissive || '#000000',
+      );
+
       component.metalness[eid] = material.metalness ?? 0;
       component.roughness[eid] = material.roughness ?? 0.7;
-
+      component.emissiveIntensity[eid] = material.emissiveIntensity ?? 0;
+      component.normalScale[eid] = material.normalScale ?? 1;
+      component.occlusionStrength[eid] = material.occlusionStrength ?? 1;
       component.textureOffsetX[eid] = material.textureOffsetX ?? 0;
       component.textureOffsetY[eid] = material.textureOffsetY ?? 0;
+      component.textureRepeatX[eid] = material.textureRepeatX ?? 1;
+      component.textureRepeatY[eid] = material.textureRepeatY ?? 1;
 
       // Store texture hashes
       component.albedoTextureHash[eid] = material.albedoTexture

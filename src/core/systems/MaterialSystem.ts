@@ -1,8 +1,14 @@
 import { defineQuery } from 'bitecs';
-import { Mesh, MeshStandardMaterial } from 'three';
+import { Mesh, MeshBasicMaterial, MeshStandardMaterial } from 'three';
 
 import { componentRegistry } from '../lib/ecs/ComponentRegistry';
 import { ECSWorld } from '../lib/ecs/World';
+import { MaterialRegistry } from '../materials/MaterialRegistry';
+import { applyOverrides } from '../materials/MaterialOverrides';
+
+import { updateThreeMaterialFrom } from '../materials/MaterialConverter';
+import type { IMaterialDefinition } from '../materials/Material.types';
+import type { MeshRendererData } from '../lib/ecs/components/definitions/MeshRendererComponent';
 
 // Get world instance
 const world = ECSWorld.getInstance().getWorld();
@@ -24,7 +30,7 @@ function getMaterialQuery() {
 }
 
 // Entity to Three.js object mapping (simplified for now)
-const entityToObject = new Map<number, any>();
+const entityToObject = new Map<number, Mesh>();
 
 /**
  * Material System - Updates Three.js materials from ECS MeshRenderer components
@@ -58,39 +64,36 @@ export class MaterialSystem {
 
     entities.forEach((eid: number) => {
       // Get mesh renderer data using the new component registry
-      const meshRendererData = componentRegistry.getComponentData(eid, 'MeshRenderer') as
-        | {
-            material?: {
-              color: string;
-              metalness: number;
-              roughness: number;
-              emissive: string;
-              emissiveIntensity: number;
-            };
-          }
-        | undefined;
-      if (!meshRendererData) return;
-
-      // For now, we'll always update since we don't have needsUpdate in the new system yet
-      // TODO: Add needsUpdate flag to the new MeshRenderer component definition
+      const meshRendererData = componentRegistry.getComponentData(
+        eid,
+        'MeshRenderer',
+      ) as MeshRendererData;
+      if (!meshRendererData || !meshRendererData.materialId) return;
 
       // Get the Three.js object
       const object = entityToObject.get(eid);
       if (!object) return;
 
-      // Update material color (cast to Mesh to access material)
       const mesh = object as Mesh;
-      const material = mesh.material as MeshStandardMaterial;
-      if (material && material.color && meshRendererData.material) {
-        // Parse color from hex string
-        material.color.set(meshRendererData.material.color);
-        material.metalness = meshRendererData.material.metalness;
-        material.roughness = meshRendererData.material.roughness;
-        material.emissive.set(meshRendererData.material.emissive);
-        material.emissiveIntensity = meshRendererData.material.emissiveIntensity;
+      if (!mesh.material) return;
 
-        updatedCount++;
-      }
+      // Get base material from registry
+      const materialRegistry = MaterialRegistry.getInstance();
+      const baseMaterial = materialRegistry.get(meshRendererData.materialId);
+      if (!baseMaterial) return;
+
+      // Apply mesh renderer overrides if they exist
+      const finalMaterial = meshRendererData.material
+        ? this.applyOverrides(baseMaterial, meshRendererData.material)
+        : baseMaterial;
+
+      // Apply material properties to Three.js material
+      this.applyMaterialProperties(
+        mesh.material as MeshStandardMaterial | MeshBasicMaterial,
+        finalMaterial,
+      );
+
+      updatedCount++;
     });
 
     this.lastUpdateCount = updatedCount;
@@ -132,8 +135,63 @@ export class MaterialSystem {
   /**
    * Register an entity-to-object mapping for material synchronization
    */
-  registerEntityObject(entityId: number, object: any): void {
+  registerEntityObject(entityId: number, object: Mesh): void {
     entityToObject.set(entityId, object);
+  }
+
+  /**
+   * Unregister an entity-to-object mapping
+   */
+  private applyOverrides(
+    baseMaterial: IMaterialDefinition,
+    overrides: Partial<IMaterialDefinition>,
+  ): IMaterialDefinition {
+    return applyOverrides(baseMaterial, overrides);
+  }
+
+  private applyMaterialProperties(
+    material: MeshStandardMaterial | MeshBasicMaterial,
+    def: IMaterialDefinition,
+  ): void {
+    // Update basic properties
+    updateThreeMaterialFrom(material, def);
+
+    // Update texture transforms if textures exist
+    if (material.map) {
+      material.map.offset.set(def.textureOffsetX || 0, def.textureOffsetY || 0);
+      material.map.repeat.set(def.textureRepeatX || 1, def.textureRepeatY || 1);
+    }
+    if ('normalMap' in material && material.normalMap) {
+      material.normalMap.offset.set(def.textureOffsetX || 0, def.textureOffsetY || 0);
+      material.normalMap.repeat.set(def.textureRepeatX || 1, def.textureRepeatY || 1);
+    }
+    if ('metalnessMap' in material && material.metalnessMap) {
+      material.metalnessMap.offset.set(def.textureOffsetX || 0, def.textureOffsetY || 0);
+      material.metalnessMap.repeat.set(def.textureRepeatX || 1, def.textureRepeatY || 1);
+    }
+    if ('roughnessMap' in material && material.roughnessMap) {
+      material.roughnessMap.offset.set(def.textureOffsetX || 0, def.textureOffsetY || 0);
+      material.roughnessMap.repeat.set(def.textureRepeatX || 1, def.textureRepeatY || 1);
+    }
+    if ('emissiveMap' in material && material.emissiveMap) {
+      material.emissiveMap.offset.set(def.textureOffsetX || 0, def.textureOffsetY || 0);
+      material.emissiveMap.repeat.set(def.textureRepeatX || 1, def.textureRepeatY || 1);
+    }
+    if ('aoMap' in material && material.aoMap) {
+      material.aoMap.offset.set(def.textureOffsetX || 0, def.textureOffsetY || 0);
+      material.aoMap.repeat.set(def.textureRepeatX || 1, def.textureRepeatY || 1);
+    }
+
+    // Trigger update
+    material.needsUpdate = true;
+    if (material.map) material.map.needsUpdate = true;
+    if ('normalMap' in material && material.normalMap) material.normalMap.needsUpdate = true;
+    if ('metalnessMap' in material && material.metalnessMap)
+      material.metalnessMap.needsUpdate = true;
+    if ('roughnessMap' in material && material.roughnessMap)
+      material.roughnessMap.needsUpdate = true;
+    if ('emissiveMap' in material && material.emissiveMap) material.emissiveMap.needsUpdate = true;
+    if ('aoMap' in material && material.aoMap) material.aoMap.needsUpdate = true;
   }
 
   /**
