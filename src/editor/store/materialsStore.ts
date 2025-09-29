@@ -202,13 +202,13 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
       return duplicate;
     },
 
-    assignToSelection: (materialId) => {
+    assignToSelection: (_materialId) => {
       // This would integrate with the entity selection system
       // For now, just a placeholder
       // Assigning material to selected entities
     },
 
-    assignToAll: (materialId) => {
+    assignToAll: (_materialId) => {
       // This would assign to all entities with MeshRenderer
       // For now, just a placeholder
       // Assigning material to all entities
@@ -283,7 +283,7 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     },
 
     debugPrintMaterials: () => {
-      const { materials } = get();
+      const { materials: _materials } = get();
       // Materials list tracked internally
     },
   };

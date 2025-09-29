@@ -494,7 +494,6 @@ export class EntityQueries {
     }
 
     const entities = this.queryStore.listAllEntities();
-    const roots = this.queryStore.getRootEntities();
 
     // Show hierarchy relationships
 
@@ -509,8 +508,7 @@ export class EntityQueries {
     // Show components
     const componentTypes = this.queryStore.getComponentTypes();
 
-    componentTypes.forEach((type) => {
-      const count = this.queryStore.getComponentCount(type);
+    componentTypes.forEach((_type) => {
 
     });
 

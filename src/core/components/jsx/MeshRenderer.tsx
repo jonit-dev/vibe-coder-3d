@@ -3,6 +3,7 @@
  * Provides R3F-style mesh and material properties that sync with ECS system
  */
 
+import { DEFAULT_MATERIAL_COLOR } from '@/core/materials/constants';
 import React, { useEffect } from 'react';
 
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
@@ -63,19 +64,21 @@ export const MeshRenderer: React.FC<IMeshRendererProps> = ({
     // Build complete material object with defaults
     const completeMaterial = material
       ? {
-          shader: 'standard' as const,
-          materialType: 'solid' as const,
-          color: '#cccccc',
-          normalScale: 1,
-          metalness: 0,
-          roughness: 0.7,
-          emissive: '#000000',
-          emissiveIntensity: 0,
-          occlusionStrength: 1,
-          textureOffsetX: 0,
-          textureOffsetY: 0,
-          ...material, // Override with provided material props
-        }
+        shader: 'standard' as const,
+        materialType: 'solid' as const,
+        color: DEFAULT_MATERIAL_COLOR,
+        normalScale: 1,
+        metalness: 0,
+        roughness: 0.7,
+        emissive: '#000000',
+        emissiveIntensity: 0,
+        occlusionStrength: 1,
+        textureOffsetX: 0,
+        textureOffsetY: 0,
+        textureRepeatX: 1,
+        textureRepeatY: 1,
+        ...material, // Override with provided material props
+      }
       : undefined;
 
     const meshRendererData: MeshRendererData = {

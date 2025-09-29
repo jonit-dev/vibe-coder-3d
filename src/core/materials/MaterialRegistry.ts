@@ -1,6 +1,7 @@
 import { MeshBasicMaterial, MeshStandardMaterial } from 'three';
-import { createThreeMaterialFrom } from './MaterialConverter';
+import { DEFAULT_MATERIAL_COLOR } from './constants';
 import type { IMaterialAssetMeta, IMaterialDefinition } from './Material.types';
+import { createThreeMaterialFrom } from './MaterialConverter';
 
 export class MaterialRegistry {
   private static instance: MaterialRegistry | null = null;
@@ -25,7 +26,7 @@ export class MaterialRegistry {
       name: 'Default Material',
       shader: 'standard',
       materialType: 'solid',
-      color: '#cccccc',
+      color: DEFAULT_MATERIAL_COLOR,
       metalness: 0,
       roughness: 0.7,
       emissive: '#000000',
@@ -106,7 +107,9 @@ export class MaterialRegistry {
     const def = this.get(id);
     if (!def) {
       // Create a basic gray material as fallback
-      const fallback = new MeshStandardMaterial({ color: 0xcccccc });
+      const fallback = new MeshStandardMaterial({
+        color: parseInt(DEFAULT_MATERIAL_COLOR.replace('#', ''), 16),
+      });
       this.idToThree.set(id, fallback);
       return fallback;
     }
@@ -119,7 +122,9 @@ export class MaterialRegistry {
     } catch (error) {
       console.error('Failed to create Three.js material synchronously:', error);
       // Return a fallback material
-      const fallback = new MeshStandardMaterial({ color: 0xcccccc });
+      const fallback = new MeshStandardMaterial({
+        color: parseInt(DEFAULT_MATERIAL_COLOR.replace('#', ''), 16),
+      });
       this.idToThree.set(id, fallback);
       return fallback;
     }

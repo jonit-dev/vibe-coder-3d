@@ -98,7 +98,7 @@ export class SafeScriptExecutor {
   /**
    * Execute only known safe patterns
    */
-  private executeKnownPatterns(functionBody: string, options: ISafeScriptExecutionOptions): void {
+  private executeKnownPatterns(functionBody: string, _options: ISafeScriptExecutionOptions): void {
     // Pattern 1: Console logging
     const logMatches = functionBody.match(/console\.log\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g);
     if (logMatches) {

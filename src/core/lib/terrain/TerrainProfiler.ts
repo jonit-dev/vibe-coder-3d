@@ -187,7 +187,7 @@ class TerrainProfiler {
   logPerformance() {
     if (!this.isEnabled) return;
 
-    const report = this.getPerformanceReport();
+    // Performance report: this.getPerformanceReport();
 
     // Terrain performance report tracked internally
   }

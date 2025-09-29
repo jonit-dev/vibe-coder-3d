@@ -33,7 +33,6 @@ export const EnvironmentLighting: React.FC = () => {
 
       // Find ambient lights
       let totalAmbientIntensity = 0;
-      let ambientColor = { r: 0.2, g: 0.2, b: 0.2 }; // Default ambient
       let foundAmbientLight = false;
 
       for (const eid of entities) {
@@ -43,7 +42,6 @@ export const EnvironmentLighting: React.FC = () => {
           foundAmbientLight = true;
           totalAmbientIntensity += lightData.intensity;
           // Use the last ambient light's color (in a real implementation, you might blend them)
-          ambientColor = lightData.color;
         }
       }
 

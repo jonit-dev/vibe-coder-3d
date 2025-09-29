@@ -30,8 +30,6 @@ export const EditorPhysicsIntegration = () => {
         const rigidBodyComponent = componentManager.getRigidBodyComponent(entityId);
 
         if (rigidBodyComponent && rigidBodyComponent.data) {
-          const rigidBodyData = rigidBodyComponent.data as IRigidBodyData;
-
           // Create physics body for this entity
 
           // Note: In a real implementation, you'd want to create the actual PhysicsBody
@@ -41,7 +39,7 @@ export const EditorPhysicsIntegration = () => {
       });
     } else {
       // Clean up physics bodies when stopping play mode
-      physicsBodyRefs.current.forEach((_bodyRef, entityId) => {
+      physicsBodyRefs.current.forEach((_bodyRef, _entityId) => {
 
         // Clean up physics body
       });

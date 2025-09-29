@@ -8,14 +8,14 @@ import { registerScript } from '@core';
 export const registerPlayerControllerScript = () => {
   registerScript({
     id: 'game.player-controller',
-    onInit: (entityId: number) => {
+    onInit: (_entityId: number) => {
 
       // Initialize player state
       // In a real implementation, this would set up component references
       // and initialize any script-specific data
     },
 
-    onUpdate: (entityId: number, deltaTime: number) => {
+    onUpdate: (_entityId: number, _deltaTime: number) => {
       // Player movement logic would go here
       // This is a simplified example
 
@@ -30,7 +30,7 @@ export const registerPlayerControllerScript = () => {
       // PlayerController update logic
     },
 
-    onDestroy: (entityId: number) => {
+    onDestroy: (_entityId: number) => {
 
       // Cleanup any resources or references
       // Remove event listeners, clear timers, etc.

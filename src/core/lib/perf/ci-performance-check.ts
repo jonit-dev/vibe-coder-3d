@@ -196,12 +196,6 @@ class PerformanceChecker {
 
   // Save current results as baseline for future comparisons
   saveAsBaseline(): void {
-    const baselineData = {
-      timings: Array.from(this.currentTimings.entries()),
-      timestamp: Date.now(),
-      nodeVersion: process.version,
-      platform: process.platform,
-    };
 
     // In a real implementation, save to file or database
 

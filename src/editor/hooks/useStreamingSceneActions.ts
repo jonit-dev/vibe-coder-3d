@@ -88,7 +88,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
   const createStreamingCallbacks = useCallback(
     (operation: string, toastId?: string): IStreamingCallbacks => ({
       onProgress: handleProgress,
-      onChunkProcessed: (chunkIndex, entities) => {
+      onChunkProcessed: (_chunkIndex, _entities) => {
         // Chunk processed successfully
       },
       onError: (error, entityIndex) => {
@@ -96,7 +96,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         if (toastId) removeToast(toastId);
         projectToasts.showOperationError(operation, error.message);
       },
-      onComplete: (summary) => {
+      onComplete: (_summary) => {
 
         if (toastId) removeToast(toastId);
       },
@@ -339,7 +339,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
           }
 
           // Stream read the file
-          const sceneData = await readSceneStream(file, (progress) => {
+          const sceneData = await readSceneStream(file, (_progress) => {
             // File read progress update
           });
 
@@ -468,7 +468,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
     async (filename = 'scene.json'): Promise<void> => {
       try {
         const scene = await exportSceneData();
-        await downloadSceneStream(scene, filename, (progress) => {
+        await downloadSceneStream(scene, filename, (_progress) => {
           // Download progress update
         });
 

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
 import { addEntity } from 'bitecs';
+import { useCallback, useEffect, useState } from 'react';
 
 import { EntityId } from '../lib/ecs/types';
 import { ECSWorld } from '../lib/ecs/World';
@@ -99,13 +99,13 @@ export const useSceneState = () => {
             enabled: true,
             castShadows: true,
             receiveShadows: true,
-            material: {
-              color: materialColor || '#3399ff',
-              metalness: 0,
-              roughness: 0.5,
-              emissive: '#000000',
-              emissiveIntensity: 0,
-            },
+            ...(materialColor
+              ? {
+                  material: {
+                    color: materialColor,
+                  },
+                }
+              : {}),
           },
         },
       ]);
@@ -133,13 +133,13 @@ export const useSceneState = () => {
             enabled: true,
             castShadows: true,
             receiveShadows: true,
-            material: {
-              color: materialColor || '#3399ff',
-              metalness: 0,
-              roughness: 0.5,
-              emissive: '#000000',
-              emissiveIntensity: 0,
-            },
+            ...(materialColor
+              ? {
+                  material: {
+                    color: materialColor,
+                  },
+                }
+              : {}),
           },
         },
         {

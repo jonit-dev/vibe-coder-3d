@@ -176,7 +176,6 @@ export const EngineLoop = ({
         if (state.isRunning && !state.isPaused) {
 
           if (perfMonitoring) {
-            const { velocity, physics, overall } = metricsRef.current;
             // Performance monitoring in debug mode
           }
         }

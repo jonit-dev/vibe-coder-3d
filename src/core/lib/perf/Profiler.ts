@@ -136,7 +136,7 @@ class ProfilerImpl implements IProfiler {
     );
 
     // Sort timings and prepare memory usage data for reporting
-    for (const timing of sortedTimings) {
+    for (const _timing of sortedTimings) {
       // Timing: ${timing.name}: ${timing.averageTime.toFixed(2)}ms avg (${timing.count} calls, ${timing.totalTime.toFixed(2)}ms total)
     }
 

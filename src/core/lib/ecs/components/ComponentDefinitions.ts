@@ -99,7 +99,7 @@ const healthComponent = ComponentFactory.createSimple({
     regenerationRate: Types.f32,
     isInvulnerable: Types.ui8,
   },
-  onAdd: (eid: EntityId, data) => {
+  onAdd: (_eid: EntityId, _data) => {
 
   },
   metadata: {

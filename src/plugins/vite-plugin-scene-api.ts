@@ -92,7 +92,7 @@ const SCENES_DIR = './src/game/scenes';
 /**
  * Logs scene API activity for development debugging
  */
-const logSceneActivity = (operation: string, details: string) => {
+const logSceneActivity = (_operation: string, _details: string) => {
   // Scene API logging disabled for production
 };
 
@@ -556,7 +556,7 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
     );
     if (!entitiesMatch) {
       // Could not extract entities from TSX file
-
+      const debugInfo = { filepath: actualFilepath, content: content.substring(0, 500) + '...' };
 
       res.statusCode = 400;
       res.setHeader('Content-Type', 'application/json');
@@ -623,7 +623,7 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
         JSON.stringify({
           error: 'Failed to parse entities from TSX file',
           details: error instanceof Error ? error.message : 'Unknown error',
-          debugInfo: debugInfo,
+          debugInfo: { filepath: actualFilepath, entitiesMatch: entitiesMatch?.[1]?.substring(0, 200) },
         }),
       );
       return;

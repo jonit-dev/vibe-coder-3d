@@ -193,8 +193,7 @@ class TerrainCacheManager {
   logStats() {
     if (process.env.NODE_ENV !== 'development') return;
 
-    const stats = this.getStats();
-    const memoryMB = stats.totalMemoryUsage / 1024 / 1024;
+    // Statistics available via this.getStats();
 
     // Terrain cache statistics tracked internally
   }

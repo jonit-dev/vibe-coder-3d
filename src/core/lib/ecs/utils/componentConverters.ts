@@ -18,6 +18,7 @@ import { IRigidBodyData } from '../components/RigidBodyComponent';
 import { ITransformData } from '../components/TransformComponent';
 import { EntityId } from '../types';
 
+import { DEFAULT_MATERIAL_COLOR } from '@/core/materials/constants';
 import { getRgbAsHex, setRgbValues } from './colorUtils';
 import { getStringFromHash, storeString } from './stringHashUtils';
 
@@ -65,7 +66,7 @@ export const MeshRendererConverter = {
           b: MeshRenderer.materialColorB,
         },
         eid,
-        data.material.color || '#3399ff',
+        data.material.color || DEFAULT_MATERIAL_COLOR,
       );
 
       MeshRenderer.metalness[eid] = data.material.metalness ?? 0;

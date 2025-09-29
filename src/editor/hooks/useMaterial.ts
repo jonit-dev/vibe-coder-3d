@@ -1,3 +1,4 @@
+import { DEFAULT_MATERIAL_COLOR } from '@/core/materials/constants';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
@@ -8,12 +9,12 @@ export interface IUseMaterial {
 }
 
 export const useMaterial = (selectedEntity: number | null): IUseMaterial => {
-  const [color, setColorState] = useState<string>('#3399ff');
+  const [color, setColorState] = useState<string>(DEFAULT_MATERIAL_COLOR);
   const componentManager = useComponentManager();
 
   useEffect(() => {
     if (selectedEntity == null) {
-      setColorState('#3399ff');
+      setColorState(DEFAULT_MATERIAL_COLOR);
       return;
     }
 
@@ -40,7 +41,7 @@ export const useMaterial = (selectedEntity: number | null): IUseMaterial => {
           setColorState(colorValue);
         }
       } else {
-        setColorState('#3399ff'); // Default blue
+        setColorState(DEFAULT_MATERIAL_COLOR);
       }
     };
 

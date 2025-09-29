@@ -142,10 +142,10 @@ export const soundComponent = ComponentFactory.create({
     }
   },
   dependencies: ['Transform'], // Need transform for 3D positioning
-  onAdd: (eid: EntityId, data) => {
+  onAdd: (_eid: EntityId, _data) => {
 
   },
-  onRemove: (eid: EntityId) => {
+  onRemove: (_eid: EntityId) => {
 
   },
   metadata: {

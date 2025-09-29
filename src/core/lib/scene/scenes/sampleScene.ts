@@ -74,6 +74,8 @@ export const registerSampleScene = () =>
           occlusionStrength: 1,
           textureOffsetX: 0,
           textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
         },
       });
 
@@ -102,6 +104,8 @@ export const registerSampleScene = () =>
           occlusionStrength: 1,
           textureOffsetX: 0,
           textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
         },
       });
       addComponent(cube1, 'RigidBody', {
@@ -142,6 +146,8 @@ export const registerSampleScene = () =>
           occlusionStrength: 1,
           textureOffsetX: 0,
           textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
         },
       });
 
@@ -170,6 +176,8 @@ export const registerSampleScene = () =>
           occlusionStrength: 1,
           textureOffsetX: 0,
           textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
         },
       });
 
@@ -205,6 +213,8 @@ export const registerSampleScene = () =>
           occlusionStrength: 1,
           textureOffsetX: 0,
           textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
         },
       });
 
@@ -232,6 +242,8 @@ export const registerSampleScene = () =>
           occlusionStrength: 1,
           textureOffsetX: 0,
           textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
         },
       });
     },

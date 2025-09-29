@@ -41,7 +41,7 @@ export const useEntitySynchronization = ({
     updateEntities();
 
     // Listen for entity events for real-time reactive updates
-    const removeEventListener = entityManager.addEventListener((event) => {
+    const removeEventListener = entityManager.addEventListener((_event) => {
 
       updateEntities();
     });

@@ -208,31 +208,23 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
   // Helper function to get default material data
   const getDefaultMaterialData = (entityId: number) => {
     const materialData = getComponentData(entityId, 'material') as Record<string, unknown> | null;
-    let color = '#3399ff'; // Default blue like old ECS system
-
     if (materialData?.color) {
       if (Array.isArray(materialData.color)) {
-        // Convert RGB array to hex
-        const [r, g, b] = materialData.color;
-        color = `#${Math.round(r * 255)
+        const [r, g, b] = materialData.color as unknown as number[];
+        const color = `#${Math.round(r * 255)
           .toString(16)
           .padStart(2, '0')}${Math.round(g * 255)
-          .toString(16)
-          .padStart(2, '0')}${Math.round(b * 255)
-          .toString(16)
-          .padStart(2, '0')}`;
-      } else if (typeof materialData.color === 'string') {
-        color = materialData.color;
+            .toString(16)
+            .padStart(2, '0')}${Math.round(b * 255)
+              .toString(16)
+              .padStart(2, '0')}`;
+        return { color };
+      } else if (typeof (materialData as any).color === 'string') {
+        return { color: (materialData as any).color as string };
       }
     }
-
-    return {
-      color,
-      metalness: 0.0,
-      roughness: 0.5,
-      emissive: '#000000',
-      emissiveIntensity: 0.0,
-    };
+    // No overrides by default to prioritize default material
+    return {} as any;
   };
 
   // Get components for this entity using new ECS system with reactive updates
@@ -371,7 +363,10 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
           enabled: true,
           castShadows: true,
           receiveShadows: true,
-          material: getDefaultMaterialData(entityId),
+          ...(() => {
+            const mat = getDefaultMaterialData(entityId);
+            return Object.keys(mat).length ? { material: mat } : {};
+          })(),
         };
         break;
       }
@@ -563,21 +558,19 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
         <div className="flex border-b border-gray-600/50">
           <button
             onClick={() => setSelectedTab('components')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              selectedTab === 'components'
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${selectedTab === 'components'
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-gray-700/30'
                 : 'text-gray-400 hover:text-gray-300'
-            }`}
+              }`}
           >
             Individual Components
           </button>
           <button
             onClick={() => setSelectedTab('packs')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              selectedTab === 'packs'
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${selectedTab === 'packs'
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-gray-700/30'
                 : 'text-gray-400 hover:text-gray-300'
-            }`}
+              }`}
           >
             Component Packs
           </button>
@@ -728,10 +721,10 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
         color = `#${Math.round(r * 255)
           .toString(16)
           .padStart(2, '0')}${Math.round(g * 255)
-          .toString(16)
-          .padStart(2, '0')}${Math.round(b * 255)
-          .toString(16)
-          .padStart(2, '0')}`;
+            .toString(16)
+            .padStart(2, '0')}${Math.round(b * 255)
+              .toString(16)
+              .padStart(2, '0')}`;
       } else if (typeof materialData.color === 'string') {
         color = materialData.color;
       }
@@ -831,7 +824,10 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
           enabled: true,
           castShadows: true,
           receiveShadows: true,
-          material: getDefaultMaterialData(entityId),
+          ...(() => {
+            const mat = getDefaultMaterialData(entityId);
+            return Object.keys(mat).length ? { material: mat } : {};
+          })(),
         };
         break;
       }
@@ -966,19 +962,17 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item)}
-                className={`w-full text-left p-2 rounded border transition-all duration-200 group ${
-                  isPack
+                className={`w-full text-left p-2 rounded border transition-all duration-200 group ${isPack
                     ? 'bg-gradient-to-r from-purple-900/20 to-purple-800/20 border-purple-600/30 hover:from-purple-800/30 hover:to-purple-700/30 hover:border-purple-500/50'
                     : 'bg-gray-700/50 border-gray-600/50 hover:bg-gray-600/50 hover:border-gray-500/50'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <div
-                    className={`flex-shrink-0 transition-colors ${
-                      isPack
+                    className={`flex-shrink-0 transition-colors ${isPack
                         ? 'text-purple-400 group-hover:text-purple-300'
                         : 'text-cyan-400 group-hover:text-cyan-300'
-                    }`}
+                      }`}
                   >
                     {item.icon}
                   </div>

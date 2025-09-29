@@ -68,28 +68,6 @@ export const useEntityCreation = () => {
         };
       }>,
     ) => {
-      // Get color from old material component if it exists
-      const materialData = getComponentData(entityId, 'material') as {
-        color?: number[] | string;
-      } | null;
-      let color = '#3399ff'; // Default blue
-
-      if (materialData?.color) {
-        if (Array.isArray(materialData.color)) {
-          // Convert RGB array to hex
-          const [r, g, b] = materialData.color;
-          color = `#${Math.round(r * 255)
-            .toString(16)
-            .padStart(2, '0')}${Math.round(g * 255)
-            .toString(16)
-            .padStart(2, '0')}${Math.round(b * 255)
-            .toString(16)
-            .padStart(2, '0')}`;
-        } else if (typeof materialData.color === 'string') {
-          color = materialData.color;
-        }
-      }
-
       // Add MeshRenderer component with proper material
       const meshRendererData: any = {
         meshId,
@@ -98,18 +76,11 @@ export const useEntityCreation = () => {
         castShadows: true,
         receiveShadows: true,
         modelPath: modelPath, // Add support for custom model paths
-        material: {
-          color,
-          metalness: 0.0,
-          roughness: 0.5,
-          emissive: '#000000',
-          emissiveIntensity: 0.0,
-        },
       };
 
       // Apply optional material overrides
       if (overrides?.material) {
-        meshRendererData.material = { ...meshRendererData.material, ...overrides.material };
+        meshRendererData.material = { ...overrides.material };
       }
 
       addComponent(entityId, KnownComponentTypes.MESH_RENDERER, meshRendererData);

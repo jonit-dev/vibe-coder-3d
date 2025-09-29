@@ -263,7 +263,6 @@ export function useModelDebug({ model, config, debug = false }: IUseModelDebugOp
 
 // Helper function to log the object hierarchy
 function logObject3DHierarchy(obj: THREE.Object3D, depth = 0) {
-  const pad = '  '.repeat(depth);
   // @ts-expect-error isSkinnedMesh and isMesh are not standard on Object3D, but present on Mesh/SkinnedMesh
   const extra = obj.isSkinnedMesh ? ' (SkinnedMesh)' : obj.isMesh ? ' (Mesh)' : '';
 
