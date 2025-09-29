@@ -1,5 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FiArrowUp, FiFile, FiFolder, FiImage, FiSearch, FiX, FiBox, FiVolume2 } from 'react-icons/fi';
+import {
+  FiArrowUp,
+  FiFile,
+  FiFolder,
+  FiImage,
+  FiSearch,
+  FiX,
+  FiBox,
+  FiVolume2,
+} from 'react-icons/fi';
 import { scanAssetsDirectory } from '@/utils/assetScanner';
 import { Model3DPreview } from './Model3DPreview';
 import { AudioPreview } from './AudioPreview';
@@ -70,12 +79,6 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
 
   // Filter and search assets
   const filteredAssets = useMemo(() => {
-    console.log('AssetLoaderModal filtering:', {
-      allowedExtensions,
-      assetsCount: assets.length,
-      basePath: currentPath
-    });
-
     let filtered = assets.filter((asset) => {
       // Always show folders for navigation
       if (asset.type === 'folder') return true;
@@ -88,19 +91,10 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
 
       // Normalize extensions - remove dots if present
       const normalizedAllowedExtensions = allowedExtensions.map((ext) =>
-        ext.toLowerCase().replace(/^\./, '')
+        ext.toLowerCase().replace(/^\./, ''),
       );
 
       const matches = fileExtension && normalizedAllowedExtensions.includes(fileExtension);
-
-      if (asset.type === 'file') {
-        console.log('Checking file:', {
-          name: asset.name,
-          extension: fileExtension,
-          normalizedAllowedExtensions,
-          matches
-        });
-      }
 
       return matches;
     });
@@ -363,7 +357,11 @@ export const AssetLoaderModal: React.FC<IAssetLoaderModalProps> = ({
                   ) : (
                     <FiImage size={10} />
                   )}
-                  {previewType === '3d' ? '3D Preview' : previewType === 'audio' ? 'Audio Preview' : 'Preview'}
+                  {previewType === '3d'
+                    ? '3D Preview'
+                    : previewType === 'audio'
+                      ? 'Audio Preview'
+                      : 'Preview'}
                 </div>
               </div>
               <div className="flex-1 p-2">

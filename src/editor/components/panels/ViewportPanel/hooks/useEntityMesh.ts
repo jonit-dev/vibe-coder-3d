@@ -66,12 +66,7 @@ export const useEntityMesh = ({
   const [entityColor, setEntityColor] = useState<string>('#3388ff');
 
   // Get materials from store for reactivity
-  const materials = useMaterialsStore(state => state.materials);
-
-  // Debug: Log materials when they change
-  React.useEffect(() => {
-    console.log('[useEntityMesh] Materials updated:', materials.map(m => ({id: m.id, name: m.name})));
-  }, [materials]);
+  const materials = useMaterialsStore((state) => state.materials);
 
   // Combine contributions from components (geometry, visibility, overrides)
   const baseContributions = useMemo<IRenderingContributions>(() => {
@@ -81,25 +76,17 @@ export const useEntityMesh = ({
   // Merge base material asset (by materialId) with inline overrides for rendering
   const renderingContributions = useMemo<IRenderingContributions>(() => {
     // Read MeshRenderer data directly for materialId and overrides
-    const meshRenderer = entityComponents.find((c) => c.type === 'MeshRenderer')
-      ?.data as MeshRendererData | undefined;
+    const meshRenderer = entityComponents.find((c) => c.type === 'MeshRenderer')?.data as
+      | MeshRendererData
+      | undefined;
     const materialId = meshRenderer?.materialId || 'default';
 
     // Get the material definition from the reactive materials list
-    const baseDef = materials.find(m => m.id === materialId);
+    const baseDef = materials.find((m) => m.id === materialId);
 
     if (!baseDef && materialId !== 'default') {
       console.warn(`Material not found in registry: ${materialId}`, {
-        availableMaterials: materials.map(m => m.id)
-      });
-    }
-
-    // Debug: Log material lookup for non-default materials
-    if (materialId !== 'default') {
-      console.log(`[useEntityMesh] Material lookup for ${materialId}:`, {
-        found: !!baseDef,
-        color: baseDef?.color,
-        hasOverrides: !!meshRenderer?.material
+        availableMaterials: materials.map((m) => m.id),
       });
     }
 

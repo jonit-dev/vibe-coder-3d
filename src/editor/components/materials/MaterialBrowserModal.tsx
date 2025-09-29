@@ -31,15 +31,14 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
 
   const materials = useMemo(() => {
     const allMaterials = store.materials;
-    console.log('MaterialBrowserModal: Available materials:', allMaterials.map(m => ({ id: m.id, name: m.name })));
-    return allMaterials.filter(material =>
-      material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      material.id.toLowerCase().includes(searchTerm.toLowerCase())
+    return allMaterials.filter(
+      (material) =>
+        material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        material.id.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [searchTerm, store.materials]);
 
   const handleMaterialClick = (materialId: string) => {
-    console.log('MaterialBrowserModal: handleMaterialClick called with materialId:', materialId);
     if (allowMultiSelect) {
       const newSelected = new Set(selectedMaterials);
       if (newSelected.has(materialId)) {
@@ -93,16 +92,18 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
   };
 
   const renderMaterialItem = (material: IMaterialDefinition) => {
-    const isSelected = selectedMaterialId === material.id ||
+    const isSelected =
+      selectedMaterialId === material.id ||
       (allowMultiSelect && selectedMaterials.has(material.id));
 
     return (
       <div
         key={material.id}
-        className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${isSelected
-          ? 'border-blue-500 bg-blue-500/10 shadow-lg'
-          : 'border-gray-600 hover:border-gray-500 hover:bg-gray-700/50 hover:shadow-md'
-          }`}
+        className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
+          isSelected
+            ? 'border-blue-500 bg-blue-500/10 shadow-lg'
+            : 'border-gray-600 hover:border-gray-500 hover:bg-gray-700/50 hover:shadow-md'
+        }`}
         onClick={() => handleMaterialClick(material.id)}
       >
         {/* 3D Preview Sphere */}
@@ -173,7 +174,7 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={allowMultiSelect ? "Select Materials" : "Select Material"}
+      title={allowMultiSelect ? 'Select Materials' : 'Select Material'}
       maxWidth="w-[900px]"
       maxHeight="max-h-[85vh]"
     >
@@ -181,7 +182,10 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
         {/* Search and controls */}
         <div className="flex items-center space-x-3 mb-4">
           <div className="flex-1 relative">
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <FiSearch
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={16}
+            />
             <input
               type="text"
               placeholder="Search materials..."
@@ -208,9 +212,7 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
 
         {/* Material list */}
         <div className="flex-1 overflow-y-auto bg-gray-900/30 rounded-lg p-3 border border-gray-700">
-          <div className="grid grid-cols-3 gap-4">
-            {materials.map(renderMaterialItem)}
-          </div>
+          <div className="grid grid-cols-3 gap-4">{materials.map(renderMaterialItem)}</div>
 
           {materials.length === 0 && (
             <div className="text-center text-gray-400 py-12">
