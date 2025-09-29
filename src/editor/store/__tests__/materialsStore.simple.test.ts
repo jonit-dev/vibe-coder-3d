@@ -162,91 +162,77 @@ describe('materialsStore', () => {
 
   describe('modal state management', () => {
     it('should manage browser modal state', () => {
-      const store = useMaterialsStore.getState();
+      act(() => {
+        useMaterialsStore.getState().openBrowser();
+      });
+      expect(useMaterialsStore.getState().isBrowserOpen).toBe(true);
 
       act(() => {
-        store.openBrowser();
+        useMaterialsStore.getState().closeBrowser();
       });
-      expect(store.isBrowserOpen).toBe(true);
-
-      act(() => {
-        store.closeBrowser();
-      });
-      expect(store.isBrowserOpen).toBe(false);
+      expect(useMaterialsStore.getState().isBrowserOpen).toBe(false);
     });
 
     it('should manage create modal state', () => {
-      const store = useMaterialsStore.getState();
+      act(() => {
+        useMaterialsStore.getState().openCreate();
+      });
+      expect(useMaterialsStore.getState().isCreateOpen).toBe(true);
 
       act(() => {
-        store.openCreate();
+        useMaterialsStore.getState().closeCreate();
       });
-      expect(store.isCreateOpen).toBe(true);
-
-      act(() => {
-        store.closeCreate();
-      });
-      expect(store.isCreateOpen).toBe(false);
+      expect(useMaterialsStore.getState().isCreateOpen).toBe(false);
     });
 
     it('should manage inspector modal state', () => {
-      const store = useMaterialsStore.getState();
+      act(() => {
+        useMaterialsStore.getState().openInspector('test-material');
+      });
+      expect(useMaterialsStore.getState().isInspectorOpen).toBe(true);
+      expect(useMaterialsStore.getState().selectedMaterialId).toBe('test-material');
 
       act(() => {
-        store.openInspector('test-material');
+        useMaterialsStore.getState().closeInspector();
       });
-      expect(store.isInspectorOpen).toBe(true);
-      expect(store.selectedMaterialId).toBe('test-material');
-
-      act(() => {
-        store.closeInspector();
-      });
-      expect(store.isInspectorOpen).toBe(false);
+      expect(useMaterialsStore.getState().isInspectorOpen).toBe(false);
     });
   });
 
   describe('selection management', () => {
     it('should manage selected material state', () => {
-      const store = useMaterialsStore.getState();
+      act(() => {
+        useMaterialsStore.getState().setSelectedMaterial('test-material');
+      });
+      expect(useMaterialsStore.getState().selectedMaterialId).toBe('test-material');
 
       act(() => {
-        store.setSelectedMaterial('test-material');
+        useMaterialsStore.getState().setSelectedMaterial(null);
       });
-      expect(store.selectedMaterialId).toBe('test-material');
-
-      act(() => {
-        store.setSelectedMaterial(null);
-      });
-      expect(store.selectedMaterialId).toBe(null);
+      expect(useMaterialsStore.getState().selectedMaterialId).toBe(null);
     });
   });
 
   describe('filter state management', () => {
     it('should manage search term', () => {
-      const store = useMaterialsStore.getState();
-
       act(() => {
-        store.setSearchTerm('test');
+        useMaterialsStore.getState().setSearchTerm('test');
       });
-      expect(store.searchTerm).toBe('test');
+      expect(useMaterialsStore.getState().searchTerm).toBe('test');
     });
 
     it('should manage shader filter', () => {
-      const store = useMaterialsStore.getState();
-
       act(() => {
-        store.setFilterByShader('unlit');
+        useMaterialsStore.getState().setFilterByShader('unlit');
       });
-      expect(store.filterByShader).toBe('unlit');
+      expect(useMaterialsStore.getState().filterByShader).toBe('unlit');
     });
 
     it('should manage type filter', () => {
-      const store = useMaterialsStore.getState();
-
       act(() => {
-        store.setFilterByType('texture');
+        useMaterialsStore.getState().setFilterByType('texture');
       });
-      expect(store.filterByType).toBe('texture');
+      expect(useMaterialsStore.getState().filterByType).toBe('texture');
     });
   });
 });
