@@ -47,9 +47,29 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
   const updateMaterial = (updates: Partial<IMaterialDefinition>) => {
     if (!material) return;
 
-    setMaterial(prev => {
+    setMaterial((prev) => {
       if (!prev) return prev;
-      const updated = { ...prev, ...updates };
+
+      let updated = { ...prev, ...updates };
+
+      // When switching from texture to solid, clear texture-specific properties
+      if (updates.materialType === 'solid' && prev.materialType === 'texture') {
+        updated = {
+          ...updated,
+          albedoTexture: undefined,
+          normalTexture: undefined,
+          metallicTexture: undefined,
+          roughnessTexture: undefined,
+          emissiveTexture: undefined,
+          occlusionTexture: undefined,
+          // Reset texture transform properties to defaults
+          normalScale: 1,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+        };
+      }
+
       setHasUnsavedChanges(true);
       return updated;
     });
@@ -331,8 +351,15 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
       label: 'Textures',
       content: texturesTab,
       icon: <FiMap size={14} />,
-      badge: material.albedoTexture || material.normalTexture || material.metallicTexture ||
-             material.roughnessTexture || material.emissiveTexture || material.occlusionTexture ? '●' : undefined,
+      badge:
+        material.albedoTexture ||
+        material.normalTexture ||
+        material.metallicTexture ||
+        material.roughnessTexture ||
+        material.emissiveTexture ||
+        material.occlusionTexture
+          ? '●'
+          : undefined,
     },
   ];
 

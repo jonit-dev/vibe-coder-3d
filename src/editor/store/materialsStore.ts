@@ -148,7 +148,26 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
       const existing = registry.get(materialId);
       if (!existing) throw new Error(`Material not found: ${materialId}`);
 
-      const updated: IMaterialDefinition = { ...existing, ...updates };
+      let updated: IMaterialDefinition = { ...existing, ...updates };
+
+      // When switching from texture to solid, clear texture-specific properties
+      if (updates.materialType === 'solid' && existing.materialType === 'texture') {
+        updated = {
+          ...updated,
+          albedoTexture: undefined,
+          normalTexture: undefined,
+          metallicTexture: undefined,
+          roughnessTexture: undefined,
+          emissiveTexture: undefined,
+          occlusionTexture: undefined,
+          // Reset texture transform properties to defaults
+          normalScale: 1,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+        };
+      }
+
       registry.upsert(updated);
       get()._refreshMaterials(); // Update UI reactively
     },
