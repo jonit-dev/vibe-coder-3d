@@ -32,6 +32,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
     isBrowserOpen,
     isCreateOpen,
     isInspectorOpen,
+    selectedMaterialId,
     openBrowser,
     closeBrowser,
     openCreate,
@@ -313,7 +314,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
 
       {/* Material Inspector Modal */}
       <MaterialInspector
-        materialId={currentMaterialId}
+        materialId={selectedMaterialId || currentMaterialId}
         isOpen={isInspectorOpen}
         onClose={closeInspector}
         onSave={handleMaterialSave}
