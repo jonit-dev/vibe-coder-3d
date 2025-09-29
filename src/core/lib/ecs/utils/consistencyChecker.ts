@@ -249,13 +249,12 @@ export class ConsistencyChecker {
     console.group('🔍 ECS Index Consistency Report');
 
     if (report.isConsistent) {
-      console.log('✅ All indices are consistent with ECS world state');
+
     } else {
-      console.log('❌ Inconsistencies detected!');
+
     }
 
     // Log stats
-    console.log('📊 Statistics:', report.stats);
 
     // Log errors
     if (report.errors.length > 0) {

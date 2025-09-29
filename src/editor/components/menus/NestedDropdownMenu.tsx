@@ -152,7 +152,6 @@ export const NestedDropdownMenu: React.FC<INestedDropdownMenuProps> = ({
       top = window.innerHeight + window.scrollY - submenuHeight;
     }
 
-    console.log('Setting submenu for category:', category.label, { left, top });
     setActiveSubmenu({ category, position: { left, top } });
   };
 

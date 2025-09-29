@@ -9,7 +9,6 @@ export * from './transformBenchmarks';
 
 // Main function to run all benchmarks
 export function runAllBenchmarks(): void {
-  console.log('🚀 Starting Performance Benchmarks...');
 
   // Import and run benchmarks dynamically to avoid circular dependencies
   import('./transformBenchmarks').then(({ runTransformBenchmarks }) => {
@@ -20,7 +19,6 @@ export function runAllBenchmarks(): void {
     runEventBenchmarks();
   });
 
-  console.log('✅ All benchmarks completed');
 }
 
 // Performance regression detection

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
 import type { MeshRendererData } from '@/core/lib/ecs/components/definitions/MeshRendererComponent';
 

@@ -347,7 +347,7 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
       onAdd(item.type as ShapeType);
     } else {
       // For future object types, show a placeholder message
-      console.log(`[AddObjectMenu] Future object type selected: ${item.type}`);
+
       // You could show a toast notification here
     }
   };

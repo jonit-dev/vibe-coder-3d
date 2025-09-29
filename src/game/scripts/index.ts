@@ -11,5 +11,4 @@ export { registerPlayerControllerScript };
 export function registerAllScripts(): void {
   registerPlayerControllerScript();
 
-  console.log('[Scripts] All scripts registered');
 }

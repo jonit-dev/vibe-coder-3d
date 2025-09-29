@@ -31,24 +31,22 @@ export function useModelDebug({ model, config, debug = false }: IUseModelDebugOp
 
     // Only log to console if configured or if debug prop is true
     if (debugSettings?.logToConsole || debug) {
-      console.log('Model: model object', model);
+
       logObject3DHierarchy(model);
 
       // Log all meshes and skinned meshes
       model.traverse((obj: THREE.Object3D) => {
         // @ts-expect-error isSkinnedMesh and isMesh are not standard on Object3D, but present on Mesh/SkinnedMesh
         if (obj.isSkinnedMesh) {
-          console.log('Model: Found SkinnedMesh:', obj.name, obj);
+
           // Use proper type assertion for SkinnedMesh
           const skinnedMesh = obj as THREE.SkinnedMesh;
           if (skinnedMesh.skeleton) {
-            console.log(
-              'Model: SkinnedMesh bones:',
-              skinnedMesh.skeleton.bones.map((b: THREE.Bone) => b.name),
-            );
+                    // Log SkinnedMesh bones for debugging
+              skinnedMesh.skeleton.bones.map((b: THREE.Bone) => b.name);
           }
         } else if ((obj as THREE.Mesh).isMesh) {
-          console.log('Model: Found Mesh:', obj.name, obj);
+
         }
       });
     }
@@ -63,10 +61,7 @@ export function useModelDebug({ model, config, debug = false }: IUseModelDebugOp
         const size = new THREE.Vector3();
         box.getCenter(center);
         box.getSize(size);
-        console.log('Model: Bounding box center:', center);
-        console.log('Model: Bounding box size:', size);
-        console.log('Model: Bounding box min:', box.min);
-        console.log('Model: Bounding box max:', box.max);
+
       }
     }
   }, [model, debugMode, debugSettings, debug]);
@@ -271,15 +266,13 @@ function logObject3DHierarchy(obj: THREE.Object3D, depth = 0) {
   const pad = '  '.repeat(depth);
   // @ts-expect-error isSkinnedMesh and isMesh are not standard on Object3D, but present on Mesh/SkinnedMesh
   const extra = obj.isSkinnedMesh ? ' (SkinnedMesh)' : obj.isMesh ? ' (Mesh)' : '';
-  console.log(`${pad}${obj.name} [${obj.type}]${extra}`);
+
   if (obj.type === 'SkinnedMesh') {
     // @ts-expect-error skeleton is not standard on Object3D, but present on SkinnedMesh
     const skeleton = obj.skeleton;
     if (skeleton) {
-      console.log(
-        `${pad}  SkinnedMesh bones:`,
-        skeleton.bones.map((b: THREE.Bone) => b.name),
-      );
+      // Log SkinnedMesh bones hierarchy
+      skeleton.bones.map((b: THREE.Bone) => b.name);
     }
   }
   obj.children.forEach((child) => logObject3DHierarchy(child, depth + 1));

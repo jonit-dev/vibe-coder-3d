@@ -89,9 +89,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
     (operation: string, toastId?: string): IStreamingCallbacks => ({
       onProgress: handleProgress,
       onChunkProcessed: (chunkIndex, entities) => {
-        console.log(
-          `[StreamingScene] ${operation} - Processed chunk ${chunkIndex} with ${entities.length} entities`,
-        );
+        // Chunk processed successfully
       },
       onError: (error, entityIndex) => {
         console.error(`[StreamingScene] ${operation} error at entity ${entityIndex}:`, error);
@@ -99,7 +97,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         projectToasts.showOperationError(operation, error.message);
       },
       onComplete: (summary) => {
-        console.log(`[StreamingScene] ${operation} completed:`, summary);
+
         if (toastId) removeToast(toastId);
       },
     }),
@@ -176,12 +174,12 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
       // Material manager adapter
       const materialManagerAdapter = {
         clearMaterials: () => {
-          console.log('[MaterialManagerAdapter] Clearing materials');
+
           const materialRegistry = MaterialRegistry.getInstance();
           materialRegistry.clearMaterials();
         },
         upsertMaterial: (material: IMaterialDefinition) => {
-          console.log('[MaterialManagerAdapter] Upserting material:', material.id, material.name);
+
           const materialRegistry = MaterialRegistry.getInstance();
           materialRegistry.upsert(material);
         },
@@ -189,12 +187,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
 
       const callbacks = createStreamingCallbacks('Import');
 
-      // Debug: Log scene materials before import
-      console.log('[SceneImport] Scene data:', {
-        entities: scene.entities?.length || 0,
-        materials: scene.materials?.length || 0,
-        materialIds: scene.materials?.map(m => m.id) || []
-      });
+      // Scene import starting
 
       await streamingSerializer.importScene(
         scene,
@@ -205,10 +198,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
       );
 
       // Refresh the materials store cache after importing
-      console.log('[SceneImport] Refreshing materials store cache...');
       useMaterialsStore.getState()._refreshMaterials();
-      console.log('[SceneImport] Materials in store after refresh:',
-        useMaterialsStore.getState().materials.map(m => ({id: m.id, name: m.name})));
     },
     [entityManager, componentManager, createStreamingCallbacks],
   );
@@ -287,11 +277,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         const materialRegistry = MaterialRegistry.getInstance();
         const materials = materialRegistry.list();
 
-        console.log(
-          `[StreamingSceneActions] Streaming save: ${transformedEntities.length} entities, ${materials.length} materials`,
-        );
-        console.log('[StreamingSceneActions] Materials being saved:', materials.map(m => ({id: m.id, name: m.name})));
-        console.log('[StreamingSceneActions] Full material details:', JSON.stringify(materials, null, 2));
+        // Starting scene save operation
         const success = await scenePersistence.saveTsxScene(sceneName, transformedEntities, materials);
 
         if (loadingToastId) removeToast(loadingToastId);
@@ -354,9 +340,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
 
           // Stream read the file
           const sceneData = await readSceneStream(file, (progress) => {
-            console.log(
-              `[StreamingSceneActions] File read progress: ${progress.phase} ${progress.percentage}%`,
-            );
+            // File read progress update
           });
 
           // Stream import the scene
@@ -485,9 +469,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
       try {
         const scene = await exportSceneData();
         await downloadSceneStream(scene, filename, (progress) => {
-          console.log(
-            `[StreamingSceneActions] Download progress: ${progress.phase} ${progress.percentage}%`,
-          );
+          // Download progress update
         });
 
         projectToasts.showOperationSuccess(
@@ -509,7 +491,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
    * Trigger file load dialog
    */
   const triggerFileLoad = useCallback(() => {
-    console.log('[StreamingSceneActions] Triggering file load');
+
     if (fileInputRef.current) {
       fileInputRef.current.click();
     } else {

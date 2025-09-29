@@ -78,8 +78,6 @@ export class SafeScriptExecutor {
         };
       }
 
-      console.log(`[SafeScriptExecutor] Executing ${lifecycleMethod} with static patterns for entity ${options.entityId}`);
-
       // Execute safe patterns only - no dynamic code execution
       this.executeKnownPatterns(functionBody, options);
 
@@ -107,24 +105,24 @@ export class SafeScriptExecutor {
       for (const logMatch of logMatches) {
         const messageMatch = logMatch.match(/['"`]([^'"`]+)['"`]/);
         if (messageMatch) {
-          console.log(`[Entity ${options.entityId}] ${messageMatch[1]}`);
+
         }
       }
     }
 
     // Pattern 2: Basic entity position updates (would need entity API integration)
     if (functionBody.includes('entity.position')) {
-      console.log(`[Entity ${options.entityId}] Position update detected (pattern matching)`);
+      // Position update detected via pattern matching
     }
 
     // Pattern 3: Basic rotation updates
     if (functionBody.includes('entity.rotation')) {
-      console.log(`[Entity ${options.entityId}] Rotation update detected (pattern matching)`);
+      // Rotation update detected via pattern matching
     }
 
     // Pattern 4: Time-based animations
     if (functionBody.includes('time.time') || functionBody.includes('deltaTime')) {
-      console.log(`[Entity ${options.entityId}] Time-based animation detected (pattern matching)`);
+      // Time-based animation detected via pattern matching
     }
   }
 
@@ -134,13 +132,10 @@ export class SafeScriptExecutor {
   public compileScript(code: string, scriptId: string): ISafeScriptExecutionResult {
     const startTime = performance.now();
     
-    console.log('[SafeScriptExecutor] ULTRA SAFE MODE - compiling script:', scriptId);
-
     try {
       // Just store the script code - no compilation needed for pattern matching
       this.scriptRegistry.set(scriptId, code);
 
-      console.log('[SafeScriptExecutor] Script stored successfully for static pattern execution');
       return {
         success: true,
         executionTime: performance.now() - startTime,

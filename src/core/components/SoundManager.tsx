@@ -33,8 +33,6 @@ export const SoundManager: React.FC = () => {
     Howler.autoUnlock = true;
     Howler.html5PoolSize = 10;
     
-    console.log('[SoundManager] Initialized with Howler.js');
-    
     return () => {
       // Cleanup all sounds on unmount
       soundInstances.current.forEach((instance) => {
@@ -84,7 +82,7 @@ export const SoundManager: React.FC = () => {
           autoplay: false, // We'll handle autoplay separately
           html5: true, // Use HTML5 Audio for better 3D support
           onload: () => {
-            console.log(`[SoundManager] Loaded audio: ${soundData.audioPath}`);
+
             // Update duration in ECS
             componentRegistry.updateComponent(entityId, 'Sound', {
               duration: howl.duration(),
@@ -93,7 +91,7 @@ export const SoundManager: React.FC = () => {
             
             // Handle autoplay after audio is loaded
             if (soundData.autoplay && soundData.enabled && !soundData.isPlaying) {
-              console.log(`[SoundManager] Auto-playing sound for entity ${entityId}`);
+
               const soundId = howl.play();
               instance!.soundId = soundId;
             }
@@ -212,7 +210,7 @@ export const SoundManager: React.FC = () => {
   // Listen for component events
   useEvent('component:added', (event) => {
     if (event.componentId === 'Sound') {
-      console.log(`[SoundManager] Sound component added to entity ${event.entityId}`);
+
       const soundData = event.data as SoundData;
       updateSoundInstance(event.entityId, soundData);
       triggerUpdate();
@@ -221,7 +219,7 @@ export const SoundManager: React.FC = () => {
 
   useEvent('component:updated', (event) => {
     if (event.componentId === 'Sound') {
-      console.log(`[SoundManager] Sound component updated for entity ${event.entityId}`);
+
       const soundData = event.data as SoundData;
       updateSoundInstance(event.entityId, soundData);
       triggerUpdate();
@@ -230,7 +228,7 @@ export const SoundManager: React.FC = () => {
 
   useEvent('component:removed', (event) => {
     if (event.componentId === 'Sound') {
-      console.log(`[SoundManager] Sound component removed from entity ${event.entityId}`);
+
       removeSoundInstance(event.entityId);
       triggerUpdate();
     }
@@ -238,7 +236,7 @@ export const SoundManager: React.FC = () => {
 
   // Listen for sound:autoplay events from the sound system
   useEvent('sound:autoplay', (event) => {
-    console.log(`[SoundManager] Autoplay event received for entity ${event.entityId}`);
+
     updateSoundInstance(event.entityId, event.soundData);
     triggerUpdate();
   });

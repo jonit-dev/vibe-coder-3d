@@ -36,8 +36,15 @@ export const useMeshRenderer = (entityId: number | null) => {
         componentManager.removeComponent(entityId, KnownComponentTypes.MESH_RENDERER);
         setMeshRendererState(null);
       } else {
-        // Add or update component
-        componentManager.addComponent(entityId, KnownComponentTypes.MESH_RENDERER, newMeshRenderer);
+        // Check if component already exists
+        const existingComponent = componentManager.getMeshRendererComponent(entityId);
+        if (existingComponent) {
+          // Update existing component
+          componentManager.updateComponent(entityId, KnownComponentTypes.MESH_RENDERER, newMeshRenderer);
+        } else {
+          // Add new component
+          componentManager.addComponent(entityId, KnownComponentTypes.MESH_RENDERER, newMeshRenderer);
+        }
         setMeshRendererState(newMeshRenderer);
       }
     },

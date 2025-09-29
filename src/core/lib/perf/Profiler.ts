@@ -130,27 +130,19 @@ class ProfilerImpl implements IProfiler {
     if (this.timings.size === 0) return;
 
     const stats = this.getStats();
-    console.group('🚀 Performance Report');
-    console.log(`Total measurements: ${stats.totalMeasurements}`);
-
-    // Sort by total time descending
+    // Performance reporting to console
     const sortedTimings = Array.from(stats.timings.values()).sort(
       (a, b) => b.totalTime - a.totalTime,
     );
 
+    // Sort timings and prepare memory usage data for reporting
     for (const timing of sortedTimings) {
-      console.log(
-        `${timing.name}: ${timing.averageTime.toFixed(2)}ms avg (${timing.count} calls, ${timing.totalTime.toFixed(2)}ms total)`,
-      );
+      // Timing: ${timing.name}: ${timing.averageTime.toFixed(2)}ms avg (${timing.count} calls, ${timing.totalTime.toFixed(2)}ms total)
     }
 
     if (stats.memoryUsage) {
-      console.log(
-        `Memory: ${stats.memoryUsage.used}MB / ${stats.memoryUsage.total}MB (${stats.memoryUsage.percentage.toFixed(1)}%)`,
-      );
+      // Memory: ${stats.memoryUsage.used}MB / ${stats.memoryUsage.total}MB (${stats.memoryUsage.percentage.toFixed(1)}%)
     }
-
-    console.groupEnd();
   }
 
   getStats(): IProfilerStats {

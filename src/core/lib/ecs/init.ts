@@ -13,7 +13,6 @@ import {
  * Call this once during application startup
  */
 export function initializeECS(): void {
-  console.log('Initializing ECS system...');
 
   // Register core components (Transform, MeshRenderer, etc.)
   registerCoreComponents();
@@ -21,16 +20,13 @@ export function initializeECS(): void {
   // Register example components (Health, Velocity, etc.)
   registerExampleComponents();
 
-  console.log('ECS system initialized successfully');
 }
 
 /**
  * Initialize only core components (minimal setup)
  */
 export function initializeCoreECS(): void {
-  console.log('Initializing core ECS components...');
 
   registerCoreComponents();
 
-  console.log('Core ECS components initialized successfully');
 }

@@ -73,11 +73,7 @@ export const CameraBackgroundManager: React.FC = () => {
           const skyboxTextureChanged = lastUpdateRef.current.skyboxTexture !== newSkyboxTexture;
 
           if (clearFlagsChanged || backgroundColorChanged || skyboxTextureChanged) {
-            console.log('[CameraBackgroundManager] Camera background updated:', {
-              clearFlags: newClearFlags,
-              backgroundColor: newBackgroundColor,
-              skyboxTexture: newSkyboxTexture,
-            });
+            // Camera background updated
 
             setClearFlags(newClearFlags);
             setBackgroundColor(newBackgroundColor);

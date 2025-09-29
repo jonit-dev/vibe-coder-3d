@@ -31,7 +31,7 @@ export const useEntitySynchronization = ({
           entityIds.length !== newIds.length ||
           !entityIds.every((id, index) => id === newIds[index])
         ) {
-          console.log(`[Editor] Entity list updated:`, newIds);
+
           setEntityIds(newIds);
         }
       }, 16); // ~60fps batching
@@ -42,7 +42,7 @@ export const useEntitySynchronization = ({
 
     // Listen for entity events for real-time reactive updates
     const removeEventListener = entityManager.addEventListener((event) => {
-      console.log(`[Editor] Entity event: ${event.type}`, event.entityId);
+
       updateEntities();
     });
 

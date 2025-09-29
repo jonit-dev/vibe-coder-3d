@@ -41,9 +41,9 @@ export const MaterialsPanel: React.FC<IMaterialsPanelProps> = ({
     handleCreate(material);
   };
 
-  const handleMaterialSave = (material: IMaterialDefinition) => {
+  const handleMaterialSave = (_material: IMaterialDefinition) => {
     // Material is saved in the inspector
-    console.log('Material saved:', material);
+
   };
 
   if (!isExpanded) {

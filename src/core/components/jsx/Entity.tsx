@@ -30,7 +30,7 @@ export const Entity: React.FC<IEntityProps> = ({
   persistentId,
   parentId,
   children,
-  debug = false,
+  debug: _debug = false,
 }) => {
   const [entityId, setEntityId] = useState<EntityId | null>(null);
   const [actualPersistentId, setActualPersistentId] = useState<string | null>(null);
@@ -42,9 +42,6 @@ export const Entity: React.FC<IEntityProps> = ({
     if (hasCreatedEntity.current) return;
     hasCreatedEntity.current = true;
 
-    if (debug) {
-      console.log(`[Entity] Creating entity: ${name}`);
-    }
 
     try {
       // Create the entity
@@ -67,9 +64,6 @@ export const Entity: React.FC<IEntityProps> = ({
       setEntityId(entity.id);
       setActualPersistentId(finalPersistentId);
 
-      if (debug) {
-        console.log(`[Entity] Created entity ${entity.id} with persistentId: ${finalPersistentId}`);
-      }
     } catch (error) {
       console.error(`[Entity] Failed to create entity: ${name}`, error);
     }
@@ -77,9 +71,6 @@ export const Entity: React.FC<IEntityProps> = ({
     // Cleanup function
     return () => {
       if (entityId !== null) {
-        if (debug) {
-          console.log(`[Entity] Cleaning up entity: ${entityId}`);
-        }
         try {
           entityManager.current.deleteEntity(entityId);
         } catch (error) {

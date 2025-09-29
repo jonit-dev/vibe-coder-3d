@@ -23,7 +23,7 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
 
   const handlePositionChange = React.useCallback(
     (position: [number, number, number]) => {
-      console.log(`[Transform] Position changed for entity ${entityId}:`, position);
+
       updateComponent(KnownComponentTypes.TRANSFORM, {
         ...data,
         position,
@@ -34,7 +34,7 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
 
   const handleRotationChange = React.useCallback(
     (rotation: [number, number, number]) => {
-      console.log(`[Transform] Rotation changed for entity ${entityId}:`, rotation);
+
       updateComponent(KnownComponentTypes.TRANSFORM, {
         ...data,
         rotation,
@@ -45,7 +45,7 @@ export const TransformAdapter: React.FC<ITransformAdapterProps> = ({
 
   const handleScaleChange = React.useCallback(
     (scale: [number, number, number]) => {
-      console.log(`[Transform] Scale changed for entity ${entityId}:`, scale);
+
       updateComponent(KnownComponentTypes.TRANSFORM, {
         ...data,
         scale,

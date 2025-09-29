@@ -49,13 +49,11 @@ export function GameEngine({
   // Auto-start the engine if required
   useEffect(() => {
     if (autoStart) {
-      console.log('Auto-starting game engine');
       startEngine();
     }
 
     // Clean up on unmount
     return () => {
-      console.log('Stopping game engine');
       stopEngine();
     };
   }, [autoStart, startEngine, stopEngine]);

@@ -60,7 +60,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
   // Find the main camera or use the first available camera
   const mainCamera = useMemo(() => {
     if (cameraEntities.length === 0) {
-      console.log('[GameCameraManager] No camera entities found');
+
       return null;
     }
 
@@ -68,9 +68,9 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     const mainCam = cameraEntities.find((entity) => entity.cameraData?.isMain);
 
     if (mainCam) {
-      console.log('[GameCameraManager] Found main camera:', mainCam.entityId);
+
     } else {
-      console.log('[GameCameraManager] No main camera found, using first available');
+
     }
 
     // Otherwise use the first camera
@@ -109,7 +109,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
       // Restore original editor camera when exiting play mode
       if (originalCameraRef.current && hasSetOriginalCamera.current) {
         set({ camera: originalCameraRef.current as any });
-        console.log('[GameCameraManager] Restored editor camera');
+
       }
       return;
     }
@@ -185,7 +185,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     // Replace the main Three.js camera with our game camera
     set({ camera: gameCamera as any });
 
-    console.log(`[GameCameraManager] Switched to game camera (Entity ${mainCamera.entityId})`);
+    // Switched to game camera successfully
 
     // Cleanup function to unregister camera when switching back
     return () => {
@@ -221,24 +221,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     const isFreeMode = controlMode === 'free';
     const hasFollowTarget = cameraData?.enableSmoothing && cameraData?.followTarget;
 
-    // Debug: Log the camera behavior strategy (only occasionally to avoid spam)
-    if (Math.random() < 0.02) {
-      // 2% chance per frame
-      console.log('[GameCameraManager] Camera behavior:', {
-        controlMode,
-        enableSmoothing: cameraData?.enableSmoothing,
-        followTarget: cameraData?.followTarget,
-        hasFollowTarget,
-        strategy:
-          isFreeMode && hasFollowTarget
-            ? 'Free+Follow'
-            : isFreeMode && !hasFollowTarget
-              ? 'Free+Static'
-              : !isFreeMode && hasFollowTarget
-                ? 'Locked+Follow'
-                : 'Locked+Static',
-      });
-    }
+    // Camera behavior tracking internally
 
     // Update camera position from ECS transform ONLY in locked mode or when not in free mode
     // In free mode, OrbitControls should have full control over camera position

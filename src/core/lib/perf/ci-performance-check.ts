@@ -60,7 +60,6 @@ class PerformanceChecker {
   }
 
   async runPerformanceChecks(): Promise<IPerformanceCheckResult> {
-    console.log('🔍 Running Performance Checks...');
 
     // Clear previous results
     Profiler.clear();
@@ -175,10 +174,8 @@ class PerformanceChecker {
   }
 
   private reportResults(result: IPerformanceCheckResult): void {
-    console.log('📊 Performance Check Results:');
-    console.log(
-      `Score: ${result.score}/${result.maxScore} (${((result.score / result.maxScore) * 100).toFixed(1)}%)`,
-    );
+
+    // Performance score: ${result.score}/${result.maxScore} (${((result.score / result.maxScore) * 100).toFixed(1)}%)
 
     if (result.warnings.length > 0) {
       console.warn('⚠️  Warnings:');
@@ -191,9 +188,9 @@ class PerformanceChecker {
     }
 
     if (result.passed) {
-      console.log('✅ All performance checks passed!');
+
     } else {
-      console.log('💥 Some performance checks failed!');
+
     }
   }
 
@@ -207,7 +204,7 @@ class PerformanceChecker {
     };
 
     // In a real implementation, save to file or database
-    console.log('💾 Baseline saved:', baselineData);
+
   }
 }
 

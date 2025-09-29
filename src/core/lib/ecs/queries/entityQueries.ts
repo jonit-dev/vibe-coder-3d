@@ -489,37 +489,30 @@ export class EntityQueries {
   // Debug method to dump current state
   debugState(): void {
     if (!this.queryStore) {
-      console.log('[EntityQueries] Not initialized');
+
       return;
     }
 
     const entities = this.queryStore.listAllEntities();
     const roots = this.queryStore.getRootEntities();
 
-    console.log('=== EntityQueries Debug State ===');
-    console.log('Total entities:', entities.length);
-    console.log('Entity IDs:', entities);
-    console.log('Root entities:', roots.length);
-    console.log('Root IDs:', roots);
-
     // Show hierarchy relationships
-    console.log('\nHierarchy relationships:');
+
     entities.forEach((id) => {
       const parent = this.queryStore.getParent(id);
       const children = this.queryStore.getChildren(id);
       if (parent !== undefined || children.length > 0) {
-        console.log(`  Entity ${id}: parent=${parent}, children=[${children.join(', ')}]`);
+        // Entity hierarchy: parent and children relationships
       }
     });
 
     // Show components
     const componentTypes = this.queryStore.getComponentTypes();
-    console.log('\nComponent types:', componentTypes.length);
+
     componentTypes.forEach((type) => {
       const count = this.queryStore.getComponentCount(type);
-      console.log(`  ${type}: ${count} entities`);
+
     });
 
-    console.log('=== End Debug State ===');
   }
 }

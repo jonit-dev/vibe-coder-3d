@@ -57,11 +57,6 @@ export function lightSystem(__deltaTime: number): number {
     }
 
     // Process the light update
-    console.log(`[lightSystem] Processing light update for entity ${eid}:`, {
-      lightType: lightData.lightType,
-      intensity: lightData.intensity,
-      enabled: lightData.enabled,
-    });
 
     // The actual Three.js light updates are handled by LightRenderer components
     // This system just processes the ECS side and resets the needsUpdate flag

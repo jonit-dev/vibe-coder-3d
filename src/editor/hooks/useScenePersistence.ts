@@ -231,12 +231,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
       clearError();
 
       try {
-        console.log('[ScenePersistence] Saving TSX scene with:', {
-          name: name.trim(),
-          entities: entities.length,
-          materials: materials.length,
-          materialIds: materials.map((m: any) => m.id)
-        });
+        // Saving TSX scene
 
         const response = await fetch('/api/scene/save-tsx', {
           method: 'POST',

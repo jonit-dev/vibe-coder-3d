@@ -8,5 +8,5 @@
 
 // Register all game scenes function
 export function registerAllScenes(): void {
-  console.log('[Game Scenes] Scene files available for dynamic import');
+
 }

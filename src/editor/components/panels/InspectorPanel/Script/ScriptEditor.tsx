@@ -36,25 +36,15 @@ export const ScriptEditor: React.FC<IScriptEditorProps> = ({
 
 function onStart(): void {
   // Hello World with entity information
-  console.log("🎮 Hello World! Script started!");
-  console.log("📍 Entity ID:", entity.id);
-  console.log("📛 Entity name:", entity.name);
-  console.log("🌍 Current position:", entity.transform.position);
-  
+
   // Demonstrate entity manipulation
-  console.log("✨ Changing entity color to show interaction...");
+
   if (three.mesh) {
     three.material.setColor("#00ff00"); // Green color
   }
   
   // Show available context objects
-  console.log("🔧 Available context:");
-  console.log("   - entity: Entity manipulation API");
-  console.log("   - time: Game time information");
-  console.log("   - input: User input handling");
-  console.log("   - math: Math utilities");
-  console.log("   - three: Three.js object access");
-  console.log("   - console: Logging functions");
+
 }
 
 function onUpdate(deltaTime: number): void {
@@ -63,7 +53,7 @@ function onUpdate(deltaTime: number): void {
   
   // Periodic status update (every 2 seconds)
   if (Math.floor(time.time) % 2 === 0 && Math.floor(time.time * 10) % 10 === 0) {
-    console.log("🔄 Script running! Position:", entity.transform.position);
+
   }
 }`
       : `// Hello World JavaScript Script
@@ -71,25 +61,15 @@ function onUpdate(deltaTime: number): void {
 
 function onStart() {
   // Hello World with entity information
-  console.log("🎮 Hello World! Script started!");
-  console.log("📍 Entity ID:", entity.id);
-  console.log("📛 Entity name:", entity.name);
-  console.log("🌍 Current position:", entity.transform.position);
-  
+
   // Demonstrate entity manipulation
-  console.log("✨ Changing entity color to show interaction...");
+
   if (three.mesh) {
     three.material.setColor("#00ff00"); // Green color
   }
   
   // Show available context objects
-  console.log("🔧 Available context:");
-  console.log("   - entity: Entity manipulation API");
-  console.log("   - time: Game time information");
-  console.log("   - input: User input handling");
-  console.log("   - math: Math utilities");
-  console.log("   - three: Three.js object access");
-  console.log("   - console: Logging functions");
+
 }
 
 function onUpdate(deltaTime) {
@@ -98,7 +78,7 @@ function onUpdate(deltaTime) {
   
   // Periodic status update (every 2 seconds)
   if (Math.floor(time.time) % 2 === 0 && Math.floor(time.time * 10) % 10 === 0) {
-    console.log("🔄 Script running! Position:", entity.transform.position);
+
   }
 }`;
 

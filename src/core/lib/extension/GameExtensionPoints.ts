@@ -179,9 +179,8 @@ export function runRegisteredScripts(deltaTime: number, entityId?: number): void
       if (entityId !== undefined) {
         script.onUpdate?.(entityId, deltaTime);
       } else {
-        // For now, just log that scripts are registered
+        // For now, just note that scripts are registered
         // In a full implementation, this would iterate over all entities with scripts
-        console.log(`[GameExtensionPoints] Script "${script.id}" available for execution`);
       }
     } catch (error) {
       console.error(`[GameExtensionPoints] Error running script "${script.id}":`, error);

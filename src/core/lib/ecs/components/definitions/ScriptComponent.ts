@@ -140,11 +140,7 @@ export const scriptComponent = ComponentFactory.create({
       data.language === 'typescript'
         ? `// Hello World TypeScript Script
 function onStart(): void {
-  console.log("🎮 Hello World! Script started!");
-  console.log("📍 Entity ID:", entity.id);
-  console.log("📛 Entity name:", entity.name);
-  console.log("🌍 Current position:", entity.transform.position);
-  
+
   if (three.mesh) {
     three.material.setColor("#00ff00");
   }
@@ -155,11 +151,7 @@ function onUpdate(deltaTime: number): void {
 }`
         : `// Hello World JavaScript Script
 function onStart() {
-  console.log("🎮 Hello World! Script started!");
-  console.log("📍 Entity ID:", entity.id);
-  console.log("📛 Entity name:", entity.name);
-  console.log("🌍 Current position:", entity.transform.position);
-  
+
   if (three.mesh) {
     three.material.setColor("#00ff00");
   }

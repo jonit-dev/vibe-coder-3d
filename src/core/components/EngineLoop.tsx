@@ -174,15 +174,10 @@ export const EngineLoop = ({
       const interval = setInterval(() => {
         const state = getLoopState();
         if (state.isRunning && !state.isPaused) {
-          console.log(`FPS: ${state.fps}, Frame: ${state.frameCount}`);
 
           if (perfMonitoring) {
             const { velocity, physics, overall } = metricsRef.current;
-            console.log(
-              `Performance (ms): Overall: ${overall.average.toFixed(2)}, ` +
-                `Velocity: ${velocity.average.toFixed(2)}, ` +
-                `Physics: ${physics.average.toFixed(2)}`,
-            );
+            // Performance monitoring in debug mode
           }
         }
       }, 1000);
@@ -223,9 +218,6 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
 
   // Debug info
   if (transformCount > 0 || cameraCount > 0 || lightCount > 0 || soundCount > 0) {
-    // Uncomment for debugging:
-    console.log(
-      `[EngineLoop] System updates - Transform: ${transformCount}, Camera: ${cameraCount}, Light: ${lightCount}, Sound: ${soundCount}`,
-    );
+    // System updates tracked internally
   }
 }

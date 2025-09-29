@@ -51,7 +51,7 @@ export function warnUnwrappedMesh(meshName: string): void {
 export function validateJSXECSUsage(): boolean {
   if (process.env.NODE_ENV === 'development') {
     // Could add runtime validation here
-    console.log('[JSX-ECS] Components loaded successfully');
+
   }
   return true;
 }

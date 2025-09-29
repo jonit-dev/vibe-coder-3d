@@ -289,7 +289,7 @@ export const createTransformAPI = (entityId: EntityId): ITransformAPI => {
 
     try {
       componentManager.updateComponent(entityId, 'Transform', newTransform);
-      console.log(`[ScriptAPI] Updated transform for entity ${entityId}:`, updates);
+      // Transform updated for entity
     } catch (error) {
       console.error(`[ScriptAPI] Failed to update transform for entity ${entityId}:`, error);
     }
@@ -406,7 +406,7 @@ const createSafeThreeJSProxy = <T extends object>(target: T, allowedProps: strin
       if (typeof prop === 'symbol') {
         return obj[prop];
       }
-      console.warn(`Access to Three.js property '${String(prop)}' is not allowed`);
+      // Access to Three.js property not allowed
       return undefined;
     },
     set(obj: any, prop: string | symbol, value: any) {
@@ -414,7 +414,7 @@ const createSafeThreeJSProxy = <T extends object>(target: T, allowedProps: strin
         obj[prop] = value;
         return true;
       }
-      console.warn(`Setting Three.js property '${String(prop)}' is not allowed`);
+      // Setting Three.js property not allowed
       return false;
     },
   });

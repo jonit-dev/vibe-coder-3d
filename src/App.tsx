@@ -15,18 +15,16 @@ export default function App() {
     // Use a flag to prevent double registration in development StrictMode
     const isInitialized = (window as { __ecsSystemInitialized?: boolean }).__ecsSystemInitialized;
     if (isInitialized) {
-      console.log('ECS system already initialized, skipping...');
       return;
     }
 
     try {
       // Initialize the new component registry system
       initializeECS();
-      console.log('✅ ECS System initialized successfully');
       (window as { __ecsSystemInitialized?: boolean }).__ecsSystemInitialized = true;
     } catch (error) {
-      console.error('❌ Failed to initialize ECS System:', error);
-      console.error('Error details:', error);
+      // ECS initialization failed - this is a critical error
+      throw error;
     }
   }, []);
 

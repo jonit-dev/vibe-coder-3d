@@ -132,13 +132,7 @@ export class ScriptExecutor {
         if (functionName === 'onDisable') result.onDisable = body;
       }
 
-      console.log('[ScriptExecutor] Parsed script functions:', {
-        onStart: !!result.onStart,
-        onUpdate: !!result.onUpdate,
-        onDestroy: !!result.onDestroy,
-        onEnable: !!result.onEnable,
-        onDisable: !!result.onDisable,
-      });
+      // Script functions parsed: onStart, onUpdate, onDestroy, onEnable, onDisable
     } catch (error) {
       result.isValid = false;
       result.parseError = error instanceof Error ? error.message : String(error);
@@ -431,7 +425,7 @@ export class ScriptExecutor {
     }
 
     if (scriptsToRemove.length > 0) {
-      console.log(`[ScriptExecutor] Cleaned up ${scriptsToRemove.length} cached scripts`);
+      // Cleaned up cached scripts
     }
   }
 
@@ -448,7 +442,7 @@ export class ScriptExecutor {
   public compileScript(code: string, scriptId: string): IScriptExecutionResult {
     const startTime = performance.now();
 
-    console.log('[ScriptExecutor] STRICT MODE SAFE VERSION - compiling script:', scriptId);
+    // Compiling script in strict mode safe version
 
     try {
       // Clean up cache periodically
@@ -474,7 +468,7 @@ export class ScriptExecutor {
 
       const executionTime = performance.now() - startTime;
 
-      console.log('[ScriptExecutor] Script parsed successfully with static analysis');
+      // Script parsed successfully with static analysis
       return {
         success: true,
         executionTime,

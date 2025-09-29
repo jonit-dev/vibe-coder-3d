@@ -14,13 +14,8 @@ export function useCameraBackground(
   const isInitializedRef = useRef<boolean>(false);
   const [textureLoader] = useState(() => new TextureLoader());
 
-  // Log hook initialization
+  // Track initialization
   if (!isInitializedRef.current) {
-    console.log('[useCameraBackground] Hook initialized with:', {
-      clearFlags,
-      backgroundColor,
-      skyboxTexture,
-    });
     isInitializedRef.current = true;
   }
 
@@ -38,13 +33,7 @@ export function useCameraBackground(
       return; // No changes, skip update
     }
 
-    console.log('[useCameraBackground] Updating background:', {
-      clearFlags,
-      backgroundColor: backgroundColor
-        ? `rgba(${backgroundColor.r}, ${backgroundColor.g}, ${backgroundColor.b}, ${backgroundColor.a})`
-        : 'none',
-      skyboxTexture: skyboxTexture || 'none',
-    });
+    // Background update logic
 
     // Apply the appropriate background based on clear flags
     let appliedColor: Color | null = null;

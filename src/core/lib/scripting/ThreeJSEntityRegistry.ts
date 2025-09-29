@@ -39,10 +39,7 @@ class ThreeJSEntityRegistry {
       lastUpdated: Date.now(),
     });
 
-    console.log(`[ThreeJSEntityRegistry] Registered entity ${entityId} with Three.js object`, {
-      objectType: object3D.type,
-      objectId: object3D.id,
-    });
+    // Entity registered with Three.js object
   }
 
   /**
@@ -63,7 +60,7 @@ class ThreeJSEntityRegistry {
   public unregisterEntity(entityId: EntityId): void {
     const removed = this.registry.delete(entityId);
     if (removed) {
-      console.log(`[ThreeJSEntityRegistry] Unregistered entity ${entityId}`);
+
     }
   }
 
@@ -101,7 +98,7 @@ class ThreeJSEntityRegistry {
    * Clear all registrations (useful for cleanup)
    */
   public clear(): void {
-    console.log(`[ThreeJSEntityRegistry] Clearing ${this.registry.size} entity registrations`);
+
     this.registry.clear();
   }
 

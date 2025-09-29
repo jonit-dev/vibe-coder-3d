@@ -11,9 +11,7 @@ import { OverridesFile, OverridePatch } from '../../serialization/SceneDiff';
  * Apply overrides to the current world state
  */
 export function applyOverrides(overrides: OverridesFile): void {
-  console.log(
-    `[OverrideApplier] Applying ${overrides.patches.length} patches for scene: ${overrides.sceneId}`,
-  );
+  // Applying override patches to scene
 
   const entityManager = EntityManager.getInstance();
   const persistentIdToEntity = buildPersistentIdMap();
@@ -27,7 +25,6 @@ export function applyOverrides(overrides: OverridesFile): void {
     }
   });
 
-  console.log(`[OverrideApplier] Applied overrides from: ${overrides.timestamp}`);
 }
 
 /**
@@ -43,7 +40,7 @@ function applyPatch(
   // Handle entity deletion
   if (patch.components._deleted) {
     if (entityId !== undefined) {
-      console.log(`[OverrideApplier] Deleting entity: ${patch.persistentId}`);
+
       entityManager.deleteEntity(entityId);
     }
     return;
@@ -56,9 +53,7 @@ function applyPatch(
       return;
     }
 
-    console.log(
-      `[OverrideApplier] Creating new entity: ${patch.entityName} (${patch.persistentId})`,
-    );
+    // Creating new entity from override patch
     const newEntity = entityManager.createEntity(patch.entityName);
 
     // Override the auto-generated PersistentId with the one from the patch
@@ -83,13 +78,13 @@ function applyPatch(
     return;
   }
 
-  console.log(`[OverrideApplier] Updating entity: ${entity.name} (${patch.persistentId})`);
+  // Updating entity from override patch
 
   // Update entity name if changed
   if (patch.entityName && patch.entityName !== entity.name) {
     // EntityManager doesn't expose name updates directly
     // This would need to be implemented in EntityManager
-    console.log(`[OverrideApplier] Name change: ${entity.name} -> ${patch.entityName}`);
+
   }
 
   // Apply component changes
@@ -99,12 +94,11 @@ function applyPatch(
     if (componentData === null) {
       // Remove component
       if (componentRegistry.hasComponent(entityId, componentId)) {
-        console.log(`[OverrideApplier] Removing component ${componentId} from entity ${entityId}`);
+
         componentRegistry.removeComponent(entityId, componentId);
       }
     } else if (componentRegistry.hasComponent(entityId, componentId)) {
       // Update existing component
-      console.log(`[OverrideApplier] Updating component ${componentId} on entity ${entityId}`);
 
       // Get current component data
       const currentData = componentRegistry.getComponentData(entityId, componentId);
@@ -118,7 +112,7 @@ function applyPatch(
       }
     } else {
       // Add new component
-      console.log(`[OverrideApplier] Adding component ${componentId} to entity ${entityId}`);
+
       componentRegistry.addComponent(entityId, componentId, componentData);
     }
   });

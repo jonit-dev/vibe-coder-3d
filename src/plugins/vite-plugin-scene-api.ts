@@ -93,7 +93,7 @@ const SCENES_DIR = './src/game/scenes';
  * Logs scene API activity for development debugging
  */
 const logSceneActivity = (operation: string, details: string) => {
-  console.log(`🎬 [Scene API] ${operation}: ${details}`);
+  // Scene API logging disabled for production
 };
 
 /**
@@ -146,7 +146,6 @@ export function sceneApiMiddleware(): Plugin {
             res.end(JSON.stringify({ error: 'Scene API endpoint not found' }));
           }
         } catch (error) {
-          console.error('Scene API error:', error);
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json');
           res.end(
@@ -318,12 +317,6 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
       const requestData = JSON.parse(body);
       const { name, entities, materials = [], description, author } = requestData;
 
-      console.log('[handleSaveTsx] Request data contains:', {
-        name,
-        entitiesCount: entities?.length || 0,
-        materialsCount: materials?.length || 0,
-        materialIds: materials?.map((m: any) => m.id) || []
-      });
 
       if (!name || typeof name !== 'string') {
         res.statusCode = 400;
@@ -411,9 +404,6 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
         return;
       }
 
-      // Debug logging
-      console.log('[handleSaveTsx] Processing entities:', entities.length);
-      console.log('[handleSaveTsx] Entity structure:', entities[0] || 'No entities');
 
       const metadata: ITsxSceneMetadata = {
         name,
@@ -424,7 +414,6 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
       };
 
       // Generate TSX content with type safety
-      console.log('[handleSaveTsx] Generating TSX with materials:', materials.length);
       const tsxContent = generateTsxScene(entities, metadata, materials);
 
       const componentName =
@@ -566,19 +555,8 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
       /(?:export\s+)?const\s+(?:entities|sceneData)\s*(?::\s*[^=]+)?=\s*\[([\s\S]*?)\];/,
     );
     if (!entitiesMatch) {
-      const debugInfo = {
-        fileLength: content.length,
-        contentPreview: content.substring(0, 1000),
-        contentEnd: content.substring(Math.max(0, content.length - 500)),
-        regexPattern:
-          '/(?:export\\s+)?const\\s+(?:entities|sceneData)\\s*(?::\\s*[^=]+)?=\\s*\\[([\\s\\S]*?)\\];/',
-        hasEntitiesKeyword: content.includes('entities'),
-        hasConstKeyword: content.includes('const'),
-        hasArrayStart: content.includes('= ['),
-      };
+      // Could not extract entities from TSX file
 
-      console.log('[handleLoadTsx] Could not find entities array in file');
-      console.log('[handleLoadTsx] Debug info:', JSON.stringify(debugInfo, null, 2));
 
       res.statusCode = 400;
       res.setHeader('Content-Type', 'application/json');
@@ -591,10 +569,6 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
       return;
     }
 
-    console.log(
-      '[handleLoadTsx] Extracted entities string:',
-      entitiesMatch[1].substring(0, 200) + '...',
-    );
 
     // Extract metadata from TSX file (supports TS type annotations)
     const metadataMatch = content.match(
@@ -640,25 +614,8 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
       // Try to parse as JSON
       entities = JSON.parse(`[${entitiesString}]`);
 
-      console.log('[handleLoadTsx] Successfully parsed', entities.length, 'entities');
     } catch (error) {
-      console.error('[handleLoadTsx] Parse error:', error);
-
-      // Provide comprehensive debugging information
-      const debugInfo = {
-        originalString: entitiesMatch[1],
-        processedString: entitiesString,
-        originalLength: entitiesMatch[1].length,
-        processedLength: entitiesString.length,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        errorStack: error instanceof Error ? error.stack : undefined,
-        firstChars: entitiesMatch[1].substring(0, 200),
-        lastChars: entitiesMatch[1].substring(Math.max(0, entitiesMatch[1].length - 200)),
-        processedFirstChars: entitiesString.substring(0, 200),
-        processedLastChars: entitiesString.substring(Math.max(0, entitiesString.length - 200)),
-      };
-
-      console.error('[handleLoadTsx] Debug info:', JSON.stringify(debugInfo, null, 2));
+      // Failed to parse entities from TSX file
 
       res.statusCode = 400;
       res.setHeader('Content-Type', 'application/json');

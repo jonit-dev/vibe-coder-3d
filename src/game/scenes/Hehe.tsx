@@ -292,9 +292,7 @@ export const Hehe: React.FC = () => {
       });
     });
 
-    console.log(
-      `[TsxScene] Loaded scene '${metadata?.name || 'Unknown'}' with ${validatedSceneData.length} entities`,
-    );
+    // Scene loaded successfully
   }, [entityManager, componentManager]);
 
   return null; // Scene components don't render UI

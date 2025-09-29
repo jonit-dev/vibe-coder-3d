@@ -24,13 +24,13 @@ export const useAutoSelection = ({
     if (prevIds.length > currentIds.length) {
       wasDeleted.current = true;
       lastDeletionTime.current = Date.now();
-      console.log('[AutoSelection] Entity deletion detected, preventing auto-selection');
+
     }
 
     // Clear deletion flag after a short delay to prevent race conditions
     if (wasDeleted.current && Date.now() - lastDeletionTime.current > 100) {
       wasDeleted.current = false;
-      console.log('[AutoSelection] Deletion flag cleared');
+
     }
 
     // Only auto-select in these cases:
@@ -48,17 +48,14 @@ export const useAutoSelection = ({
         !isNewlySelected);
 
     if (shouldAutoSelect) {
-      console.log('[AutoSelection] Auto-selecting entity:', entityIds[0]);
+
       setSelectedId(entityIds[0]);
     } else if (isNewlySelected && !entityIds.includes(selectedId)) {
       // Newly selected entity not yet synchronized - this is expected
-      console.log(
-        '[AutoSelection] Newly selected entity not yet in list, waiting for sync:',
-        selectedId,
-      );
+      // Newly selected entity not yet synchronized
     } else if (selectedId !== null && !entityIds.includes(selectedId)) {
       // If selected entity no longer exists and it was due to deletion, clear selection
-      console.log('[AutoSelection] Selected entity no longer exists, clearing selection');
+
       setSelectedId(null);
     }
 

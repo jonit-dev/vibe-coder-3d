@@ -189,25 +189,7 @@ class TerrainProfiler {
 
     const report = this.getPerformanceReport();
 
-    console.group('🏔️ Terrain Performance Report');
-    console.log(`📊 Average FPS: ${report.averageFPS.toFixed(1)}`);
-    console.log(`🧠 Memory Usage: ${report.memoryUsage.toFixed(1)}MB (${report.memoryTrend})`);
-    console.log(`⏱️ Generation Time: ${report.generationTime.toFixed(2)}ms`);
-    console.log(`📐 Vertices: ${report.vertexCount.toLocaleString()}`);
-    console.log(`🔺 Triangles: ${report.triangleCount.toLocaleString()}`);
-
-    if (report.warnings.length > 0) {
-      console.warn('⚠️ Performance Warnings:');
-      report.warnings.forEach((warning) => console.warn(`  - ${warning}`));
-    }
-
-    if (report.isPerformant) {
-      console.log('✅ Performance: Good');
-    } else {
-      console.warn('❌ Performance: Needs Attention');
-    }
-
-    console.groupEnd();
+    // Terrain performance report tracked internally
   }
 }
 

@@ -47,7 +47,6 @@ export function registerCoreComponents(): void {
   componentRegistry.register(scriptComponent);
   componentRegistry.register(soundComponent);
 
-  console.log('Core components registered successfully');
 }
 
 // ============================================================================
@@ -74,7 +73,7 @@ const healthComponent = ComponentFactory.createSimple({
     isInvulnerable: Types.ui8,
   },
   onAdd: (eid: EntityId, data) => {
-    console.log(`Health component added to entity ${eid} with ${data.current}/${data.maximum} HP`);
+
   },
   metadata: {
     description: 'Health and damage system for gameplay entities',
@@ -119,7 +118,6 @@ export function registerExampleComponents(): void {
   componentRegistry.register(healthComponent);
   componentRegistry.register(velocityComponent);
 
-  console.log('Example components registered successfully');
 }
 
 // Export type definitions for TypeScript support

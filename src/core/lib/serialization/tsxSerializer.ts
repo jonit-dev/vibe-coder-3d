@@ -25,12 +25,6 @@ export const generateTsxScene = (
   metadata: ITsxSceneMetadata,
   materials: IMaterialDefinition[] = [],
 ): string => {
-  console.log('[TSXSerializer] generateTsxScene called with:', {
-    entities: entities.length,
-    materials: materials.length,
-    materialIds: materials.map(m => m.id)
-  });
-
   const componentName = sanitizeComponentName(metadata.name);
 
   const componentString = `import React from 'react';
@@ -98,8 +92,6 @@ export const ${componentName}: React.FC = () => {
     // Refresh materials store cache
     materialsStore._refreshMaterials();
 
-    console.log(\`[TsxScene] Loaded \${sceneMaterials.length} materials\`);
-
     // Validate scene data at runtime
     const validatedSceneData = sceneData.map(entity => validateSceneEntity(entity));
 
@@ -119,7 +111,6 @@ export const ${componentName}: React.FC = () => {
       });
     });
 
-    console.log(\`[TsxScene] Loaded scene '\${metadata?.name || 'Unknown'}' with \${validatedSceneData.length} entities and \${sceneMaterials.length} materials\`);
   }, [entityManager, componentManager, materialsStore]);
 
   return null; // Scene components don't render UI

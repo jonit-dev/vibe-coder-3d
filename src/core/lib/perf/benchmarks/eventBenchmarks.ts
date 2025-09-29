@@ -88,7 +88,6 @@ export function benchmarkEventCoalescing(eventCount: number): void {
     batchedEmitter.flush();
   });
 
-  console.log(`Coalescing test: sent ${eventCount} events, received ${receivedCount}`);
 }
 
 // Benchmark handler registration overhead
@@ -151,12 +150,10 @@ export function benchmarkMixedEvents(eventCount: number): void {
     batchedEmitter.flush();
   });
 
-  console.log(`Mixed events: E1=${event1Count}, E2=${event2Count}, E3=${event3Count}`);
 }
 
 // Run all event benchmarks
 export function runEventBenchmarks(): void {
-  console.log('🧪 Running Event Benchmarks...');
 
   const testSizes = [100, 1000, 10000];
   const handlerCounts = [1, 10, 100];
@@ -177,7 +174,6 @@ export function runEventBenchmarks(): void {
   // Mixed events test
   benchmarkMixedEvents(3000);
 
-  console.log('✅ Event benchmarks completed');
 }
 
 // Auto-run benchmarks in development

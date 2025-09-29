@@ -195,17 +195,7 @@ export const CameraFollowManager: React.FC<ICameraFollowManagerProps> = ({ isPla
         }
       }
 
-      // Only log occasionally to avoid spam
-      if (Math.random() < 0.01) {
-        // 1% of frames
-        console.log('[CameraFollowManager] Following update:', {
-          mode: isPlaying ? `Play-${controlMode}` : 'Editor',
-          shouldFollow,
-          distance: distance.toFixed(3),
-          cameraPos: newPosition.toArray().map((v) => v.toFixed(2)),
-          targetPos: state.targetPosition.toArray().map((v) => v.toFixed(2)),
-        });
-      }
+      // Tracking camera follow updates internally
     } catch (error) {
       console.error('[CameraFollowManager] Error in frame update:', error);
     }

@@ -24,7 +24,7 @@ export const EnvironmentLighting: React.FC = () => {
     try {
       const lightComponent = componentRegistry.getBitECSComponent('Light');
       if (!lightComponent) {
-        console.log('[EnvironmentLighting] Light component not registered yet');
+
         return;
       }
 
@@ -56,14 +56,11 @@ export const EnvironmentLighting: React.FC = () => {
         // Set environment intensity for IBL
         setEnvironmentIntensity(totalAmbientIntensity);
 
-        console.log('[EnvironmentLighting] Applied ambient lighting:', {
-          intensity: totalAmbientIntensity,
-          color: ambientColor,
-        });
+        // Applied ambient lighting successfully
       } else {
         // Use default environment lighting when no ambient lights
         setEnvironmentIntensity(0.3);
-        console.log('[EnvironmentLighting] Using default environment lighting');
+
       }
     } catch (error) {
       console.error('[EnvironmentLighting] Error updating environment lighting:', error);
@@ -112,9 +109,7 @@ export const EnvironmentLighting: React.FC = () => {
         scene.environment = envMap;
         scene.environmentIntensity = environmentIntensity;
 
-        console.log('[EnvironmentLighting] Applied gradient environment:', {
-          intensity: environmentIntensity,
-        });
+        // Applied gradient environment successfully
       } catch (error) {
         console.warn('[EnvironmentLighting] Failed to create environment map:', error);
       }
@@ -143,10 +138,7 @@ export const useEnvironmentTexture = (url?: string): CubeTexture | Texture | nul
 
     // In a full implementation, you would load HDR environment maps here
     // For now, this is a placeholder for future HDR/IBL support
-    console.log(
-      '[useEnvironmentTexture] Environment texture loading not yet implemented for:',
-      url,
-    );
+    // Environment texture loading not yet implemented
 
     // TODO: Implement proper environment texture loading
     // This would involve loading HDR files, cubemaps, etc.

@@ -201,13 +201,13 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     assignToSelection: (materialId) => {
       // This would integrate with the entity selection system
       // For now, just a placeholder
-      console.log(`Assign material ${materialId} to selected entities`);
+      // Assigning material to selected entities
     },
 
     assignToAll: (materialId) => {
       // This would assign to all entities with MeshRenderer
       // For now, just a placeholder
-      console.log(`Assign material ${materialId} to all entities`);
+      // Assigning material to all entities
     },
 
     get filteredMaterials() {
@@ -276,6 +276,11 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     getSelectedMaterial: () => {
       const { selectedMaterialId, materials } = get();
       return selectedMaterialId ? materials.find((m) => m.id === selectedMaterialId) || null : null;
+    },
+
+    debugPrintMaterials: () => {
+      const { materials } = get();
+      // Materials list tracked internally
     },
   };
 });

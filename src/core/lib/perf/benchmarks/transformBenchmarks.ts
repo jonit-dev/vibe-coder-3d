@@ -186,7 +186,6 @@ export function benchmarkMemoryAllocations(): void {
 
 // Run all transform benchmarks
 export function runTransformBenchmarks(): void {
-  console.log('🧪 Running Transform Benchmarks...');
 
   const testSizes = [10, 100, 1000];
   const iterations = 50;
@@ -198,7 +197,6 @@ export function runTransformBenchmarks(): void {
 
   benchmarkMemoryAllocations();
 
-  console.log('✅ Transform benchmarks completed');
 }
 
 // Auto-run benchmarks in development

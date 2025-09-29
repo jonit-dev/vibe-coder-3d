@@ -97,7 +97,7 @@ class SceneRegistryClass {
     };
 
     this.scenes.set(id, definition);
-    console.log(`[SceneRegistry] Registered scene: ${id}`);
+
   }
 
   /**
@@ -155,11 +155,11 @@ class SceneRegistryClass {
     };
 
     // Execute the scene builder
-    console.log(`[SceneRegistry] Loading scene: ${id}`);
+
     await definition.builder(context);
 
     this.currentSceneId = id;
-    console.log(`[SceneRegistry] Scene loaded: ${id}`);
+
   }
 
   /**

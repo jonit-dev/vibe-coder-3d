@@ -330,8 +330,6 @@ export const X1: React.FC = () => {
     // Refresh materials store cache
     materialsStore._refreshMaterials();
 
-    console.log(`[TsxScene] Loaded ${sceneMaterials.length} materials`);
-
     // Validate scene data at runtime
     const validatedSceneData = sceneData.map(entity => validateSceneEntity(entity));
 
@@ -350,8 +348,6 @@ export const X1: React.FC = () => {
         }
       });
     });
-
-    console.log(`[TsxScene] Loaded scene '${metadata?.name || 'Unknown'}' with ${validatedSceneData.length} entities and ${sceneMaterials.length} materials`);
   }, [entityManager, componentManager, materialsStore]);
 
   return null; // Scene components don't render UI

@@ -143,10 +143,10 @@ export const soundComponent = ComponentFactory.create({
   },
   dependencies: ['Transform'], // Need transform for 3D positioning
   onAdd: (eid: EntityId, data) => {
-    console.log(`Sound component added to entity ${eid} with audio: ${data.audioPath}`);
+
   },
   onRemove: (eid: EntityId) => {
-    console.log(`Sound component removed from entity ${eid} - stopping any active audio`);
+
   },
   metadata: {
     description: '3D spatial audio system with playback controls and effects',

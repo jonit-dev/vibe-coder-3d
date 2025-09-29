@@ -20,7 +20,7 @@ export function soundSystem(_deltaTime: number, isPlaying?: boolean): number {
 
   // Initialize on first run
   if (!isInitialized) {
-    console.log('[SoundSystem] Initialized');
+
     isInitialized = true;
   }
 
@@ -29,8 +29,7 @@ export function soundSystem(_deltaTime: number, isPlaying?: boolean): number {
   wasPlayingMode = isPlaying || false;
 
   if (enteringPlayMode) {
-    console.log('[SoundSystem] Entering play mode - checking for autoplay sounds');
-    
+
     // Get all entities with Sound components
     const soundEntities = componentRegistry.getEntitiesWithComponent('Sound');
     
@@ -38,8 +37,7 @@ export function soundSystem(_deltaTime: number, isPlaying?: boolean): number {
       const soundData = componentRegistry.getComponentData(entityId, 'Sound') as SoundData;
       
       if (soundData && soundData.autoplay && soundData.enabled && !soundData.isPlaying) {
-        console.log(`[SoundSystem] Triggering autoplay for entity ${entityId}`);
-        
+
         // Emit event to notify SoundManager to start playback
         eventBus.emit('sound:autoplay', {
           entityId,
@@ -66,5 +64,5 @@ export function soundSystem(_deltaTime: number, isPlaying?: boolean): number {
 export function cleanupSoundSystem(): void {
   isInitialized = false;
   wasPlayingMode = false;
-  console.log('[SoundSystem] Cleaned up');
+
 }

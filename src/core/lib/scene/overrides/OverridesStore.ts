@@ -44,7 +44,6 @@ export class BrowserOverridesStore implements IOverridesStore {
         // Store handle for future use
         this.fileHandles.set(overrides.sceneId, fileHandle);
 
-        console.log(`[OverridesStore] Saved overrides to: ${fileName}`);
         return;
       }
     } catch (error) {
@@ -80,7 +79,7 @@ export class BrowserOverridesStore implements IOverridesStore {
         if (overrides) {
           // Store handle for future saves
           this.fileHandles.set(overrides.sceneId, fileHandle);
-          console.log(`[OverridesStore] Loaded overrides for scene: ${overrides.sceneId}`);
+
           return overrides;
         } else {
           throw new Error('Invalid overrides file format');
@@ -128,8 +127,7 @@ export class BrowserOverridesStore implements IOverridesStore {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-
-    console.log(`[OverridesStore] Downloaded overrides as: ${filename}`);
+    // File saved successfully
   }
 
   /**
@@ -154,7 +152,7 @@ export class BrowserOverridesStore implements IOverridesStore {
           const overrides = validateOverridesFile(data);
 
           if (overrides) {
-            console.log(`[OverridesStore] Loaded overrides from file: ${file.name}`);
+            // Overrides loaded successfully
             resolve(overrides);
           } else {
             throw new Error('Invalid overrides file format');
@@ -181,7 +179,7 @@ export class LocalStorageOverridesStore implements IOverridesStore {
   async save(overrides: OverridesFile): Promise<void> {
     const key = this.getKey(overrides.sceneId);
     localStorage.setItem(key, JSON.stringify(overrides));
-    console.log(`[OverridesStore] Saved overrides to localStorage: ${key}`);
+    // Overrides saved to localStorage
   }
 
   async load(): Promise<OverridesFile | null> {
@@ -198,9 +196,7 @@ export class LocalStorageOverridesStore implements IOverridesStore {
     try {
       const overrides = validateOverridesFile(JSON.parse(data));
       if (overrides) {
-        console.log(
-          `[OverridesStore] Loaded overrides from localStorage for: ${overrides.sceneId}`,
-        );
+        // Overrides loaded from localStorage successfully
       }
       return overrides;
     } catch (error) {

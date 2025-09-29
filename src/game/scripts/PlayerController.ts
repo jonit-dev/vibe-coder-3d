@@ -9,7 +9,6 @@ export const registerPlayerControllerScript = () => {
   registerScript({
     id: 'game.player-controller',
     onInit: (entityId: number) => {
-      console.log(`[PlayerController] Initializing for entity ${entityId}`);
 
       // Initialize player state
       // In a real implementation, this would set up component references
@@ -28,16 +27,10 @@ export const registerPlayerControllerScript = () => {
       // if (input.isKeyDown('d')) transform.position[0] += deltaTime * moveSpeed;
 
       // For now, just log occasionally
-      if (Math.random() < 0.001) {
-        // Very rare logging to avoid spam
-        console.log(
-          `[PlayerController] Update for entity ${entityId}, deltaTime: ${deltaTime.toFixed(3)}`,
-        );
-      }
+      // PlayerController update logic
     },
 
     onDestroy: (entityId: number) => {
-      console.log(`[PlayerController] Destroying for entity ${entityId}`);
 
       // Cleanup any resources or references
       // Remove event listeners, clear timers, etc.

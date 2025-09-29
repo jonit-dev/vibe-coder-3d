@@ -56,7 +56,7 @@ export const usePlayModeState = () => {
     }
     
     backupData.current = backupMap;
-    console.log(`[PlayModeState] Backed up transforms for ${backupMap.size} entities`);
+
   }, [entityManager, componentManager]);
   
   /**
@@ -99,7 +99,6 @@ export const usePlayModeState = () => {
       }
     }
     
-    console.log(`[PlayModeState] Restored transforms for ${restoredCount} entities`);
   }, [entityManager, componentManager]);
   
   /**
@@ -107,7 +106,7 @@ export const usePlayModeState = () => {
    */
   const clearBackup = useCallback(() => {
     backupData.current.clear();
-    console.log('[PlayModeState] Cleared transform backups');
+
   }, []);
   
   /**

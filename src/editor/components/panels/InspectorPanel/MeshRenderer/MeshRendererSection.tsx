@@ -53,13 +53,9 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   };
 
   const updateMeshRenderer = (updates: Partial<IMeshRendererData>) => {
-    console.log('updateMeshRenderer called with:', updates);
     if (meshRenderer) {
       const newMeshRenderer = { ...meshRenderer, ...updates };
-      console.log('Setting new mesh renderer:', newMeshRenderer);
       setMeshRenderer(newMeshRenderer);
-    } else {
-      console.log('No meshRenderer to update');
     }
   };
 
@@ -83,7 +79,6 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
 
   // Handle material selection from browser
   const handleMaterialSelect = (materialId: string) => {
-    console.log('handleMaterialSelect called with materialId:', materialId);
     // Clear overrides when selecting a new material to see the actual material
     updateMeshRenderer({
       materialId,
@@ -181,12 +176,6 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
                 label="Enable Overrides"
                 value={overridesEnabled}
                 onChange={(enabled: boolean) => {
-                  console.log('Toggle changed:', {
-                    enabled,
-                    currentHasOverrides: !!meshRenderer.material,
-                    localState: overridesEnabled
-                  });
-
                   // Update local state immediately for responsive UI
                   setOverridesEnabled(enabled);
 
@@ -198,11 +187,9 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
                       metalness: baseMaterial.metalness,
                       roughness: baseMaterial.roughness
                     };
-                    console.log('Enabling overrides with material:', newMaterial);
                     updateMeshRenderer({ material: newMaterial });
                   } else {
                     // Disable overrides - clear them
-                    console.log('Disabling overrides');
                     updateMeshRenderer({ material: undefined });
                   }
                 }}

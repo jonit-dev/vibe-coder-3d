@@ -88,10 +88,7 @@ class TerrainCacheManager {
       this.cache.delete(key);
       freedSpace += entry.size;
 
-      // Log eviction for debugging
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🗑️ Evicted terrain cache entry: ${key} (${entry.size} bytes)`);
-      }
+      // Evicted terrain cache entry for memory management
     }
   }
 
@@ -124,9 +121,7 @@ class TerrainCacheManager {
       size,
     });
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`💾 Cached terrain: ${key} (${size / 1024}KB)`);
-    }
+    // Terrain cached successfully
   }
 
   // Retrieve terrain data from cache
@@ -140,17 +135,10 @@ class TerrainCacheManager {
       entry.accessCount++;
       this.hitCount++;
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ Cache hit: ${key}`);
-      }
-
       return entry.data;
     }
 
     this.missCount++;
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`❌ Cache miss: ${key}`);
-    }
 
     return null;
   }
@@ -172,10 +160,6 @@ class TerrainCacheManager {
     this.cache.clear();
     this.hitCount = 0;
     this.missCount = 0;
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🗑️ Cleared terrain cache');
-    }
   }
 
   // Get cache statistics
@@ -212,25 +196,7 @@ class TerrainCacheManager {
     const stats = this.getStats();
     const memoryMB = stats.totalMemoryUsage / 1024 / 1024;
 
-    console.group('🏔️ Terrain Cache Statistics');
-    console.log(`📊 Cache Entries: ${stats.totalEntries}/${this.maxEntries}`);
-    console.log(
-      `🧠 Memory Usage: ${memoryMB.toFixed(1)}MB/${(this.maxCacheSize / 1024 / 1024).toFixed(0)}MB`,
-    );
-    console.log(`✅ Hit Rate: ${(stats.hitRate * 100).toFixed(1)}%`);
-    console.log(`❌ Miss Rate: ${(stats.missRate * 100).toFixed(1)}%`);
-
-    if (stats.totalEntries > 0) {
-      const popular = this.getPopularTerrains(3);
-      console.log('🔥 Most Popular:');
-      popular.forEach((terrain, i) => {
-        console.log(
-          `  ${i + 1}. ${terrain.key} (${terrain.accessCount} hits, ${terrain.size / 1024}KB)`,
-        );
-      });
-    }
-
-    console.groupEnd();
+    // Terrain cache statistics tracked internally
   }
 
   // Configure cache settings
@@ -253,10 +219,6 @@ class TerrainCacheManager {
     presets: TerrainData[],
     generateFunc: (props: TerrainData) => Promise<ITerrainGeometryData>,
   ) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 Preloading terrain presets...');
-    }
-
     const promises = presets.map(async (preset) => {
       if (!this.has(preset)) {
         try {
@@ -270,10 +232,7 @@ class TerrainCacheManager {
 
     await Promise.all(promises);
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Terrain preloading complete');
-      this.logStats();
-    }
+    // Preload completed
   }
 }
 

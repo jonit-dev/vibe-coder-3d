@@ -21,13 +21,21 @@
 
 **Technical Debt Prevention**
 
-- NO console.log/warn/error in production code - use structured logging
+- NO console.log/warn/error in production code - use @core/lib/logger instead
 - NO singleton pattern - use dependency injection or React context
 - Components MUST be <200 lines - split if larger
 - ALWAYS use proper TypeScript types - no `any` types
 - Error handling MUST be consistent with try-catch patterns
 - React components MUST use React.memo for expensive renders
 - useEffect dependencies MUST be minimal and specific
+
+**Logging Guidelines**
+
+- Use structured logging via @core/lib/logger: `const logger = Logger.create('ComponentName')`
+- Replace console.log with logger.debug(), console.warn with logger.warn(), console.error with logger.error()
+- Example: `logger.info('Scene loaded', { entities: entityCount, materials: materialCount })`
+- Logger automatically handles production filtering and structured output
+- Use namespaces to organize logs by module/component
 
 **Documentation**
 

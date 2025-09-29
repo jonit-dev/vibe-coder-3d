@@ -204,7 +204,7 @@ export const TerrainSection: React.FC<ITerrainSectionProps> = ({ terrain, onUpda
 
   const handleClearCache = useCallback(() => {
     terrainCache.clear();
-    console.log('🗑️ Terrain cache cleared');
+
   }, []);
 
   return (

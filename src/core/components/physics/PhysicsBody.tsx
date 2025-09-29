@@ -165,12 +165,7 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
         }
 
         if (debug) {
-          console.log(`Created physics body entity: ${entity}`, {
-            bodyType,
-            material,
-            userData,
-            tags,
-          });
+          // Physics body entity created successfully
         }
 
         // Cleanup on unmount
@@ -182,7 +177,7 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
             }
 
             if (debug) {
-              console.log(`Destroyed physics body entity: ${entityRef.current}`);
+
             }
 
             entityRef.current = null;

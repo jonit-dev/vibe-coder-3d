@@ -65,7 +65,6 @@ export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({ entityIds }) =>
     if (contextMenu.entityId != null) {
       try {
         const srcEntityId = contextMenu.entityId;
-        console.log(`[HierarchyPanel] Duplicating entity ${srcEntityId}...`);
 
         // Get the source entity
         const srcEntity = entityManager.getEntity(srcEntityId);
@@ -76,17 +75,13 @@ export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({ entityIds }) =>
 
         // Create new entity with new ECS system
         const newEntity = entityManager.createEntity(`${srcEntity.name} Copy`);
-        console.log(`[HierarchyPanel] Created new entity ${newEntity.id}`);
 
         // Get all components from the source entity
         const sourceComponents = componentManager.getComponentsForEntity(srcEntityId);
-        console.log(`[HierarchyPanel] Source entity has components:`, sourceComponents);
 
         // Copy each component to new entity
         for (const component of sourceComponents) {
-          console.log(
-            `[HierarchyPanel] Copying component '${component.type}' to entity ${newEntity.id}`,
-          );
+          // Copying component to new entity
 
           // For transform, offset position slightly
           if (component.type === KnownComponentTypes.TRANSFORM && component.data) {
@@ -106,9 +101,7 @@ export const HierarchyPanel: React.FC<IHierarchyPanelProps> = ({ entityIds }) =>
         }
 
         setSelectedId(newEntity.id);
-        console.log(
-          `[HierarchyPanel] ✅ Successfully duplicated entity ${srcEntityId} as ${newEntity.id}`,
-        );
+        // Successfully duplicated entity
       } catch (error) {
         console.error(`[HierarchyPanel] ❌ Failed to duplicate entity:`, error);
       }

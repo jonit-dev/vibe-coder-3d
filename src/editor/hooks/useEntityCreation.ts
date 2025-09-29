@@ -673,12 +673,8 @@ export const useEntityCreation = () => {
       const filename = modelPath.split('/').pop()?.split('.')[0] || 'Model';
       const actualName = name || `${filename} ${getNextNumber(filename)}`;
 
-      console.log('[createCustomModel] Creating custom model:', { modelPath, actualName });
-
       const entity = createEntity(actualName, parentId);
       addMeshRenderer(entity.id, 'custom', modelPath);
-
-      console.log('[createCustomModel] Created entity:', entity.id);
 
       return entity;
     },

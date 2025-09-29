@@ -84,17 +84,17 @@ export const RigidBodyAdapter: React.FC<IRigidBodyAdapterProps> = ({
   };
 
   const handleMeshColliderUpdate = (newData: MeshColliderData | null) => {
-    console.log('[RigidBodyAdapter] Mesh collider update:', { newData, hasMeshCollider });
+
     if (newData === null) {
       // Remove mesh collider component
       removeComponent(KnownComponentTypes.MESH_COLLIDER);
     } else {
       // Add or update mesh collider component
       if (hasMeshCollider) {
-        console.log('[RigidBodyAdapter] Updating existing mesh collider');
+
         updateComponent(KnownComponentTypes.MESH_COLLIDER, newData);
       } else {
-        console.log('[RigidBodyAdapter] Adding new mesh collider');
+
         addComponent(KnownComponentTypes.MESH_COLLIDER, newData);
       }
     }

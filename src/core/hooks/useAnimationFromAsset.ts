@@ -38,7 +38,7 @@ export function useAnimationFromAsset({
   // Memoize animation assets to prevent re-renders
   const animationAssets = useMemo(() => {
     if (debug) {
-      console.log(`🔴 Loading animations, count:`, animationSources.length);
+
     }
     return animationSources.map(({ url, type }) => ({ url, type }));
   }, [animationSources, debug]);
@@ -47,7 +47,7 @@ export function useAnimationFromAsset({
   useEffect(() => {
     modelRef.current = model;
     if (debug) {
-      console.log('🔴 Model ref updated:', { modelExists: !!model });
+
     }
   }, [model, debug]);
 
@@ -56,11 +56,11 @@ export function useAnimationFromAsset({
     setLoading(true);
     let isMounted = true;
     if (debug) {
-      console.log('🔴 Animation extraction effect running');
+
     }
     if (!model) {
       if (debug) {
-        console.log('🔴 No model available, skipping animation extraction');
+
       }
       return;
     }
@@ -72,15 +72,10 @@ export function useAnimationFromAsset({
     ) {
       newClips.push(...(model as { animations: THREE.AnimationClip[] }).animations);
       if (debug) {
-        console.log(
-          '🔴 Base model animations:',
-          (model as { animations: THREE.AnimationClip[] }).animations.map(
-            (c: THREE.AnimationClip) => c.name,
-          ),
-        );
+        // Base model animations found
       }
     } else if (debug) {
-      console.log('🔴 Base model has NO animations');
+
     }
     // Add animations from external assets
     Promise.all(
@@ -124,18 +119,12 @@ export function useAnimationFromAsset({
           assetClips = (asset as { animations: THREE.AnimationClip[] }).animations;
         }
         if (debug) {
-          console.log(
-            `🔴 Animations found in ${animationAssets[index].url}:`,
-            assetClips.map((c) => c.name),
-          );
+          // Animations found in external asset
         }
         newClips.push(...assetClips);
       });
       if (debug) {
-        console.log(
-          '🔴 Total collected animation clips:',
-          newClips.map((c) => c.name),
-        );
+        // Total animation clips collected
       }
       setClips([...newClips]);
       setLoading(false);
@@ -152,7 +141,7 @@ export function useAnimationFromAsset({
   useEffect(() => {
     if (loading) return;
     if (names.length > 0 && actions[names[0]]) {
-      if (debug) console.log('Auto-playing animation:', names[0]);
+
       const action = actions[names[0]];
       if (action) {
         action.reset();
@@ -171,7 +160,7 @@ export function useAnimationFromAsset({
       names,
       play: (name: string) => {
         if (actions[name]) {
-          if (debug) console.log('Playing animation:', name);
+          // Playing animation
           // Stop all current animations
           Object.values(actions).forEach((action) => action?.fadeOut(0.5));
           // Play requested animation

@@ -86,7 +86,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
   }, [cameraData.followOffset, selectedPreset]);
 
   const handleFieldChange = <K extends keyof CameraData>(field: K, value: CameraData[K]) => {
-    console.log('Camera field change:', field, value, 'Current cameraData:', cameraData);
+
     onUpdate({ [field]: value });
   };
 
@@ -228,7 +228,7 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
             type="select"
             value={cameraData.controlMode ?? 'free'}
             onChange={(value) => {
-              console.log('Control mode changing to:', value);
+
               handleFieldChange('controlMode', value as 'locked' | 'free');
             }}
             options={[

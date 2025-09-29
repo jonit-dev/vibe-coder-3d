@@ -11,11 +11,8 @@ let extensionsRegistered = false;
 // This function will be called by the editor/runtime at initialization
 export function registerGameExtensions(): void {
   if (extensionsRegistered) {
-    console.log('[Game] Extensions already registered, skipping...');
     return;
   }
-
-  console.log('[Game] Registering game extensions...');
 
   // Register all scenes using the traditional SceneRegistry approach
   registerAllScenes();
@@ -33,7 +30,6 @@ export function registerGameExtensions(): void {
   // registerPrefab({ ... });
 
   extensionsRegistered = true;
-  console.log('[Game] Game extensions registered successfully');
 }
 
 export const gameProjectConfig: IGameProjectConfig = {

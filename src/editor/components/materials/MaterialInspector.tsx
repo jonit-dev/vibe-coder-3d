@@ -9,6 +9,7 @@ import { ComponentField } from '@/editor/components/shared/ComponentField';
 import { Modal } from '@/editor/components/shared/Modal';
 import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
 import { InternalTabs, useInternalTabs } from '@/editor/components/shared/InternalTabs';
+import { useMaterialsStore } from '@/editor/store/materialsStore';
 import { MaterialPreviewSphere } from './MaterialPreviewSphere';
 
 export interface IMaterialInspectorProps {
@@ -29,6 +30,7 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
   const [material, setMaterial] = useState<IMaterialDefinition | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const materialRegistry = MaterialRegistry.getInstance();
+  const refreshMaterials = useMaterialsStore((state) => state._refreshMaterials);
   const { activeTab, changeTab } = useInternalTabs('basic');
 
   useEffect(() => {
@@ -80,6 +82,8 @@ export const MaterialInspector: React.FC<IMaterialInspectorProps> = ({
 
     try {
       materialRegistry.upsert(material);
+      // Refresh materials store to trigger reactive updates in viewport
+      refreshMaterials();
       // Materials now persist via scene saves
       setHasUnsavedChanges(false);
       onSave?.(material);
