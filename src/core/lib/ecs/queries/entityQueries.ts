@@ -466,6 +466,27 @@ export class EntityQueries {
     return this.queryStore.getComponentCount(componentType);
   }
 
+  // Spatial query methods
+  querySpatialBounds(bounds: IBounds): number[] {
+    if (!this.queryStore) return [];
+    return this.queryStore.querySpatialBounds(bounds);
+  }
+
+  querySpatialRadius(center: IVector3, radius: number): number[] {
+    if (!this.queryStore) return [];
+    return this.queryStore.querySpatialRadius(center, radius);
+  }
+
+  updateEntityPosition(entityId: number, position: IVector3): void {
+    if (!this.queryStore) return;
+    this.queryStore.updateEntityPosition(entityId, position);
+  }
+
+  // Access to spatial index for advanced usage
+  get spatialIndex() {
+    return this.queryStore?.spatialIndex;
+  }
+
   rebuildIndices(): void {
     if (!this.queryStore) return;
     this.queryStore.rebuildIndices();
