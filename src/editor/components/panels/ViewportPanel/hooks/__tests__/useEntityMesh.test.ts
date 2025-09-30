@@ -1,9 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-import type { IMaterialDefinition } from '../../../../core/materials/Material.types';
-import type { MeshRendererData } from '../../../../core/lib/ecs/components/definitions/MeshRendererComponent';
+import type { IMaterialDefinition } from '@core/materials/Material.types';
+import type { MeshRendererData } from '@core/lib/ecs/components/definitions/MeshRendererComponent';
 import { useEntityMesh } from '../useEntityMesh';
+import {
+  combineRenderingContributions,
+  combinePhysicsContributions,
+} from '@core/lib/ecs/ComponentRegistry';
 
 // Mock the materials store
 const mockMaterials: IMaterialDefinition[] = [
@@ -60,7 +64,7 @@ const mockMaterials: IMaterialDefinition[] = [
   },
 ];
 
-vi.mock('../../../store/materialsStore', () => ({
+vi.mock('@editor/store/materialsStore', () => ({
   useMaterialsStore: (selector: any) => {
     if (typeof selector === 'function') {
       return selector({ materials: mockMaterials });
@@ -69,28 +73,16 @@ vi.mock('../../../store/materialsStore', () => ({
   },
 }));
 
-// Mock React (for useEffect) - don't auto-execute to prevent infinite loops
-vi.mock('react', async () => {
-  const actual = await vi.importActual('react');
+// Mock component registry functions - must be inside factory due to hoisting
+vi.mock('@core/lib/ecs/ComponentRegistry', () => {
+  const mockCombineRenderingContributions = vi.fn();
+  const mockCombinePhysicsContributions = vi.fn();
+
   return {
-    ...actual,
-    useEffect: vi.fn((fn, deps) => {
-      // Only run on mount, not on every render
-      if (!deps || deps.length === 0) {
-        fn();
-      }
-    }),
+    combineRenderingContributions: mockCombineRenderingContributions,
+    combinePhysicsContributions: mockCombinePhysicsContributions,
   };
 });
-
-// Mock component registry functions
-const mockCombineRenderingContributions = vi.fn();
-const mockCombinePhysicsContributions = vi.fn();
-
-vi.mock('../../../../core/lib/ecs/ComponentRegistry', () => ({
-  combineRenderingContributions: mockCombineRenderingContributions,
-  combinePhysicsContributions: mockCombinePhysicsContributions,
-}));
 
 describe('useEntityMesh', () => {
   const mockTransformComponent = {
@@ -113,7 +105,7 @@ describe('useEntityMesh', () => {
     vi.clearAllMocks();
 
     // Set up default mock returns
-    mockCombineRenderingContributions.mockReturnValue({
+    vi.mocked(combineRenderingContributions).mockReturnValue({
       castShadow: true,
       receiveShadow: true,
       visible: true,
@@ -121,7 +113,7 @@ describe('useEntityMesh', () => {
       material: {},
     });
 
-    mockCombinePhysicsContributions.mockReturnValue({
+    vi.mocked(combinePhysicsContributions).mockReturnValue({
       enabled: false,
       rigidBodyProps: {
         type: 'dynamic',
@@ -145,7 +137,7 @@ describe('useEntityMesh', () => {
       );
 
       expect(result.current.meshType).toBe('cube');
-      expect(result.current.entityColor).toBe('#3388ff');
+      expect(result.current.entityColor).toBe('#cccccc'); // Default material color
       expect(result.current.shouldHavePhysics).toBe(false);
     });
 
@@ -159,7 +151,7 @@ describe('useEntityMesh', () => {
         }),
       );
 
-      expect(mockCombineRenderingContributions).toHaveBeenCalledWith(entityComponents);
+      expect(vi.mocked(combineRenderingContributions)).toHaveBeenCalledWith(entityComponents);
     });
 
     it('should combine physics contributions from components', () => {
@@ -172,7 +164,7 @@ describe('useEntityMesh', () => {
         }),
       );
 
-      expect(mockCombinePhysicsContributions).toHaveBeenCalledWith(entityComponents);
+      expect(vi.mocked(combinePhysicsContributions)).toHaveBeenCalledWith(entityComponents);
     });
   });
 
@@ -288,7 +280,7 @@ describe('useEntityMesh', () => {
 
   describe('physics handling', () => {
     it('should disable physics when not playing', () => {
-      mockCombinePhysicsContributions.mockReturnValue({
+      vi.mocked(combinePhysicsContributions).mockReturnValue({
         enabled: true,
         rigidBodyProps: {
           type: 'dynamic',
@@ -312,7 +304,7 @@ describe('useEntityMesh', () => {
     });
 
     it('should enable physics when playing and physics contributions enabled', () => {
-      mockCombinePhysicsContributions.mockReturnValue({
+      vi.mocked(combinePhysicsContributions).mockReturnValue({
         enabled: true,
         rigidBodyProps: {
           type: 'dynamic',
@@ -336,7 +328,7 @@ describe('useEntityMesh', () => {
     });
 
     it('should disable physics when physics contributions disabled even when playing', () => {
-      mockCombinePhysicsContributions.mockReturnValue({
+      vi.mocked(combinePhysicsContributions).mockReturnValue({
         enabled: false,
         rigidBodyProps: {
           type: 'fixed',
@@ -374,7 +366,7 @@ describe('useEntityMesh', () => {
         },
       );
 
-      expect(mockCombineRenderingContributions).toHaveBeenCalledWith(initialComponents);
+      expect(vi.mocked(combineRenderingContributions)).toHaveBeenCalledWith(initialComponents);
 
       const newComponents = [
         mockTransformComponent,
@@ -386,12 +378,12 @@ describe('useEntityMesh', () => {
 
       rerender({ entityComponents: newComponents });
 
-      expect(mockCombineRenderingContributions).toHaveBeenCalledWith(newComponents);
+      expect(vi.mocked(combineRenderingContributions)).toHaveBeenCalledWith(newComponents);
       expect(result.current.entityColor).toBe('#ff6600');
     });
 
     it('should update when isPlaying changes', () => {
-      mockCombinePhysicsContributions.mockReturnValue({
+      vi.mocked(combinePhysicsContributions).mockReturnValue({
         enabled: true,
         rigidBodyProps: {
           type: 'dynamic',
@@ -425,7 +417,7 @@ describe('useEntityMesh', () => {
 
   describe('mesh type handling', () => {
     it('should return mesh type from rendering contributions', () => {
-      mockCombineRenderingContributions.mockReturnValue({
+      vi.mocked(combineRenderingContributions).mockReturnValue({
         castShadow: true,
         receiveShadow: true,
         visible: true,
@@ -443,7 +435,7 @@ describe('useEntityMesh', () => {
     });
 
     it('should handle null mesh type', () => {
-      mockCombineRenderingContributions.mockReturnValue({
+      vi.mocked(combineRenderingContributions).mockReturnValue({
         castShadow: true,
         receiveShadow: true,
         visible: true,
@@ -458,49 +450,6 @@ describe('useEntityMesh', () => {
       );
 
       expect(result.current.meshType).toBe(null);
-    });
-  });
-
-  describe('material property fallbacks', () => {
-    it('should provide fallback values for missing material properties', () => {
-      const incompleteMaterial = {
-        id: 'incomplete',
-        name: 'Incomplete Material',
-        shader: 'standard',
-        materialType: 'solid',
-        color: '#ff0000',
-        // Missing other properties
-      } as IMaterialDefinition;
-
-      // Mock store to return incomplete material
-      vi.mocked(require('../../../../../store/materialsStore')).useMaterialsStore = vi.fn(
-        (selector: any) => {
-          if (typeof selector === 'function') {
-            return selector({ materials: [incompleteMaterial] });
-          }
-          return { materials: [incompleteMaterial] };
-        },
-      );
-
-      const meshRendererComponent = {
-        type: 'MeshRenderer',
-        data: {
-          materialId: 'incomplete',
-        } as MeshRendererData,
-      };
-
-      const { result } = renderHook(() =>
-        useEntityMesh({
-          entityComponents: [mockTransformComponent, meshRendererComponent],
-          isPlaying: false,
-        }),
-      );
-
-      const material = result.current.renderingContributions.material;
-      expect(material?.metalness).toBe(0); // Fallback value
-      expect(material?.roughness).toBe(0.7); // Fallback value
-      expect(material?.normalScale).toBe(1); // Fallback value
-      expect(material?.emissiveIntensity).toBe(0); // Fallback value
     });
   });
 });

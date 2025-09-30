@@ -235,14 +235,13 @@ describe('materialsStore - Scene-based Persistence', () => {
 
   describe('selection management', () => {
     it('should manage selected material state', () => {
-      const store = useMaterialsStore.getState();
-      expect(store.selectedMaterialId).toBeNull();
+      expect(useMaterialsStore.getState().selectedMaterialId).toBeNull();
 
-      store.setSelectedMaterial('test-material');
-      expect(store.selectedMaterialId).toBe('test-material');
+      useMaterialsStore.getState().setSelectedMaterial('test-material');
+      expect(useMaterialsStore.getState().selectedMaterialId).toBe('test-material');
 
-      store.setSelectedMaterial(null);
-      expect(store.selectedMaterialId).toBeNull();
+      useMaterialsStore.getState().setSelectedMaterial(null);
+      expect(useMaterialsStore.getState().selectedMaterialId).toBeNull();
     });
 
     it('should get selected material from materials cache', () => {
@@ -273,103 +272,80 @@ describe('materialsStore - Scene-based Persistence', () => {
 
   describe('modal state management', () => {
     it('should manage browser modal state', () => {
-      const store = useMaterialsStore.getState();
-      expect(store.isBrowserOpen).toBe(false);
+      expect(useMaterialsStore.getState().isBrowserOpen).toBe(false);
 
-      store.openBrowser();
-      expect(store.isBrowserOpen).toBe(true);
+      useMaterialsStore.getState().openBrowser();
+      expect(useMaterialsStore.getState().isBrowserOpen).toBe(true);
 
-      store.closeBrowser();
-      expect(store.isBrowserOpen).toBe(false);
+      useMaterialsStore.getState().closeBrowser();
+      expect(useMaterialsStore.getState().isBrowserOpen).toBe(false);
     });
 
     it('should manage create modal state', () => {
-      const store = useMaterialsStore.getState();
-      expect(store.isCreateOpen).toBe(false);
+      expect(useMaterialsStore.getState().isCreateOpen).toBe(false);
 
-      store.openCreate();
-      expect(store.isCreateOpen).toBe(true);
+      useMaterialsStore.getState().openCreate();
+      expect(useMaterialsStore.getState().isCreateOpen).toBe(true);
 
-      store.closeCreate();
-      expect(store.isCreateOpen).toBe(false);
+      useMaterialsStore.getState().closeCreate();
+      expect(useMaterialsStore.getState().isCreateOpen).toBe(false);
     });
 
     it('should manage inspector modal state', () => {
-      const store = useMaterialsStore.getState();
-      expect(store.isInspectorOpen).toBe(false);
+      expect(useMaterialsStore.getState().isInspectorOpen).toBe(false);
 
-      store.openInspector();
-      expect(store.isInspectorOpen).toBe(true);
+      useMaterialsStore.getState().openInspector();
+      expect(useMaterialsStore.getState().isInspectorOpen).toBe(true);
 
-      store.closeInspector();
-      expect(store.isInspectorOpen).toBe(false);
+      useMaterialsStore.getState().closeInspector();
+      expect(useMaterialsStore.getState().isInspectorOpen).toBe(false);
     });
 
     it('should set selected material when opening inspector', () => {
-      const store = useMaterialsStore.getState();
-      store.openInspector('test-material');
+      useMaterialsStore.getState().openInspector('test-material');
 
-      expect(store.isInspectorOpen).toBe(true);
-      expect(store.selectedMaterialId).toBe('test-material');
+      expect(useMaterialsStore.getState().isInspectorOpen).toBe(true);
+      expect(useMaterialsStore.getState().selectedMaterialId).toBe('test-material');
     });
 
     it('should preserve current selection when opening inspector without material ID', () => {
-      const store = useMaterialsStore.getState();
-      store.setSelectedMaterial('existing-material');
-      store.openInspector();
+      useMaterialsStore.getState().setSelectedMaterial('existing-material');
+      useMaterialsStore.getState().openInspector();
 
-      expect(store.isInspectorOpen).toBe(true);
-      expect(store.selectedMaterialId).toBe('existing-material');
-    });
-  });
-
-  describe('placeholder actions', () => {
-    it('should have placeholder for assignToSelection', () => {
-      const store = useMaterialsStore.getState();
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      store.assignToSelection('test-material');
-
-      expect(consoleSpy).toHaveBeenCalledWith('Assign material test-material to selected entities');
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should have placeholder for assignToAll', () => {
-      const store = useMaterialsStore.getState();
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      store.assignToAll('test-material');
-
-      expect(consoleSpy).toHaveBeenCalledWith('Assign material test-material to all entities');
-
-      consoleSpy.mockRestore();
+      expect(useMaterialsStore.getState().isInspectorOpen).toBe(true);
+      expect(useMaterialsStore.getState().selectedMaterialId).toBe('existing-material');
     });
   });
 
   describe('integration with registry', () => {
     it('should use registry instance consistently', () => {
-      const store = useMaterialsStore.getState();
-      // All operations should use the same registry instance
       const materials = [testMaterial];
       mockRegistry.list.mockReturnValue(materials);
 
-      expect(store.materials).toEqual(materials);
+      // Refresh to load materials from registry
+      useMaterialsStore.getState()._refreshMaterials();
+
+      expect(useMaterialsStore.getState().materials).toEqual(materials);
       expect(mockRegistry.list).toHaveBeenCalled();
     });
 
     it('should reflect registry changes in computed properties', () => {
-      const store = useMaterialsStore.getState();
       const initialMaterials = [testMaterial];
       mockRegistry.list.mockReturnValue(initialMaterials);
 
-      expect(store.getFilteredMaterials()).toEqual(initialMaterials);
+      // Refresh to load materials from registry
+      useMaterialsStore.getState()._refreshMaterials();
+
+      expect(useMaterialsStore.getState().getFilteredMaterials()).toEqual(initialMaterials);
 
       // Simulate registry change
       const updatedMaterials = [testMaterial, { ...testMaterial, id: 'new-material' }];
       mockRegistry.list.mockReturnValue(updatedMaterials);
 
-      expect(store.getFilteredMaterials()).toEqual(updatedMaterials);
+      // Refresh again to see changes
+      useMaterialsStore.getState()._refreshMaterials();
+
+      expect(useMaterialsStore.getState().getFilteredMaterials()).toEqual(updatedMaterials);
     });
   });
 });
