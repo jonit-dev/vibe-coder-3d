@@ -5,25 +5,26 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useMaterialsStore } from '../materialsStore';
 import type { IMaterialDefinition } from '@core/materials/Material.types';
+import { MaterialRegistry } from '@core/materials/MaterialRegistry';
 
-// Mock MaterialRegistry
-const mockRegistry = {
-  list: vi.fn(),
-  get: vi.fn(),
-  upsert: vi.fn(),
-  remove: vi.fn(),
-};
+// Mock MaterialRegistry - create singleton inside factory to avoid hoisting issues
+vi.mock('@core/materials/MaterialRegistry', () => {
+  const mockRegistry = {
+    list: vi.fn(() => []),
+    get: vi.fn(() => undefined),
+    upsert: vi.fn(),
+    remove: vi.fn(),
+  };
 
-// Create a singleton-like mock
-const mockMaterialRegistry = {
-  getInstance: vi.fn(() => mockRegistry),
-};
-
-vi.mock('@core/materials/MaterialRegistry', () => ({
-  MaterialRegistry: mockMaterialRegistry,
-}));
+  return {
+    MaterialRegistry: {
+      getInstance: () => mockRegistry,
+    },
+  };
+});
 
 describe('materialsStore - Scene-based Persistence', () => {
+  let mockRegistry: ReturnType<typeof MaterialRegistry.getInstance>;
   const testMaterial: IMaterialDefinition = {
     id: 'test-material',
     name: 'Test Material',
@@ -43,11 +44,12 @@ describe('materialsStore - Scene-based Persistence', () => {
   };
 
   beforeEach(() => {
+    mockRegistry = MaterialRegistry.getInstance();
     vi.clearAllMocks();
 
     // Setup default mock behavior
-    mockRegistry.list.mockReturnValue([]);
-    mockRegistry.get.mockReturnValue(undefined);
+    (mockRegistry.list as any).mockReturnValue([]);
+    (mockRegistry.get as any).mockReturnValue(undefined);
 
     // Reset store state to defaults
     const store = useMaterialsStore.getState();
