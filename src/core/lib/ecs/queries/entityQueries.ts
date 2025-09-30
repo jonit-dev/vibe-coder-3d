@@ -4,6 +4,8 @@ import { create } from 'zustand';
 import { EntityIndex } from '../indexers/EntityIndex';
 import { HierarchyIndex } from '../indexers/HierarchyIndex';
 import { ComponentIndex } from '../indexers/ComponentIndex';
+import { SpatialIndex } from '../indexers/SpatialIndex';
+import type { IVector3, IBounds } from '../indexers/SpatialIndex';
 import { IndexEventAdapter } from '../adapters/IndexEventAdapter';
 
 // Lazy import to avoid circular dependency
@@ -55,6 +57,7 @@ export interface IEntityQueriesState {
   entityIndex: EntityIndex;
   hierarchyIndex: HierarchyIndex;
   componentIndex: ComponentIndex;
+  spatialIndex: SpatialIndex;
   adapter: IndexEventAdapter;
 
   // Configuration
@@ -80,6 +83,11 @@ export interface IEntityQueriesState {
   getComponentTypes: () => string[];
   getComponentCount: (componentType: string) => number;
 
+  // Spatial queries
+  querySpatialBounds: (bounds: IBounds) => number[];
+  querySpatialRadius: (center: IVector3, radius: number) => number[];
+  updateEntityPosition: (entityId: number, position: IVector3) => void;
+
   // Management methods
   initialize: () => void;
   destroy: () => void;
@@ -101,6 +109,9 @@ export const validateComponentQuery = (query: unknown): IComponentQuery =>
 
 export const safeValidateComponentQuery = (query: unknown) => ComponentQuerySchema.safeParse(query);
 
+// Export spatial types for convenience
+export type { IVector3, IBounds } from '../indexers/SpatialIndex';
+
 /**
  * EntityQueries Store - Provides efficient entity and component queries using indices
  * Replaces O(n) and O(n²) scans with indexed lookups for scalable entity traversal
@@ -110,6 +121,7 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
   const entityIndex = new EntityIndex();
   const hierarchyIndex = new HierarchyIndex();
   const componentIndex = new ComponentIndex();
+  const spatialIndex = new SpatialIndex({ cellSize: 10 });
   const adapter = new IndexEventAdapter(entityIndex, hierarchyIndex, componentIndex);
 
   return {
@@ -117,6 +129,7 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
     entityIndex,
     hierarchyIndex,
     componentIndex,
+    spatialIndex,
     adapter,
 
     // Configuration
@@ -230,6 +243,22 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
     getComponentCount: (componentType: string) => {
       const state = get();
       return state.componentIndex.getCount(componentType);
+    },
+
+    // Spatial queries
+    querySpatialBounds: (bounds: IBounds) => {
+      const state = get();
+      return state.spatialIndex.queryBounds(bounds);
+    },
+
+    querySpatialRadius: (center: IVector3, radius: number) => {
+      const state = get();
+      return state.spatialIndex.queryRadius(center, radius);
+    },
+
+    updateEntityPosition: (entityId: number, position: IVector3) => {
+      const state = get();
+      state.spatialIndex.updateEntity(entityId, position);
     },
 
     // Management methods
@@ -489,7 +518,6 @@ export class EntityQueries {
   // Debug method to dump current state
   debugState(): void {
     if (!this.queryStore) {
-
       return;
     }
 
@@ -508,9 +536,6 @@ export class EntityQueries {
     // Show components
     const componentTypes = this.queryStore.getComponentTypes();
 
-    componentTypes.forEach((_type) => {
-
-    });
-
+    componentTypes.forEach((_type) => {});
   }
 }
