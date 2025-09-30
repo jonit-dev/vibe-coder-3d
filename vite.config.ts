@@ -7,8 +7,9 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig(async () => {
   const { sceneApiMiddleware } = await import('./src/plugins/vite-plugin-scene-api');
+  const { vitePluginScriptAPI } = await import('./src/plugins/vite-plugin-script-api');
   return {
-    plugins: [tailwindcss(), react(), tsconfigPaths(), sceneApiMiddleware()],
+    plugins: [tailwindcss(), react(), tsconfigPaths(), sceneApiMiddleware(), vitePluginScriptAPI()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

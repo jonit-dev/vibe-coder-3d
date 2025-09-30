@@ -83,22 +83,62 @@ export class MaterialSystem {
       const mesh = object as Mesh;
       if (!mesh.material) return;
 
-      // Get base material from registry (using injected instance)
-      const baseMaterial = this.materialRegistry.get(meshRendererData.materialId);
-      if (!baseMaterial) return;
+      // Handle multi-material support (materials array for submeshes)
+      if (meshRendererData.materials && Array.isArray(meshRendererData.materials)) {
+        // Multi-material mode: apply materials array to mesh
+        const materials = meshRendererData.materials
+          .map((matId) => this.materialRegistry.get(matId))
+          .filter(Boolean) as IMaterialDefinition[];
 
-      // Apply mesh renderer overrides if they exist
-      const finalMaterial = meshRendererData.material
-        ? this.applyOverrides(baseMaterial, meshRendererData.material)
-        : baseMaterial;
+        if (materials.length > 0) {
+          if (Array.isArray(mesh.material)) {
+            // Mesh already has material array - update each material
+            const materialArray = mesh.material as Array<MeshStandardMaterial | MeshBasicMaterial>;
+            materials.forEach((matDef, index) => {
+              if (materialArray[index]) {
+                this.applyMaterialProperties(materialArray[index], matDef);
+              }
+            });
+          } else {
+            // Single material - just apply the first one from the array
+            const finalMaterial = meshRendererData.material
+              ? this.applyOverrides(materials[0], meshRendererData.material)
+              : materials[0];
+            this.applyMaterialProperties(
+              mesh.material as MeshStandardMaterial | MeshBasicMaterial,
+              finalMaterial,
+            );
+          }
+          updatedCount++;
+        }
+      } else {
+        // Single material mode: use materialId
+        const baseMaterial = this.materialRegistry.get(meshRendererData.materialId);
+        if (!baseMaterial) return;
 
-      // Apply material properties to Three.js material
-      this.applyMaterialProperties(
-        mesh.material as MeshStandardMaterial | MeshBasicMaterial,
-        finalMaterial,
-      );
+        // Apply mesh renderer overrides if they exist
+        const finalMaterial = meshRendererData.material
+          ? this.applyOverrides(baseMaterial, meshRendererData.material)
+          : baseMaterial;
 
-      updatedCount++;
+        // Apply material properties to Three.js material
+        if (Array.isArray(mesh.material)) {
+          // Apply same material to all submeshes
+          mesh.material.forEach((mat) => {
+            this.applyMaterialProperties(
+              mat as MeshStandardMaterial | MeshBasicMaterial,
+              finalMaterial,
+            );
+          });
+        } else {
+          this.applyMaterialProperties(
+            mesh.material as MeshStandardMaterial | MeshBasicMaterial,
+            finalMaterial,
+          );
+        }
+
+        updatedCount++;
+      }
     });
 
     this.lastUpdateCount = updatedCount;

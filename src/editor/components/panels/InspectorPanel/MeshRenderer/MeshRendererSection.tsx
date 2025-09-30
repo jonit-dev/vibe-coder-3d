@@ -48,6 +48,9 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   // Local state for overrides toggle (kept independent from derived ECS data)
   const [overridesEnabled, setOverridesEnabled] = useState(!!meshRenderer?.material);
 
+  // Track which material slot is being edited (for multi-material mode)
+  const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
+
   const handleRemoveMeshRenderer = () => {
     setMeshRenderer(null);
   };
@@ -79,13 +82,21 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
 
   // Handle material selection from browser
   const handleMaterialSelect = (materialId: string) => {
-    // Clear overrides when selecting a new material to see the actual material
-    updateMeshRenderer({
-      materialId,
-      material: undefined // Clear overrides
-    });
-    // Keep UI consistent with cleared overrides
-    setOverridesEnabled(false);
+    // Check if we're editing a material slot (multi-material mode)
+    if (editingSlotIndex !== null && meshRenderer && meshRenderer.materials) {
+      const newMaterials = [...meshRenderer.materials];
+      newMaterials[editingSlotIndex] = materialId;
+      updateMeshRenderer({ materials: newMaterials });
+      setEditingSlotIndex(null); // Clear slot editing state
+    } else {
+      // Single material mode: Clear overrides when selecting a new material
+      updateMeshRenderer({
+        materialId,
+        material: undefined, // Clear overrides
+      });
+      // Keep UI consistent with cleared overrides
+      setOverridesEnabled(false);
+    }
     handleBrowserSelect(materialId);
   };
 
@@ -103,7 +114,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
   // Effective overrides for UI (use existing overrides or fall back to template while enabling)
   const effectiveOverrides = React.useMemo(
     () => (meshRenderer.material ? meshRenderer.material : baseOverridesTemplate),
-    [meshRenderer.material, baseOverridesTemplate]
+    [meshRenderer.material, baseOverridesTemplate],
   );
 
   return (
@@ -140,11 +151,18 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
         />
 
         {/* Material Section - Now uses materialId */}
-        <CollapsibleSection title="Material" icon={<FiImage />} defaultExpanded={true} badge="Asset">
+        <CollapsibleSection
+          title="Material"
+          icon={<FiImage />}
+          defaultExpanded={true}
+          badge="Asset"
+        >
           <div className="space-y-2">
             <div className="text-[11px] font-medium text-gray-300">Material</div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-white">{currentMaterial?.name || 'Unknown Material'}</span>
+              <span className="text-sm text-white">
+                {currentMaterial?.name || 'Unknown Material'}
+              </span>
               <div className="flex space-x-1">
                 <button
                   onClick={openBrowser}
@@ -165,11 +183,128 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
             )}
           </div>
 
+          {/* Multi-Material Support (Submeshes) */}
+          <CollapsibleSection
+            title="Material Slots"
+            defaultExpanded={false}
+            badge={
+              (meshRenderer.materials?.length || 0) > 0
+                ? `${meshRenderer.materials.length} slots`
+                : undefined
+            }
+          >
+            <div className="space-y-2">
+              {/* Enable Multi-Material Mode Toggle */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">Multi-Material Mode</span>
+                <ToggleField
+                  label=""
+                  value={(meshRenderer.materials?.length || 0) > 0}
+                  onChange={(enabled: boolean) => {
+                    if (enabled) {
+                      // Enable multi-material mode with current material as first slot
+                      updateMeshRenderer({
+                        materials: [meshRenderer.materialId || 'default'],
+                      });
+                    } else {
+                      // Disable multi-material mode
+                      updateMeshRenderer({ materials: undefined });
+                    }
+                  }}
+                  resetValue={false}
+                />
+              </div>
+
+              {meshRenderer && meshRenderer.materials && meshRenderer.materials.length > 0 ? (
+                <>
+                  <div className="text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 rounded p-2">
+                    ⚠️ Multi-material mode: Each slot can have a different material
+                  </div>
+
+                  {/* Material Slots List */}
+                  <div className="space-y-2">
+                    {meshRenderer.materials?.map((matId, index) => {
+                      const mat = materialRegistry.get(matId);
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 p-2 bg-gray-800 rounded"
+                        >
+                          <span className="text-xs text-gray-400 w-6">#{index}</span>
+                          <div className="flex-1 flex items-center justify-between">
+                            <span className="text-sm text-white truncate">
+                              {mat?.name || matId}
+                            </span>
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => {
+                                  // Open browser to select material for this slot
+                                  setEditingSlotIndex(index);
+                                  openBrowser();
+                                }}
+                                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded"
+                                title="Change material"
+                              >
+                                Change
+                              </button>
+                              <button
+                                onClick={() => openInspector(matId)}
+                                className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                                title="Edit material"
+                              >
+                                <FiEdit size={12} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  // Remove this slot
+                                  const newMaterials = meshRenderer.materials!.filter(
+                                    (_, i) => i !== index,
+                                  );
+                                  if (newMaterials.length === 0) {
+                                    updateMeshRenderer({ materials: undefined });
+                                  } else {
+                                    updateMeshRenderer({ materials: newMaterials });
+                                  }
+                                }}
+                                className="p-1 text-red-400 hover:text-red-300 hover:bg-gray-700 rounded"
+                                title="Remove slot"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Add Material Slot Button */}
+                  <button
+                    onClick={() => {
+                      const newMaterials = [
+                        ...(meshRenderer.materials || []),
+                        meshRenderer.materialId || 'default',
+                      ];
+                      updateMeshRenderer({ materials: newMaterials });
+                    }}
+                    className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+                  >
+                    + Add Material Slot
+                  </button>
+                </>
+              ) : (
+                <div className="text-xs text-gray-500 text-center py-3">
+                  Enable multi-material mode to assign different materials to submeshes
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+
           {/* Material Overrides Section */}
           <CollapsibleSection
             title="Overrides"
             defaultExpanded={false}
-            badge={overridesEnabled ? "ENABLED" : "DISABLED"}
+            badge={overridesEnabled ? 'ENABLED' : 'DISABLED'}
           >
             <div className="space-y-3">
               <ToggleField
@@ -181,11 +316,15 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
 
                   if (enabled) {
                     // Enable overrides - initialize with base material values
-                    const baseMaterial = currentMaterial || { color: '#cccccc', metalness: 0, roughness: 0.7 };
+                    const baseMaterial = currentMaterial || {
+                      color: '#cccccc',
+                      metalness: 0,
+                      roughness: 0.7,
+                    };
                     const newMaterial = {
                       color: baseMaterial.color,
                       metalness: baseMaterial.metalness,
-                      roughness: baseMaterial.roughness
+                      roughness: baseMaterial.roughness,
                     };
                     updateMeshRenderer({ material: newMaterial });
                   } else {
@@ -199,14 +338,16 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
 
               {overridesEnabled && (
                 <div className="space-y-3">
-                  <div className="text-xs text-yellow-400">⚠️ Overriding base material properties for this object only</div>
+                  <div className="text-xs text-yellow-400">
+                    ⚠️ Overriding base material properties for this object only
+                  </div>
 
                   <ColorField
                     label="Color Override"
                     value={effectiveOverrides.color || '#cccccc'}
                     onChange={(value: string) => {
                       updateMeshRenderer({
-                        material: { ...(meshRenderer.material ?? {}), color: value }
+                        material: { ...(meshRenderer.material ?? {}), color: value },
                       });
                     }}
                     resetValue="#cccccc"
@@ -219,7 +360,10 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
                       value={effectiveOverrides.metalness ?? 0}
                       onChange={(value) => {
                         updateMeshRenderer({
-                          material: { ...(meshRenderer.material ?? {}), metalness: Math.max(0, Math.min(1, value)) }
+                          material: {
+                            ...(meshRenderer.material ?? {}),
+                            metalness: Math.max(0, Math.min(1, value)),
+                          },
                         });
                       }}
                       min={0}
@@ -236,7 +380,10 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
                       value={effectiveOverrides.roughness ?? 0.7}
                       onChange={(value) => {
                         updateMeshRenderer({
-                          material: { ...(meshRenderer.material ?? {}), roughness: Math.max(0, Math.min(1, value)) }
+                          material: {
+                            ...(meshRenderer.material ?? {}),
+                            roughness: Math.max(0, Math.min(1, value)),
+                          },
                         });
                       }}
                       min={0}
@@ -293,11 +440,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
       />
 
       {/* Material Create Modal */}
-      <MaterialCreateModal
-        isOpen={isCreateOpen}
-        onClose={closeCreate}
-        onCreate={handleCreate}
-      />
+      <MaterialCreateModal isOpen={isCreateOpen} onClose={closeCreate} onCreate={handleCreate} />
 
       {/* Material Inspector Modal */}
       <MaterialInspector

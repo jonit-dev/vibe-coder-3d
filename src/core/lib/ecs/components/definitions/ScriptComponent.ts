@@ -11,6 +11,17 @@ import { EntityId } from '../../types';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
 import { Logger } from '@/core/lib/logger';
 
+// Script reference for external scripts
+export const ScriptRefSchema = z.object({
+  scriptId: z.string().describe('Unique script identifier (e.g., "game.player-controller")'),
+  source: z.enum(['external', 'inline']).describe('Script source type'),
+  path: z.string().optional().describe('Path to external script file'),
+  codeHash: z.string().optional().describe('SHA-256 hash for change detection'),
+  lastModified: z.number().optional().describe('Last modification timestamp'),
+});
+
+export type IScriptRef = z.infer<typeof ScriptRefSchema>;
+
 // Script Schema
 const ScriptSchema = z.object({
   code: z.string().default('').describe('User script code'),
@@ -20,6 +31,9 @@ const ScriptSchema = z.object({
   // Script metadata
   scriptName: z.string().default('Script').describe('Display name for the script'),
   description: z.string().default('').describe('Script description'),
+
+  // External script reference
+  scriptRef: ScriptRefSchema.optional().describe('Reference to external script file'),
 
   // Execution control
   executeInUpdate: z.boolean().default(true).describe('Execute script in update loop'),
@@ -79,6 +93,7 @@ export const scriptComponent = ComponentFactory.create({
     lastErrorMessageHash: Types.ui32,
     parametersHash: Types.ui32,
     compiledCodeHash: Types.ui32,
+    scriptRefHash: Types.ui32, // JSON serialized scriptRef
 
     // Timestamps
     lastModified: Types.f64,
@@ -96,6 +111,15 @@ export const scriptComponent = ComponentFactory.create({
 
     scriptName: getStringFromHash(component.scriptNameHash[eid]) || 'Script',
     description: getStringFromHash(component.descriptionHash[eid]) || '',
+
+    scriptRef: (() => {
+      try {
+        const refStr = getStringFromHash(component.scriptRefHash[eid]);
+        return refStr ? JSON.parse(refStr) : undefined;
+      } catch {
+        return undefined;
+      }
+    })(),
 
     executeInUpdate: Boolean(component.executeInUpdate[eid]),
     executeOnStart: Boolean(component.executeOnStart[eid]),
@@ -169,6 +193,15 @@ function onUpdate(deltaTime) {
     component.lastErrorMessageHash[eid] = storeString(data.lastErrorMessage || '');
     component.compiledCodeHash[eid] = storeString(data.compiledCode || '');
 
+    // Script reference
+    try {
+      component.scriptRefHash[eid] = data.scriptRef
+        ? storeString(JSON.stringify(data.scriptRef))
+        : 0;
+    } catch {
+      component.scriptRefHash[eid] = 0;
+    }
+
     // Parameters
     try {
       component.parametersHash[eid] = storeString(JSON.stringify(data.parameters || {}));
@@ -180,9 +213,11 @@ function onUpdate(deltaTime) {
     component.lastModified[eid] = data.lastModified ?? Date.now();
 
     // Check if script needs compilation (flags indicate the script should be active)
-    if ((data.executeOnStart ?? false) ||
-        (data.executeInUpdate ?? true) ||
-        (data.executeOnEnable ?? false)) {
+    if (
+      (data.executeOnStart ?? false) ||
+      (data.executeInUpdate ?? true) ||
+      (data.executeOnEnable ?? false)
+    ) {
       component.needsCompilation[eid] = 1;
     }
 

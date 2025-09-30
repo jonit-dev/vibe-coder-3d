@@ -174,7 +174,6 @@ export const EngineLoop = ({
       const interval = setInterval(() => {
         const state = getLoopState();
         if (state.isRunning && !state.isPaused) {
-
           if (perfMonitoring) {
             // Performance monitoring in debug mode
           }
@@ -207,7 +206,12 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
   const lightCount = Profiler.time('lightSystem', () => lightSystem(deltaTime));
 
   // Run script system - executes user scripts with entity context
-  Profiler.time('scriptSystem', () => updateScriptSystem(deltaTime * 1000, isPlaying));
+  // Note: updateScriptSystem is async but we fire-and-forget here to avoid blocking the render loop
+  Profiler.time('scriptSystem', () => {
+    updateScriptSystem(deltaTime * 1000, isPlaying).catch((error) => {
+      console.error('[EngineLoop] Script system error:', error);
+    });
+  });
 
   // Run sound system - handles autoplay and sound updates during play mode
   const soundCount = Profiler.time('soundSystem', () => soundSystem(deltaTime, isPlaying));

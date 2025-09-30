@@ -12,6 +12,8 @@ import { getStringFromHash, storeString } from '../lib/ecs/utils/stringHashUtils
 import { Logger } from '../lib/logger';
 import { IInputAPI, ITimeAPI } from '../lib/scripting/ScriptAPI';
 import { IScriptExecutionResult, ScriptExecutor } from '../lib/scripting/ScriptExecutor';
+import { resolveScript } from '../lib/scripting/ScriptResolver';
+import { ScriptData } from '../lib/ecs/components/definitions/ScriptComponent';
 
 // BitECS Script component type structure
 interface IBitECSScriptComponent {
@@ -30,6 +32,7 @@ interface IBitECSScriptComponent {
   lastErrorMessageHash: Record<number, number>;
   parametersHash: Record<number, number>;
   compiledCodeHash: Record<number, number>;
+  scriptRefHash: Record<number, number>;
   lastModified: Record<number, number>;
   needsCompilation: Record<number, number>;
   needsExecution: Record<number, number>;
@@ -150,7 +153,7 @@ function entityNeedsCompilation(eid: EntityId): boolean {
 /**
  * Ensure script is compiled before execution
  */
-function ensureScriptCompiled(eid: EntityId): boolean {
+async function ensureScriptCompiled(eid: EntityId): Promise<boolean> {
   const scriptComponent = componentRegistry.getBitECSComponent(
     'Script',
   ) as IBitECSScriptComponent | null;
@@ -162,84 +165,116 @@ function ensureScriptCompiled(eid: EntityId): boolean {
   }
 
   // Compile the script
-  return compileScriptForEntity(eid);
+  return await compileScriptForEntity(eid);
 }
 
 /**
  * Compile a script for an entity
  */
-function compileScriptForEntity(eid: EntityId): boolean {
+async function compileScriptForEntity(eid: EntityId): Promise<boolean> {
   const scriptComponent = componentRegistry.getBitECSComponent(
     'Script',
   ) as IBitECSScriptComponent | null;
   if (!scriptComponent) return false;
 
-  const codeHash = scriptComponent.codeHash[eid];
-  const code = getStringFromHash(codeHash);
   const scriptId = `entity_${eid}`;
 
-  logger.debug(`Compiling script for entity ${eid}:`, {
-    codeHash,
-    codeLength: code?.length || 0,
-    codePreview: code?.substring(0, 100) || '(empty)',
-    executeOnStart: scriptComponent.executeOnStart[eid],
-    executeInUpdate: scriptComponent.executeInUpdate[eid],
-    needsCompilation: scriptComponent.needsCompilation[eid],
-  });
+  try {
+    // Get script data for resolution
+    const codeHash = scriptComponent.codeHash[eid];
+    const code = getStringFromHash(codeHash);
 
-  if (!code || code.trim() === '') {
-    // For empty scripts, register a no-op function so execution doesn't fail
-    logger.debug(`Compiling empty script for entity ${eid} as no-op`);
-    const result: IScriptExecutionResult = scriptExecutor.compileScript(
-      '// Empty script',
-      scriptId,
-    );
+    const scriptRefHash = scriptComponent.scriptRefHash[eid];
+    const scriptRefStr = getStringFromHash(scriptRefHash);
+    const scriptRef = scriptRefStr ? JSON.parse(scriptRefStr) : undefined;
+
+    logger.debug(`Compiling script for entity ${eid}:`, {
+      codeHash,
+      codeLength: code?.length || 0,
+      codePreview: code?.substring(0, 100) || '(empty)',
+      hasScriptRef: !!scriptRef,
+      scriptRefSource: scriptRef?.source,
+      scriptRefId: scriptRef?.scriptId,
+      executeOnStart: scriptComponent.executeOnStart[eid],
+      executeInUpdate: scriptComponent.executeInUpdate[eid],
+      needsCompilation: scriptComponent.needsCompilation[eid],
+    });
+
+    // Resolve script code (from external or inline)
+    const resolution = await resolveScript(eid, { code, scriptRef });
+
+    logger.debug(`Script resolved for entity ${eid}:`, {
+      origin: resolution.origin,
+      codeLength: resolution.code?.length || 0,
+      path: resolution.path,
+      hash: resolution.hash,
+    });
+
+    const resolvedCode = resolution.code;
+
+    if (!resolvedCode || resolvedCode.trim() === '') {
+      // For empty scripts, register a no-op function so execution doesn't fail
+      logger.debug(`Compiling empty script for entity ${eid} as no-op`);
+      const result: IScriptExecutionResult = scriptExecutor.compileScript(
+        '// Empty script',
+        scriptId,
+      );
+
+      // Update component with compilation results
+      scriptComponent.hasErrors[eid] = result.success ? 0 : 1;
+      scriptComponent.lastExecutionTime[eid] = result.executionTime;
+      scriptComponent.needsCompilation[eid] = 0;
+
+      if (result.success) {
+        scriptComponent.lastErrorMessageHash[eid] = 0; // Clear error
+        logger.debug(`Successfully compiled empty script for entity ${eid}`);
+        return true;
+      } else {
+        const errorHash = storeString(result.error || 'Unknown compilation error');
+        scriptComponent.lastErrorMessageHash[eid] = errorHash;
+        logger.error(`Failed to compile empty script for entity ${eid}:`, result.error);
+        return false;
+      }
+    }
+
+    logger.debug(`Compiling script with content for entity ${eid} (origin: ${resolution.origin})`);
+    const result: IScriptExecutionResult = scriptExecutor.compileScript(resolvedCode, scriptId);
 
     // Update component with compilation results
     scriptComponent.hasErrors[eid] = result.success ? 0 : 1;
     scriptComponent.lastExecutionTime[eid] = result.executionTime;
     scriptComponent.needsCompilation[eid] = 0;
 
-    if (result.success) {
-      scriptComponent.lastErrorMessageHash[eid] = 0; // Clear error
-      logger.debug(`Successfully compiled empty script for entity ${eid}`);
-      return true;
-    } else {
-      const errorHash = storeString(result.error || 'Unknown compilation error');
+    if (result.error) {
+      const errorHash = storeString(result.error);
       scriptComponent.lastErrorMessageHash[eid] = errorHash;
-      logger.error(`Failed to compile empty script for entity ${eid}:`, result.error);
+      logger.error(`Compilation error for entity ${eid}:`, result.error);
       return false;
+    } else {
+      scriptComponent.lastErrorMessageHash[eid] = 0; // Clear error
+      logger.debug(`Successfully compiled script for entity ${eid}`);
+      return true;
     }
-  }
-
-  logger.debug(`Compiling script with content for entity ${eid}`);
-  const result: IScriptExecutionResult = scriptExecutor.compileScript(code, scriptId);
-
-  // Update component with compilation results
-  scriptComponent.hasErrors[eid] = result.success ? 0 : 1;
-  scriptComponent.lastExecutionTime[eid] = result.executionTime;
-  scriptComponent.needsCompilation[eid] = 0;
-
-  if (result.error) {
-    const errorHash = storeString(result.error);
+  } catch (error) {
+    // Handle resolution errors
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorHash = storeString(errorMsg);
+    scriptComponent.hasErrors[eid] = 1;
     scriptComponent.lastErrorMessageHash[eid] = errorHash;
-    logger.error(`Compilation error for entity ${eid}:`, result.error);
+    scriptComponent.needsCompilation[eid] = 0;
+    logger.error(`Script resolution/compilation failed for entity ${eid}:`, error);
     return false;
-  } else {
-    scriptComponent.lastErrorMessageHash[eid] = 0; // Clear error
-    logger.debug(`Successfully compiled script for entity ${eid}`);
-    return true;
   }
 }
 
 /**
  * Execute script lifecycle method for an entity
  */
-function executeScriptLifecycle(
+async function executeScriptLifecycle(
   eid: EntityId,
   method: 'onStart' | 'onUpdate' | 'onDestroy' | 'onEnable' | 'onDisable',
   deltaTime?: number,
-): void {
+): Promise<void> {
   const scriptComponent = componentRegistry.getBitECSComponent(
     'Script',
   ) as IBitECSScriptComponent | null;
@@ -251,7 +286,7 @@ function executeScriptLifecycle(
   logger.debug(`Attempting to execute ${method} for entity ${eid}`);
 
   // Ensure script is compiled before execution
-  if (!ensureScriptCompiled(eid)) {
+  if (!(await ensureScriptCompiled(eid))) {
     logger.error(`Script compilation failed for entity ${eid}, skipping execution`);
     return; // Compilation failed
   }
@@ -331,7 +366,7 @@ function executeScriptLifecycle(
 /**
  * Handle new entities with Script components
  */
-function handleNewScriptEntities(): void {
+async function handleNewScriptEntities(): Promise<void> {
   const query = getScriptQuery();
   if (!query) return;
 
@@ -353,7 +388,7 @@ function handleNewScriptEntities(): void {
 
       // Execute onEnable if component is enabled
       if (scriptComponent.enabled[eid] && scriptComponent.executeOnEnable[eid]) {
-        executeScriptLifecycle(eid, 'onEnable');
+        await executeScriptLifecycle(eid, 'onEnable');
       }
     }
   }
@@ -365,7 +400,7 @@ function handleNewScriptEntities(): void {
       logger.debug(`Script component removed from entity ${eid}`);
 
       // Execute onDestroy before cleanup
-      executeScriptLifecycle(eid, 'onDestroy');
+      await executeScriptLifecycle(eid, 'onDestroy');
 
       // Clean up
       scriptExecutor.removeScriptContext(eid);
@@ -379,7 +414,7 @@ function handleNewScriptEntities(): void {
 /**
  * Compile scripts that need compilation
  */
-function compileScripts(): void {
+async function compileScripts(): Promise<void> {
   // Compile scripts in batches to avoid frame drops
   const maxCompilationsPerFrame = 2;
   let compilations = 0;
@@ -387,7 +422,7 @@ function compileScripts(): void {
   for (const eid of entitiesToCompile) {
     if (compilations >= maxCompilationsPerFrame) break;
 
-    if (compileScriptForEntity(eid)) {
+    if (await compileScriptForEntity(eid)) {
       entitiesToCompile.delete(eid);
       compilations++;
     } else {
@@ -425,7 +460,7 @@ function ensureAllScriptsCompiled(): void {
 /**
  * Execute scripts in update loop
  */
-function executeScripts(deltaTime: number): void {
+async function executeScripts(deltaTime: number): Promise<void> {
   const query = getScriptQuery();
   if (!query) return;
 
@@ -452,14 +487,14 @@ function executeScripts(deltaTime: number): void {
 
     // Execute onStart if not yet started and configured to do so
     if (!startedEntities.has(eid) && scriptComponent.executeOnStart[eid]) {
-      executeScriptLifecycle(eid, 'onStart');
+      await executeScriptLifecycle(eid, 'onStart');
       startedEntities.add(eid);
     }
 
     // Execute onUpdate if configured to do so (only during play mode or always if not play-dependent)
     if (scriptComponent.executeInUpdate[eid]) {
       // For now, execute regardless of play state - could be made configurable per script
-      executeScriptLifecycle(eid, 'onUpdate', deltaTime);
+      await executeScriptLifecycle(eid, 'onUpdate', deltaTime);
     }
   }
 }
@@ -468,20 +503,23 @@ function executeScripts(deltaTime: number): void {
  * Main script system update function
  * Should be called from the main game loop
  */
-export function updateScriptSystem(deltaTime: number, isPlaying: boolean = false): void {
+export async function updateScriptSystem(
+  deltaTime: number,
+  isPlaying: boolean = false,
+): Promise<void> {
   // When entering play mode, ensure all scripts are marked for compilation
   if (isPlaying) {
     ensureAllScriptsCompiled();
   }
 
   // Handle new/removed script entities
-  handleNewScriptEntities();
+  await handleNewScriptEntities();
 
   // Compile scripts that need compilation
-  compileScripts();
+  await compileScripts();
 
   // Execute scripts
-  executeScripts(deltaTime);
+  await executeScripts(deltaTime);
 }
 
 /**
@@ -531,7 +569,7 @@ export function recompileAllScripts(): void {
 /**
  * Enable/disable a script for a specific entity
  */
-export function setScriptEnabled(eid: EntityId, enabled: boolean): void {
+export async function setScriptEnabled(eid: EntityId, enabled: boolean): Promise<void> {
   const scriptComponent = componentRegistry.getBitECSComponent(
     'Script',
   ) as IBitECSScriptComponent | null;
@@ -542,8 +580,8 @@ export function setScriptEnabled(eid: EntityId, enabled: boolean): void {
 
   // Call lifecycle methods based on state change
   if (!wasEnabled && enabled) {
-    executeScriptLifecycle(eid, 'onEnable');
+    await executeScriptLifecycle(eid, 'onEnable');
   } else if (wasEnabled && !enabled) {
-    executeScriptLifecycle(eid, 'onDisable');
+    await executeScriptLifecycle(eid, 'onDisable');
   }
 }

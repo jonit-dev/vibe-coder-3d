@@ -1,6 +1,7 @@
 export interface IMeshRendererData {
   meshId: string;
   materialId: string;
+  materials?: string[]; // Optional array for multi-submesh support
   enabled?: boolean;
   castShadows?: boolean;
   receiveShadows?: boolean;

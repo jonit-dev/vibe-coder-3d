@@ -202,16 +202,56 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
       return duplicate;
     },
 
-    assignToSelection: (_materialId) => {
-      // This would integrate with the entity selection system
-      // For now, just a placeholder
-      // Assigning material to selected entities
+    assignToSelection: async (materialId) => {
+      // Import componentRegistry dynamically to avoid circular deps
+      const { componentRegistry } = await import('@/core/lib/ecs/ComponentRegistry');
+      const { useEditorStore } = await import('@/editor/store/editorStore');
+
+      const selectedIds = useEditorStore.getState().selectedIds;
+      if (selectedIds.length === 0) return;
+
+      // Update materialId for all selected entities with MeshRenderer
+      selectedIds.forEach((entityId: number) => {
+        const meshRenderer = componentRegistry.getComponentData(entityId, 'MeshRenderer');
+        if (meshRenderer) {
+          componentRegistry.updateComponent(entityId, 'MeshRenderer', {
+            ...meshRenderer,
+            materialId,
+            material: undefined, // Clear overrides when assigning new material
+          });
+        }
+      });
+
+      get()._refreshMaterials();
     },
 
-    assignToAll: (_materialId) => {
-      // This would assign to all entities with MeshRenderer
-      // For now, just a placeholder
-      // Assigning material to all entities
+    assignToAll: async (materialId) => {
+      // Import componentRegistry dynamically to avoid circular deps
+      const { componentRegistry } = await import('@/core/lib/ecs/ComponentRegistry');
+      const { ECSWorld } = await import('@/core/lib/ecs/World');
+
+      const world = ECSWorld.getInstance().getWorld();
+      const meshRendererComponent = componentRegistry.getBitECSComponent('MeshRenderer');
+      if (!meshRendererComponent) return;
+
+      // Define query for all entities with MeshRenderer
+      const { defineQuery } = await import('bitecs');
+      const query = defineQuery([meshRendererComponent]);
+      const entities = query(world);
+
+      // Update materialId for all entities with MeshRenderer
+      entities.forEach((entityId: number) => {
+        const meshRenderer = componentRegistry.getComponentData(entityId, 'MeshRenderer');
+        if (meshRenderer) {
+          componentRegistry.updateComponent(entityId, 'MeshRenderer', {
+            ...meshRenderer,
+            materialId,
+            material: undefined, // Clear overrides when assigning new material
+          });
+        }
+      });
+
+      get()._refreshMaterials();
     },
 
     get filteredMaterials() {
@@ -285,7 +325,6 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
     },
 
     debugPrintMaterials: () => {
-      const { materials: _materials } = get();
       // Materials list tracked internally
     },
   };
