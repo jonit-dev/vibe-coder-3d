@@ -42,6 +42,17 @@ export { KnownComponentTypes } from './lib/ecs/IComponent';
 // Export EntityQueries for debugging and advanced usage
 export { EntityQueries } from './lib/ecs/queries/entityQueries';
 
+// Object Pooling
+export { ObjectPool } from './lib/pooling/ObjectPool';
+export type { IPoolable, IObjectPoolConfig, IObjectPoolStats } from './lib/pooling/ObjectPool';
+export {
+  Vector3Pool,
+  acquireVector3,
+  releaseVector3,
+  withPooledVectors,
+} from './lib/pooling/PooledVector3';
+export type { IVector3Pooled } from './lib/pooling/PooledVector3';
+
 // Rendering Utilities
 export {
   computeCullingVolume,

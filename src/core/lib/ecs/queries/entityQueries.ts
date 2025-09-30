@@ -7,6 +7,8 @@ import { ComponentIndex } from '../indexers/ComponentIndex';
 import { SpatialIndex } from '../indexers/SpatialIndex';
 import type { IVector3, IBounds } from '../indexers/SpatialIndex';
 import { IndexEventAdapter } from '../adapters/IndexEventAdapter';
+import { Vector3Pool } from '../../pooling/PooledVector3';
+import type { IObjectPoolStats } from '../../pooling/ObjectPool';
 
 // Lazy import to avoid circular dependency
 let ConsistencyChecker: any = null;
@@ -87,6 +89,9 @@ export interface IEntityQueriesState {
   querySpatialBounds: (bounds: IBounds) => number[];
   querySpatialRadius: (center: IVector3, radius: number) => number[];
   updateEntityPosition: (entityId: number, position: IVector3) => void;
+
+  // Object pooling
+  getPoolStats: () => IObjectPoolStats;
 
   // Management methods
   initialize: () => void;
@@ -334,6 +339,10 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
         console.error('[EntityQueries] Invalid configuration:', error);
       }
     },
+
+    getPoolStats: () => {
+      return Vector3Pool.getStats();
+    },
   };
 });
 
@@ -513,6 +522,20 @@ export class EntityQueries {
   refreshWorld(): void {
     // For now, refreshWorld behaves the same as reset since we reinitialize everything
     this.reset();
+  }
+
+  getPoolStats(): IObjectPoolStats {
+    if (!this.queryStore) {
+      return {
+        totalCreated: 0,
+        totalAcquired: 0,
+        totalReleased: 0,
+        currentSize: 0,
+        activeCount: 0,
+        hitRate: 0,
+      };
+    }
+    return this.queryStore.getPoolStats();
   }
 
   // Debug method to dump current state
