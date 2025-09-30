@@ -40,6 +40,12 @@ export class MaterialSystem {
   private lastUpdateCount = 0;
   private updateThrottleMs = 16; // ~60fps throttle
   private lastUpdateTime = 0;
+  private materialRegistry: MaterialRegistry;
+
+  constructor(materialRegistry?: MaterialRegistry) {
+    // Support both DI and backward compatibility
+    this.materialRegistry = materialRegistry || MaterialRegistry.getInstance();
+  }
 
   /**
    * Update all materials that need updating
@@ -77,9 +83,8 @@ export class MaterialSystem {
       const mesh = object as Mesh;
       if (!mesh.material) return;
 
-      // Get base material from registry
-      const materialRegistry = MaterialRegistry.getInstance();
-      const baseMaterial = materialRegistry.get(meshRendererData.materialId);
+      // Get base material from registry (using injected instance)
+      const baseMaterial = this.materialRegistry.get(meshRendererData.materialId);
       if (!baseMaterial) return;
 
       // Apply mesh renderer overrides if they exist
