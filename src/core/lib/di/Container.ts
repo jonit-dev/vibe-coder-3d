@@ -112,3 +112,11 @@ export class Container {
 
 // Global container instance
 export const container = new Container();
+
+// Register core services
+import { MaterialRegistry } from '@core/materials/MaterialRegistry';
+
+// Register MaterialRegistry as a singleton in the global container
+container.register('MaterialRegistry', () => MaterialRegistry.getInstance(), {
+  singleton: true,
+});

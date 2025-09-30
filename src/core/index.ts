@@ -52,6 +52,10 @@ export {
   textureUtils,
 } from './lib/rendering';
 
+// Materials
+export { MaterialRegistry } from './materials/MaterialRegistry';
+export type { IMaterialDefinition, IMaterialAssetMeta } from './materials/Material.types';
+
 // Systems
 export { MaterialSystem } from './systems/MaterialSystem';
 export { transformSystem } from './systems/transformSystem';

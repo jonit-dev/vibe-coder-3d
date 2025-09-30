@@ -5,6 +5,11 @@ import { createThreeMaterialFrom } from './MaterialConverter';
 
 export class MaterialRegistry {
   private static instance: MaterialRegistry | null = null;
+
+  /**
+   * @deprecated Use dependency injection via Container instead
+   * This method is kept for backward compatibility during migration
+   */
   static getInstance(): MaterialRegistry {
     if (!this.instance) this.instance = new MaterialRegistry();
     return this.instance;
@@ -14,7 +19,7 @@ export class MaterialRegistry {
   private idToThree = new Map<string, MeshStandardMaterial | MeshBasicMaterial>();
   private assetPathToId = new Map<string, string>();
 
-  private constructor() {
+  constructor() {
     // Initialize with default material only
     this.initializeDefaults();
   }
@@ -154,6 +159,7 @@ export class MaterialRegistry {
       const def = this.get(id);
       if (def) {
         try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
           const { updateThreeMaterialFrom } = require('./MaterialConverter');
           const material = this.idToThree.get(id);
           if (material) {
