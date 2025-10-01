@@ -5,6 +5,7 @@
 ## Overview
 
 - **Context & Goals**:
+
   - Unify and expand the scripting API to cover common gameplay needs while preserving sandbox safety and performance budgets.
   - Align `src/game/scripts/script-api.d.ts` with runtime implementations in `src/core/lib/scripting/ScriptAPI.ts` and generate types from source to prevent drift.
   - Introduce additional subsystems to scripts: Events, Audio, Timers/Scheduling, Queries/Tags, Entity Ops (spawn/destroy/enable), and Input Actions.
@@ -19,13 +20,16 @@
 ## Proposed Solution
 
 - **High‑level Summary**:
+
   - Standardize API naming and surface; add a thin compatibility layer for existing global names to avoid breaking changes.
   - Add new script APIs: Event, Audio, Timer/Scheduler, Query/Tags, Prefab/EntityOps, and enrich Three helpers (raycast utils, visibility, animate already returns Promises).
   - Replace mock input with real Input Service, add action querying, and basic gamepad support passthrough.
   - Introduce typed parameters via Zod schemas and optional codegen for editor UX and script hints.
   - Generate `script-api.d.ts` from runtime TypeScript sources during dev (via existing Vite plugin) to keep types in sync.
+  - Add first‑class Entity References in Script component UI and an `Entities` API to safely resolve and manipulate referenced entities.
 
 - **Architecture & Directory Structure**:
+
   ```
   src/core/lib/scripting/
   ├── ScriptAPI.ts                 # Align + extend (source of truth)
@@ -38,7 +42,8 @@
   │   ├── AudioAPI.ts             # play/stop, positional tie-ins
   │   ├── TimerAPI.ts             # timers, nextTick, frame waiters
   │   ├── QueryAPI.ts             # tags, raycasts, entity queries
-  │   └── PrefabAPI.ts            # spawn/destroy/enable/disable clones
+  │   ├── PrefabAPI.ts            # spawn/destroy/enable/disable clones
+  │   └── EntitiesAPI.ts          # resolve entity refs → safe IEntityScriptAPI
   └── ScriptExecutor.ts           # Wire new APIs into context
 
   src/plugins/
@@ -50,26 +55,33 @@
 ## Implementation Plan
 
 - **Phase 1: API Alignment (0.5 day)**
+
   1. Normalize names across runtime and d.ts (keep `IEntityScriptAPI`, `IThreeJSAPI`, `IInputAPI`).
   2. Add `compatAliases.ts` to expose legacy global names (`IScriptEntityAPI`, `IScriptThreeAPI`) mapped to the canonical ones.
   3. Audit ScriptExecutor context construction; ensure new fields are optional and back‑compatible.
 
 - **Phase 2: Input & Time (0.5 day)**
+
   1. Replace mock Input in `ScriptSystem` with a real input provider (hook/service adapter).
   2. Add `input.actions.isPressed(name)` and basic gamepad passthrough.
   3. Expose `time: { time, deltaTime, frameCount }` and add `TimerAPI` with frame‑budgeted scheduler.
 
 - **Phase 3: Events & Audio (0.75 day)**
+
   1. `EventAPI` with `on`, `off`, `emit`, auto‑scoped to entity and auto‑cleanup on destroy.
   2. `AudioAPI` bridging `SoundManager`/Howler: `play(url, opts)`, `stop(handle)`, optional positional binding to current entity.
 
 - **Phase 4: Query/Tags & Entity Ops (0.75 day)**
+
   1. `QueryAPI`: tag queries, `findByTag(name)`, `raycastAll`, `raycastFirst`, world position helpers.
   2. `PrefabAPI`: `spawn(prefabId, overrides?)`, `destroy(entityId)`, `setActive(entityId, active)` with ECS checks.
+  3. `EntitiesAPI`: resolve entity references to safe `IEntityScriptAPI`, lookup by id/name/tag, null‑safe wrappers.
 
 - **Phase 5: Type Generation & Parameters (0.5 day)**
+
   1. Generate `script-api.d.ts` from runtime interfaces (Vite dev). Add banner "AUTO‑GENERATED".
   2. Add optional `parametersSchema?: z.ZodSchema` per script; validate at runtime; expose typed `parameters`.
+  3. Script component UI: add `EntityRef` and `EntityRef[]` parameter types with entity picker + drag‑drop from hierarchy. Persist `{ entityId?, guid?, path? }` for stability across reloads.
 
 - **Phase 6: Tests & Docs (0.5 day)**
   1. Unit tests for each API and context lifecycle cleanup.
@@ -99,8 +111,23 @@
 ## Technical Details
 
 ### Canonical interfaces (source of truth)
+
 ```ts
 // src/core/lib/scripting/ScriptAPI.ts (additions only)
+export interface IEntityRef {
+  entityId?: number; // fast path when stable
+  guid?: string; // stable id if available
+  path?: string; // fallback scene path (e.g., Root/Enemy[2]/Weapon)
+}
+
+export interface IEntitiesAPI {
+  fromRef(ref: IEntityRef | number | string): IEntityScriptAPI | null; // accepts id/guid/path
+  get(entityId: number): IEntityScriptAPI | null;
+  findByName(name: string): IEntityScriptAPI[];
+  findByTag(tag: string): IEntityScriptAPI[];
+  exists(entityId: number): boolean;
+}
+
 export interface IEventAPI {
   on<T extends string>(type: T, handler: (payload: unknown) => void): () => void;
   off<T extends string>(type: T, handler: (payload: unknown) => void): void;
@@ -141,11 +168,13 @@ export interface IScriptContext {
   timer: ITimerAPI;
   query: IQueryAPI;
   prefab: IPrefabAPI;
+  entities: IEntitiesAPI; // NEW: resolve entity references safely
   parameters: Record<string, unknown>; // validated when schema provided
 }
 ```
 
 ### Context wiring
+
 ```ts
 // src/core/lib/scripting/ScriptExecutor.ts (inside createScriptContext)
 return {
@@ -160,11 +189,13 @@ return {
   timer: createTimerAPI(entityId),
   query: createQueryAPI(entityId, () => getSceneRef()),
   prefab: createPrefabAPI(entityId),
+  entities: createEntitiesAPI(),
   parameters,
 };
 ```
 
 ### Event API
+
 ```ts
 // src/core/lib/scripting/apis/EventAPI.ts
 import { emitter } from '@/core/lib/events';
@@ -184,6 +215,7 @@ export function createEventAPI(entityId: number): IEventAPI {
 ```
 
 ### Timer API (frame‑budgeted)
+
 ```ts
 // src/core/lib/scripting/apis/TimerAPI.ts
 export function createTimerAPI(entityId: number): ITimerAPI {
@@ -193,18 +225,36 @@ export function createTimerAPI(entityId: number): ITimerAPI {
 ```
 
 ### Query API
+
 ```ts
 // src/core/lib/scripting/apis/QueryAPI.ts
 export function createQueryAPI(entityId: number, getScene: () => THREE.Scene | null): IQueryAPI {
   return {
     findByTag: (tag) => /* map tag registry refs to entityIds */ [],
-    raycastFirst: (o, d) => createThreeJSAPI(entityId, () => null, getScene).raycast(o, d)[0] ?? null,
+    raycastFirst: (o, d) =>
+      createThreeJSAPI(entityId, () => null, getScene).raycast(o, d)[0] ?? null,
     raycastAll: (o, d) => createThreeJSAPI(entityId, () => null, getScene).raycast(o, d),
   };
 }
 ```
 
+### Entities API
+
+```ts
+// src/core/lib/scripting/apis/EntitiesAPI.ts
+export function createEntitiesAPI(): IEntitiesAPI {
+  return {
+    fromRef: (ref) => /* resolve via entityId → guid → path; wrap with createEntityAPI */ null,
+    get: (id) => /* wrap or null */ null,
+    findByName: (name) => /* search registry by name */ [],
+    findByTag: (tag) => /* reuse Query/Tags mapping, but return IEntityScriptAPI */ [],
+    exists: (id) => /* check ECS/componentRegistry */ false,
+  };
+}
+```
+
 ### DTS generation (dev only)
+
 ```ts
 // src/core/lib/scripting/adapters/dtsGenerator.ts
 // Walk ScriptAPI.ts interfaces, emit a global ambient d.ts mirroring names and JSDoc.
@@ -247,9 +297,22 @@ function onStart() {
 }
 ```
 
+```ts
+// 4) Entity references from Script component UI
+// Assume parameters.target is of type EntityRef (set via Inspector picker)
+function onStart() {
+  const target = entities.fromRef(parameters.target as EntityRef);
+  if (target) {
+    const [x, y, z] = target.transform.position;
+    target.transform.setPosition(x, y + 1, z);
+  }
+}
+```
+
 ## Testing Strategy
 
 - **Unit Tests**:
+
   - EventAPI: subscribe/emit/off, auto‑cleanup on destroy.
   - TimerAPI: timeout/interval/nextTick/waitFrames; frame budget adherence.
   - AudioAPI: play/stop, positional attach when entity has mesh.
@@ -263,14 +326,15 @@ function onStart() {
 
 ## Edge Cases
 
-| Edge Case | Remediation |
-| --- | --- |
-| Long‑running timers blocking frame | Scheduler slices work; cap per‑frame callbacks; warn via console.
-| Event listener leak | Auto‑unsubscribe on `onDestroy`; scoped off function set.
-| Missing scene/mesh for raycast/audio attach | Return empty results/no‑op, log debug message.
-| d.ts drift from runtime | Generate from source each dev boot; add CI check.
-| Old global names used in scripts | Provide alias globals; deprecate with console warnings.
-| Input device differences | Fallbacks for unsupported gamepad features; document mapping.
+| Edge Case                                   | Remediation                                                       |
+| ------------------------------------------- | ----------------------------------------------------------------- |
+| Long‑running timers blocking frame          | Scheduler slices work; cap per‑frame callbacks; warn via console. |
+| Event listener leak                         | Auto‑unsubscribe on `onDestroy`; scoped off function set.         |
+| Missing scene/mesh for raycast/audio attach | Return empty results/no‑op, log debug message.                    |
+| d.ts drift from runtime                     | Generate from source each dev boot; add CI check.                 |
+| Old global names used in scripts            | Provide alias globals; deprecate with console warnings.           |
+| Input device differences                    | Fallbacks for unsupported gamepad features; document mapping.     |
+| Stale/missing entity reference              | `entities.fromRef()` returns null; show warning; optional repair. |
 
 ## Sequence Diagram
 
@@ -294,13 +358,14 @@ sequenceDiagram
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-| --- | --- |
-| Security surface increases | Keep whitelist, proxies; no direct Three mutables; scoped events.
-| Performance regressions | Frame budgets in scheduler; Promises resolved via RAF; benchmarks.
-| Breaking changes in API names | Provide compatibility aliases; deprecation warnings; migration doc.
-| Type drift | Automated d.ts generation and CI check.
-| Input provider variability | Feature detection; no‑op stubs when not supported.
+| Risk                          | Mitigation                                                          |
+| ----------------------------- | ------------------------------------------------------------------- |
+| Security surface increases    | Keep whitelist, proxies; no direct Three mutables; scoped events.   |
+| Performance regressions       | Frame budgets in scheduler; Promises resolved via RAF; benchmarks.  |
+| Breaking changes in API names | Provide compatibility aliases; deprecation warnings; migration doc. |
+| Type drift                    | Automated d.ts generation and CI check.                             |
+| Input provider variability    | Feature detection; no‑op stubs when not supported.                  |
+| Entity identity across reload | Store guid/path fallback; runtime repair to current entityId.       |
 
 ## Timeline
 
@@ -319,6 +384,7 @@ sequenceDiagram
 - Input in scripts uses real provider; action querying works.
 - Back‑compat names continue to work with deprecation notices.
 - Unit and integration tests pass; CI check prevents d.ts drift.
+- Script component UI supports `EntityRef` parameters with picker/drag‑drop; scripts resolve refs via `entities.fromRef()`.
 
 ## Conclusion
 
@@ -331,5 +397,3 @@ This plan establishes a consistent, ergonomic, and safe Script API that covers e
 - Three.js + R3F for scene access; entity mesh registration via `ThreeJSEntityRegistry`.
 - Zod for parameter validation; TS path aliases per `tsconfig`.
 - No physics API expansion in this phase; add later if required by `2-10-physics-system.md`.
-
-
