@@ -40,14 +40,14 @@ export const HierarchyContextMenu: React.FC<IHierarchyContextMenuProps> = ({
             {isGroupSelection ? `Duplicate ${selectedCount} items` : 'Duplicate'}
           </button>
         </li>
-        {!isGroupSelection && onCreatePrefab && (
+        {onCreatePrefab && (
           <li>
             <button className="w-full text-left" onClick={onCreatePrefab}>
               Create Prefab
             </button>
           </li>
         )}
-        <li>
+        <li className="border-t border-gray-700 mt-1 pt-1">
           <button className="w-full text-left text-red-500" onClick={onDelete}>
             {isGroupSelection ? `Delete ${selectedCount} items` : 'Delete'}
           </button>

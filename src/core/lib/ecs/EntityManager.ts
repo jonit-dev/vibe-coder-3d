@@ -213,7 +213,6 @@ export class EntityManager {
   }
 
   createEntity(name: string, parentId?: EntityId, persistentId?: string): IEntity {
-
     const eid = addEntity(this.world);
 
     // Add required components (only EntityMeta - Transform will be added by ComponentRegistry)
@@ -504,12 +503,21 @@ export class EntityManager {
     setEntityMeta(entityId, entity.name, newParentId);
     this.entityCache.set(entityId, entity);
 
+    this.logger.debug('setParent updating relationships', {
+      entityId,
+      entityName: entity.name,
+      newParentId,
+      entityChildren: entity.children,
+    });
+
     // Emit event for reactive updates
     this.emitEvent({
       type: 'entity-updated',
       entityId,
       entity,
     });
+
+    this.logger.debug('setParent emitted entity-updated event', { entityId, newParentId });
 
     return true;
   }

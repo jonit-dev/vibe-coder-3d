@@ -1,15 +1,16 @@
-import { useCallback } from 'react';
-import { usePrefabsStore } from '@/editor/store/prefabsStore';
+import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
+import type { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { EntityManager } from '@/core/lib/ecs/EntityManager';
+import { Logger } from '@/core/lib/logger';
 import { PrefabManager } from '@/core/prefabs/PrefabManager';
 import { useEditorStore } from '@/editor/store/editorStore';
-import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
-import { Logger } from '@/core/lib/logger';
+import { usePrefabsStore } from '@/editor/store/prefabsStore';
+import { useCallback } from 'react';
 
 const logger = Logger.create('usePrefabs');
 
 export const usePrefabs = () => {
   const prefabManager = PrefabManager.getInstance();
-  const { selectedIds } = useEditorStore();
   const { openBrowser, closeBrowser, openCreate, closeCreate, _refreshPrefabs } = usePrefabsStore();
 
   /**
@@ -17,8 +18,13 @@ export const usePrefabs = () => {
    */
   const createFromSelection = useCallback(
     (options: { name: string; id?: string }) => {
+      // Read selectedIds directly from store to ensure latest value
+      const selectedIds = useEditorStore.getState().selectedIds;
+
+      logger.debug('Creating prefab from selection', { selectedIds, options });
+
       if (selectedIds.length === 0) {
-        logger.warn('No entity selected');
+        logger.warn('No entity selected', { selectedIds });
         return null;
       }
 
@@ -35,7 +41,7 @@ export const usePrefabs = () => {
         return null;
       }
     },
-    [selectedIds, prefabManager, _refreshPrefabs],
+    [prefabManager, _refreshPrefabs],
   );
 
   /**
@@ -68,28 +74,56 @@ export const usePrefabs = () => {
    */
   const replaceSelectionWithPrefab = useCallback(
     (prefabId: string) => {
+      const selectedIds = useEditorStore.getState().selectedIds;
+
       if (selectedIds.length === 0) {
         logger.warn('No entities selected');
         return;
       }
 
       try {
+        const entityManager = EntityManager.getInstance();
+
+        // Filter out child entities - only replace root entities in the selection
+        // to avoid duplication when parent deletion cascades to children
+        const rootSelectedIds = selectedIds.filter((entityId) => {
+          const entity = entityManager.getEntity(entityId);
+          if (!entity) return false;
+
+          // Keep this entity only if its parent is not also selected
+          return !entity.parentId || !selectedIds.includes(entity.parentId);
+        });
+
+        logger.debug('Filtered selection for replacement', {
+          original: selectedIds,
+          filtered: rootSelectedIds,
+        });
+
         const newEntityIds: number[] = [];
 
-        for (const entityId of selectedIds) {
+        for (const entityId of rootSelectedIds) {
           // Get entity transform for placement
-          const transform = componentRegistry.getComponentData(entityId, 'Transform') as
-            | { position?: number[]; parent?: number }
-            | undefined;
+          const transform = componentRegistry.getComponentData<ITransformData>(
+            entityId,
+            'Transform',
+          );
 
-          const position = transform?.position;
-          const parent = transform?.parent;
+          // Preserve parent relationship using EntityManager (source of truth)
+          const parent = entityManager.getEntity(entityId)?.parentId;
 
-          // Destroy old entity
+          // Destroy old entity (this will cascade to children)
           prefabManager.destroy(entityId);
 
-          // Create prefab instance at same location
-          const newEntityId = prefabManager.instantiate(prefabId, { position }, parent);
+          // Create prefab instance at same location with full transform
+          const newEntityId = prefabManager.instantiate(
+            prefabId,
+            {
+              position: transform?.position,
+              rotation: transform?.rotation,
+              scale: transform?.scale,
+            },
+            parent,
+          );
           if (newEntityId !== -1) {
             newEntityIds.push(newEntityId);
           }
@@ -103,7 +137,7 @@ export const usePrefabs = () => {
         logger.error('Failed to replace selection with prefab:', error);
       }
     },
-    [selectedIds, prefabManager],
+    [prefabManager],
   );
 
   /**

@@ -10,9 +10,9 @@ import { ECSWorld } from '../lib/ecs/World';
 import { EntityId } from '../lib/ecs/types';
 import { getStringFromHash, storeString } from '../lib/ecs/utils/stringHashUtils';
 import { Logger } from '../lib/logger';
-import { IInputAPI, ITimeAPI } from '../lib/scripting/ScriptAPI';
 import { IScriptExecutionResult, ScriptExecutor } from '../lib/scripting/ScriptExecutor';
 import { resolveScript } from '../lib/scripting/ScriptResolver';
+import { ITimeAPI } from '../lib/scripting/ScriptAPI';
 import { scheduler } from '../lib/scripting/adapters/scheduler';
 import { createInputAPI } from '../lib/scripting/apis/InputAPI';
 

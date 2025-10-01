@@ -17,6 +17,10 @@ import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsInte
 import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
 import { ScenePersistenceModal } from './components/shared/ScenePersistenceModal';
 import { PreferencesModal } from './components/shared/PreferencesModal';
+import { usePrefabs } from './components/prefabs/hooks/usePrefabs';
+import { PrefabCreateModal } from './components/prefabs/PrefabCreateModal';
+import { PrefabBrowserModal } from './components/prefabs/PrefabBrowserModal';
+import { usePrefabsStore } from './store/prefabsStore';
 import { useAutoSelection } from './hooks/useAutoSelection';
 import { useEditorHandlers } from './hooks/useEditorHandlers';
 import { GizmoMode, useEditorKeyboard } from './hooks/useEditorKeyboard';
@@ -79,6 +83,10 @@ const Editor: React.FC = () => {
 
   // Preferences modal state
   const [showPreferences, setShowPreferences] = useState(false);
+
+  // Prefabs hook
+  const { openCreate, closeCreate, openBrowser, closeBrowser, instantiate } = usePrefabs();
+  const { isCreateOpen, isBrowserOpen } = usePrefabsStore();
 
   // Entity synchronization with ECS system
   useEntitySynchronization({ entityIds, setEntityIds });
@@ -240,9 +248,23 @@ const Editor: React.FC = () => {
         isMaterialsOpen={isMaterialsExpanded}
         currentSceneName={currentSceneName}
         onOpenPreferences={() => setShowPreferences(true)}
+        onCreatePrefab={openCreate}
+        onBrowsePrefabs={openBrowser}
       />
 
       <PreferencesModal isOpen={showPreferences} onClose={() => setShowPreferences(false)} />
+
+      <PrefabCreateModal isOpen={isCreateOpen} onClose={closeCreate} />
+
+      <PrefabBrowserModal
+        isOpen={isBrowserOpen}
+        onClose={closeBrowser}
+        onSelect={(prefabId) => {
+          instantiate(prefabId);
+          closeBrowser();
+        }}
+        onCreateNew={openCreate}
+      />
 
       <EnhancedAddObjectMenu
         anchorRef={addButtonRef as React.RefObject<HTMLElement>}

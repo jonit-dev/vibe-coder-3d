@@ -2,10 +2,14 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import React, { forwardRef } from 'react';
 import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
+import { TbCube, TbPuzzle } from 'react-icons/tb';
 
+import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { EditableEntityName } from '@/editor/components/forms/EditableEntityName';
 
-import { CubeIcon } from './HierarchyPanel';
+const CubeIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <TbCube className={className} size={16} />
+);
 
 export interface IHierarchyItemProps {
   id: number;
@@ -57,6 +61,11 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
         onToggleExpanded(id);
       }
     };
+
+    // Check if this entity is a prefab instance
+    const isPrefabInstance = React.useMemo(() => {
+      return componentRegistry.hasComponent(id, 'PrefabInstance');
+    }, [id]);
 
     return (
       <li
@@ -113,22 +122,36 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
 
         {/* Drag handle and content */}
         <div
-          className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer flex-1 min-w-0"
+          className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer flex-1 min-w-0 ${
+            isPrefabInstance ? 'bg-purple-500/5 border-l-2 border-purple-500/40' : ''
+          }`}
           {...listeners}
         >
-          <CubeIcon
-            className={`${selected ? 'text-blue-300' : isPartOfSelection ? 'text-blue-400' : 'text-gray-400'} transition-colors duration-200 w-3 h-3 flex-shrink-0`}
-          />
+          {isPrefabInstance ? (
+            <TbPuzzle
+              className={`${selected ? 'text-purple-300' : isPartOfSelection ? 'text-purple-400' : 'text-purple-500'} transition-colors duration-200 w-3.5 h-3.5 flex-shrink-0`}
+              title="Prefab Instance"
+            />
+          ) : (
+            <CubeIcon
+              className={`${selected ? 'text-blue-300' : isPartOfSelection ? 'text-blue-400' : 'text-gray-400'} transition-colors duration-200 w-3 h-3 flex-shrink-0`}
+            />
+          )}
           <EditableEntityName
             entityId={id}
             enableDoubleClick={true}
-            className="font-medium truncate flex-1 min-w-0"
+            className={`font-medium truncate flex-1 min-w-0 ${isPrefabInstance ? 'text-purple-200' : ''}`}
             onDoubleClick={() => {
               // Prevent selection when double-clicking to edit
             }}
           />
-          {(selected || isPartOfSelection) && (
-            <div className="ml-auto flex-shrink-0 flex gap-1">
+          {(selected || isPartOfSelection || isPrefabInstance) && (
+            <div className="ml-auto flex-shrink-0 flex gap-1 items-center">
+              {isPrefabInstance && (
+                <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/30 text-purple-200 rounded border border-purple-400/40 font-semibold">
+                  PREFAB
+                </span>
+              )}
               {selected && <div className="w-1 h-1 bg-blue-400 rounded-full"></div>}
               {isPartOfSelection && !selected && (
                 <div className="w-1 h-1 bg-blue-500/60 rounded-full"></div>

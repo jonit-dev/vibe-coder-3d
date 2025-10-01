@@ -92,14 +92,14 @@ export const PrefabInspector: React.FC<IPrefabInspectorProps> = React.memo(({ pr
             <span className="text-gray-400">Version:</span>
             <span className="text-gray-300">{prefab.version}</span>
           </div>
-          {prefab.metadata?.createdAt && (
+          {prefab.metadata?.createdAt && typeof prefab.metadata.createdAt === 'string' ? (
             <div className="flex justify-between">
               <span className="text-gray-400">Created:</span>
               <span className="text-gray-300">
                 {new Date(prefab.metadata.createdAt as string).toLocaleDateString()}
               </span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 

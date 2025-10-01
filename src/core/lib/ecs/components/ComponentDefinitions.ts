@@ -7,7 +7,6 @@ import { Types } from 'bitecs';
 import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory, componentRegistry } from '../ComponentRegistry';
-import { EntityId } from '../types';
 import { Logger } from '@core/lib/logger';
 
 // Import all core component definitions from individual files

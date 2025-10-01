@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { FiChevronRight } from 'react-icons/fi';
 
 export interface IMenuAction {
-  label: string;
+  label?: string;
   shortcut?: string;
   action?: () => void;
   divider?: boolean;
@@ -55,7 +55,6 @@ MenuContainer.displayName = 'MenuContainer';
 export const MenuBar: React.FC<IMenuBarProps> = ({ items }) => {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const [menuPosition, setMenuPosition] = useState({ left: 0, top: 0 });
-  const [hoveredItem, setHoveredItem] = useState<number | null>(null);
   const [activeSubmenu, setActiveSubmenu] = useState<{
     item: IMenuAction;
     position: { left: number; top: number };
@@ -155,7 +154,6 @@ export const MenuBar: React.FC<IMenuBarProps> = ({ items }) => {
         }`}
         onClick={() => !item.disabled && !hasSubmenu && handleItemClick(item.action)}
         onMouseEnter={(e) => {
-          setHoveredItem(index);
           if (hasSubmenu) {
             handleSubmenuHover(item, e);
           } else {
@@ -179,7 +177,9 @@ export const MenuBar: React.FC<IMenuBarProps> = ({ items }) => {
       {items.map((menu, index) => (
         <button
           key={index}
-          ref={(el) => (menuRefs.current[index] = el)}
+          ref={(el) => {
+            menuRefs.current[index] = el;
+          }}
           className={`px-3 py-1 text-gray-300 hover:bg-gray-700 rounded transition-colors ${
             activeMenu === index ? 'bg-gray-700' : ''
           }`}

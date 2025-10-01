@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import { Logger } from '@/core/lib/logger';
 import { Modal } from '@/editor/components/shared/Modal';
+import React, { useState } from 'react';
+import { FiAlertCircle, FiBox } from 'react-icons/fi';
 import { usePrefabs } from './hooks/usePrefabs';
-import { FiBox, FiAlertCircle } from 'react-icons/fi';
+
+const logger = Logger.create('PrefabCreateModal');
 
 export interface IPrefabCreateModalProps {
   isOpen: boolean;
@@ -11,30 +14,46 @@ export interface IPrefabCreateModalProps {
 
 export const PrefabCreateModal: React.FC<IPrefabCreateModalProps> = React.memo(
   ({ isOpen, onClose, onCreated }) => {
-    const { createFromSelection } = usePrefabs();
+    const { createFromSelection, replaceSelectionWithPrefab } = usePrefabs();
     const [name, setName] = useState('');
     const [id, setId] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     const handleCreate = () => {
+      logger.debug('Create button clicked', { name: name.trim(), id: id.trim() });
+
       if (!name.trim()) {
         setError('Prefab name is required');
         return;
       }
 
       try {
+        logger.debug('Calling createFromSelection');
         const prefab = createFromSelection({ name: name.trim(), id: id.trim() || undefined });
 
         if (prefab) {
+          logger.info('Prefab created successfully', {
+            prefabId: prefab.id,
+            prefabName: prefab.name,
+          });
+          // Immediately replace current selection with an instance of the new prefab
+          try {
+            replaceSelectionWithPrefab(prefab.id);
+            logger.info('Replaced selection with prefab instance', { prefabId: prefab.id });
+          } catch (e) {
+            logger.error('Failed to replace selection with prefab instance', e);
+          }
           onCreated?.(prefab.id);
           onClose();
           setName('');
           setId('');
           setError(null);
         } else {
+          logger.error('createFromSelection returned null');
           setError('Failed to create prefab. Make sure an entity is selected.');
         }
       } catch (err) {
+        logger.error('Exception creating prefab:', err);
         setError(err instanceof Error ? err.message : 'Failed to create prefab');
       }
     };

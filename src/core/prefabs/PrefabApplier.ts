@@ -22,6 +22,14 @@ export class PrefabApplier {
    * Instantiate a prefab into the ECS world
    */
   instantiate(prefab: IPrefabDefinition, options: IInstantiateOptions = {}): number {
+    logger.info('🟡 Instantiating prefab', {
+      prefabId: prefab.id,
+      prefabName: prefab.name,
+      hasRoot: !!prefab.root,
+      rootChildren: prefab.root.children?.length || 0,
+      parentEntityId: options.parentEntityId,
+    });
+
     // Check max depth
     if (isMaxDepthExceeded(prefab.root)) {
       logger.error('Prefab exceeds maximum depth', { prefabId: prefab.id });
@@ -32,11 +40,30 @@ export class PrefabApplier {
     let rootEntity = prefab.root;
     if (options.applyOverrides) {
       rootEntity = applyOverridePatch(prefab.root, options.applyOverrides) as IPrefabEntity;
+      logger.info('🟡 Overrides applied', { prefabId: prefab.id });
     }
+
+    logger.info('🟡 Root entity structure', {
+      name: rootEntity.name,
+      hasChildren: !!rootEntity.children,
+      childCount: rootEntity.children?.length || 0,
+      childrenNames: rootEntity.children?.map((c) => c.name),
+    });
 
     // Deserialize prefab entity tree
     const serializer = PrefabSerializer.getInstance();
-    const rootEntityId = serializer.deserialize(rootEntity, options.parentEntityId);
+    const rootEntityId = serializer.deserialize(rootEntity, options.parentEntityId ?? undefined);
+
+    // Verify the deserialized entity structure
+    const entityManager = EntityManager.getInstance();
+    const instantiatedEntity = entityManager.getEntity(rootEntityId);
+    logger.info('🟡 Instantiated entity structure', {
+      rootEntityId,
+      entityName: instantiatedEntity?.name,
+      parentId: instantiatedEntity?.parentId,
+      children: instantiatedEntity?.children || [],
+      childrenCount: instantiatedEntity?.children?.length || 0,
+    });
 
     // Add PrefabInstance component to track this instance
     const instanceUuid = crypto.randomUUID();
@@ -52,7 +79,7 @@ export class PrefabApplier {
       this.applyTransformOverrides(rootEntityId, options);
     }
 
-    logger.debug('Prefab instantiated', {
+    logger.info('🟡 Prefab instantiated successfully', {
       prefabId: prefab.id,
       entityId: rootEntityId,
       instanceUuid,
@@ -105,7 +132,7 @@ export class PrefabApplier {
     // Remove the entity (this will cascade to children via EntityManager)
     try {
       const entityManager = EntityManager.getInstance();
-      entityManager.removeEntity(entityId);
+      entityManager.deleteEntity(entityId);
 
       logger.debug('Prefab instance destroyed', { entityId });
     } catch (error) {
@@ -268,7 +295,7 @@ export class PrefabApplier {
    */
   getInstances(prefabId: string): number[] {
     const instances: number[] = [];
-    const entities = componentRegistry.getEntitiesWith(['PrefabInstance']);
+    const entities = componentRegistry.getEntitiesWithComponent('PrefabInstance');
 
     for (const entityId of entities) {
       const instance = componentRegistry.getComponentData(entityId, 'PrefabInstance');

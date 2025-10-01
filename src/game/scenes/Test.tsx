@@ -1,9 +1,10 @@
 import React from 'react';
 import { useEffect } from 'react';
-import { useEntityManager } from '@editor/hooks/useEntityManager';
-import { useComponentManager } from '@editor/hooks/useComponentManager';
-import { MaterialRegistry, KnownComponentTypes } from '@core';
-import { useMaterialsStore } from '@editor/store/materialsStore';
+import { useEntityManager } from '@/editor/hooks/useEntityManager';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { useMaterialsStore } from '@/editor/store/materialsStore';
+import { materialRegistry } from '@core/materials';
+import { KnownComponentTypes } from '@core/lib/ecs';
 import type { ComponentDataMap, SceneMetadata } from '@core';
 import { validateSceneEntity } from '@core';
 
@@ -26,7 +27,7 @@ interface ITypedSceneEntity {
  */
 const sceneData: ITypedSceneEntity[] = [
   {
-    id: 6,
+    id: 0,
     name: 'Main Camera',
     components: {
       PersistentId: {
@@ -78,7 +79,7 @@ const sceneData: ITypedSceneEntity[] = [
     },
   },
   {
-    id: 7,
+    id: 1,
     name: 'Directional Light',
     components: {
       PersistentId: {
@@ -113,7 +114,7 @@ const sceneData: ITypedSceneEntity[] = [
     },
   },
   {
-    id: 8,
+    id: 2,
     name: 'Ambient Light',
     components: {
       PersistentId: {
@@ -148,7 +149,7 @@ const sceneData: ITypedSceneEntity[] = [
     },
   },
   {
-    id: 9,
+    id: 3,
     name: 'Cube 0',
     components: {
       PersistentId: {
@@ -170,14 +171,14 @@ const sceneData: ITypedSceneEntity[] = [
     },
   },
   {
-    id: 10,
+    id: 6,
     name: 'Sphere 0',
     components: {
       PersistentId: {
-        id: 'e5ce401b-fbf4-47cb-98ca-e3743eaaa56c',
+        id: 'a593734e-4f79-4ff2-b269-70503c3f7f5b',
       },
       Transform: {
-        position: [-1.5, 1.5, -0.25],
+        position: [-1.5, 1.5, 3.125],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       },
@@ -189,18 +190,28 @@ const sceneData: ITypedSceneEntity[] = [
         receiveShadows: true,
         modelPath: '',
       },
+      PrefabInstance: {
+        prefabId: 'prefab_1759355028777',
+        version: 1,
+        instanceUuid: '7f3aae14-d015-4772-80fd-13046390eaa3',
+        overridePatch: {
+          position: [-1.5, 1.5, -0.25],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+      },
     },
   },
   {
-    id: 11,
+    id: 7,
     name: 'Sphere 1',
-    parentId: 10,
+    parentId: 6,
     components: {
       PersistentId: {
-        id: '6d740d77-669d-4c18-9899-af8aedcf7cc4',
+        id: '3090838c-b51f-4524-840a-c2067e98894f',
       },
       Transform: {
-        position: [1, 1, 0],
+        position: [1, 1, 3.375],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       },
@@ -301,12 +312,12 @@ const sceneMaterials = [
 export const metadata: SceneMetadata = {
   name: 'Test',
   version: 1,
-  timestamp: '2025-09-30T02:20:30.481Z',
+  timestamp: '2025-10-01T21:44:03.808Z',
 };
 
 /**
  * Test
- * Generated: 2025-09-30T02:20:30.481Z
+ * Generated: 2025-10-01T21:44:03.808Z
  * Version: 1
  */
 export const Test: React.FC = () => {
@@ -316,7 +327,7 @@ export const Test: React.FC = () => {
 
   useEffect(() => {
     // Load materials first
-    const materialRegistry = MaterialRegistry.getInstance();
+    // Material registry is imported at top level
     materialRegistry.clearMaterials();
 
     sceneMaterials.forEach((material) => {

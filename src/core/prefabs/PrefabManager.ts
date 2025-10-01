@@ -5,6 +5,7 @@ import { PrefabSerializer } from './PrefabSerializer';
 import { PrefabPool } from './PrefabPool';
 import { Logger } from '@/core/lib/logger';
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
+import { EntityManager } from '@/core/lib/ecs/EntityManager';
 
 const logger = Logger.create('PrefabManager');
 
@@ -198,8 +199,8 @@ export class PrefabManager {
   isActive(entityId: number): boolean {
     // Check MeshRenderer enabled state as proxy for active
     const meshRenderer = componentRegistry.getComponentData(entityId, 'MeshRenderer');
-    if (meshRenderer && 'enabled' in meshRenderer) {
-      return Boolean(meshRenderer.enabled);
+    if (meshRenderer && typeof meshRenderer === 'object' && 'enabled' in meshRenderer) {
+      return Boolean((meshRenderer as { enabled?: boolean }).enabled);
     }
 
     // Default to true if no renderer
@@ -267,7 +268,31 @@ export class PrefabManager {
    * Create prefab from entity
    */
   createFromEntity(entityId: number, name: string, id: string): IPrefabDefinition {
+    logger.info('🔴 Creating prefab from entity', { entityId, name, id });
+
+    const entityManager = EntityManager.getInstance();
+    const entity = entityManager.getEntity(entityId);
+
+    logger.info('🔴 Source entity state', {
+      entityId,
+      hasEntity: !!entity,
+      entityName: entity?.name,
+      parentId: entity?.parentId,
+      children: entity?.children || [],
+      childrenCount: entity?.children?.length || 0,
+    });
+
     const prefab = this.serializer.createPrefabFromEntity(entityId, name, id);
+
+    logger.info('🔴 Prefab created', {
+      prefabId: prefab.id,
+      prefabName: prefab.name,
+      hasRoot: !!prefab.root,
+      rootChildren: prefab.root.children?.length || 0,
+      rootHasChildren: !!prefab.root.children,
+      prefabJSON: JSON.stringify(prefab, null, 2).substring(0, 1000),
+    });
+
     this.registry.upsert(prefab);
     return prefab;
   }

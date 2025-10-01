@@ -3,7 +3,6 @@ import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { EntityManager } from '@/core/lib/ecs/EntityManager';
 import { Logger } from '@/core/lib/logger';
 import { getEntityName } from '@/core/lib/ecs/DataConversion';
-import { EntityQueries } from '@/core/lib/ecs/queries/entityQueries';
 
 const logger = Logger.create('PrefabSerializer');
 
@@ -21,43 +20,96 @@ export class PrefabSerializer {
    * Serialize an entity and its children into a prefab entity structure
    */
   serialize(entityId: number): IPrefabEntity {
+    logger.info('🔵 Starting serialization', { entityId });
+
     const components: Record<string, unknown> = {};
 
+    // Get entity from EntityManager to check parent-child relationships
+    const entityManager = EntityManager.getInstance();
+    const entity = entityManager.getEntity(entityId);
+
+    logger.info('🔵 Entity state', {
+      entityId,
+      hasEntity: !!entity,
+      parentId: entity?.parentId,
+      children: entity?.children || [],
+      childrenCount: entity?.children?.length || 0,
+    });
+
     // Get all component types for this entity
-    const componentTypes = componentRegistry.getComponentTypes(entityId);
+    const componentTypes = componentRegistry.getEntityComponents(entityId);
+    logger.info('🔵 Component types found', {
+      entityId,
+      componentTypes,
+      count: componentTypes.length,
+    });
+
+    if (componentTypes.length === 0) {
+      logger.warn('Entity has no components', { entityId });
+    }
 
     // Serialize each component (except PrefabInstance to avoid recursion)
     for (const type of componentTypes) {
       if (type === 'PrefabInstance') {
+        logger.info('🔵 Skipping PrefabInstance component', { entityId });
         continue; // Don't serialize prefab instance data when creating new prefab
       }
 
       const data = componentRegistry.getComponentData(entityId, type);
       if (data) {
         components[type] = JSON.parse(JSON.stringify(data)); // Deep clone
+        logger.debug('Component serialized', { entityId, type });
       }
     }
 
     // Get entity name
     const name = getEntityName(entityId) || `Entity_${entityId}`;
+    logger.info('🔵 Entity name retrieved', { entityId, name });
 
     // Serialize children recursively
     const children: IPrefabEntity[] = [];
     const childIds = this.getChildren(entityId);
 
+    logger.info('🔵 About to serialize children', {
+      entityId,
+      childIds,
+      childCount: childIds.length,
+      entityManagerChildren: entity?.children || [],
+      match: JSON.stringify(childIds) === JSON.stringify(entity?.children || []),
+    });
+
     for (const childId of childIds) {
       try {
-        children.push(this.serialize(childId));
+        logger.info('🔵 Serializing child', { parentId: entityId, childId });
+        const childEntity = this.serialize(childId);
+        children.push(childEntity);
+        logger.info('🔵 Child serialized successfully', {
+          parentId: entityId,
+          childId,
+          childName: childEntity.name,
+          hasGrandchildren: !!childEntity.children,
+          grandchildrenCount: childEntity.children?.length || 0,
+        });
       } catch (error) {
         logger.error(`Failed to serialize child entity ${childId}:`, error);
       }
     }
 
-    return {
+    const result: IPrefabEntity = {
       name,
       components,
       children: children.length > 0 ? children : undefined,
     };
+
+    logger.info('🔵 Serialization complete', {
+      entityId,
+      name,
+      childCount: children.length,
+      hasChildren: children.length > 0,
+      result: JSON.stringify(result, null, 2).substring(0, 500),
+    });
+
+    return result;
   }
 
   /**
@@ -66,45 +118,84 @@ export class PrefabSerializer {
   deserialize(entity: IPrefabEntity, parentId?: number): number {
     const entityManager = EntityManager.getInstance();
 
-    // Create new entity
-    const entityId = entityManager.createEntity();
+    logger.info('🟢 Starting deserialization', {
+      name: entity.name,
+      parentId,
+      hasChildren: !!entity.children,
+      childCount: entity.children?.length || 0,
+      childrenData: entity.children?.map((c) => c.name),
+    });
 
-    // Set entity name
-    if (entity.name) {
-      componentRegistry.updateComponent(entityId, 'EntityMeta', { name: entity.name });
-    }
+    // Create new entity
+    const createdEntity = entityManager.createEntity(entity.name || 'Prefab Entity', parentId);
+    const entityId = createdEntity.id;
+
+    logger.info('🟢 Entity created', {
+      entityId,
+      name: entity.name,
+      parentId,
+      entityParentId: createdEntity.parentId,
+      entityChildren: createdEntity.children,
+    });
 
     // Add all components
     for (const [componentType, componentData] of Object.entries(entity.components)) {
       try {
         if (componentType === 'EntityMeta') {
-          // Handle EntityMeta specially to avoid overwriting
-          componentRegistry.updateComponent(entityId, componentType, {
-            ...componentData,
-            name: entity.name,
-          });
-        } else {
-          componentRegistry.addComponent(entityId, componentType, componentData);
+          // EntityMeta is already set by createEntity, skip
+          continue;
         }
+        componentRegistry.addComponent(entityId, componentType, componentData);
+        logger.debug('Component added', { entityId, componentType });
       } catch (error) {
         logger.error(`Failed to add component ${componentType} to entity ${entityId}:`, error);
       }
     }
 
-    // Set parent if specified
-    if (parentId !== undefined) {
-      this.setParent(entityId, parentId);
-    }
-
     // Deserialize children recursively
-    if (entity.children) {
-      for (const child of entity.children) {
+    if (entity.children && entity.children.length > 0) {
+      logger.info('🟢 Deserializing children', {
+        parentEntityId: entityId,
+        childCount: entity.children.length,
+        childrenNames: entity.children.map((c) => c.name),
+      });
+
+      for (let i = 0; i < entity.children.length; i++) {
+        const child = entity.children[i];
         try {
-          this.deserialize(child, entityId);
+          logger.info('🟢 Deserializing child', {
+            index: i,
+            childName: child.name,
+            parentEntityId: entityId,
+          });
+
+          const childId = this.deserialize(child, entityId);
+
+          // Verify child was properly parented
+          const childEntity = entityManager.getEntity(childId);
+          logger.info('🟢 Child deserialized', {
+            childId,
+            childName: child.name,
+            parentEntityId: entityId,
+            childParentId: childEntity?.parentId,
+            parentMatches: childEntity?.parentId === entityId,
+          });
         } catch (error) {
           logger.error('Failed to deserialize child entity:', error);
         }
       }
+
+      // Verify parent entity's children array
+      const parentEntity = entityManager.getEntity(entityId);
+      logger.info('🟢 Parent entity after all children deserialized', {
+        parentEntityId: entityId,
+        parentChildren: parentEntity?.children || [],
+        expectedChildCount: entity.children.length,
+        actualChildCount: parentEntity?.children?.length || 0,
+        childrenMatch: (parentEntity?.children?.length || 0) === entity.children.length,
+      });
+    } else {
+      logger.info('🟢 No children to deserialize', { entityId });
     }
 
     return entityId;
@@ -114,15 +205,19 @@ export class PrefabSerializer {
    * Create prefab definition from entity
    */
   createPrefabFromEntity(entityId: number, name: string, id: string): IPrefabDefinition {
+    logger.debug('Creating prefab from entity', { entityId, name, id });
+
     const root = this.serialize(entityId);
+    logger.debug('Entity serialized', { root });
 
     // Collect dependencies (materials, scripts, etc.)
     const dependencies: string[] = [];
     const visited = new Set<string>();
 
     this.collectDependencies(root, dependencies, visited);
+    logger.debug('Dependencies collected', { dependencies });
 
-    return {
+    const prefab = {
       id,
       name,
       version: 1,
@@ -134,6 +229,9 @@ export class PrefabSerializer {
       dependencies,
       tags: [],
     };
+
+    logger.info('Prefab definition created', { prefabId: id, prefabName: name });
+    return prefab;
   }
 
   /**
@@ -178,28 +276,23 @@ export class PrefabSerializer {
   }
 
   /**
-   * Set parent-child relationship
-   */
-  private setParent(entityId: number, parentId: number): void {
-    try {
-      // Update Transform parent reference
-      const transform = componentRegistry.getComponentData(entityId, 'Transform');
-      if (transform) {
-        componentRegistry.updateComponent(entityId, 'Transform', {
-          ...transform,
-          parent: parentId,
-        });
-      }
-    } catch (error) {
-      logger.error(`Failed to set parent ${parentId} for entity ${entityId}:`, error);
-    }
-  }
-
-  /**
-   * Get entity children using HierarchyIndex
+   * Get entity children using EntityManager directly
    */
   private getChildren(entityId: number): number[] {
-    const queries = EntityQueries.getInstance();
-    return queries.getChildren(entityId);
+    const entityManager = EntityManager.getInstance();
+    const entity = entityManager.getEntity(entityId);
+
+    // Use EntityManager's children array directly - it's the source of truth
+    const children = entity?.children || [];
+
+    logger.info('🔵 getChildren called', {
+      entityId,
+      childrenFromEntityManager: children,
+      childCount: children.length,
+      hasEntity: !!entity,
+      entityName: entity?.name,
+    });
+
+    return children;
   }
 }
