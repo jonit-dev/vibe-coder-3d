@@ -19,7 +19,8 @@ export interface ITsxSceneMetadata {
 }
 
 /**
- * Generates a TypeScript React component from scene data with full type safety
+ * Generates a clean TypeScript React component from scene data
+ * Uses the defineScene helper for zero boilerplate
  */
 export const generateTsxScene = (
   entities: ITsxSceneEntity[],
@@ -27,36 +28,18 @@ export const generateTsxScene = (
   materials: IMaterialDefinition[] = [],
   prefabs: IPrefabDefinition[] = [],
 ): string => {
-  const componentName = sanitizeComponentName(metadata.name);
-
-  const componentString = `import React from 'react';
-import { useEffect } from 'react';
-import { useEntityManager } from '@/editor/hooks/useEntityManager';
-import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { MaterialRegistry } from '@core/materials';
-import { useMaterialsStore } from '@/editor/store/materialsStore';
-import { usePrefabsStore } from '@/editor/store/prefabsStore';
-import type { KnownComponentTypes, ComponentDataMap, SceneMetadata } from '@core';
-import { validateSceneEntity } from '@core';
+  const componentString = `import { defineScene } from './defineScene';
 
 /**
- * Type-safe scene data interface
+ * ${metadata.name}${metadata.description ? `\n * ${metadata.description}` : ''}
+ * Generated: ${metadata.timestamp}
+ * Version: ${metadata.version}${metadata.author ? `\n * Author: ${metadata.author}` : ''}
+ *
+ * Pure data definition - all loading logic abstracted
  */
-interface ITypedSceneEntity {
-  id: string;
-  name: string;
-  parentId?: string | null;
-  components: {
-    [K in KnownComponentTypes]?: ComponentDataMap[K];
-  } & {
-    [key: string]: unknown; // Allow additional components
-  };
-}
-
-/**
- * Type-safe scene definition
- */
-const sceneData: ITypedSceneEntity[] = ${JSON.stringify(
+export default defineScene({
+  metadata: ${JSON.stringify(metadata, null, 2)},
+  entities: ${JSON.stringify(
     entities.map((entity) => {
       // For Script components with external scriptRef, only save the reference, not inline code
       if (entity.components.Script && typeof entity.components.Script === 'object') {
@@ -89,90 +72,10 @@ const sceneData: ITypedSceneEntity[] = ${JSON.stringify(
     }),
     null,
     2,
-  )};
-
-/**
- * Scene materials
- */
-const sceneMaterials = ${JSON.stringify(materials, null, 2)};
-
-/**
- * Scene prefabs
- */
-const scenePrefabs = ${JSON.stringify(prefabs, null, 2)};
-
-/**
- * Scene metadata
- */
-export const metadata: SceneMetadata = ${JSON.stringify(metadata, null, 2)};
-
-/**
- * ${metadata.name}${metadata.description ? `\n * ${metadata.description}` : ''}
- * Generated: ${metadata.timestamp}
- * Version: ${metadata.version}${metadata.author ? `\n * Author: ${metadata.author}` : ''}
- */
-export const ${componentName}: React.FC = () => {
-  const entityManager = useEntityManager();
-  const componentManager = useComponentManager();
-  const materialsStore = useMaterialsStore();
-  const prefabsStore = usePrefabsStore();
-
-  useEffect(() => {
-    // Load materials first
-    const materialRegistry = MaterialRegistry.getInstance();
-    materialRegistry.clearMaterials();
-
-    sceneMaterials.forEach(material => {
-      materialRegistry.upsert(material);
-    });
-
-    // Refresh materials store cache
-    materialsStore._refreshMaterials();
-
-    // Load prefabs (order preserved from scene definition)
-    const loadPrefabs = async () => {
-      console.log('[Scene] Loading prefabs from scene:', scenePrefabs.length);
-      const { PrefabManager } = await import('@core/prefabs');
-      const prefabManager = PrefabManager.getInstance();
-      prefabManager.clear();
-
-      // IMPORTANT: forEach preserves array order for prefab registration
-      scenePrefabs.forEach(prefab => {
-        console.log('[Scene] Registering prefab:', prefab.id, prefab.name);
-        prefabManager.register(prefab);
-      });
-
-      // Refresh prefabs store cache so UI components can see the prefabs
-      prefabsStore._refreshPrefabs();
-      console.log('[Scene] Prefabs loaded to store, total in registry:', prefabManager.getAll().length);
-    };
-    loadPrefabs();
-
-    // Validate scene data at runtime
-    const validatedSceneData = sceneData.map(entity => validateSceneEntity(entity));
-
-    // Clear existing entities
-    entityManager.clearEntities();
-
-    // Create entities and components with type safety
-    validatedSceneData.forEach((entityData: ITypedSceneEntity) => {
-      const entity = entityManager.createEntity(entityData.name, entityData.parentId || null);
-
-      // Type-safe component addition
-      Object.entries(entityData.components).forEach(([componentType, componentData]) => {
-        if (componentData) {
-          // Type assertion for known component types
-          componentManager.addComponent(entity.id, componentType, componentData);
-        }
-      });
-    });
-
-  }, [entityManager, componentManager, materialsStore, prefabsStore]);
-
-  return null; // Scene components don't render UI
-};
-
-export default ${componentName};
+  )},
+  materials: ${JSON.stringify(materials, null, 2)},
+  prefabs: ${JSON.stringify(prefabs, null, 2)}
+});
 `;
 
   return componentString;
@@ -214,7 +117,7 @@ export const saveTsxScene = async (
 
 /**
  * Loads and executes a TSX scene file
- * Note: This requires dynamic import which works in dev but needs special handling in production
+ * Scene files now use defineScene, so we get back { Component, metadata, data }
  */
 export const loadTsxScene = async (
   sceneName: string,
@@ -226,12 +129,13 @@ export const loadTsxScene = async (
   const scenePath = `../../../src/game/scenes/${sanitizedName}.tsx`;
 
   try {
-    // Dynamic import the scene component
-    const sceneModule = await import(scenePath);
+    // Dynamic import the scene (now returns defineScene result)
+    const sceneDefinition = await import(scenePath);
+    const sceneObj = sceneDefinition.default;
 
     return {
-      component: sceneModule.default || sceneModule[sanitizedName],
-      metadata: sceneModule.metadata,
+      component: sceneObj.Component,
+      metadata: sceneObj.metadata,
     };
   } catch (error) {
     throw new Error(
@@ -297,6 +201,7 @@ export const sanitizeComponentName = (name: string): string => {
 
 /**
  * Validates TSX scene file structure
+ * New format uses defineScene()
  */
 export const validateTsxScene = async (
   filepath: string,
@@ -304,16 +209,15 @@ export const validateTsxScene = async (
   try {
     const content = await fs.readFile(filepath, 'utf-8');
 
-    // Basic validation - check for required exports
-    const hasDefaultExport = /export\s+default\s+\w+/.test(content);
-    const hasMetadataExport = /export\s+const\s+metadata/.test(content);
+    // Check for new format (defineScene)
+    const hasDefineScene = /defineScene\s*\(/.test(content);
+    const hasDefaultExport = /export\s+default\s+defineScene/.test(content);
 
-    if (!hasDefaultExport) {
-      return { isValid: false, error: 'Missing default export for scene component' };
-    }
-
-    if (!hasMetadataExport) {
-      return { isValid: false, error: 'Missing metadata export' };
+    if (!hasDefineScene || !hasDefaultExport) {
+      return {
+        isValid: false,
+        error: 'Scene must use defineScene() helper and export it as default'
+      };
     }
 
     return { isValid: true };

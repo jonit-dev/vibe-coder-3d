@@ -570,84 +570,104 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
     // Read TSX file
     const content = await fs.readFile(actualFilepath, 'utf-8');
 
-    // Extract entities data from TSX file using regex (supports TS export and type annotations)
-    const entitiesMatch = content.match(
-      /(?:export\s+)?const\s+(?:entities|sceneData)\s*(?::\s*[^=]+)?=\s*\[([\s\S]*?)\];/,
-    );
-    if (!entitiesMatch) {
-      // Could not extract entities from TSX file
-      const debugInfo = { filepath: actualFilepath, content: content.substring(0, 500) + '...' };
+    // Check if this is the new defineScene format
+    const isDefineSceneFormat = content.includes('defineScene(');
 
-      res.statusCode = 400;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(
-        JSON.stringify({
-          error: 'Could not extract entities from TSX file',
-          debugInfo: debugInfo,
-        }),
-      );
-      return;
-    }
-
-    // Extract metadata from TSX file (supports TS type annotations)
-    const metadataMatch = content.match(
-      /export\s+const\s+metadata\s*(?::\s*[^=]+)?=\s*({[\s\S]*?});/,
-    );
-    let metadata = {};
-    if (metadataMatch) {
-      try {
-        // Use Function constructor to safely evaluate the metadata object
-        metadata = new Function(`return ${metadataMatch[1]}`)();
-      } catch (error) {
-        console.warn('Failed to parse metadata from TSX file:', error);
-      }
-    }
-
-    // Parse entities array safely
     let entities = [];
-    let entitiesString = entitiesMatch[1]; // Declare outside try-catch for catch block access
-    try {
-      // Convert JavaScript object notation to valid JSON
+    let materials = [];
+    let prefabs = [];
+    let metadata = {};
 
-      // First, fix the property names - add quotes around unquoted keys
-      // Match word characters followed by colon (but not already quoted)
-      entitiesString = entitiesString.replace(
-        /([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g,
-        '$1"$2":',
+    if (isDefineSceneFormat) {
+      // New format: extract from defineScene({...})
+      const defineSceneMatch = content.match(/defineScene\(\s*({[\s\S]*?})\s*\);?\s*$/m);
+
+      if (!defineSceneMatch) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(
+          JSON.stringify({
+            error: 'Could not extract defineScene data from TSX file',
+            debugInfo: { filepath: actualFilepath, content: content.substring(0, 500) + '...' },
+          }),
+        );
+        return;
+      }
+
+      try {
+        // Parse the defineScene argument as JSON
+        let sceneDataString = defineSceneMatch[1];
+
+        // Convert to valid JSON (handle unquoted keys, single quotes, etc.)
+        sceneDataString = sceneDataString.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+        sceneDataString = sceneDataString.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
+        sceneDataString = sceneDataString.replace(/,(\s*[}\]])/g, '$1');
+
+        const sceneObj = JSON.parse(sceneDataString);
+
+        entities = sceneObj.entities || [];
+        materials = sceneObj.materials || [];
+        prefabs = sceneObj.prefabs || [];
+        metadata = sceneObj.metadata || {};
+      } catch (error) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(
+          JSON.stringify({
+            error: 'Failed to parse defineScene data',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          }),
+        );
+        return;
+      }
+    } else {
+      // Old format: extract from individual constants
+      const entitiesMatch = content.match(
+        /(?:export\s+)?const\s+(?:entities|sceneData)\s*(?::\s*[^=]+)?=\s*\[([\s\S]*?)\];/,
       );
+      if (!entitiesMatch) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(
+          JSON.stringify({
+            error: 'Could not extract entities from TSX file',
+            debugInfo: { filepath: actualFilepath, content: content.substring(0, 500) + '...' },
+          }),
+        );
+        return;
+      }
 
-      // Fix single quotes around string values - convert to double quotes
-      // This regex matches single quotes that are not escaped and converts them to double quotes
-      entitiesString = entitiesString.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
-
-      // Clean up any trailing commas before } or ]
-      entitiesString = entitiesString.replace(/,(\s*[}\]])/g, '$1');
-
-      // Remove any comments or console.log statements that might be in the TSX
-      entitiesString = entitiesString.replace(/\/\/.*$/gm, '');
-      entitiesString = entitiesString.replace(/console\.log\([^)]*\);?/g, '');
-
-      // Remove trailing comma at the very end of the string (before wrapping in brackets)
-      entitiesString = entitiesString.replace(/,\s*$/, '');
-
-      // Try to parse as JSON
-      entities = JSON.parse(`[${entitiesString}]`);
-    } catch (error) {
-      // Failed to parse entities from TSX file
-
-      res.statusCode = 400;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(
-        JSON.stringify({
-          error: 'Failed to parse entities from TSX file',
-          details: error instanceof Error ? error.message : 'Unknown error',
-          debugInfo: {
-            filepath: actualFilepath,
-            entitiesMatch: entitiesMatch?.[1]?.substring(0, 200),
-          },
-        }),
+      const metadataMatch = content.match(
+        /export\s+const\s+metadata\s*(?::\s*[^=]+)?=\s*({[\s\S]*?});/,
       );
-      return;
+      if (metadataMatch) {
+        try {
+          metadata = new Function(`return ${metadataMatch[1]}`)();
+        } catch (error) {
+          console.warn('Failed to parse metadata from TSX file:', error);
+        }
+      }
+
+      let entitiesString = entitiesMatch[1];
+      try {
+        entitiesString = entitiesString.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+        entitiesString = entitiesString.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
+        entitiesString = entitiesString.replace(/,(\s*[}\]])/g, '$1');
+        entitiesString = entitiesString.replace(/\/\/.*$/gm, '');
+        entitiesString = entitiesString.replace(/console\.log\([^)]*\);?/g, '');
+        entitiesString = entitiesString.replace(/,\s*$/, '');
+        entities = JSON.parse(`[${entitiesString}]`);
+      } catch (error) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(
+          JSON.stringify({
+            error: 'Failed to parse entities from TSX file',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          }),
+        );
+        return;
+      }
     }
 
     // Create scene data structure
@@ -656,7 +676,9 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
       name: ((metadata as Record<string, unknown>)?.name as string) || filename.replace('.tsx', ''),
       timestamp:
         ((metadata as Record<string, unknown>)?.timestamp as string) || new Date().toISOString(),
-      entities: entities,
+      entities,
+      materials,
+      prefabs,
     };
 
     logSceneActivity('LOAD-TSX', `Scene '${actualFilename}' loaded successfully`);
