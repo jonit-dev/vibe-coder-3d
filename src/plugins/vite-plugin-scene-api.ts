@@ -43,7 +43,10 @@ const validateSceneData = (data: unknown): { isValid: boolean; error?: string } 
         return { isValid: false, error: `Entity ${i} is not a valid object` };
       }
 
-      if (typeof (entity as any).id === 'undefined' || (typeof (entity as any).id !== 'string' && typeof (entity as any).id !== 'number')) {
+      if (
+        typeof (entity as any).id === 'undefined' ||
+        (typeof (entity as any).id !== 'string' && typeof (entity as any).id !== 'number')
+      ) {
         return { isValid: false, error: `Entity ${i} missing valid id field` };
       }
 
@@ -60,7 +63,10 @@ const validateSceneData = (data: unknown): { isValid: boolean; error?: string } 
     try {
       JSON.stringify(scene);
     } catch (jsonError) {
-      return { isValid: false, error: 'Scene contains non-serializable data (circular references or invalid types)' };
+      return {
+        isValid: false,
+        error: 'Scene contains non-serializable data (circular references or invalid types)',
+      };
     }
 
     // Validate essential scene structure (warn if missing camera/lights)
@@ -73,9 +79,13 @@ const validateSceneData = (data: unknown): { isValid: boolean; error?: string } 
     if (!hasLight) {
       console.warn('[validateSceneData] Warning: Scene has no light entities');
     }
-
   } catch (validationError) {
-    return { isValid: false, error: 'Scene validation failed: ' + (validationError instanceof Error ? validationError.message : 'Unknown error') };
+    return {
+      isValid: false,
+      error:
+        'Scene validation failed: ' +
+        (validationError instanceof Error ? validationError.message : 'Unknown error'),
+    };
   }
 
   return { isValid: true };
@@ -315,8 +325,7 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
   req.on('end', async () => {
     try {
       const requestData = JSON.parse(body);
-      const { name, entities, materials = [], description, author } = requestData;
-
+      const { name, entities, materials = [], prefabs = [], description, author } = requestData;
 
       if (!name || typeof name !== 'string') {
         res.statusCode = 400;
@@ -353,7 +362,10 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
             return;
           }
 
-          if (typeof entity.id === 'undefined' || (typeof entity.id !== 'string' && typeof entity.id !== 'number')) {
+          if (
+            typeof entity.id === 'undefined' ||
+            (typeof entity.id !== 'string' && typeof entity.id !== 'number')
+          ) {
             res.statusCode = 400;
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ error: `Entity ${i} missing valid id field` }));
@@ -381,13 +393,17 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
         } catch (jsonError) {
           res.statusCode = 400;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: 'Scene contains non-serializable data (circular references or invalid types)' }));
+          res.end(
+            JSON.stringify({
+              error: 'Scene contains non-serializable data (circular references or invalid types)',
+            }),
+          );
           return;
         }
 
         // Validate essential scene structure (warn if missing camera/lights)
-        const hasCamera = entities.some(entity => entity.components && entity.components.Camera);
-        const hasLight = entities.some(entity => entity.components && entity.components.Light);
+        const hasCamera = entities.some((entity) => entity.components && entity.components.Camera);
+        const hasLight = entities.some((entity) => entity.components && entity.components.Light);
 
         if (!hasCamera) {
           console.warn('[handleSaveTsx] Warning: Scene has no camera entities');
@@ -395,15 +411,19 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
         if (!hasLight) {
           console.warn('[handleSaveTsx] Warning: Scene has no light entities');
         }
-
       } catch (validationError) {
         console.error('[handleSaveTsx] Validation error:', validationError);
         res.statusCode = 400;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Scene validation failed: ' + (validationError instanceof Error ? validationError.message : 'Unknown error') }));
+        res.end(
+          JSON.stringify({
+            error:
+              'Scene validation failed: ' +
+              (validationError instanceof Error ? validationError.message : 'Unknown error'),
+          }),
+        );
         return;
       }
-
 
       const metadata: ITsxSceneMetadata = {
         name,
@@ -414,7 +434,7 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
       };
 
       // Generate TSX content with type safety
-      const tsxContent = generateTsxScene(entities, metadata, materials);
+      const tsxContent = generateTsxScene(entities, metadata, materials, prefabs);
 
       const componentName =
         metadata.name
@@ -569,7 +589,6 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
       return;
     }
 
-
     // Extract metadata from TSX file (supports TS type annotations)
     const metadataMatch = content.match(
       /export\s+const\s+metadata\s*(?::\s*[^=]+)?=\s*({[\s\S]*?});/,
@@ -613,7 +632,6 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
 
       // Try to parse as JSON
       entities = JSON.parse(`[${entitiesString}]`);
-
     } catch (error) {
       // Failed to parse entities from TSX file
 
@@ -623,7 +641,10 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
         JSON.stringify({
           error: 'Failed to parse entities from TSX file',
           details: error instanceof Error ? error.message : 'Unknown error',
-          debugInfo: { filepath: actualFilepath, entitiesMatch: entitiesMatch?.[1]?.substring(0, 200) },
+          debugInfo: {
+            filepath: actualFilepath,
+            entitiesMatch: entitiesMatch?.[1]?.substring(0, 200),
+          },
         }),
       );
       return;

@@ -21,6 +21,7 @@ export interface IScenePersistenceActions {
     name: string,
     entities: unknown[],
     materials?: unknown[],
+    prefabs?: unknown[],
     options?: { description?: string; author?: string },
   ) => Promise<boolean>;
   loadScene: (name: string) => Promise<IStreamingScene | null>;
@@ -78,7 +79,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
                 name: name.trim(),
                 entities: data.entities,
                 materials: data.materials || [],
-                description: data.name
+                description: data.name,
               }
             : { name: name.trim(), data };
 
@@ -220,6 +221,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
       name: string,
       entities: unknown[],
       materials: unknown[] = [],
+      prefabs: unknown[] = [],
       options: { description?: string; author?: string } = {},
     ): Promise<boolean> => {
       if (!name.trim()) {
@@ -242,6 +244,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
             name: name.trim(),
             entities,
             materials,
+            prefabs,
             description: options.description,
             author: options.author,
           }),

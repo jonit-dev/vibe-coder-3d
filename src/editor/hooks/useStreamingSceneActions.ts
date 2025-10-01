@@ -298,11 +298,17 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         const materialRegistry = MaterialRegistry.getInstance();
         const materials = materialRegistry.list();
 
+        // Get prefabs for TSX scene
+        const { PrefabManager } = await import('@core/prefabs');
+        const prefabManager = PrefabManager.getInstance();
+        const prefabs = prefabManager.getAll();
+
         // Starting scene save operation
         const success = await scenePersistence.saveTsxScene(
           sceneName,
           transformedEntities,
           materials,
+          prefabs,
         );
 
         if (loadingToastId) removeToast(loadingToastId);
