@@ -99,6 +99,9 @@ export default [
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',
       'no-unused-vars': 'off',
+      // External scripts are standalone and may declare duplicate global lifecycle functions
+      // Ensure parser doesn't attempt full type-aware linting using the project config here
+      '@typescript-eslint/consistent-type-imports': 'off',
     },
   },
   prettierConfig,

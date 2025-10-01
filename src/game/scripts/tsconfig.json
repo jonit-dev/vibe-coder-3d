@@ -18,8 +18,6 @@
       "@core/*": ["src/core/*"]
     }
   },
-  "include": [
-    "script-api.d.ts",
-    "**/*.ts"
-  ]
+  "include": ["script-api.d.ts", "*.script.ts"],
+  "exclude": ["test.*.ts", "PlayerController.ts", "index.ts"]
 }
