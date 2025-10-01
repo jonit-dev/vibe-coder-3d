@@ -4,22 +4,27 @@
  */
 
 import * as THREE from 'three';
-import type { IQueryAPI } from '../ScriptAPI';
+
+import { TagManager } from '@/core/lib/ecs/tags/TagManager';
 import { Logger } from '@/core/lib/logger';
+
+import type { IQueryAPI } from '../ScriptAPI';
 
 const logger = Logger.create('QueryAPI');
 
 /**
  * Creates a query API for scripts
  */
-export const createQueryAPI = (entityId: number, getScene: () => THREE.Scene | null): IQueryAPI => {
+export const createQueryAPI = (
+  _entityId: number,
+  getScene: () => THREE.Scene | null,
+): IQueryAPI => {
+  const tagManager = TagManager.getInstance();
+
   return {
     findByTag: (tag: string): number[] => {
-      // TODO: Implement tag system integration
-      // For now, return empty array
-      logger.debug(`Finding entities by tag: ${tag}`, { entityId });
-      logger.warn('Tag system not yet fully integrated');
-      return [];
+      logger.debug(`Finding entities by tag: ${tag}`);
+      return tagManager.findByTag(tag);
     },
 
     raycastFirst: (
@@ -28,7 +33,7 @@ export const createQueryAPI = (entityId: number, getScene: () => THREE.Scene | n
     ): unknown | null => {
       const scene = getScene();
       if (!scene) {
-        logger.warn('Cannot raycast: scene not available', { entityId });
+        logger.warn('Cannot raycast: scene not available');
         return null;
       }
 
@@ -42,7 +47,7 @@ export const createQueryAPI = (entityId: number, getScene: () => THREE.Scene | n
     raycastAll: (origin: [number, number, number], dir: [number, number, number]): unknown[] => {
       const scene = getScene();
       if (!scene) {
-        logger.warn('Cannot raycast: scene not available', { entityId });
+        logger.warn('Cannot raycast: scene not available');
         return [];
       }
 

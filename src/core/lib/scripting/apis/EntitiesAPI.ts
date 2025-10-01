@@ -3,10 +3,13 @@
  * Provides scripts with entity reference resolution and queries
  */
 
+import { ComponentManager } from '@/core/lib/ecs/ComponentManager';
+import { EntityMetadataManager } from '@/core/lib/ecs/metadata/EntityMetadataManager';
+import { TagManager } from '@/core/lib/ecs/tags/TagManager';
+import { Logger } from '@/core/lib/logger';
+
 import type { IEntitiesAPI, IEntityRef, IEntityScriptAPI } from '../ScriptAPI';
 import { createEntityAPI } from '../ScriptAPI';
-import { ComponentManager } from '@/core/lib/ecs/ComponentManager';
-import { Logger } from '@/core/lib/logger';
 
 const logger = Logger.create('EntitiesAPI');
 
@@ -15,6 +18,8 @@ const logger = Logger.create('EntitiesAPI');
  */
 export const createEntitiesAPI = (): IEntitiesAPI => {
   const componentManager = ComponentManager.getInstance();
+  const metadataManager = EntityMetadataManager.getInstance();
+  const tagManager = TagManager.getInstance();
 
   // Helper to check if entity exists
   const entityExists = (id: number): boolean => {
@@ -28,25 +33,41 @@ export const createEntitiesAPI = (): IEntitiesAPI => {
 
   return {
     fromRef: (ref: IEntityRef | number | string): IEntityScriptAPI | null => {
+      let entityId: number | null = null;
+
       // Handle direct entity ID
       if (typeof ref === 'number') {
-        return entityExists(ref) ? createEntityAPI(ref) : null;
+        entityId = ref;
       }
-
-      // Handle string path/guid
-      if (typeof ref === 'string') {
-        // TODO: Implement path/guid resolution
-        logger.warn('Entity path/guid resolution not yet implemented', { ref });
-        return null;
+      // Handle string GUID
+      else if (typeof ref === 'string') {
+        entityId = metadataManager.findByGuid(ref);
+        if (entityId === null) {
+          logger.debug('Entity not found by GUID', { guid: ref });
+        }
       }
-
       // Handle IEntityRef object
-      if (ref.entityId && entityExists(ref.entityId)) {
-        return createEntityAPI(ref.entityId);
+      else {
+        // Try entityId field
+        if (ref.entityId !== undefined) {
+          entityId = ref.entityId;
+        }
+        // Try GUID
+        else if (ref.guid) {
+          entityId = metadataManager.findByGuid(ref.guid);
+        }
+        // Try name (returns first match)
+        else if (ref.name) {
+          const matches = metadataManager.findByName(ref.name);
+          entityId = matches.length > 0 ? matches[0] : null;
+        }
       }
 
-      // TODO: Fallback to guid or path resolution
-      logger.warn('Entity reference resolution incomplete', { ref });
+      // Validate entity exists
+      if (entityId !== null && entityExists(entityId)) {
+        return createEntityAPI(entityId);
+      }
+
       return null;
     },
 
@@ -55,17 +76,15 @@ export const createEntitiesAPI = (): IEntitiesAPI => {
     },
 
     findByName: (name: string): IEntityScriptAPI[] => {
-      // TODO: Implement name-based entity search
       logger.debug(`Finding entities by name: ${name}`);
-      logger.warn('findByName not yet implemented');
-      return [];
+      const entityIds = metadataManager.findByName(name);
+      return entityIds.filter(entityExists).map(createEntityAPI);
     },
 
     findByTag: (tag: string): IEntityScriptAPI[] => {
-      // TODO: Implement tag-based entity search
       logger.debug(`Finding entities by tag: ${tag}`);
-      logger.warn('findByTag not yet implemented');
-      return [];
+      const entityIds = tagManager.findByTag(tag);
+      return entityIds.filter(entityExists).map(createEntityAPI);
     },
 
     exists: (entityId: number): boolean => {

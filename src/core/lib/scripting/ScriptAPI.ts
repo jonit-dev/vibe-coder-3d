@@ -189,6 +189,7 @@ export interface IThreeJSAPI {
 export interface IEntityRef {
   entityId?: number; // fast path when stable
   guid?: string; // stable id if available
+  name?: string; // entity name lookup
   path?: string; // fallback scene path (e.g., Root/Enemy[2]/Weapon)
 }
 
