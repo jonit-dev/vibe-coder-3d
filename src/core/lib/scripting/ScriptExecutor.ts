@@ -15,6 +15,12 @@ import {
   ITimeAPI,
 } from './ScriptAPI';
 import { threeJSEntityRegistry } from './ThreeJSEntityRegistry';
+import { createEventAPI } from './apis/EventAPI';
+import { createAudioAPI } from './apis/AudioAPI';
+import { createTimerAPI, cleanupTimerAPI } from './apis/TimerAPI';
+import { createQueryAPI } from './apis/QueryAPI';
+import { createPrefabAPI } from './apis/PrefabAPI';
+import { createEntitiesAPI } from './apis/EntitiesAPI';
 
 /**
  * Result of script execution
@@ -603,6 +609,12 @@ export class ScriptExecutor {
       math: createMathAPI(),
       console: createConsoleAPI(entityId),
       three: createThreeJSAPI(entityId, getMeshRef, getSceneRef),
+      events: createEventAPI(entityId),
+      audio: createAudioAPI(entityId, getMeshRef),
+      timer: createTimerAPI(entityId),
+      query: createQueryAPI(entityId, getSceneRef),
+      prefab: createPrefabAPI(entityId),
+      entities: createEntitiesAPI(),
       parameters,
     };
   }
@@ -611,6 +623,8 @@ export class ScriptExecutor {
    * Remove script context when entity is destroyed
    */
   public removeScriptContext(entityId: EntityId): void {
+    // Cleanup timers
+    cleanupTimerAPI(entityId);
     this.scriptContexts.delete(entityId);
   }
 

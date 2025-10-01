@@ -33,7 +33,9 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'saved' | 'error' | 'missing'>('idle');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'saved' | 'error' | 'missing'>(
+    'idle',
+  );
   const [missingFile, setMissingFile] = useState(false);
   const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -87,7 +89,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
             // Show conflict resolution dialog
             const resolution = window.confirm(
               'The external file was modified by another source.\n\n' +
-              'Click OK to overwrite with your local changes, or Cancel to reload from file.'
+                'Click OK to overwrite with your local changes, or Cancel to reload from file.',
             );
 
             if (resolution) {
@@ -161,7 +163,11 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
    * Convert external script back to inline
    */
   const convertToInline = useCallback(() => {
-    if (window.confirm('Convert this external script to inline? The external file will remain but won\'t be synced anymore.')) {
+    if (
+      window.confirm(
+        "Convert this external script to inline? The external file will remain but won't be synced anymore.",
+      )
+    ) {
       onUpdate({
         scriptRef: undefined,
       });
@@ -487,8 +493,11 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
                     External Script File Missing
                   </div>
                   <div className="text-sm text-orange-200 mb-3">
-                    The external file <code className="bg-black/30 px-1 rounded">{scriptData.scriptRef?.scriptId}.ts</code> was deleted or moved.
-                    Your script code is still safe in the editor.
+                    The external file{' '}
+                    <code className="bg-black/30 px-1 rounded">
+                      {scriptData.scriptRef?.scriptId}.ts
+                    </code>{' '}
+                    was deleted or moved. Your script code is still safe in the editor.
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -514,7 +523,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
           <div className="flex items-center justify-between p-3 border-b border-gray-700 flex-shrink-0">
             <div className="flex items-center gap-2 text-sm text-gray-300">
               <FiCode className="w-4 h-4" />
-              <span>{scriptData.language === 'typescript' ? 'TypeScript' : 'JavaScript'}</span>
+              <span>TypeScript</span>
             </div>
             <div className="text-xs text-gray-500">
               {scriptData.code?.split('\n').length || 0} lines
@@ -524,7 +533,6 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
           <div className="flex-1 min-h-0">
             <ScriptEditor
               code={scriptData.code}
-              language={scriptData.language}
               onChange={handleCodeChange}
               hasErrors={scriptData.hasErrors}
               errorMessage={scriptData.lastErrorMessage}
@@ -559,20 +567,6 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
                     </button>
                   </div>
                 )}
-
-                <div>
-                  <label className="text-xs font-medium text-gray-300 block mb-1">Language</label>
-                  <select
-                    value={scriptData.language}
-                    onChange={(e) =>
-                      onUpdate({ language: e.target.value as 'javascript' | 'typescript' })
-                    }
-                    className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                  >
-                    <option value="javascript">JavaScript</option>
-                    <option value="typescript">TypeScript</option>
-                  </select>
-                </div>
 
                 <div>
                   <label className="text-xs font-medium text-gray-300 block mb-1">

@@ -184,6 +184,74 @@ export interface IThreeJSAPI {
 }
 
 /**
+ * Entity reference for cross-entity operations
+ */
+export interface IEntityRef {
+  entityId?: number; // fast path when stable
+  guid?: string; // stable id if available
+  path?: string; // fallback scene path (e.g., Root/Enemy[2]/Weapon)
+}
+
+/**
+ * Entities API for entity queries and references
+ */
+export interface IEntitiesAPI {
+  fromRef(ref: IEntityRef | number | string): IEntityScriptAPI | null; // accepts id/guid/path
+  get(entityId: number): IEntityScriptAPI | null;
+  findByName(name: string): IEntityScriptAPI[];
+  findByTag(tag: string): IEntityScriptAPI[];
+  exists(entityId: number): boolean;
+}
+
+/**
+ * Event API for event bus access
+ */
+export interface IEventAPI {
+  on<T extends string>(type: T, handler: (payload: unknown) => void): () => void;
+  off<T extends string>(type: T, handler: (payload: unknown) => void): void;
+  emit<T extends string>(type: T, payload: unknown): void;
+}
+
+/**
+ * Audio API for sound playback
+ */
+export interface IAudioAPI {
+  play(url: string, options?: Record<string, unknown>): number;
+  stop(handleOrUrl: number | string): void;
+  attachToEntity?(follow: boolean): void;
+}
+
+/**
+ * Timer API for scheduled callbacks
+ */
+export interface ITimerAPI {
+  setTimeout(cb: () => void, ms: number): number;
+  clearTimeout(id: number): void;
+  setInterval(cb: () => void, ms: number): number;
+  clearInterval(id: number): void;
+  nextTick(): Promise<void>;
+  waitFrames(count: number): Promise<void>;
+}
+
+/**
+ * Query API for scene queries
+ */
+export interface IQueryAPI {
+  findByTag(tag: string): number[]; // entity IDs
+  raycastFirst(origin: [number, number, number], dir: [number, number, number]): unknown | null;
+  raycastAll(origin: [number, number, number], dir: [number, number, number]): unknown[];
+}
+
+/**
+ * Prefab API for entity instantiation and management
+ */
+export interface IPrefabAPI {
+  spawn(prefabId: string, overrides?: Record<string, unknown>): number; // entityId
+  destroy(entityId?: number): void; // default current
+  setActive(entityId: number, active: boolean): void;
+}
+
+/**
  * Complete script execution context
  */
 export interface IScriptContext {
@@ -193,6 +261,12 @@ export interface IScriptContext {
   math: IMathAPI;
   console: IConsoleAPI;
   three: IThreeJSAPI;
+  events: IEventAPI;
+  audio: IAudioAPI;
+  timer: ITimerAPI;
+  query: IQueryAPI;
+  prefab: IPrefabAPI;
+  entities: IEntitiesAPI;
 
   // Script lifecycle methods that users can override
   onStart?: () => void;

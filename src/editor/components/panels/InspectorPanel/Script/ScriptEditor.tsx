@@ -3,7 +3,6 @@ import Editor from '@monaco-editor/react';
 
 export interface IScriptEditorProps {
   code: string;
-  language: 'javascript' | 'typescript';
   onChange: (code: string) => void;
   hasErrors?: boolean;
   errorMessage?: string;
@@ -12,7 +11,6 @@ export interface IScriptEditorProps {
 
 export const ScriptEditor: React.FC<IScriptEditorProps> = ({
   code,
-  language = 'javascript',
   onChange,
   hasErrors = false,
   errorMessage,
@@ -29,9 +27,7 @@ export const ScriptEditor: React.FC<IScriptEditorProps> = ({
   };
 
   // Default "Hello World" script template demonstrating editor context
-  const defaultValue =
-    language === 'typescript'
-      ? `// Hello World TypeScript Script
+  const defaultValue = `// Hello World TypeScript Script
 // This demonstrates basic editor context access
 
 function onStart(): void {
@@ -42,7 +38,7 @@ function onStart(): void {
   if (three.mesh) {
     three.material.setColor("#00ff00"); // Green color
   }
-  
+
   // Show available context objects
 
 }
@@ -50,32 +46,7 @@ function onStart(): void {
 function onUpdate(deltaTime: number): void {
   // Gentle rotation to show the script is running
   entity.transform.rotate(0, deltaTime * 0.5, 0);
-  
-  // Periodic status update (every 2 seconds)
-  if (Math.floor(time.time) % 2 === 0 && Math.floor(time.time * 10) % 10 === 0) {
 
-  }
-}`
-      : `// Hello World JavaScript Script
-// This demonstrates basic editor context access
-
-function onStart() {
-  // Hello World with entity information
-
-  // Demonstrate entity manipulation
-
-  if (three.mesh) {
-    three.material.setColor("#00ff00"); // Green color
-  }
-  
-  // Show available context objects
-
-}
-
-function onUpdate(deltaTime) {
-  // Gentle rotation to show the script is running
-  entity.transform.rotate(0, deltaTime * 0.5, 0);
-  
   // Periodic status update (every 2 seconds)
   if (Math.floor(time.time) % 2 === 0 && Math.floor(time.time * 10) % 10 === 0) {
 
@@ -90,8 +61,8 @@ function onUpdate(deltaTime) {
       <div className="flex-1">
         <Editor
           height={height}
-          defaultLanguage={language}
-          language={language}
+          defaultLanguage="typescript"
+          language="typescript"
           theme="vs-dark"
           value={editorValue}
           onChange={handleEditorChange}
@@ -140,9 +111,7 @@ function onUpdate(deltaTime) {
             💡 Use <code>entity</code>, <code>time</code>, <code>input</code>, <code>math</code>,{' '}
             <code>three</code>, and <code>console</code> objects
           </span>
-          <span className="text-gray-500">
-            {language === 'typescript' ? 'TypeScript' : 'JavaScript'}
-          </span>
+          <span className="text-gray-500">TypeScript</span>
         </div>
       </div>
     </div>

@@ -13,6 +13,7 @@ import { Logger } from '../lib/logger';
 import { IInputAPI, ITimeAPI } from '../lib/scripting/ScriptAPI';
 import { IScriptExecutionResult, ScriptExecutor } from '../lib/scripting/ScriptExecutor';
 import { resolveScript } from '../lib/scripting/ScriptResolver';
+import { scheduler } from '../lib/scripting/adapters/scheduler';
 
 // BitECS Script component type structure
 interface IBitECSScriptComponent {
@@ -506,6 +507,9 @@ export async function updateScriptSystem(
   deltaTime: number,
   isPlaying: boolean = false,
 ): Promise<void> {
+  // Update timer scheduler
+  scheduler.update();
+
   // When entering play mode, ensure all scripts are marked for compilation
   if (isPlaying) {
     ensureAllScriptsCompiled();

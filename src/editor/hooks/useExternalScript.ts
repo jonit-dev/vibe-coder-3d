@@ -47,7 +47,7 @@ function generateScriptId(entityId: number, scriptName: string): string {
  * Hook for managing external script files
  */
 export function useExternalScript(
-  entityId: number,
+  _entityId: number,
   onUpdate: (updates: Partial<ScriptData>) => void,
   syncInterval: number = 10000, // 10 seconds default
 ): IExternalScriptHook {
@@ -173,44 +173,39 @@ export function useExternalScript(
   /**
    * Sync from external file (check for changes)
    */
-  const syncFromExternal = useCallback(
-    async (scriptRef: IScriptRef): Promise<string | null> => {
-      if (scriptRef.source !== 'external') {
-        return null;
+  const syncFromExternal = useCallback(async (scriptRef: IScriptRef): Promise<string | null> => {
+    if (scriptRef.source !== 'external') {
+      return null;
+    }
+
+    try {
+      logger.debug(`Syncing from external script: ${scriptRef.scriptId}`);
+
+      const response = await fetch(`/api/script/load?id=${encodeURIComponent(scriptRef.scriptId)}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        if (result.error === 'not_found') {
+          logger.warn(`External script not found: ${scriptRef.scriptId}`);
+          return null;
+        }
+        throw new Error(result.error || 'Failed to load script');
       }
 
-      try {
-        logger.debug(`Syncing from external script: ${scriptRef.scriptId}`);
+      const serverHash = await computeHash(result.code);
 
-        const response = await fetch(
-          `/api/script/load?id=${encodeURIComponent(scriptRef.scriptId)}`,
-        );
-        const result = await response.json();
-
-        if (!result.success) {
-          if (result.error === 'not_found') {
-            logger.warn(`External script not found: ${scriptRef.scriptId}`);
-            return null;
-          }
-          throw new Error(result.error || 'Failed to load script');
-        }
-
-        const serverHash = await computeHash(result.code);
-
-        // Check if external file was modified
-        if (serverHash !== scriptRef.codeHash) {
-          logger.info(`External script changed: ${scriptRef.scriptId}`);
-          return result.code;
-        }
-
-        return null; // No changes
-      } catch (error) {
-        logger.error('Failed to sync from external script:', error);
-        return null;
+      // Check if external file was modified
+      if (serverHash !== scriptRef.codeHash) {
+        logger.info(`External script changed: ${scriptRef.scriptId}`);
+        return result.code;
       }
-    },
-    [],
-  );
+
+      return null; // No changes
+    } catch (error) {
+      logger.error('Failed to sync from external script:', error);
+      return null;
+    }
+  }, []);
 
   /**
    * Auto-sync setup

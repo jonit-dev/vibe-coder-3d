@@ -25,7 +25,6 @@ export type IScriptRef = z.infer<typeof ScriptRefSchema>;
 // Script Schema
 const ScriptSchema = z.object({
   code: z.string().default('').describe('User script code'),
-  language: z.enum(['javascript', 'typescript']).default('javascript').describe('Script language'),
   enabled: z.boolean().default(true).describe('Enable/disable script execution'),
 
   // Script metadata
@@ -73,7 +72,6 @@ export const scriptComponent = ComponentFactory.create({
   fields: {
     // Core properties
     enabled: Types.ui8,
-    language: Types.ui8, // 0 = javascript, 1 = typescript
 
     // Execution control
     executeInUpdate: Types.ui8,
@@ -104,9 +102,6 @@ export const scriptComponent = ComponentFactory.create({
   },
   serialize: (eid: EntityId, component: any) => ({
     code: getStringFromHash(component.codeHash[eid]),
-    language: (component.language[eid] === 0 ? 'javascript' : 'typescript') as
-      | 'javascript'
-      | 'typescript',
     enabled: Boolean(component.enabled[eid]),
 
     scriptName: getStringFromHash(component.scriptNameHash[eid]) || 'Script',
@@ -146,7 +141,6 @@ export const scriptComponent = ComponentFactory.create({
   deserialize: (eid: EntityId, data, component: any) => {
     // Core properties
     component.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
-    component.language[eid] = data.language === 'typescript' ? 1 : 0;
 
     // Execution control
     component.executeInUpdate[eid] = (data.executeInUpdate ?? true) ? 1 : 0;
@@ -160,9 +154,7 @@ export const scriptComponent = ComponentFactory.create({
     component.executionCount[eid] = data.executionCount ?? 0;
 
     // If no code is provided, initialize with default Hello World template
-    const defaultCode =
-      data.language === 'typescript'
-        ? `/// <reference path="./script-api.d.ts" />
+    const defaultCode = `/// <reference path="./script-api.d.ts" />
 
 // Hello World TypeScript Script
 function onStart(): void {
@@ -172,18 +164,6 @@ function onStart(): void {
 }
 
 function onUpdate(deltaTime: number): void {
-  entity.transform.rotate(0, deltaTime * 0.5, 0);
-}`
-        : `/// <reference path="./script-api.d.ts" />
-
-// Hello World JavaScript Script
-function onStart() {
-  if (three.mesh) {
-    three.material.setColor("#00ff00");
-  }
-}
-
-function onUpdate(deltaTime) {
   entity.transform.rotate(0, deltaTime * 0.5, 0);
 }`;
 
@@ -239,9 +219,9 @@ function onUpdate(deltaTime) {
     logger.info(`Script component removed from entity ${eid}`);
   },
   metadata: {
-    description: 'Custom JavaScript/TypeScript scripting system with secure entity access',
+    description: 'Custom TypeScript scripting system with secure entity access',
     version: '1.0.0',
-    tags: ['scripting', 'javascript', 'typescript', 'gameplay'],
+    tags: ['scripting', 'typescript', 'gameplay'],
   },
 });
 

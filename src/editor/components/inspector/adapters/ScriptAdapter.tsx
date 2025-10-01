@@ -22,7 +22,6 @@ export const ScriptAdapter: React.FC<IScriptAdapterProps> = ({
   // Convert ECS data to the format expected by ScriptSection
   const scriptData: ScriptData = {
     code: data.code || '',
-    language: data.language || 'javascript',
     enabled: data.enabled ?? true,
 
     scriptName: data.scriptName || 'Script',
