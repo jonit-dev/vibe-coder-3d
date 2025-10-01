@@ -66,7 +66,7 @@ export class PrefabSerializer {
     const name = getEntityName(entityId) || `Entity_${entityId}`;
     logger.info('🔵 Entity name retrieved', { entityId, name });
 
-    // Serialize children recursively
+    // Serialize children recursively (order preserved from entity.children array)
     const children: IPrefabEntity[] = [];
     const childIds = this.getChildren(entityId);
 
@@ -78,6 +78,7 @@ export class PrefabSerializer {
       match: JSON.stringify(childIds) === JSON.stringify(entity?.children || []),
     });
 
+    // IMPORTANT: Iterate in order to preserve child hierarchy order
     for (const childId of childIds) {
       try {
         logger.info('🔵 Serializing child', { parentId: entityId, childId });
@@ -152,7 +153,7 @@ export class PrefabSerializer {
       }
     }
 
-    // Deserialize children recursively
+    // Deserialize children recursively (order preserved from prefab definition)
     if (entity.children && entity.children.length > 0) {
       logger.info('🟢 Deserializing children', {
         parentEntityId: entityId,
@@ -160,6 +161,7 @@ export class PrefabSerializer {
         childrenNames: entity.children.map((c) => c.name),
       });
 
+      // IMPORTANT: Iterate in order to preserve child hierarchy order
       for (let i = 0; i < entity.children.length; i++) {
         const child = entity.children[i];
         try {

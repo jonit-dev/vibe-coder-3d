@@ -65,6 +65,11 @@ export const usePrefabsStore = create<IPrefabsState>((set, get) => {
     _refreshPrefabs: () => {
       const registry = PrefabRegistry.getInstance();
       const prefabs = registry.list();
+      console.log('[PrefabsStore] Refreshing prefabs, count:', prefabs.length);
+      console.log(
+        '[PrefabsStore] Prefabs:',
+        prefabs.map((p) => ({ id: p.id, name: p.name })),
+      );
       set({ prefabs });
     },
 

@@ -333,8 +333,10 @@ export class StreamingSceneSerializer {
       }
 
       // Import prefabs first if manager is provided
+      // NOTE: Prefabs are registered in the order they appear in the scene file
       if (prefabManager && validatedScene.prefabs && validatedScene.prefabs.length > 0) {
         await prefabManager.clearPrefabs();
+        // IMPORTANT: Iterate in order to preserve prefab registration order
         for (const prefab of validatedScene.prefabs) {
           await prefabManager.registerPrefab(prefab);
         }

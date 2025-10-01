@@ -33,15 +33,11 @@ export const generateTsxScene = (
 import { useEffect } from 'react';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
+import { MaterialRegistry } from '@core/materials';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
-import type {
-  ComponentDataMap,
-  SceneEntityData,
-  SceneMetadata,
-} from '@/core/types/scene';
-import { validateSceneEntity } from '@/core/types/scene';
+import { usePrefabsStore } from '@/editor/store/prefabsStore';
+import type { KnownComponentTypes, ComponentDataMap, SceneMetadata } from '@core';
+import { validateSceneEntity } from '@core';
 
 /**
  * Type-safe scene data interface
@@ -64,6 +60,7 @@ const sceneData: ITypedSceneEntity[] = ${JSON.stringify(
     entities.map((entity) => {
       // For Script components with external scriptRef, only save the reference, not inline code
       if (entity.components.Script && typeof entity.components.Script === 'object') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const scriptData = entity.components.Script as any;
         if (scriptData.scriptRef?.source === 'external') {
           return {
@@ -118,6 +115,7 @@ export const ${componentName}: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
   const materialsStore = useMaterialsStore();
+  const prefabsStore = usePrefabsStore();
 
   useEffect(() => {
     // Load materials first
@@ -131,15 +129,23 @@ export const ${componentName}: React.FC = () => {
     // Refresh materials store cache
     materialsStore._refreshMaterials();
 
-    // Load prefabs
+    // Load prefabs (order preserved from scene definition)
     const loadPrefabs = async () => {
+      console.log('[TSX Scene] Loading prefabs, count:', scenePrefabs.length);
       const { PrefabManager } = await import('@core/prefabs');
       const prefabManager = PrefabManager.getInstance();
       prefabManager.clear();
 
+      // IMPORTANT: forEach preserves array order for prefab registration
       scenePrefabs.forEach(prefab => {
+        console.log('[TSX Scene] Registering prefab:', prefab.id, prefab.name);
         prefabManager.register(prefab);
       });
+
+      console.log('[TSX Scene] Refreshing prefabs store');
+      // Refresh prefabs store cache so UI components can see the prefabs
+      prefabsStore._refreshPrefabs();
+      console.log('[TSX Scene] Prefabs loaded and store refreshed');
     };
     loadPrefabs();
 
@@ -162,7 +168,7 @@ export const ${componentName}: React.FC = () => {
       });
     });
 
-  }, [entityManager, componentManager, materialsStore]);
+  }, [entityManager, componentManager, materialsStore, prefabsStore]);
 
   return null; // Scene components don't render UI
 };

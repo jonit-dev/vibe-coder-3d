@@ -21,8 +21,11 @@ export class PrefabRegistry {
 
   /**
    * List all prefabs
+   * NOTE: Preserves insertion order as JavaScript Maps maintain insertion order (ES2015+ spec)
+   * This ensures prefabs are returned in the same order they were registered
    */
   list(): IPrefabDefinition[] {
+    // IMPORTANT: Array.from(map.values()) preserves Map insertion order
     return Array.from(this.idToDef.values());
   }
 

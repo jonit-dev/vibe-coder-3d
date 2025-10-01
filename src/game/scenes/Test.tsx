@@ -2,11 +2,12 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
+import { MaterialRegistry } from '@core/materials';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
-import { materialRegistry } from '@core/materials';
-import { KnownComponentTypes } from '@core/lib/ecs';
+import { usePrefabsStore } from '@/editor/store/prefabsStore';
 import type { ComponentDataMap, SceneMetadata } from '@core';
 import { validateSceneEntity } from '@core';
+import type { KnownComponentTypes } from '@core/lib/ecs';
 
 /**
  * Type-safe scene data interface
@@ -171,52 +172,19 @@ const sceneData: ITypedSceneEntity[] = [
     },
   },
   {
-    id: 6,
-    name: 'Sphere 0',
+    id: 12,
+    name: 'Tree 0',
     components: {
       PersistentId: {
-        id: 'a593734e-4f79-4ff2-b269-70503c3f7f5b',
+        id: '625137ae-7351-4ad5-82a9-7be46413f0aa',
       },
       Transform: {
-        position: [-1.5, 1.5, 3.125],
+        position: [-2.5, 0, 2],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       },
       MeshRenderer: {
-        meshId: 'sphere',
-        materialId: 'test123',
-        enabled: true,
-        castShadows: true,
-        receiveShadows: true,
-        modelPath: '',
-      },
-      PrefabInstance: {
-        prefabId: 'prefab_1759355028777',
-        version: 1,
-        instanceUuid: '7f3aae14-d015-4772-80fd-13046390eaa3',
-        overridePatch: {
-          position: [-1.5, 1.5, -0.25],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-        },
-      },
-    },
-  },
-  {
-    id: 7,
-    name: 'Sphere 1',
-    parentId: 6,
-    components: {
-      PersistentId: {
-        id: '3090838c-b51f-4524-840a-c2067e98894f',
-      },
-      Transform: {
-        position: [1, 1, 3.375],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
-      },
-      MeshRenderer: {
-        meshId: 'sphere',
+        meshId: 'tree',
         materialId: 'default',
         enabled: true,
         castShadows: true,
@@ -225,9 +193,63 @@ const sceneData: ITypedSceneEntity[] = [
         material: {
           shader: 'standard',
           materialType: 'solid',
-          color: '#3399ff',
+          color: '#2d5016',
           metalness: 0,
-          roughness: 0.5,
+          roughness: 0.699999988079071,
+          emissive: '#000000',
+          emissiveIntensity: 0,
+          normalScale: 1,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
+          albedoTexture: '',
+          normalTexture: '',
+          metallicTexture: '',
+          roughnessTexture: '',
+          emissiveTexture: '',
+          occlusionTexture: '',
+        },
+      },
+      PrefabInstance: {
+        prefabId: 'prefab_1759357225901',
+        version: 1,
+        instanceUuid: '54a16f3d-bc92-4393-87f3-81f24607982d',
+        overridePatch: {
+          position: [-2.5, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+      },
+    },
+  },
+  {
+    id: 13,
+    name: 'Tree 1',
+    parentId: 12,
+    components: {
+      PersistentId: {
+        id: '36e02231-3ff1-498d-a631-1e8000f57ced',
+      },
+      Transform: {
+        position: [-1, 0, 2],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      },
+      MeshRenderer: {
+        meshId: 'tree',
+        materialId: 'default',
+        enabled: true,
+        castShadows: true,
+        receiveShadows: true,
+        modelPath: '',
+        material: {
+          shader: 'standard',
+          materialType: 'solid',
+          color: '#2d5016',
+          metalness: 0,
+          roughness: 0.699999988079071,
           emissive: '#000000',
           emissiveIntensity: 0,
           normalScale: 1,
@@ -307,27 +329,218 @@ const sceneMaterials = [
 ];
 
 /**
+ * Scene prefabs
+ */
+const scenePrefabs = [
+  {
+    id: 'example-cube',
+    name: 'Example Cube',
+    description: 'A simple cube with transform and mesh renderer',
+    version: 1,
+    tags: ['example', 'primitive', 'basic'],
+    root: {
+      name: 'Cube',
+      components: {
+        Transform: {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        MeshRenderer: {
+          meshType: 'box',
+          materialId: 'default',
+          castShadow: true,
+          receiveShadow: true,
+          enabled: true,
+        },
+      },
+    },
+    dependencies: ['default'],
+    metadata: {
+      author: 'Vibe Coder 3D',
+      category: 'primitives',
+      createdAt: '2025-09-30',
+    },
+  },
+  {
+    id: 'player',
+    name: 'Player',
+    description: 'Player entity with physics and control script',
+    version: 1,
+    tags: ['player', 'character', 'controllable'],
+    root: {
+      name: 'Player',
+      components: {
+        Transform: {
+          position: [0, 1, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        MeshRenderer: {
+          meshType: 'box',
+          materialId: 'default',
+          castShadow: true,
+          receiveShadow: true,
+          enabled: true,
+        },
+        RigidBody: {
+          type: 'dynamic',
+          mass: 1,
+          friction: 0.5,
+          restitution: 0.2,
+          linearDamping: 0.1,
+          angularDamping: 0.1,
+          enabled: true,
+        },
+      },
+      children: [
+        {
+          name: 'Camera',
+          components: {
+            Transform: {
+              position: [0, 0.5, 2],
+              rotation: [0, 0, 0],
+              scale: [1, 1, 1],
+            },
+            Camera: {
+              fov: 75,
+              near: 0.1,
+              far: 1000,
+              isActive: true,
+            },
+          },
+        },
+      ],
+    },
+    dependencies: ['default'],
+    metadata: {
+      author: 'Vibe Coder 3D',
+      category: 'gameplay',
+      createdAt: '2025-09-30',
+    },
+  },
+  {
+    id: 'prefab_1759357225901',
+    name: 'trees',
+    version: 1,
+    root: {
+      name: 'Tree 0',
+      components: {
+        PersistentId: {
+          id: '1ba77aac-9e51-4b26-9b03-ef56e172de16',
+        },
+        Transform: {
+          position: [-2.5, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        MeshRenderer: {
+          meshId: 'tree',
+          materialId: 'default',
+          enabled: true,
+          castShadows: true,
+          receiveShadows: true,
+          modelPath: '',
+          material: {
+            shader: 'standard',
+            materialType: 'solid',
+            color: '#2d5016',
+            metalness: 0,
+            roughness: 0.699999988079071,
+            emissive: '#000000',
+            emissiveIntensity: 0,
+            normalScale: 1,
+            occlusionStrength: 1,
+            textureOffsetX: 0,
+            textureOffsetY: 0,
+            textureRepeatX: 1,
+            textureRepeatY: 1,
+            albedoTexture: '',
+            normalTexture: '',
+            metallicTexture: '',
+            roughnessTexture: '',
+            emissiveTexture: '',
+            occlusionTexture: '',
+          },
+        },
+      },
+      children: [
+        {
+          name: 'Tree 1',
+          components: {
+            PersistentId: {
+              id: '414233df-d011-4be8-9428-acccddf0465a',
+            },
+            Transform: {
+              position: [-1, 0, 0],
+              rotation: [0, 0, 0],
+              scale: [1, 1, 1],
+            },
+            MeshRenderer: {
+              meshId: 'tree',
+              materialId: 'default',
+              enabled: true,
+              castShadows: true,
+              receiveShadows: true,
+              modelPath: '',
+              material: {
+                shader: 'standard',
+                materialType: 'solid',
+                color: '#2d5016',
+                metalness: 0,
+                roughness: 0.699999988079071,
+                emissive: '#000000',
+                emissiveIntensity: 0,
+                normalScale: 1,
+                occlusionStrength: 1,
+                textureOffsetX: 0,
+                textureOffsetY: 0,
+                textureRepeatX: 1,
+                textureRepeatY: 1,
+                albedoTexture: '',
+                normalTexture: '',
+                metallicTexture: '',
+                roughnessTexture: '',
+                emissiveTexture: '',
+                occlusionTexture: '',
+              },
+            },
+          },
+        },
+      ],
+    },
+    metadata: {
+      createdAt: '2025-10-01T22:20:25.921Z',
+      createdFrom: 10,
+    },
+    dependencies: ['default'],
+    tags: [],
+  },
+];
+
+/**
  * Scene metadata
  */
 export const metadata: SceneMetadata = {
   name: 'Test',
   version: 1,
-  timestamp: '2025-10-01T21:44:03.808Z',
+  timestamp: '2025-10-01T22:21:08.721Z',
 };
 
 /**
  * Test
- * Generated: 2025-10-01T21:44:03.808Z
+ * Generated: 2025-10-01T22:21:08.721Z
  * Version: 1
  */
 export const Test: React.FC = () => {
   const entityManager = useEntityManager();
   const componentManager = useComponentManager();
   const materialsStore = useMaterialsStore();
+  const prefabsStore = usePrefabsStore();
 
   useEffect(() => {
     // Load materials first
-    // Material registry is imported at top level
+    const materialRegistry = MaterialRegistry.getInstance();
     materialRegistry.clearMaterials();
 
     sceneMaterials.forEach((material) => {
@@ -336,6 +549,26 @@ export const Test: React.FC = () => {
 
     // Refresh materials store cache
     materialsStore._refreshMaterials();
+
+    // Load prefabs (order preserved from scene definition)
+    const loadPrefabs = async () => {
+      console.log('[TSX Scene] Loading prefabs, count:', scenePrefabs.length);
+      const { PrefabManager } = await import('@core/prefabs');
+      const prefabManager = PrefabManager.getInstance();
+      prefabManager.clear();
+
+      // IMPORTANT: forEach preserves array order for prefab registration
+      scenePrefabs.forEach((prefab) => {
+        console.log('[TSX Scene] Registering prefab:', prefab.id, prefab.name);
+        prefabManager.register(prefab);
+      });
+
+      console.log('[TSX Scene] Refreshing prefabs store');
+      // Refresh prefabs store cache so UI components can see the prefabs
+      prefabsStore._refreshPrefabs();
+      console.log('[TSX Scene] Prefabs loaded and store refreshed');
+    };
+    loadPrefabs();
 
     // Validate scene data at runtime
     const validatedSceneData = sceneData.map((entity) => validateSceneEntity(entity));
@@ -355,7 +588,7 @@ export const Test: React.FC = () => {
         }
       });
     });
-  }, [entityManager, componentManager, materialsStore]);
+  }, [entityManager, componentManager, materialsStore, prefabsStore]);
 
   return null; // Scene components don't render UI
 };

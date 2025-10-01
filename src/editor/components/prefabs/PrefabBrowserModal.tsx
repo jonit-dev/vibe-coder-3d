@@ -12,9 +12,24 @@ export interface IPrefabBrowserModalProps {
 
 export const PrefabBrowserModal: React.FC<IPrefabBrowserModalProps> = React.memo(
   ({ isOpen, onClose, onSelect, onCreateNew }) => {
-    const { searchTerm, setSearchTerm, getFilteredPrefabs, duplicatePrefab, deletePrefab } =
-      usePrefabsStore();
+    const {
+      searchTerm,
+      setSearchTerm,
+      getFilteredPrefabs,
+      duplicatePrefab,
+      deletePrefab,
+      prefabs,
+    } = usePrefabsStore();
     const [selectedId, setSelectedId] = useState<string | null>(null);
+
+    // Debug logging when modal opens
+    React.useEffect(() => {
+      if (isOpen) {
+        console.log('[PrefabBrowserModal] Modal opened');
+        console.log('[PrefabBrowserModal] Prefabs from store:', prefabs);
+        console.log('[PrefabBrowserModal] Prefabs count:', prefabs?.length || 0);
+      }
+    }, [isOpen, prefabs]);
 
     const filteredPrefabs = getFilteredPrefabs();
 

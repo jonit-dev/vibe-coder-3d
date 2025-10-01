@@ -9,11 +9,7 @@ interface IUseEntityTransformProps {
   isPlaying: boolean;
 }
 
-export const useEntityTransform = ({
-  transform,
-  isTransforming,
-  isPlaying,
-}: IUseEntityTransformProps) => {
+export const useEntityTransform = ({ transform, isTransforming }: IUseEntityTransformProps) => {
   const meshRef = useRef<THREE.Group | THREE.Mesh | THREE.Object3D | null>(null);
   const lastSyncedTransform = useRef<string>('');
 
