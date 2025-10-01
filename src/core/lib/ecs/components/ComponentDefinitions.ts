@@ -17,6 +17,7 @@ import {
   meshColliderComponent,
   meshRendererComponent,
   persistentIdComponent,
+  PrefabInstanceComponent,
   rigidBodyComponent,
   scriptComponent,
   soundComponent,
@@ -72,8 +73,11 @@ export function registerCoreComponents(): void {
   stepTracker.step('Sound Component');
   componentRegistry.register(soundComponent);
 
+  stepTracker.step('PrefabInstance Component');
+  componentRegistry.register(PrefabInstanceComponent);
+
   stepTracker.complete();
-  componentLogger.milestone('Core Components Registered', { componentsCount: 10 });
+  componentLogger.milestone('Core Components Registered', { componentsCount: 11 });
 }
 
 // ============================================================================
@@ -99,8 +103,8 @@ const healthComponent = ComponentFactory.createSimple({
     regenerationRate: Types.f32,
     isInvulnerable: Types.ui8,
   },
-  onAdd: (_eid: EntityId, _data) => {
-
+  onAdd: () => {
+    // Empty
   },
   metadata: {
     description: 'Health and damage system for gameplay entities',

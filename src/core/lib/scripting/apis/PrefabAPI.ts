@@ -5,6 +5,7 @@
 
 import type { IPrefabAPI } from '../ScriptAPI';
 import { Logger } from '@/core/lib/logger';
+import { PrefabManager } from '@/core/prefabs/PrefabManager';
 
 const logger = Logger.create('PrefabAPI');
 
@@ -12,33 +13,48 @@ const logger = Logger.create('PrefabAPI');
  * Creates a prefab API for scripts
  */
 export const createPrefabAPI = (entityId: number): IPrefabAPI => {
+  const prefabManager = PrefabManager.getInstance();
+
   return {
     spawn: (prefabId: string, overrides?: Record<string, unknown>): number => {
       logger.debug(`Spawning prefab: ${prefabId}`, { entityId, overrides });
 
-      // TODO: Implement actual prefab spawning
-      // This would need integration with PrefabManager and EntityManager
-      logger.warn('Prefab spawning not yet fully implemented');
+      try {
+        const newEntityId = prefabManager.instantiate(prefabId, overrides);
 
-      // Return a placeholder entity ID
-      return -1;
+        if (newEntityId === -1) {
+          logger.error(`Failed to spawn prefab: ${prefabId}`);
+          return -1;
+        }
+
+        logger.info(`Spawned prefab ${prefabId} as entity ${newEntityId}`);
+        return newEntityId;
+      } catch (error) {
+        logger.error('Prefab spawn error:', error);
+        return -1;
+      }
     },
 
     destroy: (targetEntityId?: number): void => {
       const targetId = targetEntityId ?? entityId;
       logger.debug(`Destroying entity: ${targetId}`, { entityId });
 
-      // TODO: Implement actual entity destruction
-      // This would need integration with EntityManager
-      logger.warn('Entity destruction not yet fully implemented');
+      try {
+        prefabManager.destroy(targetId);
+        logger.info(`Destroyed entity: ${targetId}`);
+      } catch (error) {
+        logger.error('Entity destruction error:', error);
+      }
     },
 
     setActive: (targetEntityId: number, active: boolean): void => {
       logger.debug(`Setting entity ${targetEntityId} active: ${active}`, { entityId });
 
-      // TODO: Implement entity active state
-      // This would involve enabling/disabling all components
-      logger.warn('setActive not yet fully implemented');
+      try {
+        prefabManager.setActive(targetEntityId, active);
+      } catch (error) {
+        logger.error('setActive error:', error);
+      }
     },
   };
 };

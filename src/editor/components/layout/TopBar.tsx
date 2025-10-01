@@ -37,6 +37,7 @@ export interface ITopBarProps {
   onToggleMaterials?: () => void;
   isMaterialsOpen?: boolean;
   currentSceneName?: string | null;
+  onOpenPreferences?: () => void;
 }
 
 export const TopBar: React.FC<ITopBarProps> = ({
@@ -56,6 +57,7 @@ export const TopBar: React.FC<ITopBarProps> = ({
   onToggleMaterials,
   isMaterialsOpen = false,
   currentSceneName,
+  onOpenPreferences,
 }) => {
   const [showSaveDropdown, setShowSaveDropdown] = useState(false);
 
@@ -268,6 +270,12 @@ export const TopBar: React.FC<ITopBarProps> = ({
         {
           label: 'Keyboard Shortcuts',
           disabled: true,
+        },
+        { divider: true },
+        {
+          label: 'Preferences...',
+          shortcut: 'Ctrl+,',
+          action: onOpenPreferences,
         },
         { divider: true },
         {

@@ -11,6 +11,7 @@ import { cameraSystem } from '../systems/cameraSystem';
 import { lightSystem } from '../systems/lightSystem';
 import { soundSystem } from '../systems/soundSystem';
 import { transformSystem } from '../systems/transformSystem';
+import { InputManager } from '../lib/input/InputManager';
 
 // Types for component props
 interface IEngineLoopProps {
@@ -193,6 +194,10 @@ export const EngineLoop = ({
  * This would be expanded as more systems are added
  */
 function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
+  // Update input state BEFORE any systems run
+  const inputManager = InputManager.getInstance();
+  inputManager.update();
+
   // Run transform system - updates Three.js objects from ECS Transform components
   const transformCount = Profiler.time('transformSystem', () => transformSystem());
 
@@ -218,6 +223,9 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
 
   // Run registered game systems from extension points
   Profiler.time('registeredSystems', () => runRegisteredSystems(deltaTime));
+
+  // Clear input frame state AFTER all systems have run
+  inputManager.clearFrameState();
 
   // Debug info
   if (transformCount > 0 || cameraCount > 0 || lightCount > 0 || soundCount > 0) {

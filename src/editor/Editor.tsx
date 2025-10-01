@@ -16,6 +16,7 @@ import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
 import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
 import { ScenePersistenceModal } from './components/shared/ScenePersistenceModal';
+import { PreferencesModal } from './components/shared/PreferencesModal';
 import { useAutoSelection } from './hooks/useAutoSelection';
 import { useEditorHandlers } from './hooks/useEditorHandlers';
 import { GizmoMode, useEditorKeyboard } from './hooks/useEditorKeyboard';
@@ -75,6 +76,9 @@ const Editor: React.FC = () => {
     isOpen: boolean;
     mode: 'save' | 'load';
   }>({ isOpen: false, mode: 'save' });
+
+  // Preferences modal state
+  const [showPreferences, setShowPreferences] = useState(false);
 
   // Entity synchronization with ECS system
   useEntitySynchronization({ entityIds, setEntityIds });
@@ -235,7 +239,10 @@ const Editor: React.FC = () => {
         onToggleMaterials={toggleMaterials}
         isMaterialsOpen={isMaterialsExpanded}
         currentSceneName={currentSceneName}
+        onOpenPreferences={() => setShowPreferences(true)}
       />
+
+      <PreferencesModal isOpen={showPreferences} onClose={() => setShowPreferences(false)} />
 
       <EnhancedAddObjectMenu
         anchorRef={addButtonRef as React.RefObject<HTMLElement>}

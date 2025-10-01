@@ -9,6 +9,7 @@ export interface IHierarchyContextMenuProps {
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onCreatePrefab?: () => void;
   isGroupSelection?: boolean;
   selectedCount?: number;
 }
@@ -20,6 +21,7 @@ export const HierarchyContextMenu: React.FC<IHierarchyContextMenuProps> = ({
   onRename,
   onDuplicate,
   onDelete,
+  onCreatePrefab,
   isGroupSelection = false,
   selectedCount = 1,
 }) => {
@@ -38,6 +40,13 @@ export const HierarchyContextMenu: React.FC<IHierarchyContextMenuProps> = ({
             {isGroupSelection ? `Duplicate ${selectedCount} items` : 'Duplicate'}
           </button>
         </li>
+        {!isGroupSelection && onCreatePrefab && (
+          <li>
+            <button className="w-full text-left" onClick={onCreatePrefab}>
+              Create Prefab
+            </button>
+          </li>
+        )}
         <li>
           <button className="w-full text-left text-red-500" onClick={onDelete}>
             {isGroupSelection ? `Delete ${selectedCount} items` : 'Delete'}

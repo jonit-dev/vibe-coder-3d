@@ -14,6 +14,7 @@ import { IInputAPI, ITimeAPI } from '../lib/scripting/ScriptAPI';
 import { IScriptExecutionResult, ScriptExecutor } from '../lib/scripting/ScriptExecutor';
 import { resolveScript } from '../lib/scripting/ScriptResolver';
 import { scheduler } from '../lib/scripting/adapters/scheduler';
+import { createInputAPI } from '../lib/scripting/apis/InputAPI';
 
 // BitECS Script component type structure
 interface IBitECSScriptComponent {
@@ -78,19 +79,8 @@ let scriptExecutionCount = 0;
 /**
  * Mock input system - replace with actual input system integration
  */
-function createMockInputAPI(): IInputAPI {
-  return {
-    isKeyPressed: (__key: string) => false,
-    isKeyDown: (__key: string) => false,
-    isKeyUp: (__key: string) => false,
-    mousePosition: () => [0, 0],
-    isMouseButtonPressed: (__button: number) => false,
-    isMouseButtonDown: (__button: number) => false,
-    isMouseButtonUp: (__button: number) => false,
-    getGamepadAxis: (__gamepadIndex: number, __axisIndex: number) => 0,
-    isGamepadButtonPressed: (__gamepadIndex: number, __buttonIndex: number) => false,
-  };
-}
+// Input API is now created from real InputManager via createInputAPI()
+// Previously was a mock implementation
 
 /**
  * Get current time information
@@ -326,7 +316,7 @@ async function executeScriptLifecycle(
       maxExecutionTime,
       parameters,
       timeInfo: getTimeInfo(deltaTime || 0),
-      inputInfo: createMockInputAPI(),
+      inputInfo: createInputAPI(),
     },
     method,
   );
