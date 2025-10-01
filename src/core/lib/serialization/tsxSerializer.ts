@@ -131,21 +131,20 @@ export const ${componentName}: React.FC = () => {
 
     // Load prefabs (order preserved from scene definition)
     const loadPrefabs = async () => {
-      console.log('[TSX Scene] Loading prefabs, count:', scenePrefabs.length);
+      console.log('[Scene] Loading prefabs from scene:', scenePrefabs.length);
       const { PrefabManager } = await import('@core/prefabs');
       const prefabManager = PrefabManager.getInstance();
       prefabManager.clear();
 
       // IMPORTANT: forEach preserves array order for prefab registration
       scenePrefabs.forEach(prefab => {
-        console.log('[TSX Scene] Registering prefab:', prefab.id, prefab.name);
+        console.log('[Scene] Registering prefab:', prefab.id, prefab.name);
         prefabManager.register(prefab);
       });
 
-      console.log('[TSX Scene] Refreshing prefabs store');
       // Refresh prefabs store cache so UI components can see the prefabs
       prefabsStore._refreshPrefabs();
-      console.log('[TSX Scene] Prefabs loaded and store refreshed');
+      console.log('[Scene] Prefabs loaded to store, total in registry:', prefabManager.getAll().length);
     };
     loadPrefabs();
 

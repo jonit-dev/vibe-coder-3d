@@ -332,93 +332,6 @@ const sceneMaterials = [
  */
 const scenePrefabs = [
   {
-    id: 'example-cube',
-    name: 'Example Cube',
-    description: 'A simple cube with transform and mesh renderer',
-    version: 1,
-    tags: ['example', 'primitive', 'basic'],
-    root: {
-      name: 'Cube',
-      components: {
-        Transform: {
-          position: [0, 0, 0],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-        },
-        MeshRenderer: {
-          meshType: 'box',
-          materialId: 'default',
-          castShadow: true,
-          receiveShadow: true,
-          enabled: true,
-        },
-      },
-    },
-    dependencies: ['default'],
-    metadata: {
-      author: 'Vibe Coder 3D',
-      category: 'primitives',
-      createdAt: '2025-09-30',
-    },
-  },
-  {
-    id: 'player',
-    name: 'Player',
-    description: 'Player entity with physics and control script',
-    version: 1,
-    tags: ['player', 'character', 'controllable'],
-    root: {
-      name: 'Player',
-      components: {
-        Transform: {
-          position: [0, 1, 0],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-        },
-        MeshRenderer: {
-          meshType: 'box',
-          materialId: 'default',
-          castShadow: true,
-          receiveShadow: true,
-          enabled: true,
-        },
-        RigidBody: {
-          type: 'dynamic',
-          mass: 1,
-          friction: 0.5,
-          restitution: 0.2,
-          linearDamping: 0.1,
-          angularDamping: 0.1,
-          enabled: true,
-        },
-      },
-      children: [
-        {
-          name: 'Camera',
-          components: {
-            Transform: {
-              position: [0, 0.5, 2],
-              rotation: [0, 0, 0],
-              scale: [1, 1, 1],
-            },
-            Camera: {
-              fov: 75,
-              near: 0.1,
-              far: 1000,
-              isActive: true,
-            },
-          },
-        },
-      ],
-    },
-    dependencies: ['default'],
-    metadata: {
-      author: 'Vibe Coder 3D',
-      category: 'gameplay',
-      createdAt: '2025-09-30',
-    },
-  },
-  {
     id: 'prefab_1759357961858',
     name: 'trees',
     version: 1,
@@ -551,17 +464,23 @@ export const Test: React.FC = () => {
 
     // Load prefabs (order preserved from scene definition)
     const loadPrefabs = async () => {
+      console.log('[Scene] Loading prefabs from scene:', scenePrefabs.length);
       const { PrefabManager } = await import('@core/prefabs');
       const prefabManager = PrefabManager.getInstance();
       prefabManager.clear();
 
       // IMPORTANT: forEach preserves array order for prefab registration
       scenePrefabs.forEach((prefab) => {
+        console.log('[Scene] Registering prefab:', prefab.id, prefab.name);
         prefabManager.register(prefab);
       });
 
       // Refresh prefabs store cache so UI components can see the prefabs
       prefabsStore._refreshPrefabs();
+      console.log(
+        '[Scene] Prefabs loaded to store, total in registry:',
+        prefabManager.getAll().length,
+      );
     };
     loadPrefabs();
 

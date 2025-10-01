@@ -220,6 +220,10 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
 
       // Refresh the materials store cache after importing
       useMaterialsStore.getState()._refreshMaterials();
+
+      // Refresh the prefabs store cache after importing
+      const { usePrefabsStore } = await import('@/editor/store/prefabsStore');
+      usePrefabsStore.getState()._refreshPrefabs();
     },
     [entityManager, componentManager, createStreamingCallbacks],
   );
