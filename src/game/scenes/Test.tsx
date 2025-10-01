@@ -5,9 +5,8 @@ import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { MaterialRegistry } from '@core/materials';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
 import { usePrefabsStore } from '@/editor/store/prefabsStore';
-import type { ComponentDataMap, SceneMetadata } from '@core';
+import type { KnownComponentTypes, ComponentDataMap, SceneMetadata } from '@core';
 import { validateSceneEntity } from '@core';
-import type { KnownComponentTypes } from '@core/lib/ecs';
 
 /**
  * Type-safe scene data interface
@@ -172,14 +171,14 @@ const sceneData: ITypedSceneEntity[] = [
     },
   },
   {
-    id: 12,
+    id: 8,
     name: 'Tree 0',
     components: {
       PersistentId: {
-        id: '625137ae-7351-4ad5-82a9-7be46413f0aa',
+        id: 'fa49220c-4169-4e8b-9f85-6b1e5c486c36',
       },
       Transform: {
-        position: [-2.5, 0, 2],
+        position: [0, 0, 2.25],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       },
@@ -213,11 +212,11 @@ const sceneData: ITypedSceneEntity[] = [
         },
       },
       PrefabInstance: {
-        prefabId: 'prefab_1759357225901',
+        prefabId: 'prefab_1759357961858',
         version: 1,
-        instanceUuid: '54a16f3d-bc92-4393-87f3-81f24607982d',
+        instanceUuid: 'd8174310-e044-4413-b755-d20cf86ac2cd',
         overridePatch: {
-          position: [-2.5, 0, 0],
+          position: [0, 0, 2.25],
           rotation: [0, 0, 0],
           scale: [1, 1, 1],
         },
@@ -225,15 +224,15 @@ const sceneData: ITypedSceneEntity[] = [
     },
   },
   {
-    id: 13,
+    id: 9,
     name: 'Tree 1',
-    parentId: 12,
+    parentId: 8,
     components: {
       PersistentId: {
-        id: '36e02231-3ff1-498d-a631-1e8000f57ced',
+        id: 'c76c47a6-697c-4b3a-9904-33c5c5d9dc24',
       },
       Transform: {
-        position: [-1, 0, 2],
+        position: [0.25, 0, 3.5],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       },
@@ -333,17 +332,104 @@ const sceneMaterials = [
  */
 const scenePrefabs = [
   {
-    id: 'prefab_1759357225901',
+    id: 'example-cube',
+    name: 'Example Cube',
+    description: 'A simple cube with transform and mesh renderer',
+    version: 1,
+    tags: ['example', 'primitive', 'basic'],
+    root: {
+      name: 'Cube',
+      components: {
+        Transform: {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        MeshRenderer: {
+          meshType: 'box',
+          materialId: 'default',
+          castShadow: true,
+          receiveShadow: true,
+          enabled: true,
+        },
+      },
+    },
+    dependencies: ['default'],
+    metadata: {
+      author: 'Vibe Coder 3D',
+      category: 'primitives',
+      createdAt: '2025-09-30',
+    },
+  },
+  {
+    id: 'player',
+    name: 'Player',
+    description: 'Player entity with physics and control script',
+    version: 1,
+    tags: ['player', 'character', 'controllable'],
+    root: {
+      name: 'Player',
+      components: {
+        Transform: {
+          position: [0, 1, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        MeshRenderer: {
+          meshType: 'box',
+          materialId: 'default',
+          castShadow: true,
+          receiveShadow: true,
+          enabled: true,
+        },
+        RigidBody: {
+          type: 'dynamic',
+          mass: 1,
+          friction: 0.5,
+          restitution: 0.2,
+          linearDamping: 0.1,
+          angularDamping: 0.1,
+          enabled: true,
+        },
+      },
+      children: [
+        {
+          name: 'Camera',
+          components: {
+            Transform: {
+              position: [0, 0.5, 2],
+              rotation: [0, 0, 0],
+              scale: [1, 1, 1],
+            },
+            Camera: {
+              fov: 75,
+              near: 0.1,
+              far: 1000,
+              isActive: true,
+            },
+          },
+        },
+      ],
+    },
+    dependencies: ['default'],
+    metadata: {
+      author: 'Vibe Coder 3D',
+      category: 'gameplay',
+      createdAt: '2025-09-30',
+    },
+  },
+  {
+    id: 'prefab_1759357961858',
     name: 'trees',
     version: 1,
     root: {
       name: 'Tree 0',
       components: {
         PersistentId: {
-          id: '1ba77aac-9e51-4b26-9b03-ef56e172de16',
+          id: '6ff54fb0-7e93-4267-a9a5-826ab234895e',
         },
         Transform: {
-          position: [-2.5, 0, 0],
+          position: [0, 0, 2.25],
           rotation: [0, 0, 0],
           scale: [1, 1, 1],
         },
@@ -382,10 +468,10 @@ const scenePrefabs = [
           name: 'Tree 1',
           components: {
             PersistentId: {
-              id: '414233df-d011-4be8-9428-acccddf0465a',
+              id: '62501dcb-5097-4ff0-833b-bc7a195b39d5',
             },
             Transform: {
-              position: [-1, 0, 0],
+              position: [0.25, 0, 3.5],
               rotation: [0, 0, 0],
               scale: [1, 1, 1],
             },
@@ -423,8 +509,8 @@ const scenePrefabs = [
       ],
     },
     metadata: {
-      createdAt: '2025-10-01T22:20:25.921Z',
-      createdFrom: 10,
+      createdAt: '2025-10-01T22:32:41.878Z',
+      createdFrom: 6,
     },
     dependencies: ['default'],
     tags: [],
@@ -437,12 +523,12 @@ const scenePrefabs = [
 export const metadata: SceneMetadata = {
   name: 'Test',
   version: 1,
-  timestamp: '2025-10-01T22:21:08.721Z',
+  timestamp: '2025-10-01T22:33:11.212Z',
 };
 
 /**
  * Test
- * Generated: 2025-10-01T22:21:08.721Z
+ * Generated: 2025-10-01T22:33:11.212Z
  * Version: 1
  */
 export const Test: React.FC = () => {
@@ -465,21 +551,17 @@ export const Test: React.FC = () => {
 
     // Load prefabs (order preserved from scene definition)
     const loadPrefabs = async () => {
-      console.log('[TSX Scene] Loading prefabs, count:', scenePrefabs.length);
       const { PrefabManager } = await import('@core/prefabs');
       const prefabManager = PrefabManager.getInstance();
       prefabManager.clear();
 
       // IMPORTANT: forEach preserves array order for prefab registration
       scenePrefabs.forEach((prefab) => {
-        console.log('[TSX Scene] Registering prefab:', prefab.id, prefab.name);
         prefabManager.register(prefab);
       });
 
-      console.log('[TSX Scene] Refreshing prefabs store');
       // Refresh prefabs store cache so UI components can see the prefabs
       prefabsStore._refreshPrefabs();
-      console.log('[TSX Scene] Prefabs loaded and store refreshed');
     };
     loadPrefabs();
 
