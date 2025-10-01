@@ -23,12 +23,8 @@ export const createEntitiesAPI = (): IEntitiesAPI => {
 
   // Helper to check if entity exists
   const entityExists = (id: number): boolean => {
-    try {
-      // Try to get any component to verify entity exists
-      return componentManager.hasComponent(id, 'Transform');
-    } catch {
-      return false;
-    }
+    // Check if entity has Transform component (all entities must have one)
+    return componentManager.hasComponent(id, 'Transform');
   };
 
   return {

@@ -13,9 +13,11 @@ vi.mock('@/core/lib/ecs/ComponentManager', () => {
   return {
     ComponentManager: {
       getInstance: vi.fn(() => ({
-        hasEntity: vi.fn((id: number) => entities.has(id)),
+        hasComponent: vi.fn((id: number, type: string) => {
+          // All valid entities have Transform component
+          return type === 'Transform' && entities.has(id);
+        }),
         getComponentData: vi.fn(),
-        hasComponent: vi.fn(() => true),
         updateComponent: vi.fn(() => true),
         addComponent: vi.fn(() => ({})),
         removeComponent: vi.fn(() => true),
