@@ -8,36 +8,8 @@ const logger = Logger.create('PrefabInit');
  * Initialize prefabs from JSON files
  */
 export async function initPrefabs(): Promise<void> {
-  const registry = PrefabRegistry.getInstance();
-
-  // List of built-in prefabs to load
-  const builtInPrefabs = ['example-cube', 'player'];
-
-  let loadedCount = 0;
-  let errorCount = 0;
-
-  for (const prefabId of builtInPrefabs) {
-    try {
-      const response = await fetch(`/assets/prefabs/${prefabId}.prefab.json`);
-
-      if (!response.ok) {
-        logger.warn(`Prefab file not found: ${prefabId}`);
-        errorCount++;
-        continue;
-      }
-
-      const prefabData = (await response.json()) as IPrefabDefinition;
-      registry.upsert(prefabData);
-      loadedCount++;
-
-      logger.debug(`Loaded prefab: ${prefabId}`);
-    } catch (error) {
-      logger.error(`Failed to load prefab ${prefabId}:`, error);
-      errorCount++;
-    }
-  }
-
-  logger.info('Prefabs initialized', { loaded: loadedCount, errors: errorCount });
+  // No built-in prefabs to load - prefabs are loaded from scene files
+  logger.info('Prefabs initialized', { loaded: 0, errors: 0 });
 }
 
 /**
