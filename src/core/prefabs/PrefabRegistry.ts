@@ -15,6 +15,7 @@ export class PrefabRegistry {
   static getInstance(): PrefabRegistry {
     if (!this.instance) {
       this.instance = new PrefabRegistry();
+      console.log('[PrefabRegistry] Creating NEW singleton instance');
     }
     return this.instance;
   }
@@ -40,6 +41,7 @@ export class PrefabRegistry {
    * Upsert (insert or update) a prefab
    */
   upsert(def: IPrefabDefinition): void {
+    console.log('[PrefabRegistry] Upserting prefab:', def.id, def.name);
     // Validate schema
     try {
       PrefabDefinitionSchema.parse(def);
@@ -74,6 +76,7 @@ export class PrefabRegistry {
     // Update hash cache
     this.hashCache.set(def.id, generatePrefabHash(def));
 
+    console.log('[PrefabRegistry] Prefab registered successfully, total count:', this.idToDef.size);
     logger.debug('Prefab registered:', { id: def.id, name: def.name, version: def.version });
   }
 

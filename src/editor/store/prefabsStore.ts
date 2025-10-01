@@ -48,12 +48,14 @@ interface IPrefabsState {
 
 export const usePrefabsStore = create<IPrefabsState>((set, get) => {
   const registry = PrefabRegistry.getInstance();
+  const initialPrefabs = registry.list();
+  console.log('[PrefabsStore] Initializing store with prefabs:', initialPrefabs.length);
 
   return {
     get registry() {
       return PrefabRegistry.getInstance();
     },
-    prefabs: registry.list(),
+    prefabs: initialPrefabs,
 
     selectedPrefabId: null,
     isBrowserOpen: false,
