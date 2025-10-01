@@ -18,6 +18,8 @@ export default [
       'coverage/**',
       '*.log',
       'scripts/**',
+      'test-script-api.mjs',
+      'test-integration.ts',
     ],
   },
   js.configs.recommended,
@@ -90,6 +92,13 @@ export default [
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
+  {
+    files: ['src/game/scripts/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
+      'no-unused-vars': 'off',
     },
   },
   prettierConfig,

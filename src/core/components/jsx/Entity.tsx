@@ -30,7 +30,6 @@ export const Entity: React.FC<IEntityProps> = ({
   persistentId,
   parentId,
   children,
-  debug: _debug = false,
 }) => {
   const [entityId, setEntityId] = useState<EntityId | null>(null);
   const [actualPersistentId, setActualPersistentId] = useState<string | null>(null);

@@ -2,15 +2,14 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
-import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
+import { MaterialRegistry, KnownComponentTypes } from '@core';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type {
   ComponentDataMap,
   SceneEntityData,
   SceneMetadata,
-} from '@/core/types/scene';
-import { validateSceneEntity } from '@/core/types/scene';
+} from '@core';
+import { validateSceneEntity } from '@core';
 
 /**
  * Type-safe scene data interface

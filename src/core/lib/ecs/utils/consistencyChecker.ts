@@ -249,9 +249,9 @@ export class ConsistencyChecker {
     console.group('🔍 ECS Index Consistency Report');
 
     if (report.isConsistent) {
-
+      // Report is consistent
     } else {
-
+      // Report is inconsistent
     }
 
     // Log stats

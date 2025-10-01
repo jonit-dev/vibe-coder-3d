@@ -188,9 +188,9 @@ class PerformanceChecker {
     }
 
     if (result.passed) {
-
+      // Performance check passed
     } else {
-
+      // Performance check failed
     }
   }
 

@@ -13,7 +13,6 @@ import { Logger } from '../lib/logger';
 import { IInputAPI, ITimeAPI } from '../lib/scripting/ScriptAPI';
 import { IScriptExecutionResult, ScriptExecutor } from '../lib/scripting/ScriptExecutor';
 import { resolveScript } from '../lib/scripting/ScriptResolver';
-import { ScriptData } from '../lib/ecs/components/definitions/ScriptComponent';
 
 // BitECS Script component type structure
 interface IBitECSScriptComponent {

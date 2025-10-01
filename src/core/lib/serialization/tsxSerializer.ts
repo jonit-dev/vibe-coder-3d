@@ -58,7 +58,39 @@ interface ITypedSceneEntity {
 /**
  * Type-safe scene definition
  */
-const sceneData: ITypedSceneEntity[] = ${JSON.stringify(entities, null, 2)};
+const sceneData: ITypedSceneEntity[] = ${JSON.stringify(
+  entities.map(entity => {
+    // For Script components with external scriptRef, only save the reference, not inline code
+    if (entity.components.Script && typeof entity.components.Script === 'object') {
+      const scriptData = entity.components.Script as any;
+      if (scriptData.scriptRef?.source === 'external') {
+        return {
+          ...entity,
+          components: {
+            ...entity.components,
+            Script: {
+              ...scriptData,
+              code: '', // Clear inline code when using external script
+              scriptRef: scriptData.scriptRef,
+              parameters: scriptData.parameters,
+              enabled: scriptData.enabled,
+              executeInUpdate: scriptData.executeInUpdate,
+              executeOnStart: scriptData.executeOnStart,
+              executeOnEnable: scriptData.executeOnEnable,
+              language: scriptData.language,
+              scriptName: scriptData.scriptName,
+              description: scriptData.description,
+              maxExecutionTime: scriptData.maxExecutionTime,
+            },
+          },
+        };
+      }
+    }
+    return entity;
+  }),
+  null,
+  2,
+)};
 
 /**
  * Scene materials

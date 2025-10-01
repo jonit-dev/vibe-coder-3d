@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "isolatedModules": false,
+    "baseUrl": "../../../",
+    "paths": {
+      "@/*": ["src/*"],
+      "@core": ["src/core"],
+      "@core/*": ["src/core/*"]
+    }
+  },
+  "include": [
+    "script-api.d.ts",
+    "**/*.ts"
+  ]
+}

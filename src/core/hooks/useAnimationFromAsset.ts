@@ -38,7 +38,7 @@ export function useAnimationFromAsset({
   // Memoize animation assets to prevent re-renders
   const animationAssets = useMemo(() => {
     if (debug) {
-
+      // Debug animation sources
     }
     return animationSources.map(({ url, type }) => ({ url, type }));
   }, [animationSources, debug]);
@@ -47,7 +47,7 @@ export function useAnimationFromAsset({
   useEffect(() => {
     modelRef.current = model;
     if (debug) {
-
+      // Debug model update
     }
   }, [model, debug]);
 
@@ -56,11 +56,11 @@ export function useAnimationFromAsset({
     setLoading(true);
     let isMounted = true;
     if (debug) {
-
+      // Debug extract animation clips
     }
     if (!model) {
       if (debug) {
-
+        // Debug no model
       }
       return;
     }
@@ -75,7 +75,7 @@ export function useAnimationFromAsset({
         // Base model animations found
       }
     } else if (debug) {
-
+      // Debug no base model animations
     }
     // Add animations from external assets
     Promise.all(

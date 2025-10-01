@@ -60,7 +60,7 @@ class ThreeJSEntityRegistry {
   public unregisterEntity(entityId: EntityId): void {
     const removed = this.registry.delete(entityId);
     if (removed) {
-
+      // Entity unregistered successfully
     }
   }
 

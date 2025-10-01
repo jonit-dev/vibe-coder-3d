@@ -105,7 +105,7 @@ export class SafeScriptExecutor {
       for (const logMatch of logMatches) {
         const messageMatch = logMatch.match(/['"`]([^'"`]+)['"`]/);
         if (messageMatch) {
-
+          // Log match found
         }
       }
     }

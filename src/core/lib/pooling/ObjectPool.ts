@@ -139,7 +139,12 @@ export class ObjectPool<T> {
     this.config.reset(obj);
 
     // Support IPoolable interface
-    if ('reset' in obj && typeof (obj as any).reset === 'function') {
+    if (
+      obj !== null &&
+      typeof obj === 'object' &&
+      'reset' in obj &&
+      typeof (obj as any).reset === 'function'
+    ) {
       (obj as any).reset();
     }
 

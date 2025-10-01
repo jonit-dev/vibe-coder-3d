@@ -75,7 +75,6 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
     {
       children,
       bodyType = 'dynamic',
-      material,
       autoRegister = true,
       entityId: externalEntityId,
       debug = false,
@@ -177,7 +176,7 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
             }
 
             if (debug) {
-
+              // Debug cleanup if needed
             }
 
             entityRef.current = null;

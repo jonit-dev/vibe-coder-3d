@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "off",
+    "no-unused-vars": "off"
+  },
+  "globals": {
+    "entity": "readonly",
+    "three": "readonly",
+    "math": "readonly",
+    "input": "readonly",
+    "time": "readonly",
+    "parameters": "readonly",
+    "onStart": "writable",
+    "onUpdate": "writable",
+    "onDestroy": "writable",
+    "onEnable": "writable",
+    "onDisable": "writable"
+  }
+}

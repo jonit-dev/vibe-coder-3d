@@ -1,17 +1,33 @@
-import React, { useCallback, useState } from 'react';
-import { FiPause, FiCode, FiEdit3, FiAlertTriangle, FiCheck } from 'react-icons/fi';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import { FiCode, FiEdit3, FiAlertTriangle, FiExternalLink } from 'react-icons/fi';
 
 import { ScriptData } from '@/core/lib/ecs/components/definitions/ScriptComponent';
 import { CheckboxField } from '@/editor/components/shared/CheckboxField';
 import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { Logger } from '@/core/lib/logger';
+import { useEditorStore } from '@/editor/store/editorStore';
 
 import { ScriptCodeModal } from './ScriptCodeModal';
+
+const logger = Logger.create('ScriptSection');
 
 export interface IScriptSectionProps {
   scriptData: ScriptData;
   onUpdate: (updates: Partial<ScriptData>) => void;
   onRemove?: () => void;
+}
+
+/**
+ * Generate script ID from entity ID and script name
+ */
+function generateScriptId(entityId: number, scriptName: string): string {
+  const sanitized = scriptName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return `entity-${entityId}.${sanitized || 'script'}`;
 }
 
 export const ScriptSection: React.FC<IScriptSectionProps> = ({
@@ -20,6 +36,74 @@ export const ScriptSection: React.FC<IScriptSectionProps> = ({
   onRemove,
 }) => {
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [isCreatingExternal, setIsCreatingExternal] = useState(false);
+  const hasInitialized = useRef(false);
+  const selectedEntityId = useEditorStore((state) => state.selectedId);
+
+  /**
+   * Auto-create external script file when component is first added
+   */
+  useEffect(() => {
+    // Only run once on mount, and only if not already external
+    if (hasInitialized.current || !selectedEntityId) return;
+    if (scriptData.scriptRef?.source === 'external') {
+      hasInitialized.current = true;
+      return;
+    }
+
+    hasInitialized.current = true;
+
+    const createExternalFile = async () => {
+      try {
+        setIsCreatingExternal(true);
+        const scriptId = generateScriptId(selectedEntityId, scriptData.scriptName || 'Script');
+
+        logger.info(`Auto-creating external script file: ${scriptId}`);
+
+        // Use crypto-browserify for browser-compatible hashing
+        const encoder = new TextEncoder();
+        const data = encoder.encode(scriptData.code || '');
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const codeHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
+        const response = await fetch('/api/script/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: scriptId,
+            code: scriptData.code || '',
+            description: `Auto-generated script for ${scriptData.scriptName || 'Script'}`,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to create external script');
+        }
+
+        // Update component with scriptRef
+        onUpdate({
+          scriptRef: {
+            scriptId,
+            source: 'external',
+            path: result.path,
+            codeHash,
+            lastModified: Date.now(),
+          },
+        });
+
+        logger.info(`External script created successfully: ${scriptId} at ${result.path}`);
+      } catch (error) {
+        logger.error('Failed to auto-create external script:', error);
+      } finally {
+        setIsCreatingExternal(false);
+      }
+    };
+
+    createExternalFile();
+  }, [selectedEntityId, scriptData.scriptName, scriptData.code, scriptData.scriptRef, onUpdate]);
 
   const updateScript = useCallback(
     (updates: Partial<ScriptData>) => {
@@ -27,50 +111,6 @@ export const ScriptSection: React.FC<IScriptSectionProps> = ({
     },
     [onUpdate],
   );
-
-  const formatExecutionTime = (time: number): string => {
-    if (time < 1) return `${(time * 1000).toFixed(2)}μs`;
-    if (time < 1000) return `${time.toFixed(2)}ms`;
-    return `${(time / 1000).toFixed(2)}s`;
-  };
-
-  const getStatusIndicator = () => {
-    if (scriptData.hasErrors) {
-      return (
-        <div className="flex items-center text-red-500 text-sm">
-          <FiAlertTriangle className="mr-1" />
-          Error
-        </div>
-      );
-    }
-
-    if (scriptData.enabled) {
-      return (
-        <div className="flex items-center text-green-500 text-sm">
-          <FiCheck className="mr-1" />
-          Active
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center text-gray-500 text-sm">
-        <FiPause className="mr-1" />
-        Disabled
-      </div>
-    );
-  };
-
-  const getCodePreview = () => {
-    const code = scriptData.code?.trim();
-    if (!code) return 'No code written';
-
-    const lines = code.split('\n');
-    const previewLines = lines.slice(0, 2);
-    const preview = previewLines.join(' ').substring(0, 60);
-
-    return lines.length > 2 ? `${preview}...` : preview;
-  };
 
   return (
     <>
@@ -82,103 +122,49 @@ export const ScriptSection: React.FC<IScriptSectionProps> = ({
         icon={<FiCode />}
         defaultCollapsed={false}
       >
-        <div className="space-y-4">
-          {/* Basic Script Info */}
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-300">Script Name</label>
-              <input
-                type="text"
-                value={scriptData.scriptName}
-                onChange={(e) => updateScript({ scriptName: e.target.value })}
-                className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                placeholder="Script Name"
-              />
-            </div>
-
-            {/* Status indicator */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-300">Status</span>
-              {getStatusIndicator()}
-            </div>
-
-            <CheckboxField
-              label="Enabled"
-              description="Enable/disable script execution"
-              value={scriptData.enabled}
-              onChange={(enabled) => updateScript({ enabled })}
-            />
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-300">Language</label>
-              <select
-                value={scriptData.language}
-                onChange={(e) =>
-                  updateScript({ language: e.target.value as 'javascript' | 'typescript' })
-                }
-                className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value="javascript">JavaScript</option>
-                <option value="typescript">TypeScript</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Code Preview & Edit Button */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-gray-300">Script Code</label>
-              <button
-                onClick={() => setIsCodeModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded transition-colors"
-              >
-                <FiEdit3 className="w-3 h-3" />
-                Edit Code
-              </button>
-            </div>
-
-            <div className="bg-gray-800 border border-gray-600 rounded p-3">
-              <code className="text-xs text-gray-400 font-mono">{getCodePreview()}</code>
-            </div>
-          </div>
-
-          {/* Quick Settings */}
-          <div className="grid grid-cols-2 gap-3">
-            <CheckboxField
-              label="Execute on Start"
-              value={scriptData.executeOnStart}
-              onChange={(executeOnStart) => updateScript({ executeOnStart })}
-            />
-
-            <CheckboxField
-              label="Execute in Update"
-              value={scriptData.executeInUpdate}
-              onChange={(executeInUpdate) => updateScript({ executeInUpdate })}
-            />
-          </div>
-
-          {/* Performance Stats - Compact */}
-          {scriptData.executionCount > 0 && (
-            <div className="bg-gray-800/50 border border-gray-600 rounded p-2">
-              <div className="text-xs text-gray-400 mb-1">Performance</div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-300">Executions: {scriptData.executionCount}</span>
-                <span className="text-gray-300">
-                  Last: {formatExecutionTime(scriptData.lastExecutionTime)}
-                </span>
-              </div>
+        <div className="space-y-3">
+          {/* External Script Badge */}
+          {scriptData.scriptRef?.source === 'external' && (
+            <div className="flex items-center gap-2 px-2 py-1 bg-blue-900/20 border border-blue-600 rounded text-xs">
+              <FiExternalLink className="text-blue-400" />
+              <span className="text-blue-300 font-mono flex-1 truncate" title={scriptData.scriptRef.scriptId}>
+                {scriptData.scriptRef.scriptId}
+              </span>
             </div>
           )}
 
-          {/* Error Display - Compact */}
+          {isCreatingExternal && (
+            <div className="px-2 py-1 bg-yellow-900/20 border border-yellow-600 rounded text-xs text-yellow-300">
+              Creating external file...
+            </div>
+          )}
+
+          {/* Edit Code Button - Primary Action */}
+          <button
+            onClick={() => setIsCodeModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors"
+          >
+            <FiEdit3 className="w-4 h-4" />
+            Edit Script Code
+          </button>
+
+          {/* Enabled Toggle */}
+          <CheckboxField
+            label="Enabled (Play Mode Only)"
+            description="Script executes only in play mode"
+            value={scriptData.enabled}
+            onChange={(enabled) => updateScript({ enabled })}
+          />
+
+          {/* Error Display */}
           {scriptData.hasErrors && scriptData.lastErrorMessage && (
             <div className="bg-red-900/20 border border-red-600 rounded p-2">
-              <div className="flex items-start">
-                <FiAlertTriangle className="text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+              <div className="flex items-start gap-2">
+                <FiAlertTriangle className="text-red-500 mt-0.5 flex-shrink-0" />
                 <div className="text-red-300 text-xs">
-                  <div className="font-medium mb-1">Script Error:</div>
-                  <div className="truncate" title={scriptData.lastErrorMessage}>
-                    {scriptData.lastErrorMessage.substring(0, 100)}...
+                  <div className="font-medium mb-1">Error:</div>
+                  <div className="font-mono text-[10px] break-words">
+                    {scriptData.lastErrorMessage}
                   </div>
                 </div>
               </div>

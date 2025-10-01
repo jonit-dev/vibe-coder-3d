@@ -189,7 +189,7 @@ export const MeshRendererSection: React.FC<IMeshRendererSectionProps> = ({
             defaultExpanded={false}
             badge={
               (meshRenderer.materials?.length || 0) > 0
-                ? `${meshRenderer.materials.length} slots`
+                ? `${meshRenderer.materials?.length || 0} slots`
                 : undefined
             }
           >

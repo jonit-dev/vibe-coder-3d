@@ -162,9 +162,10 @@ export const scriptComponent = ComponentFactory.create({
     // If no code is provided, initialize with default Hello World template
     const defaultCode =
       data.language === 'typescript'
-        ? `// Hello World TypeScript Script
-function onStart(): void {
+        ? `/// <reference path="./script-api.d.ts" />
 
+// Hello World TypeScript Script
+function onStart(): void {
   if (three.mesh) {
     three.material.setColor("#00ff00");
   }
@@ -173,9 +174,10 @@ function onStart(): void {
 function onUpdate(deltaTime: number): void {
   entity.transform.rotate(0, deltaTime * 0.5, 0);
 }`
-        : `// Hello World JavaScript Script
-function onStart() {
+        : `/// <reference path="./script-api.d.ts" />
 
+// Hello World JavaScript Script
+function onStart() {
   if (three.mesh) {
     three.material.setColor("#00ff00");
   }
