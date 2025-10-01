@@ -17,6 +17,8 @@ import {
 
 import { ToolbarButton } from '../shared/ToolbarButton';
 import { ToolbarGroup } from '../shared/ToolbarGroup';
+import { MenuBar, IMenuItem } from './MenuBar';
+import { ShapeType } from '../../types/shapes';
 
 export interface ITopBarProps {
   entityCount: number;
@@ -57,12 +59,236 @@ export const TopBar: React.FC<ITopBarProps> = ({
 }) => {
   const [showSaveDropdown, setShowSaveDropdown] = useState(false);
 
-  return (
-    <header className="h-10 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-b border-cyan-900/20 shadow-lg relative z-20">
-      {/* Animated background effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/5 via-purple-900/5 to-cyan-900/5 animate-pulse"></div>
+  const menuItems: IMenuItem[] = [
+    {
+      label: 'File',
+      items: [
+        {
+          label: 'New Scene',
+          shortcut: 'Ctrl+N',
+          action: onClear,
+        },
+        { divider: true },
+        {
+          label: 'Open Scene...',
+          shortcut: 'Ctrl+O',
+          action: onLoad,
+        },
+        { divider: true },
+        {
+          label: 'Save',
+          shortcut: 'Ctrl+S',
+          action: onSave,
+          disabled: !currentSceneName,
+        },
+        {
+          label: 'Save As...',
+          shortcut: 'Ctrl+Shift+S',
+          action: onSaveAs,
+        },
+        { divider: true },
+        {
+          label: 'Import Asset...',
+          disabled: true,
+        },
+        {
+          label: 'Export Scene...',
+          disabled: true,
+        },
+      ],
+    },
+    {
+      label: 'Edit',
+      items: [
+        {
+          label: 'Undo',
+          shortcut: 'Ctrl+Z',
+          disabled: true,
+        },
+        {
+          label: 'Redo',
+          shortcut: 'Ctrl+Y',
+          disabled: true,
+        },
+        { divider: true },
+        {
+          label: 'Cut',
+          shortcut: 'Ctrl+X',
+          disabled: true,
+        },
+        {
+          label: 'Copy',
+          shortcut: 'Ctrl+C',
+          disabled: true,
+        },
+        {
+          label: 'Paste',
+          shortcut: 'Ctrl+V',
+          disabled: true,
+        },
+        {
+          label: 'Duplicate',
+          shortcut: 'Ctrl+D',
+          disabled: true,
+        },
+        { divider: true },
+        {
+          label: 'Delete',
+          shortcut: 'Del',
+          disabled: true,
+        },
+        { divider: true },
+        {
+          label: 'Select All',
+          shortcut: 'Ctrl+A',
+          disabled: true,
+        },
+        {
+          label: 'Deselect All',
+          shortcut: 'Ctrl+Shift+A',
+          disabled: true,
+        },
+      ],
+    },
+    {
+      label: 'Scene',
+      items: [
+        {
+          label: 'Play',
+          shortcut: 'Space',
+          action: onPlay,
+          disabled: isPlaying,
+        },
+        {
+          label: 'Pause',
+          action: onPause,
+          disabled: !isPlaying,
+        },
+        {
+          label: 'Stop',
+          action: onStop,
+        },
+        { divider: true },
+        {
+          label: 'Clear Scene',
+          action: onClear,
+        },
+        { divider: true },
+        {
+          label: 'Scene Settings',
+          disabled: true,
+        },
+        {
+          label: 'Lighting Settings',
+          disabled: true,
+        },
+        {
+          label: 'Physics Settings',
+          disabled: true,
+        },
+      ],
+    },
+    {
+      label: 'GameObject',
+      items: [
+        {
+          label: 'Create Empty',
+          action: () => onAddObject('Entity'),
+        },
+        { divider: true },
+        {
+          label: '3D Objects',
+          submenu: [
+            { label: 'Cube', action: () => onAddObject(ShapeType.Cube) },
+            { label: 'Sphere', action: () => onAddObject(ShapeType.Sphere) },
+            { label: 'Cylinder', action: () => onAddObject(ShapeType.Cylinder) },
+            { label: 'Cone', action: () => onAddObject(ShapeType.Cone) },
+            { label: 'Plane', action: () => onAddObject(ShapeType.Plane) },
+            { label: 'Capsule', action: () => onAddObject(ShapeType.Capsule) },
+            { label: 'Torus', action: () => onAddObject(ShapeType.Torus) },
+          ],
+        },
+        {
+          label: 'Light',
+          submenu: [
+            { label: 'Directional Light', action: () => onAddObject('DirectionalLight') },
+            { label: 'Point Light', action: () => onAddObject('PointLight') },
+            { label: 'Spot Light', action: () => onAddObject('SpotLight') },
+            { label: 'Ambient Light', action: () => onAddObject('AmbientLight') },
+          ],
+        },
+        {
+          label: 'Effects',
+          submenu: [
+            { label: 'Particle System', disabled: true },
+            { label: 'Audio Source', disabled: true },
+          ],
+        },
+        { divider: true },
+        {
+          label: 'Camera',
+          action: () => onAddObject(ShapeType.Camera),
+        },
+      ],
+    },
+    {
+      label: 'Window',
+      items: [
+        {
+          label: 'Chat Panel',
+          shortcut: 'Ctrl+/',
+          action: onToggleChat,
+        },
+        {
+          label: 'Materials Panel',
+          action: onToggleMaterials,
+        },
+        { divider: true },
+        {
+          label: 'Inspector',
+          disabled: true,
+        },
+        {
+          label: 'Hierarchy',
+          disabled: true,
+        },
+        {
+          label: 'Viewport',
+          disabled: true,
+        },
+      ],
+    },
+    {
+      label: 'Help',
+      items: [
+        {
+          label: 'Documentation',
+          disabled: true,
+        },
+        {
+          label: 'Keyboard Shortcuts',
+          disabled: true,
+        },
+        { divider: true },
+        {
+          label: 'About VibeEngine',
+          disabled: true,
+        },
+      ],
+    },
+  ];
 
-      <div className="relative z-10 flex items-center justify-between h-full px-4 py-1">
+  return (
+    <header className="flex flex-col bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-b border-cyan-900/20 shadow-lg relative z-20">
+      {/* Animated background effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/5 via-purple-900/5 to-cyan-900/5 animate-pulse pointer-events-none"></div>
+
+      {/* Menu Bar */}
+      <div className="relative z-30">
+        <MenuBar items={menuItems} />
+      </div>
+
+      <div className="relative z-10 flex items-center justify-between h-10 px-4 py-1">
         {/* Left section - Logo and project info */}
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -139,7 +365,9 @@ export const TopBar: React.FC<ITopBarProps> = ({
                 <ToolbarButton
                   onClick={onSave}
                   variant="primary"
-                  title={currentSceneName ? `Save ${currentSceneName} (Ctrl+S)` : "Save Scene (Ctrl+S)"}
+                  title={
+                    currentSceneName ? `Save ${currentSceneName} (Ctrl+S)` : 'Save Scene (Ctrl+S)'
+                  }
                   className="rounded-r-none border-r-0"
                 >
                   <FiSave className="w-4 h-4" />

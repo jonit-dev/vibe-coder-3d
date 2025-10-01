@@ -57,10 +57,7 @@ const Editor: React.FC = () => {
   } = useUIState();
   const { isPlaying, setIsPlaying } = usePhysicsState();
   const { statusMessage, setStatusMessage, performanceMetrics } = useAppState();
-  const {
-    isMaterialsExpanded,
-    setIsMaterialsExpanded,
-  } = useUIState();
+  const { isMaterialsExpanded, setIsMaterialsExpanded } = useUIState();
 
   // Gizmo mode state for viewport
   const [gizmoMode, setGizmoMode] = useState<GizmoMode>('translate');
@@ -209,7 +206,7 @@ const Editor: React.FC = () => {
 
   return (
     <div
-      className="w-full h-screen flex flex-col bg-gradient-to-br from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] text-white"
+      className="w-full h-screen flex flex-col bg-gradient-to-br from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] text-white overflow-hidden"
       onContextMenu={(e) => e.preventDefault()}
     >
       {/* Physics Integration - handles play/pause physics state */}
