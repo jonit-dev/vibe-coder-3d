@@ -8,16 +8,17 @@ export const createInputAPI = (): IInputAPI => {
   const inputManager = InputManager.getInstance();
 
   return {
-    isKeyDown: (key: string): boolean => inputManager.isKeyPressed(key),
     isKeyPressed: (key: string): boolean => inputManager.isKeyPressed(key),
-    isKeyReleased: (key: string): boolean => inputManager.isKeyReleased(key),
-
-    isMouseButtonDown: (button: number): boolean => inputManager.isMouseButtonDown(button),
-    isMouseButtonPressed: (button: number): boolean => inputManager.isMouseButtonPressed(button),
-    isMouseButtonReleased: (button: number): boolean => inputManager.isMouseButtonReleased(button),
+    isKeyDown: (key: string): boolean => inputManager.isKeyDown(key),
+    isKeyUp: (key: string): boolean => inputManager.isKeyReleased(key),
 
     mousePosition: (): [number, number] => inputManager.mousePosition(),
-    mouseDelta: (): [number, number] => inputManager.mouseDelta(),
-    mouseWheel: (): number => inputManager.mouseWheel(),
+    isMouseButtonPressed: (button: number): boolean => inputManager.isMouseButtonPressed(button),
+    isMouseButtonDown: (button: number): boolean => inputManager.isMouseButtonDown(button),
+    isMouseButtonUp: (button: number): boolean => inputManager.isMouseButtonReleased(button),
+
+    // Gamepad stubs
+    getGamepadAxis: (__gamepadIndex: number, __axisIndex: number): number => 0,
+    isGamepadButtonPressed: (__gamepadIndex: number, __buttonIndex: number): boolean => false,
   };
 };
