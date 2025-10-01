@@ -21,6 +21,7 @@ import {
 } from '@/core/lib/serialization/StreamingSceneSerializer';
 import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
+import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
 import { useProjectToasts, useToastStore } from '@/core/stores/toastStore';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
 import { useComponentManager } from './useComponentManager';
@@ -97,7 +98,6 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         projectToasts.showOperationError(operation, error.message);
       },
       onComplete: (_summary) => {
-
         if (toastId) removeToast(toastId);
       },
     }),
@@ -121,17 +121,25 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         return materialRegistry.list();
       };
 
+      // Get prefabs from PrefabRegistry
+      const getPrefabs = async () => {
+        const { PrefabManager } = await import('@core/prefabs');
+        const prefabManager = PrefabManager.getInstance();
+        return prefabManager.getAll();
+      };
+
       const callbacks = createStreamingCallbacks('Export');
 
       return await streamingSerializer.exportScene(
         entities,
         getComponentsForEntity,
         {
-          version: 6, // Bumped version for materials support
+          version: 7, // Bumped version for prefabs support
           name: metadata?.name,
         },
         callbacks,
         getMaterials,
+        getPrefabs,
       );
     },
     [entityManager, componentManager, createStreamingCallbacks],
@@ -174,14 +182,26 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
       // Material manager adapter
       const materialManagerAdapter = {
         clearMaterials: () => {
-
           const materialRegistry = MaterialRegistry.getInstance();
           materialRegistry.clearMaterials();
         },
         upsertMaterial: (material: IMaterialDefinition) => {
-
           const materialRegistry = MaterialRegistry.getInstance();
           materialRegistry.upsert(material);
+        },
+      };
+
+      // Prefab manager adapter
+      const prefabManagerAdapter = {
+        clearPrefabs: async () => {
+          const { PrefabManager } = await import('@core/prefabs');
+          const prefabManager = PrefabManager.getInstance();
+          prefabManager.clear();
+        },
+        registerPrefab: async (prefab: IPrefabDefinition) => {
+          const { PrefabManager } = await import('@core/prefabs');
+          const prefabManager = PrefabManager.getInstance();
+          prefabManager.register(prefab);
         },
       };
 
@@ -195,6 +215,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         componentManagerAdapter,
         callbacks,
         materialManagerAdapter,
+        prefabManagerAdapter,
       );
 
       // Refresh the materials store cache after importing
@@ -278,7 +299,11 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         const materials = materialRegistry.list();
 
         // Starting scene save operation
-        const success = await scenePersistence.saveTsxScene(sceneName, transformedEntities, materials);
+        const success = await scenePersistence.saveTsxScene(
+          sceneName,
+          transformedEntities,
+          materials,
+        );
 
         if (loadingToastId) removeToast(loadingToastId);
 
@@ -491,7 +516,6 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
    * Trigger file load dialog
    */
   const triggerFileLoad = useCallback(() => {
-
     if (fileInputRef.current) {
       fileInputRef.current.click();
     } else {

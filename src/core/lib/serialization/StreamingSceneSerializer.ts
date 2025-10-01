@@ -21,6 +21,7 @@ const STREAM_CONFIG = {
 } as const;
 
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
+import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
 
 // Core interfaces
 export interface IStreamingEntity {
@@ -37,6 +38,7 @@ export interface IStreamingScene {
   totalEntities: number;
   entities: IStreamingEntity[];
   materials: IMaterialDefinition[];
+  prefabs?: IPrefabDefinition[];
 }
 
 export interface IStreamingProgress {
@@ -56,8 +58,9 @@ export interface IStreamingCallbacks {
   onComplete?: (summary: { totalEntities: number; timeElapsed: number }) => void;
 }
 
-// Import material schema
+// Import material and prefab schemas
 import { MaterialDefinitionSchema } from '@/core/materials/Material.types';
+import { PrefabDefinitionSchema } from '@/core/prefabs/Prefab.types';
 
 // Zod schema for validation
 const StreamingEntitySchema = z.object({
@@ -75,12 +78,14 @@ const StreamingSceneSchema = z
     totalEntities: z.number().optional(), // Optional for backward compatibility
     entities: z.array(StreamingEntitySchema),
     materials: z.array(MaterialDefinitionSchema).optional().default([]), // Optional for backward compatibility
+    prefabs: z.array(PrefabDefinitionSchema).optional().default([]), // Optional prefabs array
   })
   .transform((data) => ({
     ...data,
     timestamp: data.timestamp || new Date().toISOString(),
     totalEntities: data.totalEntities ?? data.entities.length,
     materials: data.materials || [],
+    prefabs: data.prefabs || [],
   }));
 
 /**
@@ -139,6 +144,7 @@ export class StreamingSceneSerializer {
     metadata: { name?: string; version?: number } = {},
     callbacks: IStreamingCallbacks = {},
     getMaterials?: () => IMaterialDefinition[],
+    getPrefabs?: () => IPrefabDefinition[] | Promise<IPrefabDefinition[]>,
   ): Promise<IStreamingScene> {
     const startTime = performance.now();
     this.abortController = new AbortController();
@@ -225,13 +231,17 @@ export class StreamingSceneSerializer {
       // Get materials if provider function is available
       const materials = getMaterials ? getMaterials() : [];
 
+      // Get prefabs if provider function is available
+      const prefabs = getPrefabs ? await getPrefabs() : [];
+
       const scene: IStreamingScene = {
-        version: metadata.version || 6, // Bumped version for materials support
+        version: metadata.version || 7, // Bumped version for prefabs support
         name: metadata.name,
         timestamp: new Date().toISOString(),
         totalEntities: streamingEntities.length,
         entities: streamingEntities,
         materials,
+        prefabs,
       };
 
       // Validate the serialized scene
@@ -291,6 +301,10 @@ export class StreamingSceneSerializer {
       clearMaterials: () => void;
       upsertMaterial: (material: IMaterialDefinition) => void;
     },
+    prefabManager?: {
+      clearPrefabs: () => Promise<void> | void;
+      registerPrefab: (prefab: IPrefabDefinition) => Promise<void> | void;
+    },
   ): Promise<void> {
     const startTime = performance.now();
     this.abortController = new AbortController();
@@ -315,6 +329,14 @@ export class StreamingSceneSerializer {
         materialManager.clearMaterials();
         for (const material of validatedScene.materials) {
           materialManager.upsertMaterial(material);
+        }
+      }
+
+      // Import prefabs first if manager is provided
+      if (prefabManager && validatedScene.prefabs && validatedScene.prefabs.length > 0) {
+        await prefabManager.clearPrefabs();
+        for (const prefab of validatedScene.prefabs) {
+          await prefabManager.registerPrefab(prefab);
         }
       }
 
