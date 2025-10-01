@@ -22,15 +22,6 @@ export const PrefabBrowserModal: React.FC<IPrefabBrowserModalProps> = React.memo
     } = usePrefabsStore();
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
-    // Debug logging when modal opens
-    React.useEffect(() => {
-      if (isOpen) {
-        console.log('[PrefabBrowserModal] Modal opened');
-        console.log('[PrefabBrowserModal] Prefabs from store:', prefabs);
-        console.log('[PrefabBrowserModal] Prefabs count:', prefabs?.length || 0);
-      }
-    }, [isOpen, prefabs]);
-
     const filteredPrefabs = getFilteredPrefabs();
 
     const handleSelect = (prefabId: string) => {
