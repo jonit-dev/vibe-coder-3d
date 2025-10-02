@@ -52,15 +52,17 @@ export const InspectorButton: React.FC<IInspectorButtonProps> = ({
       disabled={disabled}
       title={title}
       className={`
-        flex items-center gap-1 font-medium transition-all duration-200 rounded flex-shrink-0
+        flex items-center justify-center gap-1 font-medium transition-all duration-200 rounded flex-shrink-0
         ${getVariantClasses()}
         ${getSizeClasses()}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
       `.trim()}
     >
-      {icon && <div className={`w-3 h-3 ${getIconClasses()}`}>{icon}</div>}
-      <span>{children}</span>
+      {icon && (
+        <div className={`w-3 h-3 flex items-center justify-center ${getIconClasses()}`}>{icon}</div>
+      )}
+      {children && <span>{children}</span>}
     </button>
   );
 };

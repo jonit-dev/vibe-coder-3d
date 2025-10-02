@@ -1,7 +1,7 @@
 import React from 'react';
 import { FiSearch } from 'react-icons/fi';
 import type { IMaterialTemplate } from '../constants/materialTemplates';
-import { MaterialPreviewSphere } from '../MaterialPreviewSphere';
+import { MaterialPreview2D } from '../MaterialPreview2D';
 
 export interface ITemplateSelectionFormProps {
   searchTerm: string;
@@ -22,7 +22,10 @@ export const TemplateSelectionForm: React.FC<ITemplateSelectionFormProps> = ({
     {/* Search Bar - Compact */}
     <div className="px-3 py-2 border-b border-gray-600 flex-shrink-0">
       <div className="relative">
-        <FiSearch className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+        <FiSearch
+          className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+          size={14}
+        />
         <input
           type="text"
           placeholder="Search templates..."
@@ -40,17 +43,17 @@ export const TemplateSelectionForm: React.FC<ITemplateSelectionFormProps> = ({
           <button
             key={template.id}
             onClick={() => onTemplateSelect(template.id)}
-            className={`p-2 border rounded text-left transition-colors ${selectedTemplate === template.id
+            className={`p-2 border rounded text-left transition-colors ${
+              selectedTemplate === template.id
                 ? 'border-blue-500 bg-blue-500/10'
                 : 'border-gray-600 hover:border-gray-500 hover:bg-gray-700/50'
-              }`}
+            }`}
           >
             <div className="flex flex-col items-center space-y-1">
-              {/* 3D Preview - Smaller */}
-              <MaterialPreviewSphere
+              {/* Material Preview */}
+              <MaterialPreview2D
                 material={template.previewMaterial}
                 size={40}
-                showControls={false}
                 className="border border-gray-600 rounded"
               />
 

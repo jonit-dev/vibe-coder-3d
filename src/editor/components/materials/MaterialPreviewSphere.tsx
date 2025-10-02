@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import React, { Suspense, useMemo, useRef } from 'react';
+import React, { Suspense, useMemo, useRef, useState, useEffect } from 'react';
 import { Color, MeshBasicMaterial, MeshStandardMaterial, Texture, TextureLoader } from 'three';
 
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
@@ -19,60 +19,50 @@ interface IPreviewSphereProps {
 const PreviewSphere: React.FC<IPreviewSphereProps> = ({ material }) => {
   const meshRef = useRef<any>(null);
   const textureLoader = useMemo(() => new TextureLoader(), []);
+  const [textures, setTextures] = useState<Record<string, Texture | null>>({});
 
-  // Load textures if available
-  const textures = useMemo(() => {
+  // Load textures asynchronously
+  useEffect(() => {
     const loadedTextures: Record<string, Texture | null> = {};
+    const promises: Promise<void>[] = [];
 
-    if (material.albedoTexture) {
-      try {
-        loadedTextures.albedo = textureLoader.load(material.albedoTexture);
-      } catch {
-        loadedTextures.albedo = null;
-      }
-    }
+    const loadTexture = (key: string, url: string | undefined) => {
+      if (!url) return;
 
-    if (material.normalTexture) {
-      try {
-        loadedTextures.normal = textureLoader.load(material.normalTexture);
-      } catch {
-        loadedTextures.normal = null;
-      }
-    }
+      const promise = new Promise<void>((resolve) => {
+        textureLoader.load(
+          url,
+          (texture) => {
+            loadedTextures[key] = texture;
+            resolve();
+          },
+          undefined,
+          () => {
+            loadedTextures[key] = null;
+            resolve();
+          },
+        );
+      });
+      promises.push(promise);
+    };
 
-    if (material.metallicTexture) {
-      try {
-        loadedTextures.metallic = textureLoader.load(material.metallicTexture);
-      } catch {
-        loadedTextures.metallic = null;
-      }
-    }
+    loadTexture('albedo', material.albedoTexture);
+    loadTexture('normal', material.normalTexture);
+    loadTexture('metallic', material.metallicTexture);
+    loadTexture('roughness', material.roughnessTexture);
+    loadTexture('emissive', material.emissiveTexture);
+    loadTexture('occlusion', material.occlusionTexture);
 
-    if (material.roughnessTexture) {
-      try {
-        loadedTextures.roughness = textureLoader.load(material.roughnessTexture);
-      } catch {
-        loadedTextures.roughness = null;
-      }
-    }
+    Promise.all(promises).then(() => {
+      setTextures(loadedTextures);
+    });
 
-    if (material.emissiveTexture) {
-      try {
-        loadedTextures.emissive = textureLoader.load(material.emissiveTexture);
-      } catch {
-        loadedTextures.emissive = null;
-      }
-    }
-
-    if (material.occlusionTexture) {
-      try {
-        loadedTextures.occlusion = textureLoader.load(material.occlusionTexture);
-      } catch {
-        loadedTextures.occlusion = null;
-      }
-    }
-
-    return loadedTextures;
+    return () => {
+      // Cleanup textures on unmount
+      Object.values(loadedTextures).forEach((texture) => {
+        texture?.dispose();
+      });
+    };
   }, [material, textureLoader]);
 
   // Create Three.js material based on definition
@@ -158,9 +148,9 @@ const PreviewSphere: React.FC<IPreviewSphereProps> = ({ material }) => {
       <directionalLight position={[10, 10, 5]} intensity={1} />
       <directionalLight position={[-10, -10, -5]} intensity={0.3} />
 
-      {/* Sphere mesh */}
+      {/* Sphere mesh - reduced geometry segments for faster rendering */}
       <mesh ref={meshRef} material={threeMaterial}>
-        <sphereGeometry args={[1, 32, 16]} />
+        <sphereGeometry args={[1, 16, 12]} />
       </mesh>
     </>
   );
@@ -183,9 +173,11 @@ export const MaterialPreviewSphere: React.FC<IMaterialPreviewSphereProps> = ({
           fov: 40,
         }}
         gl={{
-          antialias: true,
+          antialias: false, // Disable antialiasing for faster rendering
           alpha: true,
         }}
+        dpr={1} // Lock pixel ratio to 1 for consistent performance
+        frameloop="demand" // Only render when needed
       >
         <Suspense
           fallback={

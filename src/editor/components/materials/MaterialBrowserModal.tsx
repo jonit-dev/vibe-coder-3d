@@ -3,7 +3,7 @@ import { FiCopy, FiEdit, FiPlus, FiSearch, FiTrash2 } from 'react-icons/fi';
 
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import { Modal } from '@/editor/components/shared/Modal';
-import { MaterialPreviewSphere } from './MaterialPreviewSphere';
+import { MaterialPreview2D } from './MaterialPreview2D';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
 
 export interface IMaterialBrowserModalProps {
@@ -106,14 +106,9 @@ export const MaterialBrowserModal: React.FC<IMaterialBrowserModalProps> = ({
         }`}
         onClick={() => handleMaterialClick(material.id)}
       >
-        {/* 3D Preview Sphere */}
+        {/* Material Preview */}
         <div className="flex justify-center mb-3">
-          <MaterialPreviewSphere
-            material={material}
-            size={90}
-            showControls={false}
-            className="shadow-sm"
-          />
+          <MaterialPreview2D material={material} size={90} className="shadow-sm" />
         </div>
 
         {/* Material Info */}

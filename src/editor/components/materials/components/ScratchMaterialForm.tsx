@@ -3,7 +3,7 @@ import { FiImage, FiLayers, FiMove, FiSettings } from 'react-icons/fi';
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import { AssetSelector } from '@/editor/components/shared/AssetSelector';
 import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
-import { MaterialPreviewSphere } from '../MaterialPreviewSphere';
+import { MaterialPreview2D } from '../MaterialPreview2D';
 import type { IMaterialFormState, IMaterialFormActions } from '../hooks/useMaterialForm';
 
 export interface IScratchMaterialFormProps {
@@ -23,10 +23,9 @@ export const ScratchMaterialForm: React.FC<IScratchMaterialFormProps> = ({
       <div className="flex items-center gap-4">
         {/* Live Preview */}
         <div className="flex-shrink-0">
-          <MaterialPreviewSphere
+          <MaterialPreview2D
             material={previewMaterial}
             size={60}
-            showControls={false}
             className="border border-gray-600 rounded"
           />
         </div>
@@ -34,9 +33,7 @@ export const ScratchMaterialForm: React.FC<IScratchMaterialFormProps> = ({
         {/* Shader & Type - Compact */}
         <div className="flex-1 grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">
-              Shader Type
-            </label>
+            <label className="block text-xs font-medium text-gray-300 mb-1">Shader Type</label>
             <select
               value={formState.shader}
               onChange={(e) => formActions.setShader(e.target.value as 'standard' | 'unlit')}
@@ -48,9 +45,7 @@ export const ScratchMaterialForm: React.FC<IScratchMaterialFormProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">
-              Material Type
-            </label>
+            <label className="block text-xs font-medium text-gray-300 mb-1">Material Type</label>
             <select
               value={formState.materialType}
               onChange={(e) => formActions.setMaterialType(e.target.value as 'solid' | 'texture')}
@@ -67,11 +62,7 @@ export const ScratchMaterialForm: React.FC<IScratchMaterialFormProps> = ({
     {/* Scrollable Properties */}
     <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
       {/* Base Color */}
-      <CollapsibleSection
-        title="Base Color"
-        icon={<FiSettings />}
-        defaultExpanded={true}
-      >
+      <CollapsibleSection title="Base Color" icon={<FiSettings />} defaultExpanded={true}>
         <div className="flex items-center space-x-2">
           <input
             type="color"
@@ -90,11 +81,7 @@ export const ScratchMaterialForm: React.FC<IScratchMaterialFormProps> = ({
 
       {/* Standard Shader Properties */}
       {formState.shader === 'standard' && (
-        <CollapsibleSection
-          title="Surface Properties"
-          icon={<FiLayers />}
-          defaultExpanded={true}
-        >
+        <CollapsibleSection title="Surface Properties" icon={<FiLayers />} defaultExpanded={true}>
           {/* Metalness & Roughness - Side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -140,11 +127,7 @@ export const ScratchMaterialForm: React.FC<IScratchMaterialFormProps> = ({
 
       {/* Emission */}
       {formState.shader === 'standard' && (
-        <CollapsibleSection
-          title="Emission"
-          icon={<FiSettings />}
-          defaultExpanded={false}
-        >
+        <CollapsibleSection title="Emission" icon={<FiSettings />} defaultExpanded={false}>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <input
@@ -180,11 +163,7 @@ export const ScratchMaterialForm: React.FC<IScratchMaterialFormProps> = ({
 
       {/* Textures Section */}
       {formState.materialType === 'texture' && (
-        <CollapsibleSection
-          title="Textures"
-          icon={<FiImage />}
-          defaultExpanded={true}
-        >
+        <CollapsibleSection title="Textures" icon={<FiImage />} defaultExpanded={true}>
           <div className="space-y-3">
             {/* Albedo Texture */}
             <AssetSelector
@@ -255,11 +234,7 @@ export const ScratchMaterialForm: React.FC<IScratchMaterialFormProps> = ({
 
       {/* Texture Transform */}
       {formState.materialType === 'texture' && (
-        <CollapsibleSection
-          title="Texture Transform"
-          icon={<FiMove />}
-          defaultExpanded={false}
-        >
+        <CollapsibleSection title="Texture Transform" icon={<FiMove />} defaultExpanded={false}>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>

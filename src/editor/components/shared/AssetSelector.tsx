@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiEye } from 'react-icons/fi';
+import { FiEye, FiTrash2 } from 'react-icons/fi';
 
 import { useAssetLoaderStore } from '@/editor/store/assetLoaderStore';
 import { InspectorButton } from './InspectorButton';
@@ -41,6 +41,10 @@ export const AssetSelector: React.FC<IAssetSelectorProps> = ({
     });
   };
 
+  const handleClear = () => {
+    onChange(undefined);
+  };
+
   return (
     <div className="space-y-0.5">
       <span className="text-[11px] font-medium text-gray-300">{label}</span>
@@ -58,6 +62,17 @@ export const AssetSelector: React.FC<IAssetSelectorProps> = ({
             <span className="text-gray-500">{placeholder}</span>
           )}
         </div>
+        {value && (
+          <InspectorButton
+            onClick={handleClear}
+            icon={<FiTrash2 />}
+            variant="danger"
+            size="xs"
+            title="Clear texture"
+          >
+            {/* Icon-only button */}
+          </InspectorButton>
+        )}
         <InspectorButton
           onClick={handleBrowse}
           icon={buttonIcon}
