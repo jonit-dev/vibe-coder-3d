@@ -149,10 +149,10 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
       ],
     },
     {
-      label: 'Help',
+      label: 'Settings',
       items: [
         {
-          label: 'Preferences...',
+          label: 'Preferences',
           shortcut: 'Ctrl+,',
           action: onOpenPreferences,
         },
