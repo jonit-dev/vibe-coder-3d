@@ -18,6 +18,7 @@
 - Don't run `yarn dev`; ask me to.
 - Prefix interfaces with I
 - Favor using Zod
+- Use zustand for state management
 
 **Technical Debt Prevention**
 

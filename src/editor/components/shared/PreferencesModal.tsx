@@ -6,7 +6,7 @@ export interface IPreferencesModalProps {
   onClose: () => void;
 }
 
-type TabType = 'general' | 'input' | 'graphics' | 'audio';
+type TabType = 'general' | 'graphics' | 'audio';
 
 export const PreferencesModal: React.FC<IPreferencesModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<TabType>('general');
@@ -30,41 +30,6 @@ export const PreferencesModal: React.FC<IPreferencesModalProps> = ({ isOpen, onC
               </div>
               <div className="flex items-center justify-between">
                 <label className="text-sm text-gray-300">Confirm before delete</label>
-                <input type="checkbox" className="toggle toggle-primary" defaultChecked />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'input':
-        return (
-          <div className="p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-200">Input Settings</h3>
-            <p className="text-sm text-gray-400">
-              Configure keyboard and mouse input settings for the editor and runtime.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-300 block mb-2">Mouse Sensitivity</label>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="2.0"
-                  step="0.1"
-                  defaultValue="1.0"
-                  className="range range-primary range-sm"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>Slow</span>
-                  <span>Fast</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm text-gray-300">Invert Y-Axis</label>
-                <input type="checkbox" className="toggle toggle-primary" />
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm text-gray-300">Enable pointer lock in play mode</label>
                 <input type="checkbox" className="toggle toggle-primary" defaultChecked />
               </div>
             </div>
@@ -158,7 +123,6 @@ export const PreferencesModal: React.FC<IPreferencesModalProps> = ({ isOpen, onC
             <nav className="p-2">
               {[
                 { id: 'general', label: 'General' },
-                { id: 'input', label: 'Input' },
                 { id: 'graphics', label: 'Graphics' },
                 { id: 'audio', label: 'Audio' },
               ].map((tab) => (
