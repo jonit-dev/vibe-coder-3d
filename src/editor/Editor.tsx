@@ -236,7 +236,8 @@ const Editor: React.FC = () => {
         onSaveAs={() => setScenePersistenceModal({ isOpen: true, mode: 'save' })}
         onLoad={() => setScenePersistenceModal({ isOpen: true, mode: 'load' })}
         onClear={handleClear}
-        onAddObject={toggleAddMenu}
+        onAddObject={handleAddObject}
+        onToggleAddMenu={toggleAddMenu}
         addButtonRef={addButtonRef}
         isPlaying={isPlaying}
         onPlay={handlePlayWithStatus}

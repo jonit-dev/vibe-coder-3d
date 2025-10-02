@@ -14,7 +14,8 @@ export interface ITopBarProps {
   onSaveAs: () => void;
   onLoad: () => void;
   onClear: () => void;
-  onAddObject: (type?: string) => void;
+  onAddObject: (type: string, modelPath?: string) => void;
+  onToggleAddMenu: () => void;
   addButtonRef?: React.RefObject<HTMLButtonElement | null>;
   isPlaying?: boolean;
   onPlay?: () => void;
@@ -38,6 +39,7 @@ export const TopBar: React.FC<ITopBarProps> = React.memo(
     onLoad,
     onClear,
     onAddObject,
+    onToggleAddMenu,
     addButtonRef,
     isPlaying = false,
     onPlay,
@@ -71,8 +73,6 @@ export const TopBar: React.FC<ITopBarProps> = React.memo(
       currentSceneName,
       isPlaying,
     });
-
-    const handleAddObject = () => onAddObject();
 
     return (
       <header className="flex flex-col bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-b border-cyan-900/20 shadow-lg relative z-20">
@@ -113,7 +113,7 @@ export const TopBar: React.FC<ITopBarProps> = React.memo(
             isChatOpen={isChatOpen}
             isMaterialsOpen={isMaterialsOpen}
             saveDropdownOpen={saveDropdown.isOpen}
-            onAddObject={handleAddObject}
+            onAddObject={onToggleAddMenu}
             onSave={onSave}
             onSaveAs={onSaveAs}
             onLoad={onLoad}

@@ -41,19 +41,21 @@ const MenuContainer = React.forwardRef<
 
 MenuContainer.displayName = 'MenuContainer';
 
-export const MenuBarSubmenu: React.FC<IMenuBarSubmenuProps> = ({ item, position, onItemClick }) => {
-  const submenuRef = useRef<HTMLDivElement>(null);
+export const MenuBarSubmenu = React.forwardRef<HTMLDivElement, IMenuBarSubmenuProps>(
+  ({ item, position, onItemClick }, ref) => {
+    return ReactDOM.createPortal(
+      <MenuContainer ref={ref} $left={position.left} $top={position.top} $isSubmenu>
+        <div className="py-1">
+          {item.submenu?.map((subItem, idx) => (
+            <MenuBarItem key={idx} item={subItem} index={idx} onItemClick={onItemClick} />
+          ))}
+        </div>
+      </MenuContainer>,
+      document.body,
+    );
+  },
+);
 
-  return ReactDOM.createPortal(
-    <MenuContainer ref={submenuRef} $left={position.left} $top={position.top} $isSubmenu>
-      <div className="py-1">
-        {item.submenu?.map((subItem, idx) => (
-          <MenuBarItem key={idx} item={subItem} index={idx} onItemClick={onItemClick} />
-        ))}
-      </div>
-    </MenuContainer>,
-    document.body,
-  );
-};
+MenuBarSubmenu.displayName = 'MenuBarSubmenu';
 
 export { MenuContainer };

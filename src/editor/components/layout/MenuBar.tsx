@@ -34,6 +34,7 @@ export const MenuBar: React.FC<IMenuBarProps> = ({ items }) => {
 
   const menuRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const submenuRef = useRef<HTMLDivElement | null>(null);
 
   const handleMenuClick = (index: number) => {
     if (activeMenu === index) {
@@ -80,6 +81,7 @@ export const MenuBar: React.FC<IMenuBarProps> = ({ items }) => {
   useMenuBarClickOutside({
     activeMenu,
     dropdownRef,
+    submenuRef,
     menuRefs,
     onClose: () => {
       setActiveMenu(null);
@@ -128,6 +130,7 @@ export const MenuBar: React.FC<IMenuBarProps> = ({ items }) => {
       {/* Submenu */}
       {activeSubmenu && (
         <MenuBarSubmenu
+          ref={submenuRef}
           item={activeSubmenu.item}
           position={activeSubmenu.position}
           onItemClick={handleItemClick}

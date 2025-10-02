@@ -7,7 +7,7 @@ export interface IMenuConfig {
   onSaveAs: () => void;
   onLoad: () => void;
   onClear: () => void;
-  onAddObject: (type?: string) => void;
+  onAddObject: (type: string, modelPath?: string) => void;
   onPlay?: () => void;
   onPause?: () => void;
   onStop?: () => void;
@@ -69,7 +69,7 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
       ],
     },
     {
-      label: 'Scene',
+      label: 'Edit',
       items: [
         {
           label: 'Play',
@@ -85,11 +85,6 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
         {
           label: 'Stop',
           action: onStop,
-        },
-        { divider: true },
-        {
-          label: 'Clear Scene',
-          action: onClear,
         },
       ],
     },
