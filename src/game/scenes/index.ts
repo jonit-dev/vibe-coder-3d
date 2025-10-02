@@ -3,11 +3,7 @@
  * Register all game-specific scenes
  */
 
-import { sceneRegistry } from '@core/lib/scene/SceneRegistry';
-import { SceneLoader } from '@core/lib/serialization/SceneLoader';
-import { EntityManager } from '@core/lib/ecs/EntityManager';
-import { ComponentManager } from '@core/lib/ecs/ComponentManager';
-import { MaterialRegistry } from '@core/materials/MaterialRegistry';
+import { sceneRegistry, EntityManager, ComponentManager, SceneLoader } from '@core/index';
 import TestScene from './Test';
 
 // Register all game scenes function
@@ -20,23 +16,18 @@ export function registerAllScenes(): void {
       const entityManager = EntityManager.getInstance();
       const componentManager = ComponentManager.getInstance();
 
-      await sceneLoader.load(
-        TestScene.data,
-        entityManager,
-        componentManager,
-        {
-          refreshMaterials: () => {
-            // Materials already loaded, no store refresh needed in game runtime
-          },
-          refreshPrefabs: () => {
-            // Prefabs already loaded, no store refresh needed in game runtime
-          }
-        }
-      );
+      await sceneLoader.load(TestScene.data, entityManager, componentManager, {
+        refreshMaterials: () => {
+          // Materials already loaded, no store refresh needed in game runtime
+        },
+        refreshPrefabs: () => {
+          // Prefabs already loaded, no store refresh needed in game runtime
+        },
+      });
     },
     {
       name: TestScene.metadata.name,
-      description: 'Test scene with camera, lights, and trees'
-    }
+      description: 'Test scene with camera, lights, and trees',
+    },
   );
 }

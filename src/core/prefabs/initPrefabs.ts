@@ -1,4 +1,3 @@
-import { PrefabRegistry } from './PrefabRegistry';
 import type { IPrefabDefinition } from './Prefab.types';
 import { Logger } from '@/core/lib/logger';
 

@@ -183,3 +183,7 @@ export { ProjectAssetService } from './lib/assets';
 // Scene Registry
 export { defineScene, loadScene, sceneRegistry } from './lib/scene/SceneRegistry';
 export type { ISceneContext, SceneBuilder } from './lib/scene/SceneRegistry';
+
+// Scene Serialization
+export { SceneLoader } from './lib/serialization/SceneLoader';
+export type { IStoreRefresher } from './lib/serialization/SceneLoader';
