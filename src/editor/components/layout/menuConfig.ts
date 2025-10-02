@@ -1,5 +1,6 @@
 import { IMenuItem } from './MenuBar';
 import { ShapeType } from '@editor/types/shapes';
+import { GAME_OBJECT_CATEGORIES } from '@editor/config/gameObjectMenuData';
 
 export interface IMenuConfig {
   onSave: () => void;
@@ -65,68 +66,6 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
           shortcut: 'Ctrl+Shift+S',
           action: onSaveAs,
         },
-        { divider: true },
-        {
-          label: 'Import Asset...',
-          disabled: true,
-        },
-        {
-          label: 'Export Scene...',
-          disabled: true,
-        },
-      ],
-    },
-    {
-      label: 'Edit',
-      items: [
-        {
-          label: 'Undo',
-          shortcut: 'Ctrl+Z',
-          disabled: true,
-        },
-        {
-          label: 'Redo',
-          shortcut: 'Ctrl+Y',
-          disabled: true,
-        },
-        { divider: true },
-        {
-          label: 'Cut',
-          shortcut: 'Ctrl+X',
-          disabled: true,
-        },
-        {
-          label: 'Copy',
-          shortcut: 'Ctrl+C',
-          disabled: true,
-        },
-        {
-          label: 'Paste',
-          shortcut: 'Ctrl+V',
-          disabled: true,
-        },
-        {
-          label: 'Duplicate',
-          shortcut: 'Ctrl+D',
-          disabled: true,
-        },
-        { divider: true },
-        {
-          label: 'Delete',
-          shortcut: 'Del',
-          disabled: true,
-        },
-        { divider: true },
-        {
-          label: 'Select All',
-          shortcut: 'Ctrl+A',
-          disabled: true,
-        },
-        {
-          label: 'Deselect All',
-          shortcut: 'Ctrl+Shift+A',
-          disabled: true,
-        },
       ],
     },
     {
@@ -152,19 +91,6 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
           label: 'Clear Scene',
           action: onClear,
         },
-        { divider: true },
-        {
-          label: 'Scene Settings',
-          disabled: true,
-        },
-        {
-          label: 'Lighting Settings',
-          disabled: true,
-        },
-        {
-          label: 'Physics Settings',
-          disabled: true,
-        },
       ],
     },
     {
@@ -175,34 +101,16 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
           action: () => onAddObject('Entity'),
         },
         { divider: true },
-        {
-          label: '3D Objects',
-          submenu: [
-            { label: 'Cube', action: () => onAddObject(ShapeType.Cube) },
-            { label: 'Sphere', action: () => onAddObject(ShapeType.Sphere) },
-            { label: 'Cylinder', action: () => onAddObject(ShapeType.Cylinder) },
-            { label: 'Cone', action: () => onAddObject(ShapeType.Cone) },
-            { label: 'Plane', action: () => onAddObject(ShapeType.Plane) },
-            { label: 'Capsule', action: () => onAddObject(ShapeType.Capsule) },
-            { label: 'Torus', action: () => onAddObject(ShapeType.Torus) },
-          ],
-        },
-        {
-          label: 'Light',
-          submenu: [
-            { label: 'Directional Light', action: () => onAddObject('DirectionalLight') },
-            { label: 'Point Light', action: () => onAddObject('PointLight') },
-            { label: 'Spot Light', action: () => onAddObject('SpotLight') },
-            { label: 'Ambient Light', action: () => onAddObject('AmbientLight') },
-          ],
-        },
-        {
-          label: 'Effects',
-          submenu: [
-            { label: 'Particle System', disabled: true },
-            { label: 'Audio Source', disabled: true },
-          ],
-        },
+        // Convert shared categories to menu items
+        ...GAME_OBJECT_CATEGORIES.filter((cat) => cat.label !== 'Assets').map((category) => ({
+          label: category.label,
+          icon: category.icon,
+          submenu: category.items.map((item) => ({
+            label: item.label,
+            icon: item.icon,
+            action: () => onAddObject(item.type),
+          })),
+        })),
         { divider: true },
         {
           label: 'Camera',
@@ -210,14 +118,19 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
         },
         { divider: true },
         {
-          label: 'Create Prefab from Selection',
-          action: onCreatePrefab,
-          disabled: !onCreatePrefab,
-        },
-        {
-          label: 'Browse Prefabs...',
-          action: onBrowsePrefabs,
-          disabled: !onBrowsePrefabs,
+          label: 'Prefab',
+          submenu: [
+            {
+              label: 'Create from Selection',
+              action: onCreatePrefab,
+              disabled: !onCreatePrefab,
+            },
+            {
+              label: 'Browse Prefabs...',
+              action: onBrowsePrefabs,
+              disabled: !onBrowsePrefabs,
+            },
+          ],
         },
       ],
     },
@@ -233,46 +146,15 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
           label: 'Materials Panel',
           action: onToggleMaterials,
         },
-        {
-          label: 'Prefabs Panel',
-          disabled: true,
-        },
-        { divider: true },
-        {
-          label: 'Inspector',
-          disabled: true,
-        },
-        {
-          label: 'Hierarchy',
-          disabled: true,
-        },
-        {
-          label: 'Viewport',
-          disabled: true,
-        },
       ],
     },
     {
       label: 'Help',
       items: [
         {
-          label: 'Documentation',
-          disabled: true,
-        },
-        {
-          label: 'Keyboard Shortcuts',
-          disabled: true,
-        },
-        { divider: true },
-        {
           label: 'Preferences...',
           shortcut: 'Ctrl+,',
           action: onOpenPreferences,
-        },
-        { divider: true },
-        {
-          label: 'About VibeEngine',
-          disabled: true,
         },
       ],
     },
