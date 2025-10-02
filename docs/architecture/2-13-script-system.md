@@ -186,23 +186,23 @@ math.radToDeg(radians);
 
 ### 5. Input API (`input`)
 
-Keyboard, mouse, and gamepad input.
+Input Actions System for configurable input handling.
 
 ```typescript
-// Keyboard
-input.isKeyPressed('w'); // Is key currently held down
-input.isKeyDown('space'); // Was key just pressed this frame
-input.isKeyUp('shift'); // Was key just released this frame
+// Polling - get current action values
+const moveInput = input.getActionValue('Gameplay', 'Move'); // Returns number, [x,y], or [x,y,z]
+const isJumping = input.isActionActive('Gameplay', 'Jump'); // Returns boolean
 
-// Mouse
-input.mousePosition(); // [x, y] viewport coords
-input.isMouseButtonPressed(0); // 0=left, 1=middle, 2=right
-input.isMouseButtonDown(0);
-input.isMouseButtonUp(0);
+// Event-driven - subscribe to action events
+input.onAction('Gameplay', 'Fire', (phase, value) => {
+  if (phase === 'started') console.log('Fire button pressed!');
+  if (phase === 'performed') console.log('Fire button held!');
+  if (phase === 'canceled') console.log('Fire button released!');
+});
 
-// Gamepad
-input.getGamepadAxis(0, 0); // Gamepad 0, axis 0
-input.isGamepadButtonPressed(0, 0); // Gamepad 0, button 0
+// Action map management
+input.enableActionMap('UI'); // Enable UI controls
+input.disableActionMap('Gameplay'); // Disable gameplay controls
 ```
 
 ### 6. Time API (`time`)
@@ -375,9 +375,11 @@ function onUpdate(deltaTime: number): void {
   // deltaTime is in seconds
   entity.transform.rotate(0, deltaTime * 0.5, 0);
 
-  // Input handling
-  if (input.isKeyPressed('w')) {
-    entity.transform.translate(0, 0, -deltaTime * 5);
+  // Input handling using Input Actions
+  const moveInput = input.getActionValue('Gameplay', 'Move');
+  if (Array.isArray(moveInput)) {
+    const [x, y] = moveInput;
+    entity.transform.translate(x * deltaTime * 5, 0, y * deltaTime * 5);
   }
 }
 
@@ -436,17 +438,11 @@ const speed = 5.0;
 function onUpdate(deltaTime: number): void {
   const moveSpeed = speed * deltaTime;
 
-  if (input.isKeyPressed('w')) {
-    entity.transform.translate(0, 0, -moveSpeed);
-  }
-  if (input.isKeyPressed('s')) {
-    entity.transform.translate(0, 0, moveSpeed);
-  }
-  if (input.isKeyPressed('a')) {
-    entity.transform.translate(-moveSpeed, 0, 0);
-  }
-  if (input.isKeyPressed('d')) {
-    entity.transform.translate(moveSpeed, 0, 0);
+  // Use Input Actions System for movement
+  const moveInput = input.getActionValue('Gameplay', 'Move');
+  if (Array.isArray(moveInput)) {
+    const [x, y] = moveInput;
+    entity.transform.translate(x * moveSpeed, 0, y * moveSpeed);
   }
 }
 ```
@@ -468,7 +464,7 @@ async function onStart(): void {
 ```typescript
 // Emitter script (on player)
 function onUpdate(deltaTime: number): void {
-  if (input.isKeyDown('space')) {
+  if (input.isActionActive('Gameplay', 'Jump')) {
     events.emit('player:jumped', {
       entityId: entity.id,
       height: entity.transform.position[1],

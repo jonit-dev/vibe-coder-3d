@@ -221,29 +221,90 @@ declare global {
   // ============================================================================
 
   /**
-   * Input API - keyboard, mouse, and gamepad
+   * Input API - input actions system
    */
   interface IInputAPI {
-    /** Check if key is currently pressed */
-    isKeyPressed(key: string): boolean;
-    /** Check if key was just pressed this frame */
-    isKeyDown(key: string): boolean;
-    /** Check if key was just released this frame */
-    isKeyUp(key: string): boolean;
+    // Input Actions System
+    /**
+     * Get current value of an input action (polling).
+     * @param actionMapName - Name of the action map (e.g., "Gameplay", "UI")
+     * @param actionName - Name of the action (e.g., "Move", "Jump")
+     * @returns Action value: number for buttons/axes, [x,y] for 2D vectors, [x,y,z] for 3D vectors
+     * @example
+     * const moveInput = input.getActionValue("Gameplay", "Move");
+     * if (Array.isArray(moveInput)) {
+     *   const [x, y] = moveInput;
+     *   entity.position = [x * speed, 0, y * speed];
+     * }
+     */
+    getActionValue(
+      actionMapName: string,
+      actionName: string,
+    ): number | [number, number] | [number, number, number];
 
-    /** Get mouse position [x, y] in viewport coordinates */
-    mousePosition(): [number, number];
-    /** Check if mouse button is pressed (0=left, 1=middle, 2=right) */
-    isMouseButtonPressed(button: number): boolean;
-    /** Check if mouse button was just pressed */
-    isMouseButtonDown(button: number): boolean;
-    /** Check if mouse button was just released */
-    isMouseButtonUp(button: number): boolean;
+    /**
+     * Check if an input action is currently active (boolean).
+     * @param actionMapName - Name of the action map
+     * @param actionName - Name of the action
+     * @returns true if action is active (value > threshold)
+     * @example
+     * if (input.isActionActive("Gameplay", "Jump")) {
+     *   console.log("Jump is pressed!");
+     * }
+     */
+    isActionActive(actionMapName: string, actionName: string): boolean;
 
-    /** Get gamepad axis value (-1 to 1) */
-    getGamepadAxis(gamepadIndex: number, axisIndex: number): number;
-    /** Check if gamepad button is pressed */
-    isGamepadButtonPressed(gamepadIndex: number, buttonIndex: number): boolean;
+    /**
+     * Subscribe to input action events (event-driven).
+     * @param actionMapName - Name of the action map
+     * @param actionName - Name of the action
+     * @param callback - Function called when action state changes
+     * @example
+     * input.onAction("Gameplay", "Fire", (phase, value) => {
+     *   if (phase === "started") {
+     *     console.log("Fire button pressed!");
+     *   }
+     * });
+     */
+    onAction(
+      actionMapName: string,
+      actionName: string,
+      callback: (
+        phase: 'started' | 'performed' | 'canceled',
+        value: number | [number, number] | [number, number, number],
+      ) => void,
+    ): void;
+
+    /**
+     * Unsubscribe from input action events.
+     * @param actionMapName - Name of the action map
+     * @param actionName - Name of the action
+     * @param callback - The callback function to remove
+     */
+    offAction(
+      actionMapName: string,
+      actionName: string,
+      callback: (
+        phase: 'started' | 'performed' | 'canceled',
+        value: number | [number, number] | [number, number, number],
+      ) => void,
+    ): void;
+
+    /**
+     * Enable an action map.
+     * @param mapName - Name of the action map to enable
+     * @example
+     * input.enableActionMap("UI"); // Enable UI controls
+     */
+    enableActionMap(mapName: string): void;
+
+    /**
+     * Disable an action map.
+     * @param mapName - Name of the action map to disable
+     * @example
+     * input.disableActionMap("Gameplay"); // Disable gameplay controls
+     */
+    disableActionMap(mapName: string): void;
   }
 
   // ============================================================================

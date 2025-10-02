@@ -69,20 +69,20 @@ const hits = three.raycast([x, y, z], [dx, dy, dz]);
 ## Input
 
 ```typescript
-// Keyboard
-input.isKeyPressed('w'); // Held down
-input.isKeyDown('space'); // Just pressed
-input.isKeyUp('shift'); // Just released
+// Input Actions System - Polling
+const moveValue = input.getActionValue('Gameplay', 'Move'); // Returns number, [x,y], or [x,y,z]
+const isJumping = input.isActionActive('Gameplay', 'Jump'); // Returns boolean
 
-// Mouse
-const [x, y] = input.mousePosition();
-input.isMouseButtonPressed(0); // 0=left, 1=middle, 2=right
-input.isMouseButtonDown(0);
-input.isMouseButtonUp(0);
+// Input Actions System - Event-driven
+input.onAction('Gameplay', 'Fire', (phase, value) => {
+  if (phase === 'started') console.log('Fire button pressed!');
+  if (phase === 'performed') console.log('Fire button held!');
+  if (phase === 'canceled') console.log('Fire button released!');
+});
 
-// Gamepad
-input.getGamepadAxis(0, 0); // Gamepad 0, axis 0
-input.isGamepadButtonPressed(0, 0); // Gamepad 0, button 0
+// Action Map Management
+input.enableActionMap('UI'); // Enable UI controls
+input.disableActionMap('Gameplay'); // Disable gameplay controls
 ```
 
 ## Events

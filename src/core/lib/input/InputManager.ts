@@ -2,7 +2,9 @@ import { Logger } from '@core/lib/logger';
 import { KeyboardInput } from './KeyboardInput';
 import { MouseInput } from './MouseInput';
 import { ActionMap } from './ActionMap';
+import { InputActionRuntime } from './InputActionRuntime';
 import type { IActionMapConfig } from './types';
+import type { IInputActionsAsset, IInputActionCallbackContext } from './inputTypes';
 
 const logger = Logger.create('InputManager');
 
@@ -15,7 +17,9 @@ export class InputManager {
   private keyboard: KeyboardInput | null = null;
   private mouse: MouseInput | null = null;
   private actionMaps: Map<string, ActionMap> = new Map();
+  private actionRuntime: InputActionRuntime | null = null;
   private initialized: boolean = false;
+  private actionsAssetLoaded: boolean = false;
 
   private constructor() {
     // Private constructor for singleton
@@ -39,6 +43,7 @@ export class InputManager {
 
     this.keyboard = new KeyboardInput();
     this.mouse = new MouseInput(canvas);
+    this.actionRuntime = new InputActionRuntime(this.keyboard, this.mouse);
     this.initialized = true;
 
     logger.info('InputManager initialized');
@@ -51,6 +56,7 @@ export class InputManager {
     if (!this.initialized) return;
 
     this.mouse?.update();
+    this.actionRuntime?.update();
   }
 
   /**
@@ -126,9 +132,69 @@ export class InputManager {
     return map?.isActionActive(action) ?? false;
   }
 
-  public getActionValue(action: string, mapName: string = 'default'): number {
+  public getActionValueLegacy(action: string, mapName: string = 'default'): number {
     const map = this.actionMaps.get(mapName);
     return map?.getActionValue(action) ?? 0;
+  }
+
+  // New Input System methods
+
+  /**
+   * Load an input actions asset
+   */
+  public loadInputActionsAsset(asset: IInputActionsAsset): void {
+    this.actionRuntime?.loadAsset(asset);
+    this.actionsAssetLoaded = true;
+  }
+
+  /**
+   * Enable/disable action maps
+   */
+  public enableActionMap(mapName: string): void {
+    this.actionRuntime?.enableActionMap(mapName);
+  }
+
+  public disableActionMap(mapName: string): void {
+    this.actionRuntime?.disableActionMap(mapName);
+  }
+
+  /**
+   * Subscribe to action events
+   */
+  public onAction(
+    actionMapName: string,
+    actionName: string,
+    callback: (context: IInputActionCallbackContext) => void,
+  ): void {
+    this.actionRuntime?.on(actionMapName, actionName, callback);
+  }
+
+  /**
+   * Unsubscribe from action events
+   */
+  public offAction(
+    actionMapName: string,
+    actionName: string,
+    callback: (context: IInputActionCallbackContext) => void,
+  ): void {
+    this.actionRuntime?.off(actionMapName, actionName, callback);
+  }
+
+  /**
+   * Get current action value (polling)
+   */
+  public getActionValue(
+    mapName: string,
+    actionName: string,
+  ): number | [number, number] | [number, number, number] {
+    return this.actionRuntime?.getActionValue(mapName, actionName) ?? 0;
+  }
+
+  /**
+   * Check if action is active (boolean)
+   */
+  public isActionActiveNew(mapName: string, actionName: string): boolean {
+    return this.actionRuntime?.isActionActive(mapName, actionName) ?? false;
   }
 
   /**
@@ -139,9 +205,11 @@ export class InputManager {
 
     this.keyboard?.destroy();
     this.mouse?.destroy();
+    this.actionRuntime?.destroy();
 
     this.keyboard = null;
     this.mouse = null;
+    this.actionRuntime = null;
     this.actionMaps.clear();
     this.initialized = false;
 

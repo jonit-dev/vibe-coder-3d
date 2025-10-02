@@ -65,20 +65,30 @@ export interface ITransformAPI {
  * Input system access for scripts
  */
 export interface IInputAPI {
-  // Keyboard
-  isKeyPressed: (key: string) => boolean;
-  isKeyDown: (key: string) => boolean;
-  isKeyUp: (key: string) => boolean;
-
-  // Mouse
-  mousePosition: () => [number, number];
-  isMouseButtonPressed: (button: number) => boolean;
-  isMouseButtonDown: (button: number) => boolean;
-  isMouseButtonUp: (button: number) => boolean;
-
-  // Gamepad (future extension)
-  getGamepadAxis: (gamepadIndex: number, axisIndex: number) => number;
-  isGamepadButtonPressed: (gamepadIndex: number, buttonIndex: number) => boolean;
+  // Input Actions System
+  getActionValue: (
+    actionMapName: string,
+    actionName: string,
+  ) => number | [number, number] | [number, number, number];
+  isActionActive: (actionMapName: string, actionName: string) => boolean;
+  onAction: (
+    actionMapName: string,
+    actionName: string,
+    callback: (
+      phase: 'started' | 'performed' | 'canceled',
+      value: number | [number, number] | [number, number, number],
+    ) => void,
+  ) => void;
+  offAction: (
+    actionMapName: string,
+    actionName: string,
+    callback: (
+      phase: 'started' | 'performed' | 'canceled',
+      value: number | [number, number] | [number, number, number],
+    ) => void,
+  ) => void;
+  enableActionMap: (mapName: string) => void;
+  disableActionMap: (mapName: string) => void;
 }
 
 /**

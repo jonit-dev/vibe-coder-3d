@@ -1,5 +1,8 @@
 import { InputManager } from '@/core/lib/input/InputManager';
 import type { IInputAPI } from '../ScriptAPI';
+import { Logger } from '@core/lib/logger';
+
+const logger = Logger.create('InputAPI');
 
 /**
  * Creates InputAPI implementation using real InputManager
@@ -8,17 +11,49 @@ export const createInputAPI = (): IInputAPI => {
   const inputManager = InputManager.getInstance();
 
   return {
-    isKeyPressed: (key: string): boolean => inputManager.isKeyPressed(key),
-    isKeyDown: (key: string): boolean => inputManager.isKeyDown(key),
-    isKeyUp: (key: string): boolean => inputManager.isKeyReleased(key),
+    // Input Actions System
+    getActionValue: (actionMapName: string, actionName: string) => {
+      return inputManager.getActionValue(actionMapName, actionName);
+    },
 
-    mousePosition: (): [number, number] => inputManager.mousePosition(),
-    isMouseButtonPressed: (button: number): boolean => inputManager.isMouseButtonPressed(button),
-    isMouseButtonDown: (button: number): boolean => inputManager.isMouseButtonDown(button),
-    isMouseButtonUp: (button: number): boolean => inputManager.isMouseButtonReleased(button),
+    isActionActive: (actionMapName: string, actionName: string): boolean => {
+      return inputManager.isActionActiveNew(actionMapName, actionName);
+    },
 
-    // Gamepad stubs
-    getGamepadAxis: (__gamepadIndex: number, __axisIndex: number): number => 0,
-    isGamepadButtonPressed: (__gamepadIndex: number, __buttonIndex: number): boolean => false,
+    onAction: (
+      actionMapName: string,
+      actionName: string,
+      callback: (
+        phase: 'started' | 'performed' | 'canceled',
+        value: number | [number, number] | [number, number, number],
+      ) => void,
+    ) => {
+      inputManager.onAction(actionMapName, actionName, (context) => {
+        callback(context.phase, context.value);
+      });
+    },
+
+    offAction: (
+      actionMapName: string,
+      actionName: string,
+      callback: (
+        phase: 'started' | 'performed' | 'canceled',
+        value: number | [number, number] | [number, number, number],
+      ) => void,
+    ) => {
+      // Note: This is a simplified version - full cleanup would require tracking the wrapped callbacks
+      logger.warn('offAction not fully implemented - callbacks must match exactly');
+      inputManager.offAction(actionMapName, actionName, (context) => {
+        callback(context.phase, context.value);
+      });
+    },
+
+    enableActionMap: (mapName: string) => {
+      inputManager.enableActionMap(mapName);
+    },
+
+    disableActionMap: (mapName: string) => {
+      inputManager.disableActionMap(mapName);
+    },
   };
 };

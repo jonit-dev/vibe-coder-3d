@@ -55,8 +55,14 @@ export const ActionMapDialog: React.FC<IActionMapDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001]" onClick={onClose}>
-      <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001]"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <h3 className="text-lg font-semibold text-gray-200">
             {actionMap ? 'Edit Action Map' : 'New Action Map'}
@@ -171,8 +177,14 @@ export const ActionDialog: React.FC<IActionDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001]" onClick={onClose}>
-      <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001]"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <h3 className="text-lg font-semibold text-gray-200">
             {action ? 'Edit Action' : 'New Action'}
@@ -277,20 +289,20 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
 }) => {
   const store = useInputStore();
   const [bindingType, setBindingType] = useState<'simple' | 'composite'>(
-    binding && 'compositeType' in binding ? 'composite' : 'simple'
+    binding && 'compositeType' in binding ? 'composite' : 'simple',
   );
-  const [deviceType, setDeviceType] = useState<DeviceType>(
-    binding && 'type' in binding ? binding.type : DeviceType.Keyboard
-  );
+  const [deviceType, setDeviceType] = useState<
+    DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad
+  >(binding && 'type' in binding ? binding.type : DeviceType.Keyboard);
   const [path, setPath] = useState(binding && 'path' in binding ? binding.path : '');
   const [compositeType, setCompositeType] = useState<CompositeType>(
-    binding && 'compositeType' in binding ? binding.compositeType : CompositeType.TwoDVector
+    binding && 'compositeType' in binding ? binding.compositeType : CompositeType.TwoDVector,
   );
   const [error, setError] = useState('');
 
   // Composite bindings state
   const [compositeBindings, setCompositeBindings] = useState<Record<string, ISimpleBinding>>(
-    binding && 'bindings' in binding ? binding.bindings : {}
+    binding && 'bindings' in binding ? binding.bindings : {},
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -304,7 +316,7 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
         setError('Path is required');
         return;
       }
-      newBinding = { type: deviceType, path };
+      newBinding = { type: deviceType, path } as ISimpleBinding;
     } else {
       // Composite
       const requiredKeys =
@@ -333,7 +345,11 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
     onClose();
   };
 
-  const updateCompositeBinding = (key: string, type: DeviceType, bindingPath: string) => {
+  const updateCompositeBinding = (
+    key: string,
+    type: DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad,
+    bindingPath: string,
+  ) => {
     setCompositeBindings((prev) => ({
       ...prev,
       [key]: { type, path: bindingPath },
@@ -341,8 +357,14 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001]" onClick={onClose}>
-      <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001]"
+      onClick={onClose}
+    >
+      <div
+        className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <h3 className="text-lg font-semibold text-gray-200">
             {binding ? 'Edit Binding' : 'New Binding'}
@@ -420,7 +442,9 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
                       key={key}
                       label={key}
                       binding={compositeBindings[key]}
-                      onChange={(type, bindingPath) => updateCompositeBinding(key, type, bindingPath)}
+                      onChange={(type, bindingPath) =>
+                        updateCompositeBinding(key, type, bindingPath)
+                      }
                     />
                   ))}
                 {compositeType === CompositeType.OneModifier &&
@@ -429,7 +453,9 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
                       key={key}
                       label={key}
                       binding={compositeBindings[key]}
-                      onChange={(type, bindingPath) => updateCompositeBinding(key, type, bindingPath)}
+                      onChange={(type, bindingPath) =>
+                        updateCompositeBinding(key, type, bindingPath)
+                      }
                     />
                   ))}
               </div>
@@ -472,13 +498,13 @@ const CompositeBindingInput: React.FC<ICompositeBindingInputProps> = ({
   binding,
   onChange,
 }) => {
-  const [type, setType] = useState<
-    DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad
-  >(binding?.type ?? DeviceType.Keyboard);
+  const [type, setType] = useState<DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad>(
+    binding?.type ?? DeviceType.Keyboard,
+  );
   const [path, setPath] = useState(binding?.path ?? '');
 
   const handleTypeChange = (
-    newType: DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad
+    newType: DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad,
   ) => {
     setType(newType);
     onChange(newType, path);
@@ -496,7 +522,7 @@ const CompositeBindingInput: React.FC<ICompositeBindingInputProps> = ({
         value={type}
         onChange={(e) =>
           handleTypeChange(
-            e.target.value as DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad
+            e.target.value as DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad,
           )
         }
         className="px-2 py-1 bg-gray-700 text-gray-200 rounded border border-gray-600 text-sm"

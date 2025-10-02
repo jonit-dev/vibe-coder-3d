@@ -374,25 +374,6 @@ export class ScriptExecutor {
         }
       }
 
-      // Input handling patterns
-      if (functionBody.includes('input.isKeyPressed')) {
-        const keyMatches = functionBody.match(
-          /if\s*\(\s*input\.isKeyPressed\s*\(\s*['"`]([^'"`]+)['"`]\s*\)\s*\)/g,
-        );
-        if (keyMatches) {
-          for (const keyMatch of keyMatches) {
-            const match = keyMatch.match(/['"`]([^'"`]+)['"`]/);
-            if (match) {
-              const key = match[1];
-              if (context.input.isKeyPressed(key)) {
-                // For simplicity, just log that key was pressed
-                context.console.log(`Key ${key} was pressed!`);
-              }
-            }
-          }
-        }
-      }
-
       return undefined; // Most scripts don't return values
     } catch (error) {
       console.error('[ScriptExecutor] Function execution error:', error);

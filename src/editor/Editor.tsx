@@ -105,9 +105,6 @@ const Editor: React.FC = () => {
     // cancelOperation,
     scenePersistence,
     loadLastScene,
-    // Legacy compatibility
-    savedScene,
-    importScene,
   } = useStreamingSceneActions({
     onRequestSaveAs: () => setScenePersistenceModal({ isOpen: true, mode: 'save' }),
     onProgressUpdate: (streamingProgress) => {
