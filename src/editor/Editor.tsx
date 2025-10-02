@@ -160,8 +160,6 @@ const Editor: React.FC = () => {
 
   // Scene Initialization
   useSceneInitialization({
-    savedScene,
-    importScene,
     onStatusMessage: setStatusMessage,
     loadLastScene,
   });

@@ -50,6 +50,7 @@ export interface ISceneProgress {
  */
 export function useStreamingSceneActions(options: IStreamingSceneActionsOptions = {}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isLoadingRef = useRef(false);
   const [currentSceneName, setCurrentSceneName] = useState<string | null>(null);
   const [progress, setProgress] = useState<ISceneProgress>({
     isActive: false,
@@ -355,6 +356,15 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
    */
   const handleLoad = useCallback(
     async (sceneNameOrEvent?: string | React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+      // Prevent concurrent scene loading
+      if (isLoadingRef.current) {
+        console.warn(
+          '[StreamingSceneActions] Scene load already in progress, skipping duplicate request',
+        );
+        return;
+      }
+
+      isLoadingRef.current = true;
       let loadingToastId: string | undefined;
 
       try {
@@ -458,6 +468,8 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
           'Load',
           error instanceof Error ? error.message : 'Unknown error occurred',
         );
+      } finally {
+        isLoadingRef.current = false;
       }
     },
     [importSceneData, scenePersistence, projectToasts, removeToast],
