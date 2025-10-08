@@ -66,10 +66,10 @@ vi.mock('@editor/store/materialsStore', () => ({
   useMaterialsStore: () => mockStore,
 }));
 
-// Mock MaterialPreviewSphere component
-vi.mock('../MaterialPreviewSphere', () => ({
-  MaterialPreviewSphere: ({ material }: { material: IMaterialDefinition }) => (
-    <div data-testid={`preview-sphere-${material.id}`}>Preview: {material.name}</div>
+// Mock MaterialPreview2D component
+vi.mock('../MaterialPreview2D', () => ({
+  MaterialPreview2D: ({ material }: { material: IMaterialDefinition }) => (
+    <div data-testid={`preview-2d-${material.id}`}>Preview: {material.name}</div>
   ),
 }));
 
@@ -119,15 +119,15 @@ describe('MaterialBrowserModal', () => {
     it('should render all materials', () => {
       render(<MaterialBrowserModal {...defaultProps} />);
 
-      expect(screen.getByTestId('preview-sphere-default')).toBeInTheDocument();
-      expect(screen.getByTestId('preview-sphere-test123')).toBeInTheDocument();
-      expect(screen.getByTestId('preview-sphere-unlit-material')).toBeInTheDocument();
+      expect(screen.getByTestId('preview-2d-default')).toBeInTheDocument();
+      expect(screen.getByTestId('preview-2d-test123')).toBeInTheDocument();
+      expect(screen.getByTestId('preview-2d-unlit-material')).toBeInTheDocument();
     });
 
     it('should show selected material with different styling', () => {
       render(<MaterialBrowserModal {...defaultProps} selectedMaterialId="test123" />);
 
-      const selectedMaterial = screen.getByTestId('preview-sphere-test123');
+      const selectedMaterial = screen.getByTestId('preview-2d-test123');
       expect(selectedMaterial).toBeInTheDocument();
       // Just verify it renders, don't test specific styling details
     });
@@ -151,9 +151,9 @@ describe('MaterialBrowserModal', () => {
       await user.type(searchInput, 'test');
 
       await waitFor(() => {
-        expect(screen.getByTestId('preview-sphere-test123')).toBeInTheDocument();
-        expect(screen.queryByTestId('preview-sphere-default')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('preview-sphere-unlit-material')).not.toBeInTheDocument();
+        expect(screen.getByTestId('preview-2d-test123')).toBeInTheDocument();
+        expect(screen.queryByTestId('preview-2d-default')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('preview-2d-unlit-material')).not.toBeInTheDocument();
       });
     });
 
@@ -186,7 +186,7 @@ describe('MaterialBrowserModal', () => {
         />,
       );
 
-      const materialDiv = screen.getByTestId('preview-sphere-test123').closest('div')!;
+      const materialDiv = screen.getByTestId('preview-2d-test123').parentElement!.parentElement!;
       await user.click(materialDiv);
 
       expect(onSelect).toHaveBeenCalledWith('test123');
@@ -201,7 +201,7 @@ describe('MaterialBrowserModal', () => {
         <MaterialBrowserModal {...defaultProps} onSelect={onSelect} allowMultiSelect={true} />,
       );
 
-      const materialDiv = screen.getByTestId('preview-sphere-test123').closest('div')!;
+      const materialDiv = screen.getByTestId('preview-2d-test123').parentElement!.parentElement!;
       await user.click(materialDiv);
 
       // In multi-select, onSelect shouldn't be called immediately
@@ -226,7 +226,7 @@ describe('MaterialBrowserModal', () => {
       );
 
       // Select a material
-      const materialDiv = screen.getByTestId('preview-sphere-test123').closest('div')!;
+      const materialDiv = screen.getByTestId('preview-2d-test123').parentElement!.parentElement!;
       await user.click(materialDiv);
 
       // Confirm selection
@@ -314,7 +314,8 @@ describe('MaterialBrowserModal', () => {
 
       // The default material should not have a delete button
       // We need to check the specific material item for default
-      const defaultMaterialDiv = screen.getByTestId('preview-sphere-default').closest('div')!;
+      const defaultMaterialDiv =
+        screen.getByTestId('preview-2d-default').parentElement!.parentElement!;
       const deleteButton = defaultMaterialDiv.querySelector('[title="Delete"]');
       expect(deleteButton).not.toBeInTheDocument();
     });

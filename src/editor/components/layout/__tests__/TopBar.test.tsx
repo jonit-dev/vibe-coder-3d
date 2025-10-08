@@ -11,6 +11,7 @@ describe('TopBar', () => {
     onLoad: vi.fn(),
     onClear: vi.fn(),
     onAddObject: vi.fn(),
+    onToggleAddMenu: vi.fn(),
     onPlay: vi.fn(),
     onPause: vi.fn(),
     onStop: vi.fn(),
@@ -96,10 +97,10 @@ describe('TopBar', () => {
   });
 
   describe('action buttons', () => {
-    it('should call onAddObject when Add button is clicked', () => {
+    it('should call onToggleAddMenu when Add button is clicked', () => {
       render(<TopBar {...mockProps} />);
       fireEvent.click(screen.getByText('Add'));
-      expect(mockProps.onAddObject).toHaveBeenCalledTimes(1);
+      expect(mockProps.onToggleAddMenu).toHaveBeenCalledTimes(1);
     });
 
     it('should call onLoad when Load button is clicked', () => {
