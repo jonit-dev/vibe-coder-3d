@@ -19,7 +19,6 @@ export class InputManager {
   private actionMaps: Map<string, ActionMap> = new Map();
   private actionRuntime: InputActionRuntime | null = null;
   private initialized: boolean = false;
-  private actionsAssetLoaded: boolean = false;
 
   private constructor() {
     // Private constructor for singleton
@@ -144,7 +143,6 @@ export class InputManager {
    */
   public loadInputActionsAsset(asset: IInputActionsAsset): void {
     this.actionRuntime?.loadAsset(asset);
-    this.actionsAssetLoaded = true;
   }
 
   /**

@@ -393,7 +393,11 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
                 <label className="text-sm text-gray-300 block mb-2">Device</label>
                 <select
                   value={deviceType}
-                  onChange={(e) => setDeviceType(e.target.value as DeviceType)}
+                  onChange={(e) =>
+                    setDeviceType(
+                      e.target.value as DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad,
+                    )
+                  }
                   className="w-full px-3 py-2 bg-gray-700 text-gray-200 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
                 >
                   <option value={DeviceType.Keyboard}>Keyboard</option>
@@ -443,7 +447,11 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
                       label={key}
                       binding={compositeBindings[key]}
                       onChange={(type, bindingPath) =>
-                        updateCompositeBinding(key, type, bindingPath)
+                        updateCompositeBinding(
+                          key,
+                          type as DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad,
+                          bindingPath,
+                        )
                       }
                     />
                   ))}
@@ -454,7 +462,11 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
                       label={key}
                       binding={compositeBindings[key]}
                       onChange={(type, bindingPath) =>
-                        updateCompositeBinding(key, type, bindingPath)
+                        updateCompositeBinding(
+                          key,
+                          type as DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad,
+                          bindingPath,
+                        )
                       }
                     />
                   ))}
@@ -490,7 +502,10 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
 interface ICompositeBindingInputProps {
   label: string;
   binding: ISimpleBinding | undefined;
-  onChange: (type: DeviceType, path: string) => void;
+  onChange: (
+    type: DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad,
+    path: string,
+  ) => void;
 }
 
 const CompositeBindingInput: React.FC<ICompositeBindingInputProps> = ({

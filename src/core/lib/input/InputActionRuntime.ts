@@ -32,11 +32,17 @@ export class InputActionRuntime {
   > = new Map();
 
   // Action state tracking
-  private actionStates: Map<string, Map<string, {
-    isActive: boolean;
-    value: number | [number, number] | [number, number, number];
-    startTime: number;
-  }>> = new Map();
+  private actionStates: Map<
+    string,
+    Map<
+      string,
+      {
+        isActive: boolean;
+        value: number | [number, number] | [number, number, number];
+        startTime: number;
+      }
+    >
+  > = new Map();
 
   constructor(keyboard: KeyboardInput, mouse: MouseInput) {
     this.keyboard = keyboard;
@@ -59,7 +65,7 @@ export class InputActionRuntime {
 
     logger.info('Input actions asset loaded', {
       name: asset.name,
-      actionMaps: asset.actionMaps.length
+      actionMaps: asset.actionMaps.length,
     });
   }
 
@@ -96,7 +102,7 @@ export class InputActionRuntime {
   public on(
     actionMapName: string,
     actionName: string,
-    callback: (context: IInputActionCallbackContext) => void
+    callback: (context: IInputActionCallbackContext) => void,
   ): void {
     if (!this.actionCallbacks.has(actionMapName)) {
       this.actionCallbacks.set(actionMapName, new Map());
@@ -116,7 +122,7 @@ export class InputActionRuntime {
   public off(
     actionMapName: string,
     actionName: string,
-    callback: (context: IInputActionCallbackContext) => void
+    callback: (context: IInputActionCallbackContext) => void,
   ): void {
     const mapCallbacks = this.actionCallbacks.get(actionMapName);
     if (!mapCallbacks) return;
@@ -207,7 +213,7 @@ export class InputActionRuntime {
     phase: 'started' | 'performed' | 'canceled',
     value: number | [number, number] | [number, number, number],
     time: number,
-    duration: number
+    duration: number,
   ): void {
     const mapCallbacks = this.actionCallbacks.get(mapName);
     if (!mapCallbacks) return;
@@ -230,7 +236,7 @@ export class InputActionRuntime {
         logger.error('Error in action callback', {
           mapName,
           actionName: action.name,
-          error
+          error,
         });
       }
     }
@@ -254,7 +260,9 @@ export class InputActionRuntime {
   /**
    * Evaluate an action's current value based on its bindings
    */
-  private evaluateAction(action: IInputAction): number | [number, number] | [number, number, number] {
+  private evaluateAction(
+    action: IInputAction,
+  ): number | [number, number] | [number, number, number] {
     for (const binding of action.bindings) {
       const value = this.evaluateBinding(binding, action.controlType);
 
@@ -283,7 +291,7 @@ export class InputActionRuntime {
    */
   private evaluateBinding(
     binding: IBinding,
-    controlType: string
+    controlType: string,
   ): number | [number, number] | [number, number, number] {
     if ('compositeType' in binding) {
       return this.evaluateCompositeBinding(binding as ICompositeBinding);
@@ -297,7 +305,7 @@ export class InputActionRuntime {
    */
   private evaluateSimpleBinding(
     binding: ISimpleBinding,
-    controlType: string
+    controlType: string,
   ): number | [number, number] | [number, number, number] {
     if (!this.keyboard || !this.mouse) {
       return controlType === 'vector2' ? [0, 0] : 0;
@@ -305,9 +313,7 @@ export class InputActionRuntime {
 
     // Check modifiers
     if (binding.modifiers && binding.modifiers.length > 0) {
-      const allModifiersPressed = binding.modifiers.every((mod) =>
-        this.keyboard!.isKeyDown(mod)
-      );
+      const allModifiersPressed = binding.modifiers.every((mod) => this.keyboard!.isKeyDown(mod));
       if (!allModifiersPressed) {
         return controlType === 'vector2' ? [0, 0] : 0;
       }
@@ -345,7 +351,7 @@ export class InputActionRuntime {
    * Evaluate a composite binding (e.g., 2D Vector from WASD)
    */
   private evaluateCompositeBinding(
-    binding: ICompositeBinding
+    binding: ICompositeBinding,
   ): number | [number, number] | [number, number, number] {
     if (!this.keyboard || !this.mouse) {
       return [0, 0];
@@ -353,10 +359,22 @@ export class InputActionRuntime {
 
     switch (binding.compositeType) {
       case CompositeType.TwoDVector: {
-        const up = this.evaluateSimpleBinding(binding.bindings.up as ISimpleBinding, 'axis') as number;
-        const down = this.evaluateSimpleBinding(binding.bindings.down as ISimpleBinding, 'axis') as number;
-        const left = this.evaluateSimpleBinding(binding.bindings.left as ISimpleBinding, 'axis') as number;
-        const right = this.evaluateSimpleBinding(binding.bindings.right as ISimpleBinding, 'axis') as number;
+        const up = this.evaluateSimpleBinding(
+          binding.bindings.up as ISimpleBinding,
+          'axis',
+        ) as number;
+        const down = this.evaluateSimpleBinding(
+          binding.bindings.down as ISimpleBinding,
+          'axis',
+        ) as number;
+        const left = this.evaluateSimpleBinding(
+          binding.bindings.left as ISimpleBinding,
+          'axis',
+        ) as number;
+        const right = this.evaluateSimpleBinding(
+          binding.bindings.right as ISimpleBinding,
+          'axis',
+        ) as number;
 
         const x = right - left;
         const y = up - down;
@@ -370,17 +388,18 @@ export class InputActionRuntime {
         return [x, y] as [number, number];
       }
 
-      case CompositeType.OneModifier:
+      case CompositeType.OneModifier: {
         // For 1D axis (e.g., positive/negative buttons)
         const positive = this.evaluateSimpleBinding(
           binding.bindings.positive as ISimpleBinding,
-          'axis'
+          'axis',
         ) as number;
         const negative = this.evaluateSimpleBinding(
           binding.bindings.negative as ISimpleBinding,
-          'axis'
+          'axis',
         ) as number;
         return positive - negative;
+      }
 
       default:
         return [0, 0];
@@ -392,9 +411,12 @@ export class InputActionRuntime {
    */
   public getActionValue(
     mapName: string,
-    actionName: string
+    actionName: string,
   ): number | [number, number] | [number, number, number] {
     if (!this.asset) return 0;
+
+    // Check if the action map is enabled
+    if (!this.activeActionMaps.has(mapName)) return 0;
 
     const map = this.asset.actionMaps.find((m) => m.name === mapName);
     if (!map) return 0;

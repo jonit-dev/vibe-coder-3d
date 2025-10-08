@@ -15,6 +15,7 @@ export interface IMenuConfig {
   onToggleMaterials?: () => void;
   onOpenPreferences?: () => void;
   onOpenInput?: () => void;
+  onOpenInputSettings?: () => void;
   onCreatePrefab?: () => void;
   onBrowsePrefabs?: () => void;
   currentSceneName?: string | null;
@@ -35,6 +36,7 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
     onToggleMaterials,
     onOpenPreferences,
     onOpenInput,
+    onOpenInputSettings,
     onCreatePrefab,
     onBrowsePrefabs,
     currentSceneName,
@@ -153,10 +155,16 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
           shortcut: 'Ctrl+,',
           action: onOpenPreferences,
         },
+        { divider: true },
         {
-          label: 'Input',
+          label: 'Input Settings',
           shortcut: 'Ctrl+Shift+I',
           action: onOpenInput,
+        },
+        {
+          label: 'Input Actions',
+          shortcut: 'Ctrl+Alt+I',
+          action: onOpenInputSettings,
         },
       ],
     },

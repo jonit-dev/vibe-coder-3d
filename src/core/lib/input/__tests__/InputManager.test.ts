@@ -156,16 +156,17 @@ describe('InputManager', () => {
 
   describe('Pointer lock', () => {
     it('should lock pointer', () => {
-      const spy = vi.spyOn(canvas, 'requestPointerLock').mockImplementation(() => {});
+      // Mock requestPointerLock on canvas
+      canvas.requestPointerLock = vi.fn();
 
       inputManager.lockPointer();
 
-      expect(spy).toHaveBeenCalled();
-      spy.mockRestore();
+      expect(canvas.requestPointerLock).toHaveBeenCalled();
     });
 
     it('should unlock pointer', () => {
-      const spy = vi.spyOn(document, 'exitPointerLock').mockImplementation(() => {});
+      // Mock exitPointerLock on document
+      document.exitPointerLock = vi.fn();
 
       Object.defineProperty(document, 'pointerLockElement', {
         writable: true,
@@ -174,8 +175,7 @@ describe('InputManager', () => {
 
       inputManager.unlockPointer();
 
-      expect(spy).toHaveBeenCalled();
-      spy.mockRestore();
+      expect(document.exitPointerLock).toHaveBeenCalled();
     });
 
     it('should report pointer lock state', () => {

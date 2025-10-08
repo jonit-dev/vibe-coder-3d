@@ -183,23 +183,27 @@ describe('MouseInput', () => {
     });
 
     it('should use movement delta in pointer lock mode', () => {
-      // Enable pointer lock
+      // Enable pointer lock first
       Object.defineProperty(document, 'pointerLockElement', {
         writable: true,
         value: canvas,
       });
       document.dispatchEvent(new Event('pointerlockchange'));
 
-      canvas.dispatchEvent(
-        new MouseEvent('mousemove', {
-          movementX: 10,
-          movementY: 20,
-        }),
-      );
+      // Start at 0,0 in pointer lock mode
+      const [initialX, initialY] = mouseInput.getPosition();
+
+      // Create MouseEvent and manually set movementX/Y (JSDOM limitation)
+      const event = new MouseEvent('mousemove');
+      Object.defineProperty(event, 'movementX', { value: 10, writable: false });
+      Object.defineProperty(event, 'movementY', { value: 20, writable: false });
+
+      canvas.dispatchEvent(event);
 
       const [x, y] = mouseInput.getPosition();
-      expect(x).toBe(10);
-      expect(y).toBe(20);
+      // In pointer lock mode, position accumulates movement deltas
+      expect(x).toBe(initialX + 10);
+      expect(y).toBe(initialY + 20);
     });
   });
 

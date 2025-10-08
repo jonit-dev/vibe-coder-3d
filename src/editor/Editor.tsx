@@ -18,6 +18,7 @@ import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
 import { ScenePersistenceModal } from './components/shared/ScenePersistenceModal';
 import { PreferencesModal } from './components/shared/PreferencesModal';
 import { InputModal } from './components/shared/InputModal';
+import { InputSettingsModal } from './components/shared/InputSettingsModal';
 import { usePrefabs } from './components/prefabs/hooks/usePrefabs';
 import { PrefabCreateModal } from './components/prefabs/PrefabCreateModal';
 import { PrefabBrowserModal } from './components/prefabs/PrefabBrowserModal';
@@ -30,6 +31,7 @@ import { useEditorStats } from './hooks/useEditorStats';
 import { useEntitySynchronization } from './hooks/useEntitySynchronization';
 import { useStreamingSceneActions } from './hooks/useStreamingSceneActions';
 import { useSceneInitialization } from './hooks/useSceneInitialization';
+import { useInputAssetSync } from './hooks/useInputAssetSync';
 import { Logger } from '@core/lib/logger';
 
 // Import types from centralized types file
@@ -88,12 +90,18 @@ const Editor: React.FC = () => {
   // Input modal state
   const [showInput, setShowInput] = useState(false);
 
+  // Input settings modal state (advanced actions editor)
+  const [showInputSettings, setShowInputSettings] = useState(false);
+
   // Prefabs hook
   const { openCreate, closeCreate, openBrowser, closeBrowser, instantiate } = usePrefabs();
   const { isCreateOpen, isBrowserOpen } = usePrefabsStore();
 
   // Entity synchronization with ECS system
   useEntitySynchronization({ entityIds, setEntityIds });
+
+  // Sync input assets from editor store to InputManager
+  useInputAssetSync();
 
   // Streaming scene actions with progress feedback
   const {
@@ -249,6 +257,7 @@ const Editor: React.FC = () => {
         currentSceneName={currentSceneName}
         onOpenPreferences={() => setShowPreferences(true)}
         onOpenInput={() => setShowInput(true)}
+        onOpenInputSettings={() => setShowInputSettings(true)}
         onCreatePrefab={openCreate}
         onBrowsePrefabs={openBrowser}
       />
@@ -256,6 +265,8 @@ const Editor: React.FC = () => {
       <PreferencesModal isOpen={showPreferences} onClose={() => setShowPreferences(false)} />
 
       <InputModal isOpen={showInput} onClose={() => setShowInput(false)} />
+
+      <InputSettingsModal isOpen={showInputSettings} onClose={() => setShowInputSettings(false)} />
 
       <PrefabCreateModal isOpen={isCreateOpen} onClose={closeCreate} />
 

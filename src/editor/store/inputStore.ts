@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import {
   IInputActionsAsset,
   IActionMap,
@@ -29,12 +30,21 @@ interface IInputStore {
   // Actions
   addAction: (assetName: string, mapName: string, action: IInputAction) => void;
   removeAction: (assetName: string, mapName: string, actionName: string) => void;
-  updateAction: (assetName: string, mapName: string, actionName: string, action: Partial<IInputAction>) => void;
+  updateAction: (
+    assetName: string,
+    mapName: string,
+    actionName: string,
+    action: Partial<IInputAction>,
+  ) => void;
 
   // Control Schemes
   addControlScheme: (assetName: string, scheme: IControlScheme) => void;
   removeControlScheme: (assetName: string, schemeName: string) => void;
-  updateControlScheme: (assetName: string, schemeName: string, scheme: Partial<IControlScheme>) => void;
+  updateControlScheme: (
+    assetName: string,
+    schemeName: string,
+    scheme: Partial<IControlScheme>,
+  ) => void;
 
   // Helpers
   getAsset: (name: string) => IInputActionsAsset | undefined;
@@ -55,9 +65,7 @@ const createDefaultAsset = (): IInputActionsAsset => ({
     },
     {
       name: 'Gamepad',
-      deviceRequirements: [
-        { deviceType: DeviceType.Gamepad, optional: false },
-      ],
+      deviceRequirements: [{ deviceType: DeviceType.Gamepad, optional: false }],
     },
   ],
   actionMaps: [
@@ -96,9 +104,7 @@ const createDefaultAsset = (): IInputActionsAsset => ({
           actionType: ActionType.Button,
           controlType: ControlType.Button,
           enabled: true,
-          bindings: [
-            { type: DeviceType.Keyboard, path: 'space' },
-          ],
+          bindings: [{ type: DeviceType.Keyboard, path: 'space' }],
         },
         {
           name: 'Fire',
@@ -115,9 +121,7 @@ const createDefaultAsset = (): IInputActionsAsset => ({
           actionType: ActionType.PassThrough,
           controlType: ControlType.Vector2,
           enabled: true,
-          bindings: [
-            { type: DeviceType.Mouse, path: 'delta' },
-          ],
+          bindings: [{ type: DeviceType.Mouse, path: 'delta' }],
         },
       ],
     },
@@ -157,18 +161,18 @@ const createDefaultAsset = (): IInputActionsAsset => ({
           actionType: ActionType.Button,
           controlType: ControlType.Button,
           enabled: true,
-          bindings: [
-            { type: DeviceType.Keyboard, path: 'escape' },
-          ],
+          bindings: [{ type: DeviceType.Keyboard, path: 'escape' }],
         },
       ],
     },
   ],
 });
 
-export const useInputStore = create<IInputStore>((set, get) => ({
-  assets: [createDefaultAsset()],
-  currentAsset: 'Default Input',
+export const useInputStore = create<IInputStore>()(
+  persist(
+    (set, get) => ({
+      assets: [createDefaultAsset()],
+      currentAsset: 'Default Input',
 
       // Asset operations
       addAsset: (asset) =>
@@ -184,9 +188,7 @@ export const useInputStore = create<IInputStore>((set, get) => ({
 
       updateAsset: (name, updates) =>
         set((state) => ({
-          assets: state.assets.map((a) =>
-            a.name === name ? { ...a, ...updates } : a
-          ),
+          assets: state.assets.map((a) => (a.name === name ? { ...a, ...updates } : a)),
         })),
 
       setCurrentAsset: (name) => set({ currentAsset: name }),
@@ -197,7 +199,7 @@ export const useInputStore = create<IInputStore>((set, get) => ({
           assets: state.assets.map((asset) =>
             asset.name === assetName
               ? { ...asset, actionMaps: [...asset.actionMaps, actionMap] }
-              : asset
+              : asset,
           ),
         })),
 
@@ -209,7 +211,7 @@ export const useInputStore = create<IInputStore>((set, get) => ({
                   ...asset,
                   actionMaps: asset.actionMaps.filter((m) => m.name !== mapName),
                 }
-              : asset
+              : asset,
           ),
         })),
 
@@ -220,10 +222,10 @@ export const useInputStore = create<IInputStore>((set, get) => ({
               ? {
                   ...asset,
                   actionMaps: asset.actionMaps.map((map) =>
-                    map.name === mapName ? { ...map, ...updates } : map
+                    map.name === mapName ? { ...map, ...updates } : map,
                   ),
                 }
-              : asset
+              : asset,
           ),
         })),
 
@@ -235,12 +237,10 @@ export const useInputStore = create<IInputStore>((set, get) => ({
               ? {
                   ...asset,
                   actionMaps: asset.actionMaps.map((map) =>
-                    map.name === mapName
-                      ? { ...map, actions: [...map.actions, action] }
-                      : map
+                    map.name === mapName ? { ...map, actions: [...map.actions, action] } : map,
                   ),
                 }
-              : asset
+              : asset,
           ),
         })),
 
@@ -256,10 +256,10 @@ export const useInputStore = create<IInputStore>((set, get) => ({
                           ...map,
                           actions: map.actions.filter((a) => a.name !== actionName),
                         }
-                      : map
+                      : map,
                   ),
                 }
-              : asset
+              : asset,
           ),
         })),
 
@@ -274,15 +274,13 @@ export const useInputStore = create<IInputStore>((set, get) => ({
                       ? {
                           ...map,
                           actions: map.actions.map((action) =>
-                            action.name === actionName
-                              ? { ...action, ...updates }
-                              : action
+                            action.name === actionName ? { ...action, ...updates } : action,
                           ),
                         }
-                      : map
+                      : map,
                   ),
                 }
-              : asset
+              : asset,
           ),
         })),
 
@@ -295,7 +293,7 @@ export const useInputStore = create<IInputStore>((set, get) => ({
                   ...asset,
                   controlSchemes: [...asset.controlSchemes, scheme],
                 }
-              : asset
+              : asset,
           ),
         })),
 
@@ -305,11 +303,9 @@ export const useInputStore = create<IInputStore>((set, get) => ({
             asset.name === assetName
               ? {
                   ...asset,
-                  controlSchemes: asset.controlSchemes.filter(
-                    (s) => s.name !== schemeName
-                  ),
+                  controlSchemes: asset.controlSchemes.filter((s) => s.name !== schemeName),
                 }
-              : asset
+              : asset,
           ),
         })),
 
@@ -320,10 +316,10 @@ export const useInputStore = create<IInputStore>((set, get) => ({
               ? {
                   ...asset,
                   controlSchemes: asset.controlSchemes.map((scheme) =>
-                    scheme.name === schemeName ? { ...scheme, ...updates } : scheme
+                    scheme.name === schemeName ? { ...scheme, ...updates } : scheme,
                   ),
                 }
-              : asset
+              : asset,
           ),
         })),
 
@@ -339,7 +335,13 @@ export const useInputStore = create<IInputStore>((set, get) => ({
         const map = get().getActionMap(assetName, mapName);
         return map?.actions.find((a) => a.name === actionName);
       },
-}));
+    }),
+    {
+      name: 'vibe-coder-input-actions-storage',
+      version: 1,
+    },
+  ),
+);
 
 // Selectors
 export const useCurrentAssetName = () => useInputStore((state) => state.currentAsset);

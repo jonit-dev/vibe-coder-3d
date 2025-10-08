@@ -70,7 +70,7 @@ export const AssetSelector: React.FC<IAssetSelectorProps> = ({
             size="xs"
             title="Clear texture"
           >
-            {/* Icon-only button */}
+            <FiTrash2 />
           </InspectorButton>
         )}
         <InspectorButton

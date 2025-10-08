@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import { useInputSettings } from '@editor/hooks/useInputSettings';
+import { useInputActionsAssets } from '@editor/hooks/useInputActionsAssets';
+import { InputActionsEditor } from './InputActionsEditor';
 
 export interface IInputModalProps {
   isOpen: boolean;
@@ -12,6 +14,9 @@ type TabType = 'keyboard' | 'mouse' | 'actions' | 'gamepad';
 export const InputModal: React.FC<IInputModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<TabType>('keyboard');
   const { settings, updateSetting } = useInputSettings();
+  const { assets, currentAsset, setCurrentAsset, createAsset, updateAsset, deleteAsset } =
+    useInputActionsAssets();
+  const [showActionsEditor, setShowActionsEditor] = useState(false);
 
   if (!isOpen) return null;
 
@@ -160,16 +165,49 @@ export const InputModal: React.FC<IInputModalProps> = ({ isOpen, onClose }) => {
         );
 
       case 'actions':
+        if (showActionsEditor && currentAsset) {
+          return (
+            <div className="h-full flex flex-col">
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-700">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowActionsEditor(false)}
+                    className="text-cyan-400 hover:text-cyan-300 text-sm"
+                  >
+                    ← Back to Assets
+                  </button>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-sm text-gray-300">{currentAsset.name}</span>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <InputActionsEditor asset={currentAsset} onAssetChange={updateAsset} />
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-200">Input Action Maps</h3>
-              <button className="btn btn-sm btn-primary">+ New Action Map</button>
+              <h3 className="text-lg font-semibold text-gray-200">Input Actions Assets</h3>
+              <button
+                onClick={() => {
+                  const name = prompt('Enter asset name:');
+                  if (name) {
+                    const newAsset = createAsset(name);
+                    setCurrentAsset(newAsset);
+                    setShowActionsEditor(true);
+                  }
+                }}
+                className="btn btn-sm btn-primary"
+              >
+                + New Asset
+              </button>
             </div>
 
             <div className="bg-gray-900 rounded-lg p-4 space-y-3">
               <div className="text-sm text-gray-400">
-                Input Action Maps allow you to bind logical actions to physical inputs (keyboard,
+                Input Action Assets allow you to bind logical actions to physical inputs (keyboard,
                 mouse, gamepad). Configure them to decouple your game logic from specific input
                 devices.
               </div>
@@ -177,43 +215,72 @@ export const InputModal: React.FC<IInputModalProps> = ({ isOpen, onClose }) => {
               <div className="border-t border-gray-700 pt-3">
                 <h4 className="text-sm font-semibold text-gray-300 mb-2">Quick Start</h4>
                 <ol className="text-xs text-gray-400 space-y-1 list-decimal list-inside">
-                  <li>Create an action map for your game context (e.g., "Gameplay", "UI")</li>
-                  <li>Define actions (e.g., "Move", "Jump", "Fire")</li>
-                  <li>Bind inputs to each action (keys, mouse buttons, axes)</li>
-                  <li>Use in scripts via `input.getActionValue()` or `input.onAction()`</li>
+                  <li>Create or select an Input Actions asset</li>
+                  <li>Define action maps for different contexts (e.g., "Gameplay", "UI")</li>
+                  <li>Add actions to each map (e.g., "Move", "Jump", "Fire")</li>
+                  <li>Bind inputs to each action (keys, mouse buttons, composites)</li>
+                  <li>Use in scripts via the Input API</li>
                 </ol>
-              </div>
-
-              <div className="pt-3">
-                <button className="btn btn-sm btn-outline btn-primary w-full">
-                  Open Input Actions Editor
-                </button>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-300">Example Action Maps</h4>
+              <h4 className="text-sm font-semibold text-gray-300">Available Assets</h4>
               <div className="space-y-2">
-                <div className="bg-gray-700 rounded p-3 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-gray-200">Gameplay</div>
-                    <div className="text-xs text-gray-400">Move, Jump, Fire, Interact</div>
+                {assets.map((asset) => (
+                  <div
+                    key={asset.name}
+                    className="bg-gray-700 rounded p-3 flex items-center justify-between hover:bg-gray-600 transition-colors"
+                  >
+                    <div>
+                      <div className="text-sm text-gray-200">{asset.name}</div>
+                      <div className="text-xs text-gray-400">
+                        {asset.actionMaps.length} action map(s),{' '}
+                        {asset.actionMaps.reduce((sum, map) => sum + map.actions.length, 0)}{' '}
+                        action(s)
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setCurrentAsset(asset);
+                          setShowActionsEditor(true);
+                        }}
+                        className="btn btn-xs btn-primary"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete asset "${asset.name}"?`)) {
+                            deleteAsset(asset.name);
+                          }
+                        }}
+                        className="btn btn-xs btn-ghost text-red-400 hover:text-red-300"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button className="btn btn-xs btn-ghost">Edit</button>
-                    <button className="btn btn-xs btn-ghost">Delete</button>
+                ))}
+                {assets.length === 0 && (
+                  <div className="text-center text-gray-500 py-4">
+                    <p className="text-sm mb-2">No assets created yet</p>
+                    <button
+                      onClick={() => {
+                        const name = prompt('Enter asset name:');
+                        if (name) {
+                          const newAsset = createAsset(name);
+                          setCurrentAsset(newAsset);
+                          setShowActionsEditor(true);
+                        }
+                      }}
+                      className="btn btn-sm btn-primary"
+                    >
+                      Create Your First Asset
+                    </button>
                   </div>
-                </div>
-                <div className="bg-gray-700 rounded p-3 flex items-center justify-between opacity-50">
-                  <div>
-                    <div className="text-sm text-gray-200">UI Navigation</div>
-                    <div className="text-xs text-gray-400">Select, Cancel, Menu</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="btn btn-xs btn-ghost">Edit</button>
-                    <button className="btn btn-xs btn-ghost">Delete</button>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
