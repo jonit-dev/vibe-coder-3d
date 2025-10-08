@@ -27,6 +27,7 @@ export interface ITopBarProps {
   isMaterialsOpen?: boolean;
   currentSceneName?: string | null;
   onOpenPreferences?: () => void;
+  onOpenInput?: () => void;
   onCreatePrefab?: () => void;
   onBrowsePrefabs?: () => void;
 }
@@ -51,6 +52,7 @@ export const TopBar: React.FC<ITopBarProps> = React.memo(
     isMaterialsOpen = false,
     currentSceneName,
     onOpenPreferences,
+    onOpenInput,
     onCreatePrefab,
     onBrowsePrefabs,
   }) => {
@@ -68,6 +70,7 @@ export const TopBar: React.FC<ITopBarProps> = React.memo(
       onToggleChat,
       onToggleMaterials,
       onOpenPreferences,
+      onOpenInput,
       onCreatePrefab,
       onBrowsePrefabs,
       currentSceneName,

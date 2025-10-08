@@ -65,6 +65,24 @@ export interface ITransformAPI {
  * Input system access for scripts
  */
 export interface IInputAPI {
+  // Basic Keyboard Input
+  isKeyDown: (key: string) => boolean;
+  isKeyPressed: (key: string) => boolean;
+  isKeyReleased: (key: string) => boolean;
+
+  // Basic Mouse Input
+  isMouseButtonDown: (button: number) => boolean;
+  isMouseButtonPressed: (button: number) => boolean;
+  isMouseButtonReleased: (button: number) => boolean;
+  mousePosition: () => [number, number];
+  mouseDelta: () => [number, number];
+  mouseWheel: () => number;
+
+  // Pointer Lock
+  lockPointer: () => void;
+  unlockPointer: () => void;
+  isPointerLocked: () => boolean;
+
   // Input Actions System
   getActionValue: (
     actionMapName: string,

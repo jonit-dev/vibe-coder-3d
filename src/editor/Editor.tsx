@@ -17,6 +17,7 @@ import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsInte
 import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
 import { ScenePersistenceModal } from './components/shared/ScenePersistenceModal';
 import { PreferencesModal } from './components/shared/PreferencesModal';
+import { InputModal } from './components/shared/InputModal';
 import { usePrefabs } from './components/prefabs/hooks/usePrefabs';
 import { PrefabCreateModal } from './components/prefabs/PrefabCreateModal';
 import { PrefabBrowserModal } from './components/prefabs/PrefabBrowserModal';
@@ -83,6 +84,9 @@ const Editor: React.FC = () => {
 
   // Preferences modal state
   const [showPreferences, setShowPreferences] = useState(false);
+
+  // Input modal state
+  const [showInput, setShowInput] = useState(false);
 
   // Prefabs hook
   const { openCreate, closeCreate, openBrowser, closeBrowser, instantiate } = usePrefabs();
@@ -244,11 +248,14 @@ const Editor: React.FC = () => {
         isMaterialsOpen={isMaterialsExpanded}
         currentSceneName={currentSceneName}
         onOpenPreferences={() => setShowPreferences(true)}
+        onOpenInput={() => setShowInput(true)}
         onCreatePrefab={openCreate}
         onBrowsePrefabs={openBrowser}
       />
 
       <PreferencesModal isOpen={showPreferences} onClose={() => setShowPreferences(false)} />
+
+      <InputModal isOpen={showInput} onClose={() => setShowInput(false)} />
 
       <PrefabCreateModal isOpen={isCreateOpen} onClose={closeCreate} />
 

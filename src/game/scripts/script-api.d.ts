@@ -221,9 +221,104 @@ declare global {
   // ============================================================================
 
   /**
-   * Input API - input actions system
+   * Input API - keyboard, mouse, and input actions
    */
   interface IInputAPI {
+    // Basic Keyboard Input
+    /**
+     * Check if a key is currently held down.
+     * @param key - Key name (e.g., "w", "space", "shift", "up")
+     * @returns true if key is held down
+     * @example
+     * if (input.isKeyDown("w")) {
+     *   entity.transform.translate(0, 0, -0.1);
+     * }
+     */
+    isKeyDown(key: string): boolean;
+
+    /**
+     * Check if a key was just pressed this frame.
+     * @param key - Key name
+     * @returns true if key was pressed this frame (single trigger)
+     * @example
+     * if (input.isKeyPressed("space")) {
+     *   console.log("Jump!"); // Only fires once per press
+     * }
+     */
+    isKeyPressed(key: string): boolean;
+
+    /**
+     * Check if a key was just released this frame.
+     * @param key - Key name
+     * @returns true if key was released this frame
+     */
+    isKeyReleased(key: string): boolean;
+
+    // Basic Mouse Input
+    /**
+     * Check if a mouse button is currently held down.
+     * @param button - Mouse button (0=left, 1=middle, 2=right)
+     * @returns true if button is held down
+     * @example
+     * if (input.isMouseButtonDown(0)) {
+     *   console.log("Left mouse button held");
+     * }
+     */
+    isMouseButtonDown(button: number): boolean;
+
+    /**
+     * Check if a mouse button was just pressed this frame.
+     * @param button - Mouse button (0=left, 1=middle, 2=right)
+     * @returns true if button was pressed this frame
+     */
+    isMouseButtonPressed(button: number): boolean;
+
+    /**
+     * Check if a mouse button was just released this frame.
+     * @param button - Mouse button (0=left, 1=middle, 2=right)
+     * @returns true if button was released this frame
+     */
+    isMouseButtonReleased(button: number): boolean;
+
+    /**
+     * Get current mouse position relative to canvas.
+     * @returns [x, y] position in pixels
+     */
+    mousePosition(): [number, number];
+
+    /**
+     * Get mouse movement delta since last frame.
+     * @returns [dx, dy] movement in pixels
+     * @example
+     * const [dx, dy] = input.mouseDelta();
+     * entity.transform.rotate(-dy * 0.002, -dx * 0.002, 0);
+     */
+    mouseDelta(): [number, number];
+
+    /**
+     * Get mouse wheel delta.
+     * @returns Wheel movement (positive=up, negative=down)
+     */
+    mouseWheel(): number;
+
+    /**
+     * Lock the mouse pointer for FPS-style controls.
+     * @example
+     * input.lockPointer(); // Enables pointer lock
+     */
+    lockPointer(): void;
+
+    /**
+     * Unlock the mouse pointer.
+     */
+    unlockPointer(): void;
+
+    /**
+     * Check if pointer is currently locked.
+     * @returns true if pointer is locked
+     */
+    isPointerLocked(): boolean;
+
     // Input Actions System
     /**
      * Get current value of an input action (polling).

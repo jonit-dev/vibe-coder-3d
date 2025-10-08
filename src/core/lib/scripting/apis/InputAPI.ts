@@ -11,6 +11,24 @@ export const createInputAPI = (): IInputAPI => {
   const inputManager = InputManager.getInstance();
 
   return {
+    // Basic Keyboard Input
+    isKeyDown: (key: string): boolean => inputManager.isKeyDown(key),
+    isKeyPressed: (key: string): boolean => inputManager.isKeyPressed(key),
+    isKeyReleased: (key: string): boolean => inputManager.isKeyReleased(key),
+
+    // Basic Mouse Input
+    isMouseButtonDown: (button: number): boolean => inputManager.isMouseButtonDown(button),
+    isMouseButtonPressed: (button: number): boolean => inputManager.isMouseButtonPressed(button),
+    isMouseButtonReleased: (button: number): boolean => inputManager.isMouseButtonReleased(button),
+    mousePosition: (): [number, number] => inputManager.mousePosition(),
+    mouseDelta: (): [number, number] => inputManager.mouseDelta(),
+    mouseWheel: (): number => inputManager.mouseWheel(),
+
+    // Pointer Lock
+    lockPointer: (): void => inputManager.lockPointer(),
+    unlockPointer: (): void => inputManager.unlockPointer(),
+    isPointerLocked: (): boolean => inputManager.isPointerLocked(),
+
     // Input Actions System
     getActionValue: (actionMapName: string, actionName: string) => {
       return inputManager.getActionValue(actionMapName, actionName);
