@@ -6,12 +6,14 @@ import { EntitySerializer } from './EntitySerializer';
 import type {
   IEntityManagerAdapter,
   IComponentManagerAdapter,
-  ISerializedEntity
+  ISerializedEntity,
 } from './EntitySerializer';
 import type { IMaterialDefinition } from '@core/materials/Material.types';
 import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
+import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
 import { MaterialDefinitionSchema } from '@core/materials/Material.types';
 import { PrefabDefinitionSchema } from '@core/prefabs/Prefab.types';
+import { InputActionsAssetSchema } from '@core/lib/input/inputTypes';
 
 const logger = Logger.create('SceneSerializer');
 
@@ -34,6 +36,7 @@ export interface ISceneData {
   entities: ISerializedEntity[];
   materials: IMaterialDefinition[];
   prefabs: IPrefabDefinition[];
+  inputAssets?: IInputActionsAsset[];
 }
 
 const SceneDataSchema = z.object({
@@ -42,11 +45,12 @@ const SceneDataSchema = z.object({
     version: z.number(),
     timestamp: z.string(),
     author: z.string().optional(),
-    description: z.string().optional()
+    description: z.string().optional(),
   }),
   entities: z.array(z.any()), // Validated by EntitySerializer
   materials: z.array(MaterialDefinitionSchema),
-  prefabs: z.array(PrefabDefinitionSchema)
+  prefabs: z.array(PrefabDefinitionSchema),
+  inputAssets: z.array(InputActionsAssetSchema).optional(),
 });
 
 /**
@@ -65,7 +69,8 @@ export class SceneSerializer {
   async serialize(
     entityManager: IEntityManagerAdapter,
     componentManager: IComponentManagerAdapter,
-    metadata: Partial<ISceneMetadata> = {}
+    metadata: Partial<ISceneMetadata> = {},
+    inputAssets?: IInputActionsAsset[],
   ): Promise<ISceneData> {
     logger.info('Starting scene serialization');
 
@@ -79,11 +84,12 @@ export class SceneSerializer {
         version: metadata.version || 1,
         timestamp: new Date().toISOString(),
         author: metadata.author,
-        description: metadata.description
+        description: metadata.description,
       },
       entities,
       materials,
-      prefabs
+      prefabs,
+      inputAssets,
     };
 
     // Validate before returning
@@ -96,7 +102,8 @@ export class SceneSerializer {
     logger.info('Scene serialization complete', {
       entities: entities.length,
       materials: materials.length,
-      prefabs: prefabs.length
+      prefabs: prefabs.length,
+      inputAssets: inputAssets?.length || 0,
     });
 
     return sceneData;
@@ -108,9 +115,10 @@ export class SceneSerializer {
   async serializeToJSON(
     entityManager: IEntityManagerAdapter,
     componentManager: IComponentManagerAdapter,
-    metadata: Partial<ISceneMetadata> = {}
+    metadata: Partial<ISceneMetadata> = {},
+    inputAssets?: IInputActionsAsset[],
   ): Promise<string> {
-    const sceneData = await this.serialize(entityManager, componentManager, metadata);
+    const sceneData = await this.serialize(entityManager, componentManager, metadata, inputAssets);
     return JSON.stringify(sceneData, null, 2);
   }
 
@@ -123,7 +131,7 @@ export class SceneSerializer {
       return { isValid: true };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return { isValid: false, error: error.errors.map(e => e.message).join(', ') };
+        return { isValid: false, error: error.errors.map((e) => e.message).join(', ') };
       }
       return { isValid: false, error: 'Unknown validation error' };
     }
