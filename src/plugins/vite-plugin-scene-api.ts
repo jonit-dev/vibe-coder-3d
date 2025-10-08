@@ -325,7 +325,15 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
   req.on('end', async () => {
     try {
       const requestData = JSON.parse(body);
-      const { name, entities, materials = [], prefabs = [], description, author } = requestData;
+      const {
+        name,
+        entities,
+        materials = [],
+        prefabs = [],
+        inputAssets = [],
+        description,
+        author,
+      } = requestData;
 
       if (!name || typeof name !== 'string') {
         res.statusCode = 400;
@@ -434,7 +442,7 @@ async function handleSaveTsx(req: IncomingMessage, res: ServerResponse): Promise
       };
 
       // Generate TSX content with type safety
-      const tsxContent = generateTsxScene(entities, metadata, materials, prefabs);
+      const tsxContent = generateTsxScene(entities, metadata, materials, prefabs, inputAssets);
 
       const componentName =
         metadata.name
@@ -576,6 +584,7 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
     let entities = [];
     let materials = [];
     let prefabs = [];
+    let inputAssets = [];
     let metadata = {};
 
     if (isDefineSceneFormat) {
@@ -599,7 +608,10 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
         let sceneDataString = defineSceneMatch[1];
 
         // Convert to valid JSON (handle unquoted keys, single quotes, etc.)
-        sceneDataString = sceneDataString.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+        sceneDataString = sceneDataString.replace(
+          /([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g,
+          '$1"$2":',
+        );
         sceneDataString = sceneDataString.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
         sceneDataString = sceneDataString.replace(/,(\s*[}\]])/g, '$1');
 
@@ -608,6 +620,7 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
         entities = sceneObj.entities || [];
         materials = sceneObj.materials || [];
         prefabs = sceneObj.prefabs || [];
+        inputAssets = sceneObj.inputAssets || [];
         metadata = sceneObj.metadata || {};
       } catch (error) {
         res.statusCode = 400;
@@ -650,7 +663,10 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
 
       let entitiesString = entitiesMatch[1];
       try {
-        entitiesString = entitiesString.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+        entitiesString = entitiesString.replace(
+          /([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g,
+          '$1"$2":',
+        );
         entitiesString = entitiesString.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
         entitiesString = entitiesString.replace(/,(\s*[}\]])/g, '$1');
         entitiesString = entitiesString.replace(/\/\/.*$/gm, '');
@@ -679,6 +695,7 @@ async function handleLoadTsx(_req: IncomingMessage, res: ServerResponse, url: UR
       entities,
       materials,
       prefabs,
+      inputAssets,
     };
 
     logSceneActivity('LOAD-TSX', `Scene '${actualFilename}' loaded successfully`);

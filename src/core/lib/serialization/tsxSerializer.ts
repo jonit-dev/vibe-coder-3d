@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
+import type { IInputActionsAsset } from '@/core/lib/input/inputTypes';
 
 export interface ITsxSceneEntity {
   id: string | number;
@@ -27,6 +28,7 @@ export const generateTsxScene = (
   metadata: ITsxSceneMetadata,
   materials: IMaterialDefinition[] = [],
   prefabs: IPrefabDefinition[] = [],
+  inputAssets: IInputActionsAsset[] = [],
 ): string => {
   const componentString = `import { defineScene } from './defineScene';
 
@@ -74,7 +76,8 @@ export default defineScene({
     2,
   )},
   materials: ${JSON.stringify(materials, null, 2)},
-  prefabs: ${JSON.stringify(prefabs, null, 2)}
+  prefabs: ${JSON.stringify(prefabs, null, 2)},
+  inputAssets: ${JSON.stringify(inputAssets, null, 2)}
 });
 `;
 
@@ -90,6 +93,7 @@ export const saveTsxScene = async (
   materials: IMaterialDefinition[] = [],
   prefabs: IPrefabDefinition[] = [],
   metadata: Partial<Omit<ITsxSceneMetadata, 'name' | 'timestamp'>> = {},
+  inputAssets: IInputActionsAsset[] = [],
 ): Promise<{ filename: string; filepath: string }> => {
   const scenesDir = './src/game/scenes';
   const sanitizedName = sanitizeComponentName(sceneName);
@@ -104,7 +108,7 @@ export const saveTsxScene = async (
     author: metadata.author,
   };
 
-  const tsxContent = generateTsxScene(entities, fullMetadata, materials, prefabs);
+  const tsxContent = generateTsxScene(entities, fullMetadata, materials, prefabs, inputAssets);
 
   // Ensure directory exists
   await fs.mkdir(scenesDir, { recursive: true });
@@ -216,7 +220,7 @@ export const validateTsxScene = async (
     if (!hasDefineScene || !hasDefaultExport) {
       return {
         isValid: false,
-        error: 'Scene must use defineScene() helper and export it as default'
+        error: 'Scene must use defineScene() helper and export it as default',
       };
     }
 

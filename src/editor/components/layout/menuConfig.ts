@@ -157,14 +157,19 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
         },
         { divider: true },
         {
-          label: 'Input Settings',
-          shortcut: 'Ctrl+Shift+I',
-          action: onOpenInput,
-        },
-        {
-          label: 'Input Actions',
-          shortcut: 'Ctrl+Alt+I',
-          action: onOpenInputSettings,
+          label: 'Input',
+          submenu: [
+            {
+              label: 'General',
+              shortcut: 'Ctrl+Shift+I',
+              action: onOpenInput,
+            },
+            {
+              label: 'Action Maps',
+              shortcut: 'Ctrl+Alt+I',
+              action: onOpenInputSettings,
+            },
+          ],
         },
       ],
     },

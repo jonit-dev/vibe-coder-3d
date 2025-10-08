@@ -4,6 +4,7 @@ import { MaterialSerializer } from './MaterialSerializer';
 import { PrefabSerializer } from './PrefabSerializer';
 import { EntitySerializer } from './EntitySerializer';
 import type { ISceneData } from './SceneSerializer';
+import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
 
 const logger = Logger.create('SceneLoader');
 
@@ -13,6 +14,7 @@ const logger = Logger.create('SceneLoader');
 export interface IStoreRefresher {
   refreshMaterials(): void;
   refreshPrefabs(): void;
+  loadInputAssets?(assets: IInputActionsAsset[]): void;
 }
 
 /**
@@ -49,16 +51,22 @@ export class SceneLoader {
     sceneData: ISceneData,
     entityManager: IEntityManager,
     componentManager: IComponentManager,
-    storeRefresher?: IStoreRefresher
+    storeRefresher?: IStoreRefresher,
   ): Promise<void> {
     logger.info('Loading scene', { name: sceneData.metadata.name });
 
-    await this.deserializer.deserialize(sceneData, entityManager, componentManager);
+    const result = await this.deserializer.deserialize(sceneData, entityManager, componentManager);
 
     if (storeRefresher) {
       logger.debug('Refreshing store caches');
       storeRefresher.refreshMaterials();
       storeRefresher.refreshPrefabs();
+
+      // Load input assets if provided
+      if (result.inputAssets && storeRefresher.loadInputAssets) {
+        logger.debug('Loading input assets', { count: result.inputAssets.length });
+        storeRefresher.loadInputAssets(result.inputAssets);
+      }
     }
 
     logger.info('Scene loaded successfully');
@@ -70,6 +78,7 @@ export class SceneLoader {
    * - Material loading
    * - Prefab loading (with async import)
    * - Entity loading
+   * - Input asset loading
    * - Store cache refresh
    * Scene files just call this method with their data
    */
@@ -79,15 +88,17 @@ export class SceneLoader {
     prefabs: unknown[],
     entityManager: IEntityManager,
     componentManager: IComponentManager,
-    storeRefresher?: IStoreRefresher
+    storeRefresher?: IStoreRefresher,
+    inputAssets?: IInputActionsAsset[],
   ): Promise<void> {
     logger.info('Loading static scene', {
       entities: entities.length,
       materials: materials.length,
-      prefabs: prefabs.length
+      prefabs: prefabs.length,
+      inputAssets: inputAssets?.length || 0,
     });
 
-    // Load in correct order: materials -> prefabs -> entities
+    // Load in correct order: materials -> prefabs -> entities -> input assets
     this.materialSerializer.deserialize(materials);
     await this.prefabSerializer.deserialize(prefabs);
     this.entitySerializer.deserialize(entities, entityManager, componentManager);
@@ -96,6 +107,12 @@ export class SceneLoader {
       logger.debug('Refreshing store caches');
       storeRefresher.refreshMaterials();
       storeRefresher.refreshPrefabs();
+
+      // Load input assets if provided
+      if (inputAssets && storeRefresher.loadInputAssets) {
+        logger.debug('Loading input assets', { count: inputAssets.length });
+        storeRefresher.loadInputAssets(inputAssets);
+      }
     }
 
     logger.info('Static scene loaded successfully');
@@ -104,10 +121,7 @@ export class SceneLoader {
   /**
    * Clear all scene data
    */
-  async clear(
-    entityManager: IEntityManager,
-    storeRefresher?: IStoreRefresher
-  ): Promise<void> {
+  async clear(entityManager: IEntityManager, storeRefresher?: IStoreRefresher): Promise<void> {
     logger.info('Clearing scene');
 
     entityManager.clearEntities();

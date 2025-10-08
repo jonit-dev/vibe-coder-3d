@@ -22,6 +22,7 @@ const STREAM_CONFIG = {
 
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
+import type { IInputActionsAsset } from '@/core/lib/input/inputTypes';
 
 // Core interfaces
 export interface IStreamingEntity {
@@ -39,6 +40,7 @@ export interface IStreamingScene {
   entities: IStreamingEntity[];
   materials: IMaterialDefinition[];
   prefabs?: IPrefabDefinition[];
+  inputAssets?: IInputActionsAsset[];
 }
 
 export interface IStreamingProgress {
@@ -61,6 +63,7 @@ export interface IStreamingCallbacks {
 // Import material and prefab schemas
 import { MaterialDefinitionSchema } from '@/core/materials/Material.types';
 import { PrefabDefinitionSchema } from '@/core/prefabs/Prefab.types';
+import { InputActionsAssetSchema } from '@/core/lib/input/inputTypes';
 
 // Zod schema for validation
 const StreamingEntitySchema = z.object({
@@ -79,6 +82,7 @@ const StreamingSceneSchema = z
     entities: z.array(StreamingEntitySchema),
     materials: z.array(MaterialDefinitionSchema).optional().default([]), // Optional for backward compatibility
     prefabs: z.array(PrefabDefinitionSchema).optional().default([]), // Optional prefabs array
+    inputAssets: z.array(InputActionsAssetSchema).optional().default([]), // Optional input assets array
   })
   .transform((data) => ({
     ...data,
@@ -86,6 +90,7 @@ const StreamingSceneSchema = z
     totalEntities: data.totalEntities ?? data.entities.length,
     materials: data.materials || [],
     prefabs: data.prefabs || [],
+    inputAssets: data.inputAssets || [],
   }));
 
 /**

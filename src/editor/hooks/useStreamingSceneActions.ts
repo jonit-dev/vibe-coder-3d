@@ -24,6 +24,7 @@ import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
 import { useProjectToasts, useToastStore } from '@/core/stores/toastStore';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
+import { useInputStore } from '@/editor/store/inputStore';
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
 import { useScenePersistence } from './useScenePersistence';
@@ -225,6 +226,25 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
       // Refresh the prefabs store cache after importing
       const { usePrefabsStore } = await import('@/editor/store/prefabsStore');
       usePrefabsStore.getState()._refreshPrefabs();
+
+      // Load input assets if present in the scene
+      if (scene.inputAssets && Array.isArray(scene.inputAssets) && scene.inputAssets.length > 0) {
+        const inputStore = useInputStore.getState();
+
+        // Replace existing assets with loaded ones
+        inputStore.assets.forEach((asset) => {
+          inputStore.removeAsset(asset.name);
+        });
+
+        scene.inputAssets.forEach((asset) => {
+          inputStore.addAsset(asset);
+        });
+
+        // Set the first asset as current if there are any
+        if (scene.inputAssets.length > 0) {
+          inputStore.setCurrentAsset(scene.inputAssets[0].name);
+        }
+      }
     },
     [entityManager, componentManager, createStreamingCallbacks],
   );
@@ -308,12 +328,17 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         const prefabManager = PrefabManager.getInstance();
         const prefabs = prefabManager.getAll();
 
+        // Get input assets for TSX scene
+        const inputAssets = useInputStore.getState().assets;
+
         // Starting scene save operation
         const success = await scenePersistence.saveTsxScene(
           sceneName,
           transformedEntities,
           materials,
           prefabs,
+          { description: `Scene with ${transformedEntities.length} entities` },
+          inputAssets,
         );
 
         if (loadingToastId) removeToast(loadingToastId);
