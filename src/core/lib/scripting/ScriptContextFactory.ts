@@ -3,26 +3,26 @@
  */
 
 import * as THREE from 'three';
+import type { ITransformAccessor } from '../ecs/components/accessors/types';
+import { ComponentMutationBuffer } from '../ecs/mutations/ComponentMutationBuffer';
 import { EntityId } from '../ecs/types';
 import {
+  IInputAPI,
   IScriptContext,
   ITimeAPI,
-  IInputAPI,
+  createConsoleAPI,
   createEntityAPI,
   createMathAPI,
-  createConsoleAPI,
   createThreeJSAPI,
 } from './ScriptAPI';
-import type { ITransformAccessor } from '../ecs/components/accessors/types';
 import { threeJSEntityRegistry } from './ThreeJSEntityRegistry';
 import { createAudioAPI } from './apis/AudioAPI';
+import { createComponentsAPI } from './apis/ComponentsAPI';
 import { createEntitiesAPI } from './apis/EntitiesAPI';
 import { createEventAPI } from './apis/EventAPI';
 import { createPrefabAPI } from './apis/PrefabAPI';
 import { createQueryAPI } from './apis/QueryAPI';
 import { createTimerAPI } from './apis/TimerAPI';
-import { createComponentsAPI } from './apis/ComponentsAPI';
-import { ComponentMutationBuffer } from '../ecs/mutations/ComponentMutationBuffer';
 
 export interface IScriptContextFactoryOptions {
   entityId: EntityId;
@@ -117,15 +117,23 @@ export class ScriptContextFactory {
             return transformAccessor.get()?.position || [0, 0, 0];
           },
           get rotation() {
-            return transformAccessor.get()?.rotation || [0, 0, 0];
+            // Scripts expect radians; convert stored degrees to radians for reads
+            const rot = transformAccessor.get()?.rotation || [0, 0, 0];
+            return [
+              (rot[0] * Math.PI) / 180,
+              (rot[1] * Math.PI) / 180,
+              (rot[2] * Math.PI) / 180,
+            ] as [number, number, number];
           },
           get scale() {
             return transformAccessor.get()?.scale || [1, 1, 1];
           },
           setPosition: transformAccessor.setPosition.bind(transformAccessor),
+          // setRotation expects radians via accessor wrapper we built (it converts to degrees)
           setRotation: transformAccessor.setRotation.bind(transformAccessor),
           setScale: transformAccessor.setScale.bind(transformAccessor),
           translate: transformAccessor.translate.bind(transformAccessor),
+          // rotate expects radians via accessor wrapper (it converts to degrees)
           rotate: transformAccessor.rotate.bind(transformAccessor),
           lookAt: transformAccessor.lookAt.bind(transformAccessor),
           forward: transformAccessor.forward.bind(transformAccessor),
