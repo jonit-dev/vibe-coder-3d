@@ -176,6 +176,19 @@ async function compileScriptForEntity(eid: EntityId): Promise<boolean> {
 
     const resolvedCode = resolution.code;
 
+    // In dev mode with external scripts, check if the resolved hash differs from component hash
+    // If so, we've detected a file change and need to force recompilation
+    if (import.meta.env.DEV && resolution.origin === 'external' && resolution.hash) {
+      const currentHash = scriptRefStr ? JSON.parse(scriptRefStr).codeHash : null;
+      if (currentHash && resolution.hash !== currentHash) {
+        logger.info(
+          `Detected external script change for entity ${eid}: hash mismatch (${currentHash.slice(0, 8)}... -> ${resolution.hash.slice(0, 8)}...)`,
+        );
+        // Force recompilation by removing cached script
+        scriptExecutor.removeCompiledScript(scriptId);
+      }
+    }
+
     if (!resolvedCode || resolvedCode.trim() === '') {
       // For empty scripts, register a no-op function so execution doesn't fail
       logger.debug(`Compiling empty script for entity ${eid} as no-op`);

@@ -2,9 +2,9 @@
  * Script Resolver - Resolves script code from external files or inline sources
  */
 
-import { EntityId } from '../ecs/types';
-import { IScriptRef } from '../ecs/components/definitions/ScriptComponent';
 import { Logger } from '@/core/lib/logger';
+import { IScriptRef } from '../ecs/components/definitions/ScriptComponent';
+import { EntityId } from '../ecs/types';
 
 const logger = Logger.create('ScriptResolver');
 
@@ -32,9 +32,11 @@ export interface IScriptData {
 const externalScriptCache = new Map<string, { code: string; hash: string; timestamp: number }>();
 
 /**
- * Cache TTL in milliseconds (5 minutes)
+ * Cache TTL in milliseconds
+ * In development: 2 seconds for fast hot-reload
+ * In production: 5 minutes for performance
  */
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = import.meta.env.DEV ? 2000 : 5 * 60 * 1000;
 
 /**
  * Resolve script code from external file or inline source
@@ -45,29 +47,30 @@ export async function resolveScript(
 ): Promise<IScriptResolution> {
   // If scriptRef is present and source is external, use cached code or fetch
   if (data.scriptRef && data.scriptRef.source === 'external') {
-    // If we have inline code, prefer it (already synced by editor)
-    if (data.code && data.code.length > 0) {
-      return {
-        code: data.code,
-        origin: 'external',
-        path: data.scriptRef.path,
-        hash: data.scriptRef.codeHash,
-      };
-    }
-
     try {
       // Check cache first
       const cached = externalScriptCache.get(data.scriptRef.scriptId);
       const now = Date.now();
 
-      if (cached && cached.hash === data.scriptRef.codeHash && now - cached.timestamp < CACHE_TTL) {
+      // Use cache if:
+      // - Cache exists and hasn't expired
+      // - In production mode: also verify hash matches
+      // - In dev mode: always refetch after TTL for hot-reload (ignore hash)
+      const cacheExpired = !cached || now - cached.timestamp >= CACHE_TTL;
+      const hashMismatch = cached && cached.hash !== data.scriptRef.codeHash;
+
+      if (!cacheExpired && (import.meta.env.DEV || !hashMismatch)) {
         logger.debug(`Using cached external script for ${data.scriptRef.scriptId}`);
         return {
-          code: cached.code,
+          code: cached!.code,
           origin: 'external',
           path: data.scriptRef.path,
-          hash: cached.hash,
+          hash: cached!.hash,
         };
+      }
+
+      if (import.meta.env.DEV && cached && cacheExpired) {
+        logger.debug(`Cache expired for ${data.scriptRef.scriptId}, refetching from disk`);
       }
 
       // Fetch from API in dev mode
@@ -90,16 +93,6 @@ export async function resolveScript(
       };
     } catch (error) {
       logger.error(`Failed to load external script for entity ${entityId}:`, error);
-
-      // Fallback to inline code if available
-      if (data.code) {
-        logger.warn(`Falling back to inline code for entity ${entityId}`);
-        return {
-          code: data.code,
-          origin: 'inline',
-        };
-      }
-
       throw new Error(
         `Failed to resolve external script "${data.scriptRef.scriptId}": ${error instanceof Error ? error.message : String(error)}`,
       );

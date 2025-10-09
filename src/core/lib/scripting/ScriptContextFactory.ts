@@ -66,7 +66,75 @@ export class ScriptContextFactory {
       },
       enumerable: true,
     });
-    // Future: camera, rigidBody, meshCollider, etc.
+
+    Object.defineProperty(entityAPI, 'camera', {
+      get() {
+        return componentsProxy.Camera;
+      },
+      enumerable: true,
+    });
+
+    Object.defineProperty(entityAPI, 'rigidBody', {
+      get() {
+        return componentsProxy.RigidBody;
+      },
+      enumerable: true,
+    });
+
+    Object.defineProperty(entityAPI, 'meshCollider', {
+      get() {
+        return componentsProxy.MeshCollider;
+      },
+      enumerable: true,
+    });
+
+    // Override the legacy transform API to also use the component accessor
+    // This ensures all transform updates go through the mutation buffer
+    Object.defineProperty(entityAPI, 'transform', {
+      get() {
+        const transformAccessor = componentsProxy.Transform;
+        if (!transformAccessor) {
+          // Return a no-op transform API if Transform component doesn't exist
+          return {
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1],
+            setPosition: () => {},
+            setRotation: () => {},
+            setScale: () => {},
+            translate: () => {},
+            rotate: () => {},
+            lookAt: () => {},
+            forward: () => [0, 0, 1],
+            right: () => [1, 0, 0],
+            up: () => [0, 1, 0],
+          };
+        }
+        // Return accessor with getter properties for position/rotation/scale
+        const data = transformAccessor.get();
+        return {
+          get position() {
+            return transformAccessor.get()?.position || [0, 0, 0];
+          },
+          get rotation() {
+            return transformAccessor.get()?.rotation || [0, 0, 0];
+          },
+          get scale() {
+            return transformAccessor.get()?.scale || [1, 1, 1];
+          },
+          setPosition: transformAccessor.setPosition.bind(transformAccessor),
+          setRotation: transformAccessor.setRotation.bind(transformAccessor),
+          setScale: transformAccessor.setScale.bind(transformAccessor),
+          translate: transformAccessor.translate.bind(transformAccessor),
+          rotate: transformAccessor.rotate.bind(transformAccessor),
+          lookAt: transformAccessor.lookAt.bind(transformAccessor),
+          forward: transformAccessor.forward.bind(transformAccessor),
+          right: transformAccessor.right.bind(transformAccessor),
+          up: transformAccessor.up.bind(transformAccessor),
+        };
+      },
+      enumerable: true,
+    });
 
     const entityWithComponents = entityAPI;
 

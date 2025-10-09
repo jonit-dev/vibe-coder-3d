@@ -163,7 +163,7 @@ export const scriptComponent = ComponentFactory.create({
 // Hello World TypeScript Script
 function onStart(): void {
   if (three.mesh) {
-    three.material.setColor("#00ff00");
+    three.material.setColor("#000000");
   }
 }
 

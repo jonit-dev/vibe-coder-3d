@@ -4,7 +4,13 @@
 
 import * as THREE from 'three';
 import { EntityId } from '../ecs/types';
-import type { IMeshRendererAccessor } from '../ecs/components/accessors/types';
+import type {
+  IMeshRendererAccessor,
+  ITransformAccessor,
+  ICameraAccessor,
+  IRigidBodyAccessor,
+  IMeshColliderAccessor,
+} from '../ecs/components/accessors/types';
 
 /**
  * Math utilities available to scripts
@@ -142,13 +148,17 @@ export interface IEntityScriptAPI {
   hasComponent(componentType: string): boolean;
   removeComponent(componentType: string): boolean;
 
-  // Transform shortcuts (most common operations)
+  // Legacy transform API (kept for backwards compatibility)
+  // Prefer using entity.transform accessor for new code
   transform: ITransformAPI;
 
   // Direct component accessors (KISS approach - optional fields per component)
   // These are undefined if the component doesn't exist on the entity
+  // All accessors use mutation buffer for batched updates
   meshRenderer?: IMeshRendererAccessor;
-  // Future: camera?, rigidBody?, meshCollider?, etc.
+  camera?: ICameraAccessor;
+  rigidBody?: IRigidBodyAccessor;
+  meshCollider?: IMeshColliderAccessor;
 
   // Entity hierarchy
   getParent(): IEntityScriptAPI | null;
@@ -364,122 +374,9 @@ export const createConsoleAPI = (entityId: EntityId): IConsoleAPI => ({
 });
 
 /**
- * Import ComponentManager for transform operations
+ * Import ComponentManager for entity operations
  */
 import { ComponentManager } from '../ecs/ComponentManager';
-
-/**
- * Transform data interface
- */
-interface ITransformData {
-  position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-}
-
-/**
- * Creates a transform API for manipulating entity transform
- */
-export const createTransformAPI = (entityId: EntityId): ITransformAPI => {
-  const componentManager = ComponentManager.getInstance();
-
-  const getTransform = (): ITransformData => {
-    const transformData = componentManager.getComponentData<ITransformData>(entityId, 'Transform');
-    if (transformData) {
-      return transformData;
-    }
-    // Return default values if no transform component exists
-    return { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
-  };
-
-  const updateTransform = (updates: Partial<ITransformData>) => {
-    const currentTransform = getTransform();
-    const newTransform: ITransformData = { ...currentTransform, ...updates };
-
-    try {
-      componentManager.updateComponent(entityId, 'Transform', newTransform);
-      // Transform updated for entity
-    } catch (error) {
-      console.error(`[ScriptAPI] Failed to update transform for entity ${entityId}:`, error);
-    }
-  };
-
-  return {
-    get position(): [number, number, number] {
-      const transform = getTransform();
-      return transform?.position || [0, 0, 0];
-    },
-
-    get rotation(): [number, number, number] {
-      const transform = getTransform();
-      return transform?.rotation || [0, 0, 0];
-    },
-
-    get scale(): [number, number, number] {
-      const transform = getTransform();
-      return transform?.scale || [1, 1, 1];
-    },
-
-    setPosition: (x: number, y: number, z: number) => {
-      updateTransform({ position: [x, y, z] });
-    },
-
-    setRotation: (x: number, y: number, z: number) => {
-      updateTransform({ rotation: [x, y, z] });
-    },
-
-    setScale: (x: number, y: number, z: number) => {
-      updateTransform({ scale: [x, y, z] });
-    },
-
-    translate: (x: number, y: number, z: number) => {
-      const currentTransform = getTransform();
-      const [px, py, pz] = currentTransform.position;
-      updateTransform({ position: [px + x, py + y, pz + z] });
-    },
-
-    rotate: (x: number, y: number, z: number) => {
-      const currentTransform = getTransform();
-      const [rx, ry, rz] = currentTransform.rotation;
-      updateTransform({ rotation: [rx + x, ry + y, rz + z] });
-    },
-
-    lookAt: (targetPos: [number, number, number]) => {
-      // Simplified lookAt - calculate rotation to look at target
-      const currentTransform = getTransform();
-      const [px, py, pz] = currentTransform.position;
-      const [tx, ty, tz] = targetPos;
-
-      const dx = tx - px;
-      const dy = ty - py;
-      const dz = tz - pz;
-
-      const yaw = Math.atan2(dx, dz);
-      const distance = Math.sqrt(dx * dx + dz * dz);
-      const pitch = -Math.atan2(dy, distance);
-
-      updateTransform({ rotation: [pitch, yaw, 0] });
-    },
-
-    forward: (): [number, number, number] => {
-      const currentTransform = getTransform();
-      const [rx, ry] = currentTransform.rotation;
-      return [Math.sin(ry) * Math.cos(rx), -Math.sin(rx), Math.cos(ry) * Math.cos(rx)];
-    },
-
-    right: (): [number, number, number] => {
-      const currentTransform = getTransform();
-      const [, ry] = currentTransform.rotation;
-      return [Math.cos(ry), 0, -Math.sin(ry)];
-    },
-
-    up: (): [number, number, number] => {
-      const currentTransform = getTransform();
-      const [rx, ry] = currentTransform.rotation;
-      return [-Math.sin(ry) * Math.sin(rx), Math.cos(rx), -Math.cos(ry) * Math.sin(rx)];
-    },
-  };
-};
 
 /**
  * Safe Three.js operations whitelist
@@ -861,7 +758,28 @@ export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
       }
     },
 
-    transform: createTransformAPI(entityId),
+    // Transform API will be overridden in ScriptContextFactory
+    // to use the mutation buffer system
+    transform: {
+      get position(): [number, number, number] {
+        return [0, 0, 0];
+      },
+      get rotation(): [number, number, number] {
+        return [0, 0, 0];
+      },
+      get scale(): [number, number, number] {
+        return [1, 1, 1];
+      },
+      setPosition: () => {},
+      setRotation: () => {},
+      setScale: () => {},
+      translate: () => {},
+      rotate: () => {},
+      lookAt: () => {},
+      forward: () => [0, 0, 1] as [number, number, number],
+      right: () => [1, 0, 0] as [number, number, number],
+      up: () => [0, 1, 0] as [number, number, number],
+    },
 
     // Simplified hierarchy methods - would need full entity manager
     getParent: () => null,

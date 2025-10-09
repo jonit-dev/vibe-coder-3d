@@ -106,3 +106,215 @@ export interface IMeshRendererData {
   modelPath?: string;
   material?: IMaterialData;
 }
+
+/**
+ * Transform data interface
+ */
+export interface ITransformData {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+}
+
+/**
+ * Transform-specific accessor with helper methods
+ */
+export interface ITransformAccessor extends IComponentAccessor<ITransformData> {
+  /**
+   * Set position
+   */
+  setPosition(x: number, y: number, z: number): void;
+
+  /**
+   * Set rotation (in radians)
+   */
+  setRotation(x: number, y: number, z: number): void;
+
+  /**
+   * Set scale
+   */
+  setScale(x: number, y: number, z: number): void;
+
+  /**
+   * Translate by offset
+   */
+  translate(x: number, y: number, z: number): void;
+
+  /**
+   * Rotate by offset (in radians)
+   */
+  rotate(x: number, y: number, z: number): void;
+
+  /**
+   * Look at target position
+   */
+  lookAt(targetPos: [number, number, number]): void;
+
+  /**
+   * Get forward vector
+   */
+  forward(): [number, number, number];
+
+  /**
+   * Get right vector
+   */
+  right(): [number, number, number];
+
+  /**
+   * Get up vector
+   */
+  up(): [number, number, number];
+}
+
+/**
+ * Camera data interface
+ */
+export interface ICameraData {
+  fov: number;
+  near: number;
+  far: number;
+  projectionType: 'perspective' | 'orthographic';
+  orthographicSize: number;
+  depth: number;
+  isMain: boolean;
+}
+
+/**
+ * Camera-specific accessor with helper methods
+ */
+export interface ICameraAccessor extends IComponentAccessor<ICameraData> {
+  /**
+   * Set field of view (perspective only)
+   */
+  setFov(fov: number): void;
+
+  /**
+   * Set near/far clipping planes
+   */
+  setClipping(near: number, far: number): void;
+
+  /**
+   * Set projection type
+   */
+  setProjection(type: 'perspective' | 'orthographic'): void;
+
+  /**
+   * Set as main camera
+   */
+  setAsMain(isMain: boolean): void;
+}
+
+/**
+ * RigidBody data interface
+ */
+export interface IRigidBodyData {
+  type: string;
+  mass: number;
+  isStatic?: boolean;
+  restitution?: number;
+  friction?: number;
+  enabled?: boolean;
+  bodyType?: 'dynamic' | 'kinematic' | 'static';
+  gravityScale?: number;
+  canSleep?: boolean;
+  material?: {
+    friction?: number;
+    restitution?: number;
+    density?: number;
+  };
+}
+
+/**
+ * RigidBody-specific accessor with helper methods
+ */
+export interface IRigidBodyAccessor extends IComponentAccessor<IRigidBodyData> {
+  /**
+   * Enable/disable physics simulation
+   */
+  enable(value: boolean): void;
+
+  /**
+   * Set body type
+   */
+  setBodyType(type: 'dynamic' | 'kinematic' | 'static'): void;
+
+  /**
+   * Set mass (dynamic bodies only)
+   */
+  setMass(mass: number): void;
+
+  /**
+   * Set gravity scale (0 = no gravity, 1 = normal gravity)
+   */
+  setGravityScale(scale: number): void;
+
+  /**
+   * Set physics material properties
+   */
+  setPhysicsMaterial(friction: number, restitution: number, density?: number): void;
+}
+
+/**
+ * MeshCollider data interface
+ */
+export interface IMeshColliderData {
+  enabled: boolean;
+  colliderType: 'box' | 'sphere' | 'capsule' | 'convex' | 'mesh' | 'heightfield';
+  isTrigger: boolean;
+  center: [number, number, number];
+  size: {
+    width: number;
+    height: number;
+    depth: number;
+    radius: number;
+    capsuleRadius: number;
+    capsuleHeight: number;
+  };
+  physicsMaterial: {
+    friction: number;
+    restitution: number;
+    density: number;
+  };
+  type?: string;
+  meshId?: string;
+}
+
+/**
+ * MeshCollider-specific accessor with helper methods
+ */
+export interface IMeshColliderAccessor extends IComponentAccessor<IMeshColliderData> {
+  /**
+   * Enable/disable collider
+   */
+  enable(value: boolean): void;
+
+  /**
+   * Set as trigger (no physics collision, only events)
+   */
+  setTrigger(isTrigger: boolean): void;
+
+  /**
+   * Set collider type
+   */
+  setType(type: 'box' | 'sphere' | 'capsule' | 'convex' | 'mesh' | 'heightfield'): void;
+
+  /**
+   * Set collider center offset
+   */
+  setCenter(x: number, y: number, z: number): void;
+
+  /**
+   * Set box size
+   */
+  setBoxSize(width: number, height: number, depth: number): void;
+
+  /**
+   * Set sphere radius
+   */
+  setSphereRadius(radius: number): void;
+
+  /**
+   * Set capsule dimensions
+   */
+  setCapsuleSize(radius: number, height: number): void;
+}

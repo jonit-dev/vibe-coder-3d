@@ -131,16 +131,13 @@ export class DirectScriptExecutor {
     }
 
     try {
-      // Check cache first
+      // Remove any existing cached script to force recompilation
+      // This ensures that code changes are picked up
       if (this.compiledScripts.has(scriptId)) {
         if (this.debugMode) {
-          logger.debug(`Script already compiled (cached): ${scriptId}`);
+          logger.debug(`Removing cached script for recompilation: ${scriptId}`);
         }
-        const executionTime = performance.now() - startTime;
-        return {
-          success: true,
-          executionTime,
-        };
+        this.compiledScripts.delete(scriptId);
       }
 
       // Transpile TypeScript to JavaScript using official TS compiler
