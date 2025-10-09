@@ -4,9 +4,10 @@ import * as THREE from 'three';
 import { z } from 'zod';
 
 import { Logger } from '@core/lib/logger';
-import { RendererFactory, type RendererType } from '@core/lib/rendering/RendererFactory';
 import { checkWebGPUBrowserSupport, detectWebGPU } from '@core/utils/webgpu';
 import type { IEngineConfig } from '@core/configs/EngineConfig';
+
+type RendererType = 'webgl' | 'webgpu' | 'auto';
 
 const logger = Logger.create('AdaptiveCanvas');
 

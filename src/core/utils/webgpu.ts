@@ -56,7 +56,7 @@ export const getWebGPUCapabilities = async (): Promise<IWebGPUCapabilities> => {
       };
     }
 
-    const features = Array.from(adapter.features);
+    const features = Array.from(adapter.features) as string[];
     const limits: Record<string, number> = {};
 
     // Convert GPUSupportedLimits to plain object

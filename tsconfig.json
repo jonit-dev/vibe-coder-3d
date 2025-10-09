@@ -28,7 +28,6 @@
   },
   "include": ["src", "src/types", "src/game/scripts/script-api.d.ts"],
   "exclude": [
-    "src/game/scenes",
     "src/game/scripts/**/*.ts",
     "**/*.test.ts",
     "**/*.test.tsx",

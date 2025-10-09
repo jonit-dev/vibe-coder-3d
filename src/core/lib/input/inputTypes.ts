@@ -36,19 +36,19 @@ export enum CompositeType {
 
 // Binding schemas
 export const KeyboardBindingSchema = z.object({
-  type: z.literal(DeviceType.Keyboard),
+  type: z.nativeEnum(DeviceType).refine((val) => val === DeviceType.Keyboard),
   path: z.string(), // e.g., "w", "shift", "space"
   modifiers: z.array(z.string()).optional(),
 });
 
 export const MouseBindingSchema = z.object({
-  type: z.literal(DeviceType.Mouse),
+  type: z.nativeEnum(DeviceType).refine((val) => val === DeviceType.Mouse),
   path: z.string(), // e.g., "leftButton", "rightButton", "delta/x", "scroll"
   modifiers: z.array(z.string()).optional(),
 });
 
 export const GamepadBindingSchema = z.object({
-  type: z.literal(DeviceType.Gamepad),
+  type: z.nativeEnum(DeviceType).refine((val) => val === DeviceType.Gamepad),
   path: z.string(), // e.g., "buttonSouth", "leftStick/x"
   modifiers: z.array(z.string()).optional(),
 });

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { RendererType } from '@core/lib/rendering/RendererFactory';
 
 /**
  * Engine configuration schema
