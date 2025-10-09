@@ -1,5 +1,4 @@
 // Export the main ECS classes
-export { ComponentManager } from './ComponentManager';
 export { EntityManager } from './EntityManager';
 export { ECSWorld as World } from './World';
 

@@ -42,7 +42,7 @@ This document explains the integration and usage of the `bitecs` Entity Componen
   });
   ```
 
-- **Usage:** Components can be added, removed, and checked using the `ComponentManager` singleton or through hooks like `useECS`.
+- **Usage:** Components can be added, removed, and checked using the `ComponentRegistry` singleton or through hooks like `useComponentManager`.
 
 ## Core Systems
 
@@ -69,13 +69,13 @@ This document explains the integration and usage of the `bitecs` Entity Componen
 The engine uses a dual-layer ECS approach:
 
 1. **BitECS Layer**: High-performance data storage using typed arrays
-2. **Management Layer**: Higher-level abstractions through `EntityManager` and `ComponentManager` singletons
+2. **Management Layer**: Higher-level abstractions through `EntityManager` and `ComponentRegistry` singletons
 3. **React Integration**: Hooks and components that bridge React and ECS
 
 ## Entity and Component Management
 
 - **EntityManager**: Singleton class managing entity lifecycle and caching
-- **ComponentManager**: Singleton class managing component operations and events
+- **ComponentRegistry**: Singleton class managing component operations, events, validation (Zod schemas), and compatibility checks
 - **Data Conversion**: Utilities to convert between BitECS data and TypeScript interfaces
 
 ## Usage Patterns

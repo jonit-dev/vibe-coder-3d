@@ -1,4 +1,4 @@
-import { ComponentManager } from '@core/lib/ecs/ComponentManager';
+import { componentRegistry, ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { ECSWorld } from '@core/lib/ecs/World';
 
@@ -11,7 +11,7 @@ import { ECSWorld } from '@core/lib/ecs/World';
 
 let currentWorldInstance: ECSWorld | null = null;
 let currentEntityManagerInstance: EntityManager | null = null;
-let currentComponentManagerInstance: ComponentManager | null = null;
+let currentComponentRegistryInstance: ComponentRegistry | null = null;
 
 /**
  * Set the current context instances (called by EngineProvider)
@@ -20,11 +20,11 @@ let currentComponentManagerInstance: ComponentManager | null = null;
 export function setCurrentInstances(
   world: ECSWorld,
   entityManager: EntityManager,
-  componentManager: ComponentManager,
+  componentRegistryArg: ComponentRegistry,
 ): void {
   currentWorldInstance = world;
   currentEntityManagerInstance = entityManager;
-  currentComponentManagerInstance = componentManager;
+  currentComponentRegistryInstance = componentRegistryArg;
 }
 
 /**
@@ -34,7 +34,7 @@ export function setCurrentInstances(
 export function clearCurrentInstances(): void {
   currentWorldInstance = null;
   currentEntityManagerInstance = null;
-  currentComponentManagerInstance = null;
+  currentComponentRegistryInstance = null;
 }
 
 /**
@@ -66,17 +66,17 @@ export function getEntityManagerSingleton(): EntityManager {
 }
 
 /**
- * Get ComponentManager singleton with context fallback
- * @deprecated Use useComponentManager hook or dependency injection instead
+ * Get ComponentRegistry singleton with context fallback
+ * @deprecated Use useComponentRegistry hook or dependency injection instead
  */
-export function getComponentManagerSingleton(): ComponentManager {
-  if (currentComponentManagerInstance) {
-    logDeprecationWarning('getComponentManagerSingleton', 'useComponentManager hook');
-    return currentComponentManagerInstance;
+export function getComponentRegistrySingleton(): ComponentRegistry {
+  if (currentComponentRegistryInstance) {
+    logDeprecationWarning('getComponentRegistrySingleton', 'useComponentRegistry hook');
+    return currentComponentRegistryInstance;
   }
 
   // Fall back to original singleton for non-React contexts (tests, etc.)
-  return ComponentManager.getInstance();
+  return componentRegistry;
 }
 
 const deprecationWarnings = new Set<string>();

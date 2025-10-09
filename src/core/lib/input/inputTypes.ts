@@ -36,19 +36,19 @@ export enum CompositeType {
 
 // Binding schemas
 export const KeyboardBindingSchema = z.object({
-  type: z.nativeEnum(DeviceType).refine((val) => val === DeviceType.Keyboard),
+  type: z.enum(['keyboard']),
   path: z.string(), // e.g., "w", "shift", "space"
   modifiers: z.array(z.string()).optional(),
 });
 
 export const MouseBindingSchema = z.object({
-  type: z.nativeEnum(DeviceType).refine((val) => val === DeviceType.Mouse),
+  type: z.enum(['mouse']),
   path: z.string(), // e.g., "leftButton", "rightButton", "delta/x", "scroll"
   modifiers: z.array(z.string()).optional(),
 });
 
 export const GamepadBindingSchema = z.object({
-  type: z.nativeEnum(DeviceType).refine((val) => val === DeviceType.Gamepad),
+  type: z.enum(['gamepad']),
   path: z.string(), // e.g., "buttonSouth", "leftStick/x"
   modifiers: z.array(z.string()).optional(),
 });
@@ -60,7 +60,7 @@ export const SimpleBindingSchema = z.union([
 ]);
 
 export const CompositeBindingSchema = z.object({
-  compositeType: z.nativeEnum(CompositeType),
+  compositeType: z.enum(['1DAxis', '2DVector', '3DVector']),
   bindings: z.record(SimpleBindingSchema), // e.g., { up: KeyboardBinding, down: KeyboardBinding }
 });
 
@@ -69,8 +69,8 @@ export const BindingSchema = z.union([SimpleBindingSchema, CompositeBindingSchem
 // Action schema
 export const InputActionSchema = z.object({
   name: z.string(),
-  actionType: z.nativeEnum(ActionType),
-  controlType: z.nativeEnum(ControlType),
+  actionType: z.enum(['button', 'value', 'passthrough']),
+  controlType: z.enum(['button', 'axis', 'vector2', 'vector3']),
   bindings: z.array(BindingSchema),
   enabled: z.boolean().default(true),
 });
@@ -87,7 +87,7 @@ export const ControlSchemeSchema = z.object({
   name: z.string(),
   deviceRequirements: z.array(
     z.object({
-      deviceType: z.nativeEnum(DeviceType),
+      deviceType: z.enum(['keyboard', 'mouse', 'gamepad', 'touch']),
       optional: z.boolean().default(false),
     }),
   ),

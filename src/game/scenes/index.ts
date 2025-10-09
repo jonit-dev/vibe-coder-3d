@@ -3,7 +3,7 @@
  * Register all game-specific scenes
  */
 
-import { sceneRegistry, EntityManager, ComponentManager, SceneLoader } from '@core/index';
+import { sceneRegistry, EntityManager, componentRegistry, SceneLoader } from '@core/index';
 import TestScene from './Test';
 
 // Register all game scenes function
@@ -14,9 +14,9 @@ export function registerAllScenes(): void {
     async () => {
       const sceneLoader = new SceneLoader();
       const entityManager = EntityManager.getInstance();
-      const componentManager = ComponentManager.getInstance();
+      const registry = componentRegistry;
 
-      await sceneLoader.load(TestScene.data, entityManager, componentManager, {
+      await sceneLoader.load(TestScene.data, entityManager, registry, {
         refreshMaterials: () => {
           // Materials already loaded, no store refresh needed in game runtime
         },

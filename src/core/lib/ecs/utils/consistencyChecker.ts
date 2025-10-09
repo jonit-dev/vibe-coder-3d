@@ -1,5 +1,5 @@
+import { componentRegistry } from '../ComponentRegistry';
 import { EntityManager } from '../EntityManager';
-import { ComponentManager } from '../ComponentManager';
 import { EntityQueries } from '../queries/entityQueries';
 
 export interface IConsistencyReport {
@@ -42,7 +42,7 @@ export class ConsistencyChecker {
     }
 
     const entityManager = EntityManager.getInstance();
-    const componentManager = ComponentManager.getInstance();
+    const registry = componentRegistry;
     const queries = EntityQueries.getInstance();
 
     const errors: string[] = [];
@@ -51,7 +51,7 @@ export class ConsistencyChecker {
     // Get baseline data
     const worldEntities = entityManager.getAllEntities();
     const indexedEntities = queries.listAllEntities();
-    const componentTypes = componentManager.getRegisteredComponentTypes();
+    const componentTypes = registry.listComponents();
 
     const stats = {
       entitiesInWorld: worldEntities.length,
@@ -76,7 +76,7 @@ export class ConsistencyChecker {
     stats.totalComponents = this.checkComponentConsistency(
       worldEntities,
       componentTypes,
-      componentManager,
+      registry,
       queries,
       errors,
       warnings,
@@ -169,7 +169,7 @@ export class ConsistencyChecker {
   private static checkComponentConsistency(
     _worldEntities: any[],
     componentTypes: string[],
-    componentManager: ComponentManager,
+    registry: typeof componentRegistry,
     queries: EntityQueries,
     errors: string[],
     _warnings: string[],
@@ -177,7 +177,7 @@ export class ConsistencyChecker {
     let totalComponents = 0;
 
     componentTypes.forEach((componentType) => {
-      const worldEntities = componentManager.getEntitiesWithComponent(componentType);
+      const worldEntities = registry.getEntitiesWithComponent(componentType);
       const indexedEntities = queries.listEntitiesWithComponent(componentType);
 
       const worldSet = new Set(worldEntities);

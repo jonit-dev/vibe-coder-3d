@@ -13,7 +13,7 @@ import {
 } from '@core/lib/gameLoop/createLoopStore';
 import { Logger } from '@core/lib/logger';
 
-import { ComponentManagerStore, createComponentManagerStore } from './ComponentManagerStore';
+import { ComponentRegistryStore, createComponentRegistryStore } from './ComponentRegistryStore';
 import { ECSWorldStore, createECSWorldStore } from './ECSWorldStore';
 import { EntityManagerStore, createEntityManagerStore } from './EntityManagerStore';
 
@@ -21,7 +21,7 @@ interface IEngineContext {
   container: Container;
   worldStore: ECSWorldStore;
   entityManagerStore: EntityManagerStore;
-  componentManagerStore: ComponentManagerStore;
+  componentRegistryStore: ComponentRegistryStore;
   loopStore: IGameLoopStore;
 }
 
@@ -55,19 +55,19 @@ export const EngineProvider: React.FC<IEngineProviderProps> = React.memo(
       // Create scoped stores for this engine instance
       const worldStore = createECSWorldStore();
       const entityManagerStore = createEntityManagerStore();
-      const componentManagerStore = createComponentManagerStore();
+      const componentRegistryStore = createComponentRegistryStore();
       const loopStore = createLoopStore(loopOptions);
 
       // Initialize stores with the engine instance services
       worldStore.getState().setWorld(engineInstance.world);
       entityManagerStore.getState().setEntityManager(engineInstance.entityManager);
-      componentManagerStore.getState().setComponentManager(engineInstance.componentManager);
+      componentRegistryStore.getState().setComponentRegistry(engineInstance.componentRegistry);
 
       const context = {
         container: engineInstance.container,
         worldStore,
         entityManagerStore,
-        componentManagerStore,
+        componentRegistryStore,
         loopStore,
       };
 
@@ -82,16 +82,16 @@ export const EngineProvider: React.FC<IEngineProviderProps> = React.memo(
     useEffect(() => {
       const world = context.worldStore.getState().world;
       const entityManager = context.entityManagerStore.getState().entityManager;
-      const componentManager = context.componentManagerStore.getState().componentManager;
+      const componentRegistry = context.componentRegistryStore.getState().componentRegistry;
 
-      if (world && entityManager && componentManager) {
-        setCurrentInstances(world, entityManager, componentManager);
+      if (world && entityManager && componentRegistry) {
+        setCurrentInstances(world, entityManager, componentRegistry);
       }
 
       return () => {
         clearCurrentInstances();
       };
-    }, [context.worldStore, context.entityManagerStore, context.componentManagerStore]);
+    }, [context.worldStore, context.entityManagerStore, context.componentRegistryStore]);
 
     return <EngineContext.Provider value={context}>{children}</EngineContext.Provider>;
   },
@@ -118,9 +118,9 @@ export const useEntityManager = () => {
   return entityManagerStore((state) => ({ entityManager: state.entityManager }));
 };
 
-export const useComponentManager = () => {
-  const { componentManagerStore } = useEngineContext();
-  return componentManagerStore((state) => ({ componentManager: state.componentManager }));
+export const useComponentRegistry = () => {
+  const { componentRegistryStore } = useEngineContext();
+  return componentRegistryStore((state) => ({ componentRegistry: state.componentRegistry }));
 };
 
 export const useEngineContainer = () => {

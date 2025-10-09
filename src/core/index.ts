@@ -31,8 +31,7 @@ export type { IGameEngineControls as GameEngineControls } from './hooks/useGameE
 export { useGameLoop } from './lib/gameLoop';
 export { useEngineStore } from './state/engineStore';
 
-// ECS - New ComponentRegistry system
-export { ComponentManager } from './lib/ecs/ComponentManager';
+// ECS - ComponentRegistry is the single source of truth
 export { ComponentRegistry, componentRegistry } from './lib/ecs/ComponentRegistry';
 export { EntityManager } from './lib/ecs/EntityManager';
 export type { ComponentType, EntityId } from './lib/ecs/types';

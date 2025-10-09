@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { FiX } from 'react-icons/fi';
-import { useInputStore } from '@editor/store/inputStore';
 import {
-  IActionMap,
-  IInputAction,
-  IBinding,
-  ISimpleBinding,
   ActionType,
+  CompositeType,
   ControlType,
   DeviceType,
-  CompositeType,
+  IActionMap,
+  IBinding,
+  IInputAction,
+  ISimpleBinding,
 } from '@core/lib/input/inputTypes';
+import { useInputStore } from '@editor/store/inputStore';
+import React, { useState } from 'react';
+import { FiX } from 'react-icons/fi';
 
 // Action Map Dialog
 export interface IActionMapDialogProps {
@@ -291,12 +291,12 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
   const [bindingType, setBindingType] = useState<'simple' | 'composite'>(
     binding && 'compositeType' in binding ? 'composite' : 'simple',
   );
-  const [deviceType, setDeviceType] = useState<
-    DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad
-  >(binding && 'type' in binding ? binding.type : DeviceType.Keyboard);
+  const [deviceType, setDeviceType] = useState<'keyboard' | 'mouse' | 'gamepad'>(
+    binding && 'type' in binding ? binding.type : 'keyboard',
+  );
   const [path, setPath] = useState(binding && 'path' in binding ? binding.path : '');
-  const [compositeType, setCompositeType] = useState<CompositeType>(
-    binding && 'compositeType' in binding ? binding.compositeType : CompositeType.TwoDVector,
+  const [compositeType, setCompositeType] = useState<'1DAxis' | '2DVector' | '3DVector'>(
+    binding && 'compositeType' in binding ? binding.compositeType : '2DVector',
   );
   const [error, setError] = useState('');
 
@@ -502,10 +502,7 @@ export const BindingDialog: React.FC<IBindingDialogProps> = ({
 interface ICompositeBindingInputProps {
   label: string;
   binding: ISimpleBinding | undefined;
-  onChange: (
-    type: DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad,
-    path: string,
-  ) => void;
+  onChange: (type: 'keyboard' | 'mouse' | 'gamepad', path: string) => void;
 }
 
 const CompositeBindingInput: React.FC<ICompositeBindingInputProps> = ({
@@ -513,14 +510,10 @@ const CompositeBindingInput: React.FC<ICompositeBindingInputProps> = ({
   binding,
   onChange,
 }) => {
-  const [type, setType] = useState<DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad>(
-    binding?.type ?? DeviceType.Keyboard,
-  );
+  const [type, setType] = useState<'keyboard' | 'mouse' | 'gamepad'>(binding?.type ?? 'keyboard');
   const [path, setPath] = useState(binding?.path ?? '');
 
-  const handleTypeChange = (
-    newType: DeviceType.Keyboard | DeviceType.Mouse | DeviceType.Gamepad,
-  ) => {
+  const handleTypeChange = (newType: 'keyboard' | 'mouse' | 'gamepad') => {
     setType(newType);
     onChange(newType, path);
   };

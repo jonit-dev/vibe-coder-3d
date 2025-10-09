@@ -3,7 +3,7 @@ export {
   EngineProvider,
   useECSWorld,
   useEntityManager,
-  useComponentManager,
+  useComponentRegistry,
   useEngineContainer,
   useEngineContext,
   useLoopStore,
@@ -11,7 +11,7 @@ export {
 
 export type { ECSWorldStore } from './ECSWorldStore';
 export type { EntityManagerStore } from './EntityManagerStore';
-export type { ComponentManagerStore } from './ComponentManagerStore';
+export type { ComponentRegistryStore } from './ComponentRegistryStore';
 
 // Factory functions
 export { createEngineInstance } from '@core/lib/ecs/factories/createEngineInstance';
@@ -21,5 +21,5 @@ export type { IEngineInstance } from '@core/lib/ecs/factories/createEngineInstan
 export {
   getWorldSingleton,
   getEntityManagerSingleton,
-  getComponentManagerSingleton,
+  getComponentRegistrySingleton,
 } from '@core/lib/ecs/adapters/SingletonAdapter';

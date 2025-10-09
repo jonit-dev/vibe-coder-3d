@@ -3,7 +3,7 @@
  * Provides scripts with entity reference resolution and queries
  */
 
-import { ComponentManager } from '@/core/lib/ecs/ComponentManager';
+import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { EntityMetadataManager } from '@/core/lib/ecs/metadata/EntityMetadataManager';
 import { TagManager } from '@/core/lib/ecs/tags/TagManager';
 import { Logger } from '@/core/lib/logger';
@@ -17,14 +17,14 @@ const logger = Logger.create('EntitiesAPI');
  * Creates an entities API for scripts
  */
 export const createEntitiesAPI = (): IEntitiesAPI => {
-  const componentManager = ComponentManager.getInstance();
+  const registry = componentRegistry;
   const metadataManager = EntityMetadataManager.getInstance();
   const tagManager = TagManager.getInstance();
 
   // Helper to check if entity exists
   const entityExists = (id: number): boolean => {
     // Check if entity has Transform component (all entities must have one)
-    return componentManager.hasComponent(id, 'Transform');
+    return registry.hasComponent(id, 'Transform');
   };
 
   return {

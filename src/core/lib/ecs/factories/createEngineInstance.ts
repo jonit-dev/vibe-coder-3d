@@ -1,4 +1,4 @@
-import { ComponentManager } from '@core/lib/ecs/ComponentManager';
+import { componentRegistry, ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { EntityQueries } from '@core/lib/ecs/queries/entityQueries';
 import { ECSWorld } from '@core/lib/ecs/World';
@@ -7,7 +7,7 @@ import { Container } from '@core/lib/di/Container';
 export interface IEngineInstance {
   world: ECSWorld;
   entityManager: EntityManager;
-  componentManager: ComponentManager;
+  componentRegistry: ComponentRegistry;
   container: Container;
   dispose: () => void;
 }
@@ -25,19 +25,20 @@ export function createEngineInstance(parentContainer?: Container): IEngineInstan
   const world = new ECSWorld();
   const entityQueries = new EntityQueries(world.getWorld());
   const entityManager = new EntityManager(world.getWorld());
-  const componentManager = new ComponentManager(world.getWorld(), entityQueries);
+  // Use singleton ComponentRegistry instance
+  const registry = componentRegistry;
 
   // Register services in the container
   container.registerInstance('ECSWorld', world);
   container.registerInstance('EntityManager', entityManager);
-  container.registerInstance('ComponentManager', componentManager);
+  container.registerInstance('ComponentRegistry', registry);
   container.registerInstance('EntityQueries', entityQueries);
 
   // Set up disposal cleanup
   const dispose = () => {
     world.reset();
     entityManager.reset();
-    componentManager.reset();
+    // Note: ComponentRegistry is a singleton, so we don't reset it here
     entityQueries.destroy();
     container.clear();
   };
@@ -45,7 +46,7 @@ export function createEngineInstance(parentContainer?: Container): IEngineInstan
   return {
     world,
     entityManager,
-    componentManager,
+    componentRegistry: registry,
     container,
     dispose,
   };
@@ -60,7 +61,7 @@ export function isEngineInstance(obj: unknown): obj is IEngineInstance {
     obj !== null &&
     'world' in obj &&
     'entityManager' in obj &&
-    'componentManager' in obj &&
+    'componentRegistry' in obj &&
     'container' in obj &&
     'dispose' in obj
   );

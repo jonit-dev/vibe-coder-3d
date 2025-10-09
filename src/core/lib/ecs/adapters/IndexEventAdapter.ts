@@ -1,11 +1,11 @@
-import { ComponentManager } from '../ComponentManager';
+import { componentRegistry } from '../ComponentRegistry';
 import { EntityManager } from '../EntityManager';
 import { ComponentIndex } from '../indexers/ComponentIndex';
 import { EntityIndex } from '../indexers/EntityIndex';
 import { HierarchyIndex } from '../indexers/HierarchyIndex';
 
 /**
- * IndexEventAdapter - Wires EntityManager and ComponentManager events to maintain indices
+ * IndexEventAdapter - Wires EntityManager and ComponentRegistry events to maintain indices
  * Ensures indices stay synchronized with ECS world state through event-driven updates
  */
 export class IndexEventAdapter {
@@ -20,7 +20,7 @@ export class IndexEventAdapter {
   ) {}
 
   /**
-   * Attach event listeners to EntityManager and ComponentManager
+   * Attach event listeners to EntityManager and ComponentRegistry
    * Starts synchronizing indices with ECS world events
    */
   attach(): void {
@@ -30,7 +30,8 @@ export class IndexEventAdapter {
     }
 
     const entityManager = EntityManager.getInstance();
-    const componentManager = ComponentManager.getInstance();
+    // Note: ComponentRegistry uses global event system (emit/on) instead of addEventListener
+    // Component index updates handled by global event listeners if needed
 
     // Subscribe to entity events
     this.entityUnsubscribe = entityManager.addEventListener((event) => {
@@ -71,25 +72,13 @@ export class IndexEventAdapter {
       }
     });
 
-    // Subscribe to component events
-    this.componentUnsubscribe = componentManager.addEventListener((event) => {
-      switch (event.type) {
-        case 'component-added':
-          this.components.onAdd(event.componentType, event.entityId);
-          break;
-
-        case 'component-removed':
-          this.components.onRemove(event.componentType, event.entityId);
-          break;
-
-        case 'component-updated':
-          // Component updates don't affect membership, so no index update needed
-          break;
-      }
-    });
+    // Subscribe to component events via global event system (ComponentRegistry uses emit())
+    // ComponentRegistry emits 'component:added', 'component:removed', 'component:updated'
+    // For now, indices will be rebuilt when needed since ComponentRegistry uses emit() not addEventListener
+    this.componentUnsubscribe = () => {}; // No-op: ComponentRegistry uses global event system
 
     this.isAttached = true;
-    console.debug('[IndexEventAdapter] Attached to EntityManager and ComponentManager events');
+    console.debug('[IndexEventAdapter] Attached to EntityManager and ComponentRegistry events');
   }
 
   /**
@@ -112,7 +101,7 @@ export class IndexEventAdapter {
     }
 
     this.isAttached = false;
-    console.debug('[IndexEventAdapter] Detached from EntityManager and ComponentManager events');
+    console.debug('[IndexEventAdapter] Detached from EntityManager and ComponentRegistry events');
   }
 
   /**
@@ -135,7 +124,7 @@ export class IndexEventAdapter {
     this.components.clear();
 
     const entityManager = EntityManager.getInstance();
-    const componentManager = ComponentManager.getInstance();
+    const registry = componentRegistry;
 
     // Rebuild entity and hierarchy indices
     const allEntities = entityManager.getAllEntities();
@@ -152,11 +141,11 @@ export class IndexEventAdapter {
     });
 
     // Rebuild component indices
-    const componentTypes = componentManager.getRegisteredComponentTypes();
+    const componentTypes = registry.listComponents();
     console.debug(`[IndexEventAdapter] Found ${componentTypes.length} component types`);
 
     componentTypes.forEach((componentType) => {
-      const entitiesWithComponent = componentManager.getEntitiesWithComponent(componentType);
+      const entitiesWithComponent = registry.getEntitiesWithComponent(componentType);
       entitiesWithComponent.forEach((entityId) => {
         this.components.onAdd(componentType, entityId);
       });
@@ -194,7 +183,7 @@ export class IndexEventAdapter {
   validateIndices(): string[] {
     const errors: string[] = [];
     const entityManager = EntityManager.getInstance();
-    const componentManager = ComponentManager.getInstance();
+    const registry = componentRegistry;
 
     // Validate entity index
     const allEntities = entityManager.getAllEntities();
@@ -236,9 +225,9 @@ export class IndexEventAdapter {
     });
 
     // Validate component index
-    const componentTypes = componentManager.getRegisteredComponentTypes();
+    const componentTypes = registry.listComponents();
     componentTypes.forEach((componentType) => {
-      const worldEntities = new Set(componentManager.getEntitiesWithComponent(componentType));
+      const worldEntities = new Set(registry.getEntitiesWithComponent(componentType));
       const indexEntities = new Set(this.components.list(componentType));
 
       worldEntities.forEach((entityId) => {

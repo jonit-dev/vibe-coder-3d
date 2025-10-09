@@ -15,7 +15,7 @@ describe('createEngineInstance', () => {
     // Verify each instance has required properties
     expect(instanceA.world).toBeDefined();
     expect(instanceA.entityManager).toBeDefined();
-    expect(instanceA.componentManager).toBeDefined();
+    expect(instanceA.componentRegistry).toBeDefined();
     expect(instanceA.container).toBeDefined();
     expect(instanceA.dispose).toBeDefined();
 
@@ -42,11 +42,11 @@ describe('createEngineInstance', () => {
 
     expect(instance.container.has('ECSWorld')).toBe(true);
     expect(instance.container.has('EntityManager')).toBe(true);
-    expect(instance.container.has('ComponentManager')).toBe(true);
+    expect(instance.container.has('ComponentRegistry')).toBe(true);
 
     expect(instance.container.resolve('ECSWorld')).toBe(instance.world);
     expect(instance.container.resolve('EntityManager')).toBe(instance.entityManager);
-    expect(instance.container.resolve('ComponentManager')).toBe(instance.componentManager);
+    expect(instance.container.resolve('ComponentRegistry')).toBe(instance.componentRegistry);
   });
 
   it('should cleanup properly on dispose', () => {
