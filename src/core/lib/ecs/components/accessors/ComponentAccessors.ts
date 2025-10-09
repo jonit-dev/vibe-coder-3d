@@ -6,17 +6,21 @@
 import { componentRegistry } from '../../ComponentRegistry';
 import { ComponentMutationBuffer } from '../../mutations/ComponentMutationBuffer';
 import type {
-  IMeshRendererAccessor,
-  IMeshRendererData,
-  ITransformAccessor,
-  ITransformData,
   ICameraAccessor,
   ICameraData,
-  IRigidBodyAccessor,
-  IRigidBodyData,
   IMeshColliderAccessor,
   IMeshColliderData,
+  IMeshRendererAccessor,
+  IMeshRendererData,
+  IRigidBodyAccessor,
+  IRigidBodyData,
+  ITransformAccessor,
+  ITransformData,
 } from './types';
+
+// Unit conversion helpers for script-facing radians <-> ECS degrees
+const RAD_TO_DEG = 180 / Math.PI;
+const DEG_TO_RAD = Math.PI / 180;
 
 /**
  * Cache component accessors per entity to avoid repeated proxy creation
@@ -97,13 +101,30 @@ function attachSpecializedAccessors(
 ): unknown {
   if (componentId === 'Transform') {
     const transformAccessor: ITransformAccessor = {
-      get: base.get as () => ITransformData | null,
+      get(): ITransformData | null {
+        const data = base.get() as ITransformData | null;
+        if (!data) return null;
+        // Convert stored degrees to radians for scripts
+        return {
+          ...data,
+          rotation: [
+            data.rotation[0] * DEG_TO_RAD,
+            data.rotation[1] * DEG_TO_RAD,
+            data.rotation[2] * DEG_TO_RAD,
+          ],
+        };
+      },
       set: base.set,
       setPosition(x: number, y: number, z: number): void {
         buffer.queue(entityId, 'Transform', 'position', [x, y, z]);
       },
       setRotation(x: number, y: number, z: number): void {
-        buffer.queue(entityId, 'Transform', 'rotation', [x, y, z]);
+        // Scripts use radians; ECS stores degrees
+        buffer.queue(entityId, 'Transform', 'rotation', [
+          x * RAD_TO_DEG,
+          y * RAD_TO_DEG,
+          z * RAD_TO_DEG,
+        ]);
       },
       setScale(x: number, y: number, z: number): void {
         buffer.queue(entityId, 'Transform', 'scale', [x, y, z]);
@@ -119,7 +140,12 @@ function attachSpecializedAccessors(
         const current = base.get() as ITransformData | null;
         if (current) {
           const [rx, ry, rz] = current.rotation;
-          buffer.queue(entityId, 'Transform', 'rotation', [rx + x, ry + y, rz + z]);
+          // Inputs are radians; convert to degrees and add to stored degrees
+          buffer.queue(entityId, 'Transform', 'rotation', [
+            rx + x * RAD_TO_DEG,
+            ry + y * RAD_TO_DEG,
+            rz + z * RAD_TO_DEG,
+          ]);
         }
       },
       lookAt(targetPos: [number, number, number]): void {
@@ -132,29 +158,37 @@ function attachSpecializedAccessors(
           const dy = ty - py;
           const dz = tz - pz;
 
-          const yaw = Math.atan2(dx, dz);
+          const yaw = Math.atan2(dx, dz); // radians
           const distance = Math.sqrt(dx * dx + dz * dz);
-          const pitch = -Math.atan2(dy, distance);
+          const pitch = -Math.atan2(dy, distance); // radians
 
-          buffer.queue(entityId, 'Transform', 'rotation', [pitch, yaw, 0]);
+          // Store degrees
+          buffer.queue(entityId, 'Transform', 'rotation', [
+            pitch * RAD_TO_DEG,
+            yaw * RAD_TO_DEG,
+            0,
+          ]);
         }
       },
       forward(): [number, number, number] {
         const current = base.get() as ITransformData | null;
         if (!current) return [0, 0, 1];
-        const [rx, ry] = current.rotation;
+        // Convert stored degrees to radians for trig
+        const rx = current.rotation[0] * DEG_TO_RAD;
+        const ry = current.rotation[1] * DEG_TO_RAD;
         return [Math.sin(ry) * Math.cos(rx), -Math.sin(rx), Math.cos(ry) * Math.cos(rx)];
       },
       right(): [number, number, number] {
         const current = base.get() as ITransformData | null;
         if (!current) return [1, 0, 0];
-        const [, ry] = current.rotation;
+        const ry = current.rotation[1] * DEG_TO_RAD;
         return [Math.cos(ry), 0, -Math.sin(ry)];
       },
       up(): [number, number, number] {
         const current = base.get() as ITransformData | null;
         if (!current) return [0, 1, 0];
-        const [rx, ry] = current.rotation;
+        const rx = current.rotation[0] * DEG_TO_RAD;
+        const ry = current.rotation[1] * DEG_TO_RAD;
         return [-Math.sin(ry) * Math.sin(rx), Math.cos(rx), -Math.cos(ry) * Math.sin(rx)];
       },
     };

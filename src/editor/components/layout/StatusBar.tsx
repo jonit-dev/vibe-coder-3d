@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiActivity, FiClock, FiCpu, FiHardDrive, FiWifi, FiX } from 'react-icons/fi';
+import { FiActivity, FiClock, FiCpu, FiHardDrive, FiWifi, FiX, FiZap } from 'react-icons/fi';
 
 import { usePerformanceMonitor } from '@/editor/hooks/usePerformanceMonitor';
 
@@ -40,6 +40,26 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
 }) => {
   const { metrics, profilerStats } = usePerformanceMonitor(enablePerformanceMonitoring);
   const [showDetailedPerf, setShowDetailedPerf] = useState(false);
+  // Detect current renderer type using WebGPU availability
+  const [rendererLabel, setRendererLabel] = useState<'WebGL' | 'WebGPU' | 'Detecting'>('Detecting');
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { detectWebGPU } = await import('@/core/utils/webgpu');
+        const supported = await detectWebGPU();
+        if (!mounted) return;
+        setRendererLabel(supported ? 'WebGPU' : 'WebGL');
+      } catch {
+        if (!mounted) return;
+        setRendererLabel('WebGL');
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <footer className="h-8 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-t border-gray-800/50 flex items-center text-xs text-gray-400 relative overflow-hidden">
       {/* Animated background effect */}
@@ -50,9 +70,8 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <div
-              className={`w-2 h-2 rounded-full animate-pulse ${
-                streamingProgress?.isActive ? 'bg-cyan-400' : 'bg-green-400'
-              }`}
+              className={`w-2 h-2 rounded-full animate-pulse ${streamingProgress?.isActive ? 'bg-cyan-400' : 'bg-green-400'
+                }`}
             ></div>
             <span className="text-gray-300">{statusMessage}</span>
             {streamingProgress?.isActive && (
@@ -150,8 +169,15 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
           )}
         </div>
 
-        {/* Right section - Keyboard shortcuts */}
+        {/* Right section - Renderer + Keyboard shortcuts */}
         <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2 text-xs">
+            <FiZap className={`w-4 h-4 ${rendererLabel === 'WebGPU' ? 'text-cyan-400' : 'text-gray-400'}`} />
+            <span className={rendererLabel === 'WebGPU' ? 'text-cyan-400' : 'text-gray-400'}>
+              {rendererLabel}
+            </span>
+          </div>
+
           {shortcuts.map((shortcut, index) => (
             <div
               key={index}

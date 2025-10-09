@@ -31,8 +31,41 @@ This document outlines the rendering architecture for the Vibe Coder 3D engine, 
 - **In-World UI:**
   - Rendered using `three-mesh-ui` for UI elements integrated directly into the 3D scene.
 
+## WebGPU Support
+
+The engine now includes experimental WebGPU support alongside WebGL:
+
+- **WebGL**: Default renderer, widely supported across all browsers
+- **WebGPU**: Modern GPU API offering better performance (experimental, opt-in)
+
+### Enabling WebGPU
+
+WebGPU can be enabled using the `useAdaptiveRenderer` prop on GameEngine:
+
+```tsx
+<GameEngine
+  useAdaptiveRenderer={true}
+  rendererType="auto"
+>
+  {/* scene content */}
+</GameEngine>
+```
+
+The engine will automatically detect WebGPU support and fall back to WebGL if unavailable.
+
+### Browser Requirements
+
+- Chrome/Edge 113+
+- Safari 18+
+- Firefox 127+ (requires `dom.webgpu.enabled` flag)
+
+**Note**: WebGPU support in Three.js is experimental. The infrastructure is in place for future adoption.
+
+See [WebGPU Integration Guide](../guides/webgpu-integration.md) for detailed usage instructions.
+
 ## Future Considerations
 
 - Advanced rendering techniques (Deferred rendering, custom pipelines) if required for specific visual targets.
 - Optimization strategies for large scenes (impostors, advanced culling).
-- Cross-platform rendering consistency (if targeting platforms beyond WebGL).
+- Full WebGPU implementation when Three.js support is stable.
+- WebGPU compute shader integration for physics and particle systems.
