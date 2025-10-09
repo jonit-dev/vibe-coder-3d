@@ -9,5 +9,6 @@ function onStart(): void {
 }
 
 function onUpdate(deltaTime: number): void {
+  console.log('Rotating');
   entity.transform.rotate(0, deltaTime * 0.5, 0);
 }

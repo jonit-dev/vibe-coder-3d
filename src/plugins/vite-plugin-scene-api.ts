@@ -42,7 +42,7 @@ export function sceneApiMiddleware(): Plugin {
   // Return a combined plugin that includes backward compatibility
   return {
     name: 'scene-api',
-    configureServer(server) {
+    configureServer: (server) => {
       // FIRST: Add backward compatibility middleware to rewrite URLs
       server.middlewares.use('/api/scene', (req, _res, next) => {
         const url = new URL(req.url!, `http://${req.headers.host}`);
@@ -71,8 +71,10 @@ export function sceneApiMiddleware(): Plugin {
       });
 
       // THEN: Set up the new API routes
-      if (apiPlugin.configureServer) {
+      if (typeof apiPlugin.configureServer === 'function') {
         apiPlugin.configureServer(server);
+      } else if (apiPlugin.configureServer?.handler) {
+        apiPlugin.configureServer.handler(server);
       }
     },
   };

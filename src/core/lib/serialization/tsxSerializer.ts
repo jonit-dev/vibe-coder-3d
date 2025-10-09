@@ -20,6 +20,45 @@ export interface ITsxSceneMetadata {
 }
 
 /**
+ * Serialize input assets with enum values instead of strings
+ */
+const serializeInputAssets = (inputAssets: IInputActionsAsset[]): string => {
+  let json = JSON.stringify(inputAssets, null, 2);
+
+  // Replace enum string values with TypeScript enum references
+  json = json.replace(/"deviceType":\s*"keyboard"/g, `"deviceType": DeviceType.Keyboard`);
+  json = json.replace(/"deviceType":\s*"mouse"/g, `"deviceType": DeviceType.Mouse`);
+  json = json.replace(/"deviceType":\s*"gamepad"/g, `"deviceType": DeviceType.Gamepad`);
+  json = json.replace(/"deviceType":\s*"touch"/g, `"deviceType": DeviceType.Touch`);
+
+  json = json.replace(/"actionType":\s*"button"/g, `"actionType": ActionType.Button`);
+  json = json.replace(/"actionType":\s*"value"/g, `"actionType": ActionType.Value`);
+  json = json.replace(/"actionType":\s*"passthrough"/g, `"actionType": ActionType.PassThrough`);
+
+  json = json.replace(/"controlType":\s*"button"/g, `"controlType": ControlType.Button`);
+  json = json.replace(/"controlType":\s*"axis"/g, `"controlType": ControlType.Axis`);
+  json = json.replace(/"controlType":\s*"vector2"/g, `"controlType": ControlType.Vector2`);
+  json = json.replace(/"controlType":\s*"vector3"/g, `"controlType": ControlType.Vector3`);
+
+  json = json.replace(/"compositeType":\s*"1DAxis"/g, `"compositeType": CompositeType.OneModifier`);
+  json = json.replace(
+    /"compositeType":\s*"2DVector"/g,
+    `"compositeType": CompositeType.TwoDVector`,
+  );
+  json = json.replace(
+    /"compositeType":\s*"3DVector"/g,
+    `"compositeType": CompositeType.ThreeDVector`,
+  );
+
+  json = json.replace(/"type":\s*"keyboard"/g, `"type": DeviceType.Keyboard`);
+  json = json.replace(/"type":\s*"mouse"/g, `"type": DeviceType.Mouse`);
+  json = json.replace(/"type":\s*"gamepad"/g, `"type": DeviceType.Gamepad`);
+  json = json.replace(/"type":\s*"touch"/g, `"type": DeviceType.Touch`);
+
+  return json;
+};
+
+/**
  * Generates a clean TypeScript React component from scene data
  * Uses the defineScene helper for zero boilerplate
  */
@@ -30,7 +69,13 @@ export const generateTsxScene = (
   prefabs: IPrefabDefinition[] = [],
   inputAssets: IInputActionsAsset[] = [],
 ): string => {
-  const componentString = `import { defineScene } from './defineScene';
+  const hasInputAssets = inputAssets.length > 0;
+  const imports = hasInputAssets
+    ? `import { defineScene } from './defineScene';
+import { ActionType, ControlType, DeviceType, CompositeType } from '@core';`
+    : `import { defineScene } from './defineScene';`;
+
+  const componentString = `${imports}
 
 /**
  * ${metadata.name}${metadata.description ? `\n * ${metadata.description}` : ''}
@@ -77,7 +122,7 @@ export default defineScene({
   )},
   materials: ${JSON.stringify(materials, null, 2)},
   prefabs: ${JSON.stringify(prefabs, null, 2)},
-  inputAssets: ${JSON.stringify(inputAssets, null, 2)}
+  inputAssets: ${hasInputAssets ? serializeInputAssets(inputAssets) : '[]'}
 });
 `;
 

@@ -19,6 +19,7 @@
 - Prefix interfaces with I
 - Favor using Zod
 - Use zustand for state management
+- Unless explicitly oriented, do not keep deprecated code or write legacy versions of it. Just cleanup.
 
 **Technical Debt Prevention**
 

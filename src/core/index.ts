@@ -187,3 +187,20 @@ export type { ISceneContext, SceneBuilder } from './lib/scene/SceneRegistry';
 // Scene Serialization
 export { SceneLoader } from './lib/serialization/SceneLoader';
 export type { IStoreRefresher } from './lib/serialization/SceneLoader';
+
+// Input System Types
+export { ActionType, ControlType, DeviceType, CompositeType } from './lib/input/inputTypes';
+export type {
+  IKeyboardBinding,
+  IMouseBinding,
+  IGamepadBinding,
+  ISimpleBinding,
+  ICompositeBinding,
+  IBinding,
+  IInputAction,
+  IActionMap,
+  IControlScheme,
+  IInputActionsAsset,
+  IInputActionCallbackContext,
+  IInputActionReference,
+} from './lib/input/inputTypes';

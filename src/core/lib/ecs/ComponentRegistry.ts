@@ -209,7 +209,6 @@ export class ComponentRegistry {
    * Add component to entity
    */
   addComponent<TData>(entityId: EntityId, componentId: string, data: TData, world?: any): boolean {
-
     const descriptor = this.get<TData>(componentId);
     if (!descriptor) {
       console.error(`Component ${componentId} not found`);
@@ -382,6 +381,16 @@ export class ComponentRegistry {
       // Update data
       descriptor.deserialize(entityId, updatedData);
 
+      // Special handling for transform components - ensure needsUpdate flag is set
+      if (componentId === 'Transform') {
+        const bitECSTransform = this.bitECSComponents.get('Transform') as
+          | Record<string, Record<number, number>>
+          | undefined;
+        if (bitECSTransform?.needsUpdate) {
+          bitECSTransform.needsUpdate[entityId] = 1;
+        }
+      }
+
       // Special handling for camera components - ensure needsUpdate flag is set
       if (componentId === 'Camera') {
         const bitECSCamera = this.bitECSComponents.get('Camera') as
@@ -509,7 +518,7 @@ export class ComponentRegistry {
     // Check cache first
     const cached = this.entityQueryCache.get(componentId);
     const now = Date.now();
-    if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+    if (cached && now - cached.timestamp < this.CACHE_TTL) {
       return cached.entities;
     }
 

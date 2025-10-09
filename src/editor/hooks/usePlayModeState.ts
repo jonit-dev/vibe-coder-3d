@@ -62,7 +62,8 @@ export const usePlayModeState = () => {
 
         if (componentData !== null) {
           // Deep clone the component data to prevent reference issues
-          const clonedData = JSON.parse(JSON.stringify(componentData));
+          // Use structuredClone to handle undefined values properly
+          const clonedData = structuredClone(componentData);
 
           entityBackup.components.push({
             componentType,
@@ -70,12 +71,11 @@ export const usePlayModeState = () => {
           });
         }
       }
-
       backupMap.set(entity.id, entityBackup);
     }
 
     backupData.current = backupMap;
-    logger.info('State backup complete');
+    logger.info(`State backup complete - ${backupMap.size} entities backed up`);
   }, [entityManager, componentManager]);
 
   /**
@@ -87,7 +87,12 @@ export const usePlayModeState = () => {
     let componentsRemoved = 0;
     let entitiesRemoved = 0;
 
-    logger.info('Starting state restoration');
+    logger.info(`Starting state restoration - backup has ${backupData.current.size} entities`);
+
+    if (backupData.current.size === 0) {
+      logger.warn('No backup data found!');
+      return;
+    }
 
     // Step 1: Identify entities that were created during play mode and remove them
     const currentEntities = entityManager.getAllEntities();

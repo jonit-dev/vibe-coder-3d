@@ -3,7 +3,6 @@ import { FiSave, FiX, FiAlertTriangle, FiCode, FiRefreshCw, FiExternalLink } fro
 
 import { ScriptData } from '@/core/lib/ecs/components/definitions/ScriptComponent';
 import { Modal } from '@/editor/components/shared/Modal';
-import { CheckboxField } from '@/editor/components/shared/CheckboxField';
 import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
 import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
 import { Logger } from '@/core/lib/logger';

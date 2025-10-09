@@ -4,12 +4,15 @@
 
 The Script System provides TypeScript-based scripting for gameplay logic. Scripts execute in a sandboxed environment with 13 global APIs providing controlled access to engine features.
 
+**IMPORTANT:** As of 2025-10-09, the script system uses **DirectScriptExecutor** which provides full JavaScript language support via the Function() constructor, replacing the previous regex-based pattern matching approach.
+
 ## Architecture
 
 ### Core Files
 
 - **ScriptAPI.ts** - Source of truth for all API interfaces
-- **ScriptExecutor.ts** - Script compilation and execution engine
+- **DirectScriptExecutor.ts** - Script compilation and execution using Function() constructor (CURRENT)
+- **ScriptExecutor.ts** - Legacy regex-based pattern matching executor (DEPRECATED)
 - **ScriptResolver.ts** - External script file loading
 - **ThreeJSEntityRegistry.ts** - Maps entities to Three.js objects
 
@@ -90,10 +93,54 @@ Scripts can implement 5 lifecycle methods:
 
 Scripts have controlled access to engine features:
 
-- **No eval/Function constructor** - Scripts are parsed, not dynamically executed
+- **Lexical scoping** - Scripts use Function() constructor with APIs passed as parameters
+- **Full JavaScript support** - Variables, loops, conditionals, functions all work
 - **Whitelist-based Three.js access** - Only safe properties exposed via proxy
 - **Component-level isolation** - Can't directly access other entities' internals
 - **No filesystem/network** - Must use provided APIs
+- **No access to outer scope** - Only explicitly passed APIs are available
+
+### DirectScriptExecutor (Current Implementation)
+
+The DirectScriptExecutor uses the Function() constructor to execute scripts:
+
+```typescript
+const scriptFunction = new Function(
+  'entity',
+  'three',
+  'math',
+  'input',
+  'time',
+  'console',
+  'events',
+  'audio',
+  'timer',
+  'query',
+  'prefab',
+  'entities',
+  'parameters',
+  `
+  'use strict';
+  ${userScriptCode}
+  return { onStart, onUpdate, onDestroy, onEnable, onDisable };
+  `,
+);
+```
+
+**Benefits:**
+
+- ✅ Full JavaScript language support (variables, loops, conditionals, functions)
+- ✅ Natural developer experience
+- ✅ No regex patterns to maintain
+- ✅ Easy to debug
+- ✅ Still sandboxed (APIs passed as parameters)
+
+**Security:**
+
+- Scripts execute in strict mode
+- Only provided APIs are accessible
+- No access to window, document, or other browser globals
+- Cannot escape sandbox via Function/eval
 
 ### Type Generation
 

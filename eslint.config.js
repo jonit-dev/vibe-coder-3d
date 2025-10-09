@@ -102,6 +102,7 @@ export default [
       // External scripts are standalone and may declare duplicate global lifecycle functions
       // Ensure parser doesn't attempt full type-aware linting using the project config here
       '@typescript-eslint/consistent-type-imports': 'off',
+      '@typescript-eslint/triple-slash-reference': 'off',
     },
   },
   prettierConfig,

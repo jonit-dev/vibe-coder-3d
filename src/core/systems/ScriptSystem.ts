@@ -11,7 +11,10 @@ import { EntityId } from '../lib/ecs/types';
 import { getStringFromHash, storeString } from '../lib/ecs/utils/stringHashUtils';
 import { Logger } from '../lib/logger';
 import { ITimeAPI } from '../lib/scripting/ScriptAPI';
-import { IScriptExecutionResult, ScriptExecutor } from '../lib/scripting/ScriptExecutor';
+import {
+  IScriptExecutionResult,
+  DirectScriptExecutor,
+} from '../lib/scripting/DirectScriptExecutor';
 import { resolveScript } from '../lib/scripting/ScriptResolver';
 import { scheduler } from '../lib/scripting/adapters/scheduler';
 import { createInputAPI } from '../lib/scripting/apis/InputAPI';
@@ -63,8 +66,8 @@ function getScriptQuery() {
   return scriptQuery;
 }
 
-// Get script executor instance
-const scriptExecutor = ScriptExecutor.getInstance();
+// Get script executor instance - using DirectScriptExecutor for full JS support
+const scriptExecutor = DirectScriptExecutor.getInstance();
 
 // Track entities that need script compilation
 const entitiesToCompile = new Set<EntityId>();
@@ -468,6 +471,7 @@ export async function updateScriptSystem(
   // When entering play mode, ensure all scripts are marked for compilation
   if (isPlaying) {
     // Reset started set on entering play so onStart runs again
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((updateScriptSystem as any)._lastIsPlaying !== true) {
       startedEntities.clear();
     }
@@ -484,6 +488,7 @@ export async function updateScriptSystem(
   await executeScripts(deltaTime);
 
   // Track last isPlaying state to detect edges next frame
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (updateScriptSystem as any)._lastIsPlaying = isPlaying;
 }
 

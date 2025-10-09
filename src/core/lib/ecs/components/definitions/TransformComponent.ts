@@ -32,6 +32,7 @@ export const transformComponent = ComponentFactory.create({
     scaleX: Types.f32,
     scaleY: Types.f32,
     scaleZ: Types.f32,
+    needsUpdate: Types.ui8,
   },
   serialize: (eid: EntityId, component: any) => ({
     position: [component.positionX[eid], component.positionY[eid], component.positionZ[eid]] as [
