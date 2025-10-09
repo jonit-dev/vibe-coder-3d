@@ -311,8 +311,8 @@ export class DirectScriptExecutor {
 
       if (methodTime > maxTime) {
         const timeStr = methodTime.toFixed(2);
-        throw new Error(
-          `Script execution exceeded maximum time limit of ${maxTime}ms (took ${timeStr}ms)`,
+        logger.warn(
+          `Script execution took longer than recommended: ${scriptId} (${timeStr}ms > ${maxTime}ms)`,
         );
       }
 

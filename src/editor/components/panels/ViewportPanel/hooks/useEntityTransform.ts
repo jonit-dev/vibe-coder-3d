@@ -1,5 +1,5 @@
-import * as THREE from 'three';
 import { useEffect, useMemo, useRef } from 'react';
+import * as THREE from 'three';
 
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 
@@ -45,22 +45,32 @@ export const useEntityTransform = ({ transform, isTransforming }: IUseEntityTran
       // Create a more efficient hash using simple string concatenation
       const transformHash = `${position.join(',')},${rotation.join(',')},${scale.join(',')}`;
 
-      // Only sync if the transform data actually changed AND the mesh position doesn't already match
-      const meshPositionMatches =
+      // Only sync if the transform data actually changed AND any of P/R/S differs
+      const posMatches =
         Math.abs(meshRef.current.position.x - position[0]) < 0.001 &&
         Math.abs(meshRef.current.position.y - position[1]) < 0.001 &&
         Math.abs(meshRef.current.position.z - position[2]) < 0.001;
 
+      // Mesh rotation is in radians; component data is in degrees
+      const rotRadX = rotation[0] * (Math.PI / 180);
+      const rotRadY = rotation[1] * (Math.PI / 180);
+      const rotRadZ = rotation[2] * (Math.PI / 180);
+      const rotMatches =
+        Math.abs(meshRef.current.rotation.x - rotRadX) < 0.001 &&
+        Math.abs(meshRef.current.rotation.y - rotRadY) < 0.001 &&
+        Math.abs(meshRef.current.rotation.z - rotRadZ) < 0.001;
+
+      const scaleMatches =
+        Math.abs(meshRef.current.scale.x - scale[0]) < 0.001 &&
+        Math.abs(meshRef.current.scale.y - scale[1]) < 0.001 &&
+        Math.abs(meshRef.current.scale.z - scale[2]) < 0.001;
+
       // Always update tracking if transform hash changed
       if (lastSyncedTransform.current !== transformHash) {
-        if (!meshPositionMatches) {
-          // Apply transform if mesh position doesn't match ECS data
+        if (!(posMatches && rotMatches && scaleMatches)) {
+          // Apply transform if any part doesn't match ECS data
           meshRef.current.position.set(position[0], position[1], position[2]);
-          meshRef.current.rotation.set(
-            rotation[0] * (Math.PI / 180),
-            rotation[1] * (Math.PI / 180),
-            rotation[2] * (Math.PI / 180),
-          );
+          meshRef.current.rotation.set(rotRadX, rotRadY, rotRadZ);
           meshRef.current.scale.set(scale[0], scale[1], scale[2]);
 
           // Force matrix updates to ensure changes propagate immediately
@@ -68,7 +78,7 @@ export const useEntityTransform = ({ transform, isTransforming }: IUseEntityTran
           meshRef.current.updateMatrixWorld(true);
         }
 
-        // ALWAYS update the hash when transform data changes (this was the bug!)
+        // ALWAYS update the hash when transform data changes
         lastSyncedTransform.current = transformHash;
       }
     }
