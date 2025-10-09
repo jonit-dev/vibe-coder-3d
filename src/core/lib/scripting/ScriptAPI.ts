@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { EntityId } from '../ecs/types';
+import type { IMeshRendererAccessor } from '../ecs/components/accessors/types';
 
 /**
  * Math utilities available to scripts
@@ -143,6 +144,11 @@ export interface IEntityScriptAPI {
 
   // Transform shortcuts (most common operations)
   transform: ITransformAPI;
+
+  // Direct component accessors (KISS approach - optional fields per component)
+  // These are undefined if the component doesn't exist on the entity
+  meshRenderer?: IMeshRendererAccessor;
+  // Future: camera?, rigidBody?, meshCollider?, etc.
 
   // Entity hierarchy
   getParent(): IEntityScriptAPI | null;

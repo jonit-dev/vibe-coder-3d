@@ -24,6 +24,7 @@ import { IInputAPI, IScriptContext, ITimeAPI } from './ScriptAPI';
 import { cleanupTimerAPI } from './apis/TimerAPI';
 import { ScriptContextFactory } from './ScriptContextFactory';
 import { Logger } from '@/core/lib/logger';
+import { ComponentMutationBuffer } from '../ecs/mutations/ComponentMutationBuffer';
 
 const logger = Logger.create('DirectScriptExecutor');
 
@@ -92,10 +93,12 @@ export class DirectScriptExecutor {
   private scriptContexts = new Map<EntityId, IScriptContext>();
   private compiledScripts = new Map<string, ICompiledScriptLifecycle>();
   private debugMode: boolean;
+  private mutationBuffer: ComponentMutationBuffer;
 
   private constructor(debugMode = false) {
     this.debugMode = debugMode;
     this.contextFactory = new ScriptContextFactory();
+    this.mutationBuffer = new ComponentMutationBuffer();
   }
 
   public static getInstance(): DirectScriptExecutor {
@@ -237,6 +240,7 @@ export class DirectScriptExecutor {
           inputInfo: options.inputInfo,
           meshRef: options.meshRef,
           sceneRef: options.sceneRef,
+          mutationBuffer: this.mutationBuffer,
         });
         this.scriptContexts.set(options.entityId, context);
       }
@@ -251,7 +255,7 @@ export class DirectScriptExecutor {
       let lifecycle: ICompiledScriptLifecycle;
 
       // Check if this is a function (needs to be called) or already the lifecycle object
-       
+
       if (typeof compiledFunction === 'function') {
         const executionStart = performance.now();
 
@@ -384,5 +388,13 @@ export class DirectScriptExecutor {
       compiled: this.compiledScripts.size,
       contexts: this.scriptContexts.size,
     };
+  }
+
+  /**
+   * Get the shared mutation buffer for component writes
+   * This should be flushed by ComponentWriteSystem after all scripts execute
+   */
+  public getMutationBuffer(): ComponentMutationBuffer {
+    return this.mutationBuffer;
   }
 }

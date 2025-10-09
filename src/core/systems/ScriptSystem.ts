@@ -18,6 +18,7 @@ import {
 import { resolveScript } from '../lib/scripting/ScriptResolver';
 import { scheduler } from '../lib/scripting/adapters/scheduler';
 import { createInputAPI } from '../lib/scripting/apis/InputAPI';
+import { createComponentWriteSystem } from './ComponentWriteSystem';
 
 // BitECS Script component type structure
 interface IBitECSScriptComponent {
@@ -68,6 +69,9 @@ function getScriptQuery() {
 
 // Get script executor instance - using DirectScriptExecutor for full JS support
 const scriptExecutor = DirectScriptExecutor.getInstance();
+
+// Create component write system for flushing batched mutations
+const componentWriteSystem = createComponentWriteSystem(scriptExecutor.getMutationBuffer());
 
 // Track entities that need script compilation
 const entitiesToCompile = new Set<EntityId>();
@@ -486,6 +490,10 @@ export async function updateScriptSystem(
 
   // Execute scripts
   await executeScripts(deltaTime);
+
+  // Flush all batched component mutations to ECS
+  // This applies all entity.meshRenderer.material.setColor(...) style updates
+  componentWriteSystem();
 
   // Track last isPlaying state to detect edges next frame
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

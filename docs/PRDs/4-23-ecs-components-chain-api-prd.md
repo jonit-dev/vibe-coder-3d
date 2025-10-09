@@ -1,29 +1,28 @@
-# ECS Components Chain API PRD
+# Script API Direct Component Access (KISS) PRD
 
 ## Overview
 
 - **Context & Goals**:
 
-  - Enable ergonomic, chainable access to ECS component properties from scripts via `entity.components.*` (e.g., `entity.components.MeshRenderer.material.setColor('#ff00ff')`).
-  - Unify ECS data changes and runtime effects while keeping strict safety and type discipline (Zod schemas, named exports, path aliases).
-  - Maintain or improve performance: avoid per-frame object churn, use typed-array writes, and batch updates.
-  - Integrate seamlessly with the existing Script System and `IEntityScriptAPI` while preserving current APIs (`transform`, `three`, `getComponent/setComponent`).
+  - Keep the Script API simple: expose direct optional component accessors like `entity.meshRenderer`, `entity.transform` (already exists), etc.
+  - Ensure these direct accessors WORK reliably for manipulating ECS-backed state from scripts.
+  - Maintain performance with minimal object churn by applying small ECS patches; no proxy trees or extra buffers.
+  - Preserve existing APIs (`transform`, `three`, `getComponent/setComponent`).
 
 - **Current Pain Points**:
-  - Scripts must call `getComponent/setComponent` or use `three.material.*` directly; no unified, chainable component API.
-  - Component updates often merge whole objects rather than granular fields, risking unnecessary allocations and cache misses.
+  - Direct component manipulation via Script API (e.g., `entity.meshRenderer`) is missing/broken.
   - Inconsistent ergonomics between `transform` helpers and other components (e.g., `MeshRenderer`).
-  - Potential duplication between ECS-level updates and Three.js direct state, making correctness and performance tuning harder.
+  - Risk of unnecessary allocations from large object merges when setting component data.
+  - Drift between ECS updates and direct Three.js changes.
 
 ## Proposed Solution
 
 - **High‑level Summary**:
 
-  - Add `components` to `IEntityScriptAPI`, exposing a lazy, typed Proxy of component accessors generated from `ComponentRegistry` descriptors.
-  - Provide per-component accessors with safe, whitelisted operations (e.g., `MeshRenderer.material.setColor`, `setMetalness`, `enable/disable`).
-  - Implement a `ComponentMutationBuffer` to coalesce granular field updates into minimal typed-array writes, flushed once per frame by a `ComponentWriteSystem`.
-  - Cache accessors per entity and per component to avoid re-creating proxies; keep O(1) hot-path operations.
-  - Preserve existing APIs; `three.material.*` remains available. ECS changes remain the source of truth; render sync systems consume ECS state.
+  - Add direct optional fields to `IEntityScriptAPI`: `meshRenderer?`, and optionally `rigidBody?`, `camera?`, `meshCollider?` next.
+  - Each accessor provides `get()`, `set(patch)`, and minimal helpers (e.g., `material.setColor`, `enable`).
+  - No proxies or mutation buffers; operations call `componentRegistry.updateComponent` with small patches.
+  - Preserve `transform` helpers and `three.*`; keep `getComponent/setComponent` for advanced use.
 
 - **Architecture & Directory Structure**:
 
@@ -31,81 +30,44 @@
 src/
 ├── core/
 │   ├── lib/
-│   │   ├── ecs/
-│   │   │   ├── components/
-│   │   │   │   └── accessors/
-│   │   │   │       ├── ComponentAccessors.ts           # Accessor factory using descriptors
-│   │   │   │       ├── MeshRendererAccessor.ts         # Hand-tuned ops for MeshRenderer
-│   │   │   │       └── types.ts                        # IComponentAccessor<T>, operation types
-│   │   │   ├── mutations/
-│   │   │   │   ├── ComponentMutationBuffer.ts          # Coalesced writes per frame
-│   │   │   │   └── __tests__/...                       # Buffer tests and perf checks
-│   │   │   └── systems/
-│   │   │       └── ComponentWriteSystem.ts             # Flush mutation buffer once/frame
 │   │   └── scripting/
 │   │       ├── apis/
-│   │       │   └── ComponentsAPI.ts                    # entity.components proxy for scripts
-│   │       └── ScriptAPI.ts                            # add `components` to IEntityScriptAPI
+│   │       │   └── DirectComponentsAPI.ts   # (optional) helpers per component
+│   │       └── ScriptAPI.ts                  # add direct fields to IEntityScriptAPI
 │   └── systems/
-│       └── ScriptSystem.ts                             # wire context + scheduling order
+│       └── ScriptSystem.ts                   # no changes needed
 └── docs/
     └── PRDs/
-        └── 4-23-ecs-components-chain-api-prd.md        # This document
+        └── 4-23-ecs-components-chain-api-prd.md
 ```
 
 ## Implementation Plan
 
-1. **Phase 1: Foundations (0.5 day)**
+1. **Phase 1: Foundations (0.25 day)**
 
-   1. Define `IComponentAccessor<T>` and operation typing in `accessors/types.ts`.
-   2. Scaffold `ComponentMutationBuffer` and frame-flush `ComponentWriteSystem`.
-   3. Add `components` field to `IEntityScriptAPI` (type-only, not wired yet).
+   1. Add optional direct fields to `IEntityScriptAPI`: `meshRenderer?` (optionally others later).
+   2. Create simple per-component helpers that apply minimal patches.
 
-2. **Phase 2: Accessor Factory (0.75 day)**
+2. **Phase 2: MeshRenderer Accessor (0.5 day)**
 
-   1. Implement `ComponentAccessors` to generate per-component accessors from `ComponentRegistry` descriptors.
-   2. Use a lazy Proxy for `entity.components`, caching per-entity per-component instances (WeakMap cache).
-   3. Provide base `get()`/`set(partial)` methods for any registered component via Zod-safe merges.
+   1. Implement `get()`, `set(patch)`, `enable(boolean)`.
+   2. Implement `material.setColor/metalness/roughness/emissive/texture`, clamping 0..1 where needed.
 
-3. **Phase 3: MeshRenderer Specialization (0.5 day)**
+3. **Phase 3: Context Wiring (0.25 day)**
 
-   1. Implement `MeshRendererAccessor` with material helpers: `material.setColor`, `setMetalness`, `setRoughness`, `setEmissive`, `enable/disable`, texture setters by id.
-   2. Map methods to minimal field deltas in the mutation buffer (typed-array fields, hashed strings for IDs).
+   1. In `createEntityAPI`, set `entity.meshRenderer` only if component exists.
+   2. Keep `transform` and `three` as-is; no scheduler/order changes.
 
-4. **Phase 4: Buffering and Flush (0.5 day)**
-
-   1. Implement coalescing rules: last-write-wins per entity+component+field; batch applying typed-array writes.
-   2. Add `ComponentWriteSystem` into frame order before renderer sync; ensure deterministic flush timing.
-
-5. **Phase 5: Script Integration and Types (0.5 day)**
-
-   1. Wire `ComponentsAPI` into script context in `ScriptExecutor` creation; expose as `entity.components`.
-   2. Update d.ts generation so `script-api.d.ts` includes `components` types with known accessors (at least MeshRenderer).
-   3. Keep `getComponent/setComponent` working as-is; document deprecation path (no breakage).
-
-6. **Phase 6: Tests, Perf, Docs (0.5 day)**
-   1. Unit tests for buffer coalescing, accessor methods, and descriptor-driven `set()`.
-   2. Integration tests from script lifecycles updating MeshRenderer color and seeing state reflected.
-   3. Microbench: 10k chained calls coalesced in a frame; target negligible GC and O(entities) flush time.
+4. **Phase 4: Tests & Docs (0.5 day)**
+   1. Unit tests for MeshRenderer direct calls (minimal patches, clamping).
+   2. Integration tests from scripts verifying ECS/renderer reflect updates.
+   3. Update `script-api.d.ts` generation if present to include new fields.
 
 ## File and Directory Structures
 
 ```text
-/src/core/lib/ecs/components/accessors/
-├── ComponentAccessors.ts
-├── MeshRendererAccessor.ts
-└── types.ts
-
-/src/core/lib/ecs/mutations/
-├── ComponentMutationBuffer.ts
-└── __tests__/
-    └── ComponentMutationBuffer.test.ts
-
-/src/core/lib/ecs/systems/
-└── ComponentWriteSystem.ts
-
 /src/core/lib/scripting/apis/
-└── ComponentsAPI.ts
+└── DirectComponentsAPI.ts (optional)
 ```
 
 ## Technical Details
@@ -258,23 +220,23 @@ export function createComponentsAPI(entityId: number, sharedBuffer: ComponentMut
 ```ts
 // 1) Change color on start
 function onStart(): void {
-  entity.components.MeshRenderer.material.setColor('#ff00ff');
+  entity.meshRenderer?.material.setColor('#ff00ff');
 }
 ```
 
 ```ts
 // 2) Toggle visibility and tweak PBR
 function onUpdate(dt: number): void {
-  entity.components.MeshRenderer.enable(true);
-  entity.components.MeshRenderer.material.setMetalness(0.7);
-  entity.components.MeshRenderer.material.setRoughness(0.25);
+  entity.meshRenderer?.enable(true);
+  entity.meshRenderer?.material.setMetalness(0.7);
+  entity.meshRenderer?.material.setRoughness(0.25);
 }
 ```
 
 ```ts
 // 3) Generic set for future components (schema-driven)
 function onStart(): void {
-  entity.components.Camera.set({ fov: 70, near: 0.1, far: 500 });
+  entity.camera?.set({ fov: 70, near: 0.1, far: 500 } as any);
 }
 ```
 
@@ -282,14 +244,12 @@ function onStart(): void {
 
 - **Unit Tests**:
 
-  - ComponentMutationBuffer coalesces field updates; last-write-wins per field.
-  - MeshRendererAccessor calls enqueue correct field deltas for color/metalness/roughness/emissive/texture.
-  - `set(partial)` validates and decomposes nested patches without allocating deep clones excessively.
+  - MeshRenderer direct calls apply minimal patches; clamping works.
+  - Absent components leave fields undefined (safe optional chaining in scripts).
 
 - **Integration Tests**:
-  - Script lifecycle uses `entity.components.MeshRenderer.material.setColor` and ECS state reflects the change post-flush.
-  - Multiple chained calls in one frame are coalesced and flushed once before render sync.
-  - Backward compatibility: `getComponent/setComponent` still work alongside chain API.
+  - Script lifecycle uses `entity.meshRenderer.material.setColor` and ECS/renderer reflect updates.
+  - Backward compatibility: `getComponent/setComponent` still work alongside direct accessors.
 
 ## Edge Cases
 
@@ -308,21 +268,13 @@ function onStart(): void {
 sequenceDiagram
   participant Script as User Script
   participant Ctx as Script Context
-  participant Chain as Components Proxy
-  participant Buffer as MutationBuffer
   participant ECS as ComponentRegistry
-  participant Write as ComponentWriteSystem
   participant Render as Render Sync
 
-  Script->>Ctx: entity.components.MeshRenderer.material.setColor('#ff0')
-  Ctx->>Chain: get MeshRenderer accessor
-  Chain->>Buffer: queue(entityId, 'MeshRenderer', 'material', { color: '#ff0' })
-  Note over Script,Render: end of frame
-  Write->>Buffer: flush()
-  Buffer-->>Write: (eid,'MeshRenderer','material',{color:'#ff0'})
-  Write->>ECS: updateComponent(eid,'MeshRenderer', mergedPatch)
+  Script->>Ctx: entity.meshRenderer.material.setColor('#ff0')
+  Ctx->>ECS: updateComponent(eid,'MeshRenderer',{material:{color:'#ff0'}})
   ECS-->>Render: new MeshRenderer state
-  Render-->>Script: material color visible on next frame
+  Render-->>Script: color visible next frame
 ```
 
 ## Risks & Mitigations
@@ -337,26 +289,22 @@ sequenceDiagram
 
 ## Timeline
 
-- Total: ~3.25 days
-  - Phase 1: 0.5 day
-  - Phase 2: 0.75 day
-  - Phase 3: 0.5 day
+- Total: ~1.5 days
+  - Phase 1: 0.25 day
+  - Phase 2: 0.5 day
+  - Phase 3: 0.25 day
   - Phase 4: 0.5 day
-  - Phase 5: 0.5 day
-  - Phase 6: 0.5 day
 
 ## Acceptance Criteria
 
-- `IEntityScriptAPI` exposes `components` with at least `MeshRenderer` accessor methods implemented.
-- Chain API updates are reflected in ECS typed-array-backed state and visible after a single-frame flush.
-- Coalesced updates: N chained calls to the same field in one frame apply once with final value.
+- `IEntityScriptAPI` exposes direct optional fields (`meshRenderer`, optionally others later).
+- Direct accessor calls update ECS state and are visible in render after next frame.
 - No regressions: existing scripts using `transform` and `three.material.*` keep working.
-- Unit and integration tests pass; microbench confirms minimal allocations and stable frame times.
-- `script-api.d.ts` includes `components` typings; docs updated.
+- Unit and integration tests pass; `script-api.d.ts` includes new fields; docs updated.
 
 ## Conclusion
 
-This plan introduces a safe, ergonomic, and high-performance chain API for ECS components, aligning with existing architecture and Script API patterns. It centralizes state changes through ECS, coalesces writes, and preserves current capabilities—improving developer experience while protecting frame budgets.
+This plan keeps the API simple and familiar while making direct component access actually work. It updates ECS via minimal patches, preserves existing patterns, and avoids additional abstraction layers—improving ergonomics with zero proxy overhead.
 
 ## Assumptions & Dependencies
 

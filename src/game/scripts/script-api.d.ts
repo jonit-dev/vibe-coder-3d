@@ -46,6 +46,39 @@ declare global {
   }
 
   /**
+   * MeshRenderer material API for direct component access
+   */
+  interface IMeshRendererMaterialAPI {
+    /** Set material color */
+    setColor(hex: string | number): void;
+    /** Set metalness (0-1, clamped) */
+    setMetalness(value: number): void;
+    /** Set roughness (0-1, clamped) */
+    setRoughness(value: number): void;
+    /** Set emissive color and intensity */
+    setEmissive(hex: string | number, intensity?: number): void;
+    /** Set texture for a specific material map */
+    setTexture(
+      kind: 'albedo' | 'normal' | 'metallic' | 'roughness' | 'emissive' | 'occlusion',
+      idOrPath: string,
+    ): void;
+  }
+
+  /**
+   * MeshRenderer accessor API
+   */
+  interface IMeshRendererAccessor {
+    /** Get current component data */
+    get(): any | null;
+    /** Set component data via partial patch */
+    set(patch: Partial<any>): void;
+    /** Enable/disable the mesh renderer */
+    enable(value: boolean): void;
+    /** Material manipulation helpers */
+    material: IMeshRendererMaterialAPI;
+  }
+
+  /**
    * Entity API - access to entity properties and state
    */
   interface IEntityScriptAPI {
@@ -64,6 +97,12 @@ declare global {
     hasComponent(componentType: string): boolean;
     /** Remove component from entity */
     removeComponent(componentType: string): boolean;
+
+    // Direct component accessors (KISS approach - optional fields per component)
+    // These are undefined if the component doesn't exist on the entity
+    /** Direct MeshRenderer component access */
+    meshRenderer?: IMeshRendererAccessor;
+    // Future: camera?, rigidBody?, meshCollider?, etc.
 
     /** Get parent entity */
     getParent(): IEntityScriptAPI | null;
