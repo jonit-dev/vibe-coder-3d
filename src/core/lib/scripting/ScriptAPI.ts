@@ -6,7 +6,6 @@ import * as THREE from 'three';
 import { EntityId } from '../ecs/types';
 import type {
   IMeshRendererAccessor,
-  ITransformAccessor,
   ICameraAccessor,
   IRigidBodyAccessor,
   IMeshColliderAccessor,
@@ -374,9 +373,9 @@ export const createConsoleAPI = (entityId: EntityId): IConsoleAPI => ({
 });
 
 /**
- * Import ComponentManager for entity operations
+ * Import ComponentRegistry for entity operations (single source of truth)
  */
-import { ComponentManager } from '../ecs/ComponentManager';
+import { componentRegistry } from '../ecs/ComponentRegistry';
 
 /**
  * Safe Three.js operations whitelist
@@ -697,7 +696,8 @@ export const createThreeJSAPI = (
  * Creates a safe entity API for scripts
  */
 export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
-  const componentManager = ComponentManager.getInstance();
+  // Use ComponentRegistry as single source of truth
+  const registry = componentRegistry;
 
   return {
     id: entityId,
@@ -705,7 +705,7 @@ export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
 
     getComponent: <T = unknown>(componentType: string): T | null => {
       try {
-        const data = componentManager.getComponentData<T>(entityId, componentType);
+        const data = registry.getComponentData<T>(entityId, componentType);
         return data || null;
       } catch (error) {
         console.warn(
@@ -719,11 +719,10 @@ export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
     setComponent: <T = unknown>(componentType: string, data: Partial<T>): boolean => {
       try {
         // Check if entity has the component, if so update it, otherwise add it
-        if (componentManager.hasComponent(entityId, componentType)) {
-          return componentManager.updateComponent<T>(entityId, componentType, data);
+        if (registry.hasComponent(entityId, componentType)) {
+          return registry.updateComponent<T>(entityId, componentType, data);
         } else {
-          const component = componentManager.addComponent(entityId, componentType, data as T);
-          return !!component;
+          return registry.addComponent(entityId, componentType, data as T);
         }
       } catch (error) {
         console.warn(
@@ -736,7 +735,7 @@ export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
 
     hasComponent: (componentType: string): boolean => {
       try {
-        return componentManager.hasComponent(entityId, componentType);
+        return registry.hasComponent(entityId, componentType);
       } catch (error) {
         console.warn(
           `[ScriptAPI] Failed to check component ${componentType} for entity ${entityId}:`,
@@ -748,7 +747,7 @@ export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
 
     removeComponent: (componentType: string): boolean => {
       try {
-        return componentManager.removeComponent(entityId, componentType);
+        return registry.removeComponent(entityId, componentType);
       } catch (error) {
         console.warn(
           `[ScriptAPI] Failed to remove component ${componentType} for entity ${entityId}:`,

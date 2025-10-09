@@ -13,6 +13,7 @@ import {
   createConsoleAPI,
   createThreeJSAPI,
 } from './ScriptAPI';
+import type { ITransformAccessor } from '../ecs/components/accessors/types';
 import { threeJSEntityRegistry } from './ThreeJSEntityRegistry';
 import { createAudioAPI } from './apis/AudioAPI';
 import { createEntitiesAPI } from './apis/EntitiesAPI';
@@ -92,26 +93,25 @@ export class ScriptContextFactory {
     // This ensures all transform updates go through the mutation buffer
     Object.defineProperty(entityAPI, 'transform', {
       get() {
-        const transformAccessor = componentsProxy.Transform;
+        const transformAccessor = componentsProxy.Transform as ITransformAccessor | undefined;
         if (!transformAccessor) {
           // Return a no-op transform API if Transform component doesn't exist
           return {
-            position: [0, 0, 0],
-            rotation: [0, 0, 0],
-            scale: [1, 1, 1],
+            position: [0, 0, 0] as [number, number, number],
+            rotation: [0, 0, 0] as [number, number, number],
+            scale: [1, 1, 1] as [number, number, number],
             setPosition: () => {},
             setRotation: () => {},
             setScale: () => {},
             translate: () => {},
             rotate: () => {},
             lookAt: () => {},
-            forward: () => [0, 0, 1],
-            right: () => [1, 0, 0],
-            up: () => [0, 1, 0],
+            forward: () => [0, 0, 1] as [number, number, number],
+            right: () => [1, 0, 0] as [number, number, number],
+            up: () => [0, 1, 0] as [number, number, number],
           };
         }
         // Return accessor with getter properties for position/rotation/scale
-        const data = transformAccessor.get();
         return {
           get position() {
             return transformAccessor.get()?.position || [0, 0, 0];
