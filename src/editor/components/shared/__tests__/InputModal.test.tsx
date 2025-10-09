@@ -119,8 +119,9 @@ describe('InputModal', () => {
     const user = userEvent.setup();
     render(<InputModal isOpen={true} onClose={mockOnClose} />);
 
-    const checkbox = screen.getByLabelText(/Prevent default on arrow keys/);
-    await user.click(checkbox);
+    // Get the first checkbox (preventDefaultArrows)
+    const checkboxes = screen.getAllByRole('checkbox');
+    await user.click(checkboxes[0]);
 
     expect(mockUpdateSetting).toHaveBeenCalledWith('preventDefaultArrows', false);
   });
@@ -131,8 +132,9 @@ describe('InputModal', () => {
 
     await user.click(screen.getByText('Mouse'));
 
-    const checkbox = screen.getByLabelText(/Invert Y-axis/);
-    await user.click(checkbox);
+    // Get the first checkbox in mouse tab (invertY)
+    const checkboxes = screen.getAllByRole('checkbox');
+    await user.click(checkboxes[0]);
 
     expect(mockUpdateSetting).toHaveBeenCalledWith('invertY', true);
   });
