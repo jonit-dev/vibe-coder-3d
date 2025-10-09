@@ -10,9 +10,9 @@ import { ECSWorld } from '../lib/ecs/World';
 import { EntityId } from '../lib/ecs/types';
 import { getStringFromHash, storeString } from '../lib/ecs/utils/stringHashUtils';
 import { Logger } from '../lib/logger';
+import { ITimeAPI } from '../lib/scripting/ScriptAPI';
 import { IScriptExecutionResult, ScriptExecutor } from '../lib/scripting/ScriptExecutor';
 import { resolveScript } from '../lib/scripting/ScriptResolver';
-import { ITimeAPI } from '../lib/scripting/ScriptAPI';
 import { scheduler } from '../lib/scripting/adapters/scheduler';
 import { createInputAPI } from '../lib/scripting/apis/InputAPI';
 
@@ -116,27 +116,13 @@ function entityNeedsCompilation(eid: EntityId): boolean {
   const isCompiled = scriptExecutor.hasCompiled(scriptId);
   const needsCompilationFlag = scriptComponent.needsCompilation[eid] === 1;
 
-  logger.debug(`Checking compilation need for entity ${eid}:`, {
-    codeHash,
-    codeLength: code?.length || 0,
-    isEmpty,
-    hasExecutionFlags,
-    isCompiled,
-    needsCompilationFlag,
-    executeOnStart: scriptComponent.executeOnStart[eid],
-    executeInUpdate: scriptComponent.executeInUpdate[eid],
-    executeOnEnable: scriptComponent.executeOnEnable[eid],
-  });
-
   // Empty scripts with no execution flags don't need compilation
   if (isEmpty && !hasExecutionFlags) {
-    logger.debug(`Entity ${eid}: Empty script with no execution flags, skipping compilation`);
     return false;
   }
 
   // Check if script is already compiled and up to date
   const needsCompilation = !isCompiled || needsCompilationFlag;
-  logger.debug(`Entity ${eid}: Needs compilation = ${needsCompilation}`);
   return needsCompilation;
 }
 
@@ -178,27 +164,8 @@ async function compileScriptForEntity(eid: EntityId): Promise<boolean> {
     const scriptRefStr = getStringFromHash(scriptRefHash);
     const scriptRef = scriptRefStr ? JSON.parse(scriptRefStr) : undefined;
 
-    logger.debug(`Compiling script for entity ${eid}:`, {
-      codeHash,
-      codeLength: code?.length || 0,
-      codePreview: code?.substring(0, 100) || '(empty)',
-      hasScriptRef: !!scriptRef,
-      scriptRefSource: scriptRef?.source,
-      scriptRefId: scriptRef?.scriptId,
-      executeOnStart: scriptComponent.executeOnStart[eid],
-      executeInUpdate: scriptComponent.executeInUpdate[eid],
-      needsCompilation: scriptComponent.needsCompilation[eid],
-    });
-
     // Resolve script code (from external or inline)
     const resolution = await resolveScript(eid, { code, scriptRef });
-
-    logger.debug(`Script resolved for entity ${eid}:`, {
-      origin: resolution.origin,
-      codeLength: resolution.code?.length || 0,
-      path: resolution.path,
-      hash: resolution.hash,
-    });
 
     const resolvedCode = resolution.code;
 
@@ -227,7 +194,6 @@ async function compileScriptForEntity(eid: EntityId): Promise<boolean> {
       }
     }
 
-    logger.debug(`Compiling script with content for entity ${eid} (origin: ${resolution.origin})`);
     const result: IScriptExecutionResult = scriptExecutor.compileScript(resolvedCode, scriptId);
 
     // Update component with compilation results
@@ -273,17 +239,15 @@ async function executeScriptLifecycle(
   // Skip if disabled
   if (!scriptComponent.enabled[eid]) return;
 
-  logger.debug(`Attempting to execute ${method} for entity ${eid}`);
-
   // Ensure script is compiled before execution
   if (!(await ensureScriptCompiled(eid))) {
-    logger.error(`Script compilation failed for entity ${eid}, skipping execution`);
+    logger.error(`Entity ${eid}: Script compilation failed, skipping ${method}`);
     return; // Compilation failed
   }
 
   // Skip if script has errors after compilation attempt
   if (scriptComponent.hasErrors[eid]) {
-    logger.error(`Script has errors for entity ${eid}, skipping execution`);
+    logger.error(`Entity ${eid}: Script has errors, skipping ${method}`);
     return;
   }
 
@@ -303,12 +267,6 @@ async function executeScriptLifecycle(
     logger.warn(`Failed to parse parameters for entity ${eid}:`, error);
   }
 
-  logger.debug(`Executing script ${scriptId} method ${method} with parameters:`, {
-    maxExecutionTime,
-    parameters,
-    deltaTime,
-  });
-
   const result: IScriptExecutionResult = scriptExecutor.executeScript(
     scriptId,
     {
@@ -321,13 +279,9 @@ async function executeScriptLifecycle(
     method,
   );
 
-  logger.debug(`Script execution result for entity ${eid}:`, {
-    method,
-    success: result.success,
-    executionTime: result.executionTime,
-    error: result.error,
-    output: result.output,
-  });
+  if (!result.success && result.error) {
+    logger.error(`Entity ${eid}: ${method} execution failed:`, result.error);
+  }
 
   // Update performance stats
   totalScriptExecutionTime += result.executionTime;
@@ -440,6 +394,11 @@ function ensureAllScriptsCompiled(): void {
     // Skip disabled scripts
     if (!scriptComponent.enabled[eid]) continue;
 
+    // Ensure onStart will run when entering play mode
+    if (!scriptComponent.executeOnStart[eid]) {
+      scriptComponent.executeOnStart[eid] = 1;
+    }
+
     // Check if script needs compilation
     if (entityNeedsCompilation(eid)) {
       entitiesToCompile.add(eid);
@@ -470,20 +429,26 @@ async function executeScripts(deltaTime: number): Promise<void> {
 
   for (const eid of entities) {
     // Skip disabled scripts
-    if (!scriptComponent.enabled[eid]) continue;
+    if (!scriptComponent.enabled[eid]) {
+      logger.debug(`Entity ${eid}: Script disabled, skipping`);
+      continue;
+    }
 
     // Skip scripts with compilation errors
-    if (scriptComponent.hasErrors[eid]) continue;
+    if (scriptComponent.hasErrors[eid]) {
+      logger.warn(`Entity ${eid}: Script has errors, skipping execution`);
+      continue;
+    }
 
     // Execute onStart if not yet started and configured to do so
     if (!startedEntities.has(eid) && scriptComponent.executeOnStart[eid]) {
+      logger.info(`Entity ${eid}: Executing onStart()`);
       await executeScriptLifecycle(eid, 'onStart');
       startedEntities.add(eid);
     }
 
-    // Execute onUpdate if configured to do so (only during play mode or always if not play-dependent)
+    // Execute onUpdate if configured to do so
     if (scriptComponent.executeInUpdate[eid]) {
-      // For now, execute regardless of play state - could be made configurable per script
       await executeScriptLifecycle(eid, 'onUpdate', deltaTime);
     }
   }
@@ -502,6 +467,10 @@ export async function updateScriptSystem(
 
   // When entering play mode, ensure all scripts are marked for compilation
   if (isPlaying) {
+    // Reset started set on entering play so onStart runs again
+    if ((updateScriptSystem as any)._lastIsPlaying !== true) {
+      startedEntities.clear();
+    }
     ensureAllScriptsCompiled();
   }
 
@@ -513,6 +482,9 @@ export async function updateScriptSystem(
 
   // Execute scripts
   await executeScripts(deltaTime);
+
+  // Track last isPlaying state to detect edges next frame
+  (updateScriptSystem as any)._lastIsPlaying = isPlaying;
 }
 
 /**

@@ -6,10 +6,10 @@
 import { Types } from 'bitecs';
 import { z } from 'zod';
 
+import { Logger } from '@/core/lib/logger';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
-import { Logger } from '@/core/lib/logger';
 
 // Script reference for external scripts
 export const ScriptRefSchema = z.object({
@@ -34,10 +34,13 @@ const ScriptSchema = z.object({
   // External script reference
   scriptRef: ScriptRefSchema.optional().describe('Reference to external script file'),
 
-  // Execution control
-  executeInUpdate: z.boolean().default(true).describe('Execute script in update loop'),
-  executeOnStart: z.boolean().default(false).describe('Execute script when entity starts'),
-  executeOnEnable: z.boolean().default(false).describe('Execute script when component is enabled'),
+  // Execution control (simplified - scripts auto-run onStart/onUpdate during play mode)
+  executeInUpdate: z.boolean().default(true).describe('[Internal] Execute script in update loop'),
+  executeOnStart: z.boolean().default(true).describe('[Internal] Execute script when play starts'),
+  executeOnEnable: z
+    .boolean()
+    .default(false)
+    .describe('[Internal] Execute script when component is enabled'),
 
   // Performance monitoring
   maxExecutionTime: z
@@ -144,7 +147,8 @@ export const scriptComponent = ComponentFactory.create({
 
     // Execution control
     component.executeInUpdate[eid] = (data.executeInUpdate ?? true) ? 1 : 0;
-    component.executeOnStart[eid] = (data.executeOnStart ?? false) ? 1 : 0;
+    // Default to true so scripts run onStart when play begins
+    component.executeOnStart[eid] = (data.executeOnStart ?? true) ? 1 : 0;
     component.executeOnEnable[eid] = (data.executeOnEnable ?? false) ? 1 : 0;
 
     // Performance

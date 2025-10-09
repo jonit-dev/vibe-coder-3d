@@ -127,7 +127,10 @@ export const ScriptSection: React.FC<IScriptSectionProps> = ({
           {scriptData.scriptRef?.source === 'external' && (
             <div className="flex items-center gap-2 px-2 py-1 bg-blue-900/20 border border-blue-600 rounded text-xs">
               <FiExternalLink className="text-blue-400" />
-              <span className="text-blue-300 font-mono flex-1 truncate" title={scriptData.scriptRef.scriptId}>
+              <span
+                className="text-blue-300 font-mono flex-1 truncate"
+                title={scriptData.scriptRef.scriptId}
+              >
                 {scriptData.scriptRef.scriptId}
               </span>
             </div>
@@ -150,8 +153,8 @@ export const ScriptSection: React.FC<IScriptSectionProps> = ({
 
           {/* Enabled Toggle */}
           <CheckboxField
-            label="Enabled (Play Mode Only)"
-            description="Script executes only in play mode"
+            label="Enabled"
+            description="Run script when play mode starts (onStart + onUpdate)"
             value={scriptData.enabled}
             onChange={(enabled) => updateScript({ enabled })}
           />

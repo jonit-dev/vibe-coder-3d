@@ -2,8 +2,9 @@
 
 // Hello World TypeScript Script
 function onStart(): void {
+  console.log('Hello, World! This is a TypeScript script...UPDATED!');
   if (three.mesh) {
-    three.material.setColor("#00ff00");
+    three.material.setColor('#00ff00');
   }
 }
 

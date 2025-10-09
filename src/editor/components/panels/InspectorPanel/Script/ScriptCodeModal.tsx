@@ -14,7 +14,7 @@ import { ScriptParameters } from './ScriptParameters';
 const logger = Logger.create('ScriptCodeModal');
 
 const SYNC_INTERVAL = 10000; // 10 seconds
-const AUTO_SAVE_DELAY = 2000; // 2 seconds after typing stops
+const AUTO_SAVE_DELAY = 10000; // 10 seconds after typing stops
 
 export interface IScriptCodeModalProps {
   isOpen: boolean;
@@ -246,11 +246,17 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
     try {
       setIsSyncing(true);
 
-      logger.debug(`Syncing from external script: ${scriptData.scriptRef.scriptId}`);
+      logger.info(`Fetching script from external file: ${scriptData.scriptRef.scriptId}`);
 
       const response = await fetch(
         `/api/script/load?id=${encodeURIComponent(scriptData.scriptRef.scriptId)}`,
       );
+
+      logger.debug('Fetch response received:', {
+        status: response.status,
+        ok: response.ok,
+      });
+
       const result = await response.json();
 
       if (!result.success) {
@@ -273,7 +279,13 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
 
       // Check if external file was modified
       if (serverHash !== scriptData.scriptRef.codeHash) {
-        logger.info(`External script changed, updating: ${scriptData.scriptRef.scriptId}`);
+        logger.info(`External script changed, updating editor:`, {
+          scriptId: scriptData.scriptRef.scriptId,
+          oldHash: scriptData.scriptRef.codeHash?.substring(0, 8),
+          newHash: serverHash.substring(0, 8),
+          oldCodeLength: scriptData.code?.length || 0,
+          newCodeLength: result.code?.length || 0,
+        });
 
         // Update code
         onUpdate({
@@ -287,6 +299,11 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
 
         lastCodeRef.current = result.code;
         setLastSyncTime(Date.now());
+      } else {
+        logger.debug(`External script unchanged (hash match):`, {
+          scriptId: scriptData.scriptRef.scriptId,
+          hash: serverHash.substring(0, 8),
+        });
       }
     } catch (error) {
       logger.error('Failed to sync from external script:', error);
@@ -300,8 +317,18 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
    */
   useEffect(() => {
     if (!isOpen || !scriptData.scriptRef || scriptData.scriptRef.source !== 'external') {
+      logger.debug('Skipping sync:', {
+        isOpen,
+        hasScriptRef: !!scriptData.scriptRef,
+        source: scriptData.scriptRef?.source,
+      });
       return;
     }
+
+    logger.info('ScriptCodeModal opened - initiating sync from external file:', {
+      scriptId: scriptData.scriptRef.scriptId,
+      currentCodeLength: scriptData.code?.length || 0,
+    });
 
     // Initial sync
     syncFromExternal();
@@ -406,7 +433,9 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
         <div className="flex items-center gap-3">
           <FiCode className="text-blue-400" />
           <h2 className="text-lg font-semibold text-white">
-            Script Editor: {scriptData.scriptName}
+            {scriptData.scriptRef?.source === 'external'
+              ? scriptData.scriptRef.scriptId
+              : scriptData.scriptName || 'Script Editor'}
           </h2>
           {scriptData.scriptRef?.source === 'external' && (
             <span className="flex items-center gap-1 text-xs bg-blue-600 text-white px-2 py-1 rounded">
@@ -419,36 +448,32 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
               Unsaved Changes
             </span>
           )}
-          {syncStatus === 'syncing' && (
-            <span className="flex items-center gap-1 text-xs bg-gray-600 text-white px-2 py-1 rounded">
-              <FiRefreshCw className="w-3 h-3 animate-spin" />
-              Syncing...
-            </span>
-          )}
-          {syncStatus === 'saved' && (
-            <span className="flex items-center gap-1 text-xs bg-green-600 text-white px-2 py-1 rounded">
-              <FiSave className="w-3 h-3" />
-              Saved
-            </span>
+          {/* Passive sync indicator - only show when syncing */}
+          {isSyncing && (
+            <FiRefreshCw
+              className="w-4 h-4 text-blue-400 animate-spin"
+              title="Syncing with external file..."
+            />
           )}
           {syncStatus === 'error' && (
-            <span className="flex items-center gap-1 text-xs bg-red-600 text-white px-2 py-1 rounded">
-              <FiAlertTriangle className="w-3 h-3" />
-              Sync Error
-            </span>
+            <FiAlertTriangle className="w-4 h-4 text-red-400" title="Sync error" />
           )}
           {syncStatus === 'missing' && (
-            <span className="flex items-center gap-1 text-xs bg-orange-600 text-white px-2 py-1 rounded">
-              <FiAlertTriangle className="w-3 h-3" />
-              File Missing
-            </span>
+            <FiAlertTriangle className="w-4 h-4 text-orange-400" title="External file missing" />
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          {scriptData.scriptRef?.source === 'external' && lastSyncTime && !missingFile && (
-            <span className="text-xs text-gray-400">
-              Last sync: {new Date(lastSyncTime).toLocaleTimeString()}
+          {scriptData.scriptRef?.source === 'external' && (
+            <span className="text-xs text-gray-400 flex items-center gap-1">
+              {isSyncing ? (
+                <>
+                  <FiRefreshCw className="w-3 h-3 animate-spin" />
+                  Syncing...
+                </>
+              ) : lastSyncTime && !missingFile ? (
+                <>Last sync: {new Date(lastSyncTime).toLocaleTimeString()}</>
+              ) : null}
             </span>
           )}
           <button
@@ -459,17 +484,6 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
             <FiSave className="w-4 h-4" />
             Save
           </button>
-          {scriptData.scriptRef?.source === 'external' && (
-            <button
-              onClick={syncFromExternal}
-              disabled={isSyncing}
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
-              title="Sync from external file"
-            >
-              <FiRefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              Sync
-            </button>
-          )}
           <button
             onClick={handleClose}
             className="p-2 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
@@ -583,32 +597,16 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
               </div>
             </CollapsibleSection>
 
-            {/* Execution Settings */}
-            <CollapsibleSection title="Execution Settings" defaultExpanded={false}>
+            {/* Advanced Settings */}
+            <CollapsibleSection title="Advanced" defaultExpanded={false}>
               <div className="space-y-3">
-                <CheckboxField
-                  label="Execute on Start"
-                  description="Run onStart() when entity is created"
-                  value={scriptData.executeOnStart}
-                  onChange={(executeOnStart) => onUpdate({ executeOnStart })}
-                />
-
-                <CheckboxField
-                  label="Execute in Update"
-                  description="Run onUpdate() every frame"
-                  value={scriptData.executeInUpdate}
-                  onChange={(executeInUpdate) => onUpdate({ executeInUpdate })}
-                />
-
-                <CheckboxField
-                  label="Execute on Enable"
-                  description="Run onEnable() when component is enabled"
-                  value={scriptData.executeOnEnable}
-                  onChange={(executeOnEnable) => onUpdate({ executeOnEnable })}
-                />
+                <div className="text-xs text-gray-400 mb-2">
+                  Scripts automatically run onStart() when play begins and onUpdate() every frame
+                  while playing.
+                </div>
 
                 <SingleAxisField
-                  label="Max Execution Time"
+                  label="Max Execution Time (ms)"
                   value={scriptData.maxExecutionTime}
                   onChange={(maxExecutionTime) => onUpdate({ maxExecutionTime })}
                   min={1}

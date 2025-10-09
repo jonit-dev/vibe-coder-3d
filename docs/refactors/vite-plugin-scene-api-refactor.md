@@ -266,9 +266,7 @@ export interface ISceneFormatHandler {
   save(
     args: ISaveArgs,
   ): Promise<{ filename: string; modified: string; size: number; extra?: Record<string, unknown> }>;
-  load(
-    args: ILoadArgs,
-  ): Promise<{
+  load(args: ILoadArgs): Promise<{
     filename: string;
     data: unknown;
     modified?: string;

@@ -43,23 +43,24 @@ export async function resolveScript(
   entityId: EntityId,
   data: IScriptData,
 ): Promise<IScriptResolution> {
-  // If scriptRef is present and source is external, fetch from external file
+  // If scriptRef is present and source is external, use cached code or fetch
   if (data.scriptRef && data.scriptRef.source === 'external') {
-    logger.debug(`Resolving external script for entity ${entityId}:`, {
-      scriptId: data.scriptRef.scriptId,
-      path: data.scriptRef.path,
-    });
+    // If we have inline code, prefer it (already synced by editor)
+    if (data.code && data.code.length > 0) {
+      return {
+        code: data.code,
+        origin: 'external',
+        path: data.scriptRef.path,
+        hash: data.scriptRef.codeHash,
+      };
+    }
 
     try {
       // Check cache first
       const cached = externalScriptCache.get(data.scriptRef.scriptId);
       const now = Date.now();
 
-      if (
-        cached &&
-        cached.hash === data.scriptRef.codeHash &&
-        now - cached.timestamp < CACHE_TTL
-      ) {
+      if (cached && cached.hash === data.scriptRef.codeHash && now - cached.timestamp < CACHE_TTL) {
         logger.debug(`Using cached external script for ${data.scriptRef.scriptId}`);
         return {
           code: cached.code,
