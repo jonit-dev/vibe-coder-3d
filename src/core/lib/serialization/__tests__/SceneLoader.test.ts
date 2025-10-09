@@ -2,21 +2,21 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SceneLoader } from '../SceneLoader';
 import type { ISceneData } from '../SceneSerializer';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
-import { ComponentManager } from '@core/lib/ecs/ComponentManager';
+import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { MaterialRegistry } from '@core/materials/MaterialRegistry';
 import { PrefabRegistry } from '@core/prefabs/PrefabRegistry';
 
 describe('SceneLoader', () => {
   let loader: SceneLoader;
   let entityManager: EntityManager;
-  let componentManager: ComponentManager;
+  let componentRegistry: ComponentRegistry;
   let materialRegistry: MaterialRegistry;
   let prefabRegistry: PrefabRegistry;
 
   beforeEach(async () => {
     loader = new SceneLoader();
     entityManager = EntityManager.getInstance();
-    componentManager = ComponentManager.getInstance();
+    componentRegistry = ComponentRegistry.getInstance();
     materialRegistry = MaterialRegistry.getInstance();
     prefabRegistry = PrefabRegistry.getInstance();
 
@@ -39,7 +39,7 @@ describe('SceneLoader', () => {
         prefabs: [],
       };
 
-      await expect(loader.load(sceneData, entityManager, componentManager)).resolves.not.toThrow();
+      await expect(loader.load(sceneData, entityManager, componentRegistry)).resolves.not.toThrow();
     });
 
     it('should load complete scene', async () => {
@@ -112,7 +112,7 @@ describe('SceneLoader', () => {
         ],
       };
 
-      await loader.load(sceneData, entityManager, componentManager);
+      await loader.load(sceneData, entityManager, componentRegistry);
 
       // Verify all loaded
       expect(entityManager.getAllEntities()).toHaveLength(1);
@@ -153,7 +153,7 @@ describe('SceneLoader', () => {
         prefabs: [],
       };
 
-      await loader.load(sceneData, entityManager, componentManager, {
+      await loader.load(sceneData, entityManager, componentRegistry, {
         refreshMaterials,
         refreshPrefabs,
       });
@@ -174,7 +174,7 @@ describe('SceneLoader', () => {
         prefabs: [],
       };
 
-      await expect(loader.load(sceneData, entityManager, componentManager)).resolves.not.toThrow();
+      await expect(loader.load(sceneData, entityManager, componentRegistry)).resolves.not.toThrow();
     });
   });
 
@@ -238,7 +238,7 @@ describe('SceneLoader', () => {
         },
       ];
 
-      await loader.loadStatic(entities, materials, prefabs, entityManager, componentManager);
+      await loader.loadStatic(entities, materials, prefabs, entityManager, componentRegistry);
 
       expect(entityManager.getAllEntities()).toHaveLength(1);
       expect(materialRegistry.get('mat1')).toBeDefined();
@@ -304,7 +304,7 @@ describe('SceneLoader', () => {
         },
       ];
 
-      await loader.loadStatic(entities, materials, prefabs, entityManager, componentManager);
+      await loader.loadStatic(entities, materials, prefabs, entityManager, componentRegistry);
 
       // All should be loaded
       expect(entityManager.getAllEntities()).toHaveLength(1);
@@ -316,7 +316,7 @@ describe('SceneLoader', () => {
       const refreshMaterials = vi.fn();
       const refreshPrefabs = vi.fn();
 
-      await loader.loadStatic([], [], [], entityManager, componentManager, {
+      await loader.loadStatic([], [], [], entityManager, componentRegistry, {
         refreshMaterials,
         refreshPrefabs,
       });
@@ -392,7 +392,7 @@ describe('SceneLoader', () => {
         ],
       };
 
-      await loader.load(sceneData, entityManager, componentManager);
+      await loader.load(sceneData, entityManager, componentRegistry);
 
       expect(entityManager.getAllEntities()).toHaveLength(1);
       expect(materialRegistry.get('mat1')).toBeDefined();
@@ -446,12 +446,12 @@ describe('SceneLoader', () => {
         prefabs: [],
       };
 
-      await loader.load(sceneData, entityManager, componentManager);
+      await loader.load(sceneData, entityManager, componentRegistry);
       expect(entityManager.getAllEntities()).toHaveLength(1);
 
       // Modify scene
       const newEntity = entityManager.createEntity('New Entity');
-      componentManager.addComponent(newEntity.id, 'Transform', {
+      componentRegistry.addComponent(newEntity.id, 'Transform', {
         position: [1, 1, 1],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
@@ -488,7 +488,7 @@ describe('SceneLoader', () => {
         prefabs: [],
       };
 
-      await loader.load(scene1, entityManager, componentManager);
+      await loader.load(scene1, entityManager, componentRegistry);
       expect(entityManager.getAllEntities()).toHaveLength(1);
       expect(entityManager.getAllEntities()[0].name).toBe('Entity 1');
 
@@ -518,7 +518,7 @@ describe('SceneLoader', () => {
         prefabs: [],
       };
 
-      await loader.load(scene2, entityManager, componentManager);
+      await loader.load(scene2, entityManager, componentRegistry);
       expect(entityManager.getAllEntities()).toHaveLength(1);
       expect(entityManager.getAllEntities()[0].name).toBe('Entity 2');
     });

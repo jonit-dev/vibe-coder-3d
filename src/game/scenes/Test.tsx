@@ -1,4 +1,4 @@
-import { ActionType, CompositeType, ControlType, DeviceType } from '@core';
+import { ActionType, CompositeType, ControlType, DeviceType } from '@core/lib/input/inputTypes';
 import { defineScene } from './defineScene';
 
 /**

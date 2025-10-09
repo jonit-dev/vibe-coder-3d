@@ -77,7 +77,7 @@ export default [
             {
               target: './src/game/**/*',
               from: './src/core/**/*',
-              except: ['**/index.ts', '**/lib/extension/**/*'],
+              except: ['**/index.ts', '**/lib/extension/**/*', '**/lib/input/inputTypes.ts'],
               message:
                 'Game code can only import from @core/* public API or @core/lib/extension/*. Use @core/* instead of deep imports.',
             },

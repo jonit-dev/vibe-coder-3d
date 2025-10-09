@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { updateScriptSystem, setScriptEnabled, recompileAllScripts } from '../ScriptSystem';
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { ECSWorld } from '@/core/lib/ecs/World';
-import { ScriptExecutor } from '@/core/lib/scripting/ScriptExecutor';
+import { DirectScriptExecutor } from '@/core/lib/scripting/DirectScriptExecutor';
 
 // Mock dependencies
 vi.mock('@/core/lib/logger', () => ({
@@ -52,17 +52,14 @@ vi.mock('@/core/lib/scripting/apis/InputAPI', () => ({
 
 describe('ScriptSystem', () => {
   let world: any;
-  let scriptExecutor: ScriptExecutor;
+  let scriptExecutor: DirectScriptExecutor;
 
   beforeEach(() => {
     // Get world instance
     world = ECSWorld.getInstance().getWorld();
 
-    // Get script executor
-    scriptExecutor = ScriptExecutor.getInstance();
-
-    // Clear any existing scripts
-    scriptExecutor.clearAll();
+    // Get script executor - DirectScriptExecutor is not a singleton
+    scriptExecutor = new DirectScriptExecutor();
   });
 
   describe('Script Lifecycle', () => {

@@ -3,6 +3,9 @@
  * Extended type definitions for WebGPU API support
  */
 
+/* eslint-disable @typescript-eslint/naming-convention */
+/* eslint-disable @typescript-eslint/no-empty-object-type */
+
 interface Navigator {
   readonly gpu?: GPU;
 }

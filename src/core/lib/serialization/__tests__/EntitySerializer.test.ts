@@ -1,18 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { EntitySerializer } from '../EntitySerializer';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
-import { ComponentManager } from '@core/lib/ecs/ComponentManager';
+import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import type { ISerializedEntity } from '../SceneSerializer';
 
 describe('EntitySerializer', () => {
   let serializer: EntitySerializer;
   let entityManager: EntityManager;
-  let componentManager: ComponentManager;
+  let componentRegistry: ComponentRegistry;
 
   beforeEach(() => {
     serializer = new EntitySerializer();
     entityManager = EntityManager.getInstance();
-    componentManager = ComponentManager.getInstance();
+    componentRegistry = ComponentRegistry.getInstance();
 
     // Clear managers
     entityManager.clearEntities();
@@ -20,20 +20,20 @@ describe('EntitySerializer', () => {
 
   describe('serialize', () => {
     it('should serialize empty entities', () => {
-      const result = serializer.serialize(entityManager, componentManager);
+      const result = serializer.serialize(entityManager, componentRegistry);
       expect(result).toEqual([]);
     });
 
     it('should serialize single entity with Transform', () => {
       const entity = entityManager.createEntity('Test Entity');
 
-      componentManager.addComponent(entity.id, 'Transform', {
+      componentRegistry.addComponent(entity.id, 'Transform', {
         position: [0, 1, 2],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
 
-      const result = serializer.serialize(entityManager, componentManager);
+      const result = serializer.serialize(entityManager, componentRegistry);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
@@ -52,20 +52,20 @@ describe('EntitySerializer', () => {
     it('should serialize entity with multiple components', () => {
       const entity = entityManager.createEntity('Camera Entity');
 
-      componentManager.addComponent(entity.id, 'Transform', {
+      componentRegistry.addComponent(entity.id, 'Transform', {
         position: [0, 5, 10],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
 
-      componentManager.addComponent(entity.id, 'Camera', {
+      componentRegistry.addComponent(entity.id, 'Camera', {
         fov: 60,
         near: 0.1,
         far: 1000,
         isMain: true,
       });
 
-      const result = serializer.serialize(entityManager, componentManager);
+      const result = serializer.serialize(entityManager, componentRegistry);
 
       expect(result).toHaveLength(1);
       expect(result[0].components).toHaveProperty('Transform');
@@ -80,19 +80,19 @@ describe('EntitySerializer', () => {
       const parent = entityManager.createEntity('Parent');
       const child = entityManager.createEntity('Child', parent.id);
 
-      componentManager.addComponent(parent.id, 'Transform', {
+      componentRegistry.addComponent(parent.id, 'Transform', {
         position: [0, 0, 0],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
 
-      componentManager.addComponent(child.id, 'Transform', {
+      componentRegistry.addComponent(child.id, 'Transform', {
         position: [1, 0, 0],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
 
-      const result = serializer.serialize(entityManager, componentManager);
+      const result = serializer.serialize(entityManager, componentRegistry);
 
       expect(result).toHaveLength(2);
       const childEntity = result.find((e) => e.name === 'Child');
@@ -105,14 +105,14 @@ describe('EntitySerializer', () => {
       const entity3 = entityManager.createEntity('Entity 3');
 
       [entity1, entity2, entity3].forEach((entity) => {
-        componentManager.addComponent(entity.id, 'Transform', {
+        componentRegistry.addComponent(entity.id, 'Transform', {
           position: [0, 0, 0],
           rotation: [0, 0, 0],
           scale: [1, 1, 1],
         });
       });
 
-      const result = serializer.serialize(entityManager, componentManager);
+      const result = serializer.serialize(entityManager, componentRegistry);
 
       expect(result).toHaveLength(3);
       expect(result.map((e) => e.name)).toEqual(['Entity 1', 'Entity 2', 'Entity 3']);
@@ -121,7 +121,7 @@ describe('EntitySerializer', () => {
 
   describe('deserialize', () => {
     it('should deserialize empty array', () => {
-      expect(() => serializer.deserialize([], entityManager, componentManager)).not.toThrow();
+      expect(() => serializer.deserialize([], entityManager, componentRegistry)).not.toThrow();
       expect(entityManager.getAllEntities()).toHaveLength(0);
     });
 
@@ -140,14 +140,14 @@ describe('EntitySerializer', () => {
         },
       ];
 
-      serializer.deserialize(entities, entityManager, componentManager);
+      serializer.deserialize(entities, entityManager, componentRegistry);
 
       const allEntities = entityManager.getAllEntities();
       expect(allEntities).toHaveLength(1);
       expect(allEntities[0].name).toBe('Test Entity');
 
       const createdEntity = allEntities[0];
-      const components = componentManager.getComponentsForEntity(createdEntity.id);
+      const components = componentRegistry.getComponentsForEntity(createdEntity.id);
       expect(components.some((c) => c.type === 'Transform')).toBe(true);
     });
 
@@ -172,12 +172,12 @@ describe('EntitySerializer', () => {
         },
       ];
 
-      serializer.deserialize(entities, entityManager, componentManager);
+      serializer.deserialize(entities, entityManager, componentRegistry);
 
       const allEntities = entityManager.getAllEntities();
       const createdEntity = allEntities[0];
 
-      const components = componentManager.getComponentsForEntity(createdEntity.id);
+      const components = componentRegistry.getComponentsForEntity(createdEntity.id);
       expect(components).toHaveLength(2);
       expect(components.some((c) => c.type === 'Transform')).toBe(true);
       expect(components.some((c) => c.type === 'Camera')).toBe(true);
@@ -210,7 +210,7 @@ describe('EntitySerializer', () => {
         },
       ];
 
-      serializer.deserialize(entities, entityManager, componentManager);
+      serializer.deserialize(entities, entityManager, componentRegistry);
 
       const allEntities = entityManager.getAllEntities();
       expect(allEntities).toHaveLength(2);
@@ -257,7 +257,7 @@ describe('EntitySerializer', () => {
         },
       ];
 
-      serializer.deserialize(entities, entityManager, componentManager);
+      serializer.deserialize(entities, entityManager, componentRegistry);
 
       const allEntities = entityManager.getAllEntities();
       expect(allEntities).toHaveLength(3);
@@ -303,7 +303,7 @@ describe('EntitySerializer', () => {
         },
       ];
 
-      serializer.deserialize(entities, entityManager, componentManager);
+      serializer.deserialize(entities, entityManager, componentRegistry);
 
       const allEntities = entityManager.getAllEntities();
       expect(allEntities).toHaveLength(3);
@@ -376,19 +376,19 @@ describe('EntitySerializer', () => {
       const parent = entityManager.createEntity('Parent');
       const child = entityManager.createEntity('Child', parent.id);
 
-      componentManager.addComponent(parent.id, 'Transform', {
+      componentRegistry.addComponent(parent.id, 'Transform', {
         position: [1, 2, 3],
         rotation: [45, 90, 180],
         scale: [2, 2, 2],
       });
 
-      componentManager.addComponent(child.id, 'Transform', {
+      componentRegistry.addComponent(child.id, 'Transform', {
         position: [0, 1, 0],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
 
-      componentManager.addComponent(child.id, 'Camera', {
+      componentRegistry.addComponent(child.id, 'Camera', {
         fov: 60,
         near: 0.1,
         far: 1000,
@@ -396,11 +396,11 @@ describe('EntitySerializer', () => {
       });
 
       // Serialize
-      const serialized = serializer.serialize(entityManager, componentManager);
+      const serialized = serializer.serialize(entityManager, componentRegistry);
 
       // Clear and deserialize
       entityManager.clearEntities();
-      serializer.deserialize(serialized, entityManager, componentManager);
+      serializer.deserialize(serialized, entityManager, componentRegistry);
 
       // Verify
       const allEntities = entityManager.getAllEntities();
@@ -410,7 +410,7 @@ describe('EntitySerializer', () => {
       const deserializedChild = allEntities.find((e) => e.name === 'Child');
       expect(deserializedChild?.parentId).toBe(deserializedParent?.id);
 
-      const childComponents = componentManager.getComponentsForEntity(deserializedChild!.id);
+      const childComponents = componentRegistry.getComponentsForEntity(deserializedChild!.id);
       expect(childComponents).toHaveLength(2);
       expect(childComponents.some((c) => c.type === 'Transform')).toBe(true);
       expect(childComponents.some((c) => c.type === 'Camera')).toBe(true);

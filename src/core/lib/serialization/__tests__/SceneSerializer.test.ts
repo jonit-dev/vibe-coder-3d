@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SceneSerializer } from '../SceneSerializer';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
-import { ComponentManager } from '@core/lib/ecs/ComponentManager';
+import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { MaterialRegistry } from '@core/materials/MaterialRegistry';
 import { PrefabRegistry } from '@core/prefabs/PrefabRegistry';
 import type { IMaterialDefinition } from '@core/materials';
@@ -10,14 +10,14 @@ import type { IPrefabDefinition } from '@core/prefabs';
 describe('SceneSerializer', () => {
   let serializer: SceneSerializer;
   let entityManager: EntityManager;
-  let componentManager: ComponentManager;
+  let componentRegistry: ComponentRegistry;
   let materialRegistry: MaterialRegistry;
   let prefabRegistry: PrefabRegistry;
 
   beforeEach(async () => {
     serializer = new SceneSerializer();
     entityManager = EntityManager.getInstance();
-    componentManager = ComponentManager.getInstance();
+    componentRegistry = ComponentRegistry.getInstance();
     materialRegistry = MaterialRegistry.getInstance();
     prefabRegistry = PrefabRegistry.getInstance();
 
@@ -35,7 +35,7 @@ describe('SceneSerializer', () => {
         timestamp: '2025-01-01T00:00:00.000Z',
       };
 
-      const result = await serializer.serialize(entityManager, componentManager, metadata);
+      const result = await serializer.serialize(entityManager, componentRegistry, metadata);
 
       expect(result.metadata.name).toBe(metadata.name);
       expect(result.metadata.version).toBe(metadata.version);
@@ -48,7 +48,7 @@ describe('SceneSerializer', () => {
 
     it('should serialize scene with entities only', async () => {
       const entity = entityManager.createEntity('Test Entity');
-      componentManager.addComponent(entity.id, 'Transform', {
+      componentRegistry.addComponent(entity.id, 'Transform', {
         position: [0, 0, 0],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
@@ -60,7 +60,7 @@ describe('SceneSerializer', () => {
         timestamp: '2025-01-01T00:00:00.000Z',
       };
 
-      const result = await serializer.serialize(entityManager, componentManager, metadata);
+      const result = await serializer.serialize(entityManager, componentRegistry, metadata);
 
       expect(result.entities).toHaveLength(1);
       expect(result.entities[0].name).toBe('Test Entity');
@@ -96,7 +96,7 @@ describe('SceneSerializer', () => {
         timestamp: '2025-01-01T00:00:00.000Z',
       };
 
-      const result = await serializer.serialize(entityManager, componentManager, metadata);
+      const result = await serializer.serialize(entityManager, componentRegistry, metadata);
 
       expect(result.entities).toHaveLength(0);
       expect(result.materials).toHaveLength(2); // Default + test-mat
@@ -136,7 +136,7 @@ describe('SceneSerializer', () => {
         timestamp: '2025-01-01T00:00:00.000Z',
       };
 
-      const result = await serializer.serialize(entityManager, componentManager, metadata);
+      const result = await serializer.serialize(entityManager, componentRegistry, metadata);
 
       expect(result.entities).toHaveLength(0);
       expect(result.materials).toHaveLength(1); // Default material always present
@@ -148,12 +148,12 @@ describe('SceneSerializer', () => {
     it('should serialize complete scene with all types', async () => {
       // Add entity
       const entity = entityManager.createEntity('Camera');
-      componentManager.addComponent(entity.id, 'Transform', {
+      componentRegistry.addComponent(entity.id, 'Transform', {
         position: [0, 5, 10],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
-      componentManager.addComponent(entity.id, 'Camera', {
+      componentRegistry.addComponent(entity.id, 'Camera', {
         fov: 60,
         near: 0.1,
         far: 1000,
@@ -210,7 +210,7 @@ describe('SceneSerializer', () => {
         timestamp: '2025-01-01T00:00:00.000Z',
       };
 
-      const result = await serializer.serialize(entityManager, componentManager, metadata);
+      const result = await serializer.serialize(entityManager, componentRegistry, metadata);
 
       expect(result.metadata.name).toBe(metadata.name);
       expect(result.metadata.version).toBe(metadata.version);
@@ -235,7 +235,7 @@ describe('SceneSerializer', () => {
       const grandchild = entityManager.createEntity('Grandchild', child1.id);
 
       [parent, child1, child2, grandchild].forEach((entity) => {
-        componentManager.addComponent(entity.id, 'Transform', {
+        componentRegistry.addComponent(entity.id, 'Transform', {
           position: [0, 0, 0],
           rotation: [0, 0, 0],
           scale: [1, 1, 1],
@@ -248,7 +248,7 @@ describe('SceneSerializer', () => {
         timestamp: '2025-01-01T00:00:00.000Z',
       };
 
-      const result = await serializer.serialize(entityManager, componentManager, metadata);
+      const result = await serializer.serialize(entityManager, componentRegistry, metadata);
 
       expect(result.entities).toHaveLength(4);
 
@@ -264,13 +264,13 @@ describe('SceneSerializer', () => {
     it('should include all component data', async () => {
       const entity = entityManager.createEntity('Camera Entity');
 
-      componentManager.addComponent(entity.id, 'Transform', {
+      componentRegistry.addComponent(entity.id, 'Transform', {
         position: [5, 10, 5],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
 
-      componentManager.addComponent(entity.id, 'Camera', {
+      componentRegistry.addComponent(entity.id, 'Camera', {
         fov: 60,
         near: 0.1,
         far: 1000,
@@ -283,7 +283,7 @@ describe('SceneSerializer', () => {
         timestamp: '2025-01-01T00:00:00.000Z',
       };
 
-      const result = await serializer.serialize(entityManager, componentManager, metadata);
+      const result = await serializer.serialize(entityManager, componentRegistry, metadata);
 
       expect(result.entities).toHaveLength(1);
       const serializedEntity = result.entities[0];
@@ -309,7 +309,7 @@ describe('SceneSerializer', () => {
         version: 2,
       };
 
-      const result = await serializer.serialize(entityManager, componentManager, metadata);
+      const result = await serializer.serialize(entityManager, componentRegistry, metadata);
 
       expect(result.metadata.name).toBe('Test Scene');
       expect(result.metadata.version).toBe(2);
@@ -324,7 +324,7 @@ describe('SceneSerializer', () => {
         description: 'Test description',
       };
 
-      const result = await serializer.serialize(entityManager, componentManager, metadata as any);
+      const result = await serializer.serialize(entityManager, componentRegistry, metadata as any);
 
       expect(result.metadata).toMatchObject({
         name: 'Custom Scene',

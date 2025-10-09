@@ -1,13 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ScriptExecutor } from '../ScriptExecutor';
-import { IScriptExecutionOptions } from '../ScriptExecutor';
+import { DirectScriptExecutor } from '../DirectScriptExecutor';
+import type { IScriptExecutionOptions } from '../ScriptAPI';
 
-describe('ScriptExecutor Integration', () => {
-  let executor: ScriptExecutor;
+describe('DirectScriptExecutor Integration', () => {
+  let executor: DirectScriptExecutor;
 
   beforeEach(() => {
-    executor = ScriptExecutor.getInstance();
-    executor.clearAll();
+    executor = new DirectScriptExecutor();
   });
 
   const createMockOptions = (): IScriptExecutionOptions => ({

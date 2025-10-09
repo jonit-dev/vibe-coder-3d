@@ -4,7 +4,7 @@ import { createEngineInstance } from '../lib/ecs/factories/createEngineInstance'
 import {
   getWorldSingleton,
   getEntityManagerSingleton,
-  getComponentManagerSingleton,
+  getComponentRegistrySingleton,
 } from '../lib/ecs/adapters/SingletonAdapter';
 
 describe('Singleton Elimination Integration', () => {
@@ -17,7 +17,7 @@ describe('Singleton Elimination Integration', () => {
       expect(engineB).toBeDefined();
       expect(engineA.world).not.toBe(engineB.world);
       expect(engineA.entityManager).not.toBe(engineB.entityManager);
-      expect(engineA.componentManager).not.toBe(engineB.componentManager);
+      expect(engineA.componentRegistry).not.toBe(engineB.componentRegistry);
 
       // Test entity isolation
       const entityA = engineA.entityManager.createEntity('Entity A');
@@ -39,16 +39,16 @@ describe('Singleton Elimination Integration', () => {
 
       expect(engine.container.has('ECSWorld')).toBe(true);
       expect(engine.container.has('EntityManager')).toBe(true);
-      expect(engine.container.has('ComponentManager')).toBe(true);
+      expect(engine.container.has('ComponentRegistry')).toBe(true);
       expect(engine.container.has('EntityQueries')).toBe(true);
 
       const resolvedWorld = engine.container.resolve('ECSWorld');
       const resolvedEntityManager = engine.container.resolve('EntityManager');
-      const resolvedComponentManager = engine.container.resolve('ComponentManager');
+      const resolvedComponentRegistry = engine.container.resolve('ComponentRegistry');
 
       expect(resolvedWorld).toBe(engine.world);
       expect(resolvedEntityManager).toBe(engine.entityManager);
-      expect(resolvedComponentManager).toBe(engine.componentManager);
+      expect(resolvedComponentRegistry).toBe(engine.componentRegistry);
 
       engine.dispose();
     });
@@ -59,27 +59,27 @@ describe('Singleton Elimination Integration', () => {
       // These should work without throwing errors
       const world = getWorldSingleton();
       const entityManager = getEntityManagerSingleton();
-      const componentManager = getComponentManagerSingleton();
+      const componentRegistry = getComponentRegistrySingleton();
 
       expect(world).toBeDefined();
       expect(entityManager).toBeDefined();
-      expect(componentManager).toBeDefined();
+      expect(componentRegistry).toBeDefined();
     });
 
     it('should maintain backward compatibility', () => {
       const entityManager = getEntityManagerSingleton();
-      const componentManager = getComponentManagerSingleton();
+      const componentRegistry = getComponentRegistrySingleton();
 
       // Should be able to use singleton API
       const entity = entityManager.createEntity('Legacy Entity');
-      componentManager.addComponent(entity.id, 'Transform', {
+      componentRegistry.addComponent(entity.id, 'Transform', {
         position: [0, 0, 0],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
 
       expect(entity).toBeDefined();
-      expect(componentManager.hasComponent(entity.id, 'Transform')).toBe(true);
+      expect(componentRegistry.hasComponent(entity.id, 'Transform')).toBe(true);
 
       // Clean up
       entityManager.deleteEntity(entity.id);
@@ -95,29 +95,31 @@ describe('Singleton Elimination Integration', () => {
       const entityA = engineA.entityManager.createEntity('Entity A');
       const entityB = engineB.entityManager.createEntity('Entity B');
 
-      engineA.componentManager.addComponent(entityA.id, 'Transform', {
+      engineA.componentRegistry.addComponent(entityA.id, 'Transform', {
         position: [1, 2, 3],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
 
-      engineB.componentManager.addComponent(entityB.id, 'Transform', {
+      engineB.componentRegistry.addComponent(entityB.id, 'Transform', {
         position: [4, 5, 6],
         rotation: [0, 0, 0],
         scale: [2, 2, 2],
       });
 
       // Verify component isolation
-      const transformA = engineA.componentManager.getComponentData(entityA.id, 'Transform') as any;
-      const transformB = engineB.componentManager.getComponentData(entityB.id, 'Transform') as any;
+      const transformA = engineA.componentRegistry.getComponentData(entityA.id, 'Transform') as any;
+      const transformB = engineB.componentRegistry.getComponentData(entityB.id, 'Transform') as any;
 
       expect(transformA?.position).toEqual([1, 2, 3]);
       expect(transformB?.position).toEqual([4, 5, 6]);
       expect(transformB?.scale).toEqual([2, 2, 2]);
 
       // Verify component queries are isolated
-      const entitiesWithTransformA = engineA.componentManager.getEntitiesWithComponent('Transform');
-      const entitiesWithTransformB = engineB.componentManager.getEntitiesWithComponent('Transform');
+      const entitiesWithTransformA =
+        engineA.componentRegistry.getEntitiesWithComponent('Transform');
+      const entitiesWithTransformB =
+        engineB.componentRegistry.getEntitiesWithComponent('Transform');
 
       expect(entitiesWithTransformA).toHaveLength(1);
       expect(entitiesWithTransformB).toHaveLength(1);
@@ -164,14 +166,14 @@ describe('Singleton Elimination Integration', () => {
 
       // Add some data
       const entity = engine.entityManager.createEntity('Test Entity');
-      engine.componentManager.addComponent(entity.id, 'Transform', {
+      engine.componentRegistry.addComponent(entity.id, 'Transform', {
         position: [1, 2, 3],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       });
 
       expect(engine.entityManager.getEntityCount()).toBe(1);
-      expect(engine.componentManager.getEntitiesWithComponent('Transform')).toHaveLength(1);
+      expect(engine.componentRegistry.getEntitiesWithComponent('Transform')).toHaveLength(1);
 
       // Dispose
       engine.dispose();
@@ -179,7 +181,7 @@ describe('Singleton Elimination Integration', () => {
       // Container should be cleared
       expect(engine.container.has('ECSWorld')).toBe(false);
       expect(engine.container.has('EntityManager')).toBe(false);
-      expect(engine.container.has('ComponentManager')).toBe(false);
+      expect(engine.container.has('ComponentRegistry')).toBe(false);
     });
 
     it('should not leak memory between instances', () => {
@@ -192,7 +194,7 @@ describe('Singleton Elimination Integration', () => {
         // Add data to each
         for (let j = 0; j < 10; j++) {
           const entity = instance.entityManager.createEntity(`Entity-${i}-${j}`);
-          instance.componentManager.addComponent(entity.id, 'Transform', {
+          instance.componentRegistry.addComponent(entity.id, 'Transform', {
             position: [i, j, 0],
             rotation: [0, 0, 0],
             scale: [1, 1, 1],
@@ -205,7 +207,7 @@ describe('Singleton Elimination Integration', () => {
       // Verify each instance has correct data
       instances.forEach((instance) => {
         expect(instance.entityManager.getEntityCount()).toBe(10);
-        expect(instance.componentManager.getEntitiesWithComponent('Transform')).toHaveLength(10);
+        expect(instance.componentRegistry.getEntitiesWithComponent('Transform')).toHaveLength(10);
       });
 
       // Dispose all

@@ -54,12 +54,12 @@ export async function resolveScript(
 
       // Use cache if:
       // - Cache exists and hasn't expired
-      // - In production mode: also verify hash matches
-      // - In dev mode: always refetch after TTL for hot-reload (ignore hash)
+      // - Hash matches (always check hash in both dev and prod)
       const cacheExpired = !cached || now - cached.timestamp >= CACHE_TTL;
-      const hashMismatch = cached && cached.hash !== data.scriptRef.codeHash;
+      const hashMismatch =
+        cached && data.scriptRef.codeHash && cached.hash !== data.scriptRef.codeHash;
 
-      if (!cacheExpired && (import.meta.env.DEV || !hashMismatch)) {
+      if (!cacheExpired && !hashMismatch) {
         logger.debug(`Using cached external script for ${data.scriptRef.scriptId}`);
         return {
           code: cached!.code,
@@ -93,6 +93,17 @@ export async function resolveScript(
       };
     } catch (error) {
       logger.error(`Failed to load external script for entity ${entityId}:`, error);
+
+      // If we have fallback inline code, use it
+      if (data.code) {
+        logger.warn(`Falling back to inline code for entity ${entityId}`);
+        return {
+          code: data.code,
+          origin: 'inline',
+        };
+      }
+
+      // No fallback available, throw error
       throw new Error(
         `Failed to resolve external script "${data.scriptRef.scriptId}": ${error instanceof Error ? error.message : String(error)}`,
       );

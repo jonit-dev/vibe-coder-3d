@@ -9,7 +9,9 @@ export const EngineConfigSchema = z.object({
       type: z.enum(['webgl', 'webgpu', 'auto']).default('auto'),
       antialias: z.boolean().default(true),
       alpha: z.boolean().default(false),
-      powerPreference: z.enum(['high-performance', 'low-power', 'default']).default('high-performance'),
+      powerPreference: z
+        .enum(['high-performance', 'low-power', 'default'])
+        .default('high-performance'),
       stencil: z.boolean().default(true),
       depth: z.boolean().default(true),
       logarithmicDepthBuffer: z.boolean().default(false),
@@ -33,7 +35,11 @@ export const EngineConfigSchema = z.object({
     .object({
       enabled: z.boolean().default(true),
       gravity: z.tuple([z.number(), z.number(), z.number()]).default([0, -9.81, 0]),
-      timeStep: z.number().min(1 / 120).max(1 / 30).default(1 / 60),
+      timeStep: z
+        .number()
+        .min(1 / 120)
+        .max(1 / 30)
+        .default(1 / 60),
       substeps: z.number().int().min(1).max(10).default(1),
     })
     .default({}),
@@ -62,7 +68,7 @@ export const EngineConfigSchema = z.object({
 /**
  * Engine configuration interface
  */
-export interface IEngineConfig extends z.infer<typeof EngineConfigSchema> {}
+export type IEngineConfig = z.infer<typeof EngineConfigSchema>;
 
 /**
  * Default engine configuration

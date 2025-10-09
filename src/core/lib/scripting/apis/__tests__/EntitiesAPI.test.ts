@@ -4,27 +4,43 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createEntitiesAPI } from '../EntitiesAPI';
-import { ComponentManager } from '@/core/lib/ecs/ComponentManager';
 
-// Mock ComponentManager
-vi.mock('@/core/lib/ecs/ComponentManager', () => {
+// Mock ComponentRegistry
+vi.mock('@/core/lib/ecs/ComponentRegistry', () => {
   const entities = new Set([1, 2, 3, 10, 20]);
 
   return {
-    ComponentManager: {
-      getInstance: vi.fn(() => ({
-        hasComponent: vi.fn((id: number, type: string) => {
-          // All valid entities have Transform component
-          return type === 'Transform' && entities.has(id);
-        }),
-        getComponentData: vi.fn(),
-        updateComponent: vi.fn(() => true),
-        addComponent: vi.fn(() => ({})),
-        removeComponent: vi.fn(() => true),
-      })),
+    componentRegistry: {
+      hasComponent: vi.fn((id: number, type: string) => {
+        // All valid entities have Transform component
+        return type === 'Transform' && entities.has(id);
+      }),
+      getComponentData: vi.fn(),
+      updateComponent: vi.fn(() => true),
+      addComponent: vi.fn(() => ({})),
+      removeComponent: vi.fn(() => true),
     },
   };
 });
+
+// Mock EntityMetadataManager
+vi.mock('@/core/lib/ecs/metadata/EntityMetadataManager', () => ({
+  EntityMetadataManager: {
+    getInstance: vi.fn(() => ({
+      findByGuid: vi.fn(() => null),
+      findByName: vi.fn(() => []),
+    })),
+  },
+}));
+
+// Mock TagManager
+vi.mock('@/core/lib/ecs/tags/TagManager', () => ({
+  TagManager: {
+    getInstance: vi.fn(() => ({
+      findByTag: vi.fn(() => []),
+    })),
+  },
+}));
 
 describe('EntitiesAPI', () => {
   let entitiesAPI: ReturnType<typeof createEntitiesAPI>;

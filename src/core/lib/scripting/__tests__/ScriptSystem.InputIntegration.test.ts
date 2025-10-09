@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InputManager } from '@/core/lib/input/InputManager';
-import { ScriptExecutor } from '../ScriptExecutor';
+import { DirectScriptExecutor } from '../DirectScriptExecutor';
 import { createInputAPI } from '../apis/InputAPI';
 import type { IInputActionsAsset } from '@/core/lib/input/inputTypes';
 
 describe('Script System - Input System Integration', () => {
   let inputManager: InputManager;
-  let scriptExecutor: ScriptExecutor;
+  let scriptExecutor: DirectScriptExecutor;
   let canvas: HTMLCanvasElement;
 
   beforeEach(() => {
@@ -35,13 +35,11 @@ describe('Script System - Input System Integration', () => {
     inputManager = InputManager.getInstance();
     inputManager.initialize(canvas);
 
-    // Get ScriptExecutor instance
-    scriptExecutor = ScriptExecutor.getInstance();
-    scriptExecutor.clearAll();
+    // Create DirectScriptExecutor instance - not a singleton
+    scriptExecutor = new DirectScriptExecutor();
   });
 
   afterEach(() => {
-    scriptExecutor.clearAll();
     inputManager.shutdown();
     document.body.removeChild(canvas);
     vi.restoreAllMocks();

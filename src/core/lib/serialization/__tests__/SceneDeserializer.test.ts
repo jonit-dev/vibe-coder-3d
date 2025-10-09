@@ -2,21 +2,21 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { SceneDeserializer } from '../SceneDeserializer';
 import type { ISceneData } from '../SceneSerializer';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
-import { ComponentManager } from '@core/lib/ecs/ComponentManager';
+import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { MaterialRegistry } from '@core/materials/MaterialRegistry';
 import { PrefabRegistry } from '@core/prefabs/PrefabRegistry';
 
 describe('SceneDeserializer', () => {
   let deserializer: SceneDeserializer;
   let entityManager: EntityManager;
-  let componentManager: ComponentManager;
+  let componentRegistry: ComponentRegistry;
   let materialRegistry: MaterialRegistry;
   let prefabRegistry: PrefabRegistry;
 
   beforeEach(async () => {
     deserializer = new SceneDeserializer();
     entityManager = EntityManager.getInstance();
-    componentManager = ComponentManager.getInstance();
+    componentRegistry = ComponentRegistry.getInstance();
     materialRegistry = MaterialRegistry.getInstance();
     prefabRegistry = PrefabRegistry.getInstance();
 
@@ -40,7 +40,7 @@ describe('SceneDeserializer', () => {
       };
 
       await expect(
-        deserializer.deserialize(sceneData, entityManager, componentManager),
+        deserializer.deserialize(sceneData, entityManager, componentRegistry),
       ).resolves.not.toThrow();
 
       expect(entityManager.getAllEntities()).toHaveLength(0);
@@ -71,13 +71,13 @@ describe('SceneDeserializer', () => {
         prefabs: [],
       };
 
-      await deserializer.deserialize(sceneData, entityManager, componentManager);
+      await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
       const entities = entityManager.getAllEntities();
       expect(entities).toHaveLength(1);
       expect(entities[0].name).toBe('Test Entity');
 
-      const components = componentManager.getComponentsForEntity(entities[0].id);
+      const components = componentRegistry.getComponentsForEntity(entities[0].id);
       expect(components.some((c) => c.type === 'Transform')).toBe(true);
     });
 
@@ -111,7 +111,7 @@ describe('SceneDeserializer', () => {
         prefabs: [],
       };
 
-      await deserializer.deserialize(sceneData, entityManager, componentManager);
+      await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
       const material = materialRegistry.get('test-mat');
       expect(material).toBeDefined();
@@ -153,7 +153,7 @@ describe('SceneDeserializer', () => {
         ],
       };
 
-      await deserializer.deserialize(sceneData, entityManager, componentManager);
+      await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
       const prefab = prefabRegistry.get('test-prefab');
       expect(prefab).toBeDefined();
@@ -230,14 +230,14 @@ describe('SceneDeserializer', () => {
         ],
       };
 
-      await deserializer.deserialize(sceneData, entityManager, componentManager);
+      await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
       // Verify entities
       const entities = entityManager.getAllEntities();
       expect(entities).toHaveLength(1);
       expect(entities[0].name).toBe('Camera');
 
-      const components = componentManager.getComponentsForEntity(1);
+      const components = componentRegistry.getComponentsForEntity(1);
       expect(components.some((c) => c.type === 'Transform')).toBe(true);
       expect(components.some((c) => c.type === 'Camera')).toBe(true);
 
@@ -310,7 +310,7 @@ describe('SceneDeserializer', () => {
         prefabs: [],
       };
 
-      await deserializer.deserialize(sceneData, entityManager, componentManager);
+      await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
       const entities = entityManager.getAllEntities();
       expect(entities).toHaveLength(4);
@@ -378,7 +378,7 @@ describe('SceneDeserializer', () => {
         ],
       };
 
-      await deserializer.deserialize(sceneData, entityManager, componentManager);
+      await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
       // Both should be loaded
       expect(materialRegistry.get('mat1')).toBeDefined();
@@ -396,7 +396,7 @@ describe('SceneDeserializer', () => {
       };
 
       await expect(
-        deserializer.deserialize(invalidSceneData as any, entityManager, componentManager),
+        deserializer.deserialize(invalidSceneData as any, entityManager, componentRegistry),
       ).rejects.toThrow();
     });
 
@@ -431,7 +431,7 @@ describe('SceneDeserializer', () => {
 
       // Should handle invalid entity gracefully and load valid ones
       await expect(
-        deserializer.deserialize(sceneData, entityManager, componentManager),
+        deserializer.deserialize(sceneData, entityManager, componentRegistry),
       ).resolves.not.toThrow();
 
       // Valid entity should be loaded
@@ -508,7 +508,7 @@ describe('SceneDeserializer', () => {
         ],
       };
 
-      await deserializer.deserialize(sceneData, entityManager, componentManager);
+      await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
       // All should be loaded
       expect(entityManager.getAllEntities()).toHaveLength(1);

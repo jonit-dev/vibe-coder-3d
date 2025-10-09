@@ -18,11 +18,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@core": ["src/core"],
+      "@core": ["src/core/index"],
       "@core/*": ["src/core/*"],
-      "@editor": ["src/editor"],
+      "@editor": ["src/editor/index"],
       "@editor/*": ["src/editor/*"],
-      "@game": ["src/game"],
+      "@game": ["src/game/index"],
       "@game/*": ["src/game/*"]
     }
   },
