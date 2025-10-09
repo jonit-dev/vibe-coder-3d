@@ -12,6 +12,8 @@
 **Critical**
 
 - React: focus on hook usage + prevent re-rendering
+- Dont immediately jump into problems. Gather context first by reading related files until you understand the problem.
+- Always consider performance implications of your changes.
 - Don't request approval—just do it.
 - Named exports only; no barrel `index.ts`.
 - Declare components inline: `export const …`.

@@ -157,8 +157,34 @@ export class TsxFormatHandler implements ISceneFormatHandler {
       // Parse the defineScene argument as JSON
       let sceneDataString = defineSceneMatch[1];
 
+      // Replace enum references with their string values BEFORE JSON parsing
+      // DeviceType enums
+      sceneDataString = sceneDataString.replace(/DeviceType\.Keyboard/g, '"keyboard"');
+      sceneDataString = sceneDataString.replace(/DeviceType\.Mouse/g, '"mouse"');
+      sceneDataString = sceneDataString.replace(/DeviceType\.Gamepad/g, '"gamepad"');
+      sceneDataString = sceneDataString.replace(/DeviceType\.Touch/g, '"touch"');
+
+      // ActionType enums
+      sceneDataString = sceneDataString.replace(/ActionType\.Button/g, '"button"');
+      sceneDataString = sceneDataString.replace(/ActionType\.Value/g, '"value"');
+      sceneDataString = sceneDataString.replace(/ActionType\.PassThrough/g, '"passthrough"');
+
+      // ControlType enums
+      sceneDataString = sceneDataString.replace(/ControlType\.Button/g, '"button"');
+      sceneDataString = sceneDataString.replace(/ControlType\.Axis/g, '"axis"');
+      sceneDataString = sceneDataString.replace(/ControlType\.Vector2/g, '"vector2"');
+      sceneDataString = sceneDataString.replace(/ControlType\.Vector3/g, '"vector3"');
+
+      // CompositeType enums
+      sceneDataString = sceneDataString.replace(/CompositeType\.OneModifier/g, '"1DAxis"');
+      sceneDataString = sceneDataString.replace(/CompositeType\.TwoDVector/g, '"2DVector"');
+      sceneDataString = sceneDataString.replace(/CompositeType\.ThreeDVector/g, '"3DVector"');
+
       // Convert to valid JSON (handle unquoted keys, single quotes, etc.)
-      sceneDataString = sceneDataString.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
+      sceneDataString = sceneDataString.replace(
+        /([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g,
+        '$1"$2":',
+      );
       sceneDataString = sceneDataString.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
       sceneDataString = sceneDataString.replace(/,(\s*[}\]])/g, '$1');
 
