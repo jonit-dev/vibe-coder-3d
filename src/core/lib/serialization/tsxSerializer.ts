@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { IMaterialDefinition } from '@/core/materials/Material.types';
-import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
-import type { IInputActionsAsset } from '@/core/lib/input/inputTypes';
+import type { IMaterialDefinition } from '../../materials/Material.types';
+import type { IPrefabDefinition } from '../../prefabs/Prefab.types';
+import type { IInputActionsAsset } from '../input/inputTypes';
 
 export interface ITsxSceneEntity {
   id: string | number;

@@ -136,7 +136,7 @@ export class Logger {
     }
 
     // In production, filter out debug/info logs completely
-    if (import.meta.env.PROD && level < LogLevel.WARN) {
+    if (import.meta.env?.PROD && level < LogLevel.WARN) {
       return;
     }
 
