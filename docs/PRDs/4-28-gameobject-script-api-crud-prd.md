@@ -5,6 +5,7 @@
 ## 1. Overview
 
 - **Context & Goals**:
+
   - Enable gameplay scripts to create, read, update, and delete entities at runtime with safe, deterministic APIs.
   - Provide ergonomic helpers to spawn primitives (cube, sphere, plane, etc.) and custom models (GLB/GLTF) with transform and material options.
   - Integrate with Play Mode semantics so play-created entities are cleaned up on Stop and do not mutate the editor scene.
@@ -19,6 +20,7 @@
 ## 2. Proposed Solution
 
 - **High‑level Summary**:
+
   - Introduce `IGameObjectAPI` in the Script API context for runtime CRUD: `createEntity`, `createPrimitive`, `createModel`, `clone`, `destroy`, `setActive`, `setParent`, and `attachComponents`.
   - Implement `PrimitiveFactory` and `ModelFactory` that map high-level options to ECS components via `ComponentRegistry` and `EntityManager` with mutation-buffer semantics.
   - Implement `PlaySessionTracker` to register entity IDs created during play; ensure automatic cleanup on Stop.
@@ -51,24 +53,29 @@ docs/PRDs/4-28-gameobject-script-api-crud-prd.md
 ## 3. Implementation Plan
 
 - **Phase 1: API Surface (0.5 day)**
+
   1. Define `IGameObjectAPI` in `ScriptAPI.ts` and extend `IScriptContext` with `gameObject`.
   2. Implement `entity.destroy()` and `entities.exists(...)` using `EntityManager` and `ComponentRegistry` checks.
   3. Add Zod schemas in `crud.types.ts` for creation options (transform, renderer, physics, model path).
 
 - **Phase 2: Factories (0.75 day)**
+
   1. `PrimitiveFactory.create(kind, options)` → adds `Transform`, `MeshRenderer` with primitive geometry; optional `RigidBody`/`MeshCollider`.
   2. `ModelFactory.create(path|assetId, options)` → adds `Transform`, `MeshRenderer` variant referencing model; optional physics.
   3. Both return `entityId` and register with `PlaySessionTracker` during play.
 
 - **Phase 3: GameObject API (0.5 day)**
+
   1. `createEntity`, `createPrimitive`, `createModel`, `clone`, `attachComponents`, `setParent`, `setActive`, `destroy` with Zod validation.
   2. Ensure mutation buffer batching and log safe errors to sandbox console.
 
 - **Phase 4: Context Wiring & d.ts (0.5 day)**
+
   1. Attach `gameObject` in `ScriptExecutor` context construction.
   2. Ensure `script-api.d.ts` generation includes `IGameObjectAPI` and new options.
 
 - **Phase 5: Examples & Docs (0.25 day)**
+
   1. Add `game/scripts/examples/gameobject-crud-demo.ts` demonstrating primitives, model spawn, and cleanup.
   2. Update `docs/guides/script-api-quick-reference.md` with CRUD examples.
 
@@ -112,10 +119,7 @@ export interface IGameObjectAPI {
   ) => number;
   createModel: (model: string, options?: IModelOptions) => number; // path or asset id
   clone: (source: number, overrides?: Partial<ICloneOverrides>) => number;
-  attachComponents: (
-    entityId: number,
-    components: Array<{ type: string; data: unknown }>,
-  ) => void;
+  attachComponents: (entityId: number, components: Array<{ type: string; data: unknown }>) => void;
   setParent: (entityId: number, parent?: number) => void;
   setActive: (entityId: number, active: boolean) => void;
   destroy: (target?: number) => void; // default: current entity
@@ -130,7 +134,11 @@ export interface IPrimitiveOptions {
     scale?: [number, number, number] | number;
   };
   material?: { color?: string; metalness?: number; roughness?: number };
-  physics?: { body?: 'dynamic' | 'kinematic' | 'static'; collider?: 'box' | 'sphere' | 'mesh'; mass?: number };
+  physics?: {
+    body?: 'dynamic' | 'kinematic' | 'static';
+    collider?: 'box' | 'sphere' | 'mesh';
+    mass?: number;
+  };
 }
 
 export interface IModelOptions extends Omit<IPrimitiveOptions, 'physics'> {
@@ -162,7 +170,11 @@ export const PrimitiveOptionsSchema = z.object({
   parent: z.number().int().nonnegative().optional(),
   transform: TransformSchema.optional(),
   material: z
-    .object({ color: z.string().optional(), metalness: z.number().min(0).max(1).optional(), roughness: z.number().min(0).max(1).optional() })
+    .object({
+      color: z.string().optional(),
+      metalness: z.number().min(0).max(1).optional(),
+      roughness: z.number().min(0).max(1).optional(),
+    })
     .optional(),
   physics: z
     .object({
@@ -189,7 +201,10 @@ export const ModelOptionsSchema = PrimitiveOptionsSchema.extend({
 ```ts
 // src/core/lib/scripting/factories/PrimitiveFactory.ts (skeleton)
 export interface IPrimitiveFactory {
-  create(kind: 'cube' | 'sphere' | 'plane' | 'cylinder' | 'cone' | 'torus', options?: IPrimitiveOptions): number;
+  create(
+    kind: 'cube' | 'sphere' | 'plane' | 'cylinder' | 'cone' | 'torus',
+    options?: IPrimitiveOptions,
+  ): number;
 }
 
 export function createPrimitiveFactory(): IPrimitiveFactory {
@@ -265,8 +280,12 @@ export function createGameObjectAPI(): IGameObjectAPI {
 export class PlaySessionTracker {
   private static instance: PlaySessionTracker;
   private createdDuringPlay = new Set<number>();
-  static getInstance() { return this.instance ??= new PlaySessionTracker(); }
-  markCreated(eid: number) { this.createdDuringPlay.add(eid); }
+  static getInstance() {
+    return (this.instance ??= new PlaySessionTracker());
+  }
+  markCreated(eid: number) {
+    this.createdDuringPlay.add(eid);
+  }
   cleanupOnStop(deleteFn: (eid: number) => void) {
     this.createdDuringPlay.forEach((eid) => deleteFn(eid));
     this.createdDuringPlay.clear();
@@ -313,6 +332,7 @@ function onUpdate(dt: number) {
 ## 7. Testing Strategy
 
 - **Unit Tests**:
+
   - Zod validation rejects invalid transforms, material ranges, and physics options.
   - `PrimitiveFactory` creates required components and respects options.
   - `ModelFactory` assigns model reference and default transforms; errors log on bad path.
@@ -327,14 +347,14 @@ function onUpdate(dt: number) {
 
 ## 8. Edge Cases
 
-| Edge Case                                       | Remediation                                                  |
-| ----------------------------------------------- | ------------------------------------------------------------ |
-| Invalid model path or asset id                  | Fail fast with console warning; create placeholder; allow retry. |
-| Negative or zero scale                          | Clamp or reject via schema; log warning.                     |
-| Parent entity missing or deleted                | Create at root; warn; allow reassignment later.              |
-| Mesh collider requested but mesh unavailable    | Fallback to box collider or disable with warning.            |
-| Rapid create/destroy loops                      | Batch via mutation buffer; coalesce deletes per frame.       |
-| Thousands of entities spawned                   | Warn on budgets; suggest instancing; expose perf metrics.    |
+| Edge Case                                    | Remediation                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| Invalid model path or asset id               | Fail fast with console warning; create placeholder; allow retry. |
+| Negative or zero scale                       | Clamp or reject via schema; log warning.                         |
+| Parent entity missing or deleted             | Create at root; warn; allow reassignment later.                  |
+| Mesh collider requested but mesh unavailable | Fallback to box collider or disable with warning.                |
+| Rapid create/destroy loops                   | Batch via mutation buffer; coalesce deletes per frame.           |
+| Thousands of entities spawned                | Warn on budgets; suggest instancing; expose perf metrics.        |
 
 ## 9. Sequence Diagram
 
@@ -363,13 +383,13 @@ sequenceDiagram
 
 ## 10. Risks & Mitigations
 
-| Risk                                           | Mitigation                                                     |
-| ---------------------------------------------- | -------------------------------------------------------------- |
-| Type drift between runtime and d.ts            | Generate d.ts from `ScriptAPI.ts`; add CI check.              |
-| Performance regressions due to many creations  | Batch via mutation buffer; advise instancing; add guardrails. |
-| Play/Stop ordering issues                      | Use `PlaySessionTracker.cleanupOnStop` hooked into Stop event.|
-| Security surface increase in scripts           | Keep whitelist; validate options; sandbox console warnings.   |
-| Asset loading failures or latency              | Show loading placeholders; retry; debounce repeated loads.    |
+| Risk                                          | Mitigation                                                     |
+| --------------------------------------------- | -------------------------------------------------------------- |
+| Type drift between runtime and d.ts           | Generate d.ts from `ScriptAPI.ts`; add CI check.               |
+| Performance regressions due to many creations | Batch via mutation buffer; advise instancing; add guardrails.  |
+| Play/Stop ordering issues                     | Use `PlaySessionTracker.cleanupOnStop` hooked into Stop event. |
+| Security surface increase in scripts          | Keep whitelist; validate options; sandbox console warnings.    |
+| Asset loading failures or latency             | Show loading placeholders; retry; debounce repeated loads.     |
 
 ## 11. Timeline
 
@@ -400,5 +420,3 @@ This PRD introduces a cohesive, safe, and ergonomic GameObject Script API for ru
 - Physics via `@react-three/rapier` remains optional per spawn.
 - Script system uses the existing executor; `script-api.d.ts` is generated from `ScriptAPI.ts`.
 - TS path aliases per `tsconfig`; Zod preferred for runtime validation.
-
-
