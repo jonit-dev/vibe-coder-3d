@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createEngineInstance, IEngineInstance } from '../factories/createEngineInstance';
 
@@ -32,8 +32,8 @@ describe('Engine Instance Isolation', () => {
     it('should create separate component registries', () => {
       expect(instanceA.componentRegistry).toBeDefined();
       expect(instanceB.componentRegistry).toBeDefined();
-      // ComponentRegistry is a singleton, so they will be the same instance
-      expect(instanceA.componentRegistry).toBe(instanceB.componentRegistry);
+      // Each engine instance should have its own isolated ComponentRegistry
+      expect(instanceA.componentRegistry).not.toBe(instanceB.componentRegistry);
     });
 
     it('should create separate containers', () => {

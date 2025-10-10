@@ -11,8 +11,8 @@ describe('PersistentId Integration', () => {
     ECSWorld.getInstance().reset();
     componentRegistry = ComponentRegistry.getInstance();
     entityManager = EntityManager.getInstance();
-    entityManager.refreshWorld(); // Ensure EntityManager uses new world after reset
-    entityManager.reset();
+    entityManager.reset(); // Reset first to clear caches
+    entityManager.refreshWorld(); // Then refresh to rebuild indices and reattach listeners
   });
 
   describe('Entity creation with persistent IDs', () => {

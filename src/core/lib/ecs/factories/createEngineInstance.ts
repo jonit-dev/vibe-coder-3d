@@ -1,8 +1,9 @@
-import { componentRegistry, ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { Container } from '@core/lib/di/Container';
+import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { registerCoreComponents } from '@core/lib/ecs/components/ComponentDefinitions';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { EntityQueries } from '@core/lib/ecs/queries/entityQueries';
 import { ECSWorld } from '@core/lib/ecs/World';
-import { Container } from '@core/lib/di/Container';
 
 export interface IEngineInstance {
   world: ECSWorld;
@@ -23,10 +24,18 @@ export function createEngineInstance(parentContainer?: Container): IEngineInstan
 
   // Create new isolated instances
   const world = new ECSWorld();
-  const entityQueries = new EntityQueries(world.getWorld());
-  const entityManager = new EntityManager(world.getWorld());
-  // Use singleton ComponentRegistry instance
-  const registry = componentRegistry;
+  // Create isolated ComponentRegistry instance
+  const registry = new ComponentRegistry(world);
+  const entityManager = new EntityManager(world.getWorld(), registry);
+
+  // Register core components with this isolated registry
+  registerCoreComponents(registry);
+
+  // Create EntityQueries with instance-specific managers (must be after registry is initialized)
+  const entityQueries = new EntityQueries(world.getWorld(), entityManager, registry);
+
+  // Connect EntityQueries to EntityManager (breaks circular dependency)
+  entityManager.setEntityQueries(entityQueries);
 
   // Register services in the container
   container.registerInstance('ECSWorld', world);
@@ -38,7 +47,7 @@ export function createEngineInstance(parentContainer?: Container): IEngineInstan
   const dispose = () => {
     world.reset();
     entityManager.reset();
-    // Note: ComponentRegistry is a singleton, so we don't reset it here
+    registry.reset();
     entityQueries.destroy();
     container.clear();
   };

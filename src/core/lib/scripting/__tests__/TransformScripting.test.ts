@@ -5,13 +5,17 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DirectScriptExecutor, IScriptExecutionOptions } from '../DirectScriptExecutor';
+import { EntityManager } from '../../ecs/EntityManager';
 
 describe('Transform Scripting Tests', () => {
   let executor: DirectScriptExecutor;
+  let entityManager: EntityManager;
 
   beforeEach(() => {
     executor = DirectScriptExecutor.getInstance();
+    entityManager = EntityManager.getInstance();
     executor.clearAll();
+    entityManager.clearEntities();
   });
 
   const createMockOptions = (
@@ -276,6 +280,9 @@ describe('Transform Scripting Tests', () => {
 
   describe('Performance with Transform Updates', () => {
     it('should handle many rapid transform updates', () => {
+      // Create entity in the world first
+      const entity = entityManager.createEntity('TestEntity');
+
       const script = `
         function onUpdate(deltaTime) {
           entity.setComponent('Transform', {
@@ -290,7 +297,11 @@ describe('Transform Scripting Tests', () => {
 
       const executionTimes = [];
       for (let i = 0; i < 60; i++) {
-        const result = executor.executeScript('rapid-updates', createMockOptions(1), 'onUpdate');
+        const result = executor.executeScript(
+          'rapid-updates',
+          createMockOptions(entity.id),
+          'onUpdate',
+        );
         expect(result.success).toBe(true);
         executionTimes.push(result.executionTime);
       }

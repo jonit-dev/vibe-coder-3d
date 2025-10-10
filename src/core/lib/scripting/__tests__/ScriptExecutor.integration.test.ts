@@ -73,8 +73,8 @@ describe('DirectScriptExecutor Integration', () => {
 
     it('should execute onUpdate lifecycle with deltaTime', () => {
       const code = `
-        function onUpdate() {
-          entity.rotation.y += deltaTime;
+        function onUpdate(deltaTime) {
+          console.log("Delta time:", deltaTime);
         }
       `;
 
@@ -131,29 +131,28 @@ describe('DirectScriptExecutor Integration', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should execute legacy position syntax', () => {
+    it('should execute setRotation', () => {
       const code = `
         function onStart() {
-          entity.position.x = 5;
-          entity.position.y = 10;
-        }
-      `;
-
-      executor.compileScript(code, 'legacy-pos-test');
-      const result = executor.executeScript('legacy-pos-test', createMockOptions(), 'onStart');
-
-      expect(result.success).toBe(true);
-    });
-
-    it('should execute rotation with deltaTime', () => {
-      const code = `
-        function onUpdate() {
-          entity.rotation.y += deltaTime;
+          entity.transform.setRotation(0, 90, 0);
         }
       `;
 
       executor.compileScript(code, 'rotation-test');
-      const result = executor.executeScript('rotation-test', createMockOptions(), 'onUpdate');
+      const result = executor.executeScript('rotation-test', createMockOptions(), 'onStart');
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should execute setScale', () => {
+      const code = `
+        function onUpdate() {
+          entity.transform.setScale(2, 2, 2);
+        }
+      `;
+
+      executor.compileScript(code, 'scale-test');
+      const result = executor.executeScript('scale-test', createMockOptions(), 'onUpdate');
 
       expect(result.success).toBe(true);
     });
@@ -167,8 +166,8 @@ describe('DirectScriptExecutor Integration', () => {
           entity.transform.setPosition(0, 0, 0);
         }
 
-        function onUpdate() {
-          entity.rotation.y += deltaTime;
+        function onUpdate(deltaTime) {
+          entity.transform.setRotation(0, deltaTime, 0);
         }
 
         function onDestroy() {
@@ -198,10 +197,10 @@ describe('DirectScriptExecutor Integration', () => {
 
     it('should handle script with multiple operations per lifecycle', () => {
       const code = `
-        function onUpdate() {
+        function onUpdate(deltaTime) {
           console.log("Updating");
-          entity.rotation.y += deltaTime;
-          entity.position.y = Math.sin(time.time) * 2;
+          entity.transform.setRotation(0, deltaTime, 0);
+          entity.transform.setPosition(0, Math.sin(time.time) * 2, 0);
           three.material.setColor("#00ff00");
         }
       `;
@@ -276,7 +275,7 @@ describe('DirectScriptExecutor Integration', () => {
     });
 
     it('should update context time on each execution', () => {
-      const code = 'function onUpdate() { entity.rotation.y += deltaTime; }';
+      const code = 'function onUpdate() { console.log("Time:", time.time); }';
 
       executor.compileScript(code, 'time-update');
 
@@ -339,8 +338,8 @@ describe('DirectScriptExecutor Integration', () => {
   describe('Performance', () => {
     it('should track execution time', () => {
       const code = `
-        function onUpdate() {
-          entity.rotation.y += deltaTime;
+        function onUpdate(deltaTime) {
+          console.log("Frame:", deltaTime);
         }
       `;
 
@@ -353,8 +352,8 @@ describe('DirectScriptExecutor Integration', () => {
 
     it('should fail if execution exceeds max time', () => {
       const code = `
-        function onUpdate() {
-          entity.rotation.y += deltaTime;
+        function onUpdate(deltaTime) {
+          console.log("Frame:", deltaTime);
         }
       `;
 
@@ -417,7 +416,7 @@ describe('DirectScriptExecutor Integration', () => {
         }
 
         const onUpdate = () => {
-          entity.rotation.y += deltaTime;
+          console.log("Arrow function");
         }
       `;
 

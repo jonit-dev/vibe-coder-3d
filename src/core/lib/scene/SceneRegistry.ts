@@ -99,7 +99,6 @@ class SceneRegistryClass {
     };
 
     this.scenes.set(id, definition);
-
   }
 
   /**
@@ -107,14 +106,10 @@ class SceneRegistryClass {
    * First checks local scenes, then extension scenes
    */
   async loadScene(id: string, clearExisting: boolean = true): Promise<void> {
-    const stepTracker = this.logger.createStepTracker(`Load Scene: ${id}`);
-
-    stepTracker.step('Scene Definition Lookup');
     let definition = this.scenes.get(id);
 
     // If not found in local registry, check extension scenes
     if (!definition) {
-      stepTracker.step('Extension Scene Lookup');
       const extensionScene = getExtensionScene(id);
       if (extensionScene) {
         // Convert extension scene descriptor to our format
@@ -131,21 +126,17 @@ class SceneRegistryClass {
     }
 
     if (!definition) {
-      stepTracker.complete();
       throw new Error(`Scene not found: ${id}`);
     }
 
-    stepTracker.step('ECS System Setup');
     const entityManager = EntityManager.getInstance();
     const world = ECSWorld.getInstance().getWorld();
 
     // Clear existing entities if requested
     if (clearExisting) {
-      stepTracker.step('Clearing Existing Entities');
       entityManager.clearEntities();
     }
 
-    stepTracker.step('Context Creation');
     // Create context with helper functions
     const context: ISceneContext = {
       world,
@@ -160,17 +151,14 @@ class SceneRegistryClass {
 
       // Helper to add component with compile-time schema typing for scenes
       addComponent: (entityId, componentId, data) => {
-        componentRegistry.addComponent(entityId, componentId as string, data as any);
+        componentRegistry.addComponent(entityId, componentId as string, data as unknown);
       },
     };
 
-    stepTracker.step('Scene Builder Execution');
     // Execute the scene builder
     await definition.builder(context);
 
-    stepTracker.step('Scene Load Complete');
     this.currentSceneId = id;
-    stepTracker.complete();
   }
 
   /**

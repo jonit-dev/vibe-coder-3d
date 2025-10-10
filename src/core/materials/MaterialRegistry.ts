@@ -1,7 +1,7 @@
 import { MeshBasicMaterial, MeshStandardMaterial } from 'three';
 import { DEFAULT_MATERIAL_COLOR } from './constants';
 import type { IMaterialAssetMeta, IMaterialDefinition } from './Material.types';
-import { createThreeMaterialFrom } from './MaterialConverter';
+import { createThreeMaterialFrom, updateThreeMaterialFrom } from './MaterialConverter';
 
 export class MaterialRegistry {
   private static instance: MaterialRegistry | null = null;
@@ -159,8 +159,6 @@ export class MaterialRegistry {
       const def = this.get(id);
       if (def) {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const { updateThreeMaterialFrom } = require('./MaterialConverter');
           const material = this.idToThree.get(id);
           if (material) {
             updateThreeMaterialFrom(material, def);

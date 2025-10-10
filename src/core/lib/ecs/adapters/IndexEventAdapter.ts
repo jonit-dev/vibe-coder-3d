@@ -1,5 +1,5 @@
-import { componentRegistry } from '../ComponentRegistry';
-import { EntityManager } from '../EntityManager';
+import type { ComponentRegistry } from '../ComponentRegistry';
+import type { EntityManager } from '../EntityManager';
 import { ComponentIndex } from '../indexers/ComponentIndex';
 import { EntityIndex } from '../indexers/EntityIndex';
 import { HierarchyIndex } from '../indexers/HierarchyIndex';
@@ -17,6 +17,8 @@ export class IndexEventAdapter {
     private readonly entities: EntityIndex,
     private readonly hierarchy: HierarchyIndex,
     private readonly components: ComponentIndex,
+    private readonly entityManager: EntityManager,
+    private readonly componentRegistry: ComponentRegistry,
   ) {}
 
   /**
@@ -29,12 +31,11 @@ export class IndexEventAdapter {
       return;
     }
 
-    const entityManager = EntityManager.getInstance();
     // Note: ComponentRegistry uses global event system (emit/on) instead of addEventListener
     // Component index updates handled by global event listeners if needed
 
     // Subscribe to entity events
-    this.entityUnsubscribe = entityManager.addEventListener((event) => {
+    this.entityUnsubscribe = this.entityManager.addEventListener((event) => {
       switch (event.type) {
         case 'entity-created':
           if (event.entityId !== undefined && event.entity) {
@@ -123,11 +124,8 @@ export class IndexEventAdapter {
     this.hierarchy.clear();
     this.components.clear();
 
-    const entityManager = EntityManager.getInstance();
-    const registry = componentRegistry;
-
     // Rebuild entity and hierarchy indices
-    const allEntities = entityManager.getAllEntities();
+    const allEntities = this.entityManager.getAllEntities();
     console.debug(`[IndexEventAdapter] Found ${allEntities.length} entities in world`);
 
     allEntities.forEach((entity) => {
@@ -141,11 +139,11 @@ export class IndexEventAdapter {
     });
 
     // Rebuild component indices
-    const componentTypes = registry.listComponents();
+    const componentTypes = this.componentRegistry.listComponents();
     console.debug(`[IndexEventAdapter] Found ${componentTypes.length} component types`);
 
     componentTypes.forEach((componentType) => {
-      const entitiesWithComponent = registry.getEntitiesWithComponent(componentType);
+      const entitiesWithComponent = this.componentRegistry.getEntitiesWithComponent(componentType);
       entitiesWithComponent.forEach((entityId) => {
         this.components.onAdd(componentType, entityId);
       });
@@ -182,11 +180,9 @@ export class IndexEventAdapter {
    */
   validateIndices(): string[] {
     const errors: string[] = [];
-    const entityManager = EntityManager.getInstance();
-    const registry = componentRegistry;
 
     // Validate entity index
-    const allEntities = entityManager.getAllEntities();
+    const allEntities = this.entityManager.getAllEntities();
     const indexedEntities = new Set(this.entities.list());
 
     allEntities.forEach((entity) => {
@@ -196,7 +192,7 @@ export class IndexEventAdapter {
     });
 
     indexedEntities.forEach((entityId) => {
-      const entity = entityManager.getEntity(entityId);
+      const entity = this.entityManager.getEntity(entityId);
       if (!entity) {
         errors.push(`Entity ${entityId} exists in EntityIndex but not in world`);
       }
@@ -225,9 +221,9 @@ export class IndexEventAdapter {
     });
 
     // Validate component index
-    const componentTypes = registry.listComponents();
+    const componentTypes = this.componentRegistry.listComponents();
     componentTypes.forEach((componentType) => {
-      const worldEntities = new Set(registry.getEntitiesWithComponent(componentType));
+      const worldEntities = new Set(this.componentRegistry.getEntitiesWithComponent(componentType));
       const indexEntities = new Set(this.components.list(componentType));
 
       worldEntities.forEach((entityId) => {

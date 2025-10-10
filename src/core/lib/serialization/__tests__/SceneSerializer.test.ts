@@ -158,6 +158,9 @@ describe('SceneSerializer', () => {
         near: 0.1,
         far: 1000,
         isMain: true,
+        projectionType: 'perspective',
+        orthographicSize: 10,
+        depth: 0,
       });
 
       // Add material
@@ -275,6 +278,9 @@ describe('SceneSerializer', () => {
         near: 0.1,
         far: 1000,
         isMain: true,
+        projectionType: 'perspective',
+        orthographicSize: 10,
+        depth: 0,
       });
 
       const metadata = {
@@ -299,6 +305,7 @@ describe('SceneSerializer', () => {
       expect(cameraData.near).toBeCloseTo(0.1, 1);
       expect(cameraData.far).toBe(1000);
       expect(cameraData.isMain).toBe(true);
+      expect(cameraData.projectionType).toBe('perspective');
     });
   });
 

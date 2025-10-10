@@ -1,9 +1,32 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
 
 // Initialize ECS system for tests
 import { initializeCoreECS } from '../core/lib/ecs/init';
 initializeCoreECS();
+
+// Global cleanup after each test to prevent memory leaks
+afterEach(() => {
+  // Clear DirectScriptExecutor singleton to prevent context/timer accumulation
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { DirectScriptExecutor } = require('../core/lib/scripting/DirectScriptExecutor');
+    const executor = DirectScriptExecutor.getInstance();
+    executor.clearAll();
+  } catch {
+    // DirectScriptExecutor may not be loaded in all tests
+  }
+
+  // Clear global event bus handlers to prevent cross-test leaks
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { clearAllEvents, flushBatchedEvents } = require('../core/lib/events');
+    flushBatchedEvents();
+    clearAllEvents();
+  } catch {
+    // events module may not be used in all tests
+  }
+});
 
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({

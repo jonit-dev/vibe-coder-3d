@@ -127,7 +127,22 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
   const hierarchyIndex = new HierarchyIndex();
   const componentIndex = new ComponentIndex();
   const spatialIndex = new SpatialIndex({ cellSize: 10 });
-  const adapter = new IndexEventAdapter(entityIndex, hierarchyIndex, componentIndex);
+
+  // Import singletons for shared store (lazy imports to avoid circular dependencies)
+  const getEntityManager = () =>
+    import('../EntityManager').then((m) => m.EntityManager.getInstance());
+  const getComponentRegistry = () =>
+    import('../ComponentRegistry').then((m) => m.ComponentRegistry.getInstance());
+
+  // Create a placeholder adapter that will be replaced during initialize
+  // This is necessary because managers might not be available during store creation
+  const placeholderAdapter: IndexEventAdapter = {
+    attach: () => {},
+    detach: () => {},
+    rebuildIndices: () => {},
+    validateIndices: () => [],
+    getIsAttached: () => false,
+  } as unknown as IndexEventAdapter;
 
   return {
     // Index instances
@@ -135,7 +150,7 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
     hierarchyIndex,
     componentIndex,
     spatialIndex,
-    adapter,
+    adapter: placeholderAdapter,
 
     // Configuration
     config: EntityQueryConfigSchema.parse({}),
@@ -270,23 +285,43 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
     initialize: () => {
       const state = get();
       console.debug('[EntityQueries] Starting initialization...');
-      state.adapter.attach();
-      console.debug('[EntityQueries] Adapter attached');
-      console.debug('[EntityQueries] Rebuilding indices...');
 
-      // Try immediate rebuild, with fallback handling in adapters
-      try {
-        state.adapter.rebuildIndices();
-        console.debug('[EntityQueries] Index rebuild complete');
-      } catch (error) {
-        console.debug('[EntityQueries] Index rebuild failed, will rebuild on first query:', error);
-      }
+      // Create real adapter with singleton managers (async import)
+      Promise.all([getEntityManager(), getComponentRegistry()]).then(
+        ([entityManager, componentRegistry]) => {
+          const realAdapter = new IndexEventAdapter(
+            entityIndex,
+            hierarchyIndex,
+            componentIndex,
+            entityManager,
+            componentRegistry,
+          );
 
-      // Log final state
-      const entities = state.listAllEntities();
-      const roots = state.getRootEntities();
-      console.debug(
-        `[EntityQueries] Post-init: ${entities.length} entities, ${roots.length} roots`,
+          // Replace placeholder with real adapter
+          set({ adapter: realAdapter });
+
+          realAdapter.attach();
+          console.debug('[EntityQueries] Adapter attached');
+          console.debug('[EntityQueries] Rebuilding indices...');
+
+          // Try immediate rebuild, with fallback handling in adapters
+          try {
+            realAdapter.rebuildIndices();
+            console.debug('[EntityQueries] Index rebuild complete');
+          } catch (error) {
+            console.debug(
+              '[EntityQueries] Index rebuild failed, will rebuild on first query:',
+              error,
+            );
+          }
+
+          // Log final state
+          const entities = state.listAllEntities();
+          const roots = state.getRootEntities();
+          console.debug(
+            `[EntityQueries] Post-init: ${entities.length} entities, ${roots.length} roots`,
+          );
+        },
       );
     },
 
@@ -351,14 +386,40 @@ let globalQueryInstance: ReturnType<typeof useEntityQueries.getState> | null = n
 
 export class EntityQueries {
   private static instance: EntityQueries;
-  private queryStore: ReturnType<typeof useEntityQueries.getState>;
+  private queryStore: ReturnType<typeof useEntityQueries.getState> | null = null;
+  // Instance-specific indices (when not using shared store)
+  private entityIndex?: EntityIndex;
+  private hierarchyIndex?: HierarchyIndex;
+  private componentIndex?: ComponentIndex;
+  private spatialIdx?: SpatialIndex;
+  private adapter?: IndexEventAdapter;
+  private isInstanceMode = false;
 
-  constructor(world?: any) {
+  constructor(
+    world?: any,
+    entityManager?: import('../EntityManager').EntityManager,
+    componentRegistry?: import('../ComponentRegistry').ComponentRegistry,
+  ) {
     // BitECS world - using any for compatibility
-    if (world) {
-      // Instance mode with injected world - create new store
+    if (world && entityManager && componentRegistry) {
+      // Instance mode with injected dependencies - create isolated indices
+      this.isInstanceMode = true;
+      this.entityIndex = new EntityIndex();
+      this.hierarchyIndex = new HierarchyIndex();
+      this.componentIndex = new ComponentIndex();
+      this.spatialIdx = new SpatialIndex({ cellSize: 10 });
+      this.adapter = new IndexEventAdapter(
+        this.entityIndex,
+        this.hierarchyIndex,
+        this.componentIndex,
+        entityManager,
+        componentRegistry,
+      );
+      this.adapter.attach();
+      this.adapter.rebuildIndices();
+    } else if (world) {
+      // Legacy: world provided but no managers - use global store
       this.queryStore = useEntityQueries.getState();
-      // TODO: Initialize with specific world when store supports it
       this.queryStore.initialize();
     } else {
       // Singleton mode (backward compatibility)
@@ -377,8 +438,11 @@ export class EntityQueries {
     return EntityQueries.instance;
   }
 
-  // Delegate methods to store
+  // Delegate methods to store or instance indices
   listAllEntities(): number[] {
+    if (this.isInstanceMode && this.entityIndex) {
+      return this.entityIndex.list();
+    }
     if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
@@ -387,6 +451,9 @@ export class EntityQueries {
   }
 
   listEntitiesWithComponent(componentType: string): number[] {
+    if (this.isInstanceMode && this.componentIndex) {
+      return this.componentIndex.list(componentType);
+    }
     if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
@@ -395,6 +462,9 @@ export class EntityQueries {
   }
 
   listEntitiesWithComponents(componentTypes: string[]): number[] {
+    if (this.isInstanceMode && this.componentIndex) {
+      return this.componentIndex.listWithAllComponents(componentTypes);
+    }
     if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
@@ -403,6 +473,9 @@ export class EntityQueries {
   }
 
   listEntitiesWithAnyComponent(componentTypes: string[]): number[] {
+    if (this.isInstanceMode && this.componentIndex) {
+      return this.componentIndex.listWithAnyComponent(componentTypes);
+    }
     if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
@@ -411,6 +484,10 @@ export class EntityQueries {
   }
 
   getRootEntities(): number[] {
+    if (this.isInstanceMode && this.entityIndex && this.hierarchyIndex) {
+      const allEntities = this.entityIndex.list();
+      return this.hierarchyIndex.getRootEntities(allEntities);
+    }
     if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
@@ -419,6 +496,9 @@ export class EntityQueries {
   }
 
   getDescendants(entityId: number): number[] {
+    if (this.isInstanceMode && this.hierarchyIndex) {
+      return this.hierarchyIndex.getDescendants(entityId);
+    }
     if (!this.queryStore) {
       console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
@@ -427,72 +507,116 @@ export class EntityQueries {
   }
 
   getAncestors(entityId: number): number[] {
+    if (this.isInstanceMode && this.hierarchyIndex) {
+      return this.hierarchyIndex.getAncestors(entityId);
+    }
     if (!this.queryStore) return [];
     return this.queryStore.getAncestors(entityId);
   }
 
   getParent(entityId: number): number | undefined {
+    if (this.isInstanceMode && this.hierarchyIndex) {
+      return this.hierarchyIndex.getParent(entityId);
+    }
     if (!this.queryStore) return undefined;
     return this.queryStore.getParent(entityId);
   }
 
   getChildren(entityId: number): number[] {
+    if (this.isInstanceMode && this.hierarchyIndex) {
+      return this.hierarchyIndex.getChildren(entityId);
+    }
     if (!this.queryStore) return [];
     return this.queryStore.getChildren(entityId);
   }
 
   hasChildren(entityId: number): boolean {
+    if (this.isInstanceMode && this.hierarchyIndex) {
+      return this.hierarchyIndex.getChildren(entityId).length > 0;
+    }
     if (!this.queryStore) return false;
     return this.queryStore.hasChildren(entityId);
   }
 
   getDepth(entityId: number): number {
+    if (this.isInstanceMode && this.hierarchyIndex) {
+      return this.hierarchyIndex.getDepth(entityId);
+    }
     if (!this.queryStore) return 0;
     return this.queryStore.getDepth(entityId);
   }
 
   hasComponent(entityId: number, componentType: string): boolean {
+    if (this.isInstanceMode && this.componentIndex) {
+      return this.componentIndex.has(componentType, entityId);
+    }
     if (!this.queryStore) return false;
     return this.queryStore.hasComponent(entityId, componentType);
   }
 
   getComponentTypes(): string[] {
+    if (this.isInstanceMode && this.componentIndex) {
+      return this.componentIndex.getComponentTypes();
+    }
     if (!this.queryStore) return [];
     return this.queryStore.getComponentTypes();
   }
 
   getComponentCount(componentType: string): number {
+    if (this.isInstanceMode && this.componentIndex) {
+      return this.componentIndex.count(componentType);
+    }
     if (!this.queryStore) return 0;
     return this.queryStore.getComponentCount(componentType);
   }
 
   // Spatial query methods
   querySpatialBounds(bounds: IBounds): number[] {
+    if (this.isInstanceMode && this.spatialIdx) {
+      return this.spatialIdx.queryBounds(bounds);
+    }
     if (!this.queryStore) return [];
     return this.queryStore.querySpatialBounds(bounds);
   }
 
   querySpatialRadius(center: IVector3, radius: number): number[] {
+    if (this.isInstanceMode && this.spatialIdx) {
+      return this.spatialIdx.queryRadius(center, radius);
+    }
     if (!this.queryStore) return [];
     return this.queryStore.querySpatialRadius(center, radius);
   }
 
   updateEntityPosition(entityId: number, position: IVector3): void {
+    if (this.isInstanceMode && this.spatialIdx) {
+      this.spatialIdx.update(entityId, position);
+      return;
+    }
     if (!this.queryStore) return;
     this.queryStore.updateEntityPosition(entityId, position);
   }
 
   // Access to spatial index for advanced usage
   get spatialIndex() {
+    if (this.isInstanceMode) {
+      return this.spatialIdx;
+    }
     return this.queryStore?.spatialIndex;
   }
 
   rebuildIndices(): void {
+    if (this.isInstanceMode && this.adapter) {
+      this.adapter.rebuildIndices();
+      return;
+    }
     if (!this.queryStore) return;
     this.queryStore.rebuildIndices();
   }
 
   validateIndices(): string[] {
+    if (this.isInstanceMode && this.adapter) {
+      return this.adapter.validateIndices();
+    }
     if (!this.queryStore) return [];
     return this.queryStore.validateIndices();
   }
@@ -526,12 +650,24 @@ export class EntityQueries {
   }
 
   destroy(): void {
+    if (this.isInstanceMode && this.adapter) {
+      this.adapter.detach();
+      this.entityIndex?.clear();
+      this.hierarchyIndex?.clear();
+      this.componentIndex?.clear();
+      this.spatialIdx?.clear();
+      return;
+    }
     if (!this.queryStore) return;
     this.queryStore.destroy();
     globalQueryInstance = null;
   }
 
   reset(): void {
+    if (this.isInstanceMode && this.adapter) {
+      this.adapter.rebuildIndices();
+      return;
+    }
     if (this.queryStore) {
       this.queryStore.destroy();
     }
@@ -580,6 +716,6 @@ export class EntityQueries {
     // Show components
     const componentTypes = this.queryStore.getComponentTypes();
 
-    componentTypes.forEach((_type) => {});
+    componentTypes.forEach(() => {});
   }
 }

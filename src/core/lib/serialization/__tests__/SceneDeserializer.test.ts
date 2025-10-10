@@ -43,7 +43,7 @@ describe('SceneDeserializer', () => {
         deserializer.deserialize(sceneData, entityManager, componentRegistry),
       ).resolves.not.toThrow();
 
-      expect(entityManager.getAllEntities()).toHaveLength(0);
+      expect(entityManager.getAllEntitiesForAdapter()).toHaveLength(0);
       expect(materialRegistry.get('any')).toBeUndefined();
     });
 
@@ -73,11 +73,11 @@ describe('SceneDeserializer', () => {
 
       await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
-      const entities = entityManager.getAllEntities();
+      const entities = entityManager.getAllEntitiesForAdapter();
       expect(entities).toHaveLength(1);
       expect(entities[0].name).toBe('Test Entity');
 
-      const components = componentRegistry.getComponentsForEntity(entities[0].id);
+      const components = componentRegistry.getComponentsForEntityForAdapter(entities[0].id);
       expect(components.some((c) => c.type === 'Transform')).toBe(true);
     });
 
@@ -181,6 +181,9 @@ describe('SceneDeserializer', () => {
                 fov: 60,
                 near: 0.1,
                 far: 1000,
+                projectionType: 'perspective',
+                orthographicSize: 10,
+                depth: 0,
                 isMain: true,
               },
             },
@@ -233,11 +236,11 @@ describe('SceneDeserializer', () => {
       await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
       // Verify entities
-      const entities = entityManager.getAllEntities();
+      const entities = entityManager.getAllEntitiesForAdapter();
       expect(entities).toHaveLength(1);
       expect(entities[0].name).toBe('Camera');
 
-      const components = componentRegistry.getComponentsForEntity(1);
+      const components = componentRegistry.getComponentsForEntityForAdapter(1);
       expect(components.some((c) => c.type === 'Transform')).toBe(true);
       expect(components.some((c) => c.type === 'Camera')).toBe(true);
 
@@ -312,7 +315,7 @@ describe('SceneDeserializer', () => {
 
       await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
-      const entities = entityManager.getAllEntities();
+      const entities = entityManager.getAllEntitiesForAdapter();
       expect(entities).toHaveLength(4);
 
       const parent = entities.find((e) => e.name === 'Parent');

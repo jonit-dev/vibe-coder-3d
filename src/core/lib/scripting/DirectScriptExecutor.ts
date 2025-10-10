@@ -131,13 +131,16 @@ export class DirectScriptExecutor {
     }
 
     try {
-      // Remove any existing cached script to force recompilation
-      // This ensures that code changes are picked up
+      // Check if script is already compiled - return cached result
       if (this.compiledScripts.has(scriptId)) {
         if (this.debugMode) {
-          logger.debug(`Removing cached script for recompilation: ${scriptId}`);
+          logger.debug(`Using cached script: ${scriptId}`);
         }
-        this.compiledScripts.delete(scriptId);
+        const executionTime = performance.now() - startTime;
+        return {
+          success: true,
+          executionTime,
+        };
       }
 
       // Transpile TypeScript to JavaScript using official TS compiler
@@ -369,8 +372,14 @@ export class DirectScriptExecutor {
    * Clear all compiled scripts and contexts (useful for hot reload)
    */
   public clearAll(): void {
+    // Cleanup all timer APIs before clearing contexts
+    for (const entityId of this.scriptContexts.keys()) {
+      cleanupTimerAPI(entityId);
+    }
+
     this.compiledScripts.clear();
     this.scriptContexts.clear();
+    this.mutationBuffer.clear();
 
     if (this.debugMode) {
       logger.debug('Cleared all compiled scripts and contexts');

@@ -63,6 +63,9 @@ describe('EntitySerializer', () => {
         near: 0.1,
         far: 1000,
         isMain: true,
+        projectionType: 'perspective',
+        orthographicSize: 10,
+        depth: 0,
       });
 
       const result = serializer.serialize(entityManager, componentRegistry);
@@ -167,6 +170,9 @@ describe('EntitySerializer', () => {
               near: 0.1,
               far: 1000,
               isMain: true,
+              projectionType: 'perspective',
+              orthographicSize: 10,
+              depth: 0,
             },
           },
         },
@@ -178,7 +184,8 @@ describe('EntitySerializer', () => {
       const createdEntity = allEntities[0];
 
       const components = componentRegistry.getComponentsForEntity(createdEntity.id);
-      expect(components).toHaveLength(2);
+      expect(components).toHaveLength(3); // PersistentId + Transform + Camera
+      expect(components.some((c) => c.type === 'PersistentId')).toBe(true);
       expect(components.some((c) => c.type === 'Transform')).toBe(true);
       expect(components.some((c) => c.type === 'Camera')).toBe(true);
     });
@@ -393,6 +400,9 @@ describe('EntitySerializer', () => {
         near: 0.1,
         far: 1000,
         isMain: true,
+        projectionType: 'perspective',
+        orthographicSize: 10,
+        depth: 0,
       });
 
       // Serialize
@@ -411,7 +421,8 @@ describe('EntitySerializer', () => {
       expect(deserializedChild?.parentId).toBe(deserializedParent?.id);
 
       const childComponents = componentRegistry.getComponentsForEntity(deserializedChild!.id);
-      expect(childComponents).toHaveLength(2);
+      expect(childComponents).toHaveLength(3); // PersistentId + Transform + Camera
+      expect(childComponents.some((c) => c.type === 'PersistentId')).toBe(true);
       expect(childComponents.some((c) => c.type === 'Transform')).toBe(true);
       expect(childComponents.some((c) => c.type === 'Camera')).toBe(true);
     });

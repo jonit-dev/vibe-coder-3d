@@ -5,9 +5,9 @@ import { Logger } from '../logger';
 import { EntityMeta } from './BitECSComponents';
 import { componentRegistry, ComponentRegistry } from './ComponentRegistry';
 import {
+  clearPersistentIdMaps,
   generatePersistentId,
   PersistentIdSchema,
-  clearPersistentIdMaps,
 } from './components/definitions/PersistentIdComponent';
 import { getEntityName, getEntityParent, setEntityMeta } from './DataConversion';
 import { IEntity } from './IEntity';
@@ -28,23 +28,33 @@ export class EntityManager {
   private eventListeners: EntityEventListener[] = [];
   private entityCache: Map<EntityId, IEntity> = new Map();
   private existingPersistentIds: Set<string> = new Set();
-  private queries: EntityQueries;
+  private queries: EntityQueries | null = null;
   private world: any; // BitECS world - using any for compatibility with bitecs
   private componentRegistry: ComponentRegistry;
   private logger = Logger.create('EntityManager');
+  private isInstanceMode = false;
 
   constructor(world?: any, componentManager?: ComponentRegistry) {
     if (world) {
       // Instance mode with injected world and optional component manager
+      this.isInstanceMode = true;
       this.world = world;
-      this.queries = new EntityQueries(world);
+      // Note: EntityQueries will be set later via setEntityQueries to avoid circular dependency
       this.componentRegistry = componentManager || componentRegistry;
     } else {
       // Singleton mode (backward compatibility)
+      this.isInstanceMode = false;
       this.world = ECSWorld.getInstance().getWorld();
       this.queries = EntityQueries.getInstance();
       this.componentRegistry = componentRegistry;
     }
+  }
+
+  /**
+   * Set the EntityQueries instance for this manager (used in instance mode to avoid circular dependency)
+   */
+  public setEntityQueries(queries: EntityQueries): void {
+    this.queries = queries;
   }
 
   public static getInstance(): EntityManager {
@@ -54,36 +64,43 @@ export class EntityManager {
     return EntityManager.instance;
   }
 
-  public reset(): void {
+  public reset(newWorld?: any): void {
     this.entityCache.clear();
     this.existingPersistentIds.clear();
-    this.eventListeners = [];
+    // Note: We do NOT clear eventListeners here because external components
+    // (like EntityQueries/IndexEventAdapter) need to stay attached to receive
+    // events about new entities created after the reset.
+    // this.eventListeners = [];
 
     // Clear persistent ID mappings
     clearPersistentIdMaps();
 
-    // Refresh world reference in case ECSWorld singleton was reset
-    this.refreshWorld();
+    if (this.isInstanceMode) {
+      // For instance mode, optionally update world and rebuild indices
+      if (newWorld) {
+        this.world = newWorld;
+      }
+      this.queries?.reset();
+      return;
+    }
 
-    // Reset EntityQueries to rebuild indices with new world state
-    this.queries.reset();
+    // Singleton mode: refresh world reference and reset indices
+    this.refreshWorld();
+    this.queries?.reset();
   }
 
   /**
    * Refresh world reference from singleton (used after ECSWorld reset)
    */
   public refreshWorld(): void {
-    // Always refresh for singleton instances (instance was created without injected world)
-    // We can't reliably check if this.world === ECSWorld.getInstance().getWorld()
-    // because the world may have been reset, so we check if we're a singleton instance
+    if (this.isInstanceMode) {
+      // In instance mode, world is managed externally by the factory; no-op here
+      return;
+    }
+
     const currentSingletonWorld = ECSWorld.getInstance().getWorld();
-
-    // Force refresh the world reference to current singleton world
     this.world = currentSingletonWorld;
-    // Also update queries with new world
     this.queries = EntityQueries.getInstance();
-
-    // Clear cache and rebuild persistent ID tracking
     this.entityCache.clear();
     this.rebuildPersistentIdCache();
   }
@@ -202,7 +219,7 @@ export class EntityManager {
 
     const entities = this.getAllEntities();
     entities.forEach((entity) => {
-      const persistentIdData = componentRegistry.getComponentData<{ id: string }>(
+      const persistentIdData = this.componentRegistry.getComponentData<{ id: string }>(
         entity.id,
         'PersistentId',
       );
@@ -253,6 +270,18 @@ export class EntityManager {
     return entity;
   }
 
+  /**
+   * Create entity for adapter interface (returns { id: number })
+   */
+  createEntityForAdapter(
+    name: string,
+    parentId?: number | null,
+    persistentId?: string,
+  ): { id: number } {
+    const entity = this.createEntity(name, parentId, persistentId);
+    return { id: entity.id };
+  }
+
   getEntity(id: EntityId): IEntity | undefined {
     if (this.entityCache.has(id)) {
       return this.entityCache.get(id);
@@ -269,10 +298,34 @@ export class EntityManager {
     // Rebuild cache from BitECS world using efficient indexed lookup
     this.entityCache.clear();
 
+    // Return entities for adapter interface
+    return this.getAllEntitiesForAdapter();
+  }
+
+  /**
+   * Get all entities in adapter format (for SceneDeserializer compatibility)
+   */
+  private getAllEntitiesForAdapter(): Array<{
+    id: number;
+    name: string;
+    parentId?: number | null;
+  }> {
+    const entities = this.getAllEntitiesInternal();
+    return entities.map((entity) => ({
+      id: entity.id,
+      name: entity.name,
+      parentId: entity.parentId,
+    }));
+  }
+
+  /**
+   * Internal method to get all entities
+   */
+  private getAllEntitiesInternal(): IEntity[] {
     // Get all entity IDs - use scan as fallback if queries not ready
     let entityIds: number[];
     try {
-      entityIds = this.queries.listAllEntities();
+      entityIds = this.queries?.listAllEntities() || [];
 
       // If queries return empty but we know entities exist, fall back to scan
       if (entityIds.length === 0) {
@@ -322,7 +375,7 @@ export class EntityManager {
     try {
       const queriesAvailable = this.queries && this.queries.listAllEntities().length > 0;
       entities.forEach((entity) => {
-        if (queriesAvailable) {
+        if (queriesAvailable && this.queries) {
           entity.children = this.queries.getChildren(entity.id);
         } else {
           // Fall back to filtering
@@ -352,7 +405,10 @@ export class EntityManager {
     if (!entity) return false;
 
     // Remove persistent ID from tracking
-    const persistentIdData = componentRegistry.getComponentData<{ id: string }>(id, 'PersistentId');
+    const persistentIdData = this.componentRegistry.getComponentData<{ id: string }>(
+      id,
+      'PersistentId',
+    );
     if (persistentIdData && persistentIdData.id) {
       this.existingPersistentIds.delete(persistentIdData.id);
     }
@@ -426,7 +482,7 @@ export class EntityManager {
   getRootEntities(): IEntity[] {
     // Try to use efficient indexed query, fall back if queries not ready
     try {
-      const rootEntityIds = this.queries.getRootEntities();
+      const rootEntityIds = this.queries?.getRootEntities() || [];
 
       // If result is empty, verify with fallback to avoid race conditions
       if (rootEntityIds.length === 0) {
@@ -467,6 +523,13 @@ export class EntityManager {
     }
 
     return true;
+  }
+
+  /**
+   * Set parent for adapter interface (void return)
+   */
+  setParentForAdapter(childId: number, parentId?: number | null): void {
+    this.setParent(childId, parentId);
   }
 
   setParent(entityId: EntityId, newParentId?: EntityId): boolean {
@@ -522,6 +585,13 @@ export class EntityManager {
     return true;
   }
 
+  /**
+   * Clear entities for adapter interface
+   */
+  clearEntitiesForAdapter(): void {
+    this.clearEntities();
+  }
+
   private wouldCreateCircularDependency(entityId: EntityId, potentialParentId: EntityId): boolean {
     let currentId: EntityId | null = potentialParentId;
 
@@ -548,7 +618,7 @@ export class EntityManager {
    * @returns The persistent ID string, or undefined if not found
    */
   getEntityPersistentId(entityId: EntityId): string | undefined {
-    const persistentIdData = componentRegistry.getComponentData<{ id: string }>(
+    const persistentIdData = this.componentRegistry.getComponentData<{ id: string }>(
       entityId,
       'PersistentId',
     );
@@ -581,7 +651,7 @@ export class EntityManager {
     const entities = this.getAllEntities();
 
     for (const entity of entities) {
-      const persistentIdData = componentRegistry.getComponentData<{ id: string }>(
+      const persistentIdData = this.componentRegistry.getComponentData<{ id: string }>(
         entity.id,
         'PersistentId',
       );

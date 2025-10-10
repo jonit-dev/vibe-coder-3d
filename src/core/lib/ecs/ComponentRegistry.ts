@@ -4,14 +4,13 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { addComponent, defineComponent, hasComponent, removeComponent, Component } from 'bitecs';
+import { addComponent, Component, defineComponent, hasComponent, removeComponent } from 'bitecs';
 import { z } from 'zod';
 
 import { emit } from '../events';
 import { Logger } from '../logger';
 import { ECSWorld } from './World';
 import { EntityId } from './types';
-import { EntityQueries } from './queries/entityQueries';
 
 // Base component descriptor interface
 export interface IComponentDescriptor<TData = unknown> {
@@ -146,16 +145,23 @@ export class ComponentRegistry {
   // Cache for entity queries to avoid repeated scans
   private entityQueryCache = new Map<string, { entities: EntityId[]; timestamp: number }>();
   private readonly CACHE_TTL = 100; // Cache for 100ms
+  private _world: any; // BitECS world instance
 
   private get world() {
-    return ECSWorld.getInstance().getWorld();
+    return this._world || ECSWorld.getInstance().getWorld();
   }
 
   public getWorld() {
     return this.world;
   }
 
-  private constructor() {}
+  /**
+   * Constructor can take an optional world instance for isolated instances
+   * If no world provided, falls back to singleton ECSWorld
+   */
+  constructor(worldInstance?: ECSWorld) {
+    this._world = worldInstance?.getWorld();
+  }
 
   static getInstance(): ComponentRegistry {
     if (!ComponentRegistry.instance) {
@@ -167,6 +173,7 @@ export class ComponentRegistry {
   reset(): void {
     this.components.clear();
     this.bitECSComponents.clear();
+    this.entityQueryCache.clear();
   }
 
   /**
@@ -187,8 +194,6 @@ export class ComponentRegistry {
     if (bitECSComponent) {
       this.bitECSComponents.set(descriptor.id, bitECSComponent);
     }
-
-    this.logger.info(`Registered component: ${descriptor.name} (${descriptor.id})`);
   }
 
   /**
@@ -294,6 +299,13 @@ export class ComponentRegistry {
       console.error(`Failed to add component ${componentId} to entity ${entityId}:`, error);
       return false;
     }
+  }
+
+  /**
+   * Add component for adapter interface (void return)
+   */
+  addComponentForAdapter(entityId: number, componentType: string, data: unknown): void {
+    this.addComponent(entityId, componentType, data);
   }
 
   /**
@@ -522,33 +534,40 @@ export class ComponentRegistry {
       return cached.entities;
     }
 
-    // Try to use efficient EntityQueries system first
-    const queries = EntityQueries.getInstance();
-    let result = queries.listEntitiesWithComponent(componentId);
+    // Scan for entities with this component
+    // Note: We used to use EntityQueries here, but that caused issues with instance isolation
+    // The manual scan is fast enough for most use cases (typically <1000 entities)
+    let result: EntityId[] = [];
+    const bitECSComponent = this.bitECSComponents.get(componentId);
+    if (bitECSComponent) {
+      const entitySet = new Set<EntityId>();
 
-    // If EntityQueries returns empty, fall back to manual scan
-    // This handles cases where indices aren't built yet
-    if (result.length === 0) {
-      const bitECSComponent = this.bitECSComponents.get(componentId);
-      if (bitECSComponent) {
-        const entitySet = new Set<EntityId>();
-
-        // Use a smaller upper bound for better performance
-        // Most scenes won't have more than 1000 entities
-        for (let eid = 0; eid < 1000; eid++) {
-          if (hasComponent(this.world, bitECSComponent, eid)) {
-            entitySet.add(eid);
-          }
+      // Use a smaller upper bound for better performance
+      // Most scenes won't have more than 1000 entities
+      for (let eid = 0; eid < 1000; eid++) {
+        if (hasComponent(this.world, bitECSComponent, eid)) {
+          entitySet.add(eid);
         }
-
-        result = Array.from(entitySet).sort((a, b) => a - b);
       }
+
+      result = Array.from(entitySet).sort((a, b) => a - b);
     }
 
     // Cache the result
     this.entityQueryCache.set(componentId, { entities: result, timestamp: now });
 
     return result;
+  }
+
+  /**
+   * Get components for entity in adapter format (for SceneDeserializer)
+   */
+  getComponentsForEntityForAdapter(entityId: number): Array<{ type: string; data: unknown }> {
+    const componentIds = this.getEntityComponents(entityId);
+    return componentIds.map((componentId) => ({
+      type: componentId,
+      data: this.getComponentData(entityId, componentId),
+    }));
   }
 
   /**
