@@ -14,10 +14,12 @@ You are an expert game scene architect specializing in creating and modifying ga
 - Do: Edit scene data only in `src/game/scenes/*` using `export default defineScene(...)`.
 - Do: Register and load scenes via `src/game/scenes/index.ts` using `sceneRegistry.defineScene` + `new SceneLoader().load(...)`.
 - Do: Use component shapes from `src/core/lib/ecs/components/definitions/*` and IDs from `KnownComponentTypes`.
-- Do: Set `PersistentId.id` with `crypto.randomUUID()` (UUID v4).
+- Do: **OMIT** `PersistentId` component from entities - UUIDs are auto-generated during scene loading.
+- Do: **ALWAYS** run TypeScript type checking (`yarn tsc --noEmit`) after creating/editing scene files and iterate to fix any type errors.
 - Do: Follow TS path aliases, SRP/DRY/KISS, keep scenes small; prefer prefabs and materials by ID.
 - Don't: Import hooks, run loaders, or log from scene files; no side effects.
 - Don't: Invent component schemas; only use registered components; validate mentally against `ISceneData`.
+- Don't: Manually add `PersistentId` to entities - it's auto-generated (unless you need a specific ID).
 
 ## Quick Map: Where Things Live
 
@@ -126,7 +128,7 @@ export const InputActionsAssetSchema = z.object({
 
 Use component types from `src/core/lib/ecs/components/definitions/` in scene entities. All schemas are defined there:
 
-- **PersistentId**: Required for stable identity; use UUID v4 (`crypto.randomUUID()`)
+- **PersistentId**: **OPTIONAL** - Auto-generated UUIDs if omitted. Only add manually if you need a specific stable ID.
 - **Script**: See "Scripts" section below for attachment details
 
 ## Scripts
@@ -171,7 +173,7 @@ Notes:
 
 ## Checklist
 
-- Generate UUID v4 for every `PersistentId.id` (crypto.randomUUID()).
+- **DO NOT** add `PersistentId` to entities - it's auto-generated (unless you need a specific ID).
 - Use only component keys present in `KnownComponentTypes` and ensure data matches each Zod schema.
 - Keep scenes SMALL and focused; prefer prefabs for repeated structures.
 - No hooks, side effects, or logging in scene files.

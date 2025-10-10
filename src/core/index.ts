@@ -82,6 +82,12 @@ export {
 export { MaterialRegistry } from './materials/MaterialRegistry';
 export type { IMaterialDefinition, IMaterialAssetMeta } from './materials/Material.types';
 
+// Prefabs
+export type { IPrefabDefinition } from './prefabs/Prefab.types';
+
+// Input
+export type { IInputActionsAsset } from './lib/input/inputTypes';
+
 // Systems
 export { MaterialSystem } from './systems/MaterialSystem';
 export { transformSystem } from './systems/transformSystem';

@@ -1,5 +1,6 @@
 import { Logger } from '@core/lib/logger';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 
 const logger = Logger.create('EntitySerializer');
 
@@ -17,7 +18,7 @@ const SerializedEntitySchema = z.object({
   id: z.number(),
   name: z.string(),
   parentId: z.number().optional().nullable(),
-  components: z.record(z.unknown())
+  components: z.record(z.unknown()),
 });
 
 /**
@@ -48,7 +49,7 @@ export class EntitySerializer {
    */
   serialize(
     entityManager: IEntityManagerAdapter,
-    componentManager: IComponentManagerAdapter
+    componentManager: IComponentManagerAdapter,
   ): ISerializedEntity[] {
     const entities = entityManager.getAllEntities();
     const serialized: ISerializedEntity[] = [];
@@ -67,7 +68,7 @@ export class EntitySerializer {
         id: entity.id,
         name: entity.name,
         parentId: entity.parentId,
-        components: componentData
+        components: componentData,
       });
     }
 
@@ -84,7 +85,7 @@ export class EntitySerializer {
   deserialize(
     entities: unknown[],
     entityManager: IEntityManagerAdapter,
-    componentManager: IComponentManagerAdapter
+    componentManager: IComponentManagerAdapter,
   ): void {
     // Clear existing entities
     entityManager.clearEntities();
@@ -98,9 +99,17 @@ export class EntitySerializer {
       try {
         const validated = SerializedEntitySchema.parse(entityData);
 
-        // Extract PersistentId if present
+        // Extract PersistentId if present, or auto-generate UUID
         const persistentIdData = validated.components.PersistentId as { id?: string } | undefined;
-        const persistentId = persistentIdData?.id;
+        const persistentId = persistentIdData?.id || uuidv4();
+
+        // Log auto-generated IDs for debugging
+        if (!persistentIdData?.id) {
+          logger.debug('Auto-generated PersistentId for entity', {
+            name: validated.name,
+            id: persistentId,
+          });
+        }
 
         // Create entity without parent
         const created = entityManager.createEntity(validated.name, undefined, persistentId);
@@ -116,7 +125,7 @@ export class EntitySerializer {
             logger.error('Failed to add component', {
               entityId: created.id,
               componentType,
-              error
+              error,
             });
           }
         }
@@ -144,7 +153,7 @@ export class EntitySerializer {
             childId: validated.id,
             parentId: validated.parentId,
             resolvedChild: childId,
-            resolvedParent: parentId
+            resolvedParent: parentId,
           });
         }
       } catch (error) {
@@ -155,7 +164,7 @@ export class EntitySerializer {
     logger.info('Deserialized entities', {
       total: entities.length,
       success: successCount,
-      errors: errorCount
+      errors: errorCount,
     });
   }
 
@@ -168,7 +177,7 @@ export class EntitySerializer {
       return { isValid: true };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return { isValid: false, error: error.errors.map(e => e.message).join(', ') };
+        return { isValid: false, error: error.errors.map((e) => e.message).join(', ') };
       }
       return { isValid: false, error: 'Unknown validation error' };
     }

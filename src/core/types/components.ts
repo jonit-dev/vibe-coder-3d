@@ -218,13 +218,15 @@ export interface IScriptComponent {
 /**
  * Component map - Maps component names to their types
  * This provides autocomplete and type checking for component data
+ *
+ * Note: PersistentId is optional - if not provided, it will be auto-generated during scene loading
  */
 export interface IComponentMap {
   Transform: ITransformComponent;
   Camera: ICameraComponent;
   Light: ILightComponent;
   MeshRenderer: IMeshRendererComponent;
-  PersistentId: IPersistentIdComponent;
+  PersistentId?: IPersistentIdComponent; // Optional - auto-generated if not provided
   RigidBody: IRigidBodyComponent;
   MeshCollider: IMeshColliderComponent;
   PrefabInstance: IPrefabInstanceComponent;

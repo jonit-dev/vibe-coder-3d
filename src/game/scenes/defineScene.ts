@@ -1,9 +1,11 @@
 import React from 'react';
 import type { ISceneData } from '@core/lib/serialization';
-import type { ITypedSceneEntity, IMaterialData } from '@core';
-import type { IMaterialDefinition } from '@core/materials/Material.types';
-import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
-import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
+import type {
+  ITypedSceneEntity,
+  IMaterialDefinition,
+  IPrefabDefinition,
+  IInputActionsAsset,
+} from '@core';
 
 /**
  * Typed scene data with component validation
@@ -65,6 +67,6 @@ export function defineScene(sceneData: ITypedSceneData) {
   return {
     Component: SceneComponent,
     metadata: sceneData.metadata,
-    data: sceneData as unknown as ISceneData  // Cast for runtime compatibility
+    data: sceneData as unknown as ISceneData, // Cast for runtime compatibility
   };
 }

@@ -21,9 +21,6 @@ export default defineScene({
       id: 0,
       name: 'Main Camera',
       components: {
-        PersistentId: {
-          id: 'a0293986-830a-4818-a906-382600973f92',
-        },
         Transform: {
           position: [0, 1, -10],
           rotation: [0, 0, 0],
@@ -73,9 +70,6 @@ export default defineScene({
       id: 1,
       name: 'Directional Light',
       components: {
-        PersistentId: {
-          id: 'ddca780c-ce4d-4193-92dd-d01a60446870',
-        },
         Transform: {
           position: [5, 10, 5],
           rotation: [0, 0, 0],
@@ -108,9 +102,6 @@ export default defineScene({
       id: 2,
       name: 'Ambient Light',
       components: {
-        PersistentId: {
-          id: 'd330250c-3904-4f03-96a9-de0ddd3bbe65',
-        },
         Transform: {
           position: [0, 0, 0],
           rotation: [0, 0, 0],
@@ -143,9 +134,6 @@ export default defineScene({
       id: 3,
       name: 'Tree 0',
       components: {
-        PersistentId: {
-          id: 'e0eac286-9aa0-4af2-ac9e-ea9a8517abd7',
-        },
         Transform: {
           position: [-2.25, 0, 0],
           rotation: [0, 0, 0],
@@ -197,9 +185,6 @@ export default defineScene({
       name: 'Tree 1',
       parentId: 3,
       components: {
-        PersistentId: {
-          id: '75ef3c12-c394-4114-b1a9-d28b8aec6d7e',
-        },
         Transform: {
           position: [2, 0, 0],
           rotation: [0, 0, 0],
@@ -240,9 +225,6 @@ export default defineScene({
       id: 5,
       name: 'Rock 0',
       components: {
-        PersistentId: {
-          id: 'da6429ce-e73e-439e-9c2d-59866a63338f',
-        },
         Transform: {
           position: [2, 0, 2],
           rotation: [0, 0, 0],
@@ -283,9 +265,6 @@ export default defineScene({
       id: 6,
       name: 'Bush 0',
       components: {
-        PersistentId: {
-          id: '7500eef8-bd2e-43ed-8680-d8c27d6cc2ce',
-        },
         Transform: {
           position: [-1.75, 0, 1.5],
           rotation: [0, 0, 0],
@@ -326,9 +305,6 @@ export default defineScene({
       id: 7,
       name: 'Cube 0',
       components: {
-        PersistentId: {
-          id: '1b275b3a-86c7-4a67-aaa6-f287d6024b10',
-        },
         Transform: {
           position: [0, 1.75, 0],
           rotation: [0, 0, 0],
@@ -452,9 +428,6 @@ export default defineScene({
       root: {
         name: 'Tree 0',
         components: {
-          PersistentId: {
-            id: '62cf58c8-673d-4119-a1a9-a30b481bc642',
-          },
           Transform: {
             position: [-2.25, 0, 0],
             rotation: [0, 0, 0],
@@ -494,9 +467,6 @@ export default defineScene({
           {
             name: 'Tree 1',
             components: {
-              PersistentId: {
-                id: 'a47474ec-9c71-4323-85a5-e654def0200e',
-              },
               Transform: {
                 position: [2, 0, 0],
                 rotation: [0, 0, 0],
