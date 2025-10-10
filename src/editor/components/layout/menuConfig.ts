@@ -1,6 +1,7 @@
 import { IMenuItem } from './MenuBar';
 import { ShapeType } from '@editor/types/shapes';
-import { GAME_OBJECT_CATEGORIES } from '@editor/config/gameObjectMenuData';
+import { buildGameObjectCategories } from '@editor/config/gameObjectMenuData';
+import type { ICustomShapeDescriptor } from '@/core/lib/rendering/shapes/IShapeDescriptor';
 
 export interface IMenuConfig {
   onSave: () => void;
@@ -20,6 +21,7 @@ export interface IMenuConfig {
   onBrowsePrefabs?: () => void;
   currentSceneName?: string | null;
   isPlaying?: boolean;
+  customShapes?: Array<ICustomShapeDescriptor<any>>;
 }
 
 export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
@@ -41,6 +43,7 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
     onBrowsePrefabs,
     currentSceneName,
     isPlaying = false,
+    customShapes = [],
   } = config;
 
   return [
@@ -100,16 +103,18 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
           action: () => onAddObject('Entity'),
         },
         { divider: true },
-        // Convert shared categories to menu items
-        ...GAME_OBJECT_CATEGORIES.filter((cat) => cat.label !== 'Assets').map((category) => ({
-          label: category.label,
-          icon: category.icon,
-          submenu: category.items.map((item) => ({
-            label: item.label,
-            icon: item.icon,
-            action: () => onAddObject(item.type),
+        // Convert shared categories to menu items (including custom shapes)
+        ...buildGameObjectCategories(customShapes)
+          .filter((cat) => cat.label !== 'Assets')
+          .map((category) => ({
+            label: category.label,
+            icon: category.icon,
+            submenu: category.items.map((item) => ({
+              label: item.label,
+              icon: item.icon,
+              action: () => onAddObject(item.type),
+            })),
           })),
-        })),
         { divider: true },
         {
           label: 'Camera',

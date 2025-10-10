@@ -225,3 +225,12 @@ export type {
   IInputActionCallbackContext,
   IInputActionReference,
 } from './lib/input/inputTypes';
+
+// Custom Shape System
+export { shapeRegistry } from './lib/rendering/shapes/shapeRegistry';
+export type { IShapeRegistry } from './lib/rendering/shapes/shapeRegistry';
+export { initializeShapeDiscovery } from './lib/rendering/shapes/discovery';
+export type {
+  IShapeMetadata,
+  ICustomShapeDescriptor,
+} from './lib/rendering/shapes/IShapeDescriptor';

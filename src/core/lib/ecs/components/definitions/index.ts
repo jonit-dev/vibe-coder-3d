@@ -4,6 +4,7 @@
  */
 
 export { cameraComponent, type CameraData } from './CameraComponent';
+export { customShapeComponent, type CustomShapeData } from './CustomShapeComponent';
 export { lightComponent, type LightData } from './LightComponent';
 export { meshColliderComponent, type MeshColliderData } from './MeshColliderComponent';
 export { meshRendererComponent, type MeshRendererData } from './MeshRendererComponent';

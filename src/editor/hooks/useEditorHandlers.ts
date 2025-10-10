@@ -69,6 +69,7 @@ export const useEditorHandlers = ({
     createTube,
     createCross,
     createCustomModel,
+    createCustomShape,
     createDirectionalLight,
     createPointLight,
     createSpotLight,
@@ -88,6 +89,19 @@ export const useEditorHandlers = ({
     async (type: ShapeType | string, modelPath?: string) => {
       try {
         let entity;
+
+        // Handle custom shapes
+        if (typeof type === 'string' && type.startsWith('customShape:')) {
+          const shapeId = type.replace('customShape:', '');
+          const customEntity = createCustomShape(shapeId);
+          if (customEntity) {
+            setSelectedId(customEntity.id);
+            setStatusMessage(`Created ${shapeId} (Entity ${customEntity.id})`);
+            setShowAddMenu(false);
+          }
+          return;
+        }
+
         switch (type) {
           case ShapeType.Cube:
             entity = createCube();
@@ -253,6 +267,7 @@ export const useEditorHandlers = ({
       createCross,
       createCamera,
       createCustomModel,
+      createCustomShape,
       createDirectionalLight,
       createPointLight,
       createSpotLight,

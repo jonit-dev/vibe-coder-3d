@@ -11,6 +11,7 @@ import { ComponentCategory, ComponentFactory, componentRegistry } from '../Compo
 // Import all core component definitions from individual files
 import {
   cameraComponent,
+  customShapeComponent,
   lightComponent,
   meshColliderComponent,
   meshRendererComponent,
@@ -22,6 +23,7 @@ import {
   terrainComponent,
   transformComponent,
   type CameraData,
+  type CustomShapeData,
   type LightData,
   type MeshColliderData,
   type MeshRendererData,
@@ -39,6 +41,7 @@ export function registerCoreComponents(registry = componentRegistry): void {
   registry.register(persistentIdComponent.get());
   registry.register(transformComponent);
   registry.register(meshRendererComponent);
+  registry.register(customShapeComponent);
   registry.register(terrainComponent);
   registry.register(rigidBodyComponent);
   registry.register(meshColliderComponent);
@@ -122,6 +125,7 @@ export function registerExampleComponents(): void {
 // Export type definitions for TypeScript support
 export type {
   CameraData,
+  CustomShapeData,
   LightData,
   MeshColliderData,
   MeshRendererData,

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { TbBoxMultiple } from 'react-icons/tb';
 import { useEditorStore } from '@editor/store/editorStore';
 import { ShapeType } from '@editor/types/shapes';
 import { TerrainWizard } from '@editor/components/terrain/TerrainWizard';
 import { useEntityCreation } from '@editor/hooks/useEntityCreation';
+import { useCustomShapes } from '@editor/hooks/useDynamicShapes';
 import { GAME_OBJECT_CATEGORIES } from '@editor/config/gameObjectMenuData';
 import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
 import { IMenuCategory, IMenuItemOption, NestedDropdownMenu } from './NestedDropdownMenu';
@@ -14,15 +16,33 @@ export interface IEnhancedAddObjectMenuProps {
 }
 
 // Convert shared data to NestedDropdownMenu format
-const OBJECT_CATEGORIES: IMenuCategory[] = GAME_OBJECT_CATEGORIES.map((category) => ({
-  label: category.label,
-  icon: category.icon,
-  items: category.items.map((item) => ({
-    type: item.type,
-    label: item.label,
-    icon: item.icon,
-  })),
-}));
+function buildObjectCategories(customShapes: any[]): IMenuCategory[] {
+  const baseCategories = GAME_OBJECT_CATEGORIES.map((category) => ({
+    label: category.label,
+    icon: category.icon,
+    items: category.items.map((item) => ({
+      type: item.type,
+      label: item.label,
+      icon: item.icon,
+    })),
+  }));
+
+  // Add Custom Shapes category if there are any registered shapes
+  if (customShapes.length > 0) {
+    const customShapesCategory: IMenuCategory = {
+      label: 'Custom Shapes',
+      icon: <TbBoxMultiple size={18} />,
+      items: customShapes.map((shape) => ({
+        type: `customShape:${shape.meta.id}`,
+        label: shape.meta.name,
+        icon: <TbBoxMultiple size={18} />,
+      })),
+    };
+    baseCategories.push(customShapesCategory);
+  }
+
+  return baseCategories;
+}
 
 export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
   anchorRef,
@@ -33,9 +53,21 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
   const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
   const [showTerrainWizard, setShowTerrainWizard] = useState(false);
 
-  const { createTerrain } = useEntityCreation();
+  const { createTerrain, createCustomShape } = useEntityCreation();
+  const customShapes = useCustomShapes();
+
+  // Build categories dynamically including custom shapes
+  const objectCategories = useMemo(() => buildObjectCategories(customShapes), [customShapes]);
 
   const handleItemSelect = (item: IMenuItemOption) => {
+    // Handle custom shapes
+    if (item.type.startsWith('customShape:')) {
+      const shapeId = item.type.replace('customShape:', '');
+      createCustomShape(shapeId);
+      setShowAddMenu(false);
+      return;
+    }
+
     if (item.type === 'CustomModel') {
       onCustomModel?.();
       return;
@@ -124,7 +156,7 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
       open={open}
       onClose={() => setShowAddMenu(false)}
       onItemSelect={handleItemSelect}
-      categories={OBJECT_CATEGORIES}
+      categories={objectCategories}
     />
   );
 };

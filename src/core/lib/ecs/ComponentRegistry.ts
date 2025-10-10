@@ -775,6 +775,12 @@ export function combineRenderingContributions(
     if (type === 'Light') {
       combined.meshType = 'Light';
     }
+
+    // Special handling for CustomShape components
+    // When a CustomShape component is present, override meshType to 'CustomShape'
+    if (type === 'CustomShape') {
+      combined.meshType = 'CustomShape';
+    }
   });
 
   return combined;

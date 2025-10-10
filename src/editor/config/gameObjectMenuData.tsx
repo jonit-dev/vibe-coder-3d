@@ -2,6 +2,7 @@ import React from 'react';
 import { FiFolder, FiSun, FiZap } from 'react-icons/fi';
 import {
   TbBox,
+  TbBoxMultiple,
   TbBuildingBridge,
   TbCircle,
   TbCone,
@@ -25,6 +26,7 @@ import {
   TbTriangle,
 } from 'react-icons/tb';
 import { ShapeType } from '@editor/types/shapes';
+import type { ICustomShapeDescriptor } from '@/core/lib/rendering/shapes/IShapeDescriptor';
 
 export interface IGameObjectMenuItem {
   type: ShapeType | string;
@@ -276,3 +278,49 @@ export const GAME_OBJECT_CATEGORIES: IGameObjectCategory[] = [
     ],
   },
 ];
+
+/**
+ * Builds a Custom Shapes category from registered shapes
+ * Used to dynamically generate menu items for custom shapes
+ */
+export function buildCustomShapesCategory(
+  customShapes: Array<ICustomShapeDescriptor<any>>,
+): IGameObjectCategory | null {
+  if (customShapes.length === 0) {
+    return null;
+  }
+
+  return {
+    label: 'Custom Shapes',
+    icon: <TbBoxMultiple size={18} />,
+    items: customShapes.map((shape) => ({
+      type: `customShape:${shape.meta.id}`,
+      label: shape.meta.name,
+      icon: <TbBoxMultiple size={18} />,
+    })),
+  };
+}
+
+/**
+ * Builds complete game object categories including custom shapes
+ * @param customShapes - Array of registered custom shape descriptors
+ * @returns All game object categories with custom shapes appended
+ */
+export function buildGameObjectCategories(
+  customShapes: Array<ICustomShapeDescriptor<any>>,
+): IGameObjectCategory[] {
+  const categories = [...GAME_OBJECT_CATEGORIES];
+
+  const customShapesCategory = buildCustomShapesCategory(customShapes);
+  if (customShapesCategory) {
+    // Insert custom shapes before Assets category
+    const assetsIndex = categories.findIndex((cat) => cat.label === 'Assets');
+    if (assetsIndex !== -1) {
+      categories.splice(assetsIndex, 0, customShapesCategory);
+    } else {
+      categories.push(customShapesCategory);
+    }
+  }
+
+  return categories;
+}

@@ -7,6 +7,7 @@ import { TopBarPlaybackControls } from './TopBarPlaybackControls';
 import { TopBarActions } from './TopBarActions';
 import { createMenuItems } from './menuConfig';
 import { useSaveDropdown } from './hooks/useSaveDropdown';
+import { useCustomShapes } from '@editor/hooks/useDynamicShapes';
 
 export interface ITopBarProps {
   entityCount: number;
@@ -59,6 +60,7 @@ export const TopBar: React.FC<ITopBarProps> = React.memo(
     onBrowsePrefabs,
   }) => {
     const saveDropdown = useSaveDropdown();
+    const customShapes = useCustomShapes();
 
     const menuItems = createMenuItems({
       onSave,
@@ -78,6 +80,7 @@ export const TopBar: React.FC<ITopBarProps> = React.memo(
       onBrowsePrefabs,
       currentSceneName,
       isPlaying,
+      customShapes,
     });
 
     return (

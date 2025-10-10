@@ -3,9 +3,11 @@ import { useCallback } from 'react';
 import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
 import { LightData } from '@/core/lib/ecs/components/definitions/LightComponent';
 import { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
+import type { CustomShapeData } from '@/core/lib/ecs/components/definitions/CustomShapeComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
+import { shapeRegistry } from '@/core/lib/rendering/shapes/shapeRegistry';
 
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 import { useEntityData } from './useEntityData';
@@ -669,6 +671,55 @@ export const useEntityCreation = () => {
     [entityManager, removeComponentsForEntity, setSelectedId],
   );
 
+  const createCustomShape = useCallback(
+    (shapeId: string, params?: Record<string, unknown>, name?: string, parentId?: number) => {
+      // Resolve the shape descriptor to get metadata
+      const descriptor = shapeRegistry.resolve(shapeId);
+      if (!descriptor) {
+        console.error(`Custom shape not found in registry: ${shapeId}`);
+        return null;
+      }
+
+      // Use the shape's name from metadata or provided name
+      const baseName = name || descriptor.meta.name;
+      const actualName = `${baseName} ${getNextNumber(baseName)}`;
+
+      // Create entity
+      const entity = createEntity(actualName, parentId);
+
+      // Get default params if not provided
+      const shapeParams = (() => {
+        if (params) {
+          const parsed = descriptor.paramsSchema.safeParse(params);
+          if (parsed.success) {
+            return parsed.data;
+          }
+
+          console.error(
+            `Invalid params provided for custom shape ${shapeId}, falling back to defaults`,
+            parsed.error,
+          );
+        }
+
+        return descriptor.getDefaultParams();
+      })();
+
+      // Add CustomShape component with shapeId and params
+      const customShapeData: CustomShapeData = {
+        shapeId,
+        params: shapeParams,
+      };
+      addComponent(entity.id, 'CustomShape', customShapeData);
+
+      // Add MeshRenderer component (required for rendering)
+      // We use a special meshId that won't match any built-in shapes
+      addMeshRenderer(entity.id, 'customShape');
+
+      return entity;
+    },
+    [createEntity, addComponent, addMeshRenderer, getNextNumber],
+  );
+
   return {
     createEntity,
     createCube,
@@ -708,6 +759,7 @@ export const useEntityCreation = () => {
     createBush,
     createGrass,
     createCustomModel,
+    createCustomShape,
     deleteEntity,
   };
 };

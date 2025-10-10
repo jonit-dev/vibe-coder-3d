@@ -1,5 +1,8 @@
 import React, { useMemo } from 'react';
 
+import { shapeRegistry } from '@/core/lib/rendering/shapes/shapeRegistry';
+import type { CustomShapeData } from '@/core/lib/ecs/components/definitions';
+
 import {
   BushGeometry,
   CrossGeometry,
@@ -30,6 +33,11 @@ export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
     const terrainData = useMemo(() => {
       const terrain = entityComponents.find((c) => c.type === 'Terrain');
       return (terrain?.data as any) || null;
+    }, [entityComponents]);
+
+    const customShapeData = useMemo(() => {
+      const customShape = entityComponents.find((c) => c.type === 'CustomShape');
+      return (customShape?.data as CustomShapeData) || null;
     }, [entityComponents]);
 
     const geometryContent = useMemo(() => {
@@ -119,10 +127,42 @@ export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
           return null;
         case 'custom':
           return null;
+        case 'CustomShape': {
+          if (!customShapeData) {
+            return null;
+          }
+
+          const descriptor = shapeRegistry.resolve(customShapeData.shapeId);
+
+          if (!descriptor) {
+            console.warn(`Custom shape not found in registry: ${customShapeData.shapeId}`);
+            return null;
+          }
+
+          const normalizedParamsResult = descriptor.paramsSchema.safeParse(
+            customShapeData.params ?? {},
+          );
+
+          const normalizedParams = normalizedParamsResult.success
+            ? normalizedParamsResult.data
+            : (() => {
+                console.error(
+                  `Invalid params for custom shape ${customShapeData.shapeId}`,
+                  normalizedParamsResult.error,
+                );
+                return descriptor.getDefaultParams();
+              })();
+
+          const RenderGeometryComponent = descriptor.renderGeometry as React.ComponentType<
+            typeof normalizedParams
+          >;
+
+          return <RenderGeometryComponent {...normalizedParams} />;
+        }
         default:
           return <boxGeometry args={[1, 1, 1]} />;
       }
-    }, [meshType, terrainData]);
+    }, [meshType, terrainData, customShapeData]);
 
     return <>{geometryContent}</>;
   },
