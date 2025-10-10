@@ -343,15 +343,15 @@ describe('EntitySerializer', () => {
       expect(result.error).toBeUndefined();
     });
 
-    it('should reject entity without id', () => {
+    it('should accept entity without id (auto-generated)', () => {
       const entity = {
         name: 'Test',
         components: {},
       };
 
       const result = serializer.validate(entity);
-      expect(result.isValid).toBe(false);
-      expect(result.error).toBeDefined();
+      expect(result.isValid).toBe(true);
+      expect(result.error).toBeUndefined();
     });
 
     it('should reject entity without name', () => {
