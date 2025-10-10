@@ -72,40 +72,46 @@ Scene entity components now have **compile-time type checking** in VSCode. This 
 
 When loading a scene, the EntitySerializer:
 
+**Entity IDs:**
+
+1. Uses provided `id` if present in scene data
+2. Auto-generates from array position if `id` is omitted (0, 1, 2, ...)
+3. Maps old IDs to new runtime entity IDs for parent-child relationships
+
+**Persistent IDs:**
+
 1. Checks if entity has a `PersistentId` component
-2. If present, uses the provided ID
+2. If present, uses the provided UUID
 3. If missing, generates a new UUID automatically
-4. Logs auto-generated IDs in debug mode
+4. Logs auto-generated UUIDs in debug mode
 
 ### Example
 
-**Without PersistentId (Auto-Generated):**
+**Minimal entity (both IDs auto-generated):**
 
 ```typescript
 entities: [
   {
-    id: 0,
     name: 'Camera',
     components: {
       Transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
-      Camera: { fov: 75, near: 0.1, far: 1000 /*...*/ },
-      // ✨ No PersistentId - will be auto-generated!
+      Camera: { fov: 75, near: 0.1, far: 1000 },
     },
   },
 ];
 ```
 
-**With PersistentId (Manual):**
+**With manual IDs:**
 
 ```typescript
 entities: [
   {
-    id: 0,
+    id: 'camera-main',
     name: 'Camera',
     components: {
-      PersistentId: { id: 'my-custom-camera-id' }, // Custom ID
+      PersistentId: { id: 'my-custom-camera-id' },
       Transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
-      Camera: { fov: 75, near: 0.1, far: 1000 /*...*/ },
+      Camera: { fov: 75, near: 0.1, far: 1000 },
     },
   },
 ];
@@ -164,12 +170,8 @@ export default defineScene({
   },
   entities: [
     {
-      id: 0,
       name: 'Main Camera',
       components: {
-        // ✅ PersistentId is optional
-        // ✅ Autocomplete available
-        // ✅ Type checking enabled
         Transform: {
           position: [0, 1, -10],
           rotation: [0, 0, 0],
@@ -180,7 +182,6 @@ export default defineScene({
           near: 0.1,
           far: 1000,
           projectionType: 'perspective',
-          // ... more properties
         },
       },
     },
@@ -236,20 +237,22 @@ Camera: {
 }
 ```
 
-### 5. **Optional vs Required**
+### 5. **Optional Fields**
 
-Optional fields (like PersistentId) can be omitted:
+Both `id` and `PersistentId` are optional:
 
 ```typescript
-components: {
-  Transform: { /*...*/ },
-  // PersistentId is optional - omit it for auto-generation
+{
+  name: 'MyEntity',
+  components: {
+    Transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+  },
 }
 ```
 
 ## Benefits
 
-1. **✨ Less Boilerplate** - No need to manually add PersistentId
+1. **Zero Boilerplate** - No manual ID tracking or UUID generation
 2. **Instant Feedback** - See errors as you type, not at runtime
 3. **Autocomplete** - Discover available properties without docs
 4. **Refactoring Safety** - Rename component properties with confidence
@@ -258,21 +261,30 @@ components: {
 
 ## Best Practices
 
-### When to Use Manual IDs
+### When to Use Manual Entity IDs
 
-Use manual PersistentId when:
+Use manual `id` field when:
 
-- You need stable IDs across saves/loads
-- You're referencing entities from scripts
-- You're setting up entity relationships
+- You need explicit ID references for parent-child relationships
+- Working with complex hierarchies
+- Migrating from legacy scene format
 
-### When to Use Auto-Generated IDs
+### When to Use Manual Persistent IDs
 
-Use auto-generated IDs when:
+Use manual `PersistentId` when:
 
-- Creating simple scenes
+- You need stable UUIDs across saves/loads
+- Entities are referenced from scripts by ID
+- Setting up persistent entity relationships
+
+### When to Use Auto-Generation
+
+Use auto-generated IDs (default) when:
+
+- Creating new scenes
+- Simple entity hierarchies
 - Prototyping
-- Entities don't need stable references
+- Entities don't need stable external references
 
 ## Example: Minimal Scene
 
@@ -287,10 +299,8 @@ export default defineScene({
   },
   entities: [
     {
-      id: 0,
       name: 'Camera',
       components: {
-        // ✨ No PersistentId - auto-generated!
         Transform: {
           position: [0, 5, -10],
           rotation: [0, 0, 0],
@@ -327,8 +337,9 @@ Typed scene entities provide:
 - ✅ Compile-time type safety
 - ✅ Instant VSCode validation
 - ✅ Autocomplete for all properties
-- ✅ **Optional PersistentId with auto-generation**
-- ✅ Cleaner, simpler scene files
+- ✅ Optional `id` field with auto-generation from array position
+- ✅ Optional `PersistentId` with UUID auto-generation
+- ✅ Zero boilerplate - just name and components
 - ✅ Fewer runtime errors
 
 ---
