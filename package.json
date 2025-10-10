@@ -17,6 +17,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "verify": "yarn tsc && yarn lint:fix && yarn test",
+    "verify:scene": "tsx scripts/validate-scene.ts",
     "test:watch": "vitest --watch",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",

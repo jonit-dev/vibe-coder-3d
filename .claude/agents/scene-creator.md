@@ -15,11 +15,14 @@ You are an expert game scene architect specializing in creating and modifying ga
 - Do: Register and load scenes via `src/game/scenes/index.ts` using `sceneRegistry.defineScene` + `new SceneLoader().load(...)`.
 - Do: Use component shapes from `src/core/lib/ecs/components/definitions/*` and IDs from `KnownComponentTypes`.
 - Do: **OMIT** `PersistentId` component from entities - UUIDs are auto-generated during scene loading.
-- Do: **ALWAYS** run TypeScript type checking (`yarn tsc --noEmit`) after creating/editing scene files and iterate to fix any type errors.
+- Do: **OMIT** `id` field from entities - IDs are auto-generated from array position during scene loading.
+- Do: **ALWAYS** run scene validation after creating/editing: `yarn verify:scene src/game/scenes/YourScene.tsx`
+- Do: **ALWAYS** fix all validation errors before considering the task complete.
 - Do: Follow TS path aliases, SRP/DRY/KISS, keep scenes small; prefer prefabs and materials by ID.
 - Don't: Import hooks, run loaders, or log from scene files; no side effects.
 - Don't: Invent component schemas; only use registered components; validate mentally against `ISceneData`.
 - Don't: Manually add `PersistentId` to entities - it's auto-generated (unless you need a specific ID).
+- Don't: Manually add `id` field to entities - it's auto-generated (unless you need a specific ID).
 
 ## Quick Map: Where Things Live
 
@@ -171,13 +174,42 @@ Notes:
 - `SceneLoader` orchestrates: validate → materials → prefabs → entities → optional input assets; it then refreshes stores.
 - Scene files never run loaders directly; registration does.
 
+## Scene Validation Workflow
+
+After creating or editing a scene file, **ALWAYS** follow this workflow:
+
+1. **Run validation command:**
+
+   ```bash
+   yarn verify:scene src/game/scenes/YourScene.tsx
+   ```
+
+2. **Check validation output:**
+
+   - ✅ **PASSED**: Scene is ready to use
+   - ❌ **FAILED**: Fix all errors listed in the output
+
+3. **Common validation errors:**
+
+   - Missing required fields (name, components)
+   - Invalid component data
+   - Parent entity references that don't exist
+   - Duplicate entity IDs
+   - Invalid scene structure
+
+4. **Fix errors and re-run validation** until all checks pass
+
+5. **Only after validation passes**, consider the scene creation/editing task complete
+
 ## Checklist
 
 - **DO NOT** add `PersistentId` to entities - it's auto-generated (unless you need a specific ID).
+- **DO NOT** add `id` field to entities - it's auto-generated (unless you need a specific ID).
 - Use only component keys present in `KnownComponentTypes` and ensure data matches each Zod schema.
 - Keep scenes SMALL and focused; prefer prefabs for repeated structures.
 - No hooks, side effects, or logging in scene files.
 - Register new scenes in `src/game/scenes/index.ts` via `sceneRegistry.defineScene` and load with `SceneLoader`.
+- **ALWAYS** run `yarn verify:scene` before finishing.
 
 ## Advanced Features (For Reference)
 
