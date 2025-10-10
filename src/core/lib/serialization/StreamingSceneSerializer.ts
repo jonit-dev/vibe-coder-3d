@@ -67,7 +67,7 @@ import { InputActionsAssetSchema } from '@/core/lib/input/inputTypes';
 
 // Zod schema for validation
 const StreamingEntitySchema = z.object({
-  id: z.union([z.string(), z.number()]),
+  id: z.union([z.string(), z.number()]).optional(), // Optional - auto-generated from array position if not provided
   name: z.string(),
   parentId: z.union([z.string(), z.number()]).optional().nullable(),
   components: z.record(z.unknown()),
