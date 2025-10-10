@@ -35,12 +35,12 @@ export const Entity: React.FC<IEntityProps> = ({
   const [actualPersistentId, setActualPersistentId] = useState<string | null>(null);
   const entityManager = useRef(EntityManager.getInstance());
   const hasCreatedEntity = useRef(false);
+  const entityIdRef = useRef<EntityId | null>(null); // Track entityId for cleanup
 
   useEffect(() => {
     // Prevent double creation in React StrictMode
     if (hasCreatedEntity.current) return;
     hasCreatedEntity.current = true;
-
 
     try {
       // Create the entity
@@ -62,18 +62,18 @@ export const Entity: React.FC<IEntityProps> = ({
 
       setEntityId(entity.id);
       setActualPersistentId(finalPersistentId);
-
+      entityIdRef.current = entity.id; // Store in ref for cleanup
     } catch (error) {
       console.error(`[Entity] Failed to create entity: ${name}`, error);
     }
 
     // Cleanup function
     return () => {
-      if (entityId !== null) {
+      if (entityIdRef.current !== null) {
         try {
-          entityManager.current.deleteEntity(entityId);
+          entityManager.current.deleteEntity(entityIdRef.current);
         } catch (error) {
-          console.warn(`[Entity] Failed to cleanup entity ${entityId}:`, error);
+          console.warn(`[Entity] Failed to cleanup entity ${entityIdRef.current}:`, error);
         }
       }
     };
