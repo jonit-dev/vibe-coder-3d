@@ -20,6 +20,12 @@ export function createComponentWriteSystem(buffer: ComponentMutationBuffer) {
 
     buffer.flush((entityId, componentId, field, value) => {
       try {
+        // Skip physics-specific mutations (they're handled by physics binding)
+        // These are prefixed with __ to avoid conflicts with regular component fields
+        if (field.startsWith('__')) {
+          return;
+        }
+
         // Get current component data
         const current = componentRegistry.getComponentData<Record<string, unknown>>(
           entityId,

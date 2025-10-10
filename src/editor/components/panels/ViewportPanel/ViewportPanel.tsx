@@ -30,6 +30,7 @@ import { AxesIndicator } from './components/AxesIndicator';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
 import { GizmoModeSelector } from './components/GizmoModeSelector';
 import { ViewportHeader } from './components/ViewportHeader';
+import { PhysicsBindingManager } from './components/PhysicsBindingManager';
 
 export interface IViewportPanelProps {
   entityId: number | null; // selected entity - can be null
@@ -181,6 +182,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
 
             {/* Physics wrapper - only enabled when playing */}
             <Physics paused={!isPlaying} gravity={[0, -9.81, 0]}>
+              {/* Physics binding - processes script physics mutations */}
+              <PhysicsBindingManager />
+
               {/* Grid - Unity style */}
               <gridHelper args={[20, 20, '#444444', '#222222']} />
 

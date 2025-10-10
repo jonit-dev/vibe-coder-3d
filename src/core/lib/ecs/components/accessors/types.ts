@@ -252,6 +252,44 @@ export interface IRigidBodyAccessor extends IComponentAccessor<IRigidBodyData> {
    * Set physics material properties
    */
   setPhysicsMaterial(friction: number, restitution: number, density?: number): void;
+
+  /**
+   * Apply force to the rigid body
+   * @param force - Force vector [x, y, z]
+   * @param point - Optional application point in world space
+   */
+  applyForce(force: [number, number, number], point?: [number, number, number]): void;
+
+  /**
+   * Apply impulse to the rigid body (instant velocity change)
+   * @param impulse - Impulse vector [x, y, z]
+   * @param point - Optional application point in world space
+   */
+  applyImpulse(impulse: [number, number, number], point?: [number, number, number]): void;
+
+  /**
+   * Set linear velocity
+   * @param vel - Velocity vector [x, y, z]
+   */
+  setLinearVelocity(vel: [number, number, number]): void;
+
+  /**
+   * Get current linear velocity
+   * @returns Velocity vector [x, y, z]
+   */
+  getLinearVelocity(): [number, number, number];
+
+  /**
+   * Set angular velocity
+   * @param vel - Angular velocity vector [x, y, z]
+   */
+  setAngularVelocity(vel: [number, number, number]): void;
+
+  /**
+   * Get current angular velocity
+   * @returns Angular velocity vector [x, y, z]
+   */
+  getAngularVelocity(): [number, number, number];
 }
 
 /**

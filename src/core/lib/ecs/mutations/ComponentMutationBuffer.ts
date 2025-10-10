@@ -55,4 +55,34 @@ export class ComponentMutationBuffer {
   get hasPending(): boolean {
     return this.pending.size > 0;
   }
+
+  /**
+   * Get all pending mutations for processing
+   * Used by physics binding to process physics-specific mutations
+   */
+  getMutations(): Array<{
+    entityId: number;
+    componentId: string;
+    field: string;
+    value: unknown;
+  }> {
+    const mutations: Array<{
+      entityId: number;
+      componentId: string;
+      field: string;
+      value: unknown;
+    }> = [];
+
+    for (const [key, value] of this.pending) {
+      const [eidStr, componentId, field] = key.split(':');
+      mutations.push({
+        entityId: Number(eidStr),
+        componentId,
+        field,
+        value,
+      });
+    }
+
+    return mutations;
+  }
 }

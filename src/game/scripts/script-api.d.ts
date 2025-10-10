@@ -79,6 +79,110 @@ declare global {
   }
 
   /**
+   * Camera accessor API
+   */
+  interface ICameraAccessor {
+    /** Get current component data */
+    get(): any | null;
+    /** Set component data via partial patch */
+    set(patch: Partial<any>): void;
+    /** Set field of view */
+    setFov(fov: number): void;
+    /** Set near/far clipping planes */
+    setClipping(near: number, far: number): void;
+    /** Set projection type */
+    setProjection(type: 'perspective' | 'orthographic'): void;
+    /** Set as main camera */
+    setAsMain(isMain: boolean): void;
+  }
+
+  /**
+   * RigidBody accessor API
+   */
+  interface IRigidBodyAccessor {
+    /** Get current component data */
+    get(): any | null;
+    /** Set component data via partial patch */
+    set(patch: Partial<any>): void;
+    /** Enable/disable physics simulation */
+    enable(value: boolean): void;
+    /** Set body type */
+    setBodyType(type: 'dynamic' | 'kinematic' | 'static'): void;
+    /** Set mass (dynamic bodies only) */
+    setMass(mass: number): void;
+    /** Set gravity scale (0 = no gravity, 1 = normal gravity) */
+    setGravityScale(scale: number): void;
+    /** Set physics material properties */
+    setPhysicsMaterial(friction: number, restitution: number, density?: number): void;
+    /** Apply force to the rigid body */
+    applyForce(force: [number, number, number], point?: [number, number, number]): void;
+    /** Apply impulse to the rigid body (instant velocity change) */
+    applyImpulse(impulse: [number, number, number], point?: [number, number, number]): void;
+    /** Set linear velocity */
+    setLinearVelocity(vel: [number, number, number]): void;
+    /** Get current linear velocity */
+    getLinearVelocity(): [number, number, number];
+    /** Set angular velocity */
+    setAngularVelocity(vel: [number, number, number]): void;
+    /** Get current angular velocity */
+    getAngularVelocity(): [number, number, number];
+  }
+
+  /**
+   * MeshCollider accessor API
+   */
+  interface IMeshColliderAccessor {
+    /** Get current component data */
+    get(): any | null;
+    /** Set component data via partial patch */
+    set(patch: Partial<any>): void;
+    /** Enable/disable collider */
+    enable(value: boolean): void;
+    /** Set as trigger (no physics collision, only events) */
+    setTrigger(isTrigger: boolean): void;
+    /** Set collider type */
+    setType(type: 'box' | 'sphere' | 'capsule' | 'convex' | 'mesh' | 'heightfield'): void;
+    /** Set collider center offset */
+    setCenter(x: number, y: number, z: number): void;
+    /** Set box size */
+    setBoxSize(width: number, height: number, depth: number): void;
+    /** Set sphere radius */
+    setSphereRadius(radius: number): void;
+    /** Set capsule dimensions */
+    setCapsuleSize(radius: number, height: number): void;
+  }
+
+  /**
+   * Physics Events API for collision/trigger callbacks
+   */
+  interface IPhysicsEventsAPI {
+    /** Register collision enter callback */
+    onCollisionEnter(cb: (otherEntityId: number) => void): () => void;
+    /** Register collision exit callback */
+    onCollisionExit(cb: (otherEntityId: number) => void): () => void;
+    /** Register trigger enter callback */
+    onTriggerEnter(cb: (otherEntityId: number) => void): () => void;
+    /** Register trigger exit callback */
+    onTriggerExit(cb: (otherEntityId: number) => void): () => void;
+  }
+
+  /**
+   * Character Controller API for simple character movement
+   */
+  interface ICharacterControllerAPI {
+    /** Check if character is currently grounded */
+    isGrounded(): boolean;
+    /** Move character horizontally */
+    move(inputXZ: [number, number], speed: number, delta: number): void;
+    /** Make character jump (only when grounded) */
+    jump(strength: number): void;
+    /** Set maximum slope angle */
+    setSlopeLimit(maxDegrees: number): void;
+    /** Set maximum step height */
+    setStepOffset(value: number): void;
+  }
+
+  /**
    * Entity API - access to entity properties and state
    */
   interface IEntityScriptAPI {
@@ -102,7 +206,16 @@ declare global {
     // These are undefined if the component doesn't exist on the entity
     /** Direct MeshRenderer component access */
     meshRenderer?: IMeshRendererAccessor;
-    // Future: camera?, rigidBody?, meshCollider?, etc.
+    /** Direct Camera component access */
+    camera?: ICameraAccessor;
+    /** Direct RigidBody component access */
+    rigidBody?: IRigidBodyAccessor;
+    /** Direct MeshCollider component access */
+    meshCollider?: IMeshColliderAccessor;
+    /** Physics events for collision/trigger callbacks */
+    physicsEvents?: IPhysicsEventsAPI;
+    /** Character controller for simple character movement */
+    controller?: ICharacterControllerAPI;
 
     /** Get parent entity */
     getParent(): IEntityScriptAPI | null;

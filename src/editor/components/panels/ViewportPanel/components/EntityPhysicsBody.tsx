@@ -1,8 +1,13 @@
-import React from 'react';
-import { RigidBody } from '@react-three/rapier';
+import React, { useEffect, useRef } from 'react';
+import { RapierRigidBody, RigidBody } from '@react-three/rapier';
 import type { IPhysicsContributions } from '../hooks/useEntityMesh';
 import { EntityColliders } from './EntityColliders';
 import { Logger } from '@/core/lib/logger';
+import {
+  registerRigidBody,
+  unregisterRigidBody,
+} from '@/core/lib/scripting/adapters/physics-binding';
+import { useEntityContextOptional } from '@/core/components/jsx/EntityContext';
 
 interface IEntityPhysicsBodyProps {
   terrainColliderKey: string;
@@ -30,6 +35,21 @@ export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
     colliderType,
     children,
   }) => {
+    const rigidBodyRef = useRef<RapierRigidBody>(null);
+    const entityContext = useEntityContextOptional();
+    const entityId = entityContext?.entityId;
+
+    // Register rigid body with physics binding system
+    useEffect(() => {
+      if (rigidBodyRef.current && entityId !== undefined) {
+        registerRigidBody(entityId, rigidBodyRef.current);
+
+        return () => {
+          unregisterRigidBody(entityId);
+        };
+      }
+    }, [entityId]);
+
     if (!physicsContributions) {
       return <>{children}</>;
     }
@@ -47,6 +67,7 @@ export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
     try {
       return (
         <RigidBody
+          ref={rigidBodyRef}
           key={terrainColliderKey}
           type={rigidBodyProps.type as any}
           mass={rigidBodyProps.mass}

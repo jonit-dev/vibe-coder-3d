@@ -17,9 +17,11 @@ import {
 } from './ScriptAPI';
 import { threeJSEntityRegistry } from './ThreeJSEntityRegistry';
 import { createAudioAPI } from './apis/AudioAPI';
+import { createCharacterControllerAPI } from './apis/CharacterControllerAPI';
 import { createComponentsAPI } from './apis/ComponentsAPI';
 import { createEntitiesAPI } from './apis/EntitiesAPI';
 import { createEventAPI } from './apis/EventAPI';
+import { createPhysicsEventsAPI } from './apis/PhysicsEventsAPI';
 import { createPrefabAPI } from './apis/PrefabAPI';
 import { createQueryAPI } from './apis/QueryAPI';
 import { createTimerAPI } from './apis/TimerAPI';
@@ -85,6 +87,30 @@ export class ScriptContextFactory {
     Object.defineProperty(entityAPI, 'meshCollider', {
       get() {
         return componentsProxy.MeshCollider;
+      },
+      enumerable: true,
+    });
+
+    // Add physics events API if entity has RigidBody or MeshCollider
+    Object.defineProperty(entityAPI, 'physicsEvents', {
+      get() {
+        // Only provide physics events if entity has physics components
+        if (componentsProxy.RigidBody || componentsProxy.MeshCollider) {
+          return createPhysicsEventsAPI(entityId);
+        }
+        return undefined;
+      },
+      enumerable: true,
+    });
+
+    // Add character controller API if entity has RigidBody
+    Object.defineProperty(entityAPI, 'controller', {
+      get() {
+        // Only provide controller if entity has a RigidBody
+        if (componentsProxy.RigidBody) {
+          return createCharacterControllerAPI(entityId);
+        }
+        return undefined;
       },
       enumerable: true,
     });

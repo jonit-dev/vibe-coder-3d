@@ -159,6 +159,12 @@ export interface IEntityScriptAPI {
   rigidBody?: IRigidBodyAccessor;
   meshCollider?: IMeshColliderAccessor;
 
+  // Physics events for collision/trigger callbacks
+  physicsEvents?: IPhysicsEventsAPI;
+
+  // Character controller for simple character movement
+  controller?: ICharacterControllerAPI;
+
   // Entity hierarchy
   getParent(): IEntityScriptAPI | null;
   getChildren(): IEntityScriptAPI[];
@@ -293,6 +299,27 @@ export interface IPrefabAPI {
   spawn(prefabId: string, overrides?: Record<string, unknown>): number; // entityId
   destroy(entityId?: number): void; // default current
   setActive(entityId: number, active: boolean): void;
+}
+
+/**
+ * Physics Events API for collision/trigger callbacks
+ */
+export interface IPhysicsEventsAPI {
+  onCollisionEnter(cb: (otherEntityId: number) => void): () => void;
+  onCollisionExit(cb: (otherEntityId: number) => void): () => void;
+  onTriggerEnter(cb: (otherEntityId: number) => void): () => void;
+  onTriggerExit(cb: (otherEntityId: number) => void): () => void;
+}
+
+/**
+ * Character Controller API for simple character movement
+ */
+export interface ICharacterControllerAPI {
+  isGrounded(): boolean;
+  move(inputXZ: [number, number], speed: number): void;
+  jump(strength: number): void;
+  setSlopeLimit(maxDegrees: number): void;
+  setStepOffset(value: number): void;
 }
 
 /**

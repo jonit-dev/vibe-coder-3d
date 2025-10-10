@@ -22,6 +22,7 @@ import * as ts from 'typescript';
 import { EntityId } from '../ecs/types';
 import { IInputAPI, IScriptContext, ITimeAPI } from './ScriptAPI';
 import { cleanupTimerAPI } from './apis/TimerAPI';
+import { cleanupPhysicsEventsAPI } from './apis/PhysicsEventsAPI';
 import { ScriptContextFactory } from './ScriptContextFactory';
 import { Logger } from '@/core/lib/logger';
 import { ComponentMutationBuffer } from '../ecs/mutations/ComponentMutationBuffer';
@@ -341,8 +342,9 @@ export class DirectScriptExecutor {
    * Remove script context when entity is destroyed
    */
   public removeScriptContext(entityId: EntityId): void {
-    // Cleanup timers
+    // Cleanup timers and physics events
     cleanupTimerAPI(entityId);
+    cleanupPhysicsEventsAPI(entityId);
     this.scriptContexts.delete(entityId);
 
     if (this.debugMode) {
