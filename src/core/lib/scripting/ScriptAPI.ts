@@ -323,6 +323,61 @@ export interface ICharacterControllerAPI {
 }
 
 /**
+ * GameObject API for runtime entity CRUD operations
+ */
+export interface IGameObjectAPI {
+  createEntity: (name?: string, parent?: number) => number;
+  createPrimitive: (
+    kind: 'cube' | 'sphere' | 'plane' | 'cylinder' | 'cone' | 'torus',
+    options?: {
+      name?: string;
+      parent?: number;
+      transform?: {
+        position?: [number, number, number];
+        rotation?: [number, number, number];
+        scale?: [number, number, number] | number;
+      };
+      material?: { color?: string; metalness?: number; roughness?: number };
+      physics?: {
+        body?: 'dynamic' | 'kinematic' | 'static';
+        collider?: 'box' | 'sphere' | 'mesh';
+        mass?: number;
+      };
+    },
+  ) => number;
+  createModel: (
+    model: string,
+    options?: {
+      name?: string;
+      parent?: number;
+      transform?: {
+        position?: [number, number, number];
+        rotation?: [number, number, number];
+        scale?: [number, number, number] | number;
+      };
+      material?: { color?: string; metalness?: number; roughness?: number };
+      physics?: { body?: 'dynamic' | 'kinematic' | 'static'; collider?: 'mesh' | 'box'; mass?: number };
+    },
+  ) => number;
+  clone: (
+    source: number,
+    overrides?: {
+      name?: string;
+      parent?: number;
+      transform?: {
+        position?: [number, number, number];
+        rotation?: [number, number, number];
+        scale?: [number, number, number] | number;
+      };
+    },
+  ) => number;
+  attachComponents: (entityId: number, components: Array<{ type: string; data: unknown }>) => void;
+  setParent: (entityId: number, parent?: number) => void;
+  setActive: (entityId: number, active: boolean) => void;
+  destroy: (target?: number) => void;
+}
+
+/**
  * Complete script execution context
  */
 export interface IScriptContext {
@@ -338,6 +393,7 @@ export interface IScriptContext {
   query: IQueryAPI;
   prefab: IPrefabAPI;
   entities: IEntitiesAPI;
+  gameObject: IGameObjectAPI;
 
   // Script lifecycle methods that users can override
   onStart?: () => void;
@@ -400,9 +456,10 @@ export const createConsoleAPI = (entityId: EntityId): IConsoleAPI => ({
 });
 
 /**
- * Import ComponentRegistry for entity operations (single source of truth)
+ * Import ComponentRegistry and EntityManager for entity operations (single source of truth)
  */
 import { componentRegistry } from '../ecs/ComponentRegistry';
+import { EntityManager } from '../ecs/EntityManager';
 
 /**
  * Safe Three.js operations whitelist
@@ -813,8 +870,11 @@ export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
     findChild: () => null,
 
     destroy: () => {
-      // Would need entity manager to destroy entity
-      console.warn(`Entity ${entityId}: destroy() not implemented in script context`);
+      const entityManager = EntityManager.getInstance();
+      const success = entityManager.deleteEntity(entityId);
+      if (!success) {
+        console.warn(`[ScriptAPI] Failed to destroy entity ${entityId}`);
+      }
     },
 
     setActive: (active: boolean) => {

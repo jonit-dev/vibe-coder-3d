@@ -127,15 +127,29 @@ await timer.waitFrames(60); // Wait 60 frames
 ## Audio
 
 ```typescript
-// Play sound
-const id = audio.play('/sounds/jump.wav', { volume: 0.8 });
+// Play sound (2D)
+const id = audio.play('/sounds/jump.wav', {
+  volume: 0.8,
+  loop: false,
+  rate: 1.0,
+});
+
+// Play 3D spatial audio
+const id3D = audio.play('/sounds/engine.wav', {
+  volume: 1.0,
+  loop: true,
+  is3D: true, // Enable 3D positioning
+});
 
 // Stop sound
 audio.stop(id); // By ID
-audio.stop('/sounds/jump.wav'); // By URL
+audio.stop('/sounds/jump.wav'); // By URL (stops all sounds with this URL)
 
-// Positional audio
-audio.attachToEntity?.(true);
+// Attach all active sounds to entity for 3D positioning
+audio.attachToEntity(true); // true = follow entity movement
+
+// Fire-and-forget sound effect (no need to store ID)
+audio.play('/sounds/coin.wav');
 ```
 
 ## Queries

@@ -23,6 +23,7 @@ import { EntityId } from '../ecs/types';
 import { IInputAPI, IScriptContext, ITimeAPI } from './ScriptAPI';
 import { cleanupTimerAPI } from './apis/TimerAPI';
 import { cleanupPhysicsEventsAPI } from './apis/PhysicsEventsAPI';
+import { cleanupAudioAPI } from './apis/AudioAPI';
 import { ScriptContextFactory } from './ScriptContextFactory';
 import { Logger } from '@/core/lib/logger';
 import { ComponentMutationBuffer } from '../ecs/mutations/ComponentMutationBuffer';
@@ -342,9 +343,10 @@ export class DirectScriptExecutor {
    * Remove script context when entity is destroyed
    */
   public removeScriptContext(entityId: EntityId): void {
-    // Cleanup timers and physics events
+    // Cleanup timers, physics events, and audio
     cleanupTimerAPI(entityId);
     cleanupPhysicsEventsAPI(entityId);
+    cleanupAudioAPI(entityId);
     this.scriptContexts.delete(entityId);
 
     if (this.debugMode) {
@@ -374,9 +376,11 @@ export class DirectScriptExecutor {
    * Clear all compiled scripts and contexts (useful for hot reload)
    */
   public clearAll(): void {
-    // Cleanup all timer APIs before clearing contexts
+    // Cleanup all timer APIs, physics events, and audio before clearing contexts
     for (const entityId of this.scriptContexts.keys()) {
       cleanupTimerAPI(entityId);
+      cleanupPhysicsEventsAPI(entityId);
+      cleanupAudioAPI(entityId);
     }
 
     this.compiledScripts.clear();

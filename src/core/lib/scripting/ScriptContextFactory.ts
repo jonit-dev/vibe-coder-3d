@@ -25,6 +25,7 @@ import { createPhysicsEventsAPI } from './apis/PhysicsEventsAPI';
 import { createPrefabAPI } from './apis/PrefabAPI';
 import { createQueryAPI } from './apis/QueryAPI';
 import { createTimerAPI } from './apis/TimerAPI';
+import { createGameObjectAPI } from './apis/GameObjectAPI';
 
 export interface IScriptContextFactoryOptions {
   entityId: EntityId;
@@ -185,6 +186,7 @@ export class ScriptContextFactory {
       query: createQueryAPI(entityId, getSceneRef),
       prefab: createPrefabAPI(entityId),
       entities: createEntitiesAPI(),
+      gameObject: createGameObjectAPI(entityId),
       parameters,
     };
   }

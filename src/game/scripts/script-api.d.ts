@@ -700,6 +700,147 @@ declare global {
   }
 
   // ============================================================================
+  // GameObject API
+  // ============================================================================
+
+  /**
+   * GameObject API for runtime entity CRUD operations
+   * Create, modify, and destroy entities at runtime
+   */
+  interface IGameObjectAPI {
+    /**
+     * Create a new empty entity
+     * @param name - Optional entity name (default: "Entity")
+     * @param parent - Optional parent entity ID
+     * @returns Entity ID of created entity
+     * @example
+     * const entityId = gameObject.createEntity("MyEntity");
+     */
+    createEntity(name?: string, parent?: number): number;
+
+    /**
+     * Create a primitive shape entity (cube, sphere, plane, etc.)
+     * @param kind - Primitive type
+     * @param options - Creation options (transform, material, physics)
+     * @returns Entity ID of created primitive
+     * @example
+     * const cubeId = gameObject.createPrimitive('cube', {
+     *   name: 'DynamicCube',
+     *   transform: { position: [0, 5, 0], scale: 1.5 },
+     *   material: { color: '#ff0000', roughness: 0.5 },
+     *   physics: { body: 'dynamic', collider: 'box', mass: 2 }
+     * });
+     */
+    createPrimitive(
+      kind: 'cube' | 'sphere' | 'plane' | 'cylinder' | 'cone' | 'torus',
+      options?: {
+        name?: string;
+        parent?: number;
+        transform?: {
+          position?: [number, number, number];
+          rotation?: [number, number, number];
+          scale?: [number, number, number] | number;
+        };
+        material?: { color?: string; metalness?: number; roughness?: number };
+        physics?: {
+          body?: 'dynamic' | 'kinematic' | 'static';
+          collider?: 'box' | 'sphere' | 'mesh';
+          mass?: number;
+        };
+      },
+    ): number;
+
+    /**
+     * Create a model entity from GLB/GLTF file
+     * @param model - Path or asset ID of model file
+     * @param options - Creation options
+     * @returns Entity ID of created model
+     * @example
+     * const robotId = gameObject.createModel('/assets/models/robot.glb', {
+     *   parent: entity.id,
+     *   transform: { position: [0, 0, 0], scale: 1 },
+     *   physics: { body: 'static', collider: 'mesh' }
+     * });
+     */
+    createModel(
+      model: string,
+      options?: {
+        name?: string;
+        parent?: number;
+        transform?: {
+          position?: [number, number, number];
+          rotation?: [number, number, number];
+          scale?: [number, number, number] | number;
+        };
+        material?: { color?: string; metalness?: number; roughness?: number };
+        physics?: { body?: 'dynamic' | 'kinematic' | 'static'; collider?: 'mesh' | 'box'; mass?: number };
+      },
+    ): number;
+
+    /**
+     * Clone an existing entity with optional overrides
+     * @param source - Entity ID to clone
+     * @param overrides - Optional overrides for name, parent, transform
+     * @returns Entity ID of cloned entity
+     * @example
+     * const cloneId = gameObject.clone(originalId, {
+     *   name: 'Clone',
+     *   transform: { position: [5, 0, 0] }
+     * });
+     */
+    clone(
+      source: number,
+      overrides?: {
+        name?: string;
+        parent?: number;
+        transform?: {
+          position?: [number, number, number];
+          rotation?: [number, number, number];
+          scale?: [number, number, number] | number;
+        };
+      },
+    ): number;
+
+    /**
+     * Attach components to an entity
+     * @param entityId - Target entity ID
+     * @param components - Array of components to attach
+     * @example
+     * gameObject.attachComponents(entityId, [
+     *   { type: 'Light', data: { lightType: 'point', color: '#ffffff', intensity: 1 } }
+     * ]);
+     */
+    attachComponents(entityId: number, components: Array<{ type: string; data: unknown }>): void;
+
+    /**
+     * Set parent of an entity
+     * @param entityId - Entity to reparent
+     * @param parent - New parent entity ID (undefined = root)
+     * @example
+     * gameObject.setParent(childId, parentId);
+     */
+    setParent(entityId: number, parent?: number): void;
+
+    /**
+     * Set active state of an entity
+     * @param entityId - Target entity ID
+     * @param active - Active state
+     * @example
+     * gameObject.setActive(entityId, false); // Hide entity
+     */
+    setActive(entityId: number, active: boolean): void;
+
+    /**
+     * Destroy an entity
+     * @param target - Entity ID to destroy (default: current entity)
+     * @example
+     * gameObject.destroy(tempEntityId);
+     * gameObject.destroy(); // Destroy current entity
+     */
+    destroy(target?: number): void;
+  }
+
+  // ============================================================================
   // Global Variables
   // ============================================================================
 
@@ -738,6 +879,9 @@ declare global {
 
   /** Entities API */
   const entities: IEntitiesAPI;
+
+  /** GameObject API for runtime entity CRUD */
+  const gameObject: IGameObjectAPI;
 
   /** Script parameters configured in the editor */
   const parameters: Record<string, unknown>;

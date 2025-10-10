@@ -21,7 +21,7 @@ The Script System provides TypeScript-based scripting for gameplay logic. Script
 Located in `apis/` directory:
 
 - **EventAPI.ts** - Event bus integration
-- **AudioAPI.ts** - Sound playback (stub for SoundManager)
+- **AudioAPI.ts** - Sound playback with full Howler.js integration (supports 2D/3D audio)
 - **TimerAPI.ts** - Scheduled callbacks with frame budget
 - **QueryAPI.ts** - Scene queries and raycasting
 - **PrefabAPI.ts** - Entity spawning (stub for PrefabManager)
@@ -310,13 +310,68 @@ Animations and frame waiting use RAF for smooth execution:
 nextTick: () => new Promise((resolve) => requestAnimationFrame(resolve));
 ```
 
+### Audio System Integration
+
+The AudioAPI is fully integrated with Howler.js for production-quality audio playback:
+
+**Features:**
+
+- ✅ 2D and 3D spatial audio
+- ✅ Volume control (0-1, clamped)
+- ✅ Playback rate control (0.1-4, clamped)
+- ✅ Looping audio
+- ✅ Entity-attached positional audio
+- ✅ Multiple simultaneous sounds per entity
+- ✅ Automatic cleanup on entity destruction
+
+**Architecture:**
+
+- Global sound registry for all script-created sounds
+- Per-entity tracking for cleanup
+- Howler.js instances created on-demand
+- HTML5 audio mode for 3D sounds
+
+**Usage:**
+
+```typescript
+// Simple 2D sound
+const sfxId = audio.play('/sounds/click.wav', { volume: 0.8 });
+
+// Looping background music
+const musicId = audio.play('/sounds/music.mp3', {
+  volume: 0.5,
+  loop: true,
+});
+
+// 3D spatial audio
+const engineId = audio.play('/sounds/engine.wav', {
+  volume: 1.0,
+  loop: true,
+  is3D: true, // Enable 3D positioning at entity's location
+});
+
+// Attach all active sounds to entity for dynamic positioning
+audio.attachToEntity(true); // true = follow entity movement
+
+// Stop by ID or URL
+audio.stop(engineId);
+audio.stop('/sounds/music.mp3'); // Stops all sounds with this URL
+```
+
+**Cleanup:**
+All sounds for an entity are automatically stopped and unloaded when:
+
+1. The script is removed from the entity
+2. The entity is destroyed
+3. The script context is cleared
+
 ## Known Limitations
 
 ### Stubs Requiring Integration
 
-These APIs are functional but log warnings:
+These APIs are functional but have limitations:
 
-1. **AudioAPI** - Needs SoundManager/Howler integration
+1. ✅ **AudioAPI** - Fully integrated with Howler.js (2D and 3D audio support)
 2. **PrefabAPI** - Needs PrefabManager for actual spawning
 3. **QueryAPI.findByTag** - Needs tag system integration
 4. **EntitiesAPI** - Advanced lookups (name/tag/guid/path) stubbed

@@ -1,11 +1,39 @@
 /**
  * AudioAPI Tests
- * Tests for audio playback API available to scripts
+ * Tests for audio playback API available to scripts with Howler.js integration
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createAudioAPI, cleanupAudioAPI } from '../AudioAPI';
 import * as THREE from 'three';
+
+// Mock Howler.js
+const mockHowlInstances: any[] = [];
+const mockPlay = vi.fn(() => 1); // Return Howler's internal sound ID
+const mockStop = vi.fn();
+const mockUnload = vi.fn();
+const mockPos = vi.fn();
+
+vi.mock('howler', () => {
+  return {
+    Howl: vi.fn(function (this: any, config: any) {
+      const instance = {
+        _src: Array.isArray(config.src) ? config.src[0] : config.src,
+        play: mockPlay,
+        stop: mockStop,
+        unload: mockUnload,
+        pos: mockPos,
+        _config: config,
+      };
+      mockHowlInstances.push(instance);
+      return instance;
+    }),
+    Howler: {
+      pos: vi.fn(),
+      orientation: vi.fn(),
+    },
+  };
+});
 
 // Mock logger
 vi.mock('@/core/lib/logger', () => ({
@@ -24,12 +52,24 @@ describe('AudioAPI', () => {
   let mockMesh: THREE.Object3D;
 
   beforeEach(() => {
+    // Clear mock instances
+    mockHowlInstances.length = 0;
+    mockPlay.mockClear();
+    mockStop.mockClear();
+    mockUnload.mockClear();
+    mockPos.mockClear();
+
     // Create mock mesh
     mockMesh = new THREE.Object3D();
     mockMesh.position.set(10, 20, 30);
 
     // Create mesh ref getter
     mockMeshRef = vi.fn(() => mockMesh);
+  });
+
+  afterEach(() => {
+    // Clear mock calls after each test
+    vi.clearAllMocks();
   });
 
   describe('createAudioAPI', () => {
@@ -58,6 +98,85 @@ describe('AudioAPI', () => {
 
       expect(typeof handle).toBe('number');
       expect(handle).toBeGreaterThan(0);
+      expect(mockPlay).toHaveBeenCalled();
+    });
+
+    it('should create Howl instance with correct URL', () => {
+      const api = createAudioAPI(1, mockMeshRef);
+
+      api.play('sounds/test.mp3');
+
+      expect(mockHowlInstances.length).toBe(1);
+      expect(mockHowlInstances[0]._src).toBe('sounds/test.mp3');
+    });
+
+    it('should pass volume option to Howl', () => {
+      const api = createAudioAPI(1, mockMeshRef);
+
+      api.play('sounds/test.mp3', { volume: 0.5 });
+
+      const config = mockHowlInstances[0]._config;
+      expect(config.volume).toBe(0.5);
+    });
+
+    it('should pass loop option to Howl', () => {
+      const api = createAudioAPI(1, mockMeshRef);
+
+      api.play('sounds/music.mp3', { loop: true });
+
+      const config = mockHowlInstances[0]._config;
+      expect(config.loop).toBe(true);
+    });
+
+    it('should pass rate option to Howl', () => {
+      const api = createAudioAPI(1, mockMeshRef);
+
+      api.play('sounds/test.mp3', { rate: 1.5 });
+
+      const config = mockHowlInstances[0]._config;
+      expect(config.rate).toBe(1.5);
+    });
+
+    it('should clamp volume to 0-1 range', () => {
+      const api = createAudioAPI(1, mockMeshRef);
+
+      // Test upper bound
+      api.play('sounds/test1.mp3', { volume: 2.0 });
+      expect(mockHowlInstances[0]._config.volume).toBe(1.0);
+
+      // Test lower bound
+      api.play('sounds/test2.mp3', { volume: -0.5 });
+      expect(mockHowlInstances[1]._config.volume).toBe(0);
+    });
+
+    it('should clamp rate to 0.1-4 range', () => {
+      const api = createAudioAPI(1, mockMeshRef);
+
+      // Test upper bound
+      api.play('sounds/test1.mp3', { rate: 10.0 });
+      expect(mockHowlInstances[0]._config.rate).toBe(4.0);
+
+      // Test lower bound
+      api.play('sounds/test2.mp3', { rate: 0.01 });
+      expect(mockHowlInstances[1]._config.rate).toBe(0.1);
+    });
+
+    it('should enable HTML5 audio for 3D sounds', () => {
+      const api = createAudioAPI(1, mockMeshRef);
+
+      api.play('sounds/3d.mp3', { is3D: true });
+
+      const config = mockHowlInstances[0]._config;
+      expect(config.html5).toBe(true);
+    });
+
+    it('should set 3D position when is3D is enabled', () => {
+      const api = createAudioAPI(1, mockMeshRef);
+
+      api.play('sounds/3d.mp3', { is3D: true });
+
+      // Should call pos() to set 3D position
+      expect(mockPos).toHaveBeenCalledWith(10, 20, 30, 1);
     });
 
     it('should return unique handles for each sound', () => {
@@ -244,15 +363,61 @@ describe('AudioAPI', () => {
       api.play('sounds/sound1.mp3');
       api.play('sounds/sound2.mp3');
 
-      // Cleanup should not throw
-      expect(() => cleanupAudioAPI(api)).not.toThrow();
+      // Cleanup should not throw and should stop/unload sounds
+      expect(() => cleanupAudioAPI(1)).not.toThrow();
+
+      // Verify sounds were stopped and unloaded
+      expect(mockStop).toHaveBeenCalled();
+      expect(mockUnload).toHaveBeenCalled();
     });
 
     it('should cleanup empty audio API', () => {
       const api = createAudioAPI(1, mockMeshRef);
 
       // Cleanup without playing anything
-      expect(() => cleanupAudioAPI(api)).not.toThrow();
+      expect(() => cleanupAudioAPI(1)).not.toThrow();
+    });
+
+    it('should stop all sounds for the entity', () => {
+      const api = createAudioAPI(1, mockMeshRef);
+
+      // Play multiple sounds
+      api.play('sounds/sound1.mp3');
+      api.play('sounds/sound2.mp3');
+      api.play('sounds/sound3.mp3');
+
+      mockStop.mockClear();
+      mockUnload.mockClear();
+
+      // Cleanup should stop all 3 sounds
+      cleanupAudioAPI(1);
+
+      expect(mockStop).toHaveBeenCalledTimes(3);
+      expect(mockUnload).toHaveBeenCalledTimes(3);
+    });
+
+    it('should not affect other entities sounds', () => {
+      const api1 = createAudioAPI(1, mockMeshRef);
+      const api2 = createAudioAPI(2, mockMeshRef);
+
+      // Play sounds on both entities
+      api1.play('sounds/sound1.mp3');
+      api2.play('sounds/sound2.mp3');
+
+      mockStop.mockClear();
+      mockUnload.mockClear();
+
+      // Cleanup entity 1
+      cleanupAudioAPI(1);
+
+      // Only entity 1's sound should be stopped (1 stop + 1 unload)
+      expect(mockStop).toHaveBeenCalledTimes(1);
+      expect(mockUnload).toHaveBeenCalledTimes(1);
+
+      // Entity 2's sound should still be active
+      // Verify by playing another sound on entity 2
+      api2.play('sounds/sound3.mp3');
+      expect(mockPlay).toHaveBeenCalled();
     });
   });
 
