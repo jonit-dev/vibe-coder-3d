@@ -12,10 +12,11 @@ The Script System provides a TypeScript-based scripting API that allows entities
 
 - **TypeScript-only** scripting with full type definitions
 - **Sandboxed execution** with controlled API access
-- **11 Global APIs** for common gameplay needs
+- **14 Global APIs** for common gameplay needs
 - **Frame-budgeted timers** to prevent blocking
 - **Event-driven architecture** for inter-entity communication
 - **Entity references** for cross-entity operations
+- **Runtime entity creation** with GameObject API
 - **Auto-generated type declarations** for IDE support
 - **External script files** with hot-reload support
 
@@ -69,7 +70,7 @@ sequenceDiagram
 
 ## Global Script APIs
 
-Scripts have access to 11 global APIs that provide controlled access to engine features:
+Scripts have access to 14 global APIs that provide controlled access to engine features:
 
 ### 1. Entity API (`entity`)
 
@@ -330,7 +331,57 @@ prefab.destroy();
 prefab.setActive(entityId, false); // Disable entity
 ```
 
-### 13. Entities API (`entities`)
+### 13. GameObject API (`gameObject`)
+
+Runtime entity creation, modification, and destruction.
+
+```typescript
+// Create empty entity
+const entityId = gameObject.createEntity('MyEntity');
+
+// Create primitives with physics
+const cubeId = gameObject.createPrimitive('cube', {
+  name: 'DynamicCube',
+  transform: { position: [0, 5, 0], scale: 1.2 },
+  material: { color: '#44ccff', roughness: 0.6 },
+  physics: { body: 'dynamic', collider: 'box', mass: 1 },
+});
+
+// Load models
+const modelId = gameObject.createModel('/assets/robot.glb', {
+  parent: entity.id,
+  transform: { position: [0, 0, 5] },
+});
+
+// Clone entities
+const cloneId = gameObject.clone(originalId, {
+  name: 'Clone',
+  transform: { position: [5, 0, 0] },
+});
+
+// Attach components dynamically
+gameObject.attachComponents(entityId, [
+  { type: 'Light', data: { lightType: 'point', intensity: 1.5 } },
+]);
+
+// Hierarchy management
+gameObject.setParent(childId, parentId);
+gameObject.setActive(entityId, false);
+
+// Destroy entities
+gameObject.destroy(tempEntityId);
+```
+
+**Features:**
+
+- Create primitives: cube, sphere, plane, cylinder, cone, torus
+- Load GLB/GLTF models with optional physics
+- Clone entities with component preservation
+- Attach components at runtime
+- Automatic Play Mode tracking (entities created during play are cleaned up on Stop)
+- Type-safe options with Zod validation
+
+### 14. Entities API (`entities`)
 
 Cross-entity operations and references.
 

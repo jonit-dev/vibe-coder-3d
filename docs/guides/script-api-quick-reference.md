@@ -198,6 +198,54 @@ prefab.setActive(id, false); // Disable
 prefab.setActive(id, true); // Enable
 ```
 
+## GameObject (Runtime Entity Creation)
+
+```typescript
+// Create empty entity
+const entityId = gameObject.createEntity('MyEntity');
+
+// Create primitives with physics
+const cubeId = gameObject.createPrimitive('cube', {
+  name: 'DynamicCube',
+  transform: { position: [0, 5, 0], scale: 1.2 },
+  material: { color: '#44ccff', roughness: 0.6 },
+  physics: { body: 'dynamic', collider: 'box', mass: 1 },
+});
+
+// All primitive types
+gameObject.createPrimitive('sphere', options);
+gameObject.createPrimitive('plane', options);
+gameObject.createPrimitive('cylinder', options);
+gameObject.createPrimitive('cone', options);
+gameObject.createPrimitive('torus', options);
+
+// Load GLB/GLTF models
+const modelId = gameObject.createModel('/assets/robot.glb', {
+  parent: entity.id,
+  transform: { position: [0, 0, 5], scale: 1 },
+  physics: { body: 'static', collider: 'mesh' },
+});
+
+// Clone entities
+const cloneId = gameObject.clone(originalId, {
+  name: 'Clone',
+  transform: { position: [5, 0, 0] },
+});
+
+// Attach components
+gameObject.attachComponents(entityId, [
+  { type: 'Light', data: { lightType: 'point', intensity: 1.5 } },
+]);
+
+// Hierarchy & state
+gameObject.setParent(childId, parentId);
+gameObject.setActive(entityId, false);
+
+// Destroy
+gameObject.destroy(tempEntityId);
+gameObject.destroy(); // Current entity
+```
+
 ## Math
 
 ```typescript

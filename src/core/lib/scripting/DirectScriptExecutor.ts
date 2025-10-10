@@ -167,6 +167,7 @@ export class DirectScriptExecutor {
         'query',
         'prefab',
         'entities',
+        'gameObject',
         'parameters',
         `
         'use strict';
@@ -275,6 +276,7 @@ export class DirectScriptExecutor {
           context.query,
           context.prefab,
           context.entities,
+          context.gameObject,
           context.parameters,
         ) as ICompiledScriptLifecycle;
 
