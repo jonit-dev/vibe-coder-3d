@@ -3,23 +3,24 @@ import { defineScene } from './defineScene';
 
 /**
  * Forest
- * Scene with realistic immersive forest environment
+ * Scene with realistic immersive forest environment with pond
  * Generated: 2025-10-10T00:00:00.000Z
- * Version: 2
+ * Version: 3
  *
  * Pure data definition - all loading logic abstracted
  * Features: Enhanced realistic lighting with softer sun and atmospheric fog, natural material roughness,
  * varied tree heights and colors, expanded ground vegetation, fallen logs, mushrooms, ferns, and wildflowers.
+ * Central pond with reflective water, lily pads, rocks around edge, and cattails/reeds.
  * Optimized shadow casting for performance. Designed for atmospheric depth and natural forest ambiance.
  */
 export default defineScene({
   metadata: {
     name: 'Forest',
-    version: 2,
+    version: 3,
     timestamp: '2025-10-10T00:00:00.000Z',
     author: 'scene-creator-agent',
     description:
-      'Realistic immersive forest with natural lighting, atmospheric fog, varied vegetation, and enhanced material realism',
+      'Realistic immersive forest with natural lighting, atmospheric fog, varied vegetation, central pond with reflective water, and enhanced material realism',
   },
   entities: [
     {
@@ -2163,6 +2164,174 @@ export default defineScene({
         },
       },
     },
+    {
+      name: 'Pond Water',
+      components: {
+        Transform: {
+          position: [0, 0.02, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        CustomShape: {
+          shapeId: 'pond-water',
+          params: {
+            radius: 3,
+            height: 0.05,
+            radialSegments: 32,
+          },
+        },
+        MeshRenderer: {
+          meshId: 'customShape',
+          materialId: 'pond-water',
+          enabled: true,
+          castShadows: false,
+          receiveShadows: true,
+          modelPath: '',
+        },
+      },
+    },
+    {
+      name: 'Lily Pads',
+      components: {
+        Transform: {
+          position: [0, 0.05, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        CustomShape: {
+          shapeId: 'lily-pads',
+          params: {
+            count: 4,
+            padRadius: 0.25,
+            padHeight: 0.02,
+            spreadRadius: 2.5,
+            radialSegments: 16,
+            randomSeed: 42,
+          },
+        },
+        MeshRenderer: {
+          meshId: 'customShape',
+          materialId: 'lily-pad',
+          enabled: true,
+          castShadows: false,
+          receiveShadows: true,
+          modelPath: '',
+        },
+      },
+    },
+    {
+      name: 'Pond Rocks Gray',
+      components: {
+        Transform: {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        CustomShape: {
+          shapeId: 'pond-rocks-gray',
+          params: {
+            count: 2,
+            rockSize: 0.6,
+            spreadRadius: 2.8,
+            randomSeed: 42,
+            detail: 0,
+          },
+        },
+        MeshRenderer: {
+          meshId: 'customShape',
+          materialId: 'rock-gray',
+          enabled: true,
+          castShadows: true,
+          receiveShadows: true,
+          modelPath: '',
+        },
+      },
+    },
+    {
+      name: 'Pond Rocks Brown',
+      components: {
+        Transform: {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        CustomShape: {
+          shapeId: 'pond-rocks-brown',
+          params: {
+            count: 2,
+            rockSize: 0.6,
+            spreadRadius: 2.8,
+            randomSeed: 43,
+            detail: 0,
+          },
+        },
+        MeshRenderer: {
+          meshId: 'customShape',
+          materialId: 'rock-brown',
+          enabled: true,
+          castShadows: true,
+          receiveShadows: true,
+          modelPath: '',
+        },
+      },
+    },
+    {
+      name: 'Cattail Reeds',
+      components: {
+        Transform: {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        CustomShape: {
+          shapeId: 'cattail-reeds',
+          params: {
+            count: 4,
+            reedRadius: 0.04,
+            reedHeight: 1.2,
+            spreadRadius: 2.5,
+            randomSeed: 42,
+          },
+        },
+        MeshRenderer: {
+          meshId: 'customShape',
+          materialId: 'reed-stem',
+          enabled: true,
+          castShadows: false,
+          receiveShadows: true,
+          modelPath: '',
+        },
+      },
+    },
+    {
+      name: 'Cattail Heads',
+      components: {
+        Transform: {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        CustomShape: {
+          shapeId: 'cattail-heads',
+          params: {
+            count: 4,
+            reedHeight: 1.2,
+            headRadius: 0.06,
+            headHeight: 0.25,
+            spreadRadius: 2.5,
+            randomSeed: 42,
+          },
+        },
+        MeshRenderer: {
+          meshId: 'customShape',
+          materialId: 'cattail-head',
+          enabled: true,
+          castShadows: false,
+          receiveShadows: true,
+          modelPath: '',
+        },
+      },
+    },
   ],
   materials: [
     {
@@ -2479,6 +2648,74 @@ export default defineScene({
       color: '#2d5016',
       metalness: 0,
       roughness: 0.94,
+      emissive: '#000000',
+      emissiveIntensity: 0,
+      normalScale: 1,
+      occlusionStrength: 1,
+      textureOffsetX: 0,
+      textureOffsetY: 0,
+      textureRepeatX: 1,
+      textureRepeatY: 1,
+    },
+    {
+      id: 'pond-water',
+      name: 'Pond Water',
+      shader: 'standard',
+      materialType: 'solid',
+      color: '#3a7c8f',
+      metalness: 0.1,
+      roughness: 0.15,
+      emissive: '#0a1a2a',
+      emissiveIntensity: 0.05,
+      normalScale: 1,
+      occlusionStrength: 1,
+      textureOffsetX: 0,
+      textureOffsetY: 0,
+      textureRepeatX: 1,
+      textureRepeatY: 1,
+    },
+    {
+      id: 'lily-pad',
+      name: 'Lily Pad',
+      shader: 'standard',
+      materialType: 'solid',
+      color: '#3a6e2f',
+      metalness: 0,
+      roughness: 0.7,
+      emissive: '#000000',
+      emissiveIntensity: 0,
+      normalScale: 1,
+      occlusionStrength: 1,
+      textureOffsetX: 0,
+      textureOffsetY: 0,
+      textureRepeatX: 1,
+      textureRepeatY: 1,
+    },
+    {
+      id: 'reed-stem',
+      name: 'Cattail Reed Stem',
+      shader: 'standard',
+      materialType: 'solid',
+      color: '#4a5c2e',
+      metalness: 0,
+      roughness: 0.9,
+      emissive: '#000000',
+      emissiveIntensity: 0,
+      normalScale: 1,
+      occlusionStrength: 1,
+      textureOffsetX: 0,
+      textureOffsetY: 0,
+      textureRepeatX: 1,
+      textureRepeatY: 1,
+    },
+    {
+      id: 'cattail-head',
+      name: 'Cattail Head',
+      shader: 'standard',
+      materialType: 'solid',
+      color: '#5c3a1e',
+      metalness: 0,
+      roughness: 0.85,
       emissive: '#000000',
       emissiveIntensity: 0,
       normalScale: 1,

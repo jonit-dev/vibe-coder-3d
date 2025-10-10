@@ -349,4 +349,3 @@ This design decouples API exposure from script execution via a registry/manifest
 - Mutation buffer continues to be flushed by existing systems post-scripts.
 - No change to how external scripts are resolved; `ScriptResolver` remains the source.
 - Build system supports file moves/renames reflected above; path aliases used for imports.
-

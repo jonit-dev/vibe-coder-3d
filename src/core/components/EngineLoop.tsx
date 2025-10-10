@@ -4,7 +4,6 @@ import { ReactNode, useEffect, useRef } from 'react';
 
 import { useEngineContext } from '@core/context/EngineProvider';
 import { runRegisteredSystems } from '../lib/extension/GameExtensionPoints';
-import { Profiler } from '../lib/perf/Profiler';
 import { materialSystem } from '../systems/MaterialSystem';
 import { updateScriptSystem } from '../systems/ScriptSystem';
 import { cameraSystem } from '../systems/cameraSystem';
@@ -199,36 +198,29 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
   inputManager.update();
 
   // Run transform system - updates Three.js objects from ECS Transform components
-  const transformCount = Profiler.time('transformSystem', () => transformSystem());
+  transformSystem();
 
   // Run material system - updates Three.js materials from ECS Material components
-  Profiler.time('materialSystem', () => materialSystem.update());
+  materialSystem.update();
 
   // Run camera system - updates Three.js cameras from ECS Camera components
-  const cameraCount = Profiler.time('cameraSystem', () => cameraSystem());
+  cameraSystem();
 
   // Run light system - processes light component updates
-  const lightCount = Profiler.time('lightSystem', () => lightSystem(deltaTime));
+  lightSystem(deltaTime);
 
   // Run script system - executes user scripts with entity context
   // Note: updateScriptSystem is async but we fire-and-forget here to avoid blocking the render loop
-  Profiler.time('scriptSystem', () => {
-    updateScriptSystem(deltaTime * 1000, isPlaying).catch((error) => {
-      console.error('[EngineLoop] Script system error:', error);
-    });
+  updateScriptSystem(deltaTime * 1000, isPlaying).catch((error) => {
+    console.error('[EngineLoop] Script system error:', error);
   });
 
   // Run sound system - handles autoplay and sound updates during play mode
-  const soundCount = Profiler.time('soundSystem', () => soundSystem(deltaTime, isPlaying));
+  soundSystem(deltaTime, isPlaying);
 
   // Run registered game systems from extension points
-  Profiler.time('registeredSystems', () => runRegisteredSystems(deltaTime));
+  runRegisteredSystems(deltaTime);
 
   // Clear input frame state AFTER all systems have run
   inputManager.clearFrameState();
-
-  // Debug info
-  if (transformCount > 0 || cameraCount > 0 || lightCount > 0 || soundCount > 0) {
-    // System updates tracked internally
-  }
 }

@@ -18,7 +18,6 @@ import {
   releaseQuaternion,
   releaseVector3,
 } from '../lib/perf/MathPools';
-import { Profiler } from '../lib/perf/Profiler';
 
 // Get world instance
 const world = ECSWorld.getInstance().getWorld();
@@ -169,82 +168,80 @@ function computeWorldTransform(eid: number): {
  * Returns the number of transformed entities
  */
 export function transformSystem(): number {
-  return Profiler.time('transformSystem', () => {
-    // Get the query (lazy-initialized)
-    const query = getTransformQuery();
-    if (!query) {
-      return 0; // Transform component not yet registered
+  // Get the query (lazy-initialized)
+  const query = getTransformQuery();
+  if (!query) {
+    return 0; // Transform component not yet registered
+  }
+
+  // Clear world transform cache
+  worldTransforms.clear();
+
+  // Get all entities with Transform components
+  const entities = query(world);
+  let updatedCount = 0;
+
+  // Process entities in hierarchical order (roots first)
+  const processedEntities = new Set<number>();
+
+  const processEntity = (eid: number) => {
+    if (processedEntities.has(eid)) return;
+
+    // Skip if no corresponding object
+    const object = entityToObject.get(eid);
+    if (!object) return;
+
+    // Get entity for hierarchy info
+    const entity = entityManager.getEntity(eid);
+    if (!entity) return;
+
+    // Process parent first if it exists
+    if (entity.parentId && !processedEntities.has(entity.parentId)) {
+      processEntity(entity.parentId);
     }
 
-    // Clear world transform cache
-    worldTransforms.clear();
+    // Compute world transform
+    const worldTransform = computeWorldTransform(eid);
+    if (!worldTransform) return;
 
-    // Get all entities with Transform components
-    const entities = query(world);
-    let updatedCount = 0;
+    // Apply to Three.js object using pooled vectors to avoid temporary allocations
+    const tempPos = acquireVector3();
+    const tempQuat = acquireQuaternion();
+    const tempScale = acquireVector3();
 
-    // Process entities in hierarchical order (roots first)
-    const processedEntities = new Set<number>();
+    try {
+      tempPos.copy(worldTransform.position);
+      tempQuat.copy(worldTransform.quaternion);
+      tempScale.copy(worldTransform.scale);
 
-    const processEntity = (eid: number) => {
-      if (processedEntities.has(eid)) return;
+      object.position.copy(tempPos);
+      object.quaternion.copy(tempQuat);
+      object.scale.copy(tempScale);
+    } finally {
+      releaseVector3(tempPos);
+      releaseQuaternion(tempQuat);
+      releaseVector3(tempScale);
+    }
 
-      // Skip if no corresponding object
-      const object = entityToObject.get(eid);
-      if (!object) return;
+    processedEntities.add(eid);
+    updatedCount++;
 
-      // Get entity for hierarchy info
-      const entity = entityManager.getEntity(eid);
-      if (!entity) return;
-
-      // Process parent first if it exists
-      if (entity.parentId && !processedEntities.has(entity.parentId)) {
-        processEntity(entity.parentId);
-      }
-
-      // Compute world transform
-      const worldTransform = computeWorldTransform(eid);
-      if (!worldTransform) return;
-
-      // Apply to Three.js object using pooled vectors to avoid temporary allocations
-      const tempPos = acquireVector3();
-      const tempQuat = acquireQuaternion();
-      const tempScale = acquireVector3();
-
-      try {
-        tempPos.copy(worldTransform.position);
-        tempQuat.copy(worldTransform.quaternion);
-        tempScale.copy(worldTransform.scale);
-
-        object.position.copy(tempPos);
-        object.quaternion.copy(tempQuat);
-        object.scale.copy(tempScale);
-      } finally {
-        releaseVector3(tempPos);
-        releaseQuaternion(tempQuat);
-        releaseVector3(tempScale);
-      }
-
-      processedEntities.add(eid);
-      updatedCount++;
-
-      // Process children
-      entity.children.forEach((childId) => {
-        if (!processedEntities.has(childId)) {
-          processEntity(childId);
-        }
-      });
-    };
-
-    // Start with root entities first
-    entities.forEach((eid: number) => {
-      if (!processedEntities.has(eid)) {
-        processEntity(eid);
+    // Process children
+    entity.children.forEach((childId) => {
+      if (!processedEntities.has(childId)) {
+        processEntity(childId);
       }
     });
+  };
 
-    return updatedCount;
+  // Start with root entities first
+  entities.forEach((eid: number) => {
+    if (!processedEntities.has(eid)) {
+      processEntity(eid);
+    }
   });
+
+  return updatedCount;
 }
 
 /**
