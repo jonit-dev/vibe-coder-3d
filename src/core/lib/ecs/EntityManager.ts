@@ -319,42 +319,20 @@ export class EntityManager {
   }
 
   /**
-   * Internal method to get all entities
+   * Internal method to get all entities - index-first approach
+   * No more fixed-range EID scans or O(N²) children filtering
    */
   private getAllEntitiesInternal(): IEntity[] {
-    // Get all entity IDs - use scan as fallback if queries not ready
-    let entityIds: number[];
-    try {
-      entityIds = this.queries?.listAllEntities() || [];
+    // Get all entity IDs from index - no fallback scans
+    let entityIds: number[] = this.queries?.listAllEntities() || [];
 
-      // If queries return empty but we know entities exist, fall back to scan
-      if (entityIds.length === 0) {
-        // Quick check: do any entities actually exist?
-        let hasAnyEntity = false;
-        for (let eid = 0; eid < 100; eid++) {
-          if (hasComponent(this.world, EntityMeta, eid)) {
-            hasAnyEntity = true;
-            break;
-          }
-        }
-
-        if (hasAnyEntity) {
-          // Fall back to scan
-          entityIds = [];
-          for (let eid = 0; eid < 10000; eid++) {
-            if (hasComponent(this.world, EntityMeta, eid)) {
-              entityIds.push(eid);
-            }
-          }
-        }
-      }
-    } catch {
-      // If queries not initialized, fall back to scan
-      entityIds = [];
-      for (let eid = 0; eid < 10000; eid++) {
-        if (hasComponent(this.world, EntityMeta, eid)) {
-          entityIds.push(eid);
-        }
+    // If index returns empty but queries not initialized, trigger rebuild once
+    if (entityIds.length === 0 && this.queries) {
+      // Quick probe: check if any entities actually exist (cheap check)
+      if (this.hasAnyEntityCheapProbe()) {
+        this.logger.debug('Index empty but entities exist - rebuilding indices');
+        this.queries.rebuildIndices();
+        entityIds = this.queries.listAllEntities();
       }
     }
 
@@ -371,29 +349,29 @@ export class EntityManager {
       }
     });
 
-    // Build children relationships - use queries if available, otherwise scan
-    try {
-      const queriesAvailable = this.queries && this.queries.listAllEntities().length > 0;
-      entities.forEach((entity) => {
-        if (queriesAvailable && this.queries) {
-          entity.children = this.queries.getChildren(entity.id);
-        } else {
-          // Fall back to filtering
-          entity.children = entities
-            .filter((child) => child.parentId === entity.id)
-            .map((child) => child.id);
-        }
-      });
-    } catch {
-      // Fall back to filtering
-      entities.forEach((entity) => {
-        entity.children = entities
-          .filter((child) => child.parentId === entity.id)
-          .map((child) => child.id);
-      });
-    }
+    // Build children relationships via HierarchyIndex (no O(N²) filtering)
+    entities.forEach((entity) => {
+      try {
+        entity.children = this.queries?.getChildren(entity.id) || [];
+      } catch {
+        entity.children = [];
+      }
+    });
 
     return entities;
+  }
+
+  /**
+   * Cheap probe to check if any entities exist in the world
+   * Checks first 100 EIDs only - this is acceptable as a one-time probe
+   */
+  private hasAnyEntityCheapProbe(): boolean {
+    for (let eid = 0; eid < 100; eid++) {
+      if (hasComponent(this.world, EntityMeta, eid)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   deleteEntity(id: EntityId): boolean {
@@ -480,28 +458,18 @@ export class EntityManager {
   }
 
   getRootEntities(): IEntity[] {
-    // Try to use efficient indexed query, fall back if queries not ready
-    try {
-      const rootEntityIds = this.queries?.getRootEntities() || [];
+    // Use efficient indexed query - no fallback scans
+    const rootEntityIds = this.queries?.getRootEntities() || [];
 
-      // If result is empty, verify with fallback to avoid race conditions
-      if (rootEntityIds.length === 0) {
-        // Quick check if any entities exist
-        for (let eid = 0; eid < 100; eid++) {
-          if (hasComponent(this.world, EntityMeta, eid)) {
-            // Entities exist, fall back to filtering all entities
-            const allEntities = this.getAllEntities();
-            return allEntities.filter((entity) => entity.parentId === undefined);
-          }
-        }
-      }
-
-      return rootEntityIds.map((id) => this.getEntity(id)).filter(Boolean) as IEntity[];
-    } catch {
-      // Fall back to filtering all entities if queries not available
-      const allEntities = this.getAllEntities();
-      return allEntities.filter((entity) => entity.parentId === undefined);
+    // If result is empty but entities likely exist, rebuild indices once
+    if (rootEntityIds.length === 0 && this.queries && this.hasAnyEntityCheapProbe()) {
+      this.logger.debug('Root entities empty but entities exist - rebuilding indices');
+      this.queries.rebuildIndices();
+      const rebuiltRootIds = this.queries.getRootEntities();
+      return rebuiltRootIds.map((id) => this.getEntity(id)).filter(Boolean) as IEntity[];
     }
+
+    return rootEntityIds.map((id) => this.getEntity(id)).filter(Boolean) as IEntity[];
   }
 
   updateEntityName(id: EntityId, name: string): boolean {

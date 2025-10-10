@@ -525,6 +525,10 @@ export class ComponentRegistry {
 
   /**
    * Get all entities that have a specific component (legacy compatibility)
+   *
+   * WARNING: This method uses a fixed-range scan and is kept for backward compatibility.
+   * For hot-path queries, use EntityQueries.listEntitiesWithComponent() instead,
+   * which uses indexed lookups and scales to larger entity counts.
    */
   getEntitiesWithComponent(componentId: string): EntityId[] {
     // Check cache first

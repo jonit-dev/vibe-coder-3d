@@ -9,8 +9,10 @@ export interface IEngineInstance {
   world: ECSWorld;
   entityManager: EntityManager;
   componentRegistry: ComponentRegistry;
+  queries: EntityQueries;
   container: Container;
   dispose: () => void;
+  destroy: () => void;
 }
 
 /**
@@ -56,8 +58,10 @@ export function createEngineInstance(parentContainer?: Container): IEngineInstan
     world,
     entityManager,
     componentRegistry: registry,
+    queries: entityQueries,
     container,
     dispose,
+    destroy: dispose, // Alias for consistency
   };
 }
 
@@ -71,6 +75,7 @@ export function isEngineInstance(obj: unknown): obj is IEngineInstance {
     'world' in obj &&
     'entityManager' in obj &&
     'componentRegistry' in obj &&
+    'queries' in obj &&
     'container' in obj &&
     'dispose' in obj
   );

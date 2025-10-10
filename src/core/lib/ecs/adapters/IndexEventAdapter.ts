@@ -3,6 +3,9 @@ import type { EntityManager } from '../EntityManager';
 import { ComponentIndex } from '../indexers/ComponentIndex';
 import { EntityIndex } from '../indexers/EntityIndex';
 import { HierarchyIndex } from '../indexers/HierarchyIndex';
+import { on } from '../../events';
+import { hasComponent } from 'bitecs';
+import { EntityMeta } from '../BitECSComponents';
 
 /**
  * IndexEventAdapter - Wires EntityManager and ComponentRegistry events to maintain indices
@@ -10,7 +13,8 @@ import { HierarchyIndex } from '../indexers/HierarchyIndex';
  */
 export class IndexEventAdapter {
   private entityUnsubscribe?: () => void;
-  private componentUnsubscribe?: () => void;
+  private componentAddedUnsub?: () => void;
+  private componentRemovedUnsub?: () => void;
   private isAttached = false;
 
   constructor(
@@ -75,8 +79,13 @@ export class IndexEventAdapter {
 
     // Subscribe to component events via global event system (ComponentRegistry uses emit())
     // ComponentRegistry emits 'component:added', 'component:removed', 'component:updated'
-    // For now, indices will be rebuilt when needed since ComponentRegistry uses emit() not addEventListener
-    this.componentUnsubscribe = () => {}; // No-op: ComponentRegistry uses global event system
+    this.componentAddedUnsub = on('component:added', ({ entityId, componentId }) => {
+      this.components.onAdd(componentId, entityId);
+    });
+
+    this.componentRemovedUnsub = on('component:removed', ({ entityId, componentId }) => {
+      this.components.onRemove(componentId, entityId);
+    });
 
     this.isAttached = true;
     console.debug('[IndexEventAdapter] Attached to EntityManager and ComponentRegistry events');
@@ -96,9 +105,14 @@ export class IndexEventAdapter {
       this.entityUnsubscribe = undefined;
     }
 
-    if (this.componentUnsubscribe) {
-      this.componentUnsubscribe();
-      this.componentUnsubscribe = undefined;
+    if (this.componentAddedUnsub) {
+      this.componentAddedUnsub();
+      this.componentAddedUnsub = undefined;
+    }
+
+    if (this.componentRemovedUnsub) {
+      this.componentRemovedUnsub();
+      this.componentRemovedUnsub = undefined;
     }
 
     this.isAttached = false;
@@ -115,6 +129,8 @@ export class IndexEventAdapter {
   /**
    * Rebuild indices from current ECS world state
    * Useful for initializing indices when entities/components already exist
+   *
+   * NOTE: Uses direct BitECS scan to avoid circular dependency with EntityManager.getAllEntities()
    */
   rebuildIndices(): void {
     console.debug('[IndexEventAdapter] Rebuilding indices from current ECS state');
@@ -124,8 +140,20 @@ export class IndexEventAdapter {
     this.hierarchy.clear();
     this.components.clear();
 
-    // Rebuild entity and hierarchy indices
-    const allEntities = this.entityManager.getAllEntities();
+    // Rebuild entity and hierarchy indices using direct scan (no EntityManager to avoid circular dependency)
+    const world = (this.entityManager as any).world;
+    const allEntities: Array<{ id: number; name: string; parentId?: number }> = [];
+
+    // Direct BitECS scan - this is acceptable during initialization/rebuild
+    for (let eid = 0; eid < 10000; eid++) {
+      if (hasComponent(world, EntityMeta, eid)) {
+        const entity = (this.entityManager as any).buildEntityFromEid(eid);
+        if (entity) {
+          allEntities.push(entity);
+        }
+      }
+    }
+
     console.debug(`[IndexEventAdapter] Found ${allEntities.length} entities in world`);
 
     allEntities.forEach((entity) => {

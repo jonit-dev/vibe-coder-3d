@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { EntityId } from '../lib/ecs/types';
 import { ECSWorld } from '../lib/ecs/World';
+import { EntityQueries } from '../lib/ecs/queries/entityQueries';
 import { useComponentRegistry } from './useComponentRegistry';
 import { useEvent } from './useEvent';
 
@@ -13,26 +14,15 @@ import { useEvent } from './useEvent';
 export const useSceneState = () => {
   const componentRegistry = useComponentRegistry();
   const world = ECSWorld.getInstance().getWorld();
+  const queries = EntityQueries.getInstance();
 
   const [entities, setEntities] = useState<EntityId[]>([]);
 
-  // Update entities list
+  // Update entities list using indexed queries (no O(N²) scans)
   const updateEntitiesList = useCallback(() => {
-    // Get all entities that have at least one component
-    const allEntities: EntityId[] = [];
-    const componentTypes = componentRegistry.listComponents();
-
-    componentTypes.forEach((componentId) => {
-      const entitiesWithComponent = componentRegistry.getEntitiesWithComponent(componentId);
-      entitiesWithComponent.forEach((entityId) => {
-        if (!allEntities.includes(entityId)) {
-          allEntities.push(entityId);
-        }
-      });
-    });
-
-    setEntities(allEntities.sort((a, b) => a - b));
-  }, [componentRegistry]);
+    const entityIds = queries.listAllEntities();
+    setEntities(entityIds.sort((a, b) => a - b));
+  }, [queries]);
 
   // Listen for component events to update entities list
   useEvent('component:added', () => {
