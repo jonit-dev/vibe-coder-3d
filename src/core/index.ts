@@ -38,6 +38,22 @@ export type { ComponentType, EntityId } from './lib/ecs/types';
 export { ECSWorld as World } from './lib/ecs/World';
 export { KnownComponentTypes } from './lib/ecs/IComponent';
 
+// Component Types for Scene Validation
+export type {
+  ITypedSceneEntity,
+  IComponentMap,
+  ITransformComponent,
+  ICameraComponent,
+  ILightComponent,
+  IMeshRendererComponent,
+  IPersistentIdComponent,
+  IRigidBodyComponent,
+  IMeshColliderComponent,
+  IPrefabInstanceComponent,
+  IScriptComponent,
+  IMaterialData,
+} from './types/components';
+
 // Export EntityQueries for debugging and advanced usage
 export { EntityQueries } from './lib/ecs/queries/entityQueries';
 
