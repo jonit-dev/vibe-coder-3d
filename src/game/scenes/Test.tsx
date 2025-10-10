@@ -18,7 +18,6 @@ export default defineScene({
   },
   entities: [
     {
-      id: 0,
       name: 'Main Camera',
       components: {
         Transform: {
@@ -67,7 +66,6 @@ export default defineScene({
       },
     },
     {
-      id: 1,
       name: 'Directional Light',
       components: {
         Transform: {
@@ -99,7 +97,6 @@ export default defineScene({
       },
     },
     {
-      id: 2,
       name: 'Ambient Light',
       components: {
         Transform: {
@@ -131,7 +128,6 @@ export default defineScene({
       },
     },
     {
-      id: 3,
       name: 'Tree 0',
       components: {
         Transform: {
@@ -181,7 +177,6 @@ export default defineScene({
       },
     },
     {
-      id: 4,
       name: 'Tree 1',
       parentId: 3,
       components: {
@@ -222,7 +217,6 @@ export default defineScene({
       },
     },
     {
-      id: 5,
       name: 'Rock 0',
       components: {
         Transform: {
@@ -262,7 +256,6 @@ export default defineScene({
       },
     },
     {
-      id: 6,
       name: 'Bush 0',
       components: {
         Transform: {
@@ -302,7 +295,6 @@ export default defineScene({
       },
     },
     {
-      id: 7,
       name: 'Cube 0',
       components: {
         Transform: {

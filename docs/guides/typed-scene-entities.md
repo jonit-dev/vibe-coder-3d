@@ -7,7 +7,10 @@
 
 Scene entity components now have **compile-time type checking** in VSCode. This means you get instant feedback with red squiggly lines when you type invalid component data.
 
-**✨ New:** `PersistentId` is now **optional**! If you don't provide it, a UUID will be auto-generated during scene loading, reducing boilerplate in scene files.
+**✨ New Features:**
+
+- `PersistentId` is now **optional**! If you don't provide it, a UUID will be auto-generated during scene loading.
+- Entity `id` field is now **optional**! Scene entities no longer require manual ID tracking - IDs are auto-generated based on array position.
 
 ## How It Works
 
@@ -15,10 +18,10 @@ Scene entity components now have **compile-time type checking** in VSCode. This 
 
 ```typescript
 {
-  id: 0,
+  id: 0,  // Manual ID tracking required
   name: 'Camera',
   components: {
-    PersistentId: { id: 'some-uuid' },  // Required boilerplate
+    PersistentId: { id: 'some-uuid' },  // Required UUID
     Transform: {
       positiion: [0, 0, 0],  // ❌ Typo not caught
       rotation: [0, 0, 0],
@@ -28,14 +31,14 @@ Scene entity components now have **compile-time type checking** in VSCode. This 
 }
 ```
 
-### After (With Type Checking + Auto-ID)
+### After (With Type Checking + Auto-IDs)
 
 ```typescript
 {
-  id: 0,
+  // ✨ No id field needed - auto-generated from array position!
   name: 'Camera',
   components: {
-    // ✨ No PersistentId needed - auto-generated!
+    // ✨ No PersistentId needed - UUID auto-generated!
     Transform: {
       positiion: [0, 0, 0],  // 🔴 VSCode shows red squiggle
       // Error: Object literal may only specify known properties,
@@ -52,10 +55,18 @@ Scene entity components now have **compile-time type checking** in VSCode. This 
 
 ### Why Auto-Generate?
 
-1. **Less Boilerplate** - No need to manually add PersistentId to every entity
-2. **No Duplicates** - UUIDs are guaranteed unique
-3. **Cleaner Scenes** - Scene files are simpler and easier to read
-4. **Flexibility** - Still supports manual IDs when needed
+**Entity IDs (`id` field):**
+
+1. **Zero tracking overhead** - No need to manually assign sequential IDs
+2. **Auto-derived from array position** - First entity is 0, second is 1, etc.
+3. **Parent-child relationships work seamlessly** - Use numeric indices for `parentId`
+
+**Persistent IDs (`PersistentId` component):**
+
+1. **Less boilerplate** - No need to manually add PersistentId to every entity
+2. **No duplicates** - UUIDs are guaranteed unique
+3. **Cleaner scenes** - Scene files are simpler and easier to read
+4. **Flexibility** - Still supports manual UUIDs when needed for stable references
 
 ### How It Works
 

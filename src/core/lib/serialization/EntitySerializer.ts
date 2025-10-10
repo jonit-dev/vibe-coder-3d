@@ -15,9 +15,9 @@ export interface ISerializedEntity {
 }
 
 const SerializedEntitySchema = z.object({
-  id: z.number(),
+  id: z.union([z.number(), z.string()]).optional(), // Optional - auto-generated if not provided
   name: z.string(),
-  parentId: z.number().optional().nullable(),
+  parentId: z.union([z.number(), z.string()]).optional().nullable(),
   components: z.record(z.unknown()),
 });
 
@@ -91,13 +91,18 @@ export class EntitySerializer {
     entityManager.clearEntities();
 
     // First pass: Create entities and add components
-    const idMap = new Map<number, number>();
+    const idMap = new Map<number | string, number>();
     let successCount = 0;
     let errorCount = 0;
+    let autoIdCounter = 0;
 
-    for (const entityData of entities) {
+    for (let index = 0; index < entities.length; index++) {
+      const entityData = entities[index];
       try {
         const validated = SerializedEntitySchema.parse(entityData);
+
+        // Auto-generate entity ID if not provided (use array index)
+        const entityId = validated.id ?? autoIdCounter++;
 
         // Extract PersistentId if present, or auto-generate UUID
         const persistentIdData = validated.components.PersistentId as { id?: string } | undefined;
@@ -113,7 +118,7 @@ export class EntitySerializer {
 
         // Create entity without parent
         const created = entityManager.createEntity(validated.name, undefined, persistentId);
-        idMap.set(validated.id, created.id);
+        idMap.set(entityId, created.id);
 
         // Add all components except PersistentId (already handled)
         for (const [componentType, componentData] of Object.entries(validated.components)) {
@@ -138,19 +143,24 @@ export class EntitySerializer {
     }
 
     // Second pass: Establish parent relationships
-    for (const entityData of entities) {
+    autoIdCounter = 0; // Reset counter for second pass
+    for (let index = 0; index < entities.length; index++) {
+      const entityData = entities[index];
       try {
         const validated = SerializedEntitySchema.parse(entityData);
         if (validated.parentId === undefined || validated.parentId === null) continue;
 
-        const childId = idMap.get(validated.id);
+        // Auto-generate entity ID if not provided (must match first pass)
+        const entityId = validated.id ?? autoIdCounter++;
+
+        const childId = idMap.get(entityId);
         const parentId = idMap.get(validated.parentId);
 
         if (childId !== undefined && parentId !== undefined) {
           entityManager.setParent(childId, parentId);
         } else {
           logger.warn('Failed to establish parent relationship', {
-            childId: validated.id,
+            childId: entityId,
             parentId: validated.parentId,
             resolvedChild: childId,
             resolvedParent: parentId,
@@ -158,6 +168,11 @@ export class EntitySerializer {
         }
       } catch (error) {
         logger.error('Failed to set parent', { error, entityData });
+      }
+
+      // Increment counter even if entity has explicit ID to keep in sync
+      if (entityData && typeof entityData === 'object' && 'id' in entityData === false) {
+        autoIdCounter++;
       }
     }
 

@@ -237,7 +237,7 @@ export interface IComponentMap {
  * Typed entity for scenes - Provides type safety for entity component data
  */
 export interface ITypedSceneEntity {
-  id: number | string;
+  id?: number | string; // Optional - auto-generated during scene loading if not provided
   name: string;
   parentId?: number | string | null;
   components: {
