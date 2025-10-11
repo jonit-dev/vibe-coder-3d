@@ -294,18 +294,22 @@ describe('SceneSerializer', () => {
       expect(result.entities).toHaveLength(1);
       const serializedEntity = result.entities[0];
 
+      // With compression enabled (default), Transform defaults are omitted
       expect(serializedEntity.components.Transform).toMatchObject({
         position: [5, 10, 5],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
+        // rotation and scale omitted (match defaults)
       });
 
+      // Camera non-default values are included
       const cameraData = serializedEntity.components.Camera as any;
-      expect(cameraData.fov).toBe(60);
-      expect(cameraData.near).toBeCloseTo(0.1, 1);
-      expect(cameraData.far).toBe(1000);
-      expect(cameraData.isMain).toBe(true);
-      expect(cameraData.projectionType).toBe('perspective');
+      expect(cameraData.fov).toBe(60); // Non-default (default is 75)
+      expect(cameraData.far).toBe(1000); // Non-default (default is 100)
+      expect(cameraData.isMain).toBe(true); // Non-default (default is false)
+      expect(cameraData.projectionType).toBe('perspective'); // Non-default
+      // Default values should be omitted
+      expect(cameraData.near).toBeUndefined(); // Matches default (0.1)
+      expect(cameraData.orthographicSize).toBeUndefined(); // Matches default (10)
+      expect(cameraData.depth).toBeUndefined(); // Matches default (0)
     });
   });
 

@@ -10,17 +10,22 @@ export { EntitySerializer } from './EntitySerializer';
 export type {
   ISerializedEntity,
   IEntityManagerAdapter,
-  IComponentManagerAdapter
+  IComponentManagerAdapter,
+  ISerializationOptions,
 } from './EntitySerializer';
 
 // Orchestrators (NEW - Clean architecture)
 export { SceneSerializer } from './SceneSerializer';
-export type { ISceneMetadata, ISceneData } from './SceneSerializer';
+export type { ISceneMetadata, ISceneData, ISceneSerializationOptions } from './SceneSerializer';
 export { SceneDeserializer } from './SceneDeserializer';
 
 // High-level loader (NEW - Clean architecture)
 export { SceneLoader } from './SceneLoader';
 export type { IStoreRefresher } from './SceneLoader';
+
+// Compression utilities
+export * from './defaults';
+export * from './utils';
 
 // Legacy streaming system (for editor/API)
 export * from './StreamingSceneSerializer';

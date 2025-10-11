@@ -4,6 +4,13 @@ import { generateTsxScene } from '../../../core/lib/serialization/tsxSerializer'
 import type { IMaterialDefinition } from '../../../core/materials/Material.types';
 import type { IPrefabDefinition } from '../../../core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '../../../core/lib/input/inputTypes';
+import { getComponentDefaults } from '../../../core/lib/serialization/defaults/index';
+import { omitDefaults } from '../../../core/lib/serialization/utils/DefaultOmitter';
+import {
+  MaterialDeduplicator,
+  extractMaterialFromMeshRenderer,
+  replaceMaterialWithReference,
+} from '../../../core/lib/serialization/utils/MaterialHasher';
 import type {
   ISceneFormatHandler,
   ISaveArgs,
@@ -57,11 +64,63 @@ export class TsxFormatHandler implements ISceneFormatHandler {
       author: sceneData.author,
     };
 
-    // Generate TSX content
+    // Apply compression to entities
+    const materialDeduplicator = new MaterialDeduplicator();
+    const compressedEntities = (sceneData.entities as Array<{ components?: Record<string, unknown> }>).map((entity) => {
+      if (!entity.components) return entity;
+
+      const compressedComponents: Record<string, unknown> = {};
+
+      for (const [componentType, componentData] of Object.entries(entity.components)) {
+        if (!componentData || typeof componentData !== 'object') {
+          compressedComponents[componentType] = componentData;
+          continue;
+        }
+
+        let processedData = componentData as Record<string, unknown>;
+
+        // Extract and deduplicate materials from MeshRenderer
+        if (componentType === 'MeshRenderer') {
+          const inlineMaterial = extractMaterialFromMeshRenderer(processedData);
+          if (inlineMaterial) {
+            const materialId = materialDeduplicator.addMaterial(inlineMaterial);
+            processedData = replaceMaterialWithReference(processedData, materialId);
+          } else if (!processedData.materialId) {
+            // Safety: Ensure MeshRenderer always has materialId
+            // If no inline material and no materialId, use 'default'
+            processedData = {
+              ...processedData,
+              materialId: 'default',
+            };
+          }
+        }
+
+        // Omit default values
+        const defaults = getComponentDefaults(componentType);
+        if (defaults) {
+          processedData = omitDefaults(processedData, defaults) as Record<string, unknown>;
+        }
+
+        compressedComponents[componentType] = processedData;
+      }
+
+      return {
+        ...entity,
+        components: compressedComponents,
+      };
+    });
+
+    // Get deduplicated materials
+    const extractedMaterials = materialDeduplicator.getMaterials();
+
+    // Merge with existing materials (prioritize extracted materials for deduplication)
+    const allMaterials = [...extractedMaterials, ...(sceneData.materials || [])];
+
+    // Generate TSX content with compressed data
     const tsxContent = generateTsxScene(
-      sceneData.entities as never[],
+      compressedEntities as never[],
       metadata,
-      sceneData.materials || [],
+      allMaterials,
       sceneData.prefabs || [],
       sceneData.inputAssets || [],
     );
@@ -111,9 +170,69 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     // Extract scene data from TSX file
     const data = this.extractDefineSceneData(content);
 
+    // Normalize loaded data: convert inline materials to materialId references
+    const normalizedData = this.normalizeSceneData(data);
+
     return {
       filename,
-      data,
+      data: normalizedData,
+    };
+  }
+
+  /**
+   * Normalize scene data on load
+   * Converts inline materials to materialId references for backward compatibility
+   */
+  private normalizeSceneData(sceneData: any): any {
+    const materialDeduplicator = new MaterialDeduplicator();
+
+    // Process entities to extract inline materials
+    const normalizedEntities = (sceneData.entities || []).map((entity: any) => {
+      if (!entity.components) return entity;
+
+      const normalizedComponents: Record<string, unknown> = {};
+
+      for (const [componentType, componentData] of Object.entries(entity.components)) {
+        if (!componentData || typeof componentData !== 'object') {
+          normalizedComponents[componentType] = componentData;
+          continue;
+        }
+
+        let processedData = componentData as Record<string, unknown>;
+
+        // Extract and deduplicate materials from MeshRenderer
+        if (componentType === 'MeshRenderer') {
+          const inlineMaterial = extractMaterialFromMeshRenderer(processedData);
+          if (inlineMaterial) {
+            const materialId = materialDeduplicator.addMaterial(inlineMaterial);
+            processedData = replaceMaterialWithReference(processedData, materialId);
+          } else if (!processedData.materialId) {
+            // Safety: Ensure MeshRenderer always has materialId
+            processedData = {
+              ...processedData,
+              materialId: 'default',
+            };
+          }
+        }
+
+        normalizedComponents[componentType] = processedData;
+      }
+
+      return {
+        ...entity,
+        components: normalizedComponents,
+      };
+    });
+
+    // Merge extracted materials with existing materials
+    const extractedMaterials = materialDeduplicator.getMaterials();
+    const existingMaterials = sceneData.materials || [];
+    const allMaterials = [...extractedMaterials, ...existingMaterials];
+
+    return {
+      ...sceneData,
+      entities: normalizedEntities,
+      materials: allMaterials,
     };
   }
 
@@ -156,6 +275,12 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     try {
       // Parse the defineScene argument as JSON
       let sceneDataString = defineSceneMatch[1];
+
+      // Strip comments (both // and /* */) BEFORE processing
+      // Remove single-line comments
+      sceneDataString = sceneDataString.replace(/\/\/.*$/gm, '');
+      // Remove multi-line comments
+      sceneDataString = sceneDataString.replace(/\/\*[\s\S]*?\*\//g, '');
 
       // Replace enum references with their string values BEFORE JSON parsing
       // DeviceType enums

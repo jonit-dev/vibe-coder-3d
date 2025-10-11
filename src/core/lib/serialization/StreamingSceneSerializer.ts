@@ -23,6 +23,8 @@ const STREAM_CONFIG = {
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '@/core/lib/input/inputTypes';
+import { getComponentDefaults } from './defaults';
+import { restoreDefaults } from './utils/DefaultOmitter';
 
 // Core interfaces
 export interface IStreamingEntity {
@@ -376,7 +378,14 @@ export class StreamingSceneSerializer {
             const componentEntries = Object.entries(entityData.components || {});
             for (const [componentType, componentData] of componentEntries) {
               if (componentType === 'PersistentId' || !componentData) continue;
-              componentManager.addComponent(created.id, componentType, componentData);
+
+              // Restore defaults for compressed components
+              const defaults = getComponentDefaults(componentType);
+              const restoredData = defaults
+                ? restoreDefaults(componentData as Record<string, unknown>, defaults)
+                : componentData;
+
+              componentManager.addComponent(created.id, componentType, restoredData);
             }
 
             processed++;

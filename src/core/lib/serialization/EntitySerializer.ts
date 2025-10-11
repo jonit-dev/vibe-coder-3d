@@ -1,6 +1,14 @@
 import { Logger } from '@core/lib/logger';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
+import type { IMaterialDefinition } from '@core/materials/Material.types';
+import { getComponentDefaults } from './defaults/ComponentDefaults';
+import { omitDefaults, restoreDefaults } from './utils/DefaultOmitter';
+import {
+  MaterialDeduplicator,
+  extractMaterialFromMeshRenderer,
+  replaceMaterialWithReference,
+} from './utils/MaterialHasher';
 
 const logger = Logger.create('EntitySerializer');
 
@@ -40,12 +48,25 @@ export interface IComponentManagerAdapter {
 }
 
 /**
+ * Compression options for serialization
+ */
+export interface ISerializationOptions {
+  /** Omit component fields that match default values (default: true) */
+  compressDefaults?: boolean;
+  /** Extract and deduplicate inline materials (default: true) */
+  deduplicateMaterials?: boolean;
+}
+
+/**
  * Entity Serialization Service
  * Single responsibility: Serialize and deserialize entities with their components
+ * Supports optional compression via default omission and material deduplication
  */
 export class EntitySerializer {
+  private materialDeduplicator = new MaterialDeduplicator();
+
   /**
-   * Serialize entities with their components
+   * Serialize entities with their components (legacy - no compression)
    */
   serialize(
     entityManager: IEntityManagerAdapter,
@@ -74,6 +95,89 @@ export class EntitySerializer {
 
     logger.debug('Serialized entities', { count: serialized.length });
     return serialized;
+  }
+
+  /**
+   * Serialize entities with compression (default omission + material deduplication)
+   * Returns both compressed entities and extracted materials
+   */
+  serializeWithCompression(
+    entityManager: IEntityManagerAdapter,
+    componentManager: IComponentManagerAdapter,
+    options: ISerializationOptions = {},
+  ): { entities: ISerializedEntity[]; materials: IMaterialDefinition[] } {
+    const { compressDefaults = true, deduplicateMaterials = true } = options;
+
+    const entities = entityManager.getAllEntities();
+    const serialized: ISerializedEntity[] = [];
+
+    // Clear material deduplicator for fresh start
+    this.materialDeduplicator.clear();
+
+    for (const entity of entities) {
+      const components = componentManager.getComponentsForEntity(entity.id);
+      const componentData: Record<string, unknown> = {};
+
+      for (const component of components) {
+        if (!component.data) continue;
+
+        let processedData = component.data as Record<string, unknown>;
+
+        // Extract and deduplicate inline materials from MeshRenderer
+        if (deduplicateMaterials && component.type === 'MeshRenderer') {
+          const inlineMaterial = extractMaterialFromMeshRenderer(processedData);
+          if (inlineMaterial) {
+            const materialId = this.materialDeduplicator.addMaterial(inlineMaterial);
+            processedData = replaceMaterialWithReference(processedData, materialId);
+            logger.debug('Extracted material from MeshRenderer', {
+              entity: entity.name,
+              materialId,
+            });
+          }
+        }
+
+        // Omit default values
+        if (compressDefaults) {
+          const defaults = getComponentDefaults(component.type);
+          if (defaults) {
+            processedData = omitDefaults(processedData, defaults);
+          }
+        }
+
+        // Only include component if it has data
+        // (after compression, some components might have no non-default fields)
+        if (Object.keys(processedData).length > 0 || !compressDefaults) {
+          componentData[component.type] = processedData;
+        }
+      }
+
+      serialized.push({
+        id: entity.id,
+        name: entity.name,
+        parentId: entity.parentId,
+        components: componentData,
+      });
+    }
+
+    const materials = this.materialDeduplicator.getMaterials();
+    const stats = this.materialDeduplicator.getStats();
+
+    logger.info('Serialized with compression', {
+      entities: serialized.length,
+      materials: materials.length,
+      compressDefaults,
+      deduplicateMaterials,
+      deduplicationRatio: stats.deduplicationRatio.toFixed(2) + '%',
+    });
+
+    return { entities: serialized, materials };
+  }
+
+  /**
+   * Get material deduplicator (for accessing extracted materials)
+   */
+  getMaterialDeduplicator(): MaterialDeduplicator {
+    return this.materialDeduplicator;
   }
 
   /**
@@ -125,7 +229,13 @@ export class EntitySerializer {
           if (componentType === 'PersistentId' || !componentData) continue;
 
           try {
-            componentManager.addComponent(created.id, componentType, componentData);
+            // Restore defaults for compressed components
+            const defaults = getComponentDefaults(componentType);
+            const restoredData = defaults
+              ? restoreDefaults(componentData as Record<string, unknown>, defaults)
+              : componentData;
+
+            componentManager.addComponent(created.id, componentType, restoredData);
           } catch (error) {
             logger.error('Failed to add component', {
               entityId: created.id,

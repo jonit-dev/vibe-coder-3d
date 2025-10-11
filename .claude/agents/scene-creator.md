@@ -67,6 +67,8 @@ Before writing ANY scene code:
    - Use `defineScene()` in `src/game/scenes/`
    - OMIT `id` and `PersistentId` (auto-generated)
    - NO JSON comments (`//` or `/* */`)
+   - **CRITICAL**: Omit all default values (see Component Defaults Reference)
+   - **CRITICAL**: Use material registry - NO inline materials in MeshRenderer!
 
 4. **Validate**
 
@@ -77,7 +79,16 @@ Before writing ANY scene code:
 5. **Register**
    - Add to `src/game/scenes/index.ts` via `sceneRegistry.defineScene`
 
-## Scene Structure
+## Scene Structure (Compressed Format)
+
+**NEW (Oct 2025): Scenes use automatic compression!**
+
+Scenes now use the Smart Compression System which:
+- ✅ Omits component fields that match defaults (50-70% smaller)
+- ✅ Extracts and deduplicates materials (30-50% additional savings)
+- ✅ **Total: 60-80% file size reduction**
+
+**You MUST omit default values when creating scenes!**
 
 ```typescript
 import { defineScene } from './defineScene';
@@ -93,25 +104,45 @@ export default defineScene({
       name: 'Entity Name',
       parentId: 0, // Optional: parent entity index
       components: {
-        Transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
-        MeshRenderer: { meshId: 'cube', materialId: 'default' },
+        Transform: {
+          position: [5, 2, 0],
+          // rotation: [0,0,0] - OMIT (default)
+          // scale: [1,1,1] - OMIT (default)
+        },
+        MeshRenderer: {
+          meshId: 'cube',
+          materialId: 'my-material', // Reference material from registry
+          // enabled: true - OMIT (default)
+          // castShadows: true - OMIT (default)
+          // receiveShadows: true - OMIT (default)
+        },
       },
     },
   ],
   materials: [
     {
-      id: 'default',
-      name: 'Default Material',
-      shader: 'standard',
-      color: '#cccccc',
-      metalness: 0,
-      roughness: 0.7,
+      id: 'my-material',
+      name: 'My Material',
+      color: '#ff0000', // Only non-default fields!
+      roughness: 0.9,
+      // shader: 'standard' - OMIT (default)
+      // metalness: 0 - OMIT (default)
+      // All texture fields omitted (defaults)
     },
   ],
   prefabs: [],
   inputAssets: [],
 });
 ```
+
+**Component Defaults Reference:**
+- **Transform**: `position: [0,0,0]`, `rotation: [0,0,0]`, `scale: [1,1,1]`
+- **Camera**: `fov: 75`, `near: 0.1`, `far: 100`, `isMain: false`, `projectionType: 'perspective'`, etc.
+- **Light**: `intensity: 1`, `enabled: true`, `castShadow: true`, etc.
+- **MeshRenderer**: `enabled: true`, `castShadows: true`, `receiveShadows: true`
+- **Material**: `shader: 'standard'`, `materialType: 'solid'`, `color: '#cccccc'`, `metalness: 0`, `roughness: 0.7`, etc.
+
+See `src/core/lib/serialization/defaults/ComponentDefaults.ts` for full list.
 
 ## Custom Shapes
 

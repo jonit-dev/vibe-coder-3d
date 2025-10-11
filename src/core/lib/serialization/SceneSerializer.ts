@@ -54,6 +54,18 @@ const SceneDataSchema = z.object({
 });
 
 /**
+ * Scene serialization options
+ */
+export interface ISceneSerializationOptions {
+  /** Enable compression (default omission + material deduplication) */
+  compressionEnabled?: boolean;
+  /** Omit component fields that match default values */
+  compressDefaults?: boolean;
+  /** Extract and deduplicate inline materials */
+  deduplicateMaterials?: boolean;
+}
+
+/**
  * Scene Serialization Orchestrator
  * Coordinates serialization of entities, materials, and prefabs
  * Follows SRP by delegating to specialized serializers
@@ -65,17 +77,61 @@ export class SceneSerializer {
 
   /**
    * Serialize complete scene to data structure
+   * @param compressionOptions - Optional compression settings (defaults to enabled)
    */
   async serialize(
     entityManager: IEntityManagerAdapter,
     componentManager: IComponentManagerAdapter,
     metadata: Partial<ISceneMetadata> = {},
     inputAssets?: IInputActionsAsset[],
+    compressionOptions?: ISceneSerializationOptions,
   ): Promise<ISceneData> {
-    logger.info('Starting scene serialization');
+    const options = {
+      compressionEnabled: true, // Enable by default
+      compressDefaults: true,
+      deduplicateMaterials: true,
+      ...compressionOptions,
+    };
 
-    const entities = this.entitySerializer.serialize(entityManager, componentManager);
-    const materials = this.materialSerializer.serialize();
+    logger.info('Starting scene serialization', {
+      compression: options.compressionEnabled,
+    });
+
+    let entities: ISerializedEntity[];
+    let extractedMaterials: IMaterialDefinition[] = [];
+
+    // Serialize entities with optional compression
+    if (options.compressionEnabled) {
+      const compressed = this.entitySerializer.serializeWithCompression(
+        entityManager,
+        componentManager,
+        {
+          compressDefaults: options.compressDefaults,
+          deduplicateMaterials: options.deduplicateMaterials,
+        },
+      );
+      entities = compressed.entities;
+      extractedMaterials = compressed.materials;
+
+      logger.info('Compression applied', {
+        extractedMaterials: extractedMaterials.length,
+      });
+    } else {
+      // Legacy serialization (no compression)
+      entities = this.entitySerializer.serialize(entityManager, componentManager);
+    }
+
+    // Get materials from registry
+    const registryMaterials = this.materialSerializer.serialize();
+
+    // Merge extracted materials with registry materials (extracted takes precedence)
+    const allMaterials = [
+      ...extractedMaterials,
+      ...registryMaterials.filter(
+        (rm) => !extractedMaterials.some((em) => em.id === rm.id),
+      ),
+    ];
+
     const prefabs = await this.prefabSerializer.serialize();
 
     const sceneData: ISceneData = {
@@ -87,7 +143,7 @@ export class SceneSerializer {
         description: metadata.description,
       },
       entities,
-      materials,
+      materials: allMaterials,
       prefabs,
       inputAssets,
     };
@@ -101,9 +157,10 @@ export class SceneSerializer {
 
     logger.info('Scene serialization complete', {
       entities: entities.length,
-      materials: materials.length,
+      materials: allMaterials.length,
       prefabs: prefabs.length,
       inputAssets: inputAssets?.length || 0,
+      compressed: options.compressionEnabled,
     });
 
     return sceneData;
