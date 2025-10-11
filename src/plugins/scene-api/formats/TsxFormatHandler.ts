@@ -1,6 +1,5 @@
 import type { ISceneStore } from '../../../core/lib/serialization/common/ISceneStore';
 import { sanitizeComponentName } from '../../../core/lib/serialization/common/NameUtils';
-import { generateTsxScene } from '../../../core/lib/serialization/tsxSerializer';
 import type { IMaterialDefinition } from '../../../core/materials/Material.types';
 import type { IPrefabDefinition } from '../../../core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '../../../core/lib/input/inputTypes';
@@ -11,6 +10,9 @@ import {
   extractMaterialFromMeshRenderer,
   replaceMaterialWithReference,
 } from '../../../core/lib/serialization/utils/MaterialHasher';
+import { MultiFileSceneSerializer } from '../../../core/lib/serialization/multi-file/MultiFileSceneSerializer';
+import { MultiFileSceneLoader } from '../../../core/lib/serialization/multi-file/MultiFileSceneLoader';
+import { SceneFolderManager } from '../../../core/lib/serialization/multi-file/SceneFolderManager';
 import type {
   ISceneFormatHandler,
   ISaveArgs,
@@ -22,16 +24,23 @@ import type {
 
 /**
  * TSX format handler for scene persistence
- * Saves and loads scenes as TypeScript React components using defineScene
+ * Saves and loads scenes as multi-file folders using defineScene
  */
 export class TsxFormatHandler implements ISceneFormatHandler {
   readonly format = 'tsx' as const;
   readonly contentType = 'application/json';
 
-  constructor(private readonly store: ISceneStore) {}
+  private readonly multiFileSerializer = new MultiFileSceneSerializer();
+  private readonly multiFileLoader = new MultiFileSceneLoader();
+  private readonly folderManager = new SceneFolderManager();
+
+  constructor(
+    private readonly store: ISceneStore,
+    private readonly baseDir: string,
+  ) {}
 
   /**
-   * Save scene as TSX file
+   * Save scene as multi-file folder
    */
   async save(args: ISaveArgs): Promise<ISaveResult> {
     const { name, payload } = args;
@@ -87,7 +96,6 @@ export class TsxFormatHandler implements ISceneFormatHandler {
             processedData = replaceMaterialWithReference(processedData, materialId);
           } else if (!processedData.materialId) {
             // Safety: Ensure MeshRenderer always has materialId
-            // If no inline material and no materialId, use 'default'
             processedData = {
               ...processedData,
               materialId: 'default',
@@ -112,69 +120,72 @@ export class TsxFormatHandler implements ISceneFormatHandler {
 
     // Get deduplicated materials
     const extractedMaterials = materialDeduplicator.getMaterials();
-
-    // Merge with existing materials (prioritize extracted materials for deduplication)
     const allMaterials = [...extractedMaterials, ...(sceneData.materials || [])];
 
-    // Generate TSX content with compressed data
-    const tsxContent = generateTsxScene(
+    // Serialize to multi-file format
+    const multiFileData = this.multiFileSerializer.serializeMultiFile(
       compressedEntities as never[],
       metadata,
       allMaterials,
       sceneData.prefabs || [],
-      sceneData.inputAssets || [],
+      sceneData.inputAssets,
     );
 
-    // Sanitize component name for filename
-    const componentName = sanitizeComponentName(name);
-    const filename = `${componentName}.tsx`;
+    // Sanitize scene name for folder
+    const sceneName = sanitizeComponentName(name);
+    const sceneFolderPath = `${this.baseDir}/${sceneName}`;
 
-    // Write to store
-    const { modified, size } = await this.store.write(filename, tsxContent);
+    // Write all files to folder
+    const writeResult = await this.folderManager.writeSceneFiles(
+      sceneFolderPath,
+      sceneName,
+      multiFileData,
+    );
 
     return {
-      filename,
-      modified,
-      size,
-      extra: { componentName },
+      filename: `${sceneName}/${sceneName}.index.tsx`,
+      modified: new Date().toISOString(),
+      size: writeResult.totalSize,
+      extra: { filesWritten: writeResult.filesWritten },
     };
   }
 
   /**
-   * Load scene from TSX file
+   * Load scene from multi-file folder
    */
   async load(args: ILoadArgs): Promise<ILoadResult> {
     const { name } = args;
 
-    // Try both raw name and sanitized component name
-    const primaryFilename = name.endsWith('.tsx') ? name : `${name}.tsx`;
-    const sanitizedFilename = `${sanitizeComponentName(name.replace(/\.tsx$/, ''))}.tsx`;
+    // Multi-file scenes are in folders: SceneName/SceneName.index.tsx
+    const folderName = name.replace(/\.tsx$/, '');
+    const indexFilename = `${folderName}/${folderName}.index.tsx`;
 
-    let filename: string;
-    let content: string;
-
-    // Try primary filename first
-    if (await this.store.exists(primaryFilename)) {
-      filename = primaryFilename;
-      const result = await this.store.read(primaryFilename);
-      content = result.content;
-    } else if (await this.store.exists(sanitizedFilename)) {
-      // Fall back to sanitized filename
-      filename = sanitizedFilename;
-      const result = await this.store.read(sanitizedFilename);
-      content = result.content;
-    } else {
-      throw new Error(`TSX scene file not found: ${name}`);
+    if (!(await this.store.exists(indexFilename))) {
+      throw new Error(`Multi-file scene not found: ${name} (looking for ${indexFilename})`);
     }
+
+    const result = await this.store.read(indexFilename);
+    const content = result.content;
 
     // Extract scene data from TSX file
     const data = this.extractDefineSceneData(content);
 
+    // Use MultiFileSceneLoader to resolve material references
+    const sceneFolderPath = `${this.baseDir}/${folderName}`;
+    const resolvedData = await this.multiFileLoader.loadMultiFile(
+      data as any,
+      sceneFolderPath,
+      this.baseDir,
+    );
+
     // Normalize loaded data: convert inline materials to materialId references
-    const normalizedData = this.normalizeSceneData(data);
+    const normalizedData = this.normalizeSceneData({
+      ...data,
+      entities: resolvedData.entities,
+    });
 
     return {
-      filename,
+      filename: indexFilename,
       data: normalizedData,
     };
   }
@@ -204,7 +215,9 @@ export class TsxFormatHandler implements ISceneFormatHandler {
         if (componentType === 'MeshRenderer') {
           const inlineMaterial = extractMaterialFromMeshRenderer(processedData);
           if (inlineMaterial) {
-            const materialId = materialDeduplicator.addMaterial(inlineMaterial);
+            // Preserve the original material ID if it exists
+            const proposedId = (inlineMaterial as IMaterialDefinition).id;
+            const materialId = materialDeduplicator.addMaterial(inlineMaterial, proposedId);
             processedData = replaceMaterialWithReference(processedData, materialId);
           } else if (!processedData.materialId) {
             // Safety: Ensure MeshRenderer always has materialId
@@ -237,20 +250,19 @@ export class TsxFormatHandler implements ISceneFormatHandler {
   }
 
   /**
-   * List all TSX scene files
+   * List all multi-file scene folders
    */
   async list(): Promise<ISceneListItem[]> {
     const items = await this.store.list();
 
-    return items
-      .filter((f) => f.name.endsWith('.tsx'))
-      .map((i) => ({
-        name: i.name.replace(/\.tsx$/, ''),
-        filename: i.name,
-        modified: i.modified,
-        size: i.size,
-        type: 'tsx',
-      }));
+    // FsSceneStore now returns folders that contain .index.tsx files
+    return items.map((i) => ({
+      name: i.name,
+      filename: i.name,
+      modified: i.modified,
+      size: i.size,
+      type: 'tsx',
+    }));
   }
 
   /**

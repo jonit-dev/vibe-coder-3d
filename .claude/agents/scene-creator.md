@@ -79,25 +79,25 @@ Before writing ANY scene code:
 5. **Register**
    - Add to `src/game/scenes/index.ts` via `sceneRegistry.defineScene`
 
-## Scene Structure (Compressed Format)
+## Scene Structure (Multi-File Format)
 
-**NEW (Oct 2025): Scenes use automatic compression!**
+**NEW (Oct 2025): Scenes use multi-file folder structure!**
 
-Scenes now use the Smart Compression System which:
-- ✅ Omits component fields that match defaults (50-70% smaller)
-- ✅ Extracts and deduplicates materials (30-50% additional savings)
-- ✅ **Total: 60-80% file size reduction**
+Each scene is a folder containing:
+- `SceneName.index.tsx` - Main scene file with entities and references
+- `SceneName.materials.tsx` - Material definitions
+- `SceneName.metadata.json` - Scene metadata (auto-generated)
 
-**You MUST omit default values when creating scenes!**
-
+**Scene Index File (SceneName.index.tsx):**
 ```typescript
-import { defineScene } from './defineScene';
+import { defineScene } from '../defineScene';
 
 export default defineScene({
   metadata: {
-    name: 'scene-name',
+    name: 'SceneName',
     version: 1,
-    timestamp: '2025-10-10T00:00:00.000Z',
+    timestamp: '2025-10-11T00:00:00.000Z',
+    description: 'Scene description'
   },
   entities: [
     {
@@ -111,7 +111,7 @@ export default defineScene({
         },
         MeshRenderer: {
           meshId: 'cube',
-          materialId: 'my-material', // Reference material from registry
+          materialRef: './materials/my-material', // Reference to materials file
           // enabled: true - OMIT (default)
           // castShadows: true - OMIT (default)
           // receiveShadows: true - OMIT (default)
@@ -119,21 +119,36 @@ export default defineScene({
       },
     },
   ],
-  materials: [
-    {
-      id: 'my-material',
-      name: 'My Material',
-      color: '#ff0000', // Only non-default fields!
-      roughness: 0.9,
-      // shader: 'standard' - OMIT (default)
-      // metalness: 0 - OMIT (default)
-      // All texture fields omitted (defaults)
-    },
-  ],
-  prefabs: [],
-  inputAssets: [],
+  assetReferences: {
+    materials: './SceneName.materials.tsx',
+  },
 });
 ```
+
+**Materials File (SceneName.materials.tsx):**
+```typescript
+import { defineMaterials } from '@core/lib/serialization/assets/defineMaterials';
+
+export default defineMaterials([
+  {
+    id: 'my-material',
+    name: 'My Material',
+    shader: 'standard',
+    materialType: 'solid',
+    color: '#ff0000',
+    roughness: 0.9,
+    // metalness: 0 - OMIT (default)
+    // All other default fields omitted
+  },
+]);
+```
+
+**IMPORTANT:**
+- ✅ Use `materialRef: './materials/material-id'` in MeshRenderer (NOT `materialId`)
+- ✅ Material references are resolved automatically on load
+- ✅ Materials are deduplicated across the scene
+- ✅ Omit default values for compression (50-70% smaller)
+- ✅ Total file size reduction: 60-80%
 
 **Component Defaults Reference:**
 - **Transform**: `position: [0,0,0]`, `rotation: [0,0,0]`, `scale: [1,1,1]`

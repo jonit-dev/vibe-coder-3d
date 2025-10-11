@@ -130,8 +130,15 @@ export const createSceneApi = (options: ISceneApiOptions): Plugin => ({
           sendError(res, 404, `Unknown action: ${action || 'none'}`);
         }
       } catch (error) {
-        logger.error('Scene API error', { error });
-        sendError(res, 500, error instanceof Error ? error.message : 'Internal server error');
+        // Log 404 errors as warnings (expected when scene not found)
+        const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+        if (errorMessage.includes('not found')) {
+          logger.warn('Scene not found', { error: errorMessage });
+          sendError(res, 404, errorMessage);
+        } else {
+          logger.error('Scene API error', { error });
+          sendError(res, 500, errorMessage);
+        }
       }
     });
 

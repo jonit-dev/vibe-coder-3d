@@ -24,7 +24,12 @@ export default defineConfig({
   server: {
     watch: {
       // Ignore scenes and scripts since they have their own hot-reload mechanisms
-      ignored: ['**/scenes/*.tsx', '**/scenes/*.json', '**/scripts/**/*.ts', '**/game/scripts/**'],
+      ignored: [
+        '**/scenes/**/*.tsx',
+        '**/scenes/**/*.json',
+        '**/scripts/**/*.ts',
+        '**/game/scripts/**',
+      ],
     },
     fs: {
       allow: ['..'],

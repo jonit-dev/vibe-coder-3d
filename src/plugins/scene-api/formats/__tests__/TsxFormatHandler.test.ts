@@ -27,7 +27,7 @@ describe('TsxFormatHandler', () => {
 
   beforeEach(async () => {
     store = new FsSceneStore(TEST_DIR);
-    handler = new TsxFormatHandler(store);
+    handler = new TsxFormatHandler(store, TEST_DIR);
 
     // Cleanup
     try {

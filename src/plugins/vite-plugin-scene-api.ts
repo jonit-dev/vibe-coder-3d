@@ -29,7 +29,7 @@ const SCENES_DIR = './src/game/scenes';
 export function sceneApiMiddleware(): Plugin {
   const store = new FsSceneStore(SCENES_DIR);
   const jsonHandler = new JsonFormatHandler(store);
-  const tsxHandler = new TsxFormatHandler(store);
+  const tsxHandler = new TsxFormatHandler(store, SCENES_DIR);
 
   // Create the new API plugin
   const apiPlugin = createSceneApi({

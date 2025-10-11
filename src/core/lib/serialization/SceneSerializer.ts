@@ -37,6 +37,11 @@ export interface ISceneData {
   materials: IMaterialDefinition[];
   prefabs: IPrefabDefinition[];
   inputAssets?: IInputActionsAsset[];
+  assetReferences?: {
+    materials?: string;
+    prefabs?: string;
+    inputs?: string;
+  };
 }
 
 const SceneDataSchema = z.object({

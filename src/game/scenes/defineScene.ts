@@ -20,9 +20,14 @@ export interface ITypedSceneData {
     description?: string;
   };
   entities: ITypedSceneEntity[];
-  materials: IMaterialDefinition[];
-  prefabs: IPrefabDefinition[];
+  materials?: IMaterialDefinition[];
+  prefabs?: IPrefabDefinition[];
   inputAssets?: IInputActionsAsset[];
+  assetReferences?: {
+    materials?: string;
+    prefabs?: string;
+    inputs?: string;
+  };
 }
 
 /**

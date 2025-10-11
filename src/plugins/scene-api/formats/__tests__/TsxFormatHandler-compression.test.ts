@@ -23,7 +23,7 @@ describe('TsxFormatHandler - Compression', () => {
       delete: vi.fn(),
     };
 
-    handler = new TsxFormatHandler(mockStore);
+    handler = new TsxFormatHandler(mockStore, '/test/scenes');
   });
 
   it('should omit Transform defaults (rotation, scale) when saving', async () => {

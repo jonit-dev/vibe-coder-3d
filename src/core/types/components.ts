@@ -119,12 +119,7 @@ export interface IMeshRendererComponent {
   material?: IMaterialData;
 }
 
-/**
- * PersistentId Component - Unique ID for entities
- */
-export interface IPersistentIdComponent {
-  id: string;
-}
+// PersistentId is auto-generated - not included in scene files
 
 /**
  * RigidBody Component - Physics body
@@ -226,7 +221,6 @@ export interface IComponentMap {
   Camera: ICameraComponent;
   Light: ILightComponent;
   MeshRenderer: IMeshRendererComponent;
-  PersistentId?: IPersistentIdComponent; // Optional - auto-generated if not provided
   RigidBody: IRigidBodyComponent;
   MeshCollider: IMeshColliderComponent;
   PrefabInstance: IPrefabInstanceComponent;

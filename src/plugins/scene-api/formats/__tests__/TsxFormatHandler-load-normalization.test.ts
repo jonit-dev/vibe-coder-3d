@@ -15,7 +15,7 @@ describe('TsxFormatHandler - Load Normalization', () => {
       delete: vi.fn(),
     };
 
-    handler = new TsxFormatHandler(mockStore);
+    handler = new TsxFormatHandler(mockStore, '/test/scenes');
   });
 
   it('should convert inline materials to materialId references on load', async () => {

@@ -48,4 +48,11 @@ export interface ISceneStore {
    * @returns Sanitized filename with extension
    */
   sanitizeFilename(name: string, ext: '.json' | '.tsx'): string;
+
+  /**
+   * Delete a scene file or folder
+   * @param name - The scene filename or folder name
+   * @returns True if deleted successfully
+   */
+  delete?(name: string): Promise<boolean>;
 }

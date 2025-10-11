@@ -70,7 +70,8 @@ export class FsSceneStore implements ISceneStore {
   }
 
   /**
-   * List all scene files in the directory
+   * List all multi-file scene folders in the directory
+   * Multi-file scenes are folders containing a .index.tsx file
    */
   async list(): Promise<ISceneFileInfo[]> {
     try {
@@ -86,16 +87,28 @@ export class FsSceneStore implements ISceneStore {
         try {
           const stats = await fs.stat(filepath);
 
-          // Only include regular files, not directories
-          if (stats.isFile()) {
-            infos.push({
-              name: file,
-              modified: stats.mtime.toISOString(),
-              size: stats.size,
-            });
+          // Only include directories (multi-file scenes)
+          if (stats.isDirectory()) {
+            // Check if this folder has a .index.tsx file
+            const indexFile = `${file}.index.tsx`;
+            const indexPath = path.join(filepath, indexFile);
+
+            try {
+              const indexStats = await fs.stat(indexPath);
+              if (indexStats.isFile()) {
+                infos.push({
+                  name: file,
+                  modified: stats.mtime.toISOString(),
+                  size: stats.size,
+                });
+              }
+            } catch {
+              // No .index.tsx file, skip this folder
+              continue;
+            }
           }
         } catch {
-          // Skip files that can't be accessed
+          // Skip files/folders that can't be accessed
           continue;
         }
       }
