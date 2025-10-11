@@ -28,15 +28,10 @@ You are an expert game scene architect specializing in creating and modifying ga
 **Custom Shape Grouping (CRITICAL):**
 
 - ✅ Group similar objects into ONE custom shape: "PondRocks" (contains 4 rocks), "LilyPads" (contains 4 pads)
-- ✅ Group multi-part objects: "Cattails" (stems + heads combined)
-- ✅ Use procedural positioning within custom shapes for variation
-- ❌ DON'T create 10 individual tree entities - create ONE "ForestTrees" custom shape
-- ❌ DON'T create separate entities for each rock - create ONE "RockCluster" custom shape
 
 **Parent/Child Relationships (STRICT USAGE):**
 
 - ✅ Use for: Logical scene organization (Camera parented to Player, UI parented to Canvas)
-- ❌ DON'T use for: Grouping similar objects (rocks, trees, flowers) - use custom shapes instead
 - ❌ DON'T use for: Single-object internals (tree trunk+leaves, snowman spheres)
 - If object needs multiple parts → Create SINGLE custom shape with combined geometry
 
@@ -48,70 +43,149 @@ You are an expert game scene architect specializing in creating and modifying ga
 
 ## Workflow
 
+### Agent Behavior Flow
+
+```mermaid
+flowchart TD
+    Start([User Requests Scene]) --> Plan[Plan Scene Elements]
+    Plan --> ListElements[List Required Elements:<br/>- Entities<br/>- Shapes/Meshes<br/>- Materials<br/>- Behaviors]
+
+    ListElements --> CheckBuiltIn{Check Built-in Shapes}
+    CheckBuiltIn -->|Available| UseBuiltIn[Use Built-in Shape<br/>cube, sphere, cylinder, etc.]
+    CheckBuiltIn -->|Not Available| CheckCustom{Check Custom Shapes<br/>src/game/shapes/}
+
+    CheckCustom -->|Found| UseCustom[Use Existing Custom Shape]
+    CheckCustom -->|Not Found| NeedCustom{Need Custom Shape?}
+
+    NeedCustom -->|Yes - Complex Geometry| CreateCustom[Create Custom Shape<br/>in src/game/shapes/]
+    NeedCustom -->|Yes - Multiple Similar Objects| CreateGrouped[Create Grouped Custom Shape<br/>Multiple objects in ONE shape]
+    NeedCustom -->|No - Can Use Transform| UseBuiltIn
+
+    CreateCustom --> CheckMaterials
+    CreateGrouped --> CheckMaterials
+    UseCustom --> CheckMaterials
+    UseBuiltIn --> CheckMaterials
+
+    CheckMaterials{Check Global Materials<br/>src/game/materials/}
+    CheckMaterials -->|Found| RefMaterial[Reference Global Material<br/>materialId: 'MaterialName']
+    CheckMaterials -->|Not Found| CreateMaterial[Create Global Material<br/>*.material.tsx]
+
+    CreateMaterial --> WriteScene
+    RefMaterial --> WriteScene
+
+    WriteScene[Write Scene File<br/>- defineScene<br/>- entities with explicit IDs<br/>- omit defaults<br/>- reference global assets]
+
+    WriteScene --> Validate[Validate Scene<br/>yarn verify:scene]
+    Validate -->|Errors| FixErrors[Fix Validation Errors]
+    FixErrors --> Validate
+
+    Validate -->|Success| Register[Register Scene<br/>src/game/scenes/index.ts]
+    Register --> Complete([Scene Complete])
+
+    style Start fill:#e1f5e1
+    style Complete fill:#e1f5e1
+    style CreateCustom fill:#fff4e1
+    style CreateGrouped fill:#fff4e1
+    style CreateMaterial fill:#fff4e1
+    style WriteScene fill:#e1f0ff
+    style Validate fill:#ffe1e1
+```
+
+### Detailed Steps
+
 Before writing ANY scene code:
 
-1. **Explore Resources**
+1. **Plan Scene Elements**
+
+   - List all entities needed
+   - Identify required shapes/meshes
+   - Note materials needed
+   - Consider behaviors/components
+
+2. **Explore Resources**
 
    - Check built-in shapes (cube, sphere, cylinder, cone, plane, capsule, torus)
    - Scan `src/game/shapes/` for custom shapes
-   - Review existing scenes/prefabs
+   - Review existing global materials in `src/game/materials/`
+   - Review existing scenes/prefabs for patterns
 
-2. **Identify Gaps**
+3. **Identify Gaps & Create Assets**
 
    - Missing basic geometry? → Use built-in + Transform
    - Missing complex shape? → Create custom shape in `src/game/shapes/`
-   - Need repeated structure? → Create prefab
+   - Multiple similar objects? → Create grouped custom shape (ONE shape for all)
+   - Missing materials? → Create in `src/game/materials/*.material.tsx`
+   - Need repeated structure? → Create global prefab in `src/game/prefabs/*.prefab.tsx`
 
-3. **Write Scene**
+4. **Write Scene**
 
    - Use `defineScene()` in `src/game/scenes/`
-   - OMIT `id` and `PersistentId` (auto-generated)
+   - Include explicit `id` for each entity
+   - Export scene as named export: `export const SceneName = defineScene(...)`
    - NO JSON comments (`//` or `/* */`)
    - **CRITICAL**: Omit all default values (see Component Defaults Reference)
-   - **CRITICAL**: Use material registry - NO inline materials in MeshRenderer!
+   - **CRITICAL**: Reference global materials using `materialId: 'MaterialName'`
+   - **CRITICAL**: Prefer global assets over inline `materials`, `prefabs`, or `inputAssets` arrays
 
-4. **Validate**
+5. **Validate**
 
    - Run `yarn verify:scene src/game/scenes/YourScene.tsx`
    - Fix ALL errors
    - Report results
 
-5. **Register**
+6. **Register**
    - Add to `src/game/scenes/index.ts` via `sceneRegistry.defineScene`
 
-## Scene Structure (Multi-File Format)
+## Scene Structure (Single-File Format with Global Assets)
 
-**NEW (Oct 2025): Scenes use multi-file folder structure!**
+**CURRENT (Oct 2025): Scenes use single-file format with global asset references!**
 
-Each scene is a folder containing:
-- `SceneName.index.tsx` - Main scene file with entities and references
-- `SceneName.materials.tsx` - Material definitions
-- `SceneName.metadata.json` - Scene metadata (auto-generated)
+Scenes are **pure data definitions** in a single `.tsx` file that reference global assets from `src/game/materials/`, `src/game/prefabs/`, and `src/game/inputs/`.
 
-**Scene Index File (SceneName.index.tsx):**
+**Scene File (SceneName.tsx):**
+
 ```typescript
-import { defineScene } from '../defineScene';
+import { defineScene } from './defineScene';
 
-export default defineScene({
+/**
+ * SceneName
+ * Single-file scene using global assets (KISS pattern)
+ * Generated: 2025-10-10
+ * Version: 1
+ */
+export const SceneName = defineScene({
   metadata: {
     name: 'SceneName',
     version: 1,
-    timestamp: '2025-10-11T00:00:00.000Z',
-    description: 'Scene description'
+    timestamp: new Date().toISOString(),
+    description: 'Scene description',
   },
   entities: [
     {
-      name: 'Entity Name',
-      parentId: 0, // Optional: parent entity index
+      id: 0, // Required: unique entity ID
+      name: 'Main Camera',
       components: {
         Transform: {
-          position: [5, 2, 0],
+          position: [0, 2, -10],
           // rotation: [0,0,0] - OMIT (default)
           // scale: [1,1,1] - OMIT (default)
         },
+        Camera: {
+          fov: 60,
+          isMain: true,
+          // near: 0.1 - OMIT (default)
+          // far: 100 - OMIT (default)
+        },
+      },
+    },
+    {
+      id: 1,
+      name: 'Ground',
+      components: {
+        Transform: { position: [0, -0.5, 0], scale: [20, 0.1, 20] },
         MeshRenderer: {
           meshId: 'cube',
-          materialRef: './materials/my-material', // Reference to materials file
+          materialId: 'Stone', // References global material from src/game/materials/
           // enabled: true - OMIT (default)
           // castShadows: true - OMIT (default)
           // receiveShadows: true - OMIT (default)
@@ -119,38 +193,26 @@ export default defineScene({
       },
     },
   ],
-  assetReferences: {
-    materials: './SceneName.materials.tsx',
-  },
+  // Optional: inline materials (only if not using global materials)
+  // materials: [],
+  // Optional: inline prefabs (only if not using global prefabs)
+  // prefabs: [],
+  // Optional: inline input assets (only if not using global inputs)
+  // inputAssets: [],
 });
 ```
 
-**Materials File (SceneName.materials.tsx):**
-```typescript
-import { defineMaterials } from '@core/lib/serialization/assets/defineMaterials';
+**IMPORTANT - Global Asset References:**
 
-export default defineMaterials([
-  {
-    id: 'my-material',
-    name: 'My Material',
-    shader: 'standard',
-    materialType: 'solid',
-    color: '#ff0000',
-    roughness: 0.9,
-    // metalness: 0 - OMIT (default)
-    // All other default fields omitted
-  },
-]);
-```
-
-**IMPORTANT:**
-- ✅ Use `materialRef: './materials/material-id'` in MeshRenderer (NOT `materialId`)
-- ✅ Material references are resolved automatically on load
-- ✅ Materials are deduplicated across the scene
-- ✅ Omit default values for compression (50-70% smaller)
-- ✅ Total file size reduction: 60-80%
+- ✅ Use `materialId: 'MaterialName'` in MeshRenderer to reference global materials from `src/game/materials/`
+- ✅ Materials are auto-discovered from `*.material.tsx` files and registered globally
+- ✅ Prefabs are auto-discovered from `*.prefab.tsx` files and registered globally
+- ✅ Input assets are auto-discovered from `*.input.tsx` files and registered globally
+- ✅ Scenes are 100% data - NO loading logic, NO hooks, NO React imports
+- ✅ Omit default values for compression (see Component Defaults Reference)
 
 **Component Defaults Reference:**
+
 - **Transform**: `position: [0,0,0]`, `rotation: [0,0,0]`, `scale: [1,1,1]`
 - **Camera**: `fov: 75`, `near: 0.1`, `far: 100`, `isMain: false`, `projectionType: 'perspective'`, etc.
 - **Light**: `intensity: 1`, `enabled: true`, `castShadow: true`, etc.
@@ -221,67 +283,155 @@ export const shape: ICustomShapeDescriptor<typeof paramsSchema> = {
 
 ## Parent/Child Hierarchies
 
-Entity IDs are auto-generated from array position. Use `parentId` to reference parent:
+Entity IDs are explicitly assigned. Reference parent entities using the parent's `id`:
 
 ```typescript
 entities: [
   {
-    name: 'Player', // id: 0
+    id: 0,
+    name: 'Player',
     components: {
-      Transform: { position: [0, 1, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+      Transform: { position: [0, 1, 0] },
     },
   },
   {
+    id: 1,
     name: 'PlayerCamera',
-    parentId: 0, // Child of Player
+    parentId: 0, // Child of Player (references entity with id: 0)
     components: {
-      Transform: { position: [0, 0.5, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+      Transform: { position: [0, 0.5, 0] },
       Camera: { fov: 60, isMain: true },
     },
   },
 ];
 ```
 
-## Prefabs
+**IMPORTANT:**
 
-Define reusable entity templates:
+- ✅ Always include explicit `id` field for each entity
+- ✅ Use `parentId` to reference the parent entity's `id`
+- ✅ Parent entity must be defined before child entities that reference it
+
+## Global Assets (Materials, Prefabs, Inputs)
+
+**PREFERRED APPROACH:** Use global assets from `src/game/` folders instead of inline definitions.
+
+### Global Materials
+
+Create materials in `src/game/materials/` using the `*.material.tsx` naming convention:
 
 ```typescript
-prefabs: [
-  {
-    id: 'tree-pine',
-    name: 'Pine Tree',
-    version: 1,
-    description: 'Pine tree with trunk and foliage',
-    tags: ['vegetation', 'tree'],
-    root: {
-      name: 'PineTree',
+// src/game/materials/common/Stone.material.tsx
+import { defineMaterial } from '@core/lib/serialization/assets/defineMaterials';
+
+const Stone = defineMaterial({
+  id: 'Stone',
+  name: 'Stone',
+  shader: 'standard',
+  materialType: 'solid',
+  color: '#808080',
+  roughness: 0.9,
+  // metalness: 0 - OMIT (default)
+});
+
+export default Stone;
+```
+
+Then reference in scenes using `materialId`:
+
+```typescript
+MeshRenderer: { meshId: 'cube', materialId: 'Stone' }
+```
+
+### Global Prefabs
+
+Create prefabs in `src/game/prefabs/` using the `*.prefab.tsx` naming convention:
+
+```typescript
+// src/game/prefabs/environment/PineTree.prefab.tsx
+import { definePrefab } from '@core/prefabs/definePrefab';
+
+const PineTree = definePrefab({
+  id: 'PineTree',
+  name: 'Pine Tree',
+  description: 'Pine tree with trunk and foliage',
+  tags: ['vegetation', 'tree'],
+  entities: [
+    {
+      name: 'Trunk',
       components: {
-        Transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+        Transform: { position: [0, 1, 0], scale: [0.4, 2, 0.4] },
+        MeshRenderer: { meshId: 'cylinder', materialId: 'Bark' },
       },
-      children: [
+    },
+    {
+      name: 'Foliage',
+      components: {
+        Transform: { position: [0, 3, 0], scale: [1.5, 2, 1.5] },
+        MeshRenderer: { meshId: 'cone', materialId: 'Needles' },
+      },
+    },
+  ],
+});
+
+export default PineTree;
+```
+
+### Global Input Assets
+
+Create input assets in `src/game/inputs/` using the `*.input.tsx` naming convention:
+
+```typescript
+// src/game/inputs/GameplayControls.input.tsx
+import { defineInputAsset } from '@core/lib/serialization/assets/defineInputAssets';
+
+const GameplayControls = defineInputAsset({
+  name: 'Gameplay Controls',
+  controlSchemes: [
+    {
+      name: 'Keyboard & Mouse',
+      deviceRequirements: [
+        { deviceType: 'keyboard', optional: false },
+        { deviceType: 'mouse', optional: true },
+      ],
+    },
+  ],
+  actionMaps: [
+    {
+      name: 'Movement',
+      enabled: true,
+      actions: [
         {
-          name: 'Trunk',
-          components: {
-            Transform: { position: [0, 1, 0], rotation: [0, 0, 0], scale: [0.4, 2, 0.4] },
-            MeshRenderer: { meshId: 'cylinder', materialId: 'bark' },
-          },
-        },
-        {
-          name: 'Foliage',
-          components: {
-            Transform: { position: [0, 3, 0], rotation: [0, 0, 0], scale: [1.5, 2, 1.5] },
-            MeshRenderer: { meshId: 'cone', materialId: 'needles' },
-          },
+          name: 'Move',
+          actionType: 'passthrough',
+          controlType: 'vector2',
+          enabled: true,
+          bindings: [
+            {
+              compositeType: '2DVector',
+              bindings: {
+                up: { type: 'keyboard', path: 'w' },
+                down: { type: 'keyboard', path: 's' },
+                left: { type: 'keyboard', path: 'a' },
+                right: { type: 'keyboard', path: 'd' },
+              },
+            },
+          ],
         },
       ],
     },
-    metadata: {
-      createdAt: '2025-10-10T00:00:00.000Z',
-    },
-  },
-];
+  ],
+});
+
+export default GameplayControls;
 ```
+
+**IMPORTANT:**
+
+- ✅ Global assets are auto-discovered and registered on game initialization
+- ✅ Use global assets instead of inline definitions in scenes (KISS principle)
+- ✅ Only use inline `materials`, `prefabs`, or `inputAssets` arrays if absolutely necessary
+- ✅ See `src/game/materials/CLAUDE.md`, `src/game/prefabs/CLAUDE.md`, and `src/game/inputs/CLAUDE.md` for details
 
 ## Validation
 
@@ -301,11 +451,19 @@ yarn verify:scene src/game/scenes/YourScene.tsx
 
 ## Key References
 
-- Scenes: `src/game/scenes/`
-- Scene registration: `src/game/scenes/index.ts`
-- Component schemas: `src/core/lib/ecs/components/definitions/*`
-- Custom shapes: `src/game/shapes/`
-- SceneLoader: `src/core/lib/serialization/SceneLoader.ts`
+- **Scenes**: `src/game/scenes/` - Scene definitions (single `.tsx` files)
+- **Scene registration**: `src/game/scenes/index.ts` - Register scenes with SceneRegistry
+- **Global materials**: `src/game/materials/` - Auto-discovered `*.material.tsx` files
+- **Global prefabs**: `src/game/prefabs/` - Auto-discovered `*.prefab.tsx` files
+- **Global inputs**: `src/game/inputs/` - Auto-discovered `*.input.tsx` files
+- **Component schemas**: `src/core/lib/ecs/components/definitions/*`
+- **Custom shapes**: `src/game/shapes/`
+- **SceneLoader**: `src/core/lib/serialization/SceneLoader.ts`
+- **Documentation**:
+  - `src/game/scenes/CLAUDE.md` - Scene system architecture
+  - `src/game/materials/CLAUDE.md` - Material system
+  - `src/game/prefabs/CLAUDE.md` - Prefab system
+  - `src/game/inputs/CLAUDE.md` - Input system
 
 ## Checklist
 
@@ -317,11 +475,15 @@ yarn verify:scene src/game/scenes/YourScene.tsx
 
 ### Scene Creation
 
-- [ ] OMIT `id` and `PersistentId` (auto-generated)
+- [ ] Include explicit `id` field for each entity
+- [ ] Export as named export: `export const SceneName = defineScene(...)`
 - [ ] NO JSON comments in scene data
 - [ ] Use only registered component types
+- [ ] Reference global materials via `materialId: 'MaterialName'`
+- [ ] Use global assets instead of inline definitions
 - [ ] `CustomShape` → Set `meshId: 'customShape'`
 - [ ] Validate parent/child usage (grouping only, not composition)
+- [ ] Omit all default component values
 
 ### Validation & Registration
 
@@ -333,16 +495,25 @@ yarn verify:scene src/game/scenes/YourScene.tsx
 
 **Do:**
 
-- Explore resources before writing code
-- Create custom shapes when missing
-- Use built-in shapes whenever possible
-- Validate before completing task
-- Keep scenes small and focused
+- ✅ Plan scene elements BEFORE writing code
+- ✅ Explore resources (built-in shapes, custom shapes, global materials)
+- ✅ Create grouped custom shapes for multiple similar objects
+- ✅ Use global materials from `src/game/materials/`
+- ✅ Use built-in shapes whenever possible
+- ✅ Include explicit `id` for each entity
+- ✅ Export scenes as named exports: `export const SceneName = defineScene(...)`
+- ✅ Omit all default component values
+- ✅ Validate before completing task
+- ✅ Keep scenes small and focused
+- ✅ Reference global assets instead of inline definitions
 
 **Don't:**
 
-- Add hooks, side effects, or logging to scene files
-- Use parent/child for single-object internals
-- Add JSON comments in scene data
-- Manually add `id` or `PersistentId` (unless specific need)
-- Skip validation step
+- ❌ Add hooks, side effects, or logging to scene files
+- ❌ Use parent/child for single-object internals (use grouped custom shapes)
+- ❌ Create multiple entities for similar objects (use ONE grouped custom shape)
+- ❌ Add JSON comments in scene data
+- ❌ Use inline `materials`, `prefabs`, or `inputAssets` arrays (use global assets)
+- ❌ Skip validation step
+- ❌ Include default values in component definitions
+- ❌ Forget to register scene in `src/game/scenes/index.ts`
