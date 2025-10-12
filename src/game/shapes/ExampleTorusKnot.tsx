@@ -3,7 +3,7 @@
  * Demonstrates how to create a custom shape with parameters
  */
 
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import { z } from 'zod';
 
@@ -38,7 +38,7 @@ export const shape: ICustomShapeDescriptor<typeof paramsSchema> = {
 
   getDefaultParams: () => paramsSchema.parse({}),
 
-  renderGeometry: (params) => {
+  renderGeometry: (params: z.infer<typeof paramsSchema>) => {
     // Use useMemo to prevent recreating geometry on every render
     // Include all params in the dependency array
     const geometry = useMemo(

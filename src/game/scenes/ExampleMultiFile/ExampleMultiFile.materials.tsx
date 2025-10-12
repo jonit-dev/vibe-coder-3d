@@ -1,4 +1,4 @@
-import { defineMaterials } from '@core/lib/serialization/assets/defineMaterials';
+import { defineMaterials } from '@core';
 
 /**
  * Scene Materials

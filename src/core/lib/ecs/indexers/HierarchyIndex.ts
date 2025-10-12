@@ -134,6 +134,36 @@ export class HierarchyIndex {
   }
 
   /**
+   * Get all ancestors of an entity by walking up the parent chain
+   */
+  getAncestors(entityId: number): number[] {
+    const result: number[] = [];
+    let currentId: number | undefined = this.childToParent.get(entityId);
+
+    while (currentId !== undefined) {
+      result.push(currentId);
+      currentId = this.childToParent.get(currentId);
+    }
+
+    return result;
+  }
+
+  /**
+   * Get the depth of an entity in the hierarchy (root entities have depth 0)
+   */
+  getDepth(entityId: number): number {
+    let depth = 0;
+    let currentId: number | undefined = this.childToParent.get(entityId);
+
+    while (currentId !== undefined) {
+      depth++;
+      currentId = this.childToParent.get(currentId);
+    }
+
+    return depth;
+  }
+
+  /**
    * Check if setting a parent would create a circular dependency
    */
   wouldCreateCircularDependency(childId: number, potentialParentId: number): boolean {

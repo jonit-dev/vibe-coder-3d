@@ -278,7 +278,7 @@ export class EntityManager {
     parentId?: number | null,
     persistentId?: string,
   ): { id: number } {
-    const entity = this.createEntity(name, parentId, persistentId);
+    const entity = this.createEntity(name, parentId ?? undefined, persistentId);
     return { id: entity.id };
   }
 
@@ -497,7 +497,7 @@ export class EntityManager {
    * Set parent for adapter interface (void return)
    */
   setParentForAdapter(childId: number, parentId?: number | null): void {
-    this.setParent(childId, parentId);
+    this.setParent(childId, parentId ?? undefined);
   }
 
   setParent(entityId: EntityId, newParentId?: EntityId): boolean {

@@ -1,5 +1,4 @@
-import { defineInputAssets } from '@core/lib/serialization/assets/defineInputAssets';
-import { ActionType, ControlType, DeviceType, CompositeType } from '@core';
+import { defineInputAssets } from '@core';
 
 /**
  * Scene Input Assets

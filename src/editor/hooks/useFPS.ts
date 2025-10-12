@@ -6,9 +6,7 @@ import { useEffect, useRef, useState } from 'react';
  */
 export const useFPS = () => {
   const [fps, setFps] = useState(0);
-  const frameCountRef = useRef(0);
-  const lastTimeRef = useRef(performance.now());
-  const animationIdRef = useRef<number>();
+  const animationIdRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     let frameCount = 0;

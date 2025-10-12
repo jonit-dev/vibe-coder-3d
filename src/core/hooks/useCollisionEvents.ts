@@ -3,7 +3,7 @@ import { useRapier } from '@react-three/rapier';
 import { EventQueue } from '@dimforge/rapier3d-compat';
 import { useRef } from 'react';
 
-import { Logger } from '@/core/lib/logger';
+import { Logger } from '../lib/logger';
 
 const logger = Logger.create('useCollisionEvents');
 
@@ -42,8 +42,12 @@ export function useCollisionEvents(options: {
         if (!collider1 || !collider2) return;
 
         // Extract entity IDs from collider userData
-        const entityA = (collider1.userData as { entityId?: number })?.entityId ?? -1;
-        const entityB = (collider2.userData as { entityId?: number })?.entityId ?? -1;
+        const entityA =
+          ((collider1 as unknown as { userData?: { entityId?: number } }).userData
+            ?.entityId as number | undefined) ?? -1;
+        const entityB =
+          ((collider2 as unknown as { userData?: { entityId?: number } }).userData
+            ?.entityId as number | undefined) ?? -1;
 
         // Check if this is a sensor collision
         const isSensor = collider1.isSensor() || collider2.isSensor();

@@ -124,7 +124,7 @@ export function createGameObjectAPI(currentEntityId: EntityId): IGameObjectAPI {
             // For Transform, apply overrides if provided
             if (componentType === 'Transform' && validatedOverrides.transform) {
               const transform = validatedOverrides.transform;
-              const clonedData = { ...componentData };
+              const clonedData = { ...componentData } as Record<string, unknown>;
 
               if (transform.position) {
                 clonedData.position = transform.position;

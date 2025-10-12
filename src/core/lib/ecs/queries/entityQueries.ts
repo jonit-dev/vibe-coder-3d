@@ -564,7 +564,7 @@ export class EntityQueries {
 
   getComponentCount(componentType: string): number {
     if (this.isInstanceMode && this.componentIndex) {
-      return this.componentIndex.count(componentType);
+      return this.componentIndex.getCount(componentType);
     }
     if (!this.queryStore) return 0;
     return this.queryStore.getComponentCount(componentType);
@@ -589,7 +589,7 @@ export class EntityQueries {
 
   updateEntityPosition(entityId: number, position: IVector3): void {
     if (this.isInstanceMode && this.spatialIdx) {
-      this.spatialIdx.update(entityId, position);
+      this.spatialIdx.updateEntity(entityId, position);
       return;
     }
     if (!this.queryStore) return;
@@ -706,8 +706,8 @@ export class EntityQueries {
     // Show hierarchy relationships
 
     entities.forEach((id) => {
-      const parent = this.queryStore.getParent(id);
-      const children = this.queryStore.getChildren(id);
+      const parent = this.queryStore?.getParent(id);
+      const children = this.queryStore?.getChildren(id) || [];
       if (parent !== undefined || children.length > 0) {
         // Entity hierarchy: parent and children relationships
       }

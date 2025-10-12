@@ -32,7 +32,7 @@ export const shape: ICustomShapeDescriptor<typeof paramsSchema> = {
 
   getDefaultParams: () => paramsSchema.parse({}),
 
-  renderGeometry: (params) => {
+  renderGeometry: (params: z.infer<typeof paramsSchema>) => {
     const mergedGeometry = useMemo(() => {
       const seededRandom = (seed: number) => {
         const x = Math.sin(seed) * 10000;

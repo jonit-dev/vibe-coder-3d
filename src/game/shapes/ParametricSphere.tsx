@@ -3,7 +3,6 @@
  * A simple example shape demonstrating parameter control
  */
 
-import React from 'react';
 import { z } from 'zod';
 
 import type { ICustomShapeDescriptor } from '@core';

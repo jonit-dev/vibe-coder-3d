@@ -34,21 +34,21 @@ export {
   type IBatchedEventEmitter,
 } from './BatchedEventEmitter';
 
-// Profiling
-export {
-  Profiler,
-  ProfilerClass,
-  mark,
-  measure,
-  time,
-  timeAsync,
-  type IProfiler,
-  type IProfilerStats,
-  type ITimingEntry,
-} from './Profiler';
+// Profiling - Temporarily commented out (Profiler removed in b5a8e1c)
+// export {
+//   Profiler,
+//   ProfilerClass,
+//   mark,
+//   measure,
+//   time,
+//   timeAsync,
+//   type IProfiler,
+//   type IProfilerStats,
+//   type ITimingEntry,
+// } from './Profiler';
 
-// Benchmarks
-export * from './benchmarks';
+// Benchmarks - Temporarily commented out (depends on Profiler)
+// export * from './benchmarks';
 
-// CI Performance Check
-export { runCIPerformanceCheck } from './ci-performance-check';
+// CI Performance Check - Temporarily commented out (depends on Profiler)
+// export { runCIPerformanceCheck } from './ci-performance-check';

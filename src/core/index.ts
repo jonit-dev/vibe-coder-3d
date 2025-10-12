@@ -46,7 +46,6 @@ export type {
   ICameraComponent,
   ILightComponent,
   IMeshRendererComponent,
-  IPersistentIdComponent,
   IRigidBodyComponent,
   IMeshColliderComponent,
   IPrefabInstanceComponent,
@@ -84,9 +83,6 @@ export type { IMaterialDefinition, IMaterialAssetMeta } from './materials/Materi
 
 // Prefabs
 export type { IPrefabDefinition } from './prefabs/Prefab.types';
-
-// Input
-export type { IInputActionsAsset } from './lib/input/inputTypes';
 
 // Systems
 export { MaterialSystem } from './systems/MaterialSystem';
@@ -208,6 +204,10 @@ export type { ISceneContext, SceneBuilder } from './lib/scene/SceneRegistry';
 // Scene Serialization
 export { SceneLoader } from './lib/serialization/SceneLoader';
 export type { IStoreRefresher } from './lib/serialization/SceneLoader';
+
+// Asset Definition Helpers
+export { defineInputAssets } from './lib/serialization/assets/defineInputAssets';
+export { defineMaterials } from './lib/serialization/assets/defineMaterials';
 
 // Input System Types
 export { ActionType, ControlType, DeviceType, CompositeType } from './lib/input/inputTypes';

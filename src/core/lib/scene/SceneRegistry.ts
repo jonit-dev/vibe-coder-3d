@@ -10,7 +10,6 @@ import {
   getRegisteredScenes,
   getScene as getExtensionScene,
 } from '../extension/GameExtensionPoints';
-import { Logger } from '../logger';
 import type {
   CameraData,
   LightData,
@@ -67,7 +66,6 @@ class SceneRegistryClass {
   private static instance: SceneRegistryClass;
   private scenes = new Map<string, ISceneDefinition>();
   private currentSceneId: string | null = null;
-  private logger = Logger.create('SceneRegistry');
 
   private constructor() {}
 
