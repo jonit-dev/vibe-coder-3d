@@ -71,42 +71,47 @@ export class MultiFileSceneLoader {
   ): Promise<ISerializedEntity[]> {
     return Promise.all(
       entities.map(async (entity: ISerializedEntity) => {
-        if (!entity.components?.MeshRenderer) return entity;
+        let updatedEntity = entity;
 
-        const meshRenderer = entity.components.MeshRenderer as Record<string, unknown>;
+        // Resolve material reference in MeshRenderer
+        if (entity.components?.MeshRenderer) {
+          const meshRenderer = entity.components.MeshRenderer as Record<string, unknown>;
 
-        // Resolve material reference
-        if (meshRenderer.materialRef && typeof meshRenderer.materialRef === 'string') {
-          try {
-            const materialData = await this.assetResolver.resolve<IMaterialDefinition>(
-              meshRenderer.materialRef,
-              context,
-              'material',
-            );
+          if (meshRenderer.materialRef && typeof meshRenderer.materialRef === 'string') {
+            try {
+              const materialData = await this.assetResolver.resolve<IMaterialDefinition>(
+                meshRenderer.materialRef,
+                context,
+                'material',
+              );
 
-            // Replace reference with inline material for deserialization
-            return {
-              ...entity,
-              components: {
-                ...entity.components,
-                MeshRenderer: {
-                  ...meshRenderer,
-                  material: materialData,
-                  materialRef: undefined, // Remove reference
+              updatedEntity = {
+                ...updatedEntity,
+                components: {
+                  ...updatedEntity.components,
+                  MeshRenderer: {
+                    ...meshRenderer,
+                    material: materialData,
+                    materialRef: undefined, // Remove reference
+                  },
                 },
-              },
-            };
-          } catch (error) {
-            console.warn(
-              `Failed to resolve material reference '${meshRenderer.materialRef}':`,
-              error instanceof Error ? error.message : error,
-            );
-            // Return entity unchanged if reference fails
-            return entity;
+              };
+            } catch (error) {
+              console.warn(
+                `Failed to resolve material reference '${meshRenderer.materialRef}':`,
+                error instanceof Error ? error.message : error,
+              );
+            }
           }
         }
 
-        return entity;
+        // TODO: Add prefab reference resolution when prefab instantiation is implemented
+        // if (entity.components?.PrefabInstance) { ... }
+
+        // TODO: Add input reference resolution when input system uses references
+        // if (entity.components?.InputHandler) { ... }
+
+        return updatedEntity;
       }),
     );
   }

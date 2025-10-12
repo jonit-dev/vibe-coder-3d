@@ -4,11 +4,11 @@
  */
 
 import { sceneRegistry, EntityManager, componentRegistry, SceneLoader } from '@core/index';
-import ExampleMultiFileScene from './ExampleMultiFile/ExampleMultiFile.index';
+import ExampleMultiFileScene from './ExampleMultiFile';
 
 // Register all game scenes function
 export function registerAllScenes(): void {
-  // Register ExampleMultiFile scene (multi-file format demo)
+  // Register ExampleMultiFile scene (single-file format with global asset references)
   sceneRegistry.defineScene(
     'example-multi-file',
     async () => {
@@ -27,7 +27,7 @@ export function registerAllScenes(): void {
     },
     {
       name: ExampleMultiFileScene.metadata.name,
-      description: ExampleMultiFileScene.metadata.description || 'Example multi-file scene',
+      description: ExampleMultiFileScene.metadata.description || 'Example single-file scene',
     },
   );
 }

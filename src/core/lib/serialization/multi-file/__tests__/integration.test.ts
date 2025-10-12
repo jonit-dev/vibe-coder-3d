@@ -116,7 +116,7 @@ describe('Multi-File Scene System Integration', () => {
     ];
 
     // Step 1: Serialize to multi-file format
-    const sceneData = serializer.serializeMultiFile(entities, metadata, materials, []);
+    const sceneData = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
     // Verify serialization output
     expect(sceneData.index).toBeDefined();
@@ -220,7 +220,7 @@ describe('Multi-File Scene System Integration', () => {
     ];
 
     // Serialize
-    const sceneData = serializer.serializeMultiFile(originalEntities, metadata, [], []);
+    const sceneData = await serializer.serializeMultiFile(originalEntities, metadata, [], []);
 
     // Write to disk
     await folderManager.writeSceneFiles(sceneFolderPath, 'TestScene', sceneData);
@@ -267,7 +267,7 @@ describe('Multi-File Scene System Integration', () => {
     ];
 
     // Serialize
-    const sceneData = serializer.serializeMultiFile(entities, metadata, [], []);
+    const sceneData = await serializer.serializeMultiFile(entities, metadata, [], []);
 
     expect(sceneData.materials).toBeUndefined();
     expect(sceneData.index).not.toContain('materials');
@@ -311,7 +311,7 @@ describe('Multi-File Scene System Integration', () => {
       },
     ];
 
-    const sceneData = serializer.serializeMultiFile(entities, metadata, materials, []);
+    const sceneData = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
     await folderManager.writeSceneFiles(sceneFolderPath, 'TestScene', sceneData);
 

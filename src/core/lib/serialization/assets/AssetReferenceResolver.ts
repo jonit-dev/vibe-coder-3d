@@ -1,10 +1,10 @@
-import * as path from 'path';
 import * as fs from 'fs/promises';
-import type { IMaterialDefinition } from '@core/materials/Material.types';
-import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
-import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
+import * as path from 'path';
 
-export type AssetType = 'material' | 'prefab' | 'input';
+import { ASSET_DEFINE_FUNCTIONS, ASSET_EXTENSIONS, AssetType } from './AssetTypes';
+
+// Re-export AssetType for backward compatibility
+export type { AssetType };
 
 export interface IAssetRefResolutionContext {
   sceneFolder: string; // e.g., 'src/game/scenes/Forest'
@@ -57,16 +57,13 @@ export class AssetReferenceResolver {
     // Absolute reference: @/materials/common/Stone
     if (ref.startsWith('@/')) {
       const refPath = ref.replace('@/', '');
-      return path.join(
-        context.assetLibraryRoot,
-        `${refPath}.${assetType}.tsx`,
-      );
+      const extension = ASSET_EXTENSIONS[assetType];
+      return path.join(context.assetLibraryRoot, `${refPath}${extension}`);
     }
 
     // Relative reference: ./materials/TreeGreen
     if (ref.startsWith('./')) {
       // Scene-relative references point to the scene's asset file
-      const assetId = ref.split('/').pop() || '';
       const sceneName = path.basename(context.sceneFolder);
       const assetFile = `${sceneName}.${assetType}s.tsx`;
       return path.join(context.sceneFolder, assetFile);
@@ -89,7 +86,12 @@ export class AssetReferenceResolver {
       // Parse the file to get assets array
       const assets = this.parseAssetFile(content, assetType);
 
-      // Find the specific asset by ID
+      // If there's only one asset in the file, return it (single asset file)
+      if (assets.length === 1) {
+        return assets[0] as T;
+      }
+
+      // Find the specific asset by ID (for multi-asset files)
       const asset = assets.find((a: any) => a.id === assetId);
 
       if (!asset) {
@@ -110,9 +112,11 @@ export class AssetReferenceResolver {
    */
   private parseAssetFile(content: string, assetType: AssetType): unknown[] {
     // Extract the default export from the file
-    // Supports both defineMaterials([...]) and defineMaterial({...})
-    const singlePattern = new RegExp(`define${this.capitalize(assetType)}\\(\\s*({[\\s\\S]*?})\\s*\\);?\\s*$`, 'm');
-    const arrayPattern = new RegExp(`define${this.capitalize(assetType)}s\\(\\s*(\\[[\\s\\S]*?\\])\\s*\\);?\\s*$`, 'm');
+    // Supports both plural (defineMaterials([...])) and single (defineMaterial({...})) forms
+    const { single, plural } = ASSET_DEFINE_FUNCTIONS[assetType];
+
+    const singlePattern = new RegExp(`${single}\\(\\s*({[\\s\\S]*?})\\s*\\);?\\s*$`, 'm');
+    const arrayPattern = new RegExp(`${plural}\\(\\s*(\\[[\\s\\S]*?\\])\\s*\\);?\\s*$`, 'm');
 
     // Try array format first (defineMaterials([...]))
     let match = content.match(arrayPattern);
@@ -128,7 +132,7 @@ export class AssetReferenceResolver {
       return [JSON.parse(jsonStr)];
     }
 
-    throw new Error(`Could not parse asset file: no define${this.capitalize(assetType)}(s) found`);
+    throw new Error(`Could not parse asset file: no ${single} or ${plural} found`);
   }
 
   /**
@@ -139,6 +143,11 @@ export class AssetReferenceResolver {
     str = str.replace(/\/\/.*$/gm, '');
     str = str.replace(/\/\*[\s\S]*?\*\//g, '');
 
+    // Replace TypeScript enum references with their string values
+    // DeviceType.Keyboard -> "keyboard", ActionType.Button -> "button"
+    str = str.replace(/([A-Z][a-zA-Z]*Type)\.([A-Z][a-zA-Z]*)/g, '"$2"');
+    str = str.replace(/([A-Z][a-zA-Z]*Type)\.([a-z][a-zA-Z]*)/g, '"$2"');
+
     // Replace unquoted keys with quoted keys
     str = str.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":');
 
@@ -146,16 +155,9 @@ export class AssetReferenceResolver {
     str = str.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
 
     // Remove trailing commas
-    str = str.replace(/,(\\s*[}\]])/g, '$1');
+    str = str.replace(/,(\s*[}\]])/g, '$1');
 
     return str;
-  }
-
-  /**
-   * Capitalize first letter
-   */
-  private capitalize(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
   /**

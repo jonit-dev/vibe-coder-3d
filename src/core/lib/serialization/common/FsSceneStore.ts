@@ -70,8 +70,9 @@ export class FsSceneStore implements ISceneStore {
   }
 
   /**
-   * List all multi-file scene folders in the directory
-   * Multi-file scenes are folders containing a .index.tsx file
+   * List all scene files and folders in the directory
+   * - Single-file scenes: SceneName.tsx
+   * - Multi-file scenes: SceneName/ folder with SceneName.index.tsx
    */
   async list(): Promise<ISceneFileInfo[]> {
     try {
@@ -87,7 +88,7 @@ export class FsSceneStore implements ISceneStore {
         try {
           const stats = await fs.stat(filepath);
 
-          // Only include directories (multi-file scenes)
+          // Check for directories (multi-file scenes)
           if (stats.isDirectory()) {
             // Check if this folder has a .index.tsx file
             const indexFile = `${file}.index.tsx`;
@@ -106,6 +107,16 @@ export class FsSceneStore implements ISceneStore {
               // No .index.tsx file, skip this folder
               continue;
             }
+          }
+          // Check for single-file scenes (*.tsx)
+          else if (stats.isFile() && file.endsWith('.tsx')) {
+            // Remove .tsx extension for scene name
+            const sceneName = file.replace(/\.tsx$/, '');
+            infos.push({
+              name: sceneName,
+              modified: stats.mtime.toISOString(),
+              size: stats.size,
+            });
           }
         } catch {
           // Skip files/folders that can't be accessed

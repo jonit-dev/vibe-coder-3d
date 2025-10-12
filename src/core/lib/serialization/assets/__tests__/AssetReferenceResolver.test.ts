@@ -136,7 +136,8 @@ export default defineMaterial({
       expect(stats.size).toBe(1);
     });
 
-    it('should throw error if asset not found in file', async () => {
+    it('should return single asset even if ID doesnt match', async () => {
+      // With single-asset files, the asset is returned regardless of reference ID
       const mockFileContent = `import { defineMaterials } from '@core/lib/serialization/assets/defineMaterials';
 
 export default defineMaterials([
@@ -150,9 +151,11 @@ export default defineMaterials([
 
       const ref = './materials/TreeGreen';
 
-      await expect(resolver.resolve(ref, context, 'material')).rejects.toThrow(
-        "Asset 'TreeGreen' not found",
-      );
+      const material = await resolver.resolve<any>(ref, context, 'material');
+
+      // Returns the single asset in the file
+      expect(material.id).toBe('DifferentMaterial');
+      expect(material.name).toBe('Different Material');
     });
 
     it('should throw error if file not found', async () => {

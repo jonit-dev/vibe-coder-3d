@@ -91,8 +91,8 @@ describe('MultiFileSceneSerializer', () => {
   });
 
   describe('serializeMultiFile', () => {
-    it('should generate index file with entities', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, materials, [], undefined, {
+    it('should generate index file with entities', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, [], undefined, {
         extractMaterials: false,
       });
 
@@ -103,8 +103,8 @@ describe('MultiFileSceneSerializer', () => {
       expect(result.index).toContain('Rock');
     });
 
-    it('should extract materials to separate file', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, materials, []);
+    it('should extract materials to separate file', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
       expect(result.materials).toBeDefined();
       expect(result.materials).toContain('defineMaterials');
@@ -114,8 +114,8 @@ describe('MultiFileSceneSerializer', () => {
       expect(result.materials).toContain('#2d5016');
     });
 
-    it('should replace material IDs with references in entities', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, materials, []);
+    it('should replace material IDs with references in entities', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
       expect(result.index).toContain('materialRef');
       expect(result.index).toContain('./materials/mat_tree_green');
@@ -123,16 +123,16 @@ describe('MultiFileSceneSerializer', () => {
       expect(result.index).not.toContain('"materialId"');
     });
 
-    it('should include assetReferences in index when materials extracted', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, materials, []);
+    it('should include assetReferences in index when materials extracted', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
       expect(result.index).toContain('assetReferences');
       expect(result.index).toContain('materials');
       expect(result.index).toContain('./TestScene.materials.tsx');
     });
 
-    it('should not extract materials when option disabled', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, materials, [], undefined, {
+    it('should not extract materials when option disabled', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, [], undefined, {
         extractMaterials: false,
       });
 
@@ -141,7 +141,7 @@ describe('MultiFileSceneSerializer', () => {
       expect(result.index).toContain('materialId');
     });
 
-    it('should extract prefabs to separate file', () => {
+    it('should extract prefabs to separate file', async () => {
       const prefabs: IPrefabDefinition[] = [
         {
           id: 'tree_prefab',
@@ -159,7 +159,7 @@ describe('MultiFileSceneSerializer', () => {
         },
       ];
 
-      const result = serializer.serializeMultiFile(entities, metadata, materials, prefabs);
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, prefabs);
 
       expect(result.prefabs).toBeDefined();
       expect(result.prefabs).toContain('definePrefabs');
@@ -167,8 +167,8 @@ describe('MultiFileSceneSerializer', () => {
       expect(result.prefabs).toContain('Tree Prefab');
     });
 
-    it('should generate metadata file', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, materials, []);
+    it('should generate metadata file', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
       expect(result.metadata).toBeDefined();
       const metadataObj = JSON.parse(result.metadata!);
@@ -177,14 +177,14 @@ describe('MultiFileSceneSerializer', () => {
       expect(metadataObj.stats.prefabCount).toBe(0);
     });
 
-    it('should handle scenes with no materials', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, [], []);
+    it('should handle scenes with no materials', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, [], []);
 
       expect(result.materials).toBeUndefined();
       expect(result.index).not.toContain('assetReferences');
     });
 
-    it('should handle entities without MeshRenderer', () => {
+    it('should handle entities without MeshRenderer', async () => {
       const simpleEntities: ISerializedEntity[] = [
         {
           id: 0,
@@ -196,21 +196,21 @@ describe('MultiFileSceneSerializer', () => {
         },
       ];
 
-      const result = serializer.serializeMultiFile(simpleEntities, metadata, materials, []);
+      const result = await serializer.serializeMultiFile(simpleEntities, metadata, materials, []);
 
       expect(result.index).toContain('Camera');
       expect(result.index).not.toContain('materialRef');
     });
 
-    it('should preserve material count in metadata', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, materials, []);
+    it('should preserve material count in metadata', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
       const metadataObj = JSON.parse(result.metadata!);
       expect(metadataObj.stats.materialCount).toBe(2);
     });
 
-    it('should generate valid TypeScript syntax in index file', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, materials, []);
+    it('should generate valid TypeScript syntax in index file', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
       // Check for basic TypeScript syntax
       expect(result.index).toContain('import');
@@ -219,8 +219,8 @@ describe('MultiFileSceneSerializer', () => {
       expect(result.index).toContain('});');
     });
 
-    it('should generate valid TypeScript syntax in materials file', () => {
-      const result = serializer.serializeMultiFile(entities, metadata, materials, []);
+    it('should generate valid TypeScript syntax in materials file', async () => {
+      const result = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
       expect(result.materials).toContain('import');
       expect(result.materials).toContain('export default');

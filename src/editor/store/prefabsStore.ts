@@ -48,14 +48,36 @@ interface IPrefabsState {
 
 export const usePrefabsStore = create<IPrefabsState>((set, get) => {
   const registry = PrefabRegistry.getInstance();
-  const initialPrefabs = registry.list();
-  console.log('[PrefabsStore] Initializing store with prefabs:', initialPrefabs.length);
+
+  // Load prefabs from external library files
+  const loadLibraryPrefabs = async () => {
+    try {
+      const { BrowserAssetLoader } = await import(
+        '@/core/lib/serialization/assets/BrowserAssetLoader'
+      );
+      const loader = new BrowserAssetLoader();
+      const libraryPrefabs = await loader.loadPrefabs();
+
+      // Upsert all library prefabs into registry
+      libraryPrefabs.forEach((prefab) => {
+        registry.upsert(prefab);
+      });
+
+      // Refresh store to reflect loaded prefabs
+      get()._refreshPrefabs();
+    } catch (error) {
+      console.error('Failed to load library prefabs:', error);
+    }
+  };
+
+  // Trigger load in background
+  loadLibraryPrefabs();
 
   return {
     get registry() {
       return PrefabRegistry.getInstance();
     },
-    prefabs: initialPrefabs,
+    prefabs: registry.list(), // Initialize with current prefabs
 
     selectedPrefabId: null,
     isBrowserOpen: false,

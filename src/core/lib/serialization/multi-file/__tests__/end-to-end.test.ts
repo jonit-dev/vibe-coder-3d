@@ -176,7 +176,7 @@ describe('Multi-File Scene System - End-to-End Tests', () => {
       const sceneFolderPath = path.join(tempDir, 'ForestScene');
 
       // Step 1: Serialize to multi-file format
-      const sceneData = serializer.serializeMultiFile(entities, metadata, materials, []);
+      const sceneData = await serializer.serializeMultiFile(entities, metadata, materials, []);
 
       // Verify serialization
       expect(sceneData.index).toBeDefined();
@@ -300,7 +300,7 @@ describe('Multi-File Scene System - End-to-End Tests', () => {
       const sceneFolderPath = path.join(tempDir, 'DeduplicationTest');
 
       // Serialize
-      const sceneData = serializer.serializeMultiFile(entities, metadata, [sharedMaterial], []);
+      const sceneData = await serializer.serializeMultiFile(entities, metadata, [sharedMaterial], []);
 
       // Write to disk
       await folderManager.writeSceneFiles(sceneFolderPath, 'DeduplicationTest', sceneData);
@@ -352,12 +352,12 @@ describe('Multi-File Scene System - End-to-End Tests', () => {
       }));
 
       // Serialize with deduplication
-      const dedupData = serializer.serializeMultiFile(entities, metadata, [material], [], undefined, {
+      const dedupData = await serializer.serializeMultiFile(entities, metadata, [material], [], undefined, {
         extractMaterials: true,
       });
 
       // Serialize without deduplication
-      const noDedupData = serializer.serializeMultiFile(entities, metadata, [material], [], undefined, {
+      const noDedupData = await serializer.serializeMultiFile(entities, metadata, [material], [], undefined, {
         extractMaterials: false,
       });
 
@@ -464,7 +464,7 @@ describe('Multi-File Scene System - End-to-End Tests', () => {
       const sceneFolderPath = path.join(tempDir, 'CompleteScene');
 
       // Serialize with all asset types
-      const sceneData = serializer.serializeMultiFile(
+      const sceneData = await serializer.serializeMultiFile(
         entities,
         metadata,
         materials,
@@ -514,7 +514,7 @@ describe('Multi-File Scene System - End-to-End Tests', () => {
       const entities: ISerializedEntity[] = [];
       const sceneFolderPath = path.join(tempDir, 'EmptyScene');
 
-      const sceneData = serializer.serializeMultiFile(entities, metadata, [], []);
+      const sceneData = await serializer.serializeMultiFile(entities, metadata, [], []);
 
       await folderManager.writeSceneFiles(sceneFolderPath, 'EmptyScene', sceneData);
 
@@ -555,7 +555,7 @@ describe('Multi-File Scene System - End-to-End Tests', () => {
 
       const sceneFolderPath = path.join(tempDir, 'SpecialChars');
 
-      const sceneData = serializer.serializeMultiFile(entities, metadata, [], []);
+      const sceneData = await serializer.serializeMultiFile(entities, metadata, [], []);
       await folderManager.writeSceneFiles(sceneFolderPath, 'SpecialChars', sceneData);
 
       const sceneDataForLoad = {
@@ -606,7 +606,7 @@ describe('Multi-File Scene System - End-to-End Tests', () => {
       const sceneFolderPath = path.join(tempDir, 'LargeScene');
 
       const startTime = Date.now();
-      const sceneData = serializer.serializeMultiFile(entities, metadata, materials, []);
+      const sceneData = await serializer.serializeMultiFile(entities, metadata, materials, []);
       const serializeTime = Date.now() - startTime;
 
       // Serialization should be fast (< 1 second)

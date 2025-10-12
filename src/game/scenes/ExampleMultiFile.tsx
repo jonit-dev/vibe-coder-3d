@@ -1,20 +1,21 @@
-import { defineScene } from '../defineScene';
+import { defineScene } from './defineScene';
 
 /**
- * ExampleMultiFile Scene
- * Generated: 2025-10-11T02:11:46.884Z
- * Version: 1 (Multi-file format)
+ * ExampleMultiFile
+ * Scene with 5 entities
+ * Generated: 2025-10-12T02:31:16.009Z
+ * Version: 1
  */
 export default defineScene({
   metadata: {
   "name": "ExampleMultiFile",
   "version": 1,
-  "timestamp": "2025-10-11T02:11:46.884Z",
+  "timestamp": "2025-10-12T02:31:16.009Z",
   "description": "Scene with 5 entities"
 },
   entities: [
   {
-    "id": 0,
+    "id": 3,
     "name": "Main Camera",
     "components": {
       "PersistentId": {
@@ -34,7 +35,7 @@ export default defineScene({
     }
   },
   {
-    "id": 1,
+    "id": 4,
     "name": "Directional Light",
     "components": {
       "PersistentId": {
@@ -53,7 +54,7 @@ export default defineScene({
     }
   },
   {
-    "id": 2,
+    "id": 5,
     "name": "Oak Tree 1",
     "components": {
       "PersistentId": {
@@ -68,12 +69,12 @@ export default defineScene({
       },
       "MeshRenderer": {
         "meshId": "tree",
-        "materialRef": "./materials/default"
+        "materialId": "default"
       }
     }
   },
   {
-    "id": 3,
+    "id": 6,
     "name": "Oak Tree 2",
     "components": {
       "PersistentId": {
@@ -88,12 +89,12 @@ export default defineScene({
       },
       "MeshRenderer": {
         "meshId": "tree",
-        "materialRef": "./materials/default"
+        "materialId": "default"
       }
     }
   },
   {
-    "id": 4,
+    "id": 7,
     "name": "Ground",
     "components": {
       "PersistentId": {
@@ -113,13 +114,13 @@ export default defineScene({
       },
       "MeshRenderer": {
         "meshId": "cube",
-        "materialRef": "./materials/test123"
+        "materialId": "red"
       }
     }
   }
 ],
   assetReferences: {
-  "materials": "./ExampleMultiFile.materials.tsx",
-  "inputs": "./ExampleMultiFile.inputs.tsx"
-},
+    materials: ["@/materials/default","@/materials/test123","@/materials/red"],
+    inputs: ["@/inputs/DefaultInput","@/inputs/DefaultInput"]
+  }
 });

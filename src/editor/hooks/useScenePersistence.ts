@@ -123,7 +123,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
   );
 
   /**
-   * Load scene from server via API (prioritizes TSX format)
+   * Load scene from server via API (TSX format)
    */
   const loadScene = useCallback(
     async (name: string): Promise<IStreamingScene | null> => {
@@ -136,32 +136,11 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
       clearError();
 
       try {
-        // Try loading as TSX first
+        // Load as TSX (supports both single-file and multi-file formats)
         const response = await fetch(`/api/scene/load-tsx?name=${encodeURIComponent(name.trim())}`);
         const result = await response.json();
 
         if (!response.ok) {
-          // If TSX loading fails, try JSON as fallback
-          if (response.status === 404) {
-            const jsonResponse = await fetch(
-              `/api/scene/load?name=${encodeURIComponent(name.trim())}`,
-            );
-            const jsonResult = await jsonResponse.json();
-
-            if (!jsonResponse.ok) {
-              throw new Error(
-                jsonResult.error || `HTTP ${jsonResponse.status}: ${jsonResponse.statusText}`,
-              );
-            }
-
-            if (!jsonResult.success) {
-              throw new Error(jsonResult.error || 'Load operation failed');
-            }
-
-            setLoading(false);
-            return jsonResult.data;
-          }
-
           throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
         }
 

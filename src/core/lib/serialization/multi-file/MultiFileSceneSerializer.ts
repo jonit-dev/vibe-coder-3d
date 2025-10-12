@@ -2,6 +2,7 @@ import type { ISerializedEntity, ISceneMetadata } from '../common/types';
 import type { IMaterialDefinition } from '@core/materials/Material.types';
 import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
+import { AssetLibraryCatalog } from '../assets/AssetLibraryCatalog';
 
 export interface IMultiFileSceneData {
   index: string; // Forest.index.tsx content
@@ -15,6 +16,8 @@ export interface IMultiFileSerializeOptions {
   extractMaterials?: boolean; // Extract to .materials.tsx
   extractPrefabs?: boolean; // Extract to .prefabs.tsx
   extractInputs?: boolean; // Extract to .inputs.tsx
+  libraryRoot?: string; // Asset library root (default: 'src/game/assets')
+  preferLibraryRefs?: boolean; // Prefer @/ library refs over ./ scene refs (default: true)
 }
 
 /**
@@ -22,22 +25,32 @@ export interface IMultiFileSerializeOptions {
  * Splits materials, prefabs, and input assets into separate files
  */
 export class MultiFileSceneSerializer {
+  private catalog: AssetLibraryCatalog | null = null;
+
   /**
    * Serialize scene to multi-file format
    */
-  serializeMultiFile(
+  async serializeMultiFile(
     entities: ISerializedEntity[],
     metadata: ISceneMetadata,
     materials: IMaterialDefinition[],
     prefabs: IPrefabDefinition[],
     inputAssets?: IInputActionsAsset[],
     options: IMultiFileSerializeOptions = {},
-  ): IMultiFileSceneData {
+  ): Promise<IMultiFileSceneData> {
     const {
       extractMaterials = true,
       extractPrefabs = true,
       extractInputs = true,
+      libraryRoot = 'src/game/assets',
+      preferLibraryRefs = true,
     } = options;
+
+    // Build catalog if preferring library refs
+    if (preferLibraryRefs) {
+      this.catalog = new AssetLibraryCatalog(libraryRoot);
+      await this.catalog.build();
+    }
 
     // Extract materials and replace inline IDs with references
     let sceneMaterials: IMaterialDefinition[] = [];
@@ -94,14 +107,23 @@ export class MultiFileSceneSerializer {
 
   /**
    * Create material ID to reference path mapping
+   * Prefers library references (@/) when available, otherwise uses scene-relative (./)
    */
   private createMaterialReferenceMap(materials: IMaterialDefinition[]): Map<string, string> {
     const references = new Map<string, string>();
 
     materials.forEach((mat) => {
-      // Convert material ID to scene-relative reference path
-      const refPath = `./materials/${mat.id}`;
-      references.set(mat.id, refPath);
+      // Check if material exists in library
+      const libraryRef = this.catalog?.getLibraryRef('material', mat.id);
+
+      if (libraryRef) {
+        // Use library reference
+        references.set(mat.id, libraryRef);
+      } else {
+        // Use scene-relative reference
+        const refPath = `./materials/${mat.id}`;
+        references.set(mat.id, refPath);
+      }
     });
 
     return references;

@@ -56,54 +56,32 @@ interface IMaterialsState {
 }
 
 export const useMaterialsStore = create<IMaterialsState>((set, get) => {
-  // Initialize registry with common test materials if they're missing
+  // Initialize registry and load library materials
   const registry = MaterialRegistry.getInstance();
 
-  // Ensure test materials exist for scene compatibility
-  const ensureTestMaterials = () => {
-    if (!registry.get('test123')) {
-      registry.upsert({
-        id: 'test123',
-        name: 'Test Material',
-        shader: 'standard' as const,
-        materialType: 'solid' as const,
-        color: '#ff6600',
-        metalness: 0.3,
-        roughness: 0.6,
-        emissive: '#000000',
-        emissiveIntensity: 0,
-        normalScale: 1,
-        occlusionStrength: 1,
-        textureOffsetX: 0,
-        textureOffsetY: 0,
-        textureRepeatX: 1,
-        textureRepeatY: 1,
-      });
-    }
+  // Load materials from external library files
+  const loadLibraryMaterials = async () => {
+    try {
+      const { BrowserAssetLoader } = await import(
+        '@/core/lib/serialization/assets/BrowserAssetLoader'
+      );
+      const loader = new BrowserAssetLoader();
+      const libraryMaterials = await loader.loadMaterials();
 
-    if (!registry.get('dss')) {
-      registry.upsert({
-        id: 'dss',
-        name: 'dss',
-        shader: 'standard' as const,
-        materialType: 'texture' as const,
-        color: '#cccccc',
-        metalness: 0,
-        roughness: 0.7,
-        emissive: '#000000',
-        emissiveIntensity: 0,
-        normalScale: 1,
-        occlusionStrength: 1,
-        textureOffsetX: 0,
-        textureOffsetY: 0,
-        textureRepeatX: 1,
-        textureRepeatY: 1,
-        albedoTexture: '/assets/textures/crate-texture.png',
+      // Upsert all library materials into registry
+      libraryMaterials.forEach((material) => {
+        registry.upsert(material);
       });
+
+      // Refresh store to reflect loaded materials
+      get()._refreshMaterials();
+    } catch (error) {
+      console.error('Failed to load library materials:', error);
     }
   };
 
-  ensureTestMaterials();
+  // Trigger load in background
+  loadLibraryMaterials();
 
   return {
     get registry() {

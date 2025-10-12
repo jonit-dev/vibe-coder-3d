@@ -122,46 +122,154 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     const extractedMaterials = materialDeduplicator.getMaterials();
     const allMaterials = [...extractedMaterials, ...(sceneData.materials || [])];
 
-    // Serialize to multi-file format
-    const multiFileData = this.multiFileSerializer.serializeMultiFile(
+    // Save assets to global library and collect path references
+    const { FsAssetStore } = await import('../../assets-api/FsAssetStore');
+    const assetStore = new FsAssetStore('src/game/assets', 'src/game/scenes');
+
+    const materialRefsSet = new Set<string>();
+    for (const material of allMaterials) {
+      const mat = material as IMaterialDefinition;
+      // Use material ID as filename for consistency
+      // Entity uses materialId → must match filename
+      const assetPath = `@/materials/${mat.id}`;
+
+      await assetStore.save({
+        path: assetPath,
+        payload: mat,
+        type: 'material',
+      });
+
+      materialRefsSet.add(assetPath);
+    }
+
+    const inputRefsSet = new Set<string>();
+    if (sceneData.inputAssets) {
+      for (const input of sceneData.inputAssets) {
+        const inp = input as IInputActionsAsset;
+        const filename = sanitizeComponentName(inp.name);
+        const assetPath = `@/inputs/${filename}`;
+
+        await assetStore.save({
+          path: assetPath,
+          payload: inp,
+          type: 'input',
+        });
+
+        inputRefsSet.add(assetPath);
+      }
+    }
+
+    const prefabRefsSet = new Set<string>();
+    if (sceneData.prefabs) {
+      for (const prefab of sceneData.prefabs) {
+        const pref = prefab as IPrefabDefinition;
+        const filename = sanitizeComponentName(pref.id);
+        const assetPath = `@/prefabs/${filename}`;
+
+        await assetStore.save({
+          path: assetPath,
+          payload: pref,
+          type: 'prefab',
+        });
+
+        prefabRefsSet.add(assetPath);
+      }
+    }
+
+    // Generate KISS scene file with entities + path references
+    const sceneName = sanitizeComponentName(name);
+    const sceneContent = this.generateSceneWithPaths(
       compressedEntities as never[],
       metadata,
-      allMaterials,
-      sceneData.prefabs || [],
-      sceneData.inputAssets,
+      Array.from(materialRefsSet),
+      Array.from(inputRefsSet),
+      Array.from(prefabRefsSet),
     );
 
-    // Sanitize scene name for folder
-    const sceneName = sanitizeComponentName(name);
-    const sceneFolderPath = `${this.baseDir}/${sceneName}`;
-
-    // Write all files to folder
-    const writeResult = await this.folderManager.writeSceneFiles(
-      sceneFolderPath,
-      sceneName,
-      multiFileData,
-    );
+    const filename = `${sceneName}.tsx`;
+    const result = await this.store.write(filename, sceneContent);
 
     return {
-      filename: `${sceneName}/${sceneName}.index.tsx`,
-      modified: new Date().toISOString(),
-      size: writeResult.totalSize,
-      extra: { filesWritten: writeResult.filesWritten },
+      filename,
+      modified: result.modified,
+      size: result.size,
     };
   }
 
   /**
-   * Load scene from multi-file folder
+   * Generate KISS scene file with entities and path references
+   * Path format: @/materials/MaterialName matches src/game/assets/materials/MaterialName.material.tsx
+   */
+  private generateSceneWithPaths(
+    entities: unknown[],
+    metadata: { name: string; version: number; timestamp: string; description?: string; author?: string },
+    materialRefs: string[],
+    inputRefs: string[],
+    prefabRefs: string[],
+  ): string {
+    const refs: string[] = [];
+    if (materialRefs.length > 0) refs.push(`    materials: ${JSON.stringify(materialRefs)}`);
+    if (inputRefs.length > 0) refs.push(`    inputs: ${JSON.stringify(inputRefs)}`);
+    if (prefabRefs.length > 0) refs.push(`    prefabs: ${JSON.stringify(prefabRefs)}`);
+
+    const assetRefsBlock = refs.length > 0 ? `,\n  assetReferences: {\n${refs.join(',\n')}\n  }` : '';
+
+    return `import { defineScene } from './defineScene';
+
+/**
+ * ${metadata.name}${metadata.description ? `\n * ${metadata.description}` : ''}
+ * Generated: ${metadata.timestamp}
+ * Version: ${metadata.version}${metadata.author ? `\n * Author: ${metadata.author}` : ''}
+ */
+export default defineScene({
+  metadata: ${JSON.stringify(metadata, null, 2)},
+  entities: ${JSON.stringify(entities, null, 2)}${assetRefsBlock}
+});
+`;
+  }
+
+  /**
+   * Load scene from single-file or multi-file folder
    */
   async load(args: ILoadArgs): Promise<ILoadResult> {
     const { name } = args;
 
-    // Multi-file scenes are in folders: SceneName/SceneName.index.tsx
+    // Try single-file format first: SceneName.tsx
+    const singleFilename = name.endsWith('.tsx') ? name : `${name}.tsx`;
+
+    if (await this.store.exists(singleFilename)) {
+      // Single-file scene
+      const result = await this.store.read(singleFilename);
+      const content = result.content;
+
+      // Extract scene data from TSX file
+      const data = this.extractDefineSceneData(content);
+
+      // Use MultiFileSceneLoader to resolve asset references (@/materials/..., @/inputs/...)
+      const resolvedData = await this.multiFileLoader.loadMultiFile(
+        data as any,
+        this.baseDir, // Scene folder (not used for single-file)
+        'src/game/assets', // Asset library root
+      );
+
+      // Normalize loaded data: convert inline materials to materialId references
+      const normalizedData = this.normalizeSceneData({
+        ...data,
+        entities: resolvedData.entities,
+      });
+
+      return {
+        filename: singleFilename,
+        data: normalizedData,
+      };
+    }
+
+    // Fall back to multi-file format: SceneName/SceneName.index.tsx
     const folderName = name.replace(/\.tsx$/, '');
     const indexFilename = `${folderName}/${folderName}.index.tsx`;
 
     if (!(await this.store.exists(indexFilename))) {
-      throw new Error(`Multi-file scene not found: ${name} (looking for ${indexFilename})`);
+      throw new Error(`Scene not found: ${name} (tried ${singleFilename} and ${indexFilename})`);
     }
 
     const result = await this.store.read(indexFilename);
@@ -175,7 +283,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     const resolvedData = await this.multiFileLoader.loadMultiFile(
       data as any,
       sceneFolderPath,
-      this.baseDir,
+      'src/game/assets', // Asset library root, not scenes root
     );
 
     // Normalize loaded data: convert inline materials to materialId references
@@ -327,7 +435,40 @@ export class TsxFormatHandler implements ISceneFormatHandler {
 
       const sceneObj = JSON.parse(sceneDataString);
 
-      // Return scene data in the expected format
+      // Check for new ID-based format vs old inline format
+      const hasAssetReferences = sceneObj.assetReferences && typeof sceneObj.assetReferences === 'object';
+
+      if (hasAssetReferences) {
+        // New format: assetReferences with IDs
+        // Convert IDs to materialRef paths for MultiFileSceneLoader
+        const entities = (sceneObj.entities || []).map((entity: any) => {
+          if (entity.components?.MeshRenderer && entity.components.MeshRenderer.materialId) {
+            const materialId = entity.components.MeshRenderer.materialId;
+            return {
+              ...entity,
+              components: {
+                ...entity.components,
+                MeshRenderer: {
+                  ...entity.components.MeshRenderer,
+                  materialRef: `@/materials/${materialId}`,
+                  materialId: undefined, // Remove inline ID, use ref
+                },
+              },
+            };
+          }
+          return entity;
+        });
+
+        return {
+          version: sceneObj.metadata?.version || 4,
+          name: sceneObj.metadata?.name || 'Untitled',
+          timestamp: sceneObj.metadata?.timestamp || new Date().toISOString(),
+          entities,
+          assetReferences: sceneObj.assetReferences,
+        };
+      }
+
+      // Old format: inline materials/prefabs/inputs
       return {
         version: sceneObj.metadata?.version || 4,
         name: sceneObj.metadata?.name || 'Untitled',
