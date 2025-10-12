@@ -71,7 +71,7 @@ export const PrefabCreateModal: React.FC<IPrefabCreateModalProps> = React.memo(
           <div className="flex items-center gap-3 mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded">
             <FiBox className="text-blue-400 flex-shrink-0" size={24} />
             <p className="text-sm text-gray-300">
-              Create a reusable prefab from the currently selected entity and its children.
+              Create a reusable prefab from the selected entities and their children.
             </p>
           </div>
 

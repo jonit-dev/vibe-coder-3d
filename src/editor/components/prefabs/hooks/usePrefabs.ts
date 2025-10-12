@@ -14,7 +14,7 @@ export const usePrefabs = () => {
   const { openBrowser, closeBrowser, openCreate, closeCreate, _refreshPrefabs } = usePrefabsStore();
 
   /**
-   * Create prefab from currently selected entity
+   * Create prefab from currently selected entities
    */
   const createFromSelection = useCallback(
     (options: { name: string; id?: string }) => {
@@ -28,13 +28,67 @@ export const usePrefabs = () => {
         return null;
       }
 
-      const entityId = selectedIds[0]; // Use first selected entity
       const prefabId = options.id || `prefab_${Date.now()}`;
+      const entityManager = EntityManager.getInstance();
 
       try {
+        let entityId: number;
+        let isTemporaryContainer = false;
+
+        if (selectedIds.length === 1) {
+          // Single entity: use directly
+          entityId = selectedIds[0];
+        } else {
+          // Multiple entities: create temporary container
+          // Filter out child entities if their parent is also selected
+          const rootSelectedIds = selectedIds.filter((id) => {
+            const entity = entityManager.getEntity(id);
+            if (!entity) return false;
+            return !entity.parentId || !selectedIds.includes(entity.parentId);
+          });
+
+          logger.debug('Filtered root entities for prefab creation', {
+            original: selectedIds,
+            filtered: rootSelectedIds,
+          });
+
+          // Create temporary container entity
+          const container = entityManager.createEntity(options.name);
+          entityId = container.id;
+          isTemporaryContainer = true;
+
+          // Parent all root selected entities to the container
+          for (const id of rootSelectedIds) {
+            entityManager.setParent(id, entityId);
+          }
+
+          logger.debug('Created temporary container for multi-selection', {
+            containerId: entityId,
+            childCount: rootSelectedIds.length,
+          });
+        }
+
+        // Create prefab from the entity (single or container)
         const prefab = prefabManager.createFromEntity(entityId, options.name, prefabId);
         _refreshPrefabs();
-        logger.info('Prefab created from selection', { prefabId, entityId });
+
+        // Clean up temporary container if created
+        if (isTemporaryContainer) {
+          // Unparent children before destroying container
+          const containerEntity = entityManager.getEntity(entityId);
+          const children = [...(containerEntity?.children || [])];
+          for (const childId of children) {
+            entityManager.setParent(childId, undefined);
+          }
+          entityManager.deleteEntity(entityId);
+          logger.debug('Cleaned up temporary container', { containerId: entityId });
+        }
+
+        logger.info('Prefab created from selection', {
+          prefabId,
+          entityId,
+          isMultiSelection: selectedIds.length > 1,
+        });
         return prefab;
       } catch (error) {
         logger.error('Failed to create prefab from selection:', error);
@@ -70,7 +124,7 @@ export const usePrefabs = () => {
   );
 
   /**
-   * Replace selected entities with prefab instances
+   * Replace selected entities with a single prefab instance
    */
   const replaceSelectionWithPrefab = useCallback(
     (prefabId: string) => {
@@ -84,7 +138,7 @@ export const usePrefabs = () => {
       try {
         const entityManager = EntityManager.getInstance();
 
-        // Filter out child entities - only replace root entities in the selection
+        // Filter out child entities - only work with root entities in the selection
         // to avoid duplication when parent deletion cascades to children
         const rootSelectedIds = selectedIds.filter((entityId) => {
           const entity = entityManager.getEntity(entityId);
@@ -99,40 +153,60 @@ export const usePrefabs = () => {
           filtered: rootSelectedIds,
         });
 
-        const newEntityIds: number[] = [];
+        if (rootSelectedIds.length === 0) {
+          logger.warn('No root entities to replace');
+          return;
+        }
+
+        // Calculate center position of all selected entities for placement
+        const avgPosition: [number, number, number] = [0, 0, 0];
+        let validTransformCount = 0;
 
         for (const entityId of rootSelectedIds) {
-          // Get entity transform for placement
           const transform = componentRegistry.getComponentData<ITransformData>(
             entityId,
             'Transform',
           );
-
-          // Preserve parent relationship using EntityManager (source of truth)
-          const parent = entityManager.getEntity(entityId)?.parentId;
-
-          // Destroy old entity (this will cascade to children)
-          prefabManager.destroy(entityId);
-
-          // Create prefab instance at same location with full transform
-          const newEntityId = prefabManager.instantiate(
-            prefabId,
-            {
-              position: transform?.position,
-              rotation: transform?.rotation,
-              scale: transform?.scale,
-            },
-            parent,
-          );
-          if (newEntityId !== -1) {
-            newEntityIds.push(newEntityId);
+          if (transform?.position) {
+            avgPosition[0] += transform.position[0];
+            avgPosition[1] += transform.position[1];
+            avgPosition[2] += transform.position[2];
+            validTransformCount++;
           }
         }
 
-        // Update selection to new entities
-        useEditorStore.getState().setSelectedIds(newEntityIds);
+        if (validTransformCount > 0) {
+          avgPosition[0] /= validTransformCount;
+          avgPosition[1] /= validTransformCount;
+          avgPosition[2] /= validTransformCount;
+        }
 
-        logger.info('Selection replaced with prefab', { prefabId, count: newEntityIds.length });
+        // Get parent from first entity (if all have same parent, use it)
+        const firstParent = entityManager.getEntity(rootSelectedIds[0])?.parentId;
+
+        // Destroy all selected entities
+        for (const entityId of rootSelectedIds) {
+          prefabManager.destroy(entityId);
+        }
+
+        // Create single prefab instance at average position
+        const newEntityId = prefabManager.instantiate(
+          prefabId,
+          {
+            position: avgPosition,
+          },
+          firstParent,
+        );
+
+        // Update selection to new entity
+        if (newEntityId !== -1) {
+          useEditorStore.getState().setSelectedIds([newEntityId]);
+          logger.info('Selection replaced with single prefab instance', {
+            prefabId,
+            newEntityId,
+            replacedCount: rootSelectedIds.length,
+          });
+        }
       } catch (error) {
         logger.error('Failed to replace selection with prefab:', error);
       }
