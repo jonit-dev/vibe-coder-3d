@@ -1,6 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { ASSET_EXTENSIONS, ASSET_DEFINE_FUNCTIONS, type AssetType } from '../../core/lib/serialization/assets/AssetTypes';
+import { omitDefaults } from '../../core/lib/serialization/utils/DefaultOmitter';
+import { MATERIAL_DEFAULTS } from '../../core/lib/serialization/defaults/MaterialDefaults';
 import type {
   IAssetStore,
   IAssetFileMeta,
@@ -198,10 +200,37 @@ export class FsAssetStore implements IAssetStore {
       ? `\nimport { ActionType, ControlType, DeviceType, CompositeType } from '@core';`
       : '';
 
+    // Omit default values for materials to reduce file size
+    let processedPayload = payload;
+    if (type === 'material') {
+      if (isSingle) {
+        processedPayload = this.cleanMaterialForSave(omitDefaults(payload as Record<string, unknown>, MATERIAL_DEFAULTS));
+      } else if (Array.isArray(payload)) {
+        processedPayload = payload.map(item => this.cleanMaterialForSave(omitDefaults(item as Record<string, unknown>, MATERIAL_DEFAULTS)));
+      }
+    }
+
     return `import { ${importFn} } from '${importPath}';${additionalImports}
 
-export default ${defineFn}(${JSON.stringify(payload, null, 2)});
+export default ${defineFn}(${JSON.stringify(processedPayload, null, 2)});
 `;
+  }
+
+  /**
+   * Clean material by removing empty texture strings (convert to undefined)
+   * This ensures optional texture fields are truly optional and not just empty strings
+   */
+  private cleanMaterialForSave(material: Partial<Record<string, unknown>>): Partial<Record<string, unknown>> {
+    const textureFields = ['albedoTexture', 'normalTexture', 'metallicTexture', 'roughnessTexture', 'emissiveTexture', 'occlusionTexture'];
+    const cleaned = { ...material };
+
+    for (const field of textureFields) {
+      if (field in cleaned && cleaned[field] === '') {
+        delete cleaned[field];
+      }
+    }
+
+    return cleaned;
   }
 
   /**

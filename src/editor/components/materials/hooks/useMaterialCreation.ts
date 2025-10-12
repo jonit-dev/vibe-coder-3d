@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
+import { generateAssetIdentifiers, slugify } from '@/core/lib/utils/idGenerator';
 import type { IMaterialFormState } from './useMaterialForm';
 import type { IMaterialTemplate } from '../constants/materialTemplates';
 
@@ -23,27 +24,12 @@ export interface IMaterialCreationActions {
 export const useMaterialCreation = (): IMaterialCreationActions => {
   const materialRegistry = MaterialRegistry.getInstance();
 
-  const slugify = useCallback((text: string): string => {
-    return text
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '_')
-      .replace(/^_+|_+$/g, '');
-  }, []);
-
   const generateUniqueId = useCallback((baseId: string): string => {
     if (!baseId) return '';
 
-    let id = baseId;
-    let counter = 1;
-
-    while (materialRegistry.get(id)) {
-      id = `${baseId}_${counter}`;
-      counter++;
-    }
-
-    return id;
+    return generateAssetIdentifiers(baseId, '.material.tsx', (id) =>
+      materialRegistry.get(id) !== undefined
+    ).id;
   }, [materialRegistry]);
 
   const createMaterialFromScratch = useCallback((formState: IMaterialFormState): IMaterialDefinition => {
@@ -123,7 +109,7 @@ export const useMaterialCreation = (): IMaterialCreationActions => {
 
   return {
     generateUniqueId,
-    slugify,
+    slugify, // Re-export for convenience
     createMaterialFromScratch,
     createMaterialFromTemplate,
     validateForm,

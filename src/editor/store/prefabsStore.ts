@@ -1,5 +1,6 @@
 import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
 import { PrefabRegistry } from '@/core/prefabs/PrefabRegistry';
+import { generateAssetIdentifiers } from '@/core/lib/utils/idGenerator';
 import { create } from 'zustand';
 
 interface IPrefabsState {
@@ -133,10 +134,15 @@ export const usePrefabsStore = create<IPrefabsState>((set, get) => {
       const original = registry.get(prefabId);
       if (!original) throw new Error(`Prefab not found: ${prefabId}`);
 
+      const copyName = `${original.name} (Copy)`;
+      const { id: duplicateId } = generateAssetIdentifiers(copyName, '.prefab.tsx', (id) =>
+        registry.get(id) !== undefined
+      );
+
       const duplicate: IPrefabDefinition = {
         ...original,
-        id: `${original.id}_copy_${Date.now()}`,
-        name: `${original.name} (Copy)`,
+        id: duplicateId,
+        name: copyName,
       };
 
       registry.upsert(duplicate);

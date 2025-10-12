@@ -1,6 +1,10 @@
 /**
  * Material Default Values
  * Based on MaterialDefinitionSchema defaults
+ *
+ * Note: Texture fields are optional in the schema and should be omitted entirely
+ * when not specified (not included as empty strings). They are NOT in this defaults
+ * object because undefined fields should not be compared against defaults.
  */
 
 export const MATERIAL_DEFAULTS = {
@@ -17,12 +21,7 @@ export const MATERIAL_DEFAULTS = {
   textureOffsetY: 0,
   textureRepeatX: 1,
   textureRepeatY: 1,
-  albedoTexture: '',
-  normalTexture: '',
-  metallicTexture: '',
-  roughnessTexture: '',
-  emissiveTexture: '',
-  occlusionTexture: '',
+  // Texture fields intentionally omitted - they are optional and should not be serialized when undefined
 } as const;
 
 export type MaterialDefaults = typeof MATERIAL_DEFAULTS;

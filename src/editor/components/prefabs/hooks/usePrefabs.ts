@@ -2,6 +2,7 @@ import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import type { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { EntityManager } from '@/core/lib/ecs/EntityManager';
 import { Logger } from '@/core/lib/logger';
+import { generateAssetIdentifiers, slugify } from '@/core/lib/utils/idGenerator';
 import { PrefabManager } from '@/core/prefabs/PrefabManager';
 import { useEditorStore } from '@/editor/store/editorStore';
 import { usePrefabsStore } from '@/editor/store/prefabsStore';
@@ -28,7 +29,12 @@ export const usePrefabs = () => {
         return null;
       }
 
-      const prefabId = options.id || `prefab_${Date.now()}`;
+      // Generate ID from name if not provided
+      const prefabId =
+        options.id ||
+        generateAssetIdentifiers(options.name, '.prefab.tsx', (id) =>
+          usePrefabsStore.getState().registry.get(id) !== undefined
+        ).id;
       const entityManager = EntityManager.getInstance();
 
       try {
@@ -250,7 +256,11 @@ export const usePrefabs = () => {
    */
   const createVariant = useCallback(
     (options: { baseId: string; name: string; id?: string }) => {
-      const variantId = options.id || `${options.baseId}_variant_${Date.now()}`;
+      const variantId =
+        options.id ||
+        generateAssetIdentifiers(`${options.name}-variant`, '.prefab.tsx', (id) =>
+          usePrefabsStore.getState().registry.get(id) !== undefined
+        ).id;
 
       try {
         const { registry } = usePrefabsStore.getState();

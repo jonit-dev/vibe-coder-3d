@@ -123,7 +123,13 @@ describe('FsAssetStore', () => {
       });
 
       expect(result.filename).toBe('LoadTest.material.tsx');
-      expect(result.payload).toEqual(payload);
+      // Note: Default values are omitted during save, so only non-default fields are returned
+      // In this case, shader: 'standard' is the default, so it's omitted
+      expect(result.payload).toEqual({
+        id: 'load-test',
+        name: 'Load Test Material',
+        color: '#00ff00',
+      });
     });
 
     it('should throw error when asset file not found', async () => {

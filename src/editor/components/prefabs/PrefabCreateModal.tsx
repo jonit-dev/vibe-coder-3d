@@ -16,11 +16,10 @@ export const PrefabCreateModal: React.FC<IPrefabCreateModalProps> = React.memo(
   ({ isOpen, onClose, onCreated }) => {
     const { createFromSelection, replaceSelectionWithPrefab } = usePrefabs();
     const [name, setName] = useState('');
-    const [id, setId] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     const handleCreate = () => {
-      logger.debug('Create button clicked', { name: name.trim(), id: id.trim() });
+      logger.debug('Create button clicked', { name: name.trim() });
 
       if (!name.trim()) {
         setError('Prefab name is required');
@@ -29,7 +28,7 @@ export const PrefabCreateModal: React.FC<IPrefabCreateModalProps> = React.memo(
 
       try {
         logger.debug('Calling createFromSelection');
-        const prefab = createFromSelection({ name: name.trim(), id: id.trim() || undefined });
+        const prefab = createFromSelection({ name: name.trim() });
 
         if (prefab) {
           logger.info('Prefab created successfully', {
@@ -46,7 +45,6 @@ export const PrefabCreateModal: React.FC<IPrefabCreateModalProps> = React.memo(
           onCreated?.(prefab.id);
           onClose();
           setName('');
-          setId('');
           setError(null);
         } else {
           logger.error('createFromSelection returned null');
@@ -60,7 +58,6 @@ export const PrefabCreateModal: React.FC<IPrefabCreateModalProps> = React.memo(
 
     const handleClose = () => {
       setName('');
-      setId('');
       setError(null);
       onClose();
     };
@@ -95,21 +92,8 @@ export const PrefabCreateModal: React.FC<IPrefabCreateModalProps> = React.memo(
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500"
                 autoFocus
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Prefab ID <span className="text-sm text-gray-500">(optional)</span>
-              </label>
-              <input
-                type="text"
-                value={id}
-                onChange={(e) => setId(e.target.value)}
-                placeholder="my-prefab (auto-generated if empty)"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500"
-              />
               <p className="mt-1 text-xs text-gray-500">
-                Leave empty to auto-generate. Use lowercase letters, numbers, and hyphens only.
+                A unique ID will be auto-generated from the name.
               </p>
             </div>
           </div>
