@@ -305,17 +305,8 @@ export class EntityManager {
   /**
    * Get all entities in adapter format (for SceneDeserializer compatibility)
    */
-  private getAllEntitiesForAdapter(): Array<{
-    id: number;
-    name: string;
-    parentId?: number | null;
-  }> {
-    const entities = this.getAllEntitiesInternal();
-    return entities.map((entity) => ({
-      id: entity.id,
-      name: entity.name,
-      parentId: entity.parentId,
-    }));
+  private getAllEntitiesForAdapter(): IEntity[] {
+    return this.getAllEntitiesInternal();
   }
 
   /**

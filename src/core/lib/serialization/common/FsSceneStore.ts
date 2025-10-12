@@ -108,12 +108,10 @@ export class FsSceneStore implements ISceneStore {
               continue;
             }
           }
-          // Check for single-file scenes (*.tsx)
-          else if (stats.isFile() && file.endsWith('.tsx')) {
-            // Remove .tsx extension for scene name
-            const sceneName = file.replace(/\.tsx$/, '');
+          // Check for single-file scenes (*.tsx or *.json)
+          else if (stats.isFile() && (file.endsWith('.tsx') || file.endsWith('.json'))) {
             infos.push({
-              name: sceneName,
+              name: file,
               modified: stats.mtime.toISOString(),
               size: stats.size,
             });

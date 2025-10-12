@@ -21,6 +21,10 @@ export default defineConfig({
     css: true,
     include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
     exclude: ['node_modules', 'dist', '.git', '.cache'],
+    // Watch mode configuration (only enabled via --watch flag)
+    watchExclude: ['**/node_modules/**', '**/dist/**', '**/.git/**'],
+    // Only rerun tests affected by changes
+    forceRerunTriggers: ['**/vitest.config.ts', '**/src/test/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

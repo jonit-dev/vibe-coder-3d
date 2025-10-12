@@ -77,7 +77,16 @@ export default [
             {
               target: './src/game/**/*',
               from: './src/core/**/*',
-              except: ['**/index.ts', '**/lib/extension/**/*', '**/lib/input/inputTypes.ts'],
+              except: [
+                '**/index.ts',
+                '**/lib/extension/**/*',
+                '**/lib/input/inputTypes.ts',
+                '**/lib/serialization/assets/**/*',
+                '**/types/components.ts',
+                '**/materials/Material.types.ts',
+                '**/prefabs/Prefab.types.ts',
+                '**/lib/rendering/shapes/IShapeDescriptor.ts',
+              ],
               message:
                 'Game code can only import from @core/* public API or @core/lib/extension/*. Use @core/* instead of deep imports.',
             },

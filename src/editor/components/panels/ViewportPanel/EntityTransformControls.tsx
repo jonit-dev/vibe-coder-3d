@@ -35,7 +35,7 @@ export const EntityTransformControls: React.FC<IEntityTransformControlsProps> = 
   }
   return (
     <TransformControls
-      ref={transformRef}
+      ref={transformRef as any}
       mode={mode}
       showX
       showY

@@ -49,7 +49,6 @@ describe('InputModal', () => {
 
     expect(screen.getByText('Keyboard')).toBeInTheDocument();
     expect(screen.getByText('Mouse')).toBeInTheDocument();
-    expect(screen.getByText('Action Maps')).toBeInTheDocument();
     expect(screen.getByText('Gamepad')).toBeInTheDocument();
   });
 

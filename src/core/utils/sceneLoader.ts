@@ -8,7 +8,6 @@ import type { SceneData } from '@/core/types/scene';
 import { IValidationResult, SceneValidator } from '@/core/utils/sceneValidation';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
-import { Profiler } from '../lib/perf/Profiler';
 
 /**
  * Scene loading options
@@ -47,14 +46,13 @@ export class SceneLoader {
     errors: string[];
     warnings: string[];
   }> {
-    return Profiler.timeAsync('sceneLoader.loadScene', async () => {
-      const {
-        validateBeforeLoad = true,
-        clearExisting = true,
-        onProgress,
-        onError,
-        onWarning,
-      } = options;
+    const {
+      validateBeforeLoad = true,
+      clearExisting = true,
+      onProgress,
+      onError,
+      onWarning,
+    } = options;
 
       const errors: string[] = [];
       const warnings: string[] = [];
@@ -197,7 +195,6 @@ export class SceneLoader {
         onError?.(errorMsg);
         return { success: false, loadedEntities: 0, errors, warnings };
       }
-    });
   }
 
 

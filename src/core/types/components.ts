@@ -211,12 +211,20 @@ export interface IScriptComponent {
 }
 
 /**
+ * PersistentId Component - Unique identifier for entities across scene saves/loads
+ */
+export interface IPersistentIdComponent {
+  id: string;
+}
+
+/**
  * Component map - Maps component names to their types
  * This provides autocomplete and type checking for component data
  *
  * Note: PersistentId is optional - if not provided, it will be auto-generated during scene loading
  */
 export interface IComponentMap {
+  PersistentId: IPersistentIdComponent;
   Transform: ITransformComponent;
   Camera: ICameraComponent;
   Light: ILightComponent;
@@ -229,12 +237,13 @@ export interface IComponentMap {
 
 /**
  * Typed entity for scenes - Provides type safety for entity component data
+ * Components can be partially defined - defaults are applied at runtime
  */
 export interface ITypedSceneEntity {
   id?: number | string; // Optional - auto-generated during scene loading if not provided
   name: string;
   parentId?: number | string | null;
   components: {
-    [K in keyof IComponentMap]?: IComponentMap[K];
+    [K in keyof IComponentMap]?: Partial<IComponentMap[K]>;
   };
 }

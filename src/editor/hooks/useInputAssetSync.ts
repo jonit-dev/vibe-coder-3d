@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
 import { InputManager } from '@core/lib/input/InputManager';
-import { useInputStore, useCurrentAsset } from '@editor/store/inputStore';
 import { Logger } from '@core/lib/logger';
+import { useInputStore } from '@editor/store/inputStore';
+import { useEffect } from 'react';
 
 const logger = Logger.create('useInputAssetSync');
 
@@ -10,12 +10,15 @@ const logger = Logger.create('useInputAssetSync');
  * This ensures that input actions configured in the editor are available at runtime
  */
 export const useInputAssetSync = () => {
-  const currentAsset = useCurrentAsset();
+  const currentAssetName = useInputStore((state) => state.currentAsset);
+  const currentAsset = useInputStore((state) =>
+    state.currentAsset ? state.assets.find((a) => a.name === state.currentAsset) : undefined,
+  );
   const assets = useInputStore((state) => state.assets);
 
   // Load current asset into InputManager
   useEffect(() => {
-    if (!currentAsset) {
+    if (!currentAsset || !currentAssetName) {
       logger.warn('No current input asset selected');
       return;
     }
@@ -54,7 +57,7 @@ export const useInputAssetSync = () => {
         assetName: currentAsset.name,
       });
     }
-  }, [currentAsset]);
+  }, [currentAssetName]); // Only depend on the name, not the whole object
 
   // Log when assets change (for debugging)
   useEffect(() => {

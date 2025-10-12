@@ -17,7 +17,7 @@ export interface IEnhancedAddObjectMenuProps {
 
 // Convert shared data to NestedDropdownMenu format
 function buildObjectCategories(customShapes: any[]): IMenuCategory[] {
-  const baseCategories = GAME_OBJECT_CATEGORIES.map((category) => ({
+  const baseCategories: IMenuCategory[] = GAME_OBJECT_CATEGORIES.map((category) => ({
     label: category.label,
     icon: category.icon,
     items: category.items.map((item) => ({

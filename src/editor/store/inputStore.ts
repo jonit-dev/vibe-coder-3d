@@ -4,10 +4,6 @@ import {
   IActionMap,
   IInputAction,
   IControlScheme,
-  DeviceType,
-  ActionType,
-  ControlType,
-  CompositeType,
 } from '@core/lib/input/inputTypes';
 
 interface IInputStore {

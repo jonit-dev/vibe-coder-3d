@@ -3,19 +3,19 @@ import { defineScene } from './defineScene';
 /**
  * ExampleMultiFile
  * Scene with 5 entities
- * Generated: 2025-10-12T02:31:16.009Z
+ * Generated: 2025-10-12T02:33:34.063Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
   "name": "ExampleMultiFile",
   "version": 1,
-  "timestamp": "2025-10-12T02:31:16.009Z",
+  "timestamp": "2025-10-12T02:33:34.063Z",
   "description": "Scene with 5 entities"
 },
   entities: [
   {
-    "id": 3,
+    "id": 0,
     "name": "Main Camera",
     "components": {
       "PersistentId": {
@@ -35,7 +35,7 @@ export default defineScene({
     }
   },
   {
-    "id": 4,
+    "id": 1,
     "name": "Directional Light",
     "components": {
       "PersistentId": {
@@ -54,7 +54,7 @@ export default defineScene({
     }
   },
   {
-    "id": 5,
+    "id": 2,
     "name": "Oak Tree 1",
     "components": {
       "PersistentId": {
@@ -74,7 +74,7 @@ export default defineScene({
     }
   },
   {
-    "id": 6,
+    "id": 3,
     "name": "Oak Tree 2",
     "components": {
       "PersistentId": {
@@ -94,7 +94,7 @@ export default defineScene({
     }
   },
   {
-    "id": 7,
+    "id": 4,
     "name": "Ground",
     "components": {
       "PersistentId": {
@@ -114,13 +114,13 @@ export default defineScene({
       },
       "MeshRenderer": {
         "meshId": "cube",
-        "materialId": "red"
+        "materialId": "dss"
       }
     }
   }
 ],
   assetReferences: {
-    materials: ["@/materials/default","@/materials/test123","@/materials/red"],
-    inputs: ["@/inputs/DefaultInput","@/inputs/DefaultInput"]
+    materials: ["@/materials/default","@/materials/red","@/materials/dss","@/materials/test123"],
+    inputs: ["@/inputs/DefaultInput"]
   }
 });

@@ -1,11 +1,9 @@
 import React from 'react';
 import type { ISceneData } from '@core/lib/serialization';
-import type {
-  ITypedSceneEntity,
-  IMaterialDefinition,
-  IPrefabDefinition,
-  IInputActionsAsset,
-} from '@core';
+import type { ITypedSceneEntity } from '@core/types/components';
+import type { IMaterialDefinition } from '@core/materials/Material.types';
+import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
+import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
 
 /**
  * Typed scene data with component validation

@@ -305,7 +305,8 @@ describe('SceneSerializer', () => {
       expect(cameraData.fov).toBe(60); // Non-default (default is 75)
       expect(cameraData.far).toBe(1000); // Non-default (default is 100)
       expect(cameraData.isMain).toBe(true); // Non-default (default is false)
-      expect(cameraData.projectionType).toBe('perspective'); // Non-default
+      // projectionType is 'perspective' which matches the default, so it's omitted
+      expect(cameraData.projectionType).toBeUndefined(); // Matches default ('perspective')
       // Default values should be omitted
       expect(cameraData.near).toBeUndefined(); // Matches default (0.1)
       expect(cameraData.orthographicSize).toBeUndefined(); // Matches default (10)

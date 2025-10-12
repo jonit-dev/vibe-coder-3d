@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { z } from 'zod';
 
-import type { ICustomShapeDescriptor } from '@core';
+import type { ICustomShapeDescriptor } from '@core/lib/rendering/shapes/IShapeDescriptor';
 
 const paramsSchema = z.object({
   count: z.number().int().min(1).max(10).default(4),

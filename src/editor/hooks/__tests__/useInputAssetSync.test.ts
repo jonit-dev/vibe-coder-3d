@@ -40,17 +40,7 @@ describe('useInputAssetSync', () => {
     })),
   });
 
-  beforeEach(() => {
-    // Create mock InputManager
-    mockInputManager = {
-      loadInputActionsAsset: vi.fn(),
-      enableActionMap: vi.fn(),
-      disableActionMap: vi.fn(),
-    };
-
-    vi.mocked(InputManager.getInstance).mockReturnValue(mockInputManager);
-
-    // Reset input store to default state
+  const setupDefaultAsset = () => {
     const defaultAsset = createMockAsset('Default Input', [
       { name: 'Gameplay', enabled: true },
       { name: 'UI', enabled: false },
@@ -60,6 +50,27 @@ describe('useInputAssetSync', () => {
       assets: [defaultAsset],
       currentAsset: 'Default Input',
     });
+  };
+
+  beforeEach(() => {
+    // Clear all mocks first
+    vi.clearAllMocks();
+
+    // Create mock InputManager
+    mockInputManager = {
+      loadInputActionsAsset: vi.fn(),
+      enableActionMap: vi.fn(),
+      disableActionMap: vi.fn(),
+    };
+
+    vi.mocked(InputManager.getInstance).mockReturnValue(mockInputManager);
+
+    // Reset input store to empty state by default
+    // Tests that need data should call setupDefaultAsset() or set their own state
+    useInputStore.setState({
+      assets: [],
+      currentAsset: null as any,
+    });
   });
 
   afterEach(() => {
@@ -68,6 +79,8 @@ describe('useInputAssetSync', () => {
 
   describe('Asset Loading', () => {
     it('should load current asset into InputManager on mount', async () => {
+      setupDefaultAsset();
+
       renderHook(() => useInputAssetSync());
 
       await waitFor(() => {
@@ -79,6 +92,8 @@ describe('useInputAssetSync', () => {
     });
 
     it('should enable all enabled action maps', async () => {
+      setupDefaultAsset();
+
       renderHook(() => useInputAssetSync());
 
       await waitFor(() => {
@@ -90,6 +105,8 @@ describe('useInputAssetSync', () => {
     });
 
     it('should not enable disabled action maps', async () => {
+      setupDefaultAsset();
+
       renderHook(() => useInputAssetSync());
 
       await waitFor(() => {
@@ -103,6 +120,8 @@ describe('useInputAssetSync', () => {
     });
 
     it('should reload asset when currentAsset changes', async () => {
+      setupDefaultAsset();
+
       const { rerender } = renderHook(() => useInputAssetSync());
 
       // Wait for initial load
@@ -130,6 +149,8 @@ describe('useInputAssetSync', () => {
     });
 
     it('should enable correct action maps when asset changes', async () => {
+      setupDefaultAsset();
+
       const { rerender } = renderHook(() => useInputAssetSync());
 
       // Wait for initial load
@@ -164,11 +185,7 @@ describe('useInputAssetSync', () => {
 
   describe('Edge Cases', () => {
     it('should handle missing currentAsset gracefully', async () => {
-      useInputStore.setState({
-        assets: [],
-        currentAsset: null as any,
-      });
-
+      // State already set to null/empty in beforeEach
       renderHook(() => useInputAssetSync());
 
       // Should not attempt to load asset
@@ -231,6 +248,8 @@ describe('useInputAssetSync', () => {
 
   describe('Error Handling', () => {
     it('should handle loadInputActionsAsset errors gracefully', async () => {
+      setupDefaultAsset();
+
       mockInputManager.loadInputActionsAsset.mockImplementation(() => {
         throw new Error('Failed to load asset');
       });
@@ -245,6 +264,8 @@ describe('useInputAssetSync', () => {
     });
 
     it('should handle enableActionMap errors gracefully', async () => {
+      setupDefaultAsset();
+
       mockInputManager.enableActionMap.mockImplementation(() => {
         throw new Error('Failed to enable action map');
       });
@@ -288,6 +309,8 @@ describe('useInputAssetSync', () => {
 
   describe('Asset List Changes', () => {
     it('should not reload when assets list changes but currentAsset stays same', async () => {
+      setupDefaultAsset();
+
       const { rerender } = renderHook(() => useInputAssetSync());
 
       await waitFor(() => {
@@ -313,6 +336,8 @@ describe('useInputAssetSync', () => {
     });
 
     it('should handle rapid asset switches', async () => {
+      setupDefaultAsset();
+
       const { rerender } = renderHook(() => useInputAssetSync());
 
       await waitFor(() => {
@@ -398,6 +423,8 @@ describe('useInputAssetSync', () => {
 
   describe('Hook Cleanup', () => {
     it('should not call InputManager after unmount', async () => {
+      setupDefaultAsset();
+
       const { unmount } = renderHook(() => useInputAssetSync());
 
       await waitFor(() => {
@@ -428,6 +455,8 @@ describe('useInputAssetSync', () => {
 
   describe('InputManager Instance Consistency', () => {
     it('should use same InputManager instance across calls', async () => {
+      setupDefaultAsset();
+
       const { rerender } = renderHook(() => useInputAssetSync());
 
       await waitFor(() => {

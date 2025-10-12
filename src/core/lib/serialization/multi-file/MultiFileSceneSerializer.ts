@@ -1,4 +1,5 @@
-import type { ISerializedEntity, ISceneMetadata } from '../common/types';
+import type { ISerializedEntity } from '../EntitySerializer';
+import type { ISceneMetadata } from '../SceneSerializer';
 import type { IMaterialDefinition } from '@core/materials/Material.types';
 import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '@core/lib/input/inputTypes';

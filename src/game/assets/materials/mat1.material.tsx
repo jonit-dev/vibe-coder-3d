@@ -1,13 +1,13 @@
 import { defineMaterial } from '@core/lib/serialization/assets/defineMaterials';
 
 export default defineMaterial({
-  "id": "test123",
-  "name": "Test Material",
+  "id": "mat1",
+  "name": "Material 1",
   "shader": "standard",
   "materialType": "solid",
-  "color": "#ff6600",
-  "metalness": 0.3,
-  "roughness": 0.6,
+  "color": "#ff0000",
+  "metalness": 0,
+  "roughness": 0.5,
   "emissive": "#000000",
   "emissiveIntensity": 0,
   "normalScale": 1,

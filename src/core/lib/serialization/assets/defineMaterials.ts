@@ -32,6 +32,6 @@ export function defineMaterials(materials: IMaterialDefinition[]): IMaterialDefi
  * });
  * ```
  */
-export function defineMaterial(material: IMaterialDefinition): IMaterialDefinition {
-  return material;
+export function defineMaterial(material: Partial<IMaterialDefinition> & Pick<IMaterialDefinition, 'id' | 'name'>): IMaterialDefinition {
+  return material as IMaterialDefinition;
 }

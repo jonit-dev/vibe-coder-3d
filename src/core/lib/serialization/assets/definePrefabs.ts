@@ -36,6 +36,6 @@ export function definePrefabs(prefabs: IPrefabDefinition[]): IPrefabDefinition[]
  * });
  * ```
  */
-export function definePrefab(prefab: IPrefabDefinition): IPrefabDefinition {
-  return prefab;
+export function definePrefab(prefab: Partial<IPrefabDefinition> & Pick<IPrefabDefinition, 'id' | 'name'>): IPrefabDefinition {
+  return prefab as IPrefabDefinition;
 }

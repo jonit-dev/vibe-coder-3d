@@ -97,7 +97,6 @@ export class FsAssetStore implements IAssetStore {
     } else if (scope === 'scene' && sceneName) {
       // List scene-local assets
       const sceneDir = path.join(this.scenesRoot, sceneName);
-      const extension = ASSET_EXTENSIONS[type];
       const sceneAssetFile = path.join(sceneDir, `${sceneName}.${type}s.tsx`);
 
       try {

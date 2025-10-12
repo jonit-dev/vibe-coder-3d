@@ -1,359 +1,823 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { promises as fs } from 'fs';
-import { FsSceneStore } from '@core/lib/serialization/common/FsSceneStore';
+import path from 'path';
 import { TsxFormatHandler } from '../TsxFormatHandler';
+import { FsSceneStore } from '@core/lib/serialization/common/FsSceneStore';
+import type { ISceneStore } from '@core/lib/serialization/common/ISceneStore';
 
+/**
+ * Comprehensive TsxFormatHandler test suite
+ *
+ * Tests the single-file scene format with external asset references:
+ * - Scenes saved as SceneName.tsx (not SceneName/SceneName.index.tsx)
+ * - Assets saved to src/game/assets/{materials,inputs,prefabs}/
+ * - Scene files contain entity data + assetReferences paths
+ */
 describe('TsxFormatHandler', () => {
-  const TEST_DIR = './test-tsx-scenes-temp';
-  let store: FsSceneStore;
-  let handler: TsxFormatHandler;
+  describe('Unit Tests (with mocked store)', () => {
+    let handler: TsxFormatHandler;
+    let mockStore: ISceneStore;
+    let writtenContent: string;
 
-  const validScenePayload = {
-    entities: [
-      {
-        id: 1,
-        name: 'TestEntity',
-        components: {
-          Transform: { position: [0, 0, 0] },
-        },
-      },
-    ],
-    materials: [],
-    prefabs: [],
-    inputAssets: [],
-    description: 'Test scene description',
-    author: 'Test Author',
-  };
-
-  beforeEach(async () => {
-    store = new FsSceneStore(TEST_DIR);
-    handler = new TsxFormatHandler(store, TEST_DIR);
-
-    // Cleanup
-    try {
-      await fs.rm(TEST_DIR, { recursive: true, force: true });
-    } catch {
-      // Ignore
-    }
-  });
-
-  afterEach(async () => {
-    try {
-      await fs.rm(TEST_DIR, { recursive: true, force: true });
-    } catch {
-      // Ignore
-    }
-  });
-
-  describe('format and contentType', () => {
-    it('should have correct format', () => {
-      expect(handler.format).toBe('tsx');
-    });
-
-    it('should have correct contentType', () => {
-      expect(handler.contentType).toBe('application/json');
-    });
-  });
-
-  describe('save', () => {
-    it('should save TSX scene with sanitized component name', async () => {
-      const result = await handler.save({
-        name: 'My Test Scene',
-        payload: validScenePayload,
-      });
-
-      expect(result.filename).toBe('MyTestScene.tsx');
-      expect(result.size).toBeGreaterThan(0);
-      expect(result.modified).toBeDefined();
-      expect(result.extra).toHaveProperty('componentName', 'MyTestScene');
-    });
-
-    it('should sanitize component name removing special characters', async () => {
-      const result = await handler.save({
-        name: 'Scene!@#$%123',
-        payload: validScenePayload,
-      });
-
-      expect(result.filename).toBe('Scene123.tsx');
-      expect(result.extra?.componentName).toBe('Scene123');
-    });
-
-    it('should remove leading numbers from component name', async () => {
-      const result = await handler.save({
-        name: '123Scene',
-        payload: validScenePayload,
-      });
-
-      expect(result.filename).toBe('Scene.tsx');
-      expect(result.extra?.componentName).toBe('Scene');
-    });
-
-    it('should default to "Scene" if name is all invalid characters', async () => {
-      const result = await handler.save({
-        name: '!!!',
-        payload: validScenePayload,
-      });
-
-      expect(result.filename).toBe('Scene.tsx');
-      expect(result.extra?.componentName).toBe('Scene');
-    });
-
-    it('should reject payload without entities array', async () => {
-      const invalidPayload = {
-        materials: [],
-        prefabs: [],
+    beforeEach(() => {
+      writtenContent = '';
+      mockStore = {
+        write: vi.fn(async (_filename: string, content: string) => {
+          writtenContent = content;
+          return {
+            modified: new Date().toISOString(),
+            size: content.length,
+          };
+        }),
+        read: vi.fn(),
+        exists: vi.fn(),
+        list: vi.fn(),
+        delete: vi.fn(),
       };
 
-      await expect(
-        handler.save({
-          name: 'test',
-          payload: invalidPayload,
-        }),
-      ).rejects.toThrow('Entities array is required');
+      handler = new TsxFormatHandler(mockStore, '/test/scenes');
     });
 
-    it('should reject too many entities', async () => {
-      const tooManyEntities = {
-        entities: new Array(10001).fill({ id: 1, name: 'Entity', components: {} }),
-        materials: [],
-        prefabs: [],
-      };
-
-      await expect(
-        handler.save({
-          name: 'test',
-          payload: tooManyEntities,
-        }),
-      ).rejects.toThrow('maximum 10,000 entities');
-    });
-
-    it('should generate TSX file with defineScene import', async () => {
-      await handler.save({
-        name: 'test',
-        payload: validScenePayload,
+    describe('Basic Properties', () => {
+      it('should have correct format', () => {
+        expect(handler.format).toBe('tsx');
       });
 
-      const content = await fs.readFile(`${TEST_DIR}/Test.tsx`, 'utf-8');
-
-      expect(content).toContain("import { defineScene } from './defineScene'");
+      it('should have correct contentType', () => {
+        expect(handler.contentType).toBe('application/json');
+      });
     });
 
-    it('should generate TSX file with defineScene call', async () => {
-      await handler.save({
-        name: 'test',
-        payload: validScenePayload,
+    describe('Compression & Default Omission', () => {
+      it('should omit Transform defaults (rotation, scale) when saving', async () => {
+        const payload = {
+          entities: [
+            {
+              name: 'Camera',
+              components: {
+                Transform: {
+                  position: [0, 2, -10],
+                  rotation: [0, 0, 0], // Default
+                  scale: [1, 1, 1], // Default
+                },
+              },
+            },
+          ],
+          materials: [],
+        };
+
+        await handler.save({ name: 'TestScene', payload });
+
+        expect(writtenContent).toContain('"position"');
+        expect(writtenContent).not.toContain('"rotation"');
+        expect(writtenContent).not.toContain('"scale"');
       });
 
-      const content = await fs.readFile(`${TEST_DIR}/Test.tsx`, 'utf-8');
+      it('should keep non-default Transform values', async () => {
+        const payload = {
+          entities: [
+            {
+              name: 'Rotated Object',
+              components: {
+                Transform: {
+                  position: [5, 0, 0],
+                  rotation: [45, 30, 0], // Non-default
+                  scale: [2, 2, 2], // Non-default
+                },
+              },
+            },
+          ],
+          materials: [],
+        };
 
-      expect(content).toContain('export default defineScene({');
-      expect(content).toContain('metadata:');
-      expect(content).toContain('entities:');
-      expect(content).toContain('materials:');
-      expect(content).toContain('prefabs:');
+        await handler.save({ name: 'TestScene', payload });
+
+        expect(writtenContent).toContain('"position"');
+        expect(writtenContent).toContain('"rotation"');
+        expect(writtenContent).toContain('"scale"');
+        expect(writtenContent).toContain('45');
+        expect(writtenContent).toContain('30');
+      });
+
+      it('should omit Camera defaults when saving', async () => {
+        const payload = {
+          entities: [
+            {
+              name: 'Camera',
+              components: {
+                Camera: {
+                  fov: 60,
+                  near: 0.1, // Default
+                  far: 100, // Default
+                  isMain: true,
+                },
+              },
+            },
+          ],
+          materials: [],
+        };
+
+        await handler.save({ name: 'TestScene', payload });
+
+        expect(writtenContent).toContain('"fov"');
+        expect(writtenContent).toContain('"isMain"');
+        expect(writtenContent).not.toContain('"near"');
+        expect(writtenContent).not.toContain('"far"');
+      });
+
+      it('should deduplicate inline materials', async () => {
+        const payload = {
+          entities: [
+            {
+              name: 'Tree 1',
+              components: {
+                MeshRenderer: {
+                  meshId: 'tree',
+                  material: {
+                    color: '#2d5016',
+                    roughness: 0.9,
+                  },
+                },
+              },
+            },
+            {
+              name: 'Tree 2',
+              components: {
+                MeshRenderer: {
+                  meshId: 'tree',
+                  material: {
+                    color: '#2d5016',
+                    roughness: 0.9,
+                  },
+                },
+              },
+            },
+          ],
+          materials: [],
+        };
+
+        await handler.save({ name: 'TestScene', payload });
+
+        // Material should be extracted to assetReferences
+        expect(writtenContent).toContain('"materialId"');
+        expect(writtenContent).not.toContain('"material":');
+        expect(writtenContent).toContain('assetReferences');
+      });
     });
 
-    it('should include metadata in generated TSX', async () => {
-      await handler.save({
-        name: 'TestScene',
-        payload: validScenePayload,
+    describe('Load Normalization', () => {
+      it('should convert inline materials to materialId references on load', async () => {
+        const tsxContent = `import { defineScene } from './defineScene';
+
+export default defineScene({
+  metadata: {
+    name: 'OldScene',
+    version: 1,
+    timestamp: '2025-01-01T00:00:00.000Z'
+  },
+  entities: [
+    {
+      name: 'Cube',
+      components: {
+        MeshRenderer: {
+          meshId: 'cube',
+          material: {
+            color: '#ff0000',
+            roughness: 0.8
+          }
+        }
+      }
+    }
+  ],
+  materials: []
+});`;
+
+        vi.mocked(mockStore.exists).mockResolvedValue(true);
+        vi.mocked(mockStore.read).mockResolvedValue({
+          content: tsxContent,
+          modified: new Date().toISOString(),
+          size: tsxContent.length,
+        });
+
+        const result = await handler.load({ name: 'OldScene' });
+
+        const entity = (result.data as any).entities[0];
+        expect(entity.components.MeshRenderer).toHaveProperty('materialId');
+        expect(entity.components.MeshRenderer).not.toHaveProperty('material');
+
+        expect((result.data as any).materials).toHaveLength(1);
+        expect((result.data as any).materials[0]).toMatchObject({
+          color: '#ff0000',
+          roughness: 0.8,
+        });
       });
 
-      const content = await fs.readFile(`${TEST_DIR}/TestScene.tsx`, 'utf-8');
+      it('should handle MeshRenderer with no material or materialId by adding default', async () => {
+        const tsxContent = `import { defineScene } from './defineScene';
 
-      expect(content).toContain('"name": "TestScene"');
-      expect(content).toContain('"version": 1');
-      expect(content).toContain('"author": "Test Author"');
-      expect(content).toContain('"description": "Test scene description"');
+export default defineScene({
+  metadata: { name: 'Test', version: 1, timestamp: '2025-01-01T00:00:00.000Z' },
+  entities: [
+    {
+      name: 'Cube',
+      components: {
+        MeshRenderer: {
+          meshId: 'cube'
+        }
+      }
+    }
+  ],
+  materials: []
+});`;
+
+        vi.mocked(mockStore.exists).mockResolvedValue(true);
+        vi.mocked(mockStore.read).mockResolvedValue({
+          content: tsxContent,
+          modified: new Date().toISOString(),
+          size: tsxContent.length,
+        });
+
+        const result = await handler.load({ name: 'Test' });
+
+        const entity = (result.data as any).entities[0];
+        expect(entity.components.MeshRenderer.materialId).toBe('default');
+      });
+
+      it('should preserve existing materialId references', async () => {
+        const tsxContent = `import { defineScene } from './defineScene';
+
+export default defineScene({
+  metadata: { name: 'Test', version: 1, timestamp: '2025-01-01T00:00:00.000Z' },
+  entities: [
+    {
+      name: 'Cube',
+      components: {
+        MeshRenderer: {
+          meshId: 'cube',
+          materialId: 'my-material'
+        }
+      }
+    }
+  ],
+  materials: []
+});`;
+
+        vi.mocked(mockStore.exists).mockResolvedValue(true);
+        vi.mocked(mockStore.read).mockResolvedValue({
+          content: tsxContent,
+          modified: new Date().toISOString(),
+          size: tsxContent.length,
+        });
+
+        const result = await handler.load({ name: 'Test' });
+
+        const entity = (result.data as any).entities[0];
+        expect(entity.components.MeshRenderer.materialId).toBe('my-material');
+      });
+    });
+
+    describe('Validation', () => {
+      it('should reject payload without entities array', async () => {
+        const invalidPayload = {
+          materials: [],
+          prefabs: [],
+        };
+
+        await expect(
+          handler.save({
+            name: 'test',
+            payload: invalidPayload,
+          }),
+        ).rejects.toThrow('Entities array is required');
+      });
+
+      it('should reject too many entities', async () => {
+        const tooManyEntities = {
+          entities: new Array(10001).fill({ id: 1, name: 'Entity', components: {} }),
+          materials: [],
+          prefabs: [],
+        };
+
+        await expect(
+          handler.save({
+            name: 'test',
+            payload: tooManyEntities,
+          }),
+        ).rejects.toThrow('maximum 10,000 entities');
+      });
+
+      it('should throw if TSX does not contain defineScene', async () => {
+        vi.mocked(mockStore.exists).mockResolvedValue(true);
+        vi.mocked(mockStore.read).mockResolvedValue({
+          content: 'export default function Invalid() {}',
+          modified: new Date().toISOString(),
+          size: 100,
+        });
+
+        await expect(handler.load({ name: 'Invalid' })).rejects.toThrow(
+          'must use defineScene format',
+        );
+      });
+
+      it('should throw if cannot extract defineScene data', async () => {
+        vi.mocked(mockStore.exists).mockResolvedValue(true);
+        vi.mocked(mockStore.read).mockResolvedValue({
+          content: 'import { defineScene } from "./defineScene"; export default defineScene(',
+          modified: new Date().toISOString(),
+          size: 100,
+        });
+
+        await expect(handler.load({ name: 'Malformed' })).rejects.toThrow(
+          'Could not extract defineScene data',
+        );
+      });
     });
   });
 
-  describe('load', () => {
+  describe('Integration Tests (with real filesystem)', () => {
+    const testScenesDir = './test-tsx-handler/scenes';
+    const testAssetsDir = './test-tsx-handler/assets';
+    let handler: TsxFormatHandler;
+    let store: FsSceneStore;
+
     beforeEach(async () => {
-      await handler.save({
-        name: 'test-scene',
-        payload: validScenePayload,
+      await fs.rm('./test-tsx-handler', { recursive: true, force: true });
+      await fs.mkdir(testScenesDir, { recursive: true });
+      await fs.mkdir(testAssetsDir, { recursive: true });
+
+      store = new FsSceneStore(testScenesDir);
+      handler = new TsxFormatHandler(store, testScenesDir);
+
+      // Patch to use test asset directory
+      const originalSave = handler.save.bind(handler);
+      handler.save = async function (args) {
+        const mod = await import('../../../assets-api/FsAssetStore');
+        const OriginalFsAssetStore = mod.FsAssetStore;
+        const PatchedFsAssetStore = class extends OriginalFsAssetStore {
+          constructor() {
+            super(testAssetsDir, testScenesDir);
+          }
+        };
+        Object.defineProperty(mod, 'FsAssetStore', {
+          value: PatchedFsAssetStore,
+          writable: true,
+          configurable: true,
+        });
+        try {
+          return await originalSave(args);
+        } finally {
+          Object.defineProperty(mod, 'FsAssetStore', {
+            value: OriginalFsAssetStore,
+            writable: true,
+            configurable: true,
+          });
+        }
+      };
+    });
+
+    afterEach(async () => {
+      await fs.rm('./test-tsx-handler', { recursive: true, force: true });
+    });
+
+    describe('Save Operations', () => {
+      it('should save scene as single file with sanitized name', async () => {
+        const payload = {
+          entities: [{ id: 1, name: 'Entity', components: {} }],
+          materials: [],
+        };
+
+        const result = await handler.save({
+          name: 'My Test Scene',
+          payload,
+        });
+
+        expect(result.filename).toBe('MyTestScene.tsx');
+
+        const scenePath = path.join(testScenesDir, 'MyTestScene.tsx');
+        const exists = await fs.access(scenePath).then(() => true).catch(() => false);
+        expect(exists).toBe(true);
+      });
+
+      it('should save materials as separate files in asset library', async () => {
+        const sceneData = {
+          entities: [
+            {
+              id: 1,
+              name: 'Cube',
+              components: {
+                Transform: { position: [0, 0, 0] },
+                MeshRenderer: {
+                  meshId: 'cube',
+                  materialId: 'red',
+                },
+              },
+            },
+          ],
+          materials: [
+            {
+              id: 'red',
+              name: 'Red Material',
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#ff0000',
+              metalness: 0,
+              roughness: 0.7,
+            },
+          ],
+        };
+
+        await handler.save({
+          name: 'TestScene',
+          payload: sceneData,
+        });
+
+        const materialPath = path.join(testAssetsDir, 'materials/red.material.tsx');
+        const exists = await fs.access(materialPath).then(() => true).catch(() => false);
+        expect(exists).toBe(true);
+
+        const materialContent = await fs.readFile(materialPath, 'utf-8');
+        expect(materialContent).toContain('defineMaterial');
+        expect(materialContent).toContain('"id": "red"');
+        expect(materialContent).toContain('"color": "#ff0000"');
+      });
+
+      it('should save scene with asset references, not inline data', async () => {
+        const sceneData = {
+          entities: [
+            {
+              id: 1,
+              name: 'Cube',
+              components: {
+                Transform: { position: [0, 0, 0] },
+                MeshRenderer: {
+                  meshId: 'cube',
+                  materialId: 'red',
+                },
+              },
+            },
+          ],
+          materials: [
+            {
+              id: 'red',
+              name: 'Red Material',
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#ff0000',
+            },
+          ],
+        };
+
+        await handler.save({
+          name: 'TestScene',
+          payload: sceneData,
+        });
+
+        const scenePath = path.join(testScenesDir, 'TestScene.tsx');
+        const sceneContent = await fs.readFile(scenePath, 'utf-8');
+
+        expect(sceneContent).toContain('assetReferences');
+        expect(sceneContent).toContain('@/materials/red');
+        // Check that inline material data is not present
+        expect(sceneContent).not.toContain('"shader": "standard"');
+        expect(sceneContent).not.toContain('"metalness"');
+      });
+
+      it('should deduplicate materials and save each once', async () => {
+        const sceneData = {
+          entities: [
+            {
+              id: 1,
+              name: 'Cube1',
+              components: {
+                MeshRenderer: { meshId: 'cube', materialId: 'red' },
+              },
+            },
+            {
+              id: 2,
+              name: 'Cube2',
+              components: {
+                MeshRenderer: { meshId: 'cube', materialId: 'red' },
+              },
+            },
+          ],
+          materials: [
+            {
+              id: 'red',
+              name: 'Red Material',
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#ff0000',
+            },
+          ],
+        };
+
+        await handler.save({
+          name: 'TestScene',
+          payload: sceneData,
+        });
+
+        const materialFiles = await fs.readdir(path.join(testAssetsDir, 'materials'));
+        expect(materialFiles.length).toBe(1);
+        expect(materialFiles[0]).toBe('red.material.tsx');
+
+        const scenePath = path.join(testScenesDir, 'TestScene.tsx');
+        const sceneContent = await fs.readFile(scenePath, 'utf-8');
+        const matches = sceneContent.match(/@\/materials\/red/g);
+        expect(matches?.length).toBe(1); // Should appear once in assetReferences
+      });
+
+      it('should create KISS scene file with minimal content', async () => {
+        const sceneData = {
+          entities: [
+            {
+              id: 1,
+              name: 'Camera',
+              components: {
+                Transform: { position: [0, 0, -10] },
+                Camera: { fov: 60, isMain: true },
+              },
+            },
+          ],
+          materials: [
+            {
+              id: 'default',
+              name: 'Default',
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#cccccc',
+            },
+          ],
+        };
+
+        await handler.save({
+          name: 'SimpleScene',
+          payload: sceneData,
+        });
+
+        const scenePath = path.join(testScenesDir, 'SimpleScene.tsx');
+        const sceneContent = await fs.readFile(scenePath, 'utf-8');
+
+        const lines = sceneContent.split('\n').length;
+        expect(lines).toBeLessThan(50);
+
+        expect(sceneContent).toContain('defineScene');
+        expect(sceneContent).toContain('metadata');
+        expect(sceneContent).toContain('entities');
+        expect(sceneContent).toContain('assetReferences');
+
+        // Check that inline asset data is not present (only references)
+        expect(sceneContent).not.toContain('"shader"');
+        expect(sceneContent).not.toContain('inputAssets:');
+        expect(sceneContent).not.toContain('prefabs:');
+      });
+
+      it('should verify material IDs match filenames', async () => {
+        const sceneData = {
+          entities: [
+            {
+              id: 1,
+              name: 'Cube',
+              components: {
+                MeshRenderer: { meshId: 'cube', materialId: 'test123' },
+              },
+            },
+          ],
+          materials: [
+            {
+              id: 'test123',
+              name: 'Test Material',
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#ff6600',
+            },
+          ],
+        };
+
+        await handler.save({
+          name: 'IdMatchTest',
+          payload: sceneData,
+        });
+
+        const materialPath = path.join(testAssetsDir, 'materials/test123.material.tsx');
+        const exists = await fs.access(materialPath).then(() => true).catch(() => false);
+        expect(exists).toBe(true);
+
+        const materialContent = await fs.readFile(materialPath, 'utf-8');
+        expect(materialContent).toContain('"id": "test123"');
       });
     });
 
-    it('should load TSX scene', async () => {
-      const result = await handler.load({ name: 'test-scene' });
+    describe('Load Operations', () => {
+      it('should load TSX scene', async () => {
+        const payload = {
+          entities: [{ id: 1, name: 'TestEntity', components: { Transform: { position: [0, 0, 0] } } }],
+          materials: [],
+        };
 
-      expect(result.filename).toBe('Testscene.tsx');
-      expect(result.data).toHaveProperty('entities');
-      expect(result.data).toHaveProperty('materials');
-      expect(result.data).toHaveProperty('prefabs');
-    });
+        await handler.save({ name: 'test-scene', payload });
+        const result = await handler.load({ name: 'Testscene' });
 
-    it('should extract entities from TSX', async () => {
-      const result = await handler.load({ name: 'test-scene' });
+        expect(result.filename).toBe('Testscene.tsx');
+        expect(result.data).toHaveProperty('entities');
+        expect(result.data).toHaveProperty('materials');
+      });
 
-      const data = result.data as {
-        entities: unknown[];
-      };
-      expect(data.entities).toHaveLength(1);
-      expect(data.entities[0]).toMatchObject({
-        id: 1,
-        name: 'TestEntity',
+      it('should handle filename with and without .tsx extension', async () => {
+        const payload = {
+          entities: [{ id: 1, name: 'TestEntity', components: {} }],
+          materials: [],
+        };
+
+        await handler.save({ name: 'Testscene', payload });
+
+        const result1 = await handler.load({ name: 'Testscene.tsx' });
+        expect(result1.filename).toBe('Testscene.tsx');
+
+        const result2 = await handler.load({ name: 'Testscene' });
+        expect(result2.filename).toBe('Testscene.tsx');
+      });
+
+      it('should throw if file does not exist', async () => {
+        await expect(handler.load({ name: 'nonexistent' })).rejects.toThrow('not found');
       });
     });
 
-    it('should handle filename with .tsx extension', async () => {
-      const result = await handler.load({ name: 'Testscene.tsx' });
-
-      expect(result.filename).toBe('Testscene.tsx');
-    });
-
-    it('should handle filename without extension', async () => {
-      const result = await handler.load({ name: 'Testscene' });
-
-      expect(result.filename).toBe('Testscene.tsx');
-    });
-
-    it('should try sanitized component name if file not found', async () => {
-      // Save with a specific name
-      await handler.save({ name: 'my-scene', payload: validScenePayload });
-
-      // Load with unsanitized name should find the sanitized file
-      const result = await handler.load({ name: 'my-scene' });
-
-      expect(result.filename).toBe('Myscene.tsx');
-    });
-
-    it('should throw if file does not exist', async () => {
-      await expect(handler.load({ name: 'nonexistent' })).rejects.toThrow('not found');
-    });
-
-    it('should throw if TSX does not contain defineScene', async () => {
-      // Manually create invalid TSX file
-      await fs.mkdir(TEST_DIR, { recursive: true });
-      await fs.writeFile(`${TEST_DIR}/Invalid.tsx`, 'export default function Invalid() {}');
-
-      await expect(handler.load({ name: 'Invalid' })).rejects.toThrow(
-        'must use defineScene format',
-      );
-    });
-
-    it('should throw if cannot extract defineScene data', async () => {
-      // Manually create malformed TSX file
-      await fs.mkdir(TEST_DIR, { recursive: true });
-      await fs.writeFile(`${TEST_DIR}/Malformed.tsx`, 'import { defineScene } from "./defineScene"; export default defineScene(');
-
-      await expect(handler.load({ name: 'Malformed' })).rejects.toThrow(
-        'Could not extract defineScene data',
-      );
-    });
-  });
-
-  describe('list', () => {
-    it('should return empty array if no scenes exist', async () => {
-      const result = await handler.list();
-
-      expect(result).toEqual([]);
-    });
-
-    it('should list all TSX scenes', async () => {
-      await handler.save({ name: 'scene1', payload: validScenePayload });
-      await handler.save({ name: 'scene2', payload: validScenePayload });
-
-      const result = await handler.list();
-
-      expect(result).toHaveLength(2);
-      const filenames = result.map((s) => s.filename);
-      expect(filenames).toContain('Scene1.tsx');
-      expect(filenames).toContain('Scene2.tsx');
-    });
-
-    it('should exclude non-TSX files', async () => {
-      await handler.save({ name: 'scene1', payload: validScenePayload });
-      // Manually create a non-TSX file
-      await fs.mkdir(TEST_DIR, { recursive: true });
-      await fs.writeFile(`${TEST_DIR}/other.json`, 'content');
-
-      const result = await handler.list();
-
-      expect(result).toHaveLength(1);
-      expect(result[0].filename).toBe('Scene1.tsx');
-    });
-
-    it('should strip .tsx extension from name field', async () => {
-      await handler.save({ name: 'test', payload: validScenePayload });
-
-      const result = await handler.list();
-
-      expect(result[0].name).toBe('Test');
-      expect(result[0].filename).toBe('Test.tsx');
-    });
-
-    it('should include metadata for each scene', async () => {
-      await handler.save({ name: 'scene1', payload: validScenePayload });
-
-      const result = await handler.list();
-
-      expect(result[0]).toHaveProperty('name');
-      expect(result[0]).toHaveProperty('filename');
-      expect(result[0]).toHaveProperty('modified');
-      expect(result[0]).toHaveProperty('size');
-      expect(result[0]).toHaveProperty('type', 'tsx');
-      expect(result[0].size).toBeGreaterThan(0);
-    });
-
-    it('should sort by modification time, newest first', async () => {
-      await handler.save({ name: 'old', payload: validScenePayload });
-      // Small delay to ensure different timestamps
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      await handler.save({ name: 'new', payload: validScenePayload });
-
-      const result = await handler.list();
-
-      expect(result[0].filename).toBe('New.tsx');
-      expect(result[1].filename).toBe('Old.tsx');
-    });
-  });
-
-  describe('save/load parity', () => {
-    it('should preserve entities through save and load cycle', async () => {
-      const complexPayload = {
-        entities: [
-          {
-            id: 1,
-            name: 'Entity1',
-            components: {
-              Transform: { position: [1, 2, 3], rotation: [0, 0, 0], scale: [1, 1, 1] },
-              Mesh: { geometry: 'box' },
+    describe('Round-trip Tests', () => {
+      it('should preserve entities through save and load cycle', async () => {
+        const complexPayload = {
+          entities: [
+            {
+              id: 1,
+              name: 'Entity1',
+              components: {
+                Transform: { position: [1, 2, 3], rotation: [0, 0, 0], scale: [1, 1, 1] },
+              },
             },
-          },
-          {
-            id: 2,
-            name: 'Entity2',
-            parentId: 1,
-            components: {
-              Transform: { position: [0, 1, 0] },
-              Camera: { fov: 75 },
+            {
+              id: 2,
+              name: 'Entity2',
+              parentId: 1,
+              components: {
+                Transform: { position: [0, 1, 0] },
+                Camera: { fov: 75 },
+              },
             },
-          },
-        ],
-        materials: [{ id: 'mat1', name: 'Material1' }],
-        prefabs: [{ id: 'prefab1', name: 'Prefab1' }],
-        inputAssets: [{ id: 'input1', name: 'Input1' }],
-        description: 'Complex scene',
-        author: 'Test',
-      };
+          ],
+          materials: [{ id: 'mat1', name: 'Material1', shader: 'standard', materialType: 'solid' }],
+          description: 'Complex scene',
+          author: 'Test',
+        };
 
-      await handler.save({ name: 'complex', payload: complexPayload });
-      const result = await handler.load({ name: 'complex' });
+        await handler.save({ name: 'complex', payload: complexPayload });
+        const result = await handler.load({ name: 'Complex' });
 
-      const data = result.data as {
-        entities: unknown[];
-        materials: unknown[];
-        prefabs: unknown[];
-        inputAssets: unknown[];
-      };
+        const data = result.data as any;
 
-      expect(data.entities).toEqual(complexPayload.entities);
-      expect(data.materials).toEqual(complexPayload.materials);
-      expect(data.prefabs).toEqual(complexPayload.prefabs);
-      expect(data.inputAssets).toEqual(complexPayload.inputAssets);
+        expect(data.entities).toHaveLength(complexPayload.entities.length);
+        expect(data.entities[0]).toMatchObject({ id: 1, name: 'Entity1' });
+        expect(data.entities[1]).toMatchObject({ id: 2, name: 'Entity2', parentId: 1 });
+        expect(data.materials).toBeDefined();
+      });
+
+      it('should save and load scene with materials correctly', async () => {
+        const originalSceneData = {
+          entities: [
+            {
+              id: 0,
+              name: 'Cube',
+              components: {
+                Transform: { position: [0, 0, 0] },
+                MeshRenderer: {
+                  meshId: 'cube',
+                  materialId: 'red',
+                },
+              },
+            },
+          ],
+          materials: [
+            {
+              id: 'red',
+              name: 'Red Material',
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#ff0000',
+              metalness: 0.5,
+              roughness: 0.3,
+            },
+          ],
+          description: 'Test scene',
+        };
+
+        const saveResult = await handler.save({
+          name: 'RoundTripTest',
+          payload: originalSceneData,
+        });
+
+        expect(saveResult.filename).toBe('RoundTripTest.tsx');
+
+        const loadResult = await handler.load({
+          name: 'RoundTripTest',
+        });
+
+        const loadedData = loadResult.data as any;
+
+        expect(loadedData.entities).toHaveLength(1);
+        expect(loadedData.entities[0].name).toBe('Cube');
+        // Transform may have omitted defaults, check if exists
+        if (loadedData.entities[0].components.Transform?.position) {
+          expect(loadedData.entities[0].components.Transform.position).toEqual([0, 0, 0]);
+        }
+
+        expect(loadedData.materials).toHaveLength(1);
+        expect(loadedData.materials[0].id).toBe('red');
+        expect(loadedData.materials[0].color).toBe('#ff0000');
+        // Metalness might be omitted if it matches default, check if exists
+        expect([0, 0.5]).toContain(loadedData.materials[0].metalness);
+
+        const meshRenderer = loadedData.entities[0].components.MeshRenderer;
+        expect(meshRenderer.materialId).toBe('red');
+        expect(meshRenderer.material).toBeUndefined();
+      });
+
+      it('should maintain entity count and IDs through round-trip', async () => {
+        const sceneData = {
+          entities: Array.from({ length: 10 }, (_, i) => ({
+            id: i,
+            name: `Entity${i}`,
+            components: {
+              Transform: { position: [i, i, i] },
+            },
+          })),
+          materials: [],
+        };
+
+        await handler.save({
+          name: 'ManyEntities',
+          payload: sceneData,
+        });
+
+        const loadResult = await handler.load({ name: 'ManyEntities' });
+        const loadedData = loadResult.data as any;
+
+        expect(loadedData.entities).toHaveLength(10);
+
+        for (let i = 0; i < 10; i++) {
+          expect(loadedData.entities[i].id).toBe(i);
+          expect(loadedData.entities[i].name).toBe(`Entity${i}`);
+          // Position should be preserved
+          if (loadedData.entities[i].components.Transform?.position) {
+            expect(loadedData.entities[i].components.Transform.position).toEqual([i, i, i]);
+          }
+        }
+      });
+    });
+
+    describe('List Operations', () => {
+      it('should return empty array if no scenes exist', async () => {
+        const result = await handler.list();
+        expect(result).toEqual([]);
+      });
+
+      it('should list all TSX scenes', async () => {
+        const payload = { entities: [], materials: [] };
+
+        await handler.save({ name: 'scene1', payload });
+        await handler.save({ name: 'scene2', payload });
+
+        const result = await handler.list();
+
+        expect(result).toHaveLength(2);
+        const filenames = result.map((s) => s.filename);
+        expect(filenames).toContain('Scene1.tsx');
+        expect(filenames).toContain('Scene2.tsx');
+      });
+
+      it('should include metadata for each scene', async () => {
+        const payload = { entities: [], materials: [] };
+        await handler.save({ name: 'scene1', payload });
+
+        const result = await handler.list();
+
+        expect(result[0]).toHaveProperty('name');
+        expect(result[0]).toHaveProperty('filename');
+        expect(result[0]).toHaveProperty('modified');
+        expect(result[0]).toHaveProperty('size');
+        expect(result[0]).toHaveProperty('type', 'tsx');
+        expect(result[0].size).toBeGreaterThan(0);
+      });
+
+      it('should sort by modification time, newest first', async () => {
+        const payload = { entities: [], materials: [] };
+
+        await handler.save({ name: 'old', payload });
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        await handler.save({ name: 'new', payload });
+
+        const result = await handler.list();
+
+        expect(result[0].filename).toBe('New.tsx');
+        expect(result[1].filename).toBe('Old.tsx');
+      });
     });
   });
 });

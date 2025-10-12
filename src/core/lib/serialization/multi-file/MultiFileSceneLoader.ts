@@ -1,7 +1,6 @@
-import * as path from 'path';
 import { AssetReferenceResolver } from '../assets/AssetReferenceResolver';
 import type { IAssetRefResolutionContext } from '../assets/AssetReferenceResolver';
-import type { ISerializedEntity } from '../common/types';
+import type { ISerializedEntity } from '../EntitySerializer';
 import type { IMaterialDefinition } from '@core/materials/Material.types';
 
 export interface IMultiFileSceneData {

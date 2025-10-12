@@ -7,8 +7,6 @@
  * 2. Restoring omitted values during deserialization
  */
 
-import { MATERIAL_DEFAULTS } from './MaterialDefaults';
-
 /**
  * Transform Component Defaults
  * All entities exist at origin with no rotation and unit scale by default

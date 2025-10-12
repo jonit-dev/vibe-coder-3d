@@ -10,9 +10,7 @@ import {
   extractMaterialFromMeshRenderer,
   replaceMaterialWithReference,
 } from '../../../core/lib/serialization/utils/MaterialHasher';
-import { MultiFileSceneSerializer } from '../../../core/lib/serialization/multi-file/MultiFileSceneSerializer';
 import { MultiFileSceneLoader } from '../../../core/lib/serialization/multi-file/MultiFileSceneLoader';
-import { SceneFolderManager } from '../../../core/lib/serialization/multi-file/SceneFolderManager';
 import type {
   ISceneFormatHandler,
   ISaveArgs,
@@ -30,9 +28,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
   readonly format = 'tsx' as const;
   readonly contentType = 'application/json';
 
-  private readonly multiFileSerializer = new MultiFileSceneSerializer();
   private readonly multiFileLoader = new MultiFileSceneLoader();
-  private readonly folderManager = new SceneFolderManager();
 
   constructor(
     private readonly store: ISceneStore,
@@ -254,7 +250,7 @@ export default defineScene({
 
       // Normalize loaded data: convert inline materials to materialId references
       const normalizedData = this.normalizeSceneData({
-        ...data,
+        ...(data as object),
         entities: resolvedData.entities,
       });
 
@@ -288,7 +284,7 @@ export default defineScene({
 
     // Normalize loaded data: convert inline materials to materialId references
     const normalizedData = this.normalizeSceneData({
-      ...data,
+      ...(data as object),
       entities: resolvedData.entities,
     });
 

@@ -150,7 +150,7 @@ export const CameraControlsManager: React.FC<ICameraControlsManagerProps> = ({
 
     return (
       <OrbitControls
-        ref={orbitControlsRef}
+        ref={orbitControlsRef as any}
         enabled={!isTransforming} // Disable when transforming entities
         target={targetPosition}
         enablePan={true}

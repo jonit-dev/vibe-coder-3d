@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 
-import type { ICustomShapeDescriptor } from '@core';
+import type { ICustomShapeDescriptor } from '@core/lib/rendering/shapes/IShapeDescriptor';
 
 const paramsSchema = z.object({
   radius: z.number().min(0.1).max(10).default(0.5),
@@ -26,7 +26,7 @@ export const shape: ICustomShapeDescriptor<typeof paramsSchema> = {
 
   getDefaultParams: () => paramsSchema.parse({}),
 
-  renderGeometry: (params) => (
+  renderGeometry: (params: z.infer<typeof paramsSchema>) => (
     <sphereGeometry args={[params.radius, params.widthSegments, params.heightSegments]} />
   ),
 };

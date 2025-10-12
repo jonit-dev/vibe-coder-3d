@@ -7,7 +7,7 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { z } from 'zod';
 
-import type { ICustomShapeDescriptor } from '@core';
+import type { ICustomShapeDescriptor } from '@core/lib/rendering/shapes/IShapeDescriptor';
 
 /**
  * Define shape parameters with Zod validation

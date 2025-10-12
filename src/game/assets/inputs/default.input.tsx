@@ -1,5 +1,5 @@
 import { defineInputAsset } from '@core/lib/serialization/assets/defineInputAssets';
-import { ActionType, ControlType, DeviceType, CompositeType } from '@core';
+import { ActionType, ControlType, DeviceType, CompositeType } from '@core/lib/input/inputTypes';
 
 /**
  * Default Input Configuration

@@ -28,7 +28,7 @@ import { restoreDefaults } from './utils/DefaultOmitter';
 
 // Core interfaces
 export interface IStreamingEntity {
-  id: string | number;
+  id?: string | number;
   name: string;
   parentId?: string | number | null;
   components: Record<string, unknown>;
@@ -366,13 +366,15 @@ export class StreamingSceneSerializer {
               ?.PersistentId as { id?: string } | undefined;
             const persistentIdValue = persistentId?.id;
 
+            const entityIdForMap = entityData.id !== undefined ? String(entityData.id) : `temp_${i}`;
+
             const created = entityManager.createEntity(
-              entityData.name || `Entity ${String(entityData.id)}`,
+              entityData.name || `Entity ${entityIdForMap}`,
               undefined,
               persistentIdValue,
             );
 
-            idMap.set(String(entityData.id), created.id);
+            idMap.set(entityIdForMap, created.id);
 
             // Add components (except PersistentId)
             const componentEntries = Object.entries(entityData.components || {});

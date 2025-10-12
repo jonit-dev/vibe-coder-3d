@@ -206,8 +206,13 @@ export { SceneLoader } from './lib/serialization/SceneLoader';
 export type { IStoreRefresher } from './lib/serialization/SceneLoader';
 
 // Asset Definition Helpers
-export { defineInputAssets } from './lib/serialization/assets/defineInputAssets';
-export { defineMaterials } from './lib/serialization/assets/defineMaterials';
+export { defineInputAsset, defineInputAssets } from './lib/serialization/assets/defineInputAssets';
+export { defineMaterial, defineMaterials } from './lib/serialization/assets/defineMaterials';
+export { definePrefab, definePrefabs } from './lib/serialization/assets/definePrefabs';
+
+// Asset Reference Resolution
+export { AssetReferenceResolver } from './lib/serialization/assets/AssetReferenceResolver';
+export type { IAssetRefResolutionContext } from './lib/serialization/assets/AssetReferenceResolver';
 
 // Input System Types
 export { ActionType, ControlType, DeviceType, CompositeType } from './lib/input/inputTypes';

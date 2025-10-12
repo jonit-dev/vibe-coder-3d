@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { AssetReferenceResolver } from '@core/lib/serialization/assets/AssetReferenceResolver';
-import type { IAssetRefResolutionContext } from '@core/lib/serialization/assets/AssetReferenceResolver';
-import type { IMaterialDefinition } from '@core/materials/Material.types';
+import { AssetReferenceResolver } from '@core';
+import type { IAssetRefResolutionContext, IMaterialDefinition } from '@core';
 
 describe('Real Asset Files', () => {
   const context: IAssetRefResolutionContext = {
@@ -15,22 +14,22 @@ describe('Real Asset Files', () => {
   describe('Material Assets', () => {
     // Note: References should match the file path structure exactly
     // The resolver looks for: libraryRoot + refPath + .material.tsx
-    it('should load Default.material.tsx by filename', async () => {
+    it('should load default.material.tsx by filename', async () => {
       const resolver = new AssetReferenceResolver();
-      const ref = '@/materials/common/Default';
+      const ref = '@/materials/default';
 
       const material = await resolver.resolve<IMaterialDefinition>(ref, context, 'material');
 
       expect(material.id).toBe('default');
-      expect(material.name).toBe('Default Material');
+      expect(material.name).toBe('Default'); // File has "Default" not "Default Material"
       expect(material.shader).toBe('standard');
       expect(material.materialType).toBe('solid');
       expect(material.color).toBe('#cccccc');
     });
 
-    it('should load TestMaterial.material.tsx by filename', async () => {
+    it('should load test123.material.tsx by filename', async () => {
       const resolver = new AssetReferenceResolver();
-      const ref = '@/materials/common/TestMaterial';
+      const ref = '@/materials/test123';
 
       const material = await resolver.resolve<IMaterialDefinition>(ref, context, 'material');
 
@@ -41,9 +40,9 @@ describe('Real Asset Files', () => {
       expect(material.roughness).toBe(0.6);
     });
 
-    it('should load CrateTexture.material.tsx by filename', async () => {
+    it('should load dss.material.tsx by filename', async () => {
       const resolver = new AssetReferenceResolver();
-      const ref = '@/materials/CrateTexture';
+      const ref = '@/materials/dss';
 
       const material = await resolver.resolve<IMaterialDefinition>(ref, context, 'material');
 
@@ -57,28 +56,28 @@ describe('Real Asset Files', () => {
       const materialsDir = path.join(process.cwd(), 'src/game/assets/materials');
 
       const defaultExists = await fs
-        .access(path.join(materialsDir, 'common/Default.material.tsx'))
+        .access(path.join(materialsDir, 'default.material.tsx'))
         .then(() => true)
         .catch(() => false);
       expect(defaultExists).toBe(true);
 
       const testExists = await fs
-        .access(path.join(materialsDir, 'common/TestMaterial.material.tsx'))
+        .access(path.join(materialsDir, 'test123.material.tsx'))
         .then(() => true)
         .catch(() => false);
       expect(testExists).toBe(true);
 
-      const crateExists = await fs
-        .access(path.join(materialsDir, 'CrateTexture.material.tsx'))
+      const dssExists = await fs
+        .access(path.join(materialsDir, 'dss.material.tsx'))
         .then(() => true)
         .catch(() => false);
-      expect(crateExists).toBe(true);
+      expect(dssExists).toBe(true);
     });
   });
 
   describe('Input Assets', () => {
-    it('should load Default.input.tsx - verify file exists and has correct structure', async () => {
-      const filePath = path.join(process.cwd(), 'src/game/assets/inputs/Default.input.tsx');
+    it('should load default.input.tsx - verify file exists and has correct structure', async () => {
+      const filePath = path.join(process.cwd(), 'src/game/assets/inputs/default.input.tsx');
       const exists = await fs
         .access(filePath)
         .then(() => true)
@@ -102,20 +101,21 @@ describe('Real Asset Files', () => {
   });
 
   describe('Asset File Syntax', () => {
-    it('should have valid defineMaterial syntax in Default.material.tsx', async () => {
+    it('should have valid defineMaterial syntax in default.material.tsx', async () => {
       const filePath = path.join(
         process.cwd(),
-        'src/game/assets/materials/common/Default.material.tsx',
+        'src/game/assets/materials/default.material.tsx',
       );
       const content = await fs.readFile(filePath, 'utf-8');
 
       expect(content).toContain('import { defineMaterial }');
       expect(content).toContain('export default defineMaterial');
-      expect(content).toContain("id: 'default'");
+      // File format uses JSON so can be either single or double quotes
+      expect(content).toMatch(/(id: 'default'|"id": "default")/);
     });
 
-    it('should have valid defineInputAsset syntax in Default.input.tsx', async () => {
-      const filePath = path.join(process.cwd(), 'src/game/assets/inputs/Default.input.tsx');
+    it('should have valid defineInputAsset syntax in default.input.tsx', async () => {
+      const filePath = path.join(process.cwd(), 'src/game/assets/inputs/default.input.tsx');
       const content = await fs.readFile(filePath, 'utf-8');
 
       expect(content).toContain('import { defineInputAsset }');
