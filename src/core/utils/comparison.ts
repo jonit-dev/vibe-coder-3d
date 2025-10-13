@@ -43,8 +43,28 @@ export const compareMaterials = (
   if (!prev && !next) return true;
   if (!prev || !next) return false;
 
-  // Check all material properties using reference equality
-  return MATERIAL_PROPS_TO_CHECK.every((key) => prev[key] === next[key]);
+  // Check all material properties, with special handling for color
+  return MATERIAL_PROPS_TO_CHECK.every((key) => {
+    const prevVal = prev[key];
+    const nextVal = next[key];
+
+    // Special handling for color property which can be string or object
+    if (key === 'color') {
+      if (typeof prevVal === 'string' && typeof nextVal === 'string') {
+        return prevVal === nextVal;
+      }
+      if (typeof prevVal === 'object' && typeof nextVal === 'object' && prevVal && nextVal) {
+        const prevColor = prevVal as { r: number; g: number; b: number };
+        const nextColor = nextVal as { r: number; g: number; b: number };
+        return (
+          prevColor.r === nextColor.r && prevColor.g === nextColor.g && prevColor.b === nextColor.b
+        );
+      }
+      return prevVal === nextVal;
+    }
+
+    return prevVal === nextVal;
+  });
 };
 
 /**

@@ -35,5 +35,7 @@ Thumbs.db
 /html
 /coverage
 
+# Model optimization manifest (local cache)
+.model-optimization-manifest.json
 
 .serena/cache

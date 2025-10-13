@@ -322,14 +322,5 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
  * const material = useMaterialById('my-material-id');
  */
 export const useMaterialById = (materialId: string): IMaterialDefinition | undefined => {
-  return useMaterialsStore(
-    (state) => state.materials.find((m) => m.id === materialId),
-    // Custom equality function - only re-render if the material object changes
-    (prev, next) => {
-      if (!prev && !next) return true;
-      if (!prev || !next) return false;
-      // Reference equality is sufficient since MaterialRegistry returns same instance
-      return prev === next;
-    }
-  );
+  return useMaterialsStore((state) => state.materials.find((m) => m.id === materialId));
 };

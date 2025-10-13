@@ -4,7 +4,7 @@
  */
 
 import { sceneRegistry, EntityManager, componentRegistry, SceneLoader } from '@core/index';
-import ExampleMultiFileScene from './ExampleMultiFile';
+import ExampleMultiFileScene from './exampleMultiFile';
 
 // Register all game scenes function
 export function registerAllScenes(): void {

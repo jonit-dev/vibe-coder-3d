@@ -23,10 +23,10 @@ export interface IRenderingContributions {
   material?: {
     shader?: string;
     materialType?: string;
-    color?: string;
+    color?: string | { r: number; g: number; b: number };
     metalness?: number;
     roughness?: number;
-    emissive?: string;
+    emissive?: string | { r: number; g: number; b: number };
     emissiveIntensity?: number;
     normalScale?: number;
     occlusionStrength?: number;
@@ -124,7 +124,6 @@ export const useEntityMesh = ({
     // Apply only real overrides (not defaults) from MeshRenderer.material
     const overrides = meshRenderer?.material || {};
 
-
     // Filter out undefined values from overrides to prevent overwriting base values
     const filteredOverrides = Object.entries(overrides).reduce((acc, [key, value]) => {
       if (value !== undefined) {
@@ -152,7 +151,14 @@ export const useEntityMesh = ({
   // Update color from effective material
   useEffect(() => {
     if (renderingContributions.material?.color) {
-      setEntityColor(renderingContributions.material.color);
+      const color = renderingContributions.material.color;
+      // Convert object color to string format if needed
+      if (typeof color === 'object') {
+        const { r, g, b } = color;
+        setEntityColor(`rgb(${r * 255}, ${g * 255}, ${b * 255})`);
+      } else {
+        setEntityColor(color);
+      }
     }
   }, [renderingContributions]);
 

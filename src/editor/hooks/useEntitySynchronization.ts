@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 import { Logger } from '@/core/lib/logger';
 import { useEntityManager } from './useEntityManager';
@@ -81,7 +81,6 @@ export const useEntitySynchronization = ({ setEntityIds }: IUseEntitySynchroniza
     };
     // NOTE: Only depend on entityManager and setEntityIds
     // DO NOT add entityIds to dependencies - that would cause infinite loop
-     
   }, [entityManager, setEntityIds]);
 
   return { entityManager };

@@ -1,18 +1,18 @@
 /**
- * Sanitize a scene name to be a valid React component name
- * Removes special characters, ensures it starts with a capital letter
+ * Sanitize a scene name to be a valid camelCase filename
+ * Removes special characters, ensures camelCase format
  * @param name - The scene name to sanitize
- * @returns Sanitized component name
+ * @returns Sanitized camelCase name
  */
 export const sanitizeComponentName = (name: string): string => {
-  // Remove special characters and spaces, capitalize first letter
+  // Remove special characters and spaces, ensure starts with lowercase
   const sanitized = name
     .replace(/[^a-zA-Z0-9]/g, '')
     .replace(/^\d+/, '') // Remove leading numbers
-    .replace(/^./, (char) => char.toUpperCase());
+    .replace(/^./, (char) => char.toLowerCase()); // camelCase: lowercase first letter
 
-  // Ensure it starts with a capital letter and has at least one character
-  return sanitized || 'Scene';
+  // Ensure valid camelCase identifier
+  return sanitized || 'scene';
 };
 
 /**

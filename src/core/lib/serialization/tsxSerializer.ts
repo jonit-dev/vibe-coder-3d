@@ -3,6 +3,7 @@ import path from 'path';
 import type { IMaterialDefinition } from '../../materials/Material.types';
 import type { IPrefabDefinition } from '../../prefabs/Prefab.types';
 import type { IInputActionsAsset } from '../input/inputTypes';
+import { sanitizeComponentName } from './common/NameUtils';
 
 export interface ITsxSceneEntity {
   id: string | number;
@@ -244,19 +245,8 @@ export const listTsxScenes = async (): Promise<
   }
 };
 
-/**
- * Sanitizes scene name to be a valid React component name
- */
-export const sanitizeComponentName = (name: string): string => {
-  // Remove special characters and spaces, capitalize first letter
-  const sanitized = name
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .replace(/^\d+/, '') // Remove leading numbers
-    .replace(/^./, (char) => char.toUpperCase());
-
-  // Ensure it starts with a capital letter and has at least one character
-  return sanitized || 'Scene';
-};
+// Note: sanitizeComponentName is imported from common/NameUtils
+// No longer duplicated here - DRY principle
 
 /**
  * Validates TSX scene file structure

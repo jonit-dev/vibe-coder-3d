@@ -1,21 +1,28 @@
-import { Box3, Camera, Frustum, Matrix4, Mesh, Object3D, Scene } from 'three';
+import { Box3, Camera, Frustum, Matrix4, Mesh, Scene } from 'three';
 import {
   computeBoundsTree,
   disposeBoundsTree,
   acceleratedRaycast,
   MeshBVH,
+  CENTER,
+  AVERAGE,
+  SAH,
+  type SplitStrategy,
 } from 'three-mesh-bvh';
 import { Logger } from '@core/lib/logger';
 
 const logger = Logger.create('BVHManager');
 
 // Extend Three.js Mesh to support BVH
+ 
 declare module 'three' {
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   interface BufferGeometry {
     boundsTree?: MeshBVH;
     computeBoundsTree: typeof computeBoundsTree;
     disposeBoundsTree: typeof disposeBoundsTree;
   }
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   interface Mesh {
     raycast: typeof acceleratedRaycast;
   }
@@ -78,11 +85,28 @@ export class BVHManager {
   }
 
   /**
+   * Get the SplitStrategy constant from string config
+   */
+  private getStrategy(): SplitStrategy {
+    switch (this.config.strategy) {
+      case 'CENTER':
+        return CENTER;
+      case 'AVERAGE':
+        return AVERAGE;
+      case 'SAH':
+        return SAH;
+      default:
+        return SAH;
+    }
+  }
+
+  /**
    * Initialize Three.js prototype extensions for BVH
    */
   private initializeBVHExtensions(): void {
     try {
       // Apply BVH methods to BufferGeometry prototype
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const BufferGeometry = require('three').BufferGeometry;
       BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
       BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
@@ -102,6 +126,8 @@ export class BVHManager {
    * Register a mesh for BVH optimization
    */
   public registerMesh(mesh: Mesh, id?: string): void {
+    const meshId = id || mesh.uuid;
+
     try {
       if (!mesh || !mesh.geometry) {
         logger.warn('Cannot register mesh without geometry', { mesh });
@@ -113,8 +139,6 @@ export class BVHManager {
         return;
       }
 
-      const meshId = id || mesh.uuid;
-
       // Skip if already registered
       if (this.meshes.has(meshId)) {
         return;
@@ -123,8 +147,8 @@ export class BVHManager {
       // Build BVH for the mesh geometry (only if not already present)
       if (!mesh.geometry.boundsTree) {
         mesh.geometry.computeBoundsTree({
-          maxLeaf: this.config.maxLeafTris,
-          strategy: MeshBVH[this.config.strategy],
+          maxLeafTris: this.config.maxLeafTris,
+          strategy: this.getStrategy(),
         });
 
         logger.debug('BVH computed for mesh', {
@@ -135,7 +159,7 @@ export class BVHManager {
 
       this.meshes.set(meshId, mesh);
     } catch (error) {
-      logger.error('Failed to register mesh with BVH', { error, meshId: id });
+      logger.error('Failed to register mesh with BVH', { error, meshId });
     }
   }
 
@@ -154,7 +178,7 @@ export class BVHManager {
   /**
    * Update BVH for all registered meshes that need it
    */
-  public update(deltaTime: number): void {
+  public update(): void {
     const now = performance.now();
 
     // Check if enough time has passed since last update
@@ -167,18 +191,19 @@ export class BVHManager {
     let updatedCount = 0;
 
     // Update BVH for meshes that have changed
-    for (const [id, mesh] of this.meshes) {
+    for (const mesh of this.meshes.values()) {
       if (!mesh.geometry) continue;
 
       // Check if geometry needs BVH rebuild
       // This would typically happen if the geometry has been modified
-      if (mesh.geometry.attributes.position?.version !== undefined) {
+      const positionAttr = mesh.geometry.attributes.position;
+      if (positionAttr && 'version' in positionAttr) {
         const shouldRebuild = !mesh.geometry.boundsTree;
 
         if (shouldRebuild) {
           mesh.geometry.computeBoundsTree({
-            maxLeaf: this.config.maxLeafTris,
-            strategy: MeshBVH[this.config.strategy],
+            maxLeafTris: this.config.maxLeafTris,
+            strategy: this.getStrategy(),
           });
           updatedCount++;
         }
@@ -202,10 +227,7 @@ export class BVHManager {
     }
 
     // Update frustum from camera
-    this.projScreenMatrix.multiplyMatrices(
-      camera.projectionMatrix,
-      camera.matrixWorldInverse
-    );
+    this.projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projScreenMatrix);
 
     let totalObjects = 0;
@@ -272,9 +294,8 @@ export class BVHManager {
 
   /**
    * Process entire scene to register all meshes
-   * Uses batching to avoid blocking the main thread
    */
-  public processScene(scene: Scene, batchSize: number = 10): void {
+  public processScene(scene: Scene): void {
     try {
       let meshCount = 0;
       const meshes: Mesh[] = [];
@@ -322,14 +343,14 @@ export class BVHManager {
       meshCount: this.meshes.size,
     });
 
-    for (const [id, mesh] of this.meshes) {
+    for (const mesh of this.meshes.values()) {
       if (mesh.geometry.boundsTree) {
         mesh.geometry.disposeBoundsTree();
       }
 
       mesh.geometry.computeBoundsTree({
-        maxLeaf: this.config.maxLeafTris,
-        strategy: MeshBVH[this.config.strategy],
+        maxLeafTris: this.config.maxLeafTris,
+        strategy: this.getStrategy(),
       });
     }
 
@@ -344,7 +365,7 @@ export class BVHManager {
       meshCount: this.meshes.size,
     });
 
-    for (const [id, mesh] of this.meshes) {
+    for (const mesh of this.meshes.values()) {
       if (mesh.geometry.boundsTree) {
         mesh.geometry.disposeBoundsTree();
       }

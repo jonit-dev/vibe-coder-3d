@@ -522,8 +522,8 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
   /**
    * Clear scene with streaming
    */
-  const handleClear = useCallback((): void => {
-    const loadingToastId = projectToasts.showOperationStart('Clearing Scene');
+  const handleClear = useCallback(async (): Promise<void> => {
+    const loadingToastId = projectToasts.showOperationStart('Creating New Scene');
 
     try {
       const entities = entityManager.getAllEntities();
@@ -537,16 +537,20 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
       // Refresh the materials store cache after clearing
       useMaterialsStore.getState()._refreshMaterials();
 
+      // Load default scene to initialize with camera and lights
+      const { loadScene } = await import('@/core/lib/scene/SceneRegistry');
+      await loadScene('default', true);
+
       removeToast(loadingToastId);
       projectToasts.showOperationSuccess(
-        'Clear',
-        `Successfully cleared ${clearedCount} entities and materials (Streaming)`,
+        'New Scene',
+        `Created new scene with default camera and lights (cleared ${clearedCount} previous entities)`,
       );
     } catch (error) {
-      console.error('Failed to clear scene:', error);
+      console.error('Failed to create new scene:', error);
       removeToast(loadingToastId);
       projectToasts.showOperationError(
-        'Clear',
+        'New Scene',
         error instanceof Error ? error.message : 'Unknown error occurred',
       );
     }

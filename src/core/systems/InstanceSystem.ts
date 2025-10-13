@@ -54,15 +54,15 @@ export const updateInstanceSystem = (): void => {
   }
 
   // Query all entities with Instanced component
-  const entities = componentRegistry.getAllEntitiesWithComponent('Instanced');
+  const entities = componentRegistry.getEntitiesWithComponent('Instanced');
 
   for (const entityId of entities) {
-    const instancedData = componentRegistry.getComponent<InstancedComponentData>(
+    const instancedComponent = componentRegistry.getComponent<InstancedComponentData>(
       entityId,
       'Instanced',
     );
 
-    if (!instancedData || !instancedData.enabled) {
+    if (!instancedComponent || !instancedComponent.data.enabled) {
       // Remove instanced mesh if disabled
       removeInstancedMesh(entityId);
       continue;
@@ -70,9 +70,9 @@ export const updateInstanceSystem = (): void => {
 
     // Create or update instanced mesh
     if (!state.instancedMeshes.has(entityId)) {
-      createInstancedMesh(entityId, instancedData);
+      createInstancedMesh(entityId, instancedComponent.data);
     } else {
-      updateInstancedMesh(entityId, instancedData);
+      updateInstancedMesh(entityId, instancedComponent.data);
     }
   }
 
@@ -326,10 +326,7 @@ export interface IInstanceSystemApi {
   /**
    * Remove an instance by index
    */
-  removeInstance(
-    entityId: EntityId,
-    index: number,
-  ): { success: boolean; error?: string };
+  removeInstance(entityId: EntityId, index: number): { success: boolean; error?: string };
 
   /**
    * Get all instances for an entity
@@ -347,11 +344,12 @@ export interface IInstanceSystemApi {
  */
 export const instanceSystemApi: IInstanceSystemApi = {
   addInstance(entityId, instance) {
-    const data = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
-    if (!data) {
+    const component = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
+    if (!component) {
       return { success: false, error: 'Entity does not have Instanced component' };
     }
 
+    const data = component.data;
     if (data.instances.length >= data.capacity) {
       return { success: false, error: 'Instance capacity reached' };
     }
@@ -363,11 +361,12 @@ export const instanceSystemApi: IInstanceSystemApi = {
   },
 
   updateInstance(entityId, index, newData) {
-    const data = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
-    if (!data) {
+    const component = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
+    if (!component) {
       return { success: false, error: 'Entity does not have Instanced component' };
     }
 
+    const data = component.data;
     if (index < 0 || index >= data.instances.length) {
       return { success: false, error: 'Instance index out of bounds' };
     }
@@ -379,11 +378,12 @@ export const instanceSystemApi: IInstanceSystemApi = {
   },
 
   removeInstance(entityId, index) {
-    const data = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
-    if (!data) {
+    const component = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
+    if (!component) {
       return { success: false, error: 'Entity does not have Instanced component' };
     }
 
+    const data = component.data;
     if (index < 0 || index >= data.instances.length) {
       return { success: false, error: 'Instance index out of bounds' };
     }
@@ -395,13 +395,13 @@ export const instanceSystemApi: IInstanceSystemApi = {
   },
 
   getInstances(entityId) {
-    const data = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
-    return data?.instances || null;
+    const component = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
+    return component?.data.instances || null;
   },
 
   getInstanceCount(entityId) {
-    const data = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
-    return data?.instances.length || 0;
+    const component = componentRegistry.getComponent<InstancedComponentData>(entityId, 'Instanced');
+    return component?.data.instances.length || 0;
   },
 };
 

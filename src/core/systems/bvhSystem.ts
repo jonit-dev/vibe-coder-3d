@@ -63,7 +63,7 @@ export const initBVHSystem = (scene: Scene, camera: Camera, processScene = false
  * Update the BVH system
  * Should be called every frame from the game loop
  */
-export const updateBVHSystem = (deltaTime: number): void => {
+export const updateBVHSystem = (): void => {
   if (!state.enabled || !state.scene || !state.camera) {
     return;
   }
@@ -72,7 +72,7 @@ export const updateBVHSystem = (deltaTime: number): void => {
     const bvhManager = getBVHManager();
 
     // Update BVH structures
-    bvhManager.update(deltaTime);
+    bvhManager.update();
 
     // Perform frustum culling
     const stats = bvhManager.performFrustumCulling(state.scene, state.camera);

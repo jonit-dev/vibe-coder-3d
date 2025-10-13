@@ -8,7 +8,6 @@ import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
-import { getRgbAsHex, setRgbValues } from '../../utils/colorUtils';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
 
 // Single instance data schema
@@ -82,7 +81,7 @@ export const instancedComponent = ComponentFactory.create({
     comp.needsUpdate[eid] = 1;
 
     // Store instance data externally (arrays of varying length can't fit in BitECS)
-    if (!((globalThis as any).__instanceData__)) {
+    if (!(globalThis as any).__instanceData__) {
       (globalThis as any).__instanceData__ = {};
     }
     (globalThis as any).__instanceData__[eid] = instanceData.instances || [];

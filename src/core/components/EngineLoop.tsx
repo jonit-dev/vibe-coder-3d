@@ -11,7 +11,12 @@ import { lightSystem } from '../systems/lightSystem';
 import { soundSystem } from '../systems/soundSystem';
 import { transformSystem } from '../systems/transformSystem';
 import { InputManager } from '../lib/input/InputManager';
-import { initBVHSystem, updateBVHSystem, disposeBVHSystem, setBVHSystemEnabled } from '../systems/bvhSystem';
+import {
+  initBVHSystem,
+  updateBVHSystem,
+  disposeBVHSystem,
+  setBVHSystemEnabled,
+} from '../systems/bvhSystem';
 import {
   initInstanceSystem,
   updateInstanceSystem,
@@ -195,7 +200,7 @@ export const EngineLoop = ({
 
     // Update BVH system (runs outside fixed timestep for smooth culling)
     if (frameState.scene && frameState.camera) {
-      updateBVHSystem(deltaTime);
+      updateBVHSystem();
     }
 
     // Track overall frame performance
