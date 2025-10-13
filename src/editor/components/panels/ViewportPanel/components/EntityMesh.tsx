@@ -1,13 +1,13 @@
 import { ModelErrorBoundary } from '@/editor/components/shared/ModelErrorBoundary';
 import { ModelLoadingMesh } from '@/editor/components/shared/ModelLoadingMesh';
 import { useGLTF } from '@react-three/drei';
-import { ThreeEvent, useFrame } from '@react-three/fiber';
+import { ThreeEvent } from '@react-three/fiber';
 import React, { Suspense, useCallback, useMemo } from 'react';
 import type { Group, Mesh, Object3D } from 'three';
 
 import { Logger } from '@/core/lib/logger';
 import type { IRenderingContributions } from '@/core/types/entities';
-import { compareMaterials, shallowEqual } from '@/core/utils/comparison';
+import { compareMaterials, shallowEqual, deepEqual } from '@/core/utils/comparison';
 import { CameraEntity } from './CameraEntity';
 import { useEntityRegistration } from './hooks/useEntityRegistration';
 import { useTextureLoading } from './hooks/useTextureLoading';
@@ -70,13 +70,8 @@ const CustomModelMesh: React.FC<{
         [meshRef, entityId, modelScene],
       );
 
-      // Force matrix updates using useFrame to ensure proper parent-child transform inheritance
-      useFrame(() => {
-        if (meshRef?.current) {
-          // Force matrix updates on the group to ensure transforms propagate to children
-          meshRef.current.updateMatrixWorld(true);
-        }
-      });
+      // PERFORMANCE: Matrix updates now handled by ModelMatrixSystem (batched)
+      // See: performance-audit-report.md #4 - removes N individual useFrame hooks
 
       return (
         <group
@@ -134,10 +129,7 @@ const CustomModelMesh: React.FC<{
   // PERFORMANCE: Replaced JSON.stringify with fast shallow comparison
   (prevProps, nextProps) => {
     // Only re-render if actual data changes (return true = skip re-render, false = do re-render)
-    if (
-      prevProps.modelPath !== nextProps.modelPath ||
-      prevProps.entityId !== nextProps.entityId
-    ) {
+    if (prevProps.modelPath !== nextProps.modelPath || prevProps.entityId !== nextProps.entityId) {
       return false;
     }
 
@@ -278,7 +270,9 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
             {meshType === 'sphere' && <sphereGeometry args={[0.5, 32, 16]} />}
             {meshType === 'plane' && <planeGeometry args={[1, 1]} />}
             {meshType === 'cylinder' && <cylinderGeometry args={[0.5, 0.5, 1, 32]} />}
-            {(!['cube', 'sphere', 'plane', 'cylinder'].includes(meshType)) && <boxGeometry args={[1, 1, 1]} />}
+            {!['cube', 'sphere', 'plane', 'cylinder'].includes(meshType) && (
+              <boxGeometry args={[1, 1, 1]} />
+            )}
             <meshStandardMaterial
               color={
                 typeof material.color === 'string'
@@ -352,7 +346,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     }
 
     // Check if any relevant component data has actually changed
-    // PERFORMANCE: Use shallow comparison for common component types to avoid JSON.stringify
+    // PERFORMANCE: Use shallow/deep comparison to avoid JSON.stringify entirely
     for (let i = 0; i < relevantPrevComponents.length; i++) {
       const prev = relevantPrevComponents[i];
       const next = relevantNextComponents[i];
@@ -361,14 +355,21 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
         return false;
       }
 
-      // For common component types with simple data, use shallow comparison
-      if (['MeshRenderer', 'RigidBody', 'Camera', 'Light'].includes(prev.type)) {
-        if (!shallowEqual(prev.data as Record<string, unknown>, next.data as Record<string, unknown>)) {
+      // For component types with simple flat data, use fast shallow comparison
+      if (
+        ['MeshRenderer', 'RigidBody', 'Camera', 'Light', 'Sound', 'PrefabInstance'].includes(
+          prev.type,
+        )
+      ) {
+        if (
+          !shallowEqual(prev.data as Record<string, unknown>, next.data as Record<string, unknown>)
+        ) {
           return false;
         }
       } else {
-        // Fallback to JSON for complex/custom components (rare case)
-        if (JSON.stringify(prev.data) !== JSON.stringify(next.data)) {
+        // For complex components (Script, Terrain, CustomShape), use deep comparison
+        // Still faster than JSON.stringify and avoids string allocation
+        if (!deepEqual(prev.data, next.data)) {
           return false;
         }
       }

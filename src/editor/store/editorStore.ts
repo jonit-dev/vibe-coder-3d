@@ -25,7 +25,7 @@ interface IEditorStore {
 
   // Entity list cache
   entityIds: number[];
-  setEntityIds: (ids: number[]) => void;
+  setEntityIds: (idsOrUpdater: number[] | ((prev: number[]) => number[])) => void;
 
   // UI state
   contextMenu: IContextMenuState;
@@ -95,7 +95,14 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
 
   // Entity list cache
   entityIds: [],
-  setEntityIds: (ids) => set({ entityIds: ids }),
+  setEntityIds: (idsOrUpdater) => {
+    // Support both direct value and updater function pattern (like React setState)
+    if (typeof idsOrUpdater === 'function') {
+      set((state) => ({ entityIds: idsOrUpdater(state.entityIds) }));
+    } else {
+      set({ entityIds: idsOrUpdater });
+    }
+  },
 
   // UI state
   contextMenu: { open: false, entityId: null, anchorRef: null },

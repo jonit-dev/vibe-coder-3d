@@ -37,7 +37,7 @@ const MATERIAL_PROPS_TO_CHECK: Array<keyof NonNullable<IRenderingContributions['
  */
 export const compareMaterials = (
   prev: IRenderingContributions['material'],
-  next: IRenderingContributions['material']
+  next: IRenderingContributions['material'],
 ): boolean => {
   // Handle null/undefined cases
   if (!prev && !next) return true;
@@ -65,8 +65,42 @@ export const compareArrays = <T>(a: T[] | undefined, b: T[] | undefined): boolea
 export const shallowEqual = <T extends Record<string, unknown>>(
   a: T,
   b: T,
-  keys?: (keyof T)[]
+  keys?: (keyof T)[],
 ): boolean => {
   const keysToCheck = keys || (Object.keys(a) as (keyof T)[]);
   return keysToCheck.every((key) => a[key] === b[key]);
+};
+
+/**
+ * Deep equality check for component data without JSON.stringify
+ * Uses recursive comparison for nested objects/arrays
+ * PERFORMANCE: Faster than JSON.stringify for most component data
+ */
+export const deepEqual = (a: unknown, b: unknown): boolean => {
+  // Primitive or reference equality
+  if (a === b) return true;
+
+  // Null/undefined checks
+  if (a == null || b == null) return false;
+  if (typeof a !== typeof b) return false;
+
+  // Handle arrays
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((item, idx) => deepEqual(item, b[idx]));
+  }
+
+  // Handle objects
+  if (typeof a === 'object' && typeof b === 'object') {
+    const aObj = a as Record<string, unknown>;
+    const bObj = b as Record<string, unknown>;
+    const aKeys = Object.keys(aObj);
+    const bKeys = Object.keys(bObj);
+
+    if (aKeys.length !== bKeys.length) return false;
+
+    return aKeys.every((key) => deepEqual(aObj[key], bObj[key]));
+  }
+
+  return false;
 };

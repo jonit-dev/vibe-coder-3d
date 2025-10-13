@@ -16,6 +16,12 @@ export const useAutoSelection = ({
   const lastDeletionTime = useRef(0);
 
   useEffect(() => {
+    // Defensive: ensure entityIds is an array
+    if (!Array.isArray(entityIds)) {
+      console.error('[useAutoSelection] entityIds is not an array:', entityIds);
+      return;
+    }
+
     // Check if an entity was just deleted
     const currentIds = entityIds;
     const prevIds = previousEntityIds.current;
@@ -24,13 +30,11 @@ export const useAutoSelection = ({
     if (prevIds.length > currentIds.length) {
       wasDeleted.current = true;
       lastDeletionTime.current = Date.now();
-
     }
 
     // Clear deletion flag after a short delay to prevent race conditions
     if (wasDeleted.current && Date.now() - lastDeletionTime.current > 100) {
       wasDeleted.current = false;
-
     }
 
     // Only auto-select in these cases:
@@ -48,7 +52,6 @@ export const useAutoSelection = ({
         !isNewlySelected);
 
     if (shouldAutoSelect) {
-
       setSelectedId(entityIds[0]);
     } else if (isNewlySelected && !entityIds.includes(selectedId)) {
       // Newly selected entity not yet synchronized - this is expected

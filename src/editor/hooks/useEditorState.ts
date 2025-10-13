@@ -3,7 +3,7 @@ import { useEditorStore } from '../store/editorStore';
 interface IEntityState {
   entityIds: number[];
   selectedId: number | null;
-  setEntityIds: (ids: number[]) => void;
+  setEntityIds: (idsOrUpdater: number[] | ((prev: number[]) => number[])) => void;
   setSelectedId: (id: number | null) => void;
 }
 

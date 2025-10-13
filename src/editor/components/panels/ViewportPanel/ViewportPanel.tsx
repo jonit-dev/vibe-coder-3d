@@ -17,6 +17,7 @@ import { useEvent } from '@/core/hooks/useEvent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { isValidEntityId } from '@/core/lib/ecs/utils';
 import { setSelectedCameraEntity } from '@/core/systems/cameraSystem';
+import { ModelMatrixSystem } from '@/core/systems/ModelMatrixSystem';
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 import { GizmoMode } from '@/editor/hooks/useEditorKeyboard';
 import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
@@ -171,6 +172,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
 
             {/* Engine Loop - handles script execution and system updates */}
             <EngineLoop paused={!isPlaying} isPlaying={isPlaying} />
+
+            {/* Model Matrix System - batches matrix updates for custom models */}
+            <ModelMatrixSystem />
 
             {/* Scene Readiness Tracker */}
             <SceneReadinessTracker entityCount={entityIds.length} lightCount={lightIds.length} />

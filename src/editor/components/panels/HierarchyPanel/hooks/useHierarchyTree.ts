@@ -1,7 +1,10 @@
 import { useMemo } from 'react';
 
 import { IEntity } from '@/core/lib/ecs/IEntity';
+import { Logger } from '@/core/lib/logger';
 import { useEntityManager } from '@/editor/hooks/useEntityManager';
+
+const logger = Logger.create('useHierarchyTree');
 
 export interface IHierarchyTreeNode {
   entity: IEntity;
@@ -17,6 +20,12 @@ export const useHierarchyTree = (
   const entityManager = useEntityManager();
 
   return useMemo(() => {
+    // Defensive: ensure entityIds is an array
+    if (!Array.isArray(entityIds)) {
+      logger.error('entityIds is not an array', { entityIds, type: typeof entityIds });
+      return [];
+    }
+
     const allEntities = entityIds
       .map((id) => entityManager.getEntity(id))
       .filter(Boolean) as IEntity[];
