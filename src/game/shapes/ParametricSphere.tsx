@@ -20,6 +20,7 @@ export const shape: ICustomShapeDescriptor<typeof paramsSchema> = {
     category: 'Basic',
     tags: ['sphere', 'basic', 'parametric'],
     version: '1.0.0',
+    defaultColor: '#FF6B6B',
   },
 
   paramsSchema,

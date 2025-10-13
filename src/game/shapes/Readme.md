@@ -72,9 +72,22 @@ meta: {
   tags: ['tag1', 'tag2'],          // Optional: Tags for search/filtering
   version: '1.0.0',                // Optional: Version string
   icon: 'FaCube',                  // Optional: React Icons name
-  previewImage: '/path/to/img.png' // Optional: Static preview fallback
+  previewImage: '/path/to/img.png',// Optional: Static preview fallback
+  defaultColor: '#FF6B6B',         // Optional: Default color (hex format)
+  defaultMaterial: {               // Optional: Full material settings
+    color: '#FF6B6B',
+    shader: 'standard',
+    materialType: 'solid',
+    metalness: 0.5,
+    roughness: 0.7,
+    albedoTexture: '/path/to/texture.png',
+    normalTexture: '/path/to/normal.png',
+    // ... other material properties
+  }
 }
 ```
+
+**Note:** You can use either `defaultColor` for simple solid colors or `defaultMaterial` for complete material control including textures. If both are provided, `defaultMaterial` takes precedence.
 
 ### Parameters Schema (`paramsSchema`)
 

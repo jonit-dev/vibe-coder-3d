@@ -713,7 +713,16 @@ export const useEntityCreation = () => {
 
       // Add MeshRenderer component (required for rendering)
       // We use a special meshId that won't match any built-in shapes
-      addMeshRenderer(entity.id, 'customShape');
+      // If the shape has defaultMaterial or defaultColor, use it for the material
+      const overrides = (() => {
+        if (descriptor.meta.defaultMaterial) {
+          return { material: descriptor.meta.defaultMaterial };
+        } else if (descriptor.meta.defaultColor) {
+          return { material: { color: descriptor.meta.defaultColor } };
+        }
+        return undefined;
+      })();
+      addMeshRenderer(entity.id, 'customShape', undefined, overrides);
 
       return entity;
     },

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
 import { useEditorStore } from '@/editor/store/editorStore';
+import { compareArrays } from '@/core/utils/comparison';
 
 import { GizmoControls } from './GizmoControls';
 import { EntityMesh } from './components/EntityMesh';
@@ -197,6 +198,38 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       </group>
     );
   },
+  (prevProps, nextProps) => {
+    // Optimized memo comparison to prevent unnecessary re-renders
+    // while ensuring all prop changes trigger re-renders (no regressions)
+
+    // Check all primitive props
+    if (
+      prevProps.entityId !== nextProps.entityId ||
+      prevProps.selected !== nextProps.selected ||
+      prevProps.isPrimarySelection !== nextProps.isPrimarySelection ||
+      prevProps.mode !== nextProps.mode
+    ) {
+      return false; // Props changed, need re-render
+    }
+
+    // Check array equality (entity hierarchy changes)
+    if (!compareArrays(prevProps.allEntityIds, nextProps.allEntityIds)) {
+      return false;
+    }
+
+    // Function props are typically stable from parent component
+    // but we check for safety (though they rarely change)
+    if (
+      prevProps.onTransformChange !== nextProps.onTransformChange ||
+      prevProps.setIsTransforming !== nextProps.setIsTransforming ||
+      prevProps.setGizmoMode !== nextProps.setGizmoMode
+    ) {
+      return false;
+    }
+
+    // All props are equal, skip re-render
+    return true;
+  }
 );
 
 EntityRenderer.displayName = 'EntityRenderer';

@@ -7,6 +7,7 @@ import type { Group, Mesh, Object3D } from 'three';
 
 import { Logger } from '@/core/lib/logger';
 import type { IRenderingContributions } from '@/core/types/entities';
+import { compareMaterials, shallowEqual } from '@/core/utils/comparison';
 import { CameraEntity } from './CameraEntity';
 import { useEntityRegistration } from './hooks/useEntityRegistration';
 import { useTextureLoading } from './hooks/useTextureLoading';
@@ -130,18 +131,33 @@ const CustomModelMesh: React.FC<{
     }
   },
   // Custom comparison function to prevent unnecessary re-renders
+  // PERFORMANCE: Replaced JSON.stringify with fast shallow comparison
   (prevProps, nextProps) => {
     // Only re-render if actual data changes (return true = skip re-render, false = do re-render)
-    return (
-      prevProps.modelPath === nextProps.modelPath &&
-      prevProps.entityId === nextProps.entityId &&
-      prevProps.renderingContributions.castShadow === nextProps.renderingContributions.castShadow &&
-      prevProps.renderingContributions.receiveShadow ===
-      nextProps.renderingContributions.receiveShadow &&
-      prevProps.renderingContributions.visible === nextProps.renderingContributions.visible &&
-      JSON.stringify(prevProps.renderingContributions.material) ===
-      JSON.stringify(nextProps.renderingContributions.material)
-    );
+    if (
+      prevProps.modelPath !== nextProps.modelPath ||
+      prevProps.entityId !== nextProps.entityId
+    ) {
+      return false;
+    }
+
+    const prevRC = prevProps.renderingContributions;
+    const nextRC = nextProps.renderingContributions;
+
+    if (
+      prevRC.castShadow !== nextRC.castShadow ||
+      prevRC.receiveShadow !== nextRC.receiveShadow ||
+      prevRC.visible !== nextRC.visible
+    ) {
+      return false;
+    }
+
+    // Fast material comparison without JSON.stringify
+    if (!compareMaterials(prevRC.material, nextRC.material)) {
+      return false;
+    }
+
+    return true; // All props equal, skip re-render
   },
 );
 
@@ -305,15 +321,20 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     }
 
     // Deep compare renderingContributions
+    // PERFORMANCE: Replaced JSON.stringify with fast shallow comparison
     const prevRC = prevProps.renderingContributions;
     const nextRC = nextProps.renderingContributions;
     if (
       prevProps.meshType !== nextProps.meshType ||
       prevRC.castShadow !== nextRC.castShadow ||
       prevRC.receiveShadow !== nextRC.receiveShadow ||
-      prevRC.visible !== nextRC.visible ||
-      JSON.stringify(prevRC.material) !== JSON.stringify(nextRC.material)
+      prevRC.visible !== nextRC.visible
     ) {
+      return false;
+    }
+
+    // Fast material comparison without JSON.stringify
+    if (!compareMaterials(prevRC.material, nextRC.material)) {
       return false;
     }
 
@@ -331,12 +352,25 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     }
 
     // Check if any relevant component data has actually changed
+    // PERFORMANCE: Use shallow comparison for common component types to avoid JSON.stringify
     for (let i = 0; i < relevantPrevComponents.length; i++) {
       const prev = relevantPrevComponents[i];
       const next = relevantNextComponents[i];
 
-      if (prev.type !== next.type || JSON.stringify(prev.data) !== JSON.stringify(next.data)) {
+      if (prev.type !== next.type) {
         return false;
+      }
+
+      // For common component types with simple data, use shallow comparison
+      if (['MeshRenderer', 'RigidBody', 'Camera', 'Light'].includes(prev.type)) {
+        if (!shallowEqual(prev.data as Record<string, unknown>, next.data as Record<string, unknown>)) {
+          return false;
+        }
+      } else {
+        // Fallback to JSON for complex/custom components (rare case)
+        if (JSON.stringify(prev.data) !== JSON.stringify(next.data)) {
+          return false;
+        }
       }
     }
 

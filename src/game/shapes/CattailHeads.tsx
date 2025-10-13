@@ -26,6 +26,7 @@ export const shape: ICustomShapeDescriptor<typeof paramsSchema> = {
     category: 'Environment',
     tags: ['cattail', 'head', 'pond', 'vegetation', 'nature'],
     version: '1.0.0',
+    defaultColor: '#4B3621',
   },
 
   paramsSchema,

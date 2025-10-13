@@ -7,6 +7,34 @@ import type { ReactNode } from 'react';
 import type { z } from 'zod';
 
 /**
+ * Default material settings for a custom shape
+ */
+export interface IShapeDefaultMaterial {
+  /** Default color for this shape (hex format, e.g., "#ff0000") */
+  color?: string;
+  /** Shader type for the material */
+  shader?: 'standard' | 'unlit';
+  /** Material type */
+  materialType?: 'solid' | 'texture';
+  /** Metalness value (0-1) */
+  metalness?: number;
+  /** Roughness value (0-1) */
+  roughness?: number;
+  /** Albedo/diffuse texture path */
+  albedoTexture?: string;
+  /** Normal map texture path */
+  normalTexture?: string;
+  /** Metallic texture path */
+  metallicTexture?: string;
+  /** Roughness texture path */
+  roughnessTexture?: string;
+  /** Emissive texture path */
+  emissiveTexture?: string;
+  /** Occlusion/AO texture path */
+  occlusionTexture?: string;
+}
+
+/**
  * Metadata for a custom shape
  */
 export interface IShapeMetadata {
@@ -24,6 +52,10 @@ export interface IShapeMetadata {
   icon?: string;
   /** Optional static preview image (fallback if 3D preview fails) */
   previewImage?: string;
+  /** Default color for this shape (hex format, e.g., "#ff0000") */
+  defaultColor?: string;
+  /** Default material settings for this shape */
+  defaultMaterial?: IShapeDefaultMaterial;
 }
 
 /**

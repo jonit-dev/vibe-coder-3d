@@ -50,6 +50,7 @@ interface IMaterialsState {
   // Selector functions for computed properties
   getFilteredMaterials: () => IMaterialDefinition[];
   getSelectedMaterial: () => IMaterialDefinition | null | undefined;
+  getMaterialById: (id: string) => IMaterialDefinition | undefined;
 
   // Debug helper
   debugPrintMaterials: () => void;
@@ -302,8 +303,33 @@ export const useMaterialsStore = create<IMaterialsState>((set, get) => {
       return selectedMaterialId ? materials.find((m) => m.id === selectedMaterialId) || null : null;
     },
 
+    getMaterialById: (id: string) => {
+      const { materials } = get();
+      return materials.find((m) => m.id === id);
+    },
+
     debugPrintMaterials: () => {
       // Materials list tracked internally
     },
   };
 });
+
+/**
+ * PERFORMANCE: Optimized hook for subscribing to a single material by ID
+ * This prevents re-renders when unrelated materials change
+ *
+ * Usage:
+ * const material = useMaterialById('my-material-id');
+ */
+export const useMaterialById = (materialId: string): IMaterialDefinition | undefined => {
+  return useMaterialsStore(
+    (state) => state.materials.find((m) => m.id === materialId),
+    // Custom equality function - only re-render if the material object changes
+    (prev, next) => {
+      if (!prev && !next) return true;
+      if (!prev || !next) return false;
+      // Reference equality is sufficient since MaterialRegistry returns same instance
+      return prev === next;
+    }
+  );
+};

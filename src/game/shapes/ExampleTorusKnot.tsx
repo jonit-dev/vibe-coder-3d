@@ -32,6 +32,7 @@ export const shape: ICustomShapeDescriptor<typeof paramsSchema> = {
     category: 'Procedural',
     tags: ['knot', 'math', 'parametric', 'example'],
     version: '1.0.0',
+    defaultColor: '#9B59B6',
   },
 
   paramsSchema,
