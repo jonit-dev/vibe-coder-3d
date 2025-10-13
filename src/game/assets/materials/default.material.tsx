@@ -2,8 +2,5 @@ import { defineMaterial } from '@core/lib/serialization/assets/defineMaterials';
 
 export default defineMaterial({
   "id": "default",
-  "name": "Default",
-  "shader": "standard",
-  "materialType": "solid",
-  "color": "#cccccc"
+  "name": "Default"
 });

@@ -11,7 +11,6 @@ export const MaterialNameForm: React.FC<IMaterialNameFormProps> = ({
   materialName,
   materialId,
   onNameChange,
-  onIdChange,
 }) => (
   <div className="px-4 py-3 border-b border-gray-600 flex-shrink-0">
     <div>

@@ -1,8 +1,10 @@
 import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
+import { InputActionsAssetSchema } from '@core/lib/input/inputTypes';
 
 /**
  * Define input assets for external input asset files
  * Used in .inputs.tsx files to define scene-specific or shared input maps
+ * Automatically applies defaults from InputActionsAssetSchema
  *
  * @example
  * ```typescript
@@ -16,13 +18,14 @@ import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
  * ]);
  * ```
  */
-export function defineInputAssets(inputs: IInputActionsAsset[]): IInputActionsAsset[] {
-  return inputs;
+export function defineInputAssets(inputs: Partial<IInputActionsAsset>[]): IInputActionsAsset[] {
+  return inputs.map(input => InputActionsAssetSchema.parse(input));
 }
 
 /**
  * Define a single input asset for shared library files
  * Used in .input.tsx files in the shared asset library
+ * Automatically applies defaults from InputActionsAssetSchema
  *
  * @example
  * ```typescript
@@ -34,6 +37,6 @@ export function defineInputAssets(inputs: IInputActionsAsset[]): IInputActionsAs
  * });
  * ```
  */
-export function defineInputAsset(input: IInputActionsAsset): IInputActionsAsset {
-  return input;
+export function defineInputAsset(input: Partial<IInputActionsAsset>): IInputActionsAsset {
+  return InputActionsAssetSchema.parse(input);
 }

@@ -25,6 +25,13 @@ vi.mock('@core/lib/logger', () => ({
   },
 }));
 
+// Mock BrowserAssetLoader to prevent automatic asset loading
+vi.mock('@core/lib/serialization/assets/BrowserAssetLoader', () => ({
+  BrowserAssetLoader: vi.fn().mockImplementation(() => ({
+    loadInputAssets: vi.fn().mockResolvedValue([]),
+  })),
+}));
+
 describe('useInputAssetSync', () => {
   let mockInputManager: any;
 

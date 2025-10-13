@@ -92,7 +92,7 @@ export default defineMaterials([
         'material',
       );
 
-      expect(asset).toEqual({
+      expect(asset).toMatchObject({
         id: 'LibraryMaterial',
         name: 'Library Material',
         shader: 'standard',
@@ -110,7 +110,7 @@ export default defineMaterials([
         'material',
       );
 
-      expect(asset).toEqual({
+      expect(asset).toMatchObject({
         id: 'scene-material',
         name: 'Scene Material',
         shader: 'standard',

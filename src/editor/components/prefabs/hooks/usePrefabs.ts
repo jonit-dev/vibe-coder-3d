@@ -2,7 +2,7 @@ import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import type { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { EntityManager } from '@/core/lib/ecs/EntityManager';
 import { Logger } from '@/core/lib/logger';
-import { generateAssetIdentifiers, slugify } from '@/core/lib/utils/idGenerator';
+import { generateAssetIdentifiers } from '@/core/lib/utils/idGenerator';
 import { PrefabManager } from '@/core/prefabs/PrefabManager';
 import { useEditorStore } from '@/editor/store/editorStore';
 import { usePrefabsStore } from '@/editor/store/prefabsStore';

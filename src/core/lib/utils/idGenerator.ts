@@ -24,19 +24,19 @@ export function slugify(text: string): string {
 }
 
 /**
- * Convert text to PascalCase for use as file names
+ * Convert text to camelCase for use as file names (project convention)
  *
  * @example
- * toPascalCase("my nice trees") // "MyNiceTrees"
- * toPascalCase("player-character") // "PlayerCharacter"
- * toPascalCase("enemy_type_1") // "EnemyType1"
+ * toCamelCase("my nice trees") // "myNiceTrees"
+ * toCamelCase("player-character") // "playerCharacter"
+ * toCamelCase("enemy_type_1") // "enemyType1"
  */
-export function toPascalCase(text: string): string {
+export function toCamelCase(text: string): string {
   return text
     .trim()
     .replace(/[^\w\s-]/g, '') // Remove special characters
     .replace(/[\s_-]+(.)/g, (_, char) => char.toUpperCase()) // Replace separators + next char with uppercase
-    .replace(/^(.)/, (char) => char.toUpperCase()); // Capitalize first character
+    .replace(/^(.)/, (char) => char.toLowerCase()); // Lowercase first character
 }
 
 /**
@@ -73,7 +73,7 @@ export function generateUniqueId(
  *
  * @example
  * generateAssetIdentifiers("My Nice Trees", ".prefab.tsx", (id) => false)
- * // { id: "my-nice-trees", filename: "MyNiceTrees.prefab.tsx" }
+ * // { id: "my-nice-trees", filename: "myNiceTrees.prefab.tsx" }
  */
 export function generateAssetIdentifiers(
   name: string,
@@ -83,8 +83,8 @@ export function generateAssetIdentifiers(
   const baseId = slugify(name);
   const id = generateUniqueId(baseId, existsCheck);
 
-  // For filename, use the unique ID (which may have counter) converted to PascalCase
-  const filename = `${toPascalCase(id)}${extension}`;
+  // For filename, use the unique ID (which may have counter) converted to camelCase
+  const filename = `${toCamelCase(id)}${extension}`;
 
   return { id, filename };
 }

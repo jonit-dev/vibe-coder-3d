@@ -81,7 +81,7 @@ export default defineMaterials([
       const ref = './materials/TreeGreen';
       const material = await resolver.resolve(ref, context, 'material');
 
-      expect(material).toEqual({
+      expect(material).toMatchObject({
         id: 'TreeGreen',
         name: 'Tree Green',
         color: '#2d5016',
@@ -104,7 +104,7 @@ export default defineMaterial({
       const ref = '@/materials/common/Stone';
       const material = await resolver.resolve(ref, context, 'material');
 
-      expect(material).toEqual({
+      expect(material).toMatchObject({
         id: 'Stone',
         name: 'Generic Stone',
         color: '#7a7a7a',
@@ -187,7 +187,7 @@ export default defineMaterials([
       const ref = './materials/TreeGreen';
       const material = await resolver.resolve(ref, context, 'material');
 
-      expect(material).toEqual({
+      expect(material).toMatchObject({
         id: 'TreeGreen',
         name: 'Tree Green',
         color: '#2d5016',

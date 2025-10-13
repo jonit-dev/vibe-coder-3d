@@ -1,8 +1,8 @@
 import { defineMaterial } from '@core/lib/serialization/assets/defineMaterials';
 
 export default defineMaterial({
-  "id": "mat2",
-  "name": "Material 2",
-  "color": "#0000ff",
-  "roughness": 0.5
+  "id": "mat_38910607",
+  "name": "Material mat_38910607",
+  "color": "#2d5016",
+  "roughness": 0.9
 });

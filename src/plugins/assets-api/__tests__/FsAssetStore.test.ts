@@ -38,12 +38,12 @@ describe('FsAssetStore', () => {
         type: 'material',
       });
 
-      expect(result.filename).toBe('Test.material.tsx');
+      expect(result.filename).toBe('test.material.tsx');
       expect(result.path).toBe('@/materials/Test');
       expect(result.size).toBeGreaterThan(0);
 
       // Verify file exists
-      const filePath = path.join(libraryRoot, 'materials', 'Test.material.tsx');
+      const filePath = path.join(libraryRoot, 'materials', 'test.material.tsx');
       const exists = await fs
         .access(filePath)
         .then(() => true)
@@ -69,11 +69,11 @@ describe('FsAssetStore', () => {
         type: 'input',
       });
 
-      expect(result.filename).toBe('TestInput.input.tsx');
+      expect(result.filename).toBe('testInput.input.tsx');
       expect(result.path).toBe('@/inputs/TestInput');
 
       // Verify file content includes required imports
-      const filePath = path.join(libraryRoot, 'inputs', 'TestInput.input.tsx');
+      const filePath = path.join(libraryRoot, 'inputs', 'testInput.input.tsx');
       const content = await fs.readFile(filePath, 'utf-8');
       expect(content).toContain('ActionType');
       expect(content).toContain('ControlType');
@@ -93,7 +93,7 @@ describe('FsAssetStore', () => {
         type: 'material',
       });
 
-      const filePath = path.join(libraryRoot, 'materials', 'rocks', 'granite', 'Granite.material.tsx');
+      const filePath = path.join(libraryRoot, 'materials', 'rocks', 'granite', 'granite.material.tsx');
       const exists = await fs
         .access(filePath)
         .then(() => true)
@@ -122,7 +122,7 @@ describe('FsAssetStore', () => {
         type: 'material',
       });
 
-      expect(result.filename).toBe('LoadTest.material.tsx');
+      expect(result.filename).toBe('loadTest.material.tsx');
       // Note: Default values are omitted during save, so only non-default fields are returned
       // In this case, shader: 'standard' is the default, so it's omitted
       expect(result.payload).toEqual({
@@ -163,8 +163,8 @@ describe('FsAssetStore', () => {
       });
 
       expect(result.length).toBe(2);
-      expect(result.map((r) => r.filename)).toContain('Mat1.material.tsx');
-      expect(result.map((r) => r.filename)).toContain('Mat2.material.tsx');
+      expect(result.map((r) => r.filename)).toContain('mat1.material.tsx');
+      expect(result.map((r) => r.filename)).toContain('mat2.material.tsx');
     });
 
     it('should return empty array when no assets exist', async () => {
@@ -196,8 +196,8 @@ describe('FsAssetStore', () => {
       });
 
       expect(result.length).toBe(2);
-      expect(result.map((r) => r.path)).toContain('@/materials/rocks/Granite');
-      expect(result.map((r) => r.path)).toContain('@/materials/metals/Steel');
+      expect(result.map((r) => r.path)).toContain('@/materials/rocks/granite');
+      expect(result.map((r) => r.path)).toContain('@/materials/metals/steel');
     });
   });
 
@@ -209,7 +209,7 @@ describe('FsAssetStore', () => {
         type: 'material',
       });
 
-      const filePath = path.join(libraryRoot, 'materials', 'DeleteMe.material.tsx');
+      const filePath = path.join(libraryRoot, 'materials', 'deleteMe.material.tsx');
       let exists = await fs
         .access(filePath)
         .then(() => true)

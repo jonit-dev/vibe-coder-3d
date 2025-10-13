@@ -2,6 +2,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 import { ASSET_DEFINE_FUNCTIONS, ASSET_EXTENSIONS, AssetType } from './AssetTypes';
+import { MaterialDefinitionSchema } from '../../../materials/Material.types';
+import { PrefabDefinitionSchema } from '../../../prefabs/Prefab.types';
+import { InputActionsAssetSchema } from '../../input/inputTypes';
+import { ScriptDefinitionSchema } from './defineScripts';
 
 // Re-export AssetType for backward compatibility
 export type { AssetType };
@@ -118,21 +122,44 @@ export class AssetReferenceResolver {
     const singlePattern = new RegExp(`${single}\\(\\s*({[\\s\\S]*?})\\s*\\);?\\s*$`, 'm');
     const arrayPattern = new RegExp(`${plural}\\(\\s*(\\[[\\s\\S]*?\\])\\s*\\);?\\s*$`, 'm');
 
+    let parsedAssets: unknown[];
+
     // Try array format first (defineMaterials([...]))
     let match = content.match(arrayPattern);
     if (match) {
       const jsonStr = this.sanitizeForJson(match[1]);
-      return JSON.parse(jsonStr);
+      parsedAssets = JSON.parse(jsonStr);
+    } else {
+      // Try single format (defineMaterial({...}))
+      match = content.match(singlePattern);
+      if (match) {
+        const jsonStr = this.sanitizeForJson(match[1]);
+        parsedAssets = [JSON.parse(jsonStr)];
+      } else {
+        throw new Error(`Could not parse asset file: no ${single} or ${plural} found`);
+      }
     }
 
-    // Try single format (defineMaterial({...}))
-    match = content.match(singlePattern);
-    if (match) {
-      const jsonStr = this.sanitizeForJson(match[1]);
-      return [JSON.parse(jsonStr)];
-    }
+    // Apply schema validation and defaults
+    return parsedAssets.map(asset => this.applySchema(asset, assetType));
+  }
 
-    throw new Error(`Could not parse asset file: no ${single} or ${plural} found`);
+  /**
+   * Apply appropriate Zod schema to asset data to ensure defaults are applied
+   */
+  private applySchema(asset: unknown, assetType: AssetType): unknown {
+    switch (assetType) {
+      case 'material':
+        return MaterialDefinitionSchema.parse(asset);
+      case 'prefab':
+        return PrefabDefinitionSchema.parse(asset);
+      case 'input':
+        return InputActionsAssetSchema.parse(asset);
+      case 'script':
+        return ScriptDefinitionSchema.parse(asset);
+      default:
+        return asset;
+    }
   }
 
   /**

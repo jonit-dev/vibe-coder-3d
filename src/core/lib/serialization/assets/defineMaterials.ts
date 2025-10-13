@@ -1,10 +1,10 @@
 import type { IMaterialDefinition } from '@core/materials/Material.types';
-import { restoreDefaults } from '@core/lib/serialization/utils/DefaultOmitter';
-import { MATERIAL_DEFAULTS } from '@core/lib/serialization/defaults/MaterialDefaults';
+import { MaterialDefinitionSchema } from '@core/materials/Material.types';
 
 /**
  * Define materials for external material asset files
  * Used in .materials.tsx files to define scene-specific or shared materials
+ * Automatically applies defaults from MaterialDefinitionSchema
  *
  * @example
  * ```typescript
@@ -16,13 +16,13 @@ import { MATERIAL_DEFAULTS } from '@core/lib/serialization/defaults/MaterialDefa
  * ```
  */
 export function defineMaterials(materials: Array<Partial<IMaterialDefinition> & Pick<IMaterialDefinition, 'id' | 'name'>>): IMaterialDefinition[] {
-  return materials.map(material => restoreDefaults(material as Record<string, unknown>, MATERIAL_DEFAULTS) as IMaterialDefinition);
+  return materials.map(material => MaterialDefinitionSchema.parse(material));
 }
 
 /**
  * Define a single material for shared library files
  * Used in .material.tsx files in the shared asset library
- * Automatically restores default values for omitted properties
+ * Automatically applies defaults from MaterialDefinitionSchema
  *
  * @example
  * ```typescript
@@ -36,5 +36,5 @@ export function defineMaterials(materials: Array<Partial<IMaterialDefinition> & 
  * ```
  */
 export function defineMaterial(material: Partial<IMaterialDefinition> & Pick<IMaterialDefinition, 'id' | 'name'>): IMaterialDefinition {
-  return restoreDefaults(material as Record<string, unknown>, MATERIAL_DEFAULTS) as IMaterialDefinition;
+  return MaterialDefinitionSchema.parse(material);
 }

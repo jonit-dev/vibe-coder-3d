@@ -2,7 +2,11 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { ASSET_EXTENSIONS, ASSET_DEFINE_FUNCTIONS, type AssetType } from '../../core/lib/serialization/assets/AssetTypes';
 import { omitDefaults } from '../../core/lib/serialization/utils/DefaultOmitter';
-import { MATERIAL_DEFAULTS } from '../../core/lib/serialization/defaults/MaterialDefaults';
+import { MaterialDefinitionSchema } from '../../core/materials/Material.types';
+import { PrefabDefinitionSchema } from '../../core/prefabs/Prefab.types';
+import { InputActionsAssetSchema } from '../../core/lib/input/inputTypes';
+import { ScriptDefinitionSchema } from '../../core/lib/serialization/assets/defineScripts';
+import { toCamelCase } from '../../core/lib/utils/idGenerator';
 import type {
   IAssetStore,
   IAssetFileMeta,
@@ -127,14 +131,22 @@ export class FsAssetStore implements IAssetStore {
 
   /**
    * Resolve asset path to filesystem path
+   * Converts asset IDs to camelCase for consistent file naming (project convention)
    */
   private resolveAssetPath(assetPath: string, type: AssetType): string {
     const extension = ASSET_EXTENSIONS[type];
 
     if (assetPath.startsWith('@/')) {
-      // Library asset: @/materials/common/Stone
+      // Library asset: @/materials/my-nice-trees -> materials/myNiceTrees.material.tsx
       const relativePath = assetPath.replace('@/', '');
-      return path.join(this.libraryRoot, `${relativePath}${extension}`);
+      const pathParts = relativePath.split('/');
+
+      // Convert the last part (filename) to camelCase
+      const filename = pathParts[pathParts.length - 1];
+      pathParts[pathParts.length - 1] = toCamelCase(filename);
+
+      const normalizedPath = pathParts.join('/');
+      return path.join(this.libraryRoot, `${normalizedPath}${extension}`);
     } else if (assetPath.startsWith('./')) {
       // Scene-relative asset: ./materials/TreeGreen
       // Extract scene name and asset ID
@@ -200,13 +212,27 @@ export class FsAssetStore implements IAssetStore {
       ? `\nimport { ActionType, ControlType, DeviceType, CompositeType } from '@core';`
       : '';
 
-    // Omit default values for materials to reduce file size
+    // Omit default values to reduce file size
+    // Extract defaults from Zod schemas (single source of truth)
     let processedPayload = payload;
-    if (type === 'material') {
+
+    // Map asset types to their schemas
+    const schemaMap = {
+      material: MaterialDefinitionSchema,
+      prefab: PrefabDefinitionSchema,
+      input: InputActionsAssetSchema,
+      script: ScriptDefinitionSchema,
+    };
+
+    const schema = schemaMap[type];
+    if (schema) {
+      const defaults = this.extractSchemaDefaults(schema, type);
       if (isSingle) {
-        processedPayload = this.cleanMaterialForSave(omitDefaults(payload as Record<string, unknown>, MATERIAL_DEFAULTS));
+        processedPayload = this.cleanOptionalFields(omitDefaults(payload as Record<string, unknown>, defaults), type);
       } else if (Array.isArray(payload)) {
-        processedPayload = payload.map(item => this.cleanMaterialForSave(omitDefaults(item as Record<string, unknown>, MATERIAL_DEFAULTS)));
+        processedPayload = payload.map(item =>
+          this.cleanOptionalFields(omitDefaults(item as Record<string, unknown>, defaults), type)
+        );
       }
     }
 
@@ -217,16 +243,74 @@ export default ${defineFn}(${JSON.stringify(processedPayload, null, 2)});
   }
 
   /**
-   * Clean material by removing empty texture strings (convert to undefined)
-   * This ensures optional texture fields are truly optional and not just empty strings
+   * Extract default values from a Zod schema
+   * Uses Zod's parse with a minimal valid object to get all defaults
    */
-  private cleanMaterialForSave(material: Partial<Record<string, unknown>>): Partial<Record<string, unknown>> {
-    const textureFields = ['albedoTexture', 'normalTexture', 'metallicTexture', 'roughnessTexture', 'emissiveTexture', 'occlusionTexture'];
-    const cleaned = { ...material };
+  private extractSchemaDefaults(schema: any, type: AssetType): Record<string, unknown> {
+    try {
+      // Create minimal valid objects for each type
+      const minimalObjects = {
+        material: { id: '_', name: '_' },
+        prefab: { id: '_', name: '_', root: { name: '_', components: {} } },
+        input: { name: '_', controlSchemes: [], actionMaps: [] },
+        script: { id: '_', name: '_' },
+      };
 
-    for (const field of textureFields) {
-      if (field in cleaned && cleaned[field] === '') {
-        delete cleaned[field];
+      const minimal = minimalObjects[type];
+      const parsed = schema.parse(minimal);
+
+      // For prefabs, we need to include nested defaults for the root entity
+      if (type === 'prefab') {
+        const { id, name, ...defaults } = parsed;
+        // Extract defaults for the nested root entity structure
+        if (defaults.root && typeof defaults.root === 'object') {
+          const rootDefaults = defaults.root as Record<string, unknown>;
+          const { name: rootName, components, ...nestedDefaults } = rootDefaults;
+          // Only keep actual defaults (like children: [])
+          return {
+            ...defaults,
+            root: nestedDefaults,
+          };
+        }
+        return defaults;
+      }
+
+      // For other types, remove the minimal required fields
+      const { id, name, root, controlSchemes, actionMaps, ...defaults } = parsed;
+      return defaults;
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * Clean optional fields by removing empty values
+   * This ensures optional fields are truly optional and not just empty strings/arrays
+   */
+  private cleanOptionalFields(asset: Partial<Record<string, unknown>>, type: AssetType): Partial<Record<string, unknown>> {
+    const cleaned = { ...asset };
+
+    if (type === 'material') {
+      // Remove empty texture strings
+      const textureFields = ['albedoTexture', 'normalTexture', 'metallicTexture', 'roughnessTexture', 'emissiveTexture', 'occlusionTexture'];
+      for (const field of textureFields) {
+        if (field in cleaned && cleaned[field] === '') {
+          delete cleaned[field];
+        }
+      }
+    } else if (type === 'prefab') {
+      // Remove empty optional fields
+      if ('description' in cleaned && !cleaned.description) {
+        delete cleaned.description;
+      }
+      if ('dependencies' in cleaned && Array.isArray(cleaned.dependencies) && cleaned.dependencies.length === 0) {
+        delete cleaned.dependencies;
+      }
+      if ('tags' in cleaned && Array.isArray(cleaned.tags) && cleaned.tags.length === 0) {
+        delete cleaned.tags;
+      }
+      if ('metadata' in cleaned && typeof cleaned.metadata === 'object' && Object.keys(cleaned.metadata as object).length === 0) {
+        delete cleaned.metadata;
       }
     }
 

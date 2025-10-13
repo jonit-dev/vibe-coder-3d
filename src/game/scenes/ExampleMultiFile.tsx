@@ -2,16 +2,16 @@ import { defineScene } from './defineScene';
 
 /**
  * ExampleMultiFile
- * Scene with 5 entities
- * Generated: 2025-10-12T02:33:34.063Z
+ * Scene with 6 entities
+ * Generated: 2025-10-12T16:09:44.738Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
   "name": "ExampleMultiFile",
   "version": 1,
-  "timestamp": "2025-10-12T02:33:34.063Z",
-  "description": "Scene with 5 entities"
+  "timestamp": "2025-10-12T16:09:44.738Z",
+  "description": "Scene with 6 entities"
 },
   entities: [
   {
@@ -54,46 +54,6 @@ export default defineScene({
     }
   },
   {
-    "id": 2,
-    "name": "Oak Tree 1",
-    "components": {
-      "PersistentId": {
-        "id": "95f5457f-c8f0-42f0-ab8d-03ecd66cc67e"
-      },
-      "Transform": {
-        "position": [
-          -3,
-          0,
-          0
-        ]
-      },
-      "MeshRenderer": {
-        "meshId": "tree",
-        "materialId": "default"
-      }
-    }
-  },
-  {
-    "id": 3,
-    "name": "Oak Tree 2",
-    "components": {
-      "PersistentId": {
-        "id": "0634deb9-bbd9-4d14-9665-39a8485f2e95"
-      },
-      "Transform": {
-        "position": [
-          3,
-          0,
-          0
-        ]
-      },
-      "MeshRenderer": {
-        "meshId": "tree",
-        "materialId": "default"
-      }
-    }
-  },
-  {
     "id": 4,
     "name": "Ground",
     "components": {
@@ -114,13 +74,76 @@ export default defineScene({
       },
       "MeshRenderer": {
         "meshId": "cube",
-        "materialId": "dss"
+        "materialId": "grass"
+      }
+    }
+  },
+  {
+    "id": 6,
+    "name": "trees",
+    "components": {
+      "PersistentId": {
+        "id": "5ca63c70-8378-4353-bf07-eb31b694713c"
+      },
+      "PrefabInstance": {
+        "prefabId": "trees",
+        "instanceUuid": "efdc53dc-9a41-4c00-beb0-470c50c11f4e",
+        "overridePatch": {
+          "position": [
+            0.625,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": 7,
+    "name": "Oak Tree 1",
+    "parentId": 6,
+    "components": {
+      "PersistentId": {
+        "id": "f900b38b-b3f7-4a1d-808c-e1e0353e665c"
+      },
+      "Transform": {
+        "position": [
+          -1.25,
+          0,
+          0
+        ]
+      },
+      "MeshRenderer": {
+        "meshId": "tree",
+        "materialId": "default"
+      }
+    }
+  },
+  {
+    "id": 8,
+    "name": "Oak Tree 2",
+    "parentId": 6,
+    "components": {
+      "PersistentId": {
+        "id": "714bd85d-16b2-41e9-9238-6212a35de444"
+      },
+      "Transform": {
+        "position": [
+          2.5,
+          0,
+          0
+        ]
+      },
+      "MeshRenderer": {
+        "meshId": "tree",
+        "materialId": "default"
       }
     }
   }
 ],
   assetReferences: {
-    materials: ["@/materials/default","@/materials/red","@/materials/dss","@/materials/test123"],
-    inputs: ["@/inputs/DefaultInput"]
+    materials: ["@/materials/default","@/materials/dss","@/materials/mat1","@/materials/mat2","@/materials/mat_38910607","@/materials/myMaterial","@/materials/red","@/materials/test123","@/materials/grass"],
+    inputs: ["@/inputs/DefaultInput"],
+    prefabs: ["@/prefabs/Trees"]
   }
 });

@@ -178,12 +178,12 @@ describe('Assets API Integration', () => {
       const data = await response.json();
 
       expect(data.success).toBe(true);
-      expect(data.filename).toBe('TestMaterial.material.tsx');
+      expect(data.filename).toBe('testMaterial.material.tsx'); // camelCase file naming convention
       expect(data.path).toBe('@/materials/TestMaterial');
       expect(data.size).toBeGreaterThan(0);
 
       // Verify file was created
-      const filePath = path.join(libraryDir, 'materials', 'TestMaterial.material.tsx');
+      const filePath = path.join(libraryDir, 'materials', 'testMaterial.material.tsx'); // camelCase file naming
       const fileExists = await fs
         .access(filePath)
         .then(() => true)
@@ -211,7 +211,7 @@ describe('Assets API Integration', () => {
       const data = await response.json();
 
       expect(data.success).toBe(true);
-      expect(data.filename).toBe('TestInput.input.tsx');
+      expect(data.filename).toBe('testInput.input.tsx'); // camelCase file naming convention
     });
 
     it('should return 400 if path is missing', async () => {
@@ -251,12 +251,11 @@ describe('Assets API Integration', () => {
 export default defineMaterial({
   "id": "load-test",
   "name": "Load Test Material",
-  "shader": "standard",
   "color": "#00ff00"
-});`;
+});`; // Omit shader: 'standard' as it's the default
 
       await fs.writeFile(
-        path.join(libraryDir, 'materials', 'LoadTest.material.tsx'),
+        path.join(libraryDir, 'materials', 'loadTest.material.tsx'), // camelCase file naming
         materialContent,
       );
     });
@@ -270,12 +269,12 @@ export default defineMaterial({
       const data = await response.json();
 
       expect(data.success).toBe(true);
-      expect(data.filename).toBe('LoadTest.material.tsx');
+      expect(data.filename).toBe('loadTest.material.tsx'); // camelCase file naming convention
       expect(data.payload).toEqual({
         id: 'load-test',
         name: 'Load Test Material',
-        shader: 'standard',
         color: '#00ff00',
+        // Note: shader: 'standard' is the default, so it's omitted during save
       });
     });
 
@@ -372,14 +371,14 @@ export default defineMaterials([{ "id": "scene-mat", "name": "Scene Material" }]
       const materialContent = `import { defineMaterial } from '@core/lib/serialization/assets/defineMaterials';
 export default defineMaterial({ "id": "delete-test", "name": "Delete Test" });`;
       await fs.writeFile(
-        path.join(libraryDir, 'materials', 'DeleteTest.material.tsx'),
+        path.join(libraryDir, 'materials', 'deleteTest.material.tsx'), // camelCase file naming
         materialContent,
       );
     });
 
     it('should delete a material', async () => {
       // Verify file exists before deletion
-      const filePath = path.join(libraryDir, 'materials', 'DeleteTest.material.tsx');
+      const filePath = path.join(libraryDir, 'materials', 'deleteTest.material.tsx'); // camelCase file naming
       let fileExists = await fs
         .access(filePath)
         .then(() => true)

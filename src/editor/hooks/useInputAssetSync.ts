@@ -19,7 +19,6 @@ export const useInputAssetSync = () => {
   // Load current asset into InputManager
   useEffect(() => {
     if (!currentAsset || !currentAssetName) {
-      logger.warn('No current input asset selected');
       return;
     }
 

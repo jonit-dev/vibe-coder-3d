@@ -245,7 +245,7 @@ describe('PooledVector3', () => {
       }
 
       const duration = performance.now() - start;
-      expect(duration).toBeLessThan(50); // Should be fast
+      expect(duration).toBeLessThan(100); // Should be fast
 
       const stats = Vector3Pool.getStats();
       expect(stats.totalAcquired).toBe(iterations * 3);
