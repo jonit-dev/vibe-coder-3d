@@ -448,9 +448,10 @@ export class StreamingSceneSerializer {
       }
 
       // Restore locked entity IDs if provided
-      if (setLockedEntityIds && validatedScene.lockedEntityIds) {
+      if (setLockedEntityIds) {
         // Map old IDs to new IDs
-        const newLockedIds = validatedScene.lockedEntityIds
+        const sourceLockedIds = validatedScene.lockedEntityIds ?? [];
+        const newLockedIds = sourceLockedIds
           .map((oldId) => {
             const newId = idMap.get(String(oldId));
             return typeof newId === 'number' ? newId : null;

@@ -40,7 +40,7 @@ export class RendererFactory {
    * @param options - Renderer configuration options
    */
   static async create(
-    type: RendererType = 'webgl',
+    _type: RendererType = 'webgl',
     options: IRendererOptions = {},
   ): Promise<IRendererResult> {
     const {

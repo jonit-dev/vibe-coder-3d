@@ -190,7 +190,7 @@ export class EntitySerializer {
     entities: unknown[],
     entityManager: IEntityManagerAdapter,
     componentManager: IComponentManagerAdapter,
-  ): void {
+  ): Map<number | string, number> {
     // Clear existing entities
     entityManager.clearEntities();
 
@@ -291,6 +291,8 @@ export class EntitySerializer {
       success: successCount,
       errors: errorCount,
     });
+
+    return idMap;
   }
 
   /**

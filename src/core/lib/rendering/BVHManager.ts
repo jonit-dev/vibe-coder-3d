@@ -1,4 +1,4 @@
-import { Box3, Camera, Frustum, Matrix4, Mesh, Scene } from 'three';
+import { Box3, BufferGeometry, Camera, Frustum, Matrix4, Mesh, Scene } from 'three';
 import {
   computeBoundsTree,
   disposeBoundsTree,
@@ -14,7 +14,7 @@ import { Logger } from '@core/lib/logger';
 const logger = Logger.create('BVHManager');
 
 // Extend Three.js Mesh to support BVH
- 
+
 declare module 'three' {
   // eslint-disable-next-line @typescript-eslint/naming-convention
   interface BufferGeometry {
@@ -106,8 +106,6 @@ export class BVHManager {
   private initializeBVHExtensions(): void {
     try {
       // Apply BVH methods to BufferGeometry prototype
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const BufferGeometry = require('three').BufferGeometry;
       BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
       BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 

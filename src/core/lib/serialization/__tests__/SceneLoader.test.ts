@@ -176,6 +176,46 @@ describe('SceneLoader', () => {
 
       await expect(loader.load(sceneData, entityManager, componentRegistry)).resolves.not.toThrow();
     });
+
+    it('should map locked entity IDs to runtime IDs when loading', async () => {
+      const refreshMaterials = vi.fn();
+      const refreshPrefabs = vi.fn();
+      const setLockedEntityIds = vi.fn();
+
+      const sceneData: ISceneData = {
+        metadata: {
+          name: 'Locked Scene',
+          version: 1,
+          timestamp: '2025-01-01T00:00:00.000Z',
+        },
+        entities: [
+          {
+            id: 42,
+            name: 'Locked Entity',
+            components: {
+              PersistentId: {
+                id: 'persist-locked-entity',
+              },
+            },
+          },
+        ],
+        materials: [],
+        prefabs: [],
+        lockedEntityIds: [42],
+      };
+
+      await loader.load(sceneData, entityManager, componentRegistry, {
+        refreshMaterials,
+        refreshPrefabs,
+        setLockedEntityIds,
+      });
+
+      const runtimeEntities = entityManager.getAllEntities();
+      expect(runtimeEntities).toHaveLength(1);
+      const runtimeId = runtimeEntities[0].id;
+
+      expect(setLockedEntityIds).toHaveBeenCalledWith([runtimeId]);
+    });
   });
 
   describe('loadStatic', () => {
@@ -323,6 +363,45 @@ describe('SceneLoader', () => {
 
       expect(refreshMaterials).toHaveBeenCalled();
       expect(refreshPrefabs).toHaveBeenCalled();
+    });
+
+    it('should map locked entity IDs when loading static data', async () => {
+      const refreshMaterials = vi.fn();
+      const refreshPrefabs = vi.fn();
+      const setLockedEntityIds = vi.fn();
+
+      const entities = [
+        {
+          id: 5,
+          name: 'Static Locked Entity',
+          components: {
+            PersistentId: {
+              id: 'persist-static-locked',
+            },
+          },
+        },
+      ];
+
+      await loader.loadStatic(
+        entities,
+        [],
+        [],
+        entityManager,
+        componentRegistry,
+        {
+          refreshMaterials,
+          refreshPrefabs,
+          setLockedEntityIds,
+        },
+        undefined,
+        [5],
+      );
+
+      const runtimeEntities = entityManager.getAllEntities();
+      expect(runtimeEntities).toHaveLength(1);
+      const runtimeId = runtimeEntities[0].id;
+
+      expect(setLockedEntityIds).toHaveBeenCalledWith([runtimeId]);
     });
   });
 

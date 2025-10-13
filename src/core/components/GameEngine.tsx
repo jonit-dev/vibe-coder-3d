@@ -46,7 +46,7 @@ export function GameEngine({
   autoStart = true,
   canvasProps,
   noCanvas = false,
-  engineConfig,
+  engineConfig: _engineConfig,
   children,
 }: IGameEngineProps) {
   // Get controls from the hook

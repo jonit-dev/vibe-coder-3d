@@ -8,6 +8,26 @@ import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
 
 const logger = Logger.create('SceneLoader');
 
+const mapLockedEntityIdsToRuntime = (
+  lockedEntityIds: number[] | undefined,
+  idMap?: Map<string | number, number>,
+): number[] => {
+  if (!lockedEntityIds || lockedEntityIds.length === 0) {
+    return [];
+  }
+
+  if (!idMap) {
+    return [...lockedEntityIds];
+  }
+
+  return lockedEntityIds
+    .map((id) => {
+      const mapped = idMap.get(id) ?? idMap.get(String(id));
+      return typeof mapped === 'number' ? mapped : null;
+    })
+    .filter((id): id is number => id !== null);
+};
+
 /**
  * Store refresh interface for cache synchronization
  */
@@ -70,9 +90,13 @@ export class SceneLoader {
       }
 
       // Restore locked entity IDs if provided
-      if (result.lockedEntityIds && storeRefresher.setLockedEntityIds) {
-        logger.debug('Restoring locked entity IDs', { count: result.lockedEntityIds.length });
-        storeRefresher.setLockedEntityIds(result.lockedEntityIds);
+      if (storeRefresher.setLockedEntityIds) {
+        const mappedLockedIds = mapLockedEntityIdsToRuntime(
+          result.lockedEntityIds,
+          result.entityIdMap,
+        );
+        logger.debug('Restoring locked entity IDs', { count: mappedLockedIds.length });
+        storeRefresher.setLockedEntityIds(mappedLockedIds);
       }
     }
 
@@ -97,6 +121,7 @@ export class SceneLoader {
     componentManager: IComponentManager,
     storeRefresher?: IStoreRefresher,
     inputAssets?: IInputActionsAsset[],
+    lockedEntityIds?: number[],
   ): Promise<void> {
     logger.info('Loading static scene', {
       entities: entities.length,
@@ -108,7 +133,7 @@ export class SceneLoader {
     // Load in correct order: materials -> prefabs -> entities -> input assets
     this.materialSerializer.deserialize(materials);
     await this.prefabSerializer.deserialize(prefabs);
-    this.entitySerializer.deserialize(entities, entityManager, componentManager);
+    const idMap = this.entitySerializer.deserialize(entities, entityManager, componentManager);
 
     if (storeRefresher) {
       logger.debug('Refreshing store caches');
@@ -119,6 +144,12 @@ export class SceneLoader {
       if (inputAssets && storeRefresher.loadInputAssets) {
         logger.debug('Loading input assets', { count: inputAssets.length });
         storeRefresher.loadInputAssets(inputAssets);
+      }
+
+      if (storeRefresher.setLockedEntityIds) {
+        const mappedLockedIds = mapLockedEntityIdsToRuntime(lockedEntityIds, idMap);
+        logger.debug('Restoring locked entity IDs', { count: mappedLockedIds.length });
+        storeRefresher.setLockedEntityIds(mappedLockedIds);
       }
     }
 

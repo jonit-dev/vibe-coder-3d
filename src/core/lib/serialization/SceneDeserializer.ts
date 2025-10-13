@@ -52,7 +52,11 @@ export class SceneDeserializer {
     sceneData: unknown,
     entityManager: IEntityManagerAdapter,
     componentManager: IComponentManagerAdapter,
-  ): Promise<{ inputAssets?: IInputActionsAsset[]; lockedEntityIds?: number[] }> {
+  ): Promise<{
+    inputAssets?: IInputActionsAsset[];
+    lockedEntityIds?: number[];
+    entityIdMap: Map<string | number, number>;
+  }> {
     logger.info('Starting scene deserialization');
 
     // Validate scene data structure
@@ -72,7 +76,11 @@ export class SceneDeserializer {
     await this.prefabSerializer.deserialize(validated.prefabs);
 
     logger.debug('Deserializing entities');
-    this.entitySerializer.deserialize(validated.entities, entityManager, componentManager);
+    const entityIdMap = this.entitySerializer.deserialize(
+      validated.entities,
+      entityManager,
+      componentManager,
+    );
 
     logger.info('Scene deserialization complete', {
       name: validated.metadata.name,
@@ -87,6 +95,7 @@ export class SceneDeserializer {
     return {
       inputAssets: validated.inputAssets,
       lockedEntityIds: validated.lockedEntityIds,
+      entityIdMap,
     };
   }
 
@@ -97,7 +106,11 @@ export class SceneDeserializer {
     json: string,
     entityManager: IEntityManagerAdapter,
     componentManager: IComponentManagerAdapter,
-  ): Promise<{ inputAssets?: IInputActionsAsset[]; lockedEntityIds?: number[] }> {
+  ): Promise<{
+    inputAssets?: IInputActionsAsset[];
+    lockedEntityIds?: number[];
+    entityIdMap: Map<string | number, number>;
+  }> {
     const sceneData = JSON.parse(json);
     return await this.deserialize(sceneData, entityManager, componentManager);
   }
