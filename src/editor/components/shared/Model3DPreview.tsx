@@ -1,7 +1,7 @@
-import React, { Suspense, useState } from 'react';
+import { Center, Environment, OrbitControls, useGLTF } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Center, Environment } from '@react-three/drei';
-import { FiRotateCcw, FiAlertCircle } from 'react-icons/fi';
+import React, { Suspense, useState } from 'react';
+import { FiAlertCircle, FiRotateCcw } from 'react-icons/fi';
 import * as THREE from 'three';
 
 interface IModel3DPreviewProps {
@@ -116,7 +116,7 @@ export const Model3DPreview: React.FC<IModel3DPreviewProps> = ({ modelPath, clas
           gl={{
             antialias: true,
             alpha: true,
-            powerPreference: 'low-power', // Optimize for battery life
+            powerPreference: 'high-performance',
           }}
         >
           <Environment preset="studio" />
