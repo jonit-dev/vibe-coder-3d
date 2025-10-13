@@ -26,11 +26,18 @@ describe('AssetReferenceResolver', () => {
   });
 
   describe('resolvePath', () => {
-    it('should resolve shared library reference (@/)', () => {
+    it('should resolve shared library reference (@/) with camelCase filename', () => {
       const ref = '@/materials/common/Stone';
       const resolved = resolver.resolvePath(ref, context, 'material');
 
-      expect(resolved).toBe('src/game/assets/materials/common/Stone.material.tsx');
+      expect(resolved).toBe('src/game/assets/materials/common/stone.material.tsx');
+    });
+
+    it('should resolve dash-case reference to camelCase filename', () => {
+      const ref = '@/materials/farm-grass';
+      const resolved = resolver.resolvePath(ref, context, 'material');
+
+      expect(resolved).toBe('src/game/assets/materials/farmGrass.material.tsx');
     });
 
     it('should resolve scene-relative reference (./)', () => {
@@ -40,18 +47,18 @@ describe('AssetReferenceResolver', () => {
       expect(resolved).toBe('src/game/scenes/Forest/Forest.materials.tsx');
     });
 
-    it('should handle prefab asset type', () => {
-      const ref = '@/prefabs/props/Tree';
+    it('should handle prefab asset type with camelCase conversion', () => {
+      const ref = '@/prefabs/props/tree-model';
       const resolved = resolver.resolvePath(ref, context, 'prefab');
 
-      expect(resolved).toBe('src/game/assets/prefabs/props/Tree.prefab.tsx');
+      expect(resolved).toBe('src/game/assets/prefabs/props/treeModel.prefab.tsx');
     });
 
-    it('should handle input asset type', () => {
-      const ref = '@/inputs/DefaultControls';
+    it('should handle input asset type with camelCase conversion', () => {
+      const ref = '@/inputs/default-controls';
       const resolved = resolver.resolvePath(ref, context, 'input');
 
-      expect(resolved).toBe('src/game/assets/inputs/DefaultControls.input.tsx');
+      expect(resolved).toBe('src/game/assets/inputs/defaultControls.input.tsx');
     });
 
     it('should throw error for invalid reference', () => {

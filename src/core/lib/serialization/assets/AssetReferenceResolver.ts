@@ -6,6 +6,7 @@ import { MaterialDefinitionSchema } from '../../../materials/Material.types';
 import { PrefabDefinitionSchema } from '../../../prefabs/Prefab.types';
 import { InputActionsAssetSchema } from '../../input/inputTypes';
 import { ScriptDefinitionSchema } from './defineScripts';
+import { toCamelCase } from '../../utils/idGenerator';
 
 // Re-export AssetType for backward compatibility
 export type { AssetType };
@@ -56,13 +57,21 @@ export class AssetReferenceResolver {
 
   /**
    * Resolve reference string to file path
+   * Converts asset IDs to camelCase for consistent file naming (project convention)
    */
   resolvePath(ref: string, context: IAssetRefResolutionContext, assetType: AssetType): string {
-    // Absolute reference: @/materials/common/Stone
+    // Absolute reference: @/materials/farm-grass
     if (ref.startsWith('@/')) {
       const refPath = ref.replace('@/', '');
       const extension = ASSET_EXTENSIONS[assetType];
-      return path.join(context.assetLibraryRoot, `${refPath}${extension}`);
+      const pathParts = refPath.split('/');
+
+      // Convert the last part (filename) to camelCase to match FsAssetStore convention
+      const filename = pathParts[pathParts.length - 1];
+      pathParts[pathParts.length - 1] = toCamelCase(filename);
+
+      const normalizedPath = pathParts.join('/');
+      return path.join(context.assetLibraryRoot, `${normalizedPath}${extension}`);
     }
 
     // Relative reference: ./materials/TreeGreen
@@ -141,7 +150,7 @@ export class AssetReferenceResolver {
     }
 
     // Apply schema validation and defaults
-    return parsedAssets.map(asset => this.applySchema(asset, assetType));
+    return parsedAssets.map((asset) => this.applySchema(asset, assetType));
   }
 
   /**

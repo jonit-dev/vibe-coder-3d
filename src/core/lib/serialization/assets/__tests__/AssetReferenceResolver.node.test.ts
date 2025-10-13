@@ -20,8 +20,8 @@ describe('AssetReferenceResolver (Node)', () => {
     await fs.mkdir(path.join(libraryDir, 'materials', 'common'), { recursive: true });
     await fs.mkdir(sceneDir, { recursive: true });
 
-    // Create test library material
-    // Note: asset ID must match the last part of the reference path
+    // Create test library material (camelCase filename)
+    // Note: asset ID can be dash-case, but filename must be camelCase
     const libraryMaterial = `import { defineMaterial } from '@core';
 export default defineMaterial({
   id: 'LibraryMaterial',
@@ -30,8 +30,21 @@ export default defineMaterial({
   color: '#ff0000'
 });`;
     await fs.writeFile(
-      path.join(libraryDir, 'materials', 'common', 'LibraryMaterial.material.tsx'),
+      path.join(libraryDir, 'materials', 'common', 'libraryMaterial.material.tsx'),
       libraryMaterial,
+    );
+
+    // Create test library material with dash-case ID (camelCase filename)
+    const farmGrassMaterial = `import { defineMaterial } from '@core';
+export default defineMaterial({
+  id: 'farm-grass',
+  name: 'Farm Grass',
+  shader: 'standard',
+  color: '#2d5016'
+});`;
+    await fs.writeFile(
+      path.join(libraryDir, 'materials', 'farmGrass.material.tsx'),
+      farmGrassMaterial,
     );
 
     // Create test scene materials
@@ -53,14 +66,22 @@ export default defineMaterials([
   });
 
   describe('resolvePath', () => {
-    it('should resolve library reference to correct file path', () => {
+    it('should resolve library reference to camelCase file path', () => {
       const resolver = new AssetReferenceResolver();
       const ref = '@/materials/common/LibraryMaterial';
       const resolved = resolver.resolvePath(ref, context, 'material');
 
       expect(resolved).toBe(
-        path.join(libraryDir, 'materials', 'common', 'LibraryMaterial.material.tsx'),
+        path.join(libraryDir, 'materials', 'common', 'libraryMaterial.material.tsx'),
       );
+    });
+
+    it('should convert dash-case reference to camelCase file path', () => {
+      const resolver = new AssetReferenceResolver();
+      const ref = '@/materials/farm-grass';
+      const resolved = resolver.resolvePath(ref, context, 'material');
+
+      expect(resolved).toBe(path.join(libraryDir, 'materials', 'farmGrass.material.tsx'));
     });
 
     it('should resolve scene-relative reference to correct file path', () => {
@@ -97,6 +118,24 @@ export default defineMaterials([
         name: 'Library Material',
         shader: 'standard',
         color: '#ff0000',
+      });
+    });
+
+    it('should resolve dash-case reference to camelCase file', async () => {
+      const resolver = new AssetReferenceResolver();
+      const ref = '@/materials/farm-grass';
+
+      const asset = await resolver.resolve<{ id: string; name: string; color: string }>(
+        ref,
+        context,
+        'material',
+      );
+
+      expect(asset).toMatchObject({
+        id: 'farm-grass',
+        name: 'Farm Grass',
+        shader: 'standard',
+        color: '#2d5016',
       });
     });
 
