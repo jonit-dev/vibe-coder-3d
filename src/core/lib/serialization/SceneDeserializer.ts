@@ -24,6 +24,7 @@ const SceneDataSchema = z.object({
   materials: z.array(MaterialDefinitionSchema),
   prefabs: z.array(PrefabDefinitionSchema),
   inputAssets: z.array(InputActionsAssetSchema).optional(),
+  lockedEntityIds: z.array(z.number()).optional().default([]),
 });
 
 /**
@@ -51,7 +52,7 @@ export class SceneDeserializer {
     sceneData: unknown,
     entityManager: IEntityManagerAdapter,
     componentManager: IComponentManagerAdapter,
-  ): Promise<{ inputAssets?: IInputActionsAsset[] }> {
+  ): Promise<{ inputAssets?: IInputActionsAsset[]; lockedEntityIds?: number[] }> {
     logger.info('Starting scene deserialization');
 
     // Validate scene data structure
@@ -79,11 +80,13 @@ export class SceneDeserializer {
       materials: validated.materials.length,
       prefabs: validated.prefabs.length,
       inputAssets: validated.inputAssets?.length || 0,
+      lockedEntityIds: validated.lockedEntityIds?.length || 0,
     });
 
-    // Return input assets for caller to handle
+    // Return input assets and locked entity IDs for caller to handle
     return {
       inputAssets: validated.inputAssets,
+      lockedEntityIds: validated.lockedEntityIds,
     };
   }
 
@@ -94,7 +97,7 @@ export class SceneDeserializer {
     json: string,
     entityManager: IEntityManagerAdapter,
     componentManager: IComponentManagerAdapter,
-  ): Promise<{ inputAssets?: IInputActionsAsset[] }> {
+  ): Promise<{ inputAssets?: IInputActionsAsset[]; lockedEntityIds?: number[] }> {
     const sceneData = JSON.parse(json);
     return await this.deserialize(sceneData, entityManager, componentManager);
   }

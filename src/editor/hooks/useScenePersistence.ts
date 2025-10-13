@@ -24,6 +24,7 @@ export interface IScenePersistenceActions {
     prefabs?: unknown[],
     options?: { description?: string; author?: string },
     inputAssets?: unknown[],
+    lockedEntityIds?: number[],
   ) => Promise<boolean>;
   loadScene: (name: string) => Promise<IStreamingScene | null>;
   listScenes: () => Promise<boolean>;
@@ -204,6 +205,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
       prefabs: unknown[] = [],
       options: { description?: string; author?: string } = {},
       inputAssets: unknown[] = [],
+      lockedEntityIds: number[] = [],
     ): Promise<boolean> => {
       if (!name.trim()) {
         setError('Scene name cannot be empty');
@@ -227,6 +229,7 @@ export function useScenePersistence(): IScenePersistenceState & IScenePersistenc
             materials,
             prefabs,
             inputAssets,
+            lockedEntityIds,
             description: options.description,
             author: options.author,
           }),

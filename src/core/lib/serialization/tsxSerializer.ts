@@ -68,6 +68,7 @@ export const generateTsxScene = (
   materials: IMaterialDefinition[] = [],
   prefabs: IPrefabDefinition[] = [],
   inputAssets: IInputActionsAsset[] = [],
+  lockedEntityIds: number[] = [],
 ): string => {
   const hasInputAssets = inputAssets.length > 0;
   const imports = hasInputAssets
@@ -122,7 +123,8 @@ export default defineScene({
   )},
   materials: ${JSON.stringify(materials, null, 2)},
   prefabs: ${JSON.stringify(prefabs, null, 2)},
-  inputAssets: ${hasInputAssets ? serializeInputAssets(inputAssets) : '[]'}
+  inputAssets: ${hasInputAssets ? serializeInputAssets(inputAssets) : '[]'},
+  lockedEntityIds: ${JSON.stringify(lockedEntityIds, null, 2)}
 });
 `;
 
@@ -139,6 +141,7 @@ export const saveTsxScene = async (
   prefabs: IPrefabDefinition[] = [],
   metadata: Partial<Omit<ITsxSceneMetadata, 'name' | 'timestamp'>> = {},
   inputAssets: IInputActionsAsset[] = [],
+  lockedEntityIds: number[] = [],
 ): Promise<{ filename: string; filepath: string }> => {
   const scenesDir = './src/game/scenes';
   const sanitizedName = sanitizeComponentName(sceneName);
@@ -153,7 +156,14 @@ export const saveTsxScene = async (
     author: metadata.author,
   };
 
-  const tsxContent = generateTsxScene(entities, fullMetadata, materials, prefabs, inputAssets);
+  const tsxContent = generateTsxScene(
+    entities,
+    fullMetadata,
+    materials,
+    prefabs,
+    inputAssets,
+    lockedEntityIds,
+  );
 
   // Ensure directory exists
   await fs.mkdir(scenesDir, { recursive: true });

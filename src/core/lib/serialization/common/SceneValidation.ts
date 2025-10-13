@@ -27,6 +27,7 @@ export const SceneDataSchema = z.object({
   materials: z.array(MaterialDefinitionSchema),
   prefabs: z.array(PrefabDefinitionSchema),
   inputAssets: z.array(InputActionsAssetSchema).optional(),
+  lockedEntityIds: z.array(z.number()).optional().default([]),
 });
 
 /**

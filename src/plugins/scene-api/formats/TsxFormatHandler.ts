@@ -47,6 +47,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
       materials?: IMaterialDefinition[];
       prefabs?: IPrefabDefinition[];
       inputAssets?: IInputActionsAsset[];
+      lockedEntityIds?: number[];
       description?: string;
       author?: string;
     };
@@ -71,7 +72,9 @@ export class TsxFormatHandler implements ISceneFormatHandler {
 
     // Apply compression to entities
     const materialDeduplicator = new MaterialDeduplicator();
-    const compressedEntities = (sceneData.entities as Array<{ components?: Record<string, unknown> }>).map((entity) => {
+    const compressedEntities = (
+      sceneData.entities as Array<{ components?: Record<string, unknown> }>
+    ).map((entity) => {
       if (!entity.components) return entity;
 
       const compressedComponents: Record<string, unknown> = {};
@@ -180,6 +183,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
       Array.from(materialRefsSet),
       Array.from(inputRefsSet),
       Array.from(prefabRefsSet),
+      sceneData.lockedEntityIds || [],
     );
 
     const filename = `${sceneName}.tsx`;
@@ -198,17 +202,29 @@ export class TsxFormatHandler implements ISceneFormatHandler {
    */
   private generateSceneWithPaths(
     entities: unknown[],
-    metadata: { name: string; version: number; timestamp: string; description?: string; author?: string },
+    metadata: {
+      name: string;
+      version: number;
+      timestamp: string;
+      description?: string;
+      author?: string;
+    },
     materialRefs: string[],
     inputRefs: string[],
     prefabRefs: string[],
+    lockedEntityIds: number[],
   ): string {
     const refs: string[] = [];
     if (materialRefs.length > 0) refs.push(`    materials: ${JSON.stringify(materialRefs)}`);
     if (inputRefs.length > 0) refs.push(`    inputs: ${JSON.stringify(inputRefs)}`);
     if (prefabRefs.length > 0) refs.push(`    prefabs: ${JSON.stringify(prefabRefs)}`);
 
-    const assetRefsBlock = refs.length > 0 ? `,\n  assetReferences: {\n${refs.join(',\n')}\n  }` : '';
+    const assetRefsBlock =
+      refs.length > 0 ? `,\n  assetReferences: {\n${refs.join(',\n')}\n  }` : '';
+    const lockedIdsBlock =
+      lockedEntityIds.length > 0
+        ? `,\n  lockedEntityIds: ${JSON.stringify(lockedEntityIds, null, 2)}`
+        : '';
 
     return `import { defineScene } from './defineScene';
 
@@ -219,7 +235,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
  */
 export default defineScene({
   metadata: ${JSON.stringify(metadata, null, 2)},
-  entities: ${JSON.stringify(entities, null, 2)}${assetRefsBlock}
+  entities: ${JSON.stringify(entities, null, 2)}${assetRefsBlock}${lockedIdsBlock}
 });
 `;
   }
@@ -432,7 +448,8 @@ export default defineScene({
       const sceneObj = JSON.parse(sceneDataString);
 
       // Check for new ID-based format vs old inline format
-      const hasAssetReferences = sceneObj.assetReferences && typeof sceneObj.assetReferences === 'object';
+      const hasAssetReferences =
+        sceneObj.assetReferences && typeof sceneObj.assetReferences === 'object';
 
       if (hasAssetReferences) {
         // New format: assetReferences with IDs
@@ -461,6 +478,7 @@ export default defineScene({
           timestamp: sceneObj.metadata?.timestamp || new Date().toISOString(),
           entities,
           assetReferences: sceneObj.assetReferences,
+          lockedEntityIds: sceneObj.lockedEntityIds || [],
         };
       }
 
@@ -473,6 +491,7 @@ export default defineScene({
         materials: sceneObj.materials || [],
         prefabs: sceneObj.prefabs || [],
         inputAssets: sceneObj.inputAssets || [],
+        lockedEntityIds: sceneObj.lockedEntityIds || [],
       };
     } catch (error) {
       throw new Error(

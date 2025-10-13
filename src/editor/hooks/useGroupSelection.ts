@@ -11,6 +11,7 @@ export const useGroupSelection = () => {
   const removeFromSelection = useEditorStore((s) => s.removeFromSelection);
   const toggleSelection = useEditorStore((s) => s.toggleSelection);
   const clearSelection = useEditorStore((s) => s.clearSelection);
+  const isEntityLocked = useEditorStore((s) => s.isEntityLocked);
 
   // Get all descendants of an entity (recursively)
   const getAllDescendants = useCallback(
@@ -38,34 +39,46 @@ export const useGroupSelection = () => {
 
   const selectWithChildren = useCallback(
     (entityId: number) => {
+      // Don't allow selection of locked entities
+      if (isEntityLocked(entityId)) {
+        return;
+      }
       const descendants = getAllDescendants(entityId);
-      const allSelected = [entityId, ...descendants];
+      const allSelected = [entityId, ...descendants].filter((id) => !isEntityLocked(id));
       setSelectedIds(allSelected);
     },
-    [getAllDescendants, setSelectedIds],
+    [getAllDescendants, setSelectedIds, isEntityLocked],
   );
 
   // Select entity alone (for multi-select scenarios)
   const selectSingle = useCallback(
     (entityId: number) => {
+      // Don't allow selection of locked entities
+      if (isEntityLocked(entityId)) {
+        return;
+      }
       setSelectedIds([entityId]);
     },
-    [setSelectedIds],
+    [setSelectedIds, isEntityLocked],
   );
 
   // Add entity and its children to selection
   const addGroupToSelection = useCallback(
     (entityId: number) => {
+      // Don't allow selection of locked entities
+      if (isEntityLocked(entityId)) {
+        return;
+      }
       const descendants = getAllDescendants(entityId);
       const toAdd = [entityId, ...descendants];
 
       toAdd.forEach((id) => {
-        if (!selectedIds.includes(id)) {
+        if (!selectedIds.includes(id) && !isEntityLocked(id)) {
           addToSelection(id);
         }
       });
     },
-    [getAllDescendants, selectedIds, addToSelection],
+    [getAllDescendants, selectedIds, addToSelection, isEntityLocked],
   );
 
   // Remove entity and its children from selection
@@ -95,10 +108,12 @@ export const useGroupSelection = () => {
 
       const minIndex = Math.min(startIndex, endIndex);
       const maxIndex = Math.max(startIndex, endIndex);
-      const rangeIds = allEntityIds.slice(minIndex, maxIndex + 1);
+      const rangeIds = allEntityIds
+        .slice(minIndex, maxIndex + 1)
+        .filter((id) => !isEntityLocked(id));
       setSelectedIds(rangeIds);
     },
-    [setSelectedIds],
+    [setSelectedIds, isEntityLocked],
   );
 
   // Handle hierarchy selection with modifiers

@@ -23,6 +23,12 @@ export function registerAllScenes(): void {
         refreshPrefabs: () => {
           // Prefabs already loaded, no store refresh needed in game runtime
         },
+        setLockedEntityIds: (lockedIds: number[]) => {
+          // Access editor store through window global to avoid import during game runtime
+          if (typeof window !== 'undefined' && (window as any).__editorStore) {
+            (window as any).__editorStore.setState({ lockedEntityIds: new Set(lockedIds) });
+          }
+        },
       });
     },
     {

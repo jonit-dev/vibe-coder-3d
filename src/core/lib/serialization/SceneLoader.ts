@@ -15,6 +15,7 @@ export interface IStoreRefresher {
   refreshMaterials(): void;
   refreshPrefabs(): void;
   loadInputAssets?(assets: IInputActionsAsset[]): void;
+  setLockedEntityIds?(lockedIds: number[]): void;
 }
 
 /**
@@ -66,6 +67,12 @@ export class SceneLoader {
       if (result.inputAssets && storeRefresher.loadInputAssets) {
         logger.debug('Loading input assets', { count: result.inputAssets.length });
         storeRefresher.loadInputAssets(result.inputAssets);
+      }
+
+      // Restore locked entity IDs if provided
+      if (result.lockedEntityIds && storeRefresher.setLockedEntityIds) {
+        logger.debug('Restoring locked entity IDs', { count: result.lockedEntityIds.length });
+        storeRefresher.setLockedEntityIds(result.lockedEntityIds);
       }
     }
 

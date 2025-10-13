@@ -43,6 +43,7 @@ export interface IStreamingScene {
   materials: IMaterialDefinition[];
   prefabs?: IPrefabDefinition[];
   inputAssets?: IInputActionsAsset[];
+  lockedEntityIds?: number[];
 }
 
 export interface IStreamingProgress {
@@ -85,6 +86,7 @@ const StreamingSceneSchema = z
     materials: z.array(MaterialDefinitionSchema).optional().default([]), // Optional for backward compatibility
     prefabs: z.array(PrefabDefinitionSchema).optional().default([]), // Optional prefabs array
     inputAssets: z.array(InputActionsAssetSchema).optional().default([]), // Optional input assets array
+    lockedEntityIds: z.array(z.number()).optional().default([]), // Optional locked entity IDs
   })
   .transform((data) => ({
     ...data,
@@ -93,6 +95,7 @@ const StreamingSceneSchema = z
     materials: data.materials || [],
     prefabs: data.prefabs || [],
     inputAssets: data.inputAssets || [],
+    lockedEntityIds: data.lockedEntityIds || [],
   }));
 
 /**
@@ -152,6 +155,7 @@ export class StreamingSceneSerializer {
     callbacks: IStreamingCallbacks = {},
     getMaterials?: () => IMaterialDefinition[],
     getPrefabs?: () => IPrefabDefinition[] | Promise<IPrefabDefinition[]>,
+    getLockedEntityIds?: () => number[],
   ): Promise<IStreamingScene> {
     const startTime = performance.now();
     this.abortController = new AbortController();
@@ -241,6 +245,9 @@ export class StreamingSceneSerializer {
       // Get prefabs if provider function is available
       const prefabs = getPrefabs ? await getPrefabs() : [];
 
+      // Get locked entity IDs if provider function is available
+      const lockedEntityIds = getLockedEntityIds ? getLockedEntityIds() : [];
+
       const scene: IStreamingScene = {
         version: metadata.version || 7, // Bumped version for prefabs support
         name: metadata.name,
@@ -249,6 +256,7 @@ export class StreamingSceneSerializer {
         entities: streamingEntities,
         materials,
         prefabs,
+        lockedEntityIds,
       };
 
       // Validate the serialized scene
@@ -312,6 +320,7 @@ export class StreamingSceneSerializer {
       clearPrefabs: () => Promise<void> | void;
       registerPrefab: (prefab: IPrefabDefinition) => Promise<void> | void;
     },
+    setLockedEntityIds?: (lockedIds: number[]) => void,
   ): Promise<void> {
     const startTime = performance.now();
     this.abortController = new AbortController();
@@ -366,7 +375,8 @@ export class StreamingSceneSerializer {
               ?.PersistentId as { id?: string } | undefined;
             const persistentIdValue = persistentId?.id;
 
-            const entityIdForMap = entityData.id !== undefined ? String(entityData.id) : `temp_${i}`;
+            const entityIdForMap =
+              entityData.id !== undefined ? String(entityData.id) : `temp_${i}`;
 
             const created = entityManager.createEntity(
               entityData.name || `Entity ${entityIdForMap}`,
@@ -435,6 +445,19 @@ export class StreamingSceneSerializer {
             entityManager.setParent(childEid, parentEid);
           }
         }
+      }
+
+      // Restore locked entity IDs if provided
+      if (setLockedEntityIds && validatedScene.lockedEntityIds) {
+        // Map old IDs to new IDs
+        const newLockedIds = validatedScene.lockedEntityIds
+          .map((oldId) => {
+            const newId = idMap.get(String(oldId));
+            return typeof newId === 'number' ? newId : null;
+          })
+          .filter((id): id is number => id !== null);
+
+        setLockedEntityIds(newLockedIds);
       }
 
       const endTime = performance.now();

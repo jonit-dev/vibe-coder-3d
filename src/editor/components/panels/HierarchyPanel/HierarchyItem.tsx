@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import React, { forwardRef } from 'react';
-import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
+import { FiChevronDown, FiChevronRight, FiLock, FiUnlock } from 'react-icons/fi';
 import { TbCube, TbPuzzle } from 'react-icons/tb';
 
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
@@ -23,6 +23,8 @@ export interface IHierarchyItemProps {
   onToggleExpanded?: (id: number) => void;
   isDragOver?: boolean;
   isPartOfSelection?: boolean;
+  isLocked?: boolean;
+  onToggleLock?: (id: number) => void;
 }
 
 export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
@@ -38,6 +40,8 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
       onToggleExpanded,
       isDragOver = false,
       isPartOfSelection = false,
+      isLocked = false,
+      onToggleLock,
     },
     ref,
   ) => {
@@ -59,6 +63,13 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
       e.stopPropagation();
       if (onToggleExpanded) {
         onToggleExpanded(id);
+      }
+    };
+
+    const handleToggleLock = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (onToggleLock) {
+        onToggleLock(id);
       }
     };
 
@@ -145,19 +156,34 @@ export const HierarchyItem = forwardRef<HTMLLIElement, IHierarchyItemProps>(
               // Prevent selection when double-clicking to edit
             }}
           />
-          {(selected || isPartOfSelection || isPrefabInstance) && (
-            <div className="ml-auto flex-shrink-0 flex gap-1 items-center">
-              {isPrefabInstance && (
-                <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/30 text-purple-200 rounded border border-purple-400/40 font-semibold">
-                  PREFAB
-                </span>
+          <div className="ml-auto flex-shrink-0 flex gap-1.5 items-center">
+            {/* Lock icon */}
+            <button
+              onClick={handleToggleLock}
+              className="hover:bg-gray-600/30 rounded p-0.5 transition-colors"
+              title={isLocked ? 'Unlock entity' : 'Lock entity'}
+            >
+              {isLocked ? (
+                <FiLock className="text-yellow-500" size={12} />
+              ) : (
+                <FiUnlock className="text-gray-500 hover:text-gray-300" size={12} />
               )}
-              {selected && <div className="w-1 h-1 bg-blue-400 rounded-full"></div>}
-              {isPartOfSelection && !selected && (
-                <div className="w-1 h-1 bg-blue-500/60 rounded-full"></div>
-              )}
-            </div>
-          )}
+            </button>
+            {/* Other indicators */}
+            {(selected || isPartOfSelection || isPrefabInstance) && (
+              <>
+                {isPrefabInstance && (
+                  <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/30 text-purple-200 rounded border border-purple-400/40 font-semibold">
+                    PREFAB
+                  </span>
+                )}
+                {selected && <div className="w-1 h-1 bg-blue-400 rounded-full"></div>}
+                {isPartOfSelection && !selected && (
+                  <div className="w-1 h-1 bg-blue-500/60 rounded-full"></div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </li>
     );

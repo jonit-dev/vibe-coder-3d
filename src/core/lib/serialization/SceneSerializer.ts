@@ -37,6 +37,7 @@ export interface ISceneData {
   materials: IMaterialDefinition[];
   prefabs: IPrefabDefinition[];
   inputAssets?: IInputActionsAsset[];
+  lockedEntityIds?: number[];
   assetReferences?: {
     materials?: string;
     prefabs?: string;
@@ -56,6 +57,7 @@ const SceneDataSchema = z.object({
   materials: z.array(MaterialDefinitionSchema),
   prefabs: z.array(PrefabDefinitionSchema),
   inputAssets: z.array(InputActionsAssetSchema).optional(),
+  lockedEntityIds: z.array(z.number()).optional().default([]),
 });
 
 /**
@@ -90,6 +92,7 @@ export class SceneSerializer {
     metadata: Partial<ISceneMetadata> = {},
     inputAssets?: IInputActionsAsset[],
     compressionOptions?: ISceneSerializationOptions,
+    lockedEntityIds?: number[],
   ): Promise<ISceneData> {
     const options = {
       compressionEnabled: true, // Enable by default
@@ -132,9 +135,7 @@ export class SceneSerializer {
     // Merge extracted materials with registry materials (extracted takes precedence)
     const allMaterials = [
       ...extractedMaterials,
-      ...registryMaterials.filter(
-        (rm) => !extractedMaterials.some((em) => em.id === rm.id),
-      ),
+      ...registryMaterials.filter((rm) => !extractedMaterials.some((em) => em.id === rm.id)),
     ];
 
     const prefabs = await this.prefabSerializer.serialize();
@@ -151,6 +152,7 @@ export class SceneSerializer {
       materials: allMaterials,
       prefabs,
       inputAssets,
+      lockedEntityIds,
     };
 
     // Validate before returning
@@ -165,6 +167,7 @@ export class SceneSerializer {
       materials: allMaterials.length,
       prefabs: prefabs.length,
       inputAssets: inputAssets?.length || 0,
+      lockedEntityIds: lockedEntityIds?.length || 0,
       compressed: options.compressionEnabled,
     });
 

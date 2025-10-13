@@ -25,6 +25,7 @@ import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
 import { useProjectToasts, useToastStore } from '@/core/stores/toastStore';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
 import { useInputStore } from '@/editor/store/inputStore';
+import { useEditorStore } from '@/editor/store/editorStore';
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
 import { useScenePersistence } from './useScenePersistence';
@@ -130,6 +131,12 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         return prefabManager.getAll();
       };
 
+      // Get locked entity IDs from editor store
+      const getLockedEntityIds = () => {
+        const lockedIds = useEditorStore.getState().lockedEntityIds;
+        return Array.from(lockedIds);
+      };
+
       const callbacks = createStreamingCallbacks('Export');
 
       return await streamingSerializer.exportScene(
@@ -142,6 +149,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         callbacks,
         getMaterials,
         getPrefabs,
+        getLockedEntityIds,
       );
     },
     [entityManager, componentManager, createStreamingCallbacks],
@@ -209,6 +217,12 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
 
       const callbacks = createStreamingCallbacks('Import');
 
+      // Function to restore locked entity IDs
+      const setLockedEntityIds = (lockedIds: number[]) => {
+        // Create a new Set with the locked IDs to trigger Zustand reactivity
+        useEditorStore.setState({ lockedEntityIds: new Set(lockedIds) });
+      };
+
       // Scene import starting
 
       await streamingSerializer.importScene(
@@ -218,6 +232,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         callbacks,
         materialManagerAdapter,
         prefabManagerAdapter,
+        setLockedEntityIds,
       );
 
       // Refresh the materials store cache after importing
@@ -331,6 +346,9 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         // Get input assets for TSX scene
         const inputAssets = useInputStore.getState().assets;
 
+        // Get locked entity IDs
+        const lockedEntityIds = Array.from(useEditorStore.getState().lockedEntityIds);
+
         // Starting scene save operation
         const success = await scenePersistence.saveTsxScene(
           sceneName,
@@ -339,6 +357,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
           prefabs,
           { description: `Scene with ${transformedEntities.length} entities` },
           inputAssets,
+          lockedEntityIds,
         );
 
         if (loadingToastId) removeToast(loadingToastId);

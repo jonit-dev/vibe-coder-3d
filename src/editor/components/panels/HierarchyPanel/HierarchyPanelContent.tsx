@@ -57,10 +57,29 @@ const RootDropZone: React.FC<{ isDragging: boolean }> = React.memo(({ isDragging
   );
 });
 
-export const HierarchyPanelContent: React.FC = React.memo(() => {
+export const HierarchyPanelContent: React.FC = () => {
   const entityIds = useEditorStore((s) => s.entityIds);
+  const lockedEntityIds = useEditorStore((s) => s.lockedEntityIds);
+  const toggleEntityLock = useEditorStore((s) => s.toggleEntityLock);
   const groupSelection = useGroupSelection();
   const { openCreate } = usePrefabs();
+
+  // Force re-render when locked IDs change by tracking the Set size
+  const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
+  const lockedIdsRef = React.useRef(lockedEntityIds);
+
+  React.useEffect(() => {
+    if (lockedIdsRef.current !== lockedEntityIds) {
+      lockedIdsRef.current = lockedEntityIds;
+      forceUpdate();
+    }
+  }, [lockedEntityIds]);
+
+  // Helper function to check if entity is locked
+  const isEntityLocked = React.useCallback(
+    (id: number) => lockedEntityIds.has(id),
+    [lockedEntityIds],
+  );
 
   const {
     expandedNodes,
@@ -146,6 +165,8 @@ export const HierarchyPanelContent: React.FC = React.memo(() => {
                   isExpanded={isExpanded}
                   onToggleExpanded={handleToggleExpanded}
                   isDragOver={dragOverEntity === entity.id}
+                  isLocked={isEntityLocked(entity.id)}
+                  onToggleLock={toggleEntityLock}
                 />
               ))}
             </ul>
@@ -178,4 +199,4 @@ export const HierarchyPanelContent: React.FC = React.memo(() => {
       />
     </div>
   );
-});
+};

@@ -23,6 +23,11 @@ interface IEditorStore {
   toggleSelection: (id: number) => void;
   clearSelection: () => void;
 
+  // Entity lock state
+  lockedEntityIds: Set<number>;
+  toggleEntityLock: (id: number) => void;
+  isEntityLocked: (id: number) => boolean;
+
   // Entity list cache
   entityIds: number[];
   setEntityIds: (idsOrUpdater: number[] | ((prev: number[]) => number[])) => void;
@@ -92,6 +97,24 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
     }
   },
   clearSelection: () => set({ selectedIds: [], selectedId: null }),
+
+  // Entity lock state
+  lockedEntityIds: new Set<number>(),
+  toggleEntityLock: (id) => {
+    set((state) => {
+      const newLockedIds = new Set(state.lockedEntityIds);
+      if (newLockedIds.has(id)) {
+        newLockedIds.delete(id);
+      } else {
+        newLockedIds.add(id);
+      }
+      // Return new Set to trigger reactivity
+      return { lockedEntityIds: newLockedIds };
+    });
+  },
+  isEntityLocked: (id) => {
+    return get().lockedEntityIds.has(id);
+  },
 
   // Entity list cache
   entityIds: [],
