@@ -1,5 +1,5 @@
 // EngineLoop component - Manages the core game loop and systems
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { ReactNode, useEffect, useRef } from 'react';
 
 import { useEngineContext } from '@core/context/EngineProvider';
@@ -11,6 +11,16 @@ import { lightSystem } from '../systems/lightSystem';
 import { soundSystem } from '../systems/soundSystem';
 import { transformSystem } from '../systems/transformSystem';
 import { InputManager } from '../lib/input/InputManager';
+import { initBVHSystem, updateBVHSystem, disposeBVHSystem, setBVHSystemEnabled } from '../systems/bvhSystem';
+import {
+  initInstanceSystem,
+  updateInstanceSystem,
+  cleanupInstanceSystem,
+} from '../systems/InstanceSystem';
+import { useEngineStore } from '../state/engineStore';
+import { Logger } from '@core/lib/logger';
+
+const logger = Logger.create('EngineLoop');
 
 // Types for component props
 interface IEngineLoopProps {
@@ -115,6 +125,28 @@ export const EngineLoop = ({
     }
   }, [paused]); // Only depend on paused
 
+  // Initialize BVH system and Instance system
+  const { scene, camera } = useThree();
+  const bvhCullingEnabled = useEngineStore((s) => s.bvhCulling);
+
+  useEffect(() => {
+    if (scene && camera) {
+      initBVHSystem(scene, camera);
+      initInstanceSystem(scene);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      disposeBVHSystem();
+      cleanupInstanceSystem();
+    };
+  }, [scene, camera]);
+
+  // Update BVH system enabled state when setting changes
+  useEffect(() => {
+    setBVHSystemEnabled(bvhCullingEnabled);
+  }, [bvhCullingEnabled]);
+
   // Cleanup effect - only runs on unmount
   useEffect(() => {
     return () => {
@@ -126,7 +158,7 @@ export const EngineLoop = ({
   }, []); // No dependencies - only runs on mount/unmount
 
   // Main game loop
-  useFrame((_, rawDeltaTime) => {
+  useFrame((frameState, rawDeltaTime) => {
     const state = getLoopState();
 
     // Skip if not running or paused
@@ -159,6 +191,11 @@ export const EngineLoop = ({
     } else {
       // Run systems with variable timestep
       runECSSystems(deltaTime, isPlaying);
+    }
+
+    // Update BVH system (runs outside fixed timestep for smooth culling)
+    if (frameState.scene && frameState.camera) {
+      updateBVHSystem(deltaTime);
     }
 
     // Track overall frame performance
@@ -203,6 +240,9 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
   // Run material system - updates Three.js materials from ECS Material components
   materialSystem.update();
 
+  // Run instance system - updates InstancedMesh objects from ECS Instanced components
+  updateInstanceSystem();
+
   // Run camera system - updates Three.js cameras from ECS Camera components
   cameraSystem();
 
@@ -212,7 +252,7 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
   // Run script system - executes user scripts with entity context
   // Note: updateScriptSystem is async but we fire-and-forget here to avoid blocking the render loop
   updateScriptSystem(deltaTime * 1000, isPlaying).catch((error) => {
-    console.error('[EngineLoop] Script system error:', error);
+    logger.error('Script system error', { error });
   });
 
   // Run sound system - handles autoplay and sound updates during play mode

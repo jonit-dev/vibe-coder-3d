@@ -5,6 +5,11 @@
 
 export { cameraComponent, type CameraData } from './CameraComponent';
 export { customShapeComponent, type CustomShapeData } from './CustomShapeComponent';
+export {
+  instancedComponent,
+  type InstancedComponentData,
+  type InstanceData,
+} from './InstancedComponent';
 export { lightComponent, type LightData } from './LightComponent';
 export { meshColliderComponent, type MeshColliderData } from './MeshColliderComponent';
 export { meshRendererComponent, type MeshRendererData } from './MeshRendererComponent';

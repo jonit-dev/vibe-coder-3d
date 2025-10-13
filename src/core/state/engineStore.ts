@@ -5,6 +5,7 @@ interface IEngineState {
   fps: number;
   shadows: boolean;
   quality: 'low' | 'medium' | 'high';
+  bvhCulling: boolean;
 
   // Debug settings
   debug: boolean;
@@ -14,6 +15,7 @@ interface IEngineState {
   setFps: (fps: number) => void;
   setShadows: (enabled: boolean) => void;
   setQuality: (quality: 'low' | 'medium' | 'high') => void;
+  setBvhCulling: (enabled: boolean) => void;
   setDebug: (enabled: boolean) => void;
   setShowFps: (enabled: boolean) => void;
 }
@@ -23,6 +25,7 @@ export const useEngineStore = create<IEngineState>((set) => ({
   fps: 60,
   shadows: true,
   quality: 'medium',
+  bvhCulling: false, // Disabled by default - opt-in for performance optimization
   debug: false,
   showFps: false,
 
@@ -30,6 +33,7 @@ export const useEngineStore = create<IEngineState>((set) => ({
   setFps: (fps) => set({ fps }),
   setShadows: (shadows) => set({ shadows }),
   setQuality: (quality) => set({ quality }),
+  setBvhCulling: (bvhCulling) => set({ bvhCulling }),
   setDebug: (debug) => set({ debug }),
   setShowFps: (showFps) => set({ showFps }),
 }));

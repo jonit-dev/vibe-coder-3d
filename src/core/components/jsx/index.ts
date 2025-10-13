@@ -15,6 +15,10 @@ export type { ITransformProps } from './Transform';
 export { MeshRenderer, Cube, Sphere, Cylinder, Plane } from './MeshRenderer';
 export type { IMeshRendererProps, IMaterialProps } from './MeshRenderer';
 
+// Instancing components
+export { Instanced } from './Instanced';
+export type { IInstancedProps } from './Instanced';
+
 // Camera components
 export { Camera, PerspectiveCamera, OrthographicCamera } from './Camera';
 export type { ICameraProps } from './Camera';

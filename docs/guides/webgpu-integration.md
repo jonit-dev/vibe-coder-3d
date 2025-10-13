@@ -358,8 +358,35 @@ The engine will log renderer information:
 - [ ] Add WebGPU performance benchmarks
 - [ ] Create WebGPU migration guide for existing projects
 
+## Complementary Performance Optimizations
+
+### GPU Instancing
+
+Combine WebGPU with GPU instancing for maximum performance:
+
+```tsx
+import { Instanced } from '@core/components/jsx';
+
+<GameEngine useAdaptiveRenderer={true} rendererType="auto">
+  {/* Instancing reduces draw calls dramatically */}
+  <Entity name="Forest">
+    <Instanced
+      baseMeshId="tree"
+      baseMaterialId="bark"
+      instances={treePositions}
+      capacity={1000}
+    />
+  </Entity>
+</GameEngine>
+```
+
+WebGPU + Instancing can render **10,000+ objects** with excellent frame rates where WebGL with individual meshes would struggle.
+
+See [Instancing System Guide](./instancing-system.md) for details.
+
 ## See Also
 
+- [Instancing System Guide](./instancing-system.md) - Reduce draw calls with GPU instancing
 - [Engine Configuration](../architecture/2-2-technical-stack.md)
 - [Rendering Pipeline](../architecture/2-9-rendering-pipeline.md)
 - [Performance Optimization](../PRDs/performance/)

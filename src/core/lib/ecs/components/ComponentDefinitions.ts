@@ -12,6 +12,7 @@ import { ComponentCategory, ComponentFactory, componentRegistry } from '../Compo
 import {
   cameraComponent,
   customShapeComponent,
+  instancedComponent,
   lightComponent,
   meshColliderComponent,
   meshRendererComponent,
@@ -24,6 +25,7 @@ import {
   transformComponent,
   type CameraData,
   type CustomShapeData,
+  type InstancedComponentData,
   type LightData,
   type MeshColliderData,
   type MeshRendererData,
@@ -41,6 +43,7 @@ export function registerCoreComponents(registry = componentRegistry): void {
   registry.register(persistentIdComponent.get());
   registry.register(transformComponent);
   registry.register(meshRendererComponent);
+  registry.register(instancedComponent);
   registry.register(customShapeComponent);
   registry.register(terrainComponent);
   registry.register(rigidBodyComponent);
@@ -126,6 +129,7 @@ export function registerExampleComponents(): void {
 export type {
   CameraData,
   CustomShapeData,
+  InstancedComponentData,
   LightData,
   MeshColliderData,
   MeshRendererData,
