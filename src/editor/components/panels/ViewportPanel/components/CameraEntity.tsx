@@ -5,7 +5,7 @@ import { CameraGeometry } from './CameraGeometry';
 import { isCameraData } from './utils';
 
 interface ICameraEntityProps {
-  meshRef: React.RefObject<any>;
+  meshInstanceRef: React.Ref<any>;
   entityId: number;
   entityComponents: any[];
   isPlaying: boolean;
@@ -13,14 +13,14 @@ interface ICameraEntityProps {
 }
 
 export const CameraEntity: React.FC<ICameraEntityProps> = React.memo(
-  ({ meshRef, entityId, entityComponents, isPlaying, onMeshClick }) => {
+  ({ meshInstanceRef, entityId, entityComponents, isPlaying, onMeshClick }) => {
     // Extract camera data for dynamic frustum
     const cameraComponent = entityComponents.find((c) => c.type === 'Camera');
     const cameraData = cameraComponent?.data;
     const typedCameraData = isCameraData(cameraData) ? cameraData : {};
 
     return (
-      <group ref={meshRef as any} userData={{ entityId }} onClick={onMeshClick}>
+      <group ref={meshInstanceRef as any} userData={{ entityId }} onClick={onMeshClick}>
         <CameraGeometry
           showFrustum={true}
           isPlaying={isPlaying}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
@@ -35,77 +35,76 @@ export const useEntityTransform = ({ transform, isTransforming }: IUseEntityTran
     ];
   }, [transformData]);
 
-  // Sync mesh transform from ComponentManager (single source of truth)
-  // CRITICAL: Only sync when transform data actually changes, not on every render
-  // Allow sync during play mode to handle position restoration on stop
-  useEffect(() => {
-    if (meshRef.current && !isTransforming && transformData) {
+  const syncObjectTransform = useCallback(
+    (object: THREE.Object3D | THREE.Group | THREE.Mesh | null, force = false) => {
+      if (!object || !transformData || (!force && isTransforming)) {
+        return;
+      }
+
       const { position, rotation, scale } = transformData;
-
-      // Create a more efficient hash using simple string concatenation
-      const transformHash = `${position.join(',')},${rotation.join(',')},${scale.join(',')}`;
-
-      // Only sync if the transform data actually changed AND any of P/R/S differs
-      const posMatches =
-        Math.abs(meshRef.current.position.x - position[0]) < 0.001 &&
-        Math.abs(meshRef.current.position.y - position[1]) < 0.001 &&
-        Math.abs(meshRef.current.position.z - position[2]) < 0.001;
 
       // Mesh rotation is in radians; component data is in degrees
       const rotRadX = rotation[0] * (Math.PI / 180);
       const rotRadY = rotation[1] * (Math.PI / 180);
       const rotRadZ = rotation[2] * (Math.PI / 180);
+
+      const posMatches =
+        Math.abs(object.position.x - position[0]) < 0.001 &&
+        Math.abs(object.position.y - position[1]) < 0.001 &&
+        Math.abs(object.position.z - position[2]) < 0.001;
+
       const rotMatches =
-        Math.abs(meshRef.current.rotation.x - rotRadX) < 0.001 &&
-        Math.abs(meshRef.current.rotation.y - rotRadY) < 0.001 &&
-        Math.abs(meshRef.current.rotation.z - rotRadZ) < 0.001;
+        Math.abs(object.rotation.x - rotRadX) < 0.001 &&
+        Math.abs(object.rotation.y - rotRadY) < 0.001 &&
+        Math.abs(object.rotation.z - rotRadZ) < 0.001;
 
       const scaleMatches =
-        Math.abs(meshRef.current.scale.x - scale[0]) < 0.001 &&
-        Math.abs(meshRef.current.scale.y - scale[1]) < 0.001 &&
-        Math.abs(meshRef.current.scale.z - scale[2]) < 0.001;
+        Math.abs(object.scale.x - scale[0]) < 0.001 &&
+        Math.abs(object.scale.y - scale[1]) < 0.001 &&
+        Math.abs(object.scale.z - scale[2]) < 0.001;
 
-      // Always update tracking if transform hash changed
-      if (lastSyncedTransform.current !== transformHash) {
-        if (!(posMatches && rotMatches && scaleMatches)) {
-          // Apply transform if any part doesn't match ECS data
-          meshRef.current.position.set(position[0], position[1], position[2]);
-          meshRef.current.rotation.set(rotRadX, rotRadY, rotRadZ);
-          meshRef.current.scale.set(scale[0], scale[1], scale[2]);
+      const transformHash = `${position.join(',')},${rotation.join(',')},${scale.join(',')}`;
 
-          // Force matrix updates to ensure changes propagate immediately
-          meshRef.current.updateMatrix();
-          meshRef.current.updateMatrixWorld(true);
-        }
+      if (force || lastSyncedTransform.current !== transformHash || !(posMatches && rotMatches && scaleMatches)) {
+        object.position.set(position[0], position[1], position[2]);
+        object.rotation.set(rotRadX, rotRadY, rotRadZ);
+        object.scale.set(scale[0], scale[1], scale[2]);
 
-        // ALWAYS update the hash when transform data changes
+        object.updateMatrix();
+        object.updateMatrixWorld(true);
+
         lastSyncedTransform.current = transformHash;
       }
+    },
+    [transformData, isTransforming],
+  );
+
+  // Sync mesh transform from ComponentManager (single source of truth)
+  // CRITICAL: Only sync when transform data actually changes, not on every render
+  // Allow sync during play mode to handle position restoration on stop
+  useLayoutEffect(() => {
+    if (meshRef.current) {
+      syncObjectTransform(meshRef.current);
     }
-  }, [transformData, isTransforming]);
+  }, [syncObjectTransform]);
 
-  // ADDITIONAL SYNC: Force sync when meshRef becomes available (important for custom models)
-  useEffect(() => {
-    if (meshRef.current && transformData && !isTransforming) {
-      const { position, rotation, scale } = transformData;
+  const meshInstanceRef = useCallback(
+    (object: THREE.Object3D | THREE.Group | THREE.Mesh | null) => {
+      meshRef.current = object;
 
-      // Apply transform immediately when meshRef becomes available
-      meshRef.current.position.set(position[0], position[1], position[2]);
-      meshRef.current.rotation.set(
-        rotation[0] * (Math.PI / 180),
-        rotation[1] * (Math.PI / 180),
-        rotation[2] * (Math.PI / 180),
-      );
-      meshRef.current.scale.set(scale[0], scale[1], scale[2]);
+      if (!object) {
+        lastSyncedTransform.current = '';
+        return;
+      }
 
-      // Force matrix updates
-      meshRef.current.updateMatrix();
-      meshRef.current.updateMatrixWorld(true);
-    }
-  }, [meshRef.current]); // Trigger when meshRef.current changes
+      syncObjectTransform(object, true);
+    },
+    [syncObjectTransform],
+  );
 
   return {
     meshRef,
+    meshInstanceRef,
     position: transformData?.position || null,
     rotation: transformData?.rotation || null,
     scale: transformData?.scale || null,

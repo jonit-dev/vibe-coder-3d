@@ -4,8 +4,8 @@ import { useGLTF } from '@react-three/drei';
 import { ThreeEvent } from '@react-three/fiber';
 import React, { Suspense, useCallback, useMemo } from 'react';
 import type { Group, Mesh, Object3D } from 'three';
+import { SkeletonUtils } from 'three-stdlib';
 
-import { Logger } from '@/core/lib/logger';
 import type { IRenderingContributions } from '@/core/types/entities';
 import { compareMaterials, shallowEqual, deepEqual } from '@/core/utils/comparison';
 import { CameraEntity } from './CameraEntity';
@@ -19,111 +19,77 @@ import { isMeshRendererData } from './utils';
 // Custom Model Mesh Component - FIXED VERSION
 const CustomModelMesh: React.FC<{
   modelPath: string;
-  meshRef: React.RefObject<Group | Mesh | Object3D>;
+  meshInstanceRef: React.Ref<Group | Mesh | Object3D | null>;
   renderingContributions: IRenderingContributions;
   entityId: number;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
 }> = React.memo(
-  ({ modelPath, meshRef, renderingContributions, entityId, onMeshClick, onMeshDoubleClick }) => {
-    const logger = Logger.create('CustomModelMesh');
-    try {
-      const { scene } = useGLTF(modelPath);
+  ({ modelPath, meshInstanceRef, renderingContributions, entityId, onMeshClick, onMeshDoubleClick }) => {
+    // Don't wrap useGLTF in try-catch - it throws promises for Suspense, not errors
+    // The Suspense boundary in the parent component will handle loading states
+    const { scene } = useGLTF(modelPath);
 
-      // Don't clone the scene - use it directly to avoid transform inheritance issues
-      const modelScene = useMemo(() => {
-        // Reset position and rotation but preserve original scale
-        scene.position.set(0, 0, 0);
-        scene.rotation.set(0, 0, 0);
-        // DON'T reset scale - preserve the model's original scale
-        scene.matrixAutoUpdate = true;
+    const modelScene = useMemo(() => {
+      // Clone the cached scene so multiple entities don't mutate the same instance
+      const clonedScene = SkeletonUtils.clone(scene) as Group;
+      clonedScene.position.set(0, 0, 0);
+      clonedScene.rotation.set(0, 0, 0);
+      clonedScene.matrixAutoUpdate = true;
 
-        // Ensure all children respect parent transforms
-        scene.traverse((child) => {
-          child.matrixAutoUpdate = true;
-        });
-
-        return scene;
-      }, [scene, entityId]);
-
-      // Use callback ref to ensure proper Group integration with transform system
-      const groupRefCallback = useCallback(
-        (groupRef: Group | null) => {
-          if (groupRef && meshRef) {
-            // CRITICAL: Ensure the group can be transformed by gizmos and physics
-            groupRef.matrixAutoUpdate = true;
-            groupRef.userData = { ...groupRef.userData, entityId };
-
-            // IMPORTANT: Start the group at origin to match other mesh types
-            // The transform system will apply the actual entity position
-            groupRef.position.set(0, 0, 0);
-            groupRef.rotation.set(0, 0, 0);
-            groupRef.scale.set(1, 1, 1);
-
-            // Assign to the passed meshRef for transform system integration
-            (meshRef as React.MutableRefObject<Group>).current = groupRef;
-          } else if (!groupRef && meshRef.current) {
-            // Cleanup when component unmounts
-            (meshRef as React.MutableRefObject<Group | null>).current = null;
-          }
-        },
-        [meshRef, entityId, modelScene],
-      );
-
-      // PERFORMANCE: Matrix updates now handled by ModelMatrixSystem (batched)
-      // See: performance-audit-report.md #4 - removes N individual useFrame hooks
-
-      return (
-        <group
-          ref={groupRefCallback}
-          userData={{ entityId }}
-          onClick={onMeshClick}
-          onDoubleClick={onMeshDoubleClick}
-          castShadow={renderingContributions.castShadow}
-          receiveShadow={renderingContributions.receiveShadow}
-          visible={renderingContributions.visible}
-        >
-          <primitive object={modelScene} />
-        </group>
-      );
-    } catch (error) {
-      logger.error('Failed to load model:', {
-        entityId,
-        modelPath,
-        error: (error as Error)?.message || 'Unknown error',
+      // Ensure all children respect parent transforms
+      clonedScene.traverse((child) => {
+        child.matrixAutoUpdate = true;
       });
 
-      // Fallback to error mesh with callback ref
-      const errorRefCallback = useCallback(
-        (errorMeshRef: Mesh | null) => {
-          if (errorMeshRef && meshRef) {
-            // Ensure the error mesh can be transformed
-            errorMeshRef.matrixAutoUpdate = true;
-            errorMeshRef.userData = { ...errorMeshRef.userData, entityId };
+      return clonedScene;
+    }, [scene]);
 
-            (meshRef as React.MutableRefObject<Mesh>).current = errorMeshRef;
-          } else if (!errorMeshRef && meshRef.current) {
-            (meshRef as React.MutableRefObject<Mesh | null>).current = null;
+    // Use callback ref to ensure proper Group integration with transform system
+    const groupRefCallback = useCallback(
+      (groupRef: Group | null) => {
+        if (groupRef) {
+          // CRITICAL: Ensure the group can be transformed by gizmos and physics
+          groupRef.matrixAutoUpdate = true;
+          groupRef.userData = { ...groupRef.userData, entityId };
+
+          // IMPORTANT: Start the group at origin to match other mesh types
+          // The transform system will apply the actual entity position
+          groupRef.position.set(0, 0, 0);
+          groupRef.rotation.set(0, 0, 0);
+          groupRef.scale.set(1, 1, 1);
+
+          if (typeof meshInstanceRef === 'function') {
+            meshInstanceRef(groupRef);
+          } else if (meshInstanceRef && 'current' in meshInstanceRef) {
+            (meshInstanceRef as React.MutableRefObject<Group | Mesh | Object3D | null>).current =
+              groupRef;
           }
-        },
-        [meshRef, entityId],
-      );
+        } else if (typeof meshInstanceRef === 'function') {
+          meshInstanceRef(null);
+        } else if (meshInstanceRef && 'current' in meshInstanceRef) {
+          (meshInstanceRef as React.MutableRefObject<Group | Mesh | Object3D | null>).current = null;
+        }
+      },
+      [meshInstanceRef, entityId],
+    );
 
-      return (
-        <mesh
-          ref={errorRefCallback}
-          userData={{ entityId }}
-          onClick={onMeshClick}
-          onDoubleClick={onMeshDoubleClick}
-          castShadow={renderingContributions.castShadow}
-          receiveShadow={renderingContributions.receiveShadow}
-          visible={renderingContributions.visible}
-        >
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial color="#ff4444" wireframe />
-        </mesh>
-      );
-    }
+    // PERFORMANCE: Matrix updates now handled by ModelMatrixSystem (batched)
+    // See: performance-audit-report.md #4 - removes N individual useFrame hooks
+
+    return (
+      <group
+        ref={groupRefCallback}
+        userData={{ entityId }}
+        onClick={onMeshClick}
+        onDoubleClick={onMeshDoubleClick}
+        castShadow={renderingContributions.castShadow}
+        receiveShadow={renderingContributions.receiveShadow}
+        visible={renderingContributions.visible}
+      >
+        <primitive object={modelScene} />
+      </group>
+    );
   },
   // Custom comparison function to prevent unnecessary re-renders
   // PERFORMANCE: Replaced JSON.stringify with fast shallow comparison
@@ -156,6 +122,7 @@ const CustomModelMesh: React.FC<{
 export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
   ({
     meshRef,
+    meshInstanceRef,
     meshType,
     renderingContributions,
     entityColor,
@@ -189,7 +156,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           entityId={entityId}
           fallbackMesh={
             <mesh
-              ref={meshRef}
+              ref={meshInstanceRef as React.Ref<Mesh>}
               userData={{ entityId }}
               onClick={onMeshClick}
               onDoubleClick={onMeshDoubleClick}
@@ -206,6 +173,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
             fallback={
               <ModelLoadingMesh
                 meshRef={meshRef}
+                meshInstanceRef={meshInstanceRef}
                 entityId={entityId}
                 renderingContributions={renderingContributions}
                 onMeshClick={onMeshClick}
@@ -215,7 +183,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           >
             <CustomModelMesh
               modelPath={modelPath}
-              meshRef={meshRef}
+              meshInstanceRef={meshInstanceRef}
               renderingContributions={renderingContributions}
               entityId={entityId}
               onMeshClick={onMeshClick}
@@ -230,7 +198,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     if (meshType === 'Camera') {
       return (
         <CameraEntity
-          meshRef={meshRef}
+          meshInstanceRef={meshInstanceRef}
           entityId={entityId}
           entityComponents={entityComponents}
           isPlaying={isPlaying}
@@ -243,7 +211,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     if (meshType === 'Light') {
       return (
         <LightEntity
-          meshRef={meshRef}
+          meshInstanceRef={meshInstanceRef}
           entityId={entityId}
           entityComponents={entityComponents}
           isPlaying={isPlaying}
@@ -257,7 +225,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
       <Suspense
         fallback={
           <mesh
-            ref={meshRef}
+            ref={meshInstanceRef as React.Ref<Mesh>}
             userData={{ entityId }}
             onClick={onMeshClick}
             onDoubleClick={onMeshDoubleClick}
@@ -286,7 +254,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
         }
       >
         <MaterialRenderer
-          meshRef={meshRef}
+          meshInstanceRef={meshInstanceRef}
           meshType={meshType}
           entityComponents={entityComponents}
           renderingContributions={renderingContributions}
@@ -309,7 +277,8 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
       prevProps.entityId !== nextProps.entityId ||
       prevProps.meshType !== nextProps.meshType ||
       prevProps.entityColor !== nextProps.entityColor ||
-      prevProps.isPlaying !== nextProps.isPlaying
+      prevProps.isPlaying !== nextProps.isPlaying ||
+      prevProps.meshInstanceRef !== nextProps.meshInstanceRef
     ) {
       return false;
     }

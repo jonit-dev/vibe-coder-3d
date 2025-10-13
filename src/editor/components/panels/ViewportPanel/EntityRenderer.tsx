@@ -58,7 +58,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       setIsTransforming,
     });
 
-    const { meshRef, position, scale, rotationRadians } = useEntityTransform({
+    const { meshRef, meshInstanceRef, position, scale, rotationRadians } = useEntityTransform({
       transform,
       isTransforming: isTransformingLocal,
       isPlaying,
@@ -135,6 +135,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     const meshContent = !shouldHideMesh ? (
       <EntityMesh
         meshRef={meshRef as React.RefObject<THREE.Group | THREE.Object3D | THREE.Mesh>}
+        meshInstanceRef={meshInstanceRef}
         meshType={meshType}
         renderingContributions={renderingContributions}
         entityColor={entityColor}

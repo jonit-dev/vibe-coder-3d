@@ -22,4 +22,5 @@ export interface IEntityMeshProps {
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
   isPlaying?: boolean;
   entityComponents?: IEntityComponent[];
+  meshInstanceRef: React.Ref<Group | Mesh | Object3D | null>;
 }

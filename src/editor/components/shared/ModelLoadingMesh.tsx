@@ -4,6 +4,7 @@ import type { Mesh, Object3D, Group } from 'three';
 
 interface IModelLoadingMeshProps {
   meshRef?: React.RefObject<Group | Mesh | Object3D | null>;
+  meshInstanceRef?: React.Ref<Group | Mesh | Object3D | null>;
   entityId: number;
   renderingContributions: {
     castShadow?: boolean;
@@ -15,7 +16,7 @@ interface IModelLoadingMeshProps {
 }
 
 export const ModelLoadingMesh: React.FC<IModelLoadingMeshProps> = React.memo(
-  ({ meshRef, entityId, renderingContributions, onMeshClick, onMeshDoubleClick }) => {
+  ({ meshRef, meshInstanceRef, entityId, renderingContributions, onMeshClick, onMeshDoubleClick }) => {
     const loadingMeshRef = useRef<Mesh>(null);
 
     // Animate loading mesh with a gentle pulsing effect
@@ -26,9 +27,13 @@ export const ModelLoadingMesh: React.FC<IModelLoadingMeshProps> = React.memo(
       }
     });
 
+    const resolvedRef = (meshInstanceRef as React.Ref<Group | Mesh | Object3D | null>)
+      || (meshRef as React.Ref<Group | Mesh | Object3D | null>)
+      || (loadingMeshRef as unknown as React.Ref<Group | Mesh | Object3D | null>);
+
     return (
       <mesh
-        ref={meshRef || loadingMeshRef}
+        ref={resolvedRef}
         userData={{ entityId }}
         onClick={onMeshClick}
         onDoubleClick={onMeshDoubleClick}

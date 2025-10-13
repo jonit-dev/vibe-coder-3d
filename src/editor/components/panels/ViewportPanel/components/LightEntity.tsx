@@ -5,7 +5,7 @@ import { LightGeometry } from './LightGeometry';
 import { isLightData, parseColorToRGB } from './utils';
 
 interface ILightEntityProps {
-  meshRef: React.RefObject<any>;
+  meshInstanceRef: React.Ref<any>;
   entityId: number;
   entityComponents: any[];
   isPlaying: boolean;
@@ -13,14 +13,14 @@ interface ILightEntityProps {
 }
 
 export const LightEntity: React.FC<ILightEntityProps> = React.memo(
-  ({ meshRef, entityId, entityComponents, isPlaying, onMeshClick }) => {
+  ({ meshInstanceRef, entityId, entityComponents, isPlaying, onMeshClick }) => {
     // Extract light data for dynamic visualization
     const lightComponent = entityComponents.find((c) => c.type === 'Light');
     const lightData = lightComponent?.data;
     const typedLightData = isLightData(lightData) ? lightData : {};
 
     return (
-      <group ref={meshRef as any} userData={{ entityId }} onClick={onMeshClick}>
+      <group ref={meshInstanceRef as any} userData={{ entityId }} onClick={onMeshClick}>
         <LightGeometry
           lightType={typedLightData.lightType || 'point'}
           showDirection={true}

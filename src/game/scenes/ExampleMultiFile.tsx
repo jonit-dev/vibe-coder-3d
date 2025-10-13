@@ -2,16 +2,16 @@ import { defineScene } from './defineScene';
 
 /**
  * ExampleMultiFile
- * Scene with 6 entities
- * Generated: 2025-10-13T03:21:44.616Z
+ * Scene with 7 entities
+ * Generated: 2025-10-13T04:06:47.785Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
   "name": "ExampleMultiFile",
   "version": 1,
-  "timestamp": "2025-10-13T03:21:44.616Z",
-  "description": "Scene with 6 entities"
+  "timestamp": "2025-10-13T04:06:47.785Z",
+  "description": "Scene with 7 entities"
 },
   entities: [
   {
@@ -31,7 +31,10 @@ export default defineScene({
       "Camera": {
         "fov": 60,
         "isMain": true,
-        "skyboxTexture": "/assets/skyboxes/farm-skybox.png"
+        "skyboxTexture": "/assets/skyboxes/farm-skybox.png",
+        "skyboxRepeat": {
+          "u": 2
+        }
       }
     }
   },
@@ -51,7 +54,7 @@ export default defineScene({
       },
       "Light": {
         "lightType": "directional",
-        "intensity": 1.5
+        "intensity": 2
       }
     }
   },
@@ -63,11 +66,6 @@ export default defineScene({
         "id": "2c220494-5661-411d-89be-728dc587137e"
       },
       "Transform": {
-        "position": [
-          0,
-          -0.5,
-          0
-        ],
         "scale": [
           20,
           0.1,
@@ -139,6 +137,32 @@ export default defineScene({
       "MeshRenderer": {
         "meshId": "tree",
         "materialId": "default"
+      }
+    }
+  },
+  {
+    "id": 6,
+    "name": "FarmHouse",
+    "components": {
+      "PersistentId": {
+        "id": "e090f520-b408-4945-af0c-f34e8208d63e"
+      },
+      "Transform": {
+        "position": [
+          -3.25,
+          0,
+          3
+        ],
+        "scale": [
+          2,
+          2,
+          2.5
+        ]
+      },
+      "MeshRenderer": {
+        "meshId": "custom",
+        "materialId": "default",
+        "modelPath": "/assets/models/FarmHouse/farm_house_basic_shaded.glb"
       }
     }
   }

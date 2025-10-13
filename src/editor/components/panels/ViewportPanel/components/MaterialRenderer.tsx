@@ -4,7 +4,7 @@ import React from 'react';
 import { GeometryRenderer } from './GeometryRenderer';
 
 interface IMaterialRendererProps {
-  meshRef: React.RefObject<any>;
+  meshInstanceRef: React.Ref<any>;
   meshType: string;
   entityComponents: any[];
   renderingContributions: any;
@@ -19,7 +19,7 @@ interface IMaterialRendererProps {
 
 export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
   ({
-    meshRef,
+    meshInstanceRef,
     meshType,
     entityComponents,
     renderingContributions,
@@ -41,7 +41,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
       // Standard PBR material - use single key to prevent recreation when switching between textured/solid
       return (
         <mesh
-          ref={meshRef}
+          ref={meshInstanceRef as any}
           castShadow={renderingContributions.castShadow}
           receiveShadow={renderingContributions.receiveShadow}
           userData={{ entityId }}
@@ -76,7 +76,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
       // Unlit shader - use basic material
       return (
         <mesh
-          ref={meshRef}
+          ref={meshInstanceRef as any}
           castShadow={false}
           receiveShadow={false}
           userData={{ entityId }}
