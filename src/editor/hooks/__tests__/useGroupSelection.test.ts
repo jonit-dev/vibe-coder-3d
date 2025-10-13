@@ -7,6 +7,7 @@ const mockAddToSelection = vi.fn();
 const mockRemoveFromSelection = vi.fn();
 const mockToggleSelection = vi.fn();
 const mockClearSelection = vi.fn();
+const mockIsEntityLocked = vi.fn();
 const mockGetEntity = vi.fn();
 
 let mockSelectedIds: number[] = [];
@@ -21,6 +22,7 @@ vi.mock('@editor/store/editorStore', () => ({
       removeFromSelection: mockRemoveFromSelection,
       toggleSelection: mockToggleSelection,
       clearSelection: mockClearSelection,
+      isEntityLocked: mockIsEntityLocked,
     };
     return selector(mockStore);
   },
@@ -47,6 +49,9 @@ describe('useGroupSelection', () => {
       parentId: undefined,
       children: [],
     }));
+
+    // By default, entities are not locked
+    mockIsEntityLocked.mockReturnValue(false);
   });
 
   describe('getAllDescendants', () => {
