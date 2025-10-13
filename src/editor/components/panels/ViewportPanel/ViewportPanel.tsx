@@ -129,6 +129,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
           <Canvas
             camera={{ position: [0, 5, 10], fov: 50 }}
             shadows="percentage"
+            gl={{
+              powerPreference: 'high-performance',
+            }}
             onCreated={({ camera, gl }) => {
               // Fix camera orientation - look at origin from a good angle
               camera.lookAt(0, 0, 0);
