@@ -194,7 +194,7 @@ describe('SceneLoader', () => {
             name: 'Locked Entity',
             components: {
               PersistentId: {
-                id: 'persist-locked-entity',
+                id: '550e8400-e29b-41d4-a716-446655440000',
               },
             },
           },
@@ -376,7 +376,7 @@ describe('SceneLoader', () => {
           name: 'Static Locked Entity',
           components: {
             PersistentId: {
-              id: 'persist-static-locked',
+              id: '660e9500-f39c-52e5-b827-557766550111',
             },
           },
         },
