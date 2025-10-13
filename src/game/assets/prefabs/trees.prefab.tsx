@@ -42,7 +42,8 @@ export default definePrefab({
             "receiveShadows": true,
             "modelPath": ""
           }
-        }
+        },
+        "children": []
       },
       {
         "name": "Oak Tree 2",
@@ -75,7 +76,8 @@ export default definePrefab({
             "receiveShadows": true,
             "modelPath": ""
           }
-        }
+        },
+        "children": []
       }
     ]
   },

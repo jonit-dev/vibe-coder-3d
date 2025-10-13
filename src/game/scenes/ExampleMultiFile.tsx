@@ -3,14 +3,14 @@ import { defineScene } from './defineScene';
 /**
  * ExampleMultiFile
  * Scene with 6 entities
- * Generated: 2025-10-12T16:09:44.738Z
+ * Generated: 2025-10-13T03:21:44.616Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
   "name": "ExampleMultiFile",
   "version": 1,
-  "timestamp": "2025-10-12T16:09:44.738Z",
+  "timestamp": "2025-10-13T03:21:44.616Z",
   "description": "Scene with 6 entities"
 },
   entities: [
@@ -30,7 +30,8 @@ export default defineScene({
       },
       "Camera": {
         "fov": 60,
-        "isMain": true
+        "isMain": true,
+        "skyboxTexture": "/assets/skyboxes/farm-skybox.png"
       }
     }
   },
@@ -44,17 +45,18 @@ export default defineScene({
       "Transform": {
         "position": [
           5,
-          10,
+          16.25,
           5
         ]
       },
       "Light": {
-        "lightType": "directional"
+        "lightType": "directional",
+        "intensity": 1.5
       }
     }
   },
   {
-    "id": 4,
+    "id": 2,
     "name": "Ground",
     "components": {
       "PersistentId": {
@@ -74,12 +76,12 @@ export default defineScene({
       },
       "MeshRenderer": {
         "meshId": "cube",
-        "materialId": "grass"
+        "materialId": "farm-grass"
       }
     }
   },
   {
-    "id": 6,
+    "id": 3,
     "name": "trees",
     "components": {
       "PersistentId": {
@@ -99,9 +101,9 @@ export default defineScene({
     }
   },
   {
-    "id": 7,
+    "id": 4,
     "name": "Oak Tree 1",
-    "parentId": 6,
+    "parentId": 3,
     "components": {
       "PersistentId": {
         "id": "f900b38b-b3f7-4a1d-808c-e1e0353e665c"
@@ -120,9 +122,9 @@ export default defineScene({
     }
   },
   {
-    "id": 8,
+    "id": 5,
     "name": "Oak Tree 2",
-    "parentId": 6,
+    "parentId": 3,
     "components": {
       "PersistentId": {
         "id": "714bd85d-16b2-41e9-9238-6212a35de444"
@@ -142,7 +144,7 @@ export default defineScene({
   }
 ],
   assetReferences: {
-    materials: ["@/materials/default","@/materials/dss","@/materials/mat1","@/materials/mat2","@/materials/mat_38910607","@/materials/myMaterial","@/materials/red","@/materials/test123","@/materials/grass"],
+    materials: ["@/materials/default","@/materials/farm-grass","@/materials/dss","@/materials/grass","@/materials/mat1","@/materials/mat2","@/materials/mat_38910607","@/materials/myMaterial","@/materials/red","@/materials/test123"],
     inputs: ["@/inputs/DefaultInput"],
     prefabs: ["@/prefabs/Trees"]
   }
