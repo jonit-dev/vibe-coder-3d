@@ -86,7 +86,6 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
   }, [cameraData.followOffset, selectedPreset]);
 
   const handleFieldChange = <K extends keyof CameraData>(field: K, value: CameraData[K]) => {
-
     onUpdate({ [field]: value });
   };
 
@@ -112,7 +111,9 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
             label="Projection"
             type="select"
             value={cameraData.projectionType ?? 'perspective'}
-            onChange={(value) => handleFieldChange('projectionType', value as 'perspective' | 'orthographic')}
+            onChange={(value) =>
+              handleFieldChange('projectionType', value as 'perspective' | 'orthographic')
+            }
             options={[
               { value: 'perspective', label: 'Perspective' },
               { value: 'orthographic', label: 'Orthographic' },
@@ -186,7 +187,12 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
             label="Clear Flags"
             type="select"
             value={cameraData.clearFlags ?? 'skybox'}
-            onChange={(value) => handleFieldChange('clearFlags', value as 'skybox' | 'solidColor' | 'depthOnly' | 'dontClear')}
+            onChange={(value) =>
+              handleFieldChange(
+                'clearFlags',
+                value as 'skybox' | 'solidColor' | 'depthOnly' | 'dontClear',
+              )
+            }
             options={[
               { value: 'skybox', label: 'Skybox' },
               { value: 'solidColor', label: 'Solid Color' },
@@ -196,16 +202,141 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
           />
 
           {cameraData.clearFlags === 'skybox' && (
-            <AssetSelector
-              label="Skybox Texture"
-              value={cameraData.skyboxTexture}
-              onChange={(assetPath) => handleFieldChange('skyboxTexture', assetPath)}
-              placeholder="No texture selected"
-              buttonTitle="Browse skybox textures"
-              basePath="/assets/skyboxes"
-              allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'hdr']}
-              showPreview={true}
-            />
+            <>
+              <AssetSelector
+                label="Skybox Texture"
+                value={cameraData.skyboxTexture}
+                onChange={(assetPath) => handleFieldChange('skyboxTexture', assetPath)}
+                placeholder="No texture selected"
+                buttonTitle="Browse skybox textures"
+                basePath="/assets/skyboxes"
+                allowedExtensions={['jpg', 'jpeg', 'png', 'webp', 'hdr', 'exr']}
+                showPreview={true}
+              />
+
+              {/* Skybox Transform Controls */}
+              <div className="mt-4 space-y-2">
+                <div className="text-xs font-medium text-gray-400 mb-2">Skybox Transform</div>
+
+                <Vector3Field
+                  label="Scale"
+                  value={[
+                    cameraData.skyboxScale?.x ?? 1.0,
+                    cameraData.skyboxScale?.y ?? 1.0,
+                    cameraData.skyboxScale?.z ?? 1.0,
+                  ]}
+                  onChange={([x, y, z]) => handleFieldChange('skyboxScale', { x, y, z })}
+                  resetValue={[1.0, 1.0, 1.0]}
+                />
+
+                <Vector3Field
+                  label="Rotation (degrees)"
+                  value={[
+                    cameraData.skyboxRotation?.x ?? 0.0,
+                    cameraData.skyboxRotation?.y ?? 0.0,
+                    cameraData.skyboxRotation?.z ?? 0.0,
+                  ]}
+                  onChange={([x, y, z]) => handleFieldChange('skyboxRotation', { x, y, z })}
+                  resetValue={[0.0, 0.0, 0.0]}
+                />
+
+                <SingleAxisField
+                  label="Repeat U"
+                  value={cameraData.skyboxRepeat?.u ?? 1.0}
+                  onChange={(value) =>
+                    handleFieldChange('skyboxRepeat', {
+                      u: Math.max(0.1, value),
+                      v: cameraData.skyboxRepeat?.v ?? 1.0,
+                    })
+                  }
+                  resetValue={1.0}
+                  min={0.1}
+                  step={0.1}
+                  sensitivity={0.1}
+                  axisLabel="U"
+                  axisColor="#e74c3c"
+                />
+
+                <SingleAxisField
+                  label="Repeat V"
+                  value={cameraData.skyboxRepeat?.v ?? 1.0}
+                  onChange={(value) =>
+                    handleFieldChange('skyboxRepeat', {
+                      u: cameraData.skyboxRepeat?.u ?? 1.0,
+                      v: Math.max(0.1, value),
+                    })
+                  }
+                  resetValue={1.0}
+                  min={0.1}
+                  step={0.1}
+                  sensitivity={0.1}
+                  axisLabel="V"
+                  axisColor="#27ae60"
+                />
+
+                <SingleAxisField
+                  label="Offset U"
+                  value={cameraData.skyboxOffset?.u ?? 0.0}
+                  onChange={(value) =>
+                    handleFieldChange('skyboxOffset', {
+                      u: value,
+                      v: cameraData.skyboxOffset?.v ?? 0.0,
+                    })
+                  }
+                  resetValue={0.0}
+                  step={0.01}
+                  sensitivity={0.01}
+                  axisLabel="U"
+                  axisColor="#3498db"
+                />
+
+                <SingleAxisField
+                  label="Offset V"
+                  value={cameraData.skyboxOffset?.v ?? 0.0}
+                  onChange={(value) =>
+                    handleFieldChange('skyboxOffset', {
+                      u: cameraData.skyboxOffset?.u ?? 0.0,
+                      v: value,
+                    })
+                  }
+                  resetValue={0.0}
+                  step={0.01}
+                  sensitivity={0.01}
+                  axisLabel="V"
+                  axisColor="#9b59b6"
+                />
+
+                <SingleAxisField
+                  label="Intensity"
+                  value={cameraData.skyboxIntensity ?? 1.0}
+                  onChange={(value) =>
+                    handleFieldChange('skyboxIntensity', Math.max(0, Math.min(5, value)))
+                  }
+                  resetValue={1.0}
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  sensitivity={0.1}
+                  axisLabel="INT"
+                  axisColor="#f39c12"
+                />
+
+                <SingleAxisField
+                  label="Blur"
+                  value={cameraData.skyboxBlur ?? 0.0}
+                  onChange={(value) =>
+                    handleFieldChange('skyboxBlur', Math.max(0, Math.min(1, value)))
+                  }
+                  resetValue={0.0}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  sensitivity={0.01}
+                  axisLabel="BLUR"
+                  axisColor="#e67e22"
+                />
+              </div>
+            </>
           )}
 
           {cameraData.clearFlags === 'solidColor' && (
@@ -228,7 +359,6 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
             type="select"
             value={cameraData.controlMode ?? 'free'}
             onChange={(value) => {
-
               handleFieldChange('controlMode', value as 'locked' | 'free');
             }}
             options={[
@@ -260,7 +390,9 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
                 label="Follow Target Entity"
                 type="select"
                 value={(cameraData.followTarget ?? 0).toString()}
-                onChange={(value) => handleFieldChange('followTarget', parseInt(value as string, 10))}
+                onChange={(value) =>
+                  handleFieldChange('followTarget', parseInt(value as string, 10))
+                }
                 options={entityOptions}
               />
 
@@ -367,7 +499,12 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
                 label="Tone Mapping"
                 type="select"
                 value={cameraData.toneMapping ?? 'none'}
-                onChange={(value) => handleFieldChange('toneMapping', value as 'none' | 'linear' | 'reinhard' | 'cineon' | 'aces')}
+                onChange={(value) =>
+                  handleFieldChange(
+                    'toneMapping',
+                    value as 'none' | 'linear' | 'reinhard' | 'cineon' | 'aces',
+                  )
+                }
                 options={[
                   { value: 'none', label: 'None' },
                   { value: 'linear', label: 'Linear' },
@@ -405,7 +542,12 @@ export const CameraSection: React.FC<ICameraSectionProps> = ({
               label="Post-Processing Preset"
               type="select"
               value={cameraData.postProcessingPreset ?? 'none'}
-              onChange={(value) => handleFieldChange('postProcessingPreset', value as 'none' | 'cinematic' | 'realistic' | 'stylized')}
+              onChange={(value) =>
+                handleFieldChange(
+                  'postProcessingPreset',
+                  value as 'none' | 'cinematic' | 'realistic' | 'stylized',
+                )
+              }
               options={[
                 { value: 'none', label: 'None' },
                 { value: 'cinematic', label: 'Cinematic' },

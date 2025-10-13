@@ -8,24 +8,27 @@ import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
+import { getSkyboxPaths } from '@/utils/skyboxLoader';
 
-// Skybox texture mapping for BitECS storage
-const SKYBOX_TEXTURES = [
-  '', // 0 = no texture/default
-  '/assets/skyboxes/forest_day.jpg',
-  '/assets/skyboxes/mountain_sunset.jpg',
-  '/assets/skyboxes/city_night.jpg',
-  '/assets/skyboxes/ocean_horizon.jpg',
-  '/assets/skyboxes/desert_dusk.jpg',
-];
+// Dynamically loaded skybox paths (lazy-loaded for performance)
+let SKYBOX_TEXTURES: string[] | null = null;
+
+const getSkyboxTextures = (): string[] => {
+  if (!SKYBOX_TEXTURES) {
+    SKYBOX_TEXTURES = getSkyboxPaths();
+  }
+  return SKYBOX_TEXTURES;
+};
 
 const getSkyboxIndex = (path: string): number => {
-  const index = SKYBOX_TEXTURES.indexOf(path);
+  const textures = getSkyboxTextures();
+  const index = textures.indexOf(path);
   return index >= 0 ? index : 0;
 };
 
 const getSkyboxPath = (index: number): string => {
-  return SKYBOX_TEXTURES[index] || '';
+  const textures = getSkyboxTextures();
+  return textures[index] || '';
 };
 
 // Camera Schema
@@ -77,6 +80,35 @@ const CameraSchema = z.object({
   enablePostProcessing: z.boolean().optional(),
   postProcessingPreset: z.enum(['none', 'cinematic', 'realistic', 'stylized']).optional(),
   rotationSmoothing: z.number().min(0.1).max(10).optional(),
+  // Skybox Transform Properties (like Unity/Unreal)
+  skyboxScale: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      z: z.number(),
+    })
+    .optional(),
+  skyboxRotation: z
+    .object({
+      x: z.number(), // Euler angles in degrees
+      y: z.number(),
+      z: z.number(),
+    })
+    .optional(),
+  skyboxRepeat: z
+    .object({
+      u: z.number().min(0.1), // UV repeat
+      v: z.number().min(0.1),
+    })
+    .optional(),
+  skyboxOffset: z
+    .object({
+      u: z.number(), // UV offset
+      v: z.number(),
+    })
+    .optional(),
+  skyboxIntensity: z.number().min(0).max(5).optional(), // HDR intensity multiplier
+  skyboxBlur: z.number().min(0).max(1).optional(), // Blur amount (0-1)
 });
 
 // Camera Component Definition
@@ -123,6 +155,19 @@ export const cameraComponent = ComponentFactory.create({
     smoothingSpeed: Types.f32,
     rotationSmoothing: Types.f32,
     needsUpdate: Types.ui8,
+    // Skybox Transform Properties
+    skyboxScaleX: Types.f32,
+    skyboxScaleY: Types.f32,
+    skyboxScaleZ: Types.f32,
+    skyboxRotationX: Types.f32,
+    skyboxRotationY: Types.f32,
+    skyboxRotationZ: Types.f32,
+    skyboxRepeatU: Types.f32,
+    skyboxRepeatV: Types.f32,
+    skyboxOffsetU: Types.f32,
+    skyboxOffsetV: Types.f32,
+    skyboxIntensity: Types.f32,
+    skyboxBlur: Types.f32,
   },
   serialize: (eid: EntityId, component: any) => {
     const serialized = {
@@ -173,6 +218,27 @@ export const cameraComponent = ComponentFactory.create({
       },
       smoothingSpeed: component.smoothingSpeed[eid] ?? 2.0,
       rotationSmoothing: component.rotationSmoothing[eid] ?? 1.5,
+      // Skybox Transform Properties
+      skyboxScale: {
+        x: component.skyboxScaleX[eid] ?? 1.0,
+        y: component.skyboxScaleY[eid] ?? 1.0,
+        z: component.skyboxScaleZ[eid] ?? 1.0,
+      },
+      skyboxRotation: {
+        x: component.skyboxRotationX[eid] ?? 0.0,
+        y: component.skyboxRotationY[eid] ?? 0.0,
+        z: component.skyboxRotationZ[eid] ?? 0.0,
+      },
+      skyboxRepeat: {
+        u: component.skyboxRepeatU[eid] ?? 1.0,
+        v: component.skyboxRepeatV[eid] ?? 1.0,
+      },
+      skyboxOffset: {
+        u: component.skyboxOffsetU[eid] ?? 0.0,
+        v: component.skyboxOffsetV[eid] ?? 0.0,
+      },
+      skyboxIntensity: component.skyboxIntensity[eid] ?? 1.0,
+      skyboxBlur: component.skyboxBlur[eid] ?? 0.0,
     };
     return serialized;
   },
@@ -225,6 +291,20 @@ export const cameraComponent = ComponentFactory.create({
     component.smoothingSpeed[eid] = data.smoothingSpeed ?? 2.0;
     component.rotationSmoothing[eid] = data.rotationSmoothing ?? 1.5;
 
+    // Skybox Transform Properties
+    component.skyboxScaleX[eid] = data.skyboxScale?.x ?? 1.0;
+    component.skyboxScaleY[eid] = data.skyboxScale?.y ?? 1.0;
+    component.skyboxScaleZ[eid] = data.skyboxScale?.z ?? 1.0;
+    component.skyboxRotationX[eid] = data.skyboxRotation?.x ?? 0.0;
+    component.skyboxRotationY[eid] = data.skyboxRotation?.y ?? 0.0;
+    component.skyboxRotationZ[eid] = data.skyboxRotation?.z ?? 0.0;
+    component.skyboxRepeatU[eid] = data.skyboxRepeat?.u ?? 1.0;
+    component.skyboxRepeatV[eid] = data.skyboxRepeat?.v ?? 1.0;
+    component.skyboxOffsetU[eid] = data.skyboxOffset?.u ?? 0.0;
+    component.skyboxOffsetV[eid] = data.skyboxOffset?.v ?? 0.0;
+    component.skyboxIntensity[eid] = data.skyboxIntensity ?? 1.0;
+    component.skyboxBlur[eid] = data.skyboxBlur ?? 0.0;
+
     component.needsUpdate[eid] = 1; // Mark for update
   },
   dependencies: ['Transform'],
@@ -236,6 +316,3 @@ export const cameraComponent = ComponentFactory.create({
 });
 
 export type CameraData = z.infer<typeof CameraSchema>;
-
-// Export skybox textures for UI components
-export { SKYBOX_TEXTURES };

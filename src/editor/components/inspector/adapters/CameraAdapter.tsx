@@ -49,6 +49,13 @@ export const CameraAdapter: React.FC<ICameraAdapterProps> = ({
     // Post-processing
     enablePostProcessing: data.enablePostProcessing ?? false,
     postProcessingPreset: data.postProcessingPreset ?? 'none',
+    // Skybox
+    skyboxScale: data.skyboxScale ?? { x: 1, y: 1, z: 1 },
+    skyboxRotation: data.skyboxRotation ?? { x: 0, y: 0, z: 0 },
+    skyboxRepeat: data.skyboxRepeat ?? { u: 1, v: 1 },
+    skyboxOffset: data.skyboxOffset ?? { u: 0, v: 0 },
+    skyboxIntensity: data.skyboxIntensity ?? 1,
+    skyboxBlur: data.skyboxBlur ?? 0,
   };
 
   const handleUpdate = (updates: Partial<CameraData>) => {

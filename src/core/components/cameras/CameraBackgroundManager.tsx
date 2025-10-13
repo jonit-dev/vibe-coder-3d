@@ -1,7 +1,7 @@
 import { defineQuery } from 'bitecs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useCameraBackground } from '../../hooks/useCameraBackground';
+import { ISkyboxTransform, useCameraBackground } from '../../hooks/useCameraBackground';
 import { useEvent } from '../../hooks/useEvent';
 import { componentRegistry } from '../../lib/ecs/ComponentRegistry';
 import { CameraData } from '../../lib/ecs/components/definitions/CameraComponent';
@@ -13,12 +13,14 @@ export const CameraBackgroundManager: React.FC = () => {
     { r: number; g: number; b: number; a: number } | undefined
   >();
   const [skyboxTexture, setSkyboxTexture] = useState<string>('');
+  const [skyboxTransform, setSkyboxTransform] = useState<ISkyboxTransform | undefined>();
 
   const world = ECSWorld.getInstance().getWorld();
   const lastUpdateRef = useRef<{
     clearFlags: string;
     backgroundColor?: { r: number; g: number; b: number; a: number };
     skyboxTexture?: string;
+    skyboxTransform?: ISkyboxTransform;
   }>({
     clearFlags: 'skybox',
   });
@@ -64,6 +66,14 @@ export const CameraBackgroundManager: React.FC = () => {
           const newClearFlags = cameraData.clearFlags || 'skybox';
           const newBackgroundColor = cameraData.backgroundColor;
           const newSkyboxTexture = cameraData.skyboxTexture || '';
+          const newSkyboxTransform: ISkyboxTransform = {
+            scale: cameraData.skyboxScale,
+            rotation: cameraData.skyboxRotation,
+            repeat: cameraData.skyboxRepeat,
+            offset: cameraData.skyboxOffset,
+            intensity: cameraData.skyboxIntensity,
+            blur: cameraData.skyboxBlur,
+          };
 
           // Check if data actually changed
           const clearFlagsChanged = lastUpdateRef.current.clearFlags !== newClearFlags;
@@ -71,19 +81,29 @@ export const CameraBackgroundManager: React.FC = () => {
             JSON.stringify(lastUpdateRef.current.backgroundColor) !==
             JSON.stringify(newBackgroundColor);
           const skyboxTextureChanged = lastUpdateRef.current.skyboxTexture !== newSkyboxTexture;
+          const skyboxTransformChanged =
+            JSON.stringify(lastUpdateRef.current.skyboxTransform) !==
+            JSON.stringify(newSkyboxTransform);
 
-          if (clearFlagsChanged || backgroundColorChanged || skyboxTextureChanged) {
+          if (
+            clearFlagsChanged ||
+            backgroundColorChanged ||
+            skyboxTextureChanged ||
+            skyboxTransformChanged
+          ) {
             // Camera background updated
 
             setClearFlags(newClearFlags);
             setBackgroundColor(newBackgroundColor);
             setSkyboxTexture(newSkyboxTexture);
+            setSkyboxTransform(newSkyboxTransform);
 
             // Update the ref for next comparison
             lastUpdateRef.current = {
               clearFlags: newClearFlags,
               backgroundColor: newBackgroundColor,
               skyboxTexture: newSkyboxTexture,
+              skyboxTransform: newSkyboxTransform,
             };
           }
         }
@@ -118,7 +138,7 @@ export const CameraBackgroundManager: React.FC = () => {
   });
 
   // Use the hook to actually apply the changes to the scene
-  useCameraBackground(clearFlags, backgroundColor, skyboxTexture);
+  useCameraBackground(clearFlags, backgroundColor, skyboxTexture, skyboxTransform);
 
   return null; // This component doesn't render anything
 };

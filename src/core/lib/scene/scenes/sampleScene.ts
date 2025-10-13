@@ -52,7 +52,7 @@ export const registerSampleScene = () =>
       // Create ground plane
       const ground = createEntity('Ground');
       addComponent(ground, 'Transform', {
-        position: [0, -0.5, 0],
+        position: [0, 0, 0],
         rotation: [0, 0, 0],
         scale: [20, 0.1, 20],
       });
