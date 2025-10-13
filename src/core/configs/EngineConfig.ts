@@ -6,7 +6,7 @@ import { z } from 'zod';
 export const EngineConfigSchema = z.object({
   renderer: z
     .object({
-      type: z.enum(['webgl', 'webgpu', 'auto']).default('auto'),
+      type: z.enum(['webgl']).default('webgl'),
       antialias: z.boolean().default(true),
       alpha: z.boolean().default(false),
       powerPreference: z
@@ -75,7 +75,7 @@ export type IEngineConfig = z.infer<typeof EngineConfigSchema>;
  */
 export const defaultEngineConfig: IEngineConfig = {
   renderer: {
-    type: 'auto',
+    type: 'webgl',
     antialias: true,
     alpha: false,
     powerPreference: 'high-performance',
@@ -131,36 +131,6 @@ export function mergeEngineConfig(userConfig: Partial<IEngineConfig>): IEngineCo
 }
 
 /**
- * WebGPU-optimized configuration preset
- */
-export const webgpuPreset: Partial<IEngineConfig> = {
-  renderer: {
-    type: 'webgpu',
-    powerPreference: 'high-performance',
-    antialias: true,
-    alpha: false,
-    depth: true,
-    stencil: true,
-    logarithmicDepthBuffer: false,
-    outputColorSpace: 'srgb',
-    toneMapping: 'aces',
-    toneMappingExposure: 1.0,
-    shadows: {
-      enabled: true,
-      type: 'pcfsoft',
-      autoUpdate: true,
-    },
-  },
-  performance: {
-    enableFrustumCulling: true,
-    enableOcclusionCulling: false,
-    maxLights: 16,
-    shadowMapSize: 2048,
-    anisotropy: 16,
-  },
-};
-
-/**
  * Mobile-optimized configuration preset
  */
 export const mobilePreset: Partial<IEngineConfig> = {
@@ -195,7 +165,7 @@ export const mobilePreset: Partial<IEngineConfig> = {
  */
 export const highQualityPreset: Partial<IEngineConfig> = {
   renderer: {
-    type: 'auto',
+    type: 'webgl',
     antialias: true,
     powerPreference: 'high-performance',
     alpha: false,

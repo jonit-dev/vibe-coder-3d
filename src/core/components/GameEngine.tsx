@@ -4,19 +4,15 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect } from 'react';
 import { z } from 'zod';
 
-import { AdaptiveCanvas } from '@core/components/AdaptiveCanvas';
 import { EngineLoop } from '@core/components/EngineLoop';
 import type { IEngineConfig } from '@core/configs/EngineConfig';
 import { useGameEngineControls } from '@core/hooks/useGameEngineControls';
-import type { RendererType } from '@core/lib/rendering/RendererFactory';
 
 // Zod schema for GameEngine component props
 export const GameEnginePropsSchema = z.object({
   autoStart: z.boolean().default(true),
   canvasProps: z.record(z.unknown()).optional(), // React.ComponentProps<typeof Canvas>
   noCanvas: z.boolean().default(false),
-  useAdaptiveRenderer: z.boolean().default(false),
-  rendererType: z.enum(['webgl', 'webgpu', 'auto']).optional(),
   engineConfig: z.record(z.unknown()).optional(),
   children: z.any().optional(), // React.ReactNode
 });
@@ -32,12 +28,6 @@ export interface IGameEngineProps {
   /** Skip Canvas wrapping when used inside an existing Canvas (default: false) */
   noCanvas?: boolean;
 
-  /** Use adaptive renderer (WebGPU with WebGL fallback) - default: false */
-  useAdaptiveRenderer?: boolean;
-
-  /** Renderer type preference (only used with useAdaptiveRenderer) */
-  rendererType?: RendererType;
-
   /** Engine configuration */
   engineConfig?: Partial<IEngineConfig>;
 
@@ -51,14 +41,11 @@ export const validateGameEngineProps = (props: unknown) => GameEnginePropsSchema
 /**
  * Main GameEngine component
  * Wraps the R3F Canvas and manages the game engine lifecycle
- * Supports both WebGL and WebGPU rendering
  */
 export function GameEngine({
   autoStart = true,
   canvasProps,
   noCanvas = false,
-  useAdaptiveRenderer = false,
-  rendererType = 'auto',
   engineConfig,
   children,
 }: IGameEngineProps) {
@@ -90,24 +77,7 @@ export function GameEngine({
     );
   }
 
-  // Use adaptive renderer (WebGPU with WebGL fallback)
-  if (useAdaptiveRenderer) {
-    return (
-      <AdaptiveCanvas
-        rendererType={engineConfig?.renderer?.type ?? rendererType}
-        engineConfig={engineConfig}
-        canvasProps={{ ...canvasProps, frameloop: 'demand' }}
-      >
-        {/* Core engine loop component - must be inside Canvas */}
-        <EngineLoop />
-
-        {/* Scene content */}
-        {children}
-      </AdaptiveCanvas>
-    );
-  }
-
-  // Default: wrap with standard Canvas (WebGL)
+  // Wrap with standard Canvas (WebGL)
   return (
     <Canvas {...canvasProps} frameloop="demand">
       {/* Core engine loop component - must be inside Canvas */}
