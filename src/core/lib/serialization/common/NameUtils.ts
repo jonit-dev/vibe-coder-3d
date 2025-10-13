@@ -16,6 +16,23 @@ export const sanitizeComponentName = (name: string): string => {
 };
 
 /**
+ * Sanitize a scene name to be a valid PascalCase filename
+ * Removes special characters, ensures PascalCase format
+ * @param name - The scene name to sanitize
+ * @returns Sanitized PascalCase name
+ */
+export const sanitizePascalCase = (name: string): string => {
+  // Remove special characters and spaces, ensure starts with uppercase
+  const sanitized = name
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .replace(/^\d+/, '') // Remove leading numbers
+    .replace(/^./, (char) => char.toUpperCase()); // PascalCase: uppercase first letter
+
+  // Ensure valid PascalCase identifier
+  return sanitized || 'Scene';
+};
+
+/**
  * Sanitize a filename for safe file system storage
  * Removes special characters and ensures proper extension
  * @param name - The filename to sanitize
