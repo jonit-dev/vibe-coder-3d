@@ -1,0 +1,22 @@
+[package]
+name = "vibe-scene-graph"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Math
+glam = { version = "0.27", features = ["serde"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+log = "0.4"
+
+# Internal dependencies
+vibe-scene = { path = "../scene" }
+vibe-ecs-bridge = { path = "../ecs-bridge" }
+
+[dev-dependencies]
+serde_json = "1.0"

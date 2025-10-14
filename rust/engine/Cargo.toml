@@ -3,6 +3,7 @@ members = [
     ".",
     "crates/scene",
     "crates/ecs-bridge",
+    "crates/scene-graph",
 ]
 
 [package]
@@ -14,6 +15,7 @@ edition = "2021"
 # Internal workspace dependencies
 vibe-scene = { path = "crates/scene" }
 vibe-ecs-bridge = { path = "crates/ecs-bridge" }
+vibe-scene-graph = { path = "crates/scene-graph" }
 
 # Core rendering
 wgpu = "0.19"
