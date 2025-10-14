@@ -1,7 +1,6 @@
 import { useGameEngineControls } from '@core/hooks/useGameEngineControls';
 import { usePlayModeState } from './usePlayModeState';
-import { EntityManager } from '@core/lib/ecs/EntityManager';
-import { ComponentManager } from '@core/lib/ecs/ComponentManager';
+import { EntityManager, componentRegistry } from '@core/index';
 import { SceneSerializer } from '@core/lib/serialization/SceneSerializer';
 import { RustSceneExporter } from '@core/lib/serialization/RustSceneExporter';
 import { Logger } from '@core/lib/logger';
@@ -23,12 +22,11 @@ export const usePhysicsControls = ({ onStatusMessage }: IPhysicsControlsProps) =
     // Export current scene to Rust before playing
     try {
       const entityManager = EntityManager.getInstance();
-      const componentManager = ComponentManager.getInstance();
       const sceneSerializer = new SceneSerializer();
       const rustExporter = new RustSceneExporter();
 
       // Serialize current scene state
-      const sceneData = await sceneSerializer.serialize(entityManager, componentManager, {
+      const sceneData = await sceneSerializer.serialize(entityManager, componentRegistry, {
         name: 'play-mode',
         description: 'Play mode scene snapshot',
       });
