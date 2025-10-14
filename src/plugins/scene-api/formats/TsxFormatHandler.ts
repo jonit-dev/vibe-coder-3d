@@ -14,6 +14,7 @@ import {
   replaceMaterialWithReference,
 } from '../../../core/lib/serialization/utils/MaterialHasher';
 import { MultiFileSceneLoader } from '../../../core/lib/serialization/multi-file/MultiFileSceneLoader';
+import { RustSceneExporter } from '../../../core/lib/serialization/RustSceneExporter';
 import type {
   ISceneFormatHandler,
   ISaveArgs,
@@ -32,6 +33,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
   readonly contentType = 'application/json';
 
   private readonly multiFileLoader = new MultiFileSceneLoader();
+  private readonly rustExporter = new RustSceneExporter();
 
   constructor(
     private readonly store: ISceneStore,
@@ -43,6 +45,9 @@ export class TsxFormatHandler implements ISceneFormatHandler {
    */
   async save(args: ISaveArgs): Promise<ISaveResult> {
     const { name, payload } = args;
+
+    // Strip .tsx extension from name if present to avoid double extensions
+    const cleanName = name.replace(/\.tsx$/i, '');
 
     // Extract scene data from payload
     const sceneData = payload as {
@@ -66,7 +71,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
 
     // Create metadata
     const metadata = {
-      name,
+      name: cleanName,
       version: 1,
       timestamp: new Date().toISOString(),
       description: sceneData.description,
@@ -74,7 +79,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     };
 
     // Save full scene dump to Rust folder (no compression)
-    await this.saveRustSceneDump(name, sceneData, metadata);
+    await this.rustExporter.export(cleanName, sceneData, metadata);
 
     // Apply compression to entities
     const materialDeduplicator = new MaterialDeduplicator();
@@ -182,7 +187,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     }
 
     // Generate KISS scene file with entities + path references
-    const sceneName = sanitizePascalCase(name);
+    const sceneName = sanitizeComponentName(cleanName);
     const sceneContent = this.generateSceneWithPaths(
       compressedEntities as never[],
       metadata,
@@ -389,55 +394,6 @@ export default defineScene({
       size: i.size,
       type: 'tsx',
     }));
-  }
-
-  /**
-   * Save full scene dump to Rust folder (without compression)
-   */
-  private async saveRustSceneDump(
-    name: string,
-    sceneData: {
-      entities: unknown[];
-      materials?: IMaterialDefinition[];
-      prefabs?: IPrefabDefinition[];
-      inputAssets?: IInputActionsAsset[];
-      lockedEntityIds?: number[];
-    },
-    metadata: {
-      name: string;
-      version: number;
-      timestamp: string;
-      description?: string;
-      author?: string;
-    },
-  ): Promise<void> {
-    try {
-      const { promises: fs } = await import('fs');
-      const { join } = await import('path');
-
-      const rustSceneDir = join(process.cwd(), 'rust', 'game', 'scenes');
-      await fs.mkdir(rustSceneDir, { recursive: true });
-
-      // Build full scene data (no compression)
-      const fullSceneData = {
-        metadata,
-        entities: sceneData.entities,
-        materials: sceneData.materials || [],
-        prefabs: sceneData.prefabs || [],
-        inputAssets: sceneData.inputAssets || [],
-        lockedEntityIds: sceneData.lockedEntityIds || [],
-      };
-
-      const filename = `${name}.json`;
-      const filepath = join(rustSceneDir, filename);
-      await fs.writeFile(filepath, JSON.stringify(fullSceneData, null, 2), 'utf-8');
-    } catch (error) {
-      // Don't fail the main save operation if Rust save fails
-      // Just log the error
-      if (typeof console !== 'undefined') {
-        console.warn('Failed to save Rust scene dump:', error);
-      }
-    }
   }
 
   /**

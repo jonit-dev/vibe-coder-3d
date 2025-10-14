@@ -2,16 +2,16 @@ import { defineScene } from './defineScene';
 
 /**
  * fml
- * Scene with 4 entities
- * Generated: 2025-10-13T15:19:06.955Z
+ * Scene with 5 entities
+ * Generated: 2025-10-14T16:27:01.245Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
     name: 'fml',
     version: 1,
-    timestamp: '2025-10-13T15:19:06.955Z',
-    description: 'Scene with 4 entities',
+    timestamp: '2025-10-14T16:27:01.245Z',
+    description: 'Scene with 5 entities',
   },
   entities: [
     {
@@ -28,9 +28,6 @@ export default defineScene({
           fov: 20,
           isMain: true,
           backgroundColor: {
-            r: 0,
-            g: 0,
-            b: 0,
             a: 0,
           },
         },
@@ -79,10 +76,28 @@ export default defineScene({
         PersistentId: {
           id: '9fa8956c-80ff-4e6a-b32c-7f89775b1d40',
         },
-        Transform: {},
+        Transform: {
+          position: [-1.75, 0, 0],
+        },
         MeshRenderer: {
           meshId: 'cube',
-          materialId: 'default',
+          materialId: 'grass',
+        },
+      },
+    },
+    {
+      id: 4,
+      name: 'Cube 0 Copy',
+      components: {
+        PersistentId: {
+          id: '56029c79-5304-4cde-9c9b-f3244c8985a2',
+        },
+        Transform: {
+          position: [1.5, 0, 0],
+        },
+        MeshRenderer: {
+          meshId: 'cube',
+          materialId: 'mat1',
         },
       },
     },
@@ -100,7 +115,7 @@ export default defineScene({
       '@/materials/red',
       '@/materials/test123',
     ],
-    inputs: ['@/inputs/DefaultInput'],
-    prefabs: ['@/prefabs/Trees'],
+    inputs: ['@/inputs/defaultInput'],
+    prefabs: ['@/prefabs/trees'],
   },
 });

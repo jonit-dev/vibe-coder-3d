@@ -1,5 +1,12 @@
 import { useGameEngineControls } from '@core/hooks/useGameEngineControls';
 import { usePlayModeState } from './usePlayModeState';
+import { EntityManager } from '@core/lib/ecs/EntityManager';
+import { ComponentManager } from '@core/lib/ecs/ComponentManager';
+import { SceneSerializer } from '@core/lib/serialization/SceneSerializer';
+import { RustSceneExporter } from '@core/lib/serialization/RustSceneExporter';
+import { Logger } from '@core/lib/logger';
+
+const logger = Logger.create('PhysicsControls');
 
 interface IPhysicsControlsProps {
   onStatusMessage: (message: string) => void;
@@ -9,9 +16,41 @@ export const usePhysicsControls = ({ onStatusMessage }: IPhysicsControlsProps) =
   const { startEngine, pauseEngine, stopEngine } = useGameEngineControls();
   const { backupTransforms, restoreTransforms, hasBackup } = usePlayModeState();
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     // Backup current transform states before starting physics
     backupTransforms();
+
+    // Export current scene to Rust before playing
+    try {
+      const entityManager = EntityManager.getInstance();
+      const componentManager = ComponentManager.getInstance();
+      const sceneSerializer = new SceneSerializer();
+      const rustExporter = new RustSceneExporter();
+
+      // Serialize current scene state
+      const sceneData = await sceneSerializer.serialize(entityManager, componentManager, {
+        name: 'play-mode',
+        description: 'Play mode scene snapshot',
+      });
+
+      // Export to Rust
+      await rustExporter.export(
+        'play-mode',
+        {
+          entities: sceneData.entities,
+          materials: sceneData.materials,
+          prefabs: sceneData.prefabs,
+          inputAssets: sceneData.inputAssets,
+          lockedEntityIds: sceneData.lockedEntityIds,
+        },
+        sceneData.metadata,
+      );
+
+      logger.debug('Scene exported to Rust for play mode');
+    } catch (error) {
+      // Don't fail play mode if export fails
+      logger.warn('Failed to export scene to Rust', { error });
+    }
 
     // Start the physics engine
     startEngine();
