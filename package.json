@@ -26,7 +26,9 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md}\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "rust:export-schemas": "node scripts/export-schemas.js",
+    "rust:engine": "cargo run --manifest-path rust/engine/Cargo.toml --"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

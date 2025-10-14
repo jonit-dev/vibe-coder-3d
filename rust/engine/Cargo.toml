@@ -1,0 +1,42 @@
+[package]
+name = "vibe-coder-engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Core rendering
+wgpu = "0.19"
+winit = "0.29"
+
+# Math
+glam = { version = "0.27", features = ["serde"] }
+bytemuck = { version = "1.24", features = ["derive"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Asset loading
+gltf = { version = "1.4", features = ["utils"], optional = true }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+env_logger = "0.11"
+log = "0.4"
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
+# Async runtime helper
+pollster = "0.3"
+
+[features]
+default = ["gltf-support"]
+gltf-support = ["gltf"]
+
+[[bin]]
+name = "vibe-engine"
+path = "src/main.rs"

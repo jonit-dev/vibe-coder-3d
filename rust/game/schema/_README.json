@@ -1,0 +1,6 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ComponentSchemas",
+  "description": "Component schemas will be exported here",
+  "note": "Run from within the editor to export actual schemas"
+}
