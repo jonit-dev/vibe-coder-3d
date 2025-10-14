@@ -68,6 +68,29 @@ impl MeshCache {
     pub fn get(&self, id: &str) -> Option<&GpuMesh> {
         self.meshes.get(id)
     }
+
+    /// Load meshes from a GLTF file and upload to GPU
+    #[cfg(feature = "gltf-support")]
+    pub fn load_gltf(&mut self, device: &wgpu::Device, path: &str) -> anyhow::Result<Vec<String>> {
+        use crate::gltf_loader::load_gltf;
+
+        let meshes = load_gltf(path)?;
+        let mut mesh_ids = Vec::new();
+
+        for (idx, mesh) in meshes.into_iter().enumerate() {
+            let mesh_id = format!("{}_{}", path, idx);
+            self.upload_mesh(device, &mesh_id, mesh);
+            mesh_ids.push(mesh_id);
+        }
+
+        Ok(mesh_ids)
+    }
+
+    /// Load meshes from a GLTF file (stub when feature disabled)
+    #[cfg(not(feature = "gltf-support"))]
+    pub fn load_gltf(&mut self, _device: &wgpu::Device, _path: &str) -> anyhow::Result<Vec<String>> {
+        anyhow::bail!("GLTF support not enabled")
+    }
 }
 
 impl Default for MeshCache {

@@ -27,32 +27,84 @@ rust/
 ### Code Style
 
 - **Use idiomatic Rust**: Follow Rust API guidelines and community conventions
+- **Use snake_case for variables and functions**: All local variables, function names, and struct fields (except JSON-bound fields) must use snake_case
+- **Use PascalCase for types**: Structs, enums, and traits use PascalCase (e.g., `MeshCache`, `GpuMesh`)
+- **Use SCREAMING_SNAKE_CASE for constants**: Global constants use uppercase with underscores
 - **Prefer explicit over implicit**: Be clear about types, lifetimes, and error handling
 - **Run `cargo fmt`** before committing - formatting is non-negotiable
 - **Run `cargo clippy`** and address warnings - they often catch real issues
 - **No `unwrap()` in production paths** - use proper error handling with `Result<T, E>`
 - **Use structured logging**: `log::info!()`, `log::debug()`, etc. - no `println!()` except in CLI output
 
+```rust
+// ✅ GOOD - proper naming conventions
+const MAX_TEXTURE_SIZE: u32 = 4096;
+
+pub struct MeshCache {
+    mesh_map: HashMap<String, GpuMesh>,
+}
+
+impl MeshCache {
+    pub fn upload_mesh(&mut self, device: &wgpu::Device, mesh_id: &str, mesh: Mesh) {
+        let vertex_buffer = device.create_buffer_init(...);
+        let index_count = mesh.indices.len() as u32;
+    }
+}
+
+// ❌ BAD - inconsistent naming
+pub struct meshCache {  // Should be PascalCase
+    MeshMap: HashMap<String, GpuMesh>,  // Should be snake_case
+}
+
+impl meshCache {
+    pub fn UploadMesh(&mut self, Device: &wgpu::Device, meshID: &str) {  // Should be snake_case
+        let VertexBuffer = ...;  // Should be snake_case
+    }
+}
+```
+
 ### Error Handling
+
+Always use `anyhow::Result` for functions that can fail, and add context to errors:
 
 ```rust
 // ❌ BAD - panics on error
 let data = std::fs::read_to_string(path).unwrap();
 
-// ✅ GOOD - returns Result
-fn load_file(path: &Path) -> Result<String, std::io::Error> {
-    std::fs::read_to_string(path)
+// ❌ BAD - unclear error messages
+fn load_file(path: &Path) -> Result<String> {
+    Ok(std::fs::read_to_string(path)?)  // What file? Why did it fail?
 }
 
 // ✅ GOOD - context on error
 use anyhow::{Context, Result};
+
 fn load_scene(path: &Path) -> Result<SceneData> {
     let json = std::fs::read_to_string(path)
-        .context("Failed to read scene file")?;
+        .with_context(|| format!("Failed to read scene file: {}", path.display()))?;
     serde_json::from_str(&json)
         .context("Failed to parse scene JSON")
 }
+
+// ✅ GOOD - GLTF loading with comprehensive error context
+fn load_gltf(path: &str) -> Result<Vec<Mesh>> {
+    let (document, buffers, _images) = gltf::import(path)
+        .with_context(|| format!("Failed to load GLTF file: {}", path))?;
+
+    let positions = reader.read_positions()
+        .context("GLTF mesh missing positions")?;
+
+    Ok(meshes)
+}
 ```
+
+**Error Handling Rules:**
+
+- Use `anyhow::Result<T>` for public functions that can fail
+- Use `.context()` for static error messages
+- Use `.with_context(|| format!(...))` for dynamic error messages (closures avoid allocation on success)
+- Never use `unwrap()` or `expect()` in library code (tests are OK)
+- Log errors at the point they're handled, not where they're created
 
 ### Module Organization
 
@@ -272,6 +324,38 @@ pub fn parse_component<T: DeserializeOwned>(
 
 ## Common Patterns
 
+### Feature-Gated Code
+
+Use feature flags for optional dependencies and functionality:
+
+```rust
+// ✅ GOOD - feature-gated implementation
+#[cfg(feature = "gltf-support")]
+pub fn load_gltf(path: &str) -> Result<Vec<Mesh>> {
+    let (document, buffers, _images) = gltf::import(path)?;
+    // ... actual implementation
+}
+
+#[cfg(not(feature = "gltf-support"))]
+pub fn load_gltf(_path: &str) -> anyhow::Result<Vec<Mesh>> {
+    anyhow::bail!("GLTF support not enabled. Compile with --features gltf-support")
+}
+
+// In Cargo.toml
+[features]
+default = []
+gltf-support = ["dep:gltf"]
+
+[dependencies]
+gltf = { version = "1.4", optional = true }
+```
+
+This pattern:
+
+- Keeps binary size small when features aren't needed
+- Provides clear error messages when features are missing
+- Allows conditional compilation of heavy dependencies
+
 ### Resource Caching
 
 ```rust
@@ -329,6 +413,32 @@ impl CameraBuilder {
     }
 }
 ```
+
+### Default Trait Implementation
+
+Always implement `Default` for cache and manager structs:
+
+```rust
+// ✅ GOOD - explicit Default implementation
+impl Default for MeshCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ✅ ALSO GOOD - derive Default when struct fields all have Default
+#[derive(Default)]
+pub struct ResourceManager {
+    meshes: HashMap<String, GpuMesh>,
+    materials: HashMap<String, Material>,
+}
+```
+
+This allows:
+
+- Users to create instances with `MeshCache::default()`
+- Structs containing your type to derive `Default`
+- More idiomatic Rust code
 
 ## Debugging
 
@@ -459,31 +569,68 @@ codegen-units = 1    # Better optimization, slower compile
 - **Pin major versions**: Use `foo = "1.0"` not `foo = "*"`
 - **Review dependency tree**: `cargo tree` to check bloat
 
+## Workspace Crates Architecture
+
+The engine is modularized into workspace crates under `engine/crates/`:
+
+- **vibe-scene**: Core scene model (EntityId, Scene, Entity, ComponentKindId)
+- **vibe-ecs-bridge**: Component registry and decoders for Three.js ECS integration
+- **vibe-scene-graph**: Parent/child transform hierarchy and world transform propagation
+- **vibe-assets**: Mesh/material/texture caches and GLTF loading
+
+### Crate Design Principles
+
+- **Single Responsibility**: Each crate has one clear purpose
+- **Minimal Dependencies**: Keep crate dependency graph acyclic and shallow
+- **Re-exports**: Main engine crate re-exports public APIs from workspace crates
+- **Feature Flags**: Use features for optional dependencies (e.g., `gltf-support`)
+- **Comprehensive Tests**: Each crate must have unit tests for all public functions
+
+```rust
+// ✅ GOOD - workspace crate organization
+// In engine/crates/assets/src/lib.rs
+pub use gltf_loader::load_gltf;
+pub use material::{Material, MaterialCache};
+pub use mesh_cache::{GpuMesh, MeshCache};
+pub use texture_cache::{GpuTexture, TextureCache};
+pub use vertex::{Vertex, Mesh};
+
+// In engine/Cargo.toml
+[dependencies]
+vibe-scene = { path = "crates/scene" }
+vibe-ecs-bridge = { path = "crates/ecs-bridge" }
+vibe-assets = { path = "crates/assets" }
+```
+
 ## Current Status
 
 ### ✅ Implemented
 
 - Scene loading from JSON
-- Transform, MeshRenderer, Camera components
-- Basic ECS architecture
+- Transform, MeshRenderer, Camera, Light components
+- Modular workspace crates architecture (scene, ecs-bridge, scene-graph, assets)
+- Component registry system with dynamic decoders
 - Primitive mesh rendering (cube, sphere, plane)
-- Material system with PBR properties
+- Material system with PBR properties and texture caching
 - Camera system with view/projection matrices
-- 102 unit tests with full coverage
+- Scene graph with parent-child transform hierarchy
+- GLTF model loading (feature-gated)
+- Comprehensive unit tests across all crates
 - wgpu rendering pipeline
 
 ### 🚧 In Progress
 
-- GLTF model loading
-- Entity hierarchy (parent-child transforms)
-- Dynamic lighting system
+- Integrating GLTF assets into rendering pipeline
+- Texture loading and binding
 
 ### 📋 Planned
 
+- Render graph architecture
+- Shadow mapping
+- Post-processing effects
 - Physics integration (Rapier3D)
 - Audio system
 - Scripting runtime
-- Advanced rendering (shadows, post-processing)
 
 ## Resources
 
