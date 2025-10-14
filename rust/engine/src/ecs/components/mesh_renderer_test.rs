@@ -72,6 +72,8 @@ mod tests {
             materialId: Some("wood".to_string()),
             modelPath: Some("/path/to/model.glb".to_string()),
             enabled: true,
+            castShadows: true,
+            receiveShadows: true,
         };
 
         let cloned = renderer.clone();
@@ -96,5 +98,58 @@ mod tests {
         assert_eq!(renderer.materialId, None);
         assert_eq!(renderer.modelPath, None);
         assert!(renderer.enabled);
+    }
+
+    #[test]
+    fn test_shadow_properties_default() {
+        // Test that shadow properties default to true
+        let json = r#"{
+            "meshId": "cube"
+        }"#;
+
+        let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
+
+        assert!(renderer.castShadows);
+        assert!(renderer.receiveShadows);
+    }
+
+    #[test]
+    fn test_shadow_properties_explicit() {
+        // Test explicit shadow property values from TypeScript
+        let json = r#"{
+            "meshId": "cube",
+            "materialId": "mat1",
+            "castShadows": false,
+            "receiveShadows": true
+        }"#;
+
+        let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
+
+        assert_eq!(renderer.meshId, Some("cube".to_string()));
+        assert_eq!(renderer.materialId, Some("mat1".to_string()));
+        assert!(!renderer.castShadows);
+        assert!(renderer.receiveShadows);
+    }
+
+    #[test]
+    fn test_full_serialization_from_typescript() {
+        // Test a complete MeshRenderer as exported from TypeScript editor
+        let json = r#"{
+            "meshId": "sphere",
+            "materialId": "pbr-material",
+            "modelPath": "/models/sphere.glb",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": false
+        }"#;
+
+        let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
+
+        assert_eq!(renderer.meshId, Some("sphere".to_string()));
+        assert_eq!(renderer.materialId, Some("pbr-material".to_string()));
+        assert_eq!(renderer.modelPath, Some("/models/sphere.glb".to_string()));
+        assert!(renderer.enabled);
+        assert!(renderer.castShadows);
+        assert!(!renderer.receiveShadows);
     }
 }

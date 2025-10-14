@@ -8,7 +8,8 @@ mod tests {
         let transform = Transform::default();
 
         assert_eq!(transform.position, Some([0.0, 0.0, 0.0]));
-        assert_eq!(transform.rotation, Some([0.0, 0.0, 0.0, 1.0]));
+        // Default rotation is Euler angles [x, y, z], not quaternion
+        assert_eq!(transform.rotation, Some(vec![0.0, 0.0, 0.0]));
         assert_eq!(transform.scale, Some([1.0, 1.0, 1.0]));
     }
 
@@ -37,10 +38,10 @@ mod tests {
     }
 
     #[test]
-    fn test_rotation_quat_with_value() {
+    fn test_rotation_quat_with_quaternion() {
         let transform = Transform {
             position: None,
-            rotation: Some([0.0, 0.0, 0.707, 0.707]), // ~90 degrees around Z
+            rotation: Some(vec![0.0, 0.0, 0.707, 0.707]), // ~90 degrees around Z
             scale: None,
         };
 
@@ -49,6 +50,24 @@ mod tests {
         assert!((rot.y - 0.0).abs() < 0.001);
         assert!((rot.z - 0.707).abs() < 0.001);
         assert!((rot.w - 0.707).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_rotation_quat_with_euler_angles() {
+        // Test that Euler angles (3 values) from TypeScript are properly converted
+        let transform = Transform {
+            position: None,
+            rotation: Some(vec![0.0, 0.0, std::f32::consts::FRAC_PI_2]), // 90 degrees around Z
+            scale: None,
+        };
+
+        let rot = transform.rotation_quat();
+        // Expected quaternion for 90 degree Z rotation
+        let expected = Quat::from_euler(glam::EulerRot::XYZ, 0.0, 0.0, std::f32::consts::FRAC_PI_2);
+        assert!((rot.x - expected.x).abs() < 0.001);
+        assert!((rot.y - expected.y).abs() < 0.001);
+        assert!((rot.z - expected.z).abs() < 0.001);
+        assert!((rot.w - expected.w).abs() < 0.001);
     }
 
     #[test]
@@ -106,7 +125,7 @@ mod tests {
     fn test_matrix_translation() {
         let transform = Transform {
             position: Some([5.0, 10.0, 15.0]),
-            rotation: Some([0.0, 0.0, 0.0, 1.0]),
+            rotation: Some(vec![0.0, 0.0, 0.0, 1.0]),
             scale: Some([1.0, 1.0, 1.0]),
         };
 
@@ -122,7 +141,7 @@ mod tests {
     fn test_matrix_scale() {
         let transform = Transform {
             position: Some([0.0, 0.0, 0.0]),
-            rotation: Some([0.0, 0.0, 0.0, 1.0]),
+            rotation: Some(vec![0.0, 0.0, 0.0, 1.0]),
             scale: Some([2.0, 3.0, 4.0]),
         };
 
@@ -139,7 +158,7 @@ mod tests {
 
     #[test]
     fn test_deserialization() {
-        // Test that Transform can be deserialized from JSON
+        // Test that Transform can be deserialized from JSON (quaternion)
         let json = r#"{
             "position": [1.0, 2.0, 3.0],
             "rotation": [0.0, 0.0, 0.0, 1.0],
@@ -149,7 +168,7 @@ mod tests {
         let transform: Transform = serde_json::from_str(json).unwrap();
 
         assert_eq!(transform.position, Some([1.0, 2.0, 3.0]));
-        assert_eq!(transform.rotation, Some([0.0, 0.0, 0.0, 1.0]));
+        assert_eq!(transform.rotation, Some(vec![0.0, 0.0, 0.0, 1.0]));
         assert_eq!(transform.scale, Some([1.5, 1.5, 1.5]));
     }
 
@@ -165,5 +184,30 @@ mod tests {
         assert_eq!(transform.position, Some([1.0, 2.0, 3.0]));
         assert_eq!(transform.rotation, None);
         assert_eq!(transform.scale, None);
+    }
+
+    #[test]
+    fn test_deserialization_euler_from_typescript() {
+        // Test that TypeScript format (3-value Euler angles) deserializes correctly
+        let json = r#"{
+            "position": [1.0, 2.0, 3.0],
+            "rotation": [0.0, 0.0, 1.57],
+            "scale": [2.0, 2.0, 2.0]
+        }"#;
+
+        let transform: Transform = serde_json::from_str(json).unwrap();
+
+        assert_eq!(transform.position, Some([1.0, 2.0, 3.0]));
+        // Rotation should be a Vec with 3 elements (Euler)
+        assert_eq!(transform.rotation.as_ref().map(|r| r.len()), Some(3));
+        assert_eq!(transform.scale, Some([2.0, 2.0, 2.0]));
+
+        // Verify it converts to quaternion correctly
+        let quat = transform.rotation_quat();
+        let expected = Quat::from_euler(glam::EulerRot::XYZ, 0.0, 0.0, 1.57);
+        assert!((quat.x - expected.x).abs() < 0.001);
+        assert!((quat.y - expected.y).abs() < 0.001);
+        assert!((quat.z - expected.z).abs() < 0.001);
+        assert!((quat.w - expected.w).abs() < 0.001);
     }
 }

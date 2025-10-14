@@ -103,6 +103,9 @@ mod tests {
             isMain: true,
             projectionType: "perspective".to_string(),
             orthographicSize: 10.0,
+            backgroundColor: None,
+            clearFlags: None,
+            skyboxTexture: None,
         };
 
         camera.apply_component(&component);
@@ -120,6 +123,9 @@ mod tests {
             isMain: true,
             projectionType: "perspective".to_string(),
             orthographicSize: 10.0,
+            backgroundColor: None,
+            clearFlags: None,
+            skyboxTexture: None,
         };
 
         camera.apply_component(&component);
@@ -138,6 +144,9 @@ mod tests {
             isMain: false,
             projectionType: "perspective".to_string(),
             orthographicSize: 10.0,
+            backgroundColor: None,
+            clearFlags: None,
+            skyboxTexture: None,
         };
 
         camera.apply_component(&component);
