@@ -4,6 +4,7 @@ members = [
     "crates/scene",
     "crates/ecs-bridge",
     "crates/scene-graph",
+    "crates/assets",
 ]
 
 [package]
@@ -16,6 +17,7 @@ edition = "2021"
 vibe-scene = { path = "crates/scene" }
 vibe-ecs-bridge = { path = "crates/ecs-bridge" }
 vibe-scene-graph = { path = "crates/scene-graph" }
+vibe-assets = { path = "crates/assets" }
 
 # Core rendering
 wgpu = "0.19"

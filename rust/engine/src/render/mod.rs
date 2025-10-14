@@ -8,26 +8,26 @@ pub mod depth_texture;
 mod integration_test;
 #[cfg(test)]
 mod lighting_test;
-pub mod material;
+// Material, MeshCache, and Vertex now from vibe-assets crate
+pub mod material; // Keep for backward compat with tests
 #[cfg(test)]
 mod material_test;
-pub mod mesh_cache;
+pub mod mesh_cache; // Keep for backward compat with tests
 pub mod pipeline;
 #[cfg(test)]
 mod pipeline_test;
-pub mod primitives;
+pub mod primitives; // Keep for backward compat with tests
 #[cfg(test)]
 mod primitives_test;
 pub mod renderer;
 pub mod scene_renderer;
-pub mod vertex;
+pub mod vertex; // Keep for backward compat with tests
 #[cfg(test)]
 mod vertex_test;
 
 pub use camera::Camera;
-pub use material::{Material, MaterialCache};
-pub use mesh_cache::MeshCache;
+// Re-export from vibe-assets crate
+pub use vibe_assets::{Material, MaterialCache, MeshCache, Mesh, Vertex};
 pub use pipeline::RenderPipeline;
 pub use renderer::Renderer;
 pub use scene_renderer::SceneRenderer;
-pub use vertex::{Mesh, Vertex};
