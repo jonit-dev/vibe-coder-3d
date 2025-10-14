@@ -1,6 +1,6 @@
 # Rust Engine Architecture Status
 
-## Completed (Phases 1-3)
+## Completed (Phases 1-3, 5 partial)
 
 ### ✅ Phase 1: Workspace Foundations
 
@@ -31,6 +31,18 @@
 
 **Total Tests**: 25 passing
 
+### ✅ Phase 5: Assets (Partial)
+
+- Created `vibe-assets` workspace crate for asset management
+- MaterialCache with PBR properties and hex color parsing
+- MeshCache with GPU buffer management for primitives
+- TextureCache with image loading and GPU texture creation
+- Vertex and Mesh types with bytemuck support
+
+**Status**: Material and Mesh caches functional. Texture loading ready. GLTF loader pending.
+
+**Tests**: Inherits tests from main engine (material_test.rs, primitives_test.rs, vertex_test.rs)
+
 ## Architecture Overview
 
 ```
@@ -60,6 +72,12 @@
 │  ├─ Transform propagation (lazy, dirty tracking)            │
 │  ├─ Cycle detection                                         │
 │  └─ extract_renderables() → RenderableInstance              │
+│                                                              │
+│  vibe-assets                                                 │
+│  ├─ MaterialCache (PBR properties, hex colors)              │
+│  ├─ MeshCache (GPU buffers, primitives)                     │
+│  ├─ TextureCache (image loading, GPU textures)              │
+│  └─ Vertex/Mesh types                                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
