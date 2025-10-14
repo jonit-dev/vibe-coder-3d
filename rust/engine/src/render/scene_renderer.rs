@@ -1,11 +1,11 @@
 use super::{
     material::MaterialCache,
     mesh_cache::MeshCache,
-    pipeline::{InstanceRaw, RenderPipeline},
+    pipeline::{InstanceRaw, LightUniform, RenderPipeline},
     Camera,
 };
 use crate::ecs::{components::transform::Transform, SceneData};
-use glam::Mat4;
+use glam::{Mat4, Vec3};
 use wgpu::util::DeviceExt;
 
 pub struct RenderableEntity {
@@ -20,6 +20,8 @@ pub struct SceneRenderer {
     pub pipeline: RenderPipeline,
     pub entities: Vec<RenderableEntity>,
     pub instance_buffer: Option<wgpu::Buffer>,
+    pub light_uniform: LightUniform,
+    pub depth_texture: super::depth_texture::DepthTexture,
 }
 
 impl SceneRenderer {
@@ -29,6 +31,7 @@ impl SceneRenderer {
 
         let material_cache = MaterialCache::new();
         let pipeline = RenderPipeline::new(device, config);
+        let depth_texture = super::depth_texture::DepthTexture::create(device, config);
 
         Self {
             mesh_cache,
@@ -36,6 +39,8 @@ impl SceneRenderer {
             pipeline,
             entities: Vec::new(),
             instance_buffer: None,
+            light_uniform: LightUniform::new(),
+            depth_texture,
         }
     }
 
@@ -46,6 +51,14 @@ impl SceneRenderer {
 
         // Load materials from scene
         self.material_cache.load_from_scene(scene.materials.as_ref());
+
+        // Reset lights to defaults
+        self.light_uniform = LightUniform::new();
+
+        // Extract lights from scene
+        let mut directional_light_set = false;
+        let mut ambient_light_set = false;
+        let mut point_light_count = 0;
 
         for (idx, entity) in scene.entities.iter().enumerate() {
             let unnamed = "Unnamed".to_string();
@@ -64,7 +77,72 @@ impl SceneRenderer {
                         log::debug!("    Color: RGB({}, {}, {})", color.r, color.g, color.b);
                     }
                     log::debug!("    Cast Shadow: {}", light.castShadow);
-                    log::debug!("    Direction: ({}, {}, {})", light.directionX, light.directionY, light.directionZ);
+
+                    // Only process enabled lights
+                    if !light.enabled {
+                        log::debug!("    Skipping (disabled)");
+                        continue;
+                    }
+
+                    let light_color = light.color.as_ref().map(|c| [c.r, c.g, c.b]).unwrap_or([1.0, 1.0, 1.0]);
+
+                    match light.lightType.as_str() {
+                        "directional" => {
+                            if !directional_light_set {
+                                log::info!("  ✓ Using directional light: intensity={}, color={:?}", light.intensity, light_color);
+                                self.light_uniform.directional_direction = [light.directionX, light.directionY, light.directionZ];
+                                self.light_uniform.directional_intensity = light.intensity;
+                                self.light_uniform.directional_color = light_color;
+                                self.light_uniform.directional_enabled = 1.0;
+                                directional_light_set = true;
+                            } else {
+                                log::debug!("    Skipping (directional light already set)");
+                            }
+                        }
+                        "ambient" => {
+                            if !ambient_light_set {
+                                log::info!("  ✓ Using ambient light: intensity={}, color={:?}", light.intensity, light_color);
+                                self.light_uniform.ambient_color = light_color;
+                                self.light_uniform.ambient_intensity = light.intensity;
+                                ambient_light_set = true;
+                            } else {
+                                log::debug!("    Skipping (ambient light already set)");
+                            }
+                        }
+                        "point" => {
+                            if point_light_count < 2 {
+                                log::info!("  ✓ Using point light #{}: intensity={}, range={}, color={:?}",
+                                    point_light_count, light.intensity, light.range, light_color);
+
+                                // Get transform for point light position
+                                let transform = entity
+                                    .get_component::<Transform>("Transform")
+                                    .unwrap_or_default();
+                                let position = transform.position_vec3();
+
+                                if point_light_count == 0 {
+                                    self.light_uniform.point_position_0 = [position.x, position.y, position.z];
+                                    self.light_uniform.point_intensity_0 = light.intensity;
+                                    self.light_uniform.point_color_0 = light_color;
+                                    self.light_uniform.point_range_0 = light.range;
+                                } else {
+                                    self.light_uniform.point_position_1 = [position.x, position.y, position.z];
+                                    self.light_uniform.point_intensity_1 = light.intensity;
+                                    self.light_uniform.point_color_1 = light_color;
+                                    self.light_uniform.point_range_1 = light.range;
+                                }
+                                point_light_count += 1;
+                            } else {
+                                log::debug!("    Skipping (max 2 point lights already set)");
+                            }
+                        }
+                        "spot" => {
+                            log::debug!("    Spot lights not yet implemented");
+                        }
+                        _ => {
+                            log::warn!("    Unknown light type: {}", light.lightType);
+                        }
+                    }
                 }
             }
 
@@ -181,7 +259,10 @@ impl SceneRenderer {
         queue: &wgpu::Queue,
     ) {
         // Update camera
-        self.pipeline.update_camera(queue, camera.view_projection_matrix());
+        self.pipeline.update_camera(queue, camera.view_projection_matrix(), camera.position);
+
+        // Update lights
+        self.pipeline.update_lights(queue, &self.light_uniform);
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Scene Render Pass"),
@@ -193,7 +274,11 @@ impl SceneRenderer {
                     store: wgpu::StoreOp::Store,
                 },
             })],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &self.depth_texture.view,
+                depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
+                stencil_ops: None,
+            }),
             occlusion_query_set: None,
             timestamp_writes: None,
         });

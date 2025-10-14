@@ -1,38 +1,134 @@
 use super::vertex::{Mesh, Vertex};
 
-/// Generate a cube mesh (2x2x2 centered at origin)
+/// Generate a cube mesh (1x1x1 centered at origin) to match Three.js BoxGeometry(1,1,1)
 pub fn create_cube() -> Mesh {
     let vertices = vec![
-        // Front face (z = 1)
-        Vertex { position: [-1.0, -1.0, 1.0], normal: [0.0, 0.0, 1.0], uv: [0.0, 1.0] },
-        Vertex { position: [1.0, -1.0, 1.0], normal: [0.0, 0.0, 1.0], uv: [1.0, 1.0] },
-        Vertex { position: [1.0, 1.0, 1.0], normal: [0.0, 0.0, 1.0], uv: [1.0, 0.0] },
-        Vertex { position: [-1.0, 1.0, 1.0], normal: [0.0, 0.0, 1.0], uv: [0.0, 0.0] },
-        // Back face (z = -1)
-        Vertex { position: [1.0, -1.0, -1.0], normal: [0.0, 0.0, -1.0], uv: [0.0, 1.0] },
-        Vertex { position: [-1.0, -1.0, -1.0], normal: [0.0, 0.0, -1.0], uv: [1.0, 1.0] },
-        Vertex { position: [-1.0, 1.0, -1.0], normal: [0.0, 0.0, -1.0], uv: [1.0, 0.0] },
-        Vertex { position: [1.0, 1.0, -1.0], normal: [0.0, 0.0, -1.0], uv: [0.0, 0.0] },
-        // Top face (y = 1)
-        Vertex { position: [-1.0, 1.0, 1.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 1.0] },
-        Vertex { position: [1.0, 1.0, 1.0], normal: [0.0, 1.0, 0.0], uv: [1.0, 1.0] },
-        Vertex { position: [1.0, 1.0, -1.0], normal: [0.0, 1.0, 0.0], uv: [1.0, 0.0] },
-        Vertex { position: [-1.0, 1.0, -1.0], normal: [0.0, 1.0, 0.0], uv: [0.0, 0.0] },
-        // Bottom face (y = -1)
-        Vertex { position: [-1.0, -1.0, -1.0], normal: [0.0, -1.0, 0.0], uv: [0.0, 1.0] },
-        Vertex { position: [1.0, -1.0, -1.0], normal: [0.0, -1.0, 0.0], uv: [1.0, 1.0] },
-        Vertex { position: [1.0, -1.0, 1.0], normal: [0.0, -1.0, 0.0], uv: [1.0, 0.0] },
-        Vertex { position: [-1.0, -1.0, 1.0], normal: [0.0, -1.0, 0.0], uv: [0.0, 0.0] },
-        // Right face (x = 1)
-        Vertex { position: [1.0, -1.0, 1.0], normal: [1.0, 0.0, 0.0], uv: [0.0, 1.0] },
-        Vertex { position: [1.0, -1.0, -1.0], normal: [1.0, 0.0, 0.0], uv: [1.0, 1.0] },
-        Vertex { position: [1.0, 1.0, -1.0], normal: [1.0, 0.0, 0.0], uv: [1.0, 0.0] },
-        Vertex { position: [1.0, 1.0, 1.0], normal: [1.0, 0.0, 0.0], uv: [0.0, 0.0] },
-        // Left face (x = -1)
-        Vertex { position: [-1.0, -1.0, -1.0], normal: [-1.0, 0.0, 0.0], uv: [0.0, 1.0] },
-        Vertex { position: [-1.0, -1.0, 1.0], normal: [-1.0, 0.0, 0.0], uv: [1.0, 1.0] },
-        Vertex { position: [-1.0, 1.0, 1.0], normal: [-1.0, 0.0, 0.0], uv: [1.0, 0.0] },
-        Vertex { position: [-1.0, 1.0, -1.0], normal: [-1.0, 0.0, 0.0], uv: [0.0, 0.0] },
+        // Front face (z = 0.5)
+        Vertex {
+            position: [-0.5, -0.5, 0.5],
+            normal: [0.0, 0.0, 1.0],
+            uv: [0.0, 1.0],
+        },
+        Vertex {
+            position: [0.5, -0.5, 0.5],
+            normal: [0.0, 0.0, 1.0],
+            uv: [1.0, 1.0],
+        },
+        Vertex {
+            position: [0.5, 0.5, 0.5],
+            normal: [0.0, 0.0, 1.0],
+            uv: [1.0, 0.0],
+        },
+        Vertex {
+            position: [-0.5, 0.5, 0.5],
+            normal: [0.0, 0.0, 1.0],
+            uv: [0.0, 0.0],
+        },
+        // Back face (z = -0.5)
+        Vertex {
+            position: [0.5, -0.5, -0.5],
+            normal: [0.0, 0.0, -1.0],
+            uv: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-0.5, -0.5, -0.5],
+            normal: [0.0, 0.0, -1.0],
+            uv: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-0.5, 0.5, -0.5],
+            normal: [0.0, 0.0, -1.0],
+            uv: [1.0, 0.0],
+        },
+        Vertex {
+            position: [0.5, 0.5, -0.5],
+            normal: [0.0, 0.0, -1.0],
+            uv: [0.0, 0.0],
+        },
+        // Top face (y = 0.5)
+        Vertex {
+            position: [-0.5, 0.5, 0.5],
+            normal: [0.0, 1.0, 0.0],
+            uv: [0.0, 1.0],
+        },
+        Vertex {
+            position: [0.5, 0.5, 0.5],
+            normal: [0.0, 1.0, 0.0],
+            uv: [1.0, 1.0],
+        },
+        Vertex {
+            position: [0.5, 0.5, -0.5],
+            normal: [0.0, 1.0, 0.0],
+            uv: [1.0, 0.0],
+        },
+        Vertex {
+            position: [-0.5, 0.5, -0.5],
+            normal: [0.0, 1.0, 0.0],
+            uv: [0.0, 0.0],
+        },
+        // Bottom face (y = -0.5)
+        Vertex {
+            position: [-0.5, -0.5, -0.5],
+            normal: [0.0, -1.0, 0.0],
+            uv: [0.0, 1.0],
+        },
+        Vertex {
+            position: [0.5, -0.5, -0.5],
+            normal: [0.0, -1.0, 0.0],
+            uv: [1.0, 1.0],
+        },
+        Vertex {
+            position: [0.5, -0.5, 0.5],
+            normal: [0.0, -1.0, 0.0],
+            uv: [1.0, 0.0],
+        },
+        Vertex {
+            position: [-0.5, -0.5, 0.5],
+            normal: [0.0, -1.0, 0.0],
+            uv: [0.0, 0.0],
+        },
+        // Right face (x = 0.5)
+        Vertex {
+            position: [0.5, -0.5, 0.5],
+            normal: [1.0, 0.0, 0.0],
+            uv: [0.0, 1.0],
+        },
+        Vertex {
+            position: [0.5, -0.5, -0.5],
+            normal: [1.0, 0.0, 0.0],
+            uv: [1.0, 1.0],
+        },
+        Vertex {
+            position: [0.5, 0.5, -0.5],
+            normal: [1.0, 0.0, 0.0],
+            uv: [1.0, 0.0],
+        },
+        Vertex {
+            position: [0.5, 0.5, 0.5],
+            normal: [1.0, 0.0, 0.0],
+            uv: [0.0, 0.0],
+        },
+        // Left face (x = -0.5)
+        Vertex {
+            position: [-0.5, -0.5, -0.5],
+            normal: [-1.0, 0.0, 0.0],
+            uv: [0.0, 1.0],
+        },
+        Vertex {
+            position: [-0.5, -0.5, 0.5],
+            normal: [-1.0, 0.0, 0.0],
+            uv: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-0.5, 0.5, 0.5],
+            normal: [-1.0, 0.0, 0.0],
+            uv: [1.0, 0.0],
+        },
+        Vertex {
+            position: [-0.5, 0.5, -0.5],
+            normal: [-1.0, 0.0, 0.0],
+            uv: [0.0, 0.0],
+        },
     ];
 
     let indices = vec![
@@ -102,10 +198,26 @@ pub fn create_plane(size: f32) -> Mesh {
     let half = size / 2.0;
 
     let vertices = vec![
-        Vertex { position: [-half, 0.0, -half], normal: [0.0, 1.0, 0.0], uv: [0.0, 0.0] },
-        Vertex { position: [half, 0.0, -half], normal: [0.0, 1.0, 0.0], uv: [1.0, 0.0] },
-        Vertex { position: [half, 0.0, half], normal: [0.0, 1.0, 0.0], uv: [1.0, 1.0] },
-        Vertex { position: [-half, 0.0, half], normal: [0.0, 1.0, 0.0], uv: [0.0, 1.0] },
+        Vertex {
+            position: [-half, 0.0, -half],
+            normal: [0.0, 1.0, 0.0],
+            uv: [0.0, 0.0],
+        },
+        Vertex {
+            position: [half, 0.0, -half],
+            normal: [0.0, 1.0, 0.0],
+            uv: [1.0, 0.0],
+        },
+        Vertex {
+            position: [half, 0.0, half],
+            normal: [0.0, 1.0, 0.0],
+            uv: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-half, 0.0, half],
+            normal: [0.0, 1.0, 0.0],
+            uv: [0.0, 1.0],
+        },
     ];
 
     let indices = vec![0, 1, 2, 2, 3, 0];

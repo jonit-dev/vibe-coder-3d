@@ -1,6 +1,12 @@
 use glam::{Mat4, Vec3};
 use wgpu::Color;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ProjectionType {
+    Perspective,
+    Orthographic,
+}
+
 pub struct Camera {
     pub position: Vec3,
     pub target: Vec3,
@@ -10,6 +16,8 @@ pub struct Camera {
     pub near: f32,
     pub far: f32,
     pub background_color: Color,
+    pub projection_type: ProjectionType,
+    pub orthographic_size: f32,
 }
 
 impl Camera {
@@ -28,6 +36,8 @@ impl Camera {
                 b: 0.3,
                 a: 1.0,
             },
+            projection_type: ProjectionType::Perspective,
+            orthographic_size: 10.0,
         }
     }
 
@@ -36,21 +46,64 @@ impl Camera {
     }
 
     pub fn projection_matrix(&self) -> Mat4 {
-        Mat4::perspective_rh(self.fov, self.aspect, self.near, self.far)
+        match self.projection_type {
+            ProjectionType::Perspective => {
+                // Use GL-style clip space (-1..1 for Z), we'll convert to WGPU below
+                Mat4::perspective_rh_gl(self.fov, self.aspect, self.near, self.far)
+            }
+            ProjectionType::Orthographic => {
+                let half_height = self.orthographic_size / 2.0;
+                let half_width = half_height * self.aspect;
+                // Use GL-style clip space for orthographic as well
+                Mat4::orthographic_rh_gl(
+                    -half_width,
+                    half_width,
+                    -half_height,
+                    half_height,
+                    self.near,
+                    self.far,
+                )
+            }
+        }
     }
 
     pub fn view_projection_matrix(&self) -> Mat4 {
-        self.projection_matrix() * self.view_matrix()
+        // Convert GL clip space to WGPU (0..1 depth) and keep Y-up
+        // from https://sotrh.github.io/learn-wgpu/beginner/tutorial5-textures/#a-few-changes
+        const OPENGL_TO_WGPU_MATRIX: Mat4 = Mat4::from_cols_array(&[
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.5, 1.0,
+        ]);
+
+        OPENGL_TO_WGPU_MATRIX * self.projection_matrix() * self.view_matrix()
     }
 
     pub fn update_aspect(&mut self, width: u32, height: u32) {
         self.aspect = width as f32 / height as f32;
     }
 
-    pub fn apply_component(&mut self, camera_comp: &crate::ecs::components::camera::CameraComponent) {
+    pub fn apply_component(
+        &mut self,
+        camera_comp: &crate::ecs::components::camera::CameraComponent,
+    ) {
         self.fov = camera_comp.fov.to_radians();
         self.near = camera_comp.near;
         self.far = camera_comp.far;
+
+        // Apply projection type
+        self.projection_type = match camera_comp.projectionType.as_str() {
+            "orthographic" => ProjectionType::Orthographic,
+            _ => ProjectionType::Perspective,
+        };
+        self.orthographic_size = camera_comp.orthographicSize;
+
+        log::info!(
+            "Applied camera settings: projection={:?}, fov={:.1}°, near={}, far={}, ortho_size={}",
+            self.projection_type,
+            camera_comp.fov,
+            self.near,
+            self.far,
+            self.orthographic_size
+        );
 
         // Apply background color if specified
         if let Some(ref bg) = camera_comp.backgroundColor {
@@ -60,7 +113,13 @@ impl Camera {
                 b: bg.b as f64,
                 a: bg.a as f64,
             };
-            log::info!("Applied background color: r={}, g={}, b={}, a={}", bg.r, bg.g, bg.b, bg.a);
+            log::info!(
+                "Applied background color: r={}, g={}, b={}, a={}",
+                bg.r,
+                bg.g,
+                bg.b,
+                bg.a
+            );
         }
     }
 }

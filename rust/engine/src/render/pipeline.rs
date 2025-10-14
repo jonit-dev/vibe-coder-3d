@@ -1,23 +1,79 @@
 use super::vertex::Vertex;
 use bytemuck::{Pod, Zeroable};
-use glam::Mat4;
+use glam::{Mat4, Vec3};
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
 pub struct CameraUniform {
     view_proj: [[f32; 4]; 4],
+    camera_position: [f32; 4],
 }
 
 impl CameraUniform {
     pub fn new() -> Self {
         Self {
             view_proj: Mat4::IDENTITY.to_cols_array_2d(),
+            camera_position: [0.0, 0.0, 0.0, 0.0],
         }
     }
 
-    pub fn update_view_proj(&mut self, view_proj: Mat4) {
+    pub fn update_view_proj(&mut self, view_proj: Mat4, camera_pos: Vec3) {
         self.view_proj = view_proj.to_cols_array_2d();
+        self.camera_position = [camera_pos.x, camera_pos.y, camera_pos.z, 0.0];
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Pod, Zeroable)]
+pub struct LightUniform {
+    // Directional light
+    pub directional_direction: [f32; 3],
+    pub directional_intensity: f32,
+    pub directional_color: [f32; 3],
+    pub directional_enabled: f32,
+
+    // Ambient light
+    pub ambient_color: [f32; 3],
+    pub ambient_intensity: f32,
+
+    // Point light 0
+    pub point_position_0: [f32; 3],
+    pub point_intensity_0: f32,
+    pub point_color_0: [f32; 3],
+    pub point_range_0: f32,
+
+    // Point light 1
+    pub point_position_1: [f32; 3],
+    pub point_intensity_1: f32,
+    pub point_color_1: [f32; 3],
+    pub point_range_1: f32,
+}
+
+impl LightUniform {
+    pub fn new() -> Self {
+        Self {
+            // Default directional light (like Three.js default)
+            directional_direction: [0.5, 1.0, 0.5],
+            directional_intensity: 1.0,
+            directional_color: [1.0, 1.0, 1.0],
+            directional_enabled: 1.0,
+
+            // Default ambient light
+            ambient_color: [0.3, 0.3, 0.3],
+            ambient_intensity: 1.0,
+
+            // No point lights by default
+            point_position_0: [0.0, 0.0, 0.0],
+            point_intensity_0: 0.0,
+            point_color_0: [1.0, 1.0, 1.0],
+            point_range_0: 10.0,
+
+            point_position_1: [0.0, 0.0, 0.0],
+            point_intensity_1: 0.0,
+            point_color_1: [1.0, 1.0, 1.0],
+            point_range_1: 10.0,
+        }
     }
 }
 
@@ -96,6 +152,7 @@ pub struct RenderPipeline {
     pub pipeline: wgpu::RenderPipeline,
     pub camera_bind_group: wgpu::BindGroup,
     pub camera_buffer: wgpu::Buffer,
+    pub light_buffer: wgpu::Buffer,
 }
 
 impl RenderPipeline {
@@ -108,29 +165,55 @@ impl RenderPipeline {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
+        // Create lighting uniform buffer
+        let light_uniform = LightUniform::new();
+        let light_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Light Buffer"),
+            contents: bytemuck::cast_slice(&[light_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
         // Create bind group layout
         let camera_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                }],
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
                 label: Some("camera_bind_group_layout"),
             });
 
         // Create bind group
         let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &camera_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: camera_buffer.as_entire_binding(),
-            }],
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: camera_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: light_buffer.as_entire_binding(),
+                },
+            ],
             label: Some("camera_bind_group"),
         });
 
@@ -174,7 +257,13 @@ impl RenderPipeline {
                 unclipped_depth: false,
                 conservative: false,
             },
-            depth_stencil: None, // TODO: Add depth buffer
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,
@@ -187,12 +276,17 @@ impl RenderPipeline {
             pipeline,
             camera_bind_group,
             camera_buffer,
+            light_buffer,
         }
     }
 
-    pub fn update_camera(&self, queue: &wgpu::Queue, view_proj: Mat4) {
+    pub fn update_camera(&self, queue: &wgpu::Queue, view_proj: Mat4, camera_pos: Vec3) {
         let mut camera_uniform = CameraUniform::new();
-        camera_uniform.update_view_proj(view_proj);
+        camera_uniform.update_view_proj(view_proj, camera_pos);
         queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[camera_uniform]));
+    }
+
+    pub fn update_lights(&self, queue: &wgpu::Queue, lights: &LightUniform) {
+        queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[*lights]));
     }
 }
