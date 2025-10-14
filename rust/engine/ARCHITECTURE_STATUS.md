@@ -31,17 +31,19 @@
 
 **Total Tests**: 25 passing
 
-### ✅ Phase 5: Assets (Partial)
+### ✅ Phase 5: Assets
 
 - Created `vibe-assets` workspace crate for asset management
 - MaterialCache with PBR properties and hex color parsing
 - MeshCache with GPU buffer management for primitives
 - TextureCache with image loading and GPU texture creation
 - Vertex and Mesh types with bytemuck support
+- GLTF loader with feature-gated support (`gltf-support`)
+- MeshCache::load_gltf() method for loading 3D models
 
-**Status**: Material and Mesh caches functional. Texture loading ready. GLTF loader pending.
+**Status**: Complete. All asset loading systems implemented.
 
-**Tests**: Inherits tests from main engine (material_test.rs, primitives_test.rs, vertex_test.rs)
+**Tests**: Inherits tests from main engine (material_test.rs, primitives_test.rs, vertex_test.rs, gltf_loader tests)
 
 ## Architecture Overview
 
@@ -136,12 +138,12 @@ for instance in instances {
 - Too complex for initial integration
 - Current monolithic renderer works fine
 
-### Phase 5: Assets (Partially Done)
+### Phase 5: Assets (Complete ✅)
 
-- MeshCache and MaterialCache exist in src/render/
-- Could be extracted to crates/assets
-- Add TextureCache, GLTF loading
-- URI-based asset addressing
+- Extracted to vibe-assets workspace crate
+- MeshCache, MaterialCache, TextureCache implemented
+- GLTF loading with feature flag
+- Next: URI-based asset addressing, asset hot-reloading
 
 ### Phase 6: Live Bridge
 
