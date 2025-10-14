@@ -6,6 +6,7 @@ use super::{
 };
 use crate::ecs::{components::transform::Transform, SceneData};
 use glam::{Mat4, Vec3};
+use vibe_scene_graph::SceneGraph;
 use wgpu::util::DeviceExt;
 
 pub struct RenderableEntity {
@@ -52,6 +53,20 @@ impl SceneRenderer {
         // Load materials from scene
         self.material_cache
             .load_from_scene(scene.materials.as_ref());
+
+        // Build scene graph for transform hierarchy
+        let mut scene_graph = match SceneGraph::build(scene) {
+            Ok(graph) => {
+                log::info!("Built scene graph with {} entities", graph.entity_ids().len());
+                graph
+            }
+            Err(e) => {
+                log::error!("Failed to build scene graph: {}", e);
+                log::warn!("Falling back to flat hierarchy (no parent transforms)");
+                // Continue with empty graph - will process entities manually below
+                return;
+            }
+        };
 
         // Reset lights to defaults
         self.light_uniform = LightUniform::new();
@@ -172,58 +187,34 @@ impl SceneRenderer {
                 }
             }
 
-            // Check if entity has MeshRenderer
-            if let Some(mesh_renderer) = entity
-                .get_component::<crate::ecs::components::mesh_renderer::MeshRenderer>(
-                    "MeshRenderer",
-                )
-            {
-                log::debug!("  MeshRenderer component found:");
-                log::debug!("    Enabled: {}", mesh_renderer.enabled);
-                log::debug!("    Mesh ID: {:?}", mesh_renderer.meshId);
-                log::debug!("    Material ID: {:?}", mesh_renderer.materialId);
-                log::debug!("    Model Path: {:?}", mesh_renderer.modelPath);
-                log::debug!("    Cast Shadows: {}", mesh_renderer.castShadows);
-                log::debug!("    Receive Shadows: {}", mesh_renderer.receiveShadows);
+        }
 
-                if !mesh_renderer.enabled {
-                    log::debug!("    Skipping (disabled)");
-                    continue;
-                }
+        // Extract renderable entities using scene graph (includes world transforms from hierarchy)
+        log::info!("Extracting renderable entities from scene graph...");
+        let renderable_instances = scene_graph.extract_renderables(scene);
+        log::info!("Found {} renderable instances", renderable_instances.len());
 
-                // Get transform
-                let transform = entity
-                    .get_component::<Transform>("Transform")
-                    .unwrap_or_default();
+        for instance in renderable_instances {
+            // Only include enabled renderers
+            let mesh_id = instance
+                .mesh_id
+                .clone()
+                .unwrap_or_else(|| "cube".to_string());
 
-                log::debug!("  Transform:");
-                log::debug!("    Position: {:?}", transform.position);
-                log::debug!("    Rotation: {:?}", transform.rotation);
-                log::debug!("    Scale: {:?}", transform.scale);
-                log::debug!("    Position Vec3: {:?}", transform.position_vec3());
-                log::debug!("    Rotation Quat: {:?}", transform.rotation_quat());
-                log::debug!("    Scale Vec3: {:?}", transform.scale_vec3());
+            let material_id = instance.material_id.clone();
 
-                let mesh_id = mesh_renderer
-                    .meshId
-                    .clone()
-                    .unwrap_or_else(|| "cube".to_string());
+            log::debug!(
+                "  ✓ Renderable: mesh='{}', material={:?}, world_transform={:?}",
+                &mesh_id,
+                &material_id,
+                instance.world_transform
+            );
 
-                let material_id = mesh_renderer.materialId.clone();
-
-                log::info!(
-                    "  ✓ Added renderable entity '{}' (mesh: '{}', material: {:?})",
-                    entity_name,
-                    &mesh_id,
-                    &material_id
-                );
-
-                self.entities.push(RenderableEntity {
-                    transform: transform.matrix(),
-                    mesh_id,
-                    material_id,
-                });
-            }
+            self.entities.push(RenderableEntity {
+                transform: instance.world_transform,
+                mesh_id,
+                material_id,
+            });
         }
 
         log::info!("Loaded {} renderable entities", self.entities.len());

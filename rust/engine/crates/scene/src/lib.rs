@@ -69,6 +69,10 @@ pub struct Metadata {
 /// Entity in the scene
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entity {
+    /// Numeric entity ID from the editor (not used for stable references)
+    #[serde(default)]
+    pub id: Option<u32>,
+    /// Direct persistentId field (optional, for compatibility)
     #[serde(default)]
     pub persistentId: Option<String>,
     #[serde(default)]
@@ -79,11 +83,26 @@ pub struct Entity {
 }
 
 impl Entity {
-    /// Get stable entity ID
+    /// Get stable entity ID - tries multiple sources
     pub fn entity_id(&self) -> Option<EntityId> {
-        self.persistentId
-            .as_ref()
-            .map(|id| EntityId::from_persistent_id(id))
+        // First try direct persistentId field
+        if let Some(ref id) = self.persistentId {
+            return Some(EntityId::from_persistent_id(id));
+        }
+
+        // Then check PersistentId component
+        if let Some(component) = self.components.get("PersistentId") {
+            if let Some(obj) = component.as_object() {
+                if let Some(id_value) = obj.get("id") {
+                    if let Some(id_str) = id_value.as_str() {
+                        return Some(EntityId::from_persistent_id(id_str));
+                    }
+                }
+            }
+        }
+
+        // Fallback to numeric id if available (for old scenes)
+        self.id.map(|numeric_id| EntityId::new(numeric_id as u64))
     }
 
     /// Get parent entity ID
@@ -182,6 +201,7 @@ mod tests {
     #[test]
     fn test_entity_ids() {
         let entity = Entity {
+            id: None,
             persistentId: Some("entity-1".to_string()),
             name: Some("Test".to_string()),
             parentPersistentId: Some("parent-1".to_string()),
@@ -203,6 +223,7 @@ mod tests {
         );
 
         let entity = Entity {
+            id: None,
             persistentId: Some("entity-1".to_string()),
             name: Some("Test".to_string()),
             parentPersistentId: None,
@@ -217,6 +238,7 @@ mod tests {
     #[test]
     fn test_scene_entity_lookup() {
         let entity1 = Entity {
+            id: None,
             persistentId: Some("entity-1".to_string()),
             name: Some("Entity1".to_string()),
             parentPersistentId: None,
@@ -224,6 +246,7 @@ mod tests {
         };
 
         let entity2 = Entity {
+            id: None,
             persistentId: Some("entity-2".to_string()),
             name: Some("Entity2".to_string()),
             parentPersistentId: None,
@@ -259,6 +282,7 @@ mod tests {
         components.insert("Transform".to_string(), serde_json::json!({}));
 
         let entity1 = Entity {
+            id: None,
             persistentId: Some("entity-1".to_string()),
             name: Some("HasTransform".to_string()),
             parentPersistentId: None,
@@ -266,6 +290,7 @@ mod tests {
         };
 
         let entity2 = Entity {
+            id: None,
             persistentId: Some("entity-2".to_string()),
             name: Some("NoTransform".to_string()),
             parentPersistentId: None,
