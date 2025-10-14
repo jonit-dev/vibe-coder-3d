@@ -1,6 +1,33 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct Color {
+    #[serde(default)]
+    pub r: f32,
+    #[serde(default)]
+    pub g: f32,
+    #[serde(default)]
+    pub b: f32,
+    #[serde(default = "default_alpha")]
+    pub a: f32,
+}
+
+fn default_alpha() -> f32 {
+    1.0
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct CameraComponent {
     #[serde(default = "default_fov")]
     pub fov: f32,
@@ -19,6 +46,15 @@ pub struct CameraComponent {
 
     #[serde(default = "default_orthographic_size")]
     pub orthographicSize: f32,
+
+    #[serde(default)]
+    pub backgroundColor: Option<Color>,
+
+    #[serde(default)]
+    pub clearFlags: Option<String>,
+
+    #[serde(default)]
+    pub skyboxTexture: Option<String>,
 }
 
 fn default_fov() -> f32 {
@@ -50,6 +86,9 @@ impl Default for CameraComponent {
             isMain: false,
             projectionType: default_projection_type(),
             orthographicSize: default_orthographic_size(),
+            backgroundColor: None,
+            clearFlags: None,
+            skyboxTexture: None,
         }
     }
 }

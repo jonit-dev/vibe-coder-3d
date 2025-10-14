@@ -10,6 +10,10 @@ pub struct MeshRenderer {
     pub modelPath: Option<String>,
     #[serde(default = "default_enabled")]
     pub enabled: bool,
+    #[serde(default = "default_enabled")]
+    pub castShadows: bool,
+    #[serde(default = "default_enabled")]
+    pub receiveShadows: bool,
 }
 
 fn default_enabled() -> bool {
@@ -23,6 +27,8 @@ impl Default for MeshRenderer {
             materialId: None,
             modelPath: None,
             enabled: true,
+            castShadows: true,
+            receiveShadows: true,
         }
     }
 }

@@ -41,15 +41,45 @@ impl SceneRenderer {
 
     pub fn load_scene(&mut self, device: &wgpu::Device, scene: &SceneData) {
         log::info!("Loading scene entities for rendering...");
+        log::debug!("Scene has {} total entities", scene.entities.len());
         self.entities.clear();
 
         // Load materials from scene
         self.material_cache.load_from_scene(scene.materials.as_ref());
 
-        for entity in &scene.entities {
+        for (idx, entity) in scene.entities.iter().enumerate() {
+            let unnamed = "Unnamed".to_string();
+            let entity_name = entity.name.as_ref().unwrap_or(&unnamed);
+            log::debug!("Processing entity #{}: '{}'", idx, entity_name);
+            log::debug!("  Components: {:?}", entity.components.keys().collect::<Vec<_>>());
+
+            // Check for Light component
+            if entity.has_component("Light") {
+                if let Some(light) = entity.get_component::<crate::ecs::components::light::Light>("Light") {
+                    log::debug!("  Light component found:");
+                    log::debug!("    Type: {}", light.lightType);
+                    log::debug!("    Enabled: {}", light.enabled);
+                    log::debug!("    Intensity: {}", light.intensity);
+                    if let Some(ref color) = light.color {
+                        log::debug!("    Color: RGB({}, {}, {})", color.r, color.g, color.b);
+                    }
+                    log::debug!("    Cast Shadow: {}", light.castShadow);
+                    log::debug!("    Direction: ({}, {}, {})", light.directionX, light.directionY, light.directionZ);
+                }
+            }
+
             // Check if entity has MeshRenderer
             if let Some(mesh_renderer) = entity.get_component::<crate::ecs::components::mesh_renderer::MeshRenderer>("MeshRenderer") {
+                log::debug!("  MeshRenderer component found:");
+                log::debug!("    Enabled: {}", mesh_renderer.enabled);
+                log::debug!("    Mesh ID: {:?}", mesh_renderer.meshId);
+                log::debug!("    Material ID: {:?}", mesh_renderer.materialId);
+                log::debug!("    Model Path: {:?}", mesh_renderer.modelPath);
+                log::debug!("    Cast Shadows: {}", mesh_renderer.castShadows);
+                log::debug!("    Receive Shadows: {}", mesh_renderer.receiveShadows);
+
                 if !mesh_renderer.enabled {
+                    log::debug!("    Skipping (disabled)");
                     continue;
                 }
 
@@ -58,6 +88,14 @@ impl SceneRenderer {
                     .get_component::<Transform>("Transform")
                     .unwrap_or_default();
 
+                log::debug!("  Transform:");
+                log::debug!("    Position: {:?}", transform.position);
+                log::debug!("    Rotation: {:?}", transform.rotation);
+                log::debug!("    Scale: {:?}", transform.scale);
+                log::debug!("    Position Vec3: {:?}", transform.position_vec3());
+                log::debug!("    Rotation Quat: {:?}", transform.rotation_quat());
+                log::debug!("    Scale Vec3: {:?}", transform.scale_vec3());
+
                 let mesh_id = mesh_renderer
                     .meshId
                     .clone()
@@ -65,9 +103,9 @@ impl SceneRenderer {
 
                 let material_id = mesh_renderer.materialId.clone();
 
-                log::debug!(
-                    "Added entity '{}' with mesh '{}' and material {:?}",
-                    entity.name.as_ref().unwrap_or(&"Unnamed".to_string()),
+                log::info!(
+                    "  ✓ Added renderable entity '{}' (mesh: '{}', material: {:?})",
+                    entity_name,
                     &mesh_id,
                     &material_id
                 );
@@ -89,18 +127,33 @@ impl SceneRenderer {
     }
 
     fn update_instance_buffer(&mut self, device: &wgpu::Device) {
+        log::debug!("Creating instance buffer for {} entities", self.entities.len());
+
         let instance_data: Vec<InstanceRaw> = self
             .entities
             .iter()
-            .map(|e| {
+            .enumerate()
+            .map(|(idx, e)| {
                 // Get material
-                let material = if let Some(ref mat_id) = e.material_id {
-                    self.material_cache.get(mat_id)
+                let (material, mat_id) = if let Some(ref mat_id) = e.material_id {
+                    (self.material_cache.get(mat_id), mat_id.as_str())
                 } else {
-                    self.material_cache.default()
+                    (self.material_cache.default(), "default")
                 };
 
                 let color_rgb = material.color_rgb();
+
+                log::debug!(
+                    "Instance #{}: mesh='{}', material='{}', color=RGB({:.2}, {:.2}, {:.2}), metallic={}, roughness={}",
+                    idx,
+                    e.mesh_id,
+                    mat_id,
+                    color_rgb.x,
+                    color_rgb.y,
+                    color_rgb.z,
+                    material.metallic,
+                    material.roughness
+                );
 
                 InstanceRaw::with_material(
                     e.transform,
@@ -116,6 +169,8 @@ impl SceneRenderer {
             contents: bytemuck::cast_slice(&instance_data),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         }));
+
+        log::debug!("Instance buffer created successfully");
     }
 
     pub fn render(
@@ -134,12 +189,7 @@ impl SceneRenderer {
                 view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.1,
-                        g: 0.2,
-                        b: 0.3,
-                        a: 1.0,
-                    }),
+                    load: wgpu::LoadOp::Clear(camera.background_color),
                     store: wgpu::StoreOp::Store,
                 },
             })],

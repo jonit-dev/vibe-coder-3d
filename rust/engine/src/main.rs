@@ -42,14 +42,21 @@ fn main() -> anyhow::Result<()> {
 fn resolve_scene_path(scene: &str) -> anyhow::Result<PathBuf> {
     let path = PathBuf::from(scene);
 
-    // If it's already a valid path with extension, use it directly
-    if path.extension().is_some() && path.exists() {
+    // If it's already a valid JSON path that exists, use it directly
+    if path.extension() == Some(std::ffi::OsStr::new("json")) && path.exists() {
         return Ok(path);
     }
 
-    // Otherwise, treat it as a scene name and look in rust/game/scenes/
+    // Strip .tsx extension if present (for compatibility with TypeScript scene names)
+    let scene_name = if scene.ends_with(".tsx") {
+        &scene[..scene.len() - 4]
+    } else {
+        scene
+    };
+
+    // Look for the JSON file in rust/game/scenes/
     let scene_dir = PathBuf::from("rust/game/scenes");
-    let scene_file = scene_dir.join(format!("{}.json", scene));
+    let scene_file = scene_dir.join(format!("{}.json", scene_name));
 
     if scene_file.exists() {
         Ok(scene_file)

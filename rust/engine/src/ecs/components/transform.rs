@@ -1,12 +1,12 @@
 use glam::{Mat4, Quat, Vec3};
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Clone, Copy)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Transform {
     #[serde(default)]
     pub position: Option<[f32; 3]>,
     #[serde(default)]
-    pub rotation: Option<[f32; 4]>, // quaternion [x, y, z, w]
+    pub rotation: Option<Vec<f32>>, // Can be [x, y, z] (Euler) or [x, y, z, w] (quaternion)
     #[serde(default)]
     pub scale: Option<[f32; 3]>,
 }
@@ -15,7 +15,7 @@ impl Default for Transform {
     fn default() -> Self {
         Self {
             position: Some([0.0, 0.0, 0.0]),
-            rotation: Some([0.0, 0.0, 0.0, 1.0]),
+            rotation: Some(vec![0.0, 0.0, 0.0]),
             scale: Some([1.0, 1.0, 1.0]),
         }
     }
@@ -30,9 +30,25 @@ impl Transform {
     }
 
     /// Get rotation as Quat
+    /// Handles both Euler angles [x, y, z] and quaternions [x, y, z, w]
     pub fn rotation_quat(&self) -> Quat {
-        self.rotation
-            .map(|r| Quat::from_xyzw(r[0], r[1], r[2], r[3]))
+        self.rotation.as_ref()
+            .map(|r| {
+                match r.len() {
+                    3 => {
+                        // Euler angles in radians [x, y, z]
+                        Quat::from_euler(glam::EulerRot::XYZ, r[0], r[1], r[2])
+                    }
+                    4 => {
+                        // Quaternion [x, y, z, w]
+                        Quat::from_xyzw(r[0], r[1], r[2], r[3])
+                    }
+                    _ => {
+                        log::warn!("Invalid rotation array length: {}, using identity", r.len());
+                        Quat::IDENTITY
+                    }
+                }
+            })
             .unwrap_or(Quat::IDENTITY)
     }
 

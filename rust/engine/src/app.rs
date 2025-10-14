@@ -57,16 +57,34 @@ impl App {
         let mut camera = Camera::new(width, height);
 
         // Find and apply main camera from scene
+        log::info!("Searching for main camera in {} entities...", scene.entities.len());
         for entity in &scene.entities {
+            log::debug!("Checking entity: {:?}, components: {:?}", entity.name, entity.components.keys());
+
             if let Some(camera_comp) = entity.get_component::<crate::ecs::components::camera::CameraComponent>("Camera") {
+                log::debug!("Found Camera component - isMain: {}", camera_comp.isMain);
                 if camera_comp.isMain {
                     log::info!("Found main camera in scene: {:?}", entity.name);
+                    log::debug!("  FOV: {}", camera_comp.fov);
+                    log::debug!("  Near: {}", camera_comp.near);
+                    log::debug!("  Far: {}", camera_comp.far);
+                    log::debug!("  Projection Type: {}", camera_comp.projectionType);
+                    log::debug!("  Orthographic Size: {}", camera_comp.orthographicSize);
+                    log::debug!("  Clear Flags: {:?}", camera_comp.clearFlags);
+                    log::debug!("  Skybox Texture: {:?}", camera_comp.skyboxTexture);
+
                     camera.apply_component(&camera_comp);
 
                     // Apply camera transform if available
                     if let Some(transform) = entity.get_component::<crate::ecs::components::transform::Transform>("Transform") {
+                        log::debug!("  Transform found:");
+                        log::debug!("    Position: {:?}", transform.position);
+                        log::debug!("    Rotation: {:?}", transform.rotation);
+                        log::debug!("    Scale: {:?}", transform.scale);
+
                         camera.position = transform.position_vec3();
-                        log::info!("Camera position: {:?}", camera.position);
+                        log::info!("  Applied camera position: {:?}", camera.position);
+                        log::debug!("  Camera rotation (quat): {:?}", transform.rotation_quat());
                     }
 
                     break;

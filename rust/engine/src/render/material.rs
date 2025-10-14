@@ -110,21 +110,38 @@ impl MaterialCache {
             if let Ok(materials) = serde_json::from_value::<Vec<Material>>(value.clone()) {
                 log::info!("Loading {} materials from scene", materials.len());
 
-                for material in materials {
-                    log::debug!(
-                        "Loaded material '{}' ({}): color={}, metallic={}, roughness={}",
-                        material.name.as_ref().unwrap_or(&material.id),
-                        material.id,
+                for (idx, material) in materials.iter().enumerate() {
+                    let mat_name = material.name.as_ref().unwrap_or(&material.id);
+                    log::debug!("Material #{}: '{}'", idx, mat_name);
+                    log::debug!("  ID: {}", material.id);
+                    log::debug!("  Shader: {}", material.shader);
+                    log::debug!("  Color: {} -> RGB({:.2}, {:.2}, {:.2})",
                         material.color,
-                        material.metallic,
-                        material.roughness
+                        material.color_rgb().x,
+                        material.color_rgb().y,
+                        material.color_rgb().z
                     );
+                    log::debug!("  Metallic: {}", material.metallic);
+                    log::debug!("  Roughness: {}", material.roughness);
+                    log::debug!("  Opacity: {}", material.opacity);
+                    if let Some(ref emissive) = material.emissive {
+                        let emissive_rgb = material.emissive_rgb();
+                        log::debug!("  Emissive: {} -> RGB({:.2}, {:.2}, {:.2})",
+                            emissive,
+                            emissive_rgb.x,
+                            emissive_rgb.y,
+                            emissive_rgb.z
+                        );
+                    }
 
-                    self.materials.insert(material.id.clone(), material);
+                    self.materials.insert(material.id.clone(), material.clone());
                 }
+                log::info!("Successfully loaded {} materials", materials.len());
             } else {
                 log::warn!("Failed to parse materials from scene");
             }
+        } else {
+            log::debug!("No materials in scene, using defaults");
         }
     }
 
