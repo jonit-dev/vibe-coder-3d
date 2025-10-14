@@ -1,4 +1,5 @@
 use super::{
+    material::MaterialCache,
     mesh_cache::MeshCache,
     pipeline::{InstanceRaw, RenderPipeline},
     Camera,
@@ -10,10 +11,12 @@ use wgpu::util::DeviceExt;
 pub struct RenderableEntity {
     pub transform: Mat4,
     pub mesh_id: String,
+    pub material_id: Option<String>,
 }
 
 pub struct SceneRenderer {
     pub mesh_cache: MeshCache,
+    pub material_cache: MaterialCache,
     pub pipeline: RenderPipeline,
     pub entities: Vec<RenderableEntity>,
     pub instance_buffer: Option<wgpu::Buffer>,
@@ -24,10 +27,12 @@ impl SceneRenderer {
         let mut mesh_cache = MeshCache::new();
         mesh_cache.initialize_primitives(device);
 
+        let material_cache = MaterialCache::new();
         let pipeline = RenderPipeline::new(device, config);
 
         Self {
             mesh_cache,
+            material_cache,
             pipeline,
             entities: Vec::new(),
             instance_buffer: None,
@@ -37,6 +42,9 @@ impl SceneRenderer {
     pub fn load_scene(&mut self, device: &wgpu::Device, scene: &SceneData) {
         log::info!("Loading scene entities for rendering...");
         self.entities.clear();
+
+        // Load materials from scene
+        self.material_cache.load_from_scene(scene.materials.as_ref());
 
         for entity in &scene.entities {
             // Check if entity has MeshRenderer
@@ -55,15 +63,19 @@ impl SceneRenderer {
                     .clone()
                     .unwrap_or_else(|| "cube".to_string());
 
+                let material_id = mesh_renderer.materialId.clone();
+
                 log::debug!(
-                    "Added entity '{}' with mesh '{}'",
+                    "Added entity '{}' with mesh '{}' and material {:?}",
                     entity.name.as_ref().unwrap_or(&"Unnamed".to_string()),
-                    &mesh_id
+                    &mesh_id,
+                    &material_id
                 );
 
                 self.entities.push(RenderableEntity {
                     transform: transform.matrix(),
                     mesh_id,
+                    material_id,
                 });
             }
         }
@@ -80,7 +92,23 @@ impl SceneRenderer {
         let instance_data: Vec<InstanceRaw> = self
             .entities
             .iter()
-            .map(|e| InstanceRaw::from_matrix(e.transform))
+            .map(|e| {
+                // Get material
+                let material = if let Some(ref mat_id) = e.material_id {
+                    self.material_cache.get(mat_id)
+                } else {
+                    self.material_cache.default()
+                };
+
+                let color_rgb = material.color_rgb();
+
+                InstanceRaw::with_material(
+                    e.transform,
+                    [color_rgb.x, color_rgb.y, color_rgb.z],
+                    material.metallic,
+                    material.roughness,
+                )
+            })
             .collect();
 
         self.instance_buffer = Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

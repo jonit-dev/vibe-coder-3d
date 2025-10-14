@@ -54,7 +54,25 @@ impl App {
         scene_renderer.load_scene(&renderer.device, &scene);
 
         // Initialize camera
-        let camera = Camera::new(width, height);
+        let mut camera = Camera::new(width, height);
+
+        // Find and apply main camera from scene
+        for entity in &scene.entities {
+            if let Some(camera_comp) = entity.get_component::<crate::ecs::components::camera::CameraComponent>("Camera") {
+                if camera_comp.isMain {
+                    log::info!("Found main camera in scene: {:?}", entity.name);
+                    camera.apply_component(&camera_comp);
+
+                    // Apply camera transform if available
+                    if let Some(transform) = entity.get_component::<crate::ecs::components::transform::Transform>("Transform") {
+                        camera.position = transform.position_vec3();
+                        log::info!("Camera position: {:?}", camera.position);
+                    }
+
+                    break;
+                }
+            }
+        }
 
         // Initialize timer
         let timer = FrameTimer::new();

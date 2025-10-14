@@ -9,6 +9,8 @@ struct InstanceInput {
     @location(6) model_matrix_1: vec4<f32>,
     @location(7) model_matrix_2: vec4<f32>,
     @location(8) model_matrix_3: vec4<f32>,
+    @location(9) color: vec3<f32>,
+    @location(10) metallic_roughness: vec2<f32>,
 };
 
 @group(0) @binding(0)
@@ -24,6 +26,8 @@ struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) world_normal: vec3<f32>,
     @location(1) uv: vec2<f32>,
+    @location(2) color: vec3<f32>,
+    @location(3) metallic_roughness: vec2<f32>,
 };
 
 @vertex
@@ -43,6 +47,8 @@ fn vs_main(
     out.clip_position = camera.view_proj * world_position;
     out.world_normal = (model_matrix * vec4<f32>(model.normal, 0.0)).xyz;
     out.uv = model.uv;
+    out.color = instance.color;
+    out.metallic_roughness = instance.metallic_roughness;
     return out;
 }
 
@@ -55,11 +61,24 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let normal = normalize(in.world_normal);
     let diffuse = max(dot(normal, light_dir), 0.0);
 
-    // Base color (light gray)
-    let base_color = vec3<f32>(0.7, 0.7, 0.7);
+    // Use material color from instance
+    let base_color = in.color;
+    let metallic = in.metallic_roughness.x;
+    let roughness = in.metallic_roughness.y;
+
+    // Simple PBR-ish lighting
     let ambient = 0.3;
+    let specular_strength = (1.0 - roughness) * 0.5;
 
-    let color = base_color * (ambient + diffuse * 0.7);
+    // Basic lighting calculation
+    let lit_color = base_color * (ambient + diffuse * 0.7);
 
-    return vec4<f32>(color, 1.0);
+    // Add simple specular highlight for non-rough materials
+    let view_dir = vec3<f32>(0.0, 0.0, 1.0); // Simplified
+    let reflect_dir = reflect(-light_dir, normal);
+    let spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32.0) * specular_strength;
+
+    let final_color = lit_color + vec3<f32>(spec);
+
+    return vec4<f32>(final_color, 1.0);
 }

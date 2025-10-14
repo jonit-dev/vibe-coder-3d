@@ -38,4 +38,10 @@ impl Camera {
     pub fn update_aspect(&mut self, width: u32, height: u32) {
         self.aspect = width as f32 / height as f32;
     }
+
+    pub fn apply_component(&mut self, camera_comp: &crate::ecs::components::camera::CameraComponent) {
+        self.fov = camera_comp.fov.to_radians();
+        self.near = camera_comp.near;
+        self.far = camera_comp.far;
+    }
 }
