@@ -30,7 +30,13 @@
     "rust:export-schemas": "node scripts/export-schemas.js",
     "rust:engine": "cargo run --manifest-path rust/engine/Cargo.toml --",
     "rust:test": "cargo test --manifest-path rust/engine/Cargo.toml",
-    "rust:build": "cargo build --manifest-path rust/engine/Cargo.toml"
+    "rust:test:watch": "cargo watch -x 'test --manifest-path rust/engine/Cargo.toml'",
+    "rust:build": "cargo build --manifest-path rust/engine/Cargo.toml",
+    "rust:build:release": "cargo build --release --manifest-path rust/engine/Cargo.toml",
+    "rust:build:full": "cd rust/engine && cargo clean && cargo build",
+    "rust:check": "cargo check --manifest-path rust/engine/Cargo.toml",
+    "rust:clean": "cargo clean --manifest-path rust/engine/Cargo.toml",
+    "rust:run:release": "cargo run --release --manifest-path rust/engine/Cargo.toml --"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

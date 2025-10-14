@@ -1,0 +1,16 @@
+# Faster linker for development builds
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+# Parallel frontend for faster compilation
+[build]
+jobs = 8  # Adjust based on your CPU cores
+
+# Enable incremental compilation (should be on by default but explicit is good)
+[profile.dev]
+incremental = true
+
+# Faster debug builds with less optimization
+opt-level = 0
+debug = true
