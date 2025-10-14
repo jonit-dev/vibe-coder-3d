@@ -32,7 +32,8 @@ impl Transform {
     /// Get rotation as Quat
     /// Handles both Euler angles [x, y, z] and quaternions [x, y, z, w]
     pub fn rotation_quat(&self) -> Quat {
-        self.rotation.as_ref()
+        self.rotation
+            .as_ref()
             .map(|r| {
                 match r.len() {
                     3 => {

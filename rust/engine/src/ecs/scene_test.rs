@@ -123,8 +123,7 @@ mod tests {
         let scene: SceneData = serde_json::from_str(json).unwrap();
 
         let entity = &scene.entities[0];
-        let camera: components::camera::CameraComponent =
-            entity.get_component("Camera").unwrap();
+        let camera: components::camera::CameraComponent = entity.get_component("Camera").unwrap();
 
         assert_eq!(camera.fov, 75.0);
         assert_eq!(camera.near, 0.5);

@@ -115,7 +115,8 @@ impl MaterialCache {
                     log::debug!("Material #{}: '{}'", idx, mat_name);
                     log::debug!("  ID: {}", material.id);
                     log::debug!("  Shader: {}", material.shader);
-                    log::debug!("  Color: {} -> RGB({:.2}, {:.2}, {:.2})",
+                    log::debug!(
+                        "  Color: {} -> RGB({:.2}, {:.2}, {:.2})",
                         material.color,
                         material.color_rgb().x,
                         material.color_rgb().y,
@@ -126,7 +127,8 @@ impl MaterialCache {
                     log::debug!("  Opacity: {}", material.opacity);
                     if let Some(ref emissive) = material.emissive {
                         let emissive_rgb = material.emissive_rgb();
-                        log::debug!("  Emissive: {} -> RGB({:.2}, {:.2}, {:.2})",
+                        log::debug!(
+                            "  Emissive: {} -> RGB({:.2}, {:.2}, {:.2})",
                             emissive,
                             emissive_rgb.x,
                             emissive_rgb.y,

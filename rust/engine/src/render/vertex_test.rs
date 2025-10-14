@@ -61,10 +61,7 @@ mod tests {
         let desc = Vertex::desc();
         let normal_attr = &desc.attributes[1];
 
-        assert_eq!(
-            normal_attr.offset,
-            std::mem::size_of::<[f32; 3]>() as u64
-        );
+        assert_eq!(normal_attr.offset, std::mem::size_of::<[f32; 3]>() as u64);
         assert_eq!(normal_attr.shader_location, 1);
         assert_eq!(normal_attr.format, wgpu::VertexFormat::Float32x3);
     }

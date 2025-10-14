@@ -13,7 +13,7 @@ mod tests {
             up: Vec3::Y,
             fov: 60.0_f32.to_radians(), // Three.js default: 50, common: 60
             aspect: 16.0 / 9.0,
-            near: 0.1, // Three.js default
+            near: 0.1,   // Three.js default
             far: 2000.0, // Three.js default
             background_color: wgpu::Color {
                 r: 0.0,
@@ -101,7 +101,8 @@ mod tests {
         let view = camera.view_matrix();
 
         // Transform camera position to view space (should be at origin)
-        let cam_pos_view = view * Vec4::new(camera.position.x, camera.position.y, camera.position.z, 1.0);
+        let cam_pos_view =
+            view * Vec4::new(camera.position.x, camera.position.y, camera.position.z, 1.0);
 
         // In view space, camera is at origin
         assert!(cam_pos_view.x.abs() < 0.01);
@@ -374,7 +375,12 @@ mod tests {
 
         let camera_solid = CameraComponent {
             clearFlags: Some("solidColor".to_string()),
-            backgroundColor: Some(Color { r: 0.5, g: 0.5, b: 0.5, a: 1.0 }),
+            backgroundColor: Some(Color {
+                r: 0.5,
+                g: 0.5,
+                b: 0.5,
+                a: 1.0,
+            }),
             ..camera_skybox
         };
 

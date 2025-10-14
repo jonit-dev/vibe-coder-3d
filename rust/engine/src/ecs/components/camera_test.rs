@@ -159,7 +159,10 @@ mod tests {
         assert_eq!(camera.projectionType, "perspective");
         assert_eq!(camera.orthographicSize, 10.0);
         assert_eq!(camera.clearFlags, Some("skybox".to_string()));
-        assert_eq!(camera.skyboxTexture, Some("/textures/sunset.hdr".to_string()));
+        assert_eq!(
+            camera.skyboxTexture,
+            Some("/textures/sunset.hdr".to_string())
+        );
 
         let bg = camera.backgroundColor.unwrap();
         assert!((bg.r - 0.1).abs() < 0.001);

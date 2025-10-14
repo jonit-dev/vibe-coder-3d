@@ -57,11 +57,20 @@ impl App {
         let mut camera = Camera::new(width, height);
 
         // Find and apply main camera from scene
-        log::info!("Searching for main camera in {} entities...", scene.entities.len());
+        log::info!(
+            "Searching for main camera in {} entities...",
+            scene.entities.len()
+        );
         for entity in &scene.entities {
-            log::debug!("Checking entity: {:?}, components: {:?}", entity.name, entity.components.keys());
+            log::debug!(
+                "Checking entity: {:?}, components: {:?}",
+                entity.name,
+                entity.components.keys()
+            );
 
-            if let Some(camera_comp) = entity.get_component::<crate::ecs::components::camera::CameraComponent>("Camera") {
+            if let Some(camera_comp) =
+                entity.get_component::<crate::ecs::components::camera::CameraComponent>("Camera")
+            {
                 log::debug!("Found Camera component - isMain: {}", camera_comp.isMain);
                 if camera_comp.isMain {
                     log::info!("Found main camera in scene: {:?}", entity.name);
@@ -76,7 +85,9 @@ impl App {
                     camera.apply_component(&camera_comp);
 
                     // Apply camera transform if available
-                    if let Some(transform) = entity.get_component::<crate::ecs::components::transform::Transform>("Transform") {
+                    if let Some(transform) = entity
+                        .get_component::<crate::ecs::components::transform::Transform>("Transform")
+                    {
                         log::debug!("  Transform found:");
                         log::debug!("    Position: {:?}", transform.position);
                         log::debug!("    Rotation: {:?}", transform.rotation);
@@ -138,7 +149,9 @@ impl App {
 
                                     match self.render() {
                                         Ok(_) => {}
-                                        Err(wgpu::SurfaceError::Lost) => self.resize(self.renderer.size),
+                                        Err(wgpu::SurfaceError::Lost) => {
+                                            self.resize(self.renderer.size)
+                                        }
                                         Err(wgpu::SurfaceError::OutOfMemory) => {
                                             log::error!("Out of memory");
                                             control_flow.exit();
@@ -190,12 +203,12 @@ impl App {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = self
-            .renderer
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
+        let mut encoder =
+            self.renderer
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
 
         // Render the scene
         self.scene_renderer

@@ -114,7 +114,7 @@ mod tests {
 
         let _instance2 = instance1; // Copy
         let _instance3 = instance1.clone(); // Clone
-        // Just verify copy and clone work
+                                            // Just verify copy and clone work
     }
 
     #[test]
@@ -180,10 +180,7 @@ mod tests {
         let color_attr = &desc.attributes[4];
         assert_eq!(color_attr.shader_location, 9);
         assert_eq!(color_attr.format, wgpu::VertexFormat::Float32x3);
-        assert_eq!(
-            color_attr.offset,
-            std::mem::size_of::<[f32; 16]>() as u64
-        );
+        assert_eq!(color_attr.offset, std::mem::size_of::<[f32; 16]>() as u64);
     }
 
     #[test]
@@ -260,12 +257,7 @@ mod tests {
         let mut uniform = CameraUniform::new();
 
         // Create a perspective projection matrix
-        let projection = Mat4::perspective_rh(
-            60.0_f32.to_radians(),
-            16.0 / 9.0,
-            0.1,
-            1000.0,
-        );
+        let projection = Mat4::perspective_rh(60.0_f32.to_radians(), 16.0 / 9.0, 0.1, 1000.0);
 
         uniform.update_view_proj(projection);
         // Just verify projection matrices can be set
@@ -281,12 +273,7 @@ mod tests {
             glam::Vec3::ZERO,
             glam::Vec3::Y,
         );
-        let projection = Mat4::perspective_rh(
-            60.0_f32.to_radians(),
-            16.0 / 9.0,
-            0.1,
-            1000.0,
-        );
+        let projection = Mat4::perspective_rh(60.0_f32.to_radians(), 16.0 / 9.0, 0.1, 1000.0);
 
         let view_proj = projection * view;
         uniform.update_view_proj(view_proj);

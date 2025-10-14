@@ -50,7 +50,8 @@ impl SceneRenderer {
         self.entities.clear();
 
         // Load materials from scene
-        self.material_cache.load_from_scene(scene.materials.as_ref());
+        self.material_cache
+            .load_from_scene(scene.materials.as_ref());
 
         // Reset lights to defaults
         self.light_uniform = LightUniform::new();
@@ -64,11 +65,16 @@ impl SceneRenderer {
             let unnamed = "Unnamed".to_string();
             let entity_name = entity.name.as_ref().unwrap_or(&unnamed);
             log::debug!("Processing entity #{}: '{}'", idx, entity_name);
-            log::debug!("  Components: {:?}", entity.components.keys().collect::<Vec<_>>());
+            log::debug!(
+                "  Components: {:?}",
+                entity.components.keys().collect::<Vec<_>>()
+            );
 
             // Check for Light component
             if entity.has_component("Light") {
-                if let Some(light) = entity.get_component::<crate::ecs::components::light::Light>("Light") {
+                if let Some(light) =
+                    entity.get_component::<crate::ecs::components::light::Light>("Light")
+                {
                     log::debug!("  Light component found:");
                     log::debug!("    Type: {}", light.lightType);
                     log::debug!("    Enabled: {}", light.enabled);
@@ -84,13 +90,22 @@ impl SceneRenderer {
                         continue;
                     }
 
-                    let light_color = light.color.as_ref().map(|c| [c.r, c.g, c.b]).unwrap_or([1.0, 1.0, 1.0]);
+                    let light_color = light
+                        .color
+                        .as_ref()
+                        .map(|c| [c.r, c.g, c.b])
+                        .unwrap_or([1.0, 1.0, 1.0]);
 
                     match light.lightType.as_str() {
                         "directional" => {
                             if !directional_light_set {
-                                log::info!("  ✓ Using directional light: intensity={}, color={:?}", light.intensity, light_color);
-                                self.light_uniform.directional_direction = [light.directionX, light.directionY, light.directionZ];
+                                log::info!(
+                                    "  ✓ Using directional light: intensity={}, color={:?}",
+                                    light.intensity,
+                                    light_color
+                                );
+                                self.light_uniform.directional_direction =
+                                    [light.directionX, light.directionY, light.directionZ];
                                 self.light_uniform.directional_intensity = light.intensity;
                                 self.light_uniform.directional_color = light_color;
                                 self.light_uniform.directional_enabled = 1.0;
@@ -101,7 +116,11 @@ impl SceneRenderer {
                         }
                         "ambient" => {
                             if !ambient_light_set {
-                                log::info!("  ✓ Using ambient light: intensity={}, color={:?}", light.intensity, light_color);
+                                log::info!(
+                                    "  ✓ Using ambient light: intensity={}, color={:?}",
+                                    light.intensity,
+                                    light_color
+                                );
                                 self.light_uniform.ambient_color = light_color;
                                 self.light_uniform.ambient_intensity = light.intensity;
                                 ambient_light_set = true;
@@ -111,8 +130,13 @@ impl SceneRenderer {
                         }
                         "point" => {
                             if point_light_count < 2 {
-                                log::info!("  ✓ Using point light #{}: intensity={}, range={}, color={:?}",
-                                    point_light_count, light.intensity, light.range, light_color);
+                                log::info!(
+                                    "  ✓ Using point light #{}: intensity={}, range={}, color={:?}",
+                                    point_light_count,
+                                    light.intensity,
+                                    light.range,
+                                    light_color
+                                );
 
                                 // Get transform for point light position
                                 let transform = entity
@@ -121,12 +145,14 @@ impl SceneRenderer {
                                 let position = transform.position_vec3();
 
                                 if point_light_count == 0 {
-                                    self.light_uniform.point_position_0 = [position.x, position.y, position.z];
+                                    self.light_uniform.point_position_0 =
+                                        [position.x, position.y, position.z];
                                     self.light_uniform.point_intensity_0 = light.intensity;
                                     self.light_uniform.point_color_0 = light_color;
                                     self.light_uniform.point_range_0 = light.range;
                                 } else {
-                                    self.light_uniform.point_position_1 = [position.x, position.y, position.z];
+                                    self.light_uniform.point_position_1 =
+                                        [position.x, position.y, position.z];
                                     self.light_uniform.point_intensity_1 = light.intensity;
                                     self.light_uniform.point_color_1 = light_color;
                                     self.light_uniform.point_range_1 = light.range;
@@ -147,7 +173,11 @@ impl SceneRenderer {
             }
 
             // Check if entity has MeshRenderer
-            if let Some(mesh_renderer) = entity.get_component::<crate::ecs::components::mesh_renderer::MeshRenderer>("MeshRenderer") {
+            if let Some(mesh_renderer) = entity
+                .get_component::<crate::ecs::components::mesh_renderer::MeshRenderer>(
+                    "MeshRenderer",
+                )
+            {
                 log::debug!("  MeshRenderer component found:");
                 log::debug!("    Enabled: {}", mesh_renderer.enabled);
                 log::debug!("    Mesh ID: {:?}", mesh_renderer.meshId);
@@ -205,7 +235,10 @@ impl SceneRenderer {
     }
 
     fn update_instance_buffer(&mut self, device: &wgpu::Device) {
-        log::debug!("Creating instance buffer for {} entities", self.entities.len());
+        log::debug!(
+            "Creating instance buffer for {} entities",
+            self.entities.len()
+        );
 
         let instance_data: Vec<InstanceRaw> = self
             .entities
@@ -242,11 +275,13 @@ impl SceneRenderer {
             })
             .collect();
 
-        self.instance_buffer = Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&instance_data),
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        }));
+        self.instance_buffer = Some(
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Instance Buffer"),
+                contents: bytemuck::cast_slice(&instance_data),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            }),
+        );
 
         log::debug!("Instance buffer created successfully");
     }
@@ -259,7 +294,8 @@ impl SceneRenderer {
         queue: &wgpu::Queue,
     ) {
         // Update camera
-        self.pipeline.update_camera(queue, camera.view_projection_matrix(), camera.position);
+        self.pipeline
+            .update_camera(queue, camera.view_projection_matrix(), camera.position);
 
         // Update lights
         self.pipeline.update_lights(queue, &self.light_uniform);
@@ -276,7 +312,10 @@ impl SceneRenderer {
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &self.depth_texture.view,
-                depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: wgpu::StoreOp::Store,
+                }),
                 stencil_ops: None,
             }),
             occlusion_query_set: None,

@@ -57,7 +57,12 @@ impl MeshCache {
         };
 
         self.meshes.insert(id.to_string(), gpu_mesh);
-        log::debug!("Uploaded mesh '{}': {} vertices, {} indices", id, mesh.vertices.len(), mesh.indices.len());
+        log::debug!(
+            "Uploaded mesh '{}': {} vertices, {} indices",
+            id,
+            mesh.vertices.len(),
+            mesh.indices.len()
+        );
     }
 
     pub fn get(&self, id: &str) -> Option<&GpuMesh> {

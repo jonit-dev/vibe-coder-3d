@@ -283,7 +283,11 @@ impl RenderPipeline {
     pub fn update_camera(&self, queue: &wgpu::Queue, view_proj: Mat4, camera_pos: Vec3) {
         let mut camera_uniform = CameraUniform::new();
         camera_uniform.update_view_proj(view_proj, camera_pos);
-        queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[camera_uniform]));
+        queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[camera_uniform]),
+        );
     }
 
     pub fn update_lights(&self, queue: &wgpu::Queue, lights: &LightUniform) {

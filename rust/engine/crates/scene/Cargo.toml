@@ -1,0 +1,16 @@
+[package]
+name = "vibe-scene"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Math
+glam = { version = "0.27", features = ["serde"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"

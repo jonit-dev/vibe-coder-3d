@@ -270,7 +270,10 @@ mod tests {
             .get_component::<MeshRenderer>("MeshRenderer")
             .expect("MeshRenderer should exist");
 
-        assert_eq!(green_renderer.materialId, Some("green-material".to_string()));
+        assert_eq!(
+            green_renderer.materialId,
+            Some("green-material".to_string())
+        );
 
         let green_transform = green_cube
             .get_component::<Transform>("Transform")
@@ -346,10 +349,10 @@ mod tests {
         // Disable the red cube
         let red_cube = &mut scene.entities[3];
         if let Some(renderer) = red_cube.components.get_mut("MeshRenderer") {
-            renderer.as_object_mut().unwrap().insert(
-                "enabled".to_string(),
-                json!(false),
-            );
+            renderer
+                .as_object_mut()
+                .unwrap()
+                .insert("enabled".to_string(), json!(false));
         }
 
         // Re-parse
@@ -370,10 +373,10 @@ mod tests {
         // Set directional light intensity to 0
         let directional_light = &mut scene.entities[1];
         if let Some(light_data) = directional_light.components.get_mut("Light") {
-            light_data.as_object_mut().unwrap().insert(
-                "intensity".to_string(),
-                json!(0.0),
-            );
+            light_data
+                .as_object_mut()
+                .unwrap()
+                .insert("intensity".to_string(), json!(0.0));
         }
 
         let light = directional_light

@@ -1,9 +1,20 @@
+[workspace]
+members = [
+    ".",
+    "crates/scene",
+    "crates/ecs-bridge",
+]
+
 [package]
 name = "vibe-coder-engine"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# Internal workspace dependencies
+vibe-scene = { path = "crates/scene" }
+vibe-ecs-bridge = { path = "crates/ecs-bridge" }
+
 # Core rendering
 wgpu = "0.19"
 winit = "0.29"

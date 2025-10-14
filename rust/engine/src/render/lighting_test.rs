@@ -84,8 +84,8 @@ mod tests {
             directionX: 0.0,
             directionY: -1.0,
             directionZ: 0.0,
-            range: 10.0,   // Three.js default range
-            decay: 1.0,    // Three.js default decay
+            range: 10.0, // Three.js default range
+            decay: 1.0,  // Three.js default decay
             angle: std::f32::consts::PI / 6.0,
             penumbra: 0.0,
             shadowMapSize: 512,
@@ -282,8 +282,7 @@ mod tests {
 
         // In shader, all lights contribute:
         // final_lighting = ambient + directional + point0 + point1
-        let total_light_sources =
-            (uniform.directional_enabled as i32) +
+        let total_light_sources = (uniform.directional_enabled as i32) +
             1 + // ambient always present
             (if uniform.point_intensity_0 > 0.0 { 1 } else { 0 }) +
             (if uniform.point_intensity_1 > 0.0 { 1 } else { 0 });

@@ -1,20 +1,20 @@
 pub mod camera;
 #[cfg(test)]
-mod camera_test;
-#[cfg(test)]
 mod camera_behavior_test;
+#[cfg(test)]
+mod camera_test;
+pub mod depth_texture;
+#[cfg(test)]
+mod integration_test;
+#[cfg(test)]
+mod lighting_test;
 pub mod material;
 #[cfg(test)]
 mod material_test;
 pub mod mesh_cache;
 pub mod pipeline;
-pub mod depth_texture;
 #[cfg(test)]
 mod pipeline_test;
-#[cfg(test)]
-mod lighting_test;
-#[cfg(test)]
-mod integration_test;
 pub mod primitives;
 #[cfg(test)]
 mod primitives_test;
