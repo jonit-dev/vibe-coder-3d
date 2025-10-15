@@ -88,7 +88,11 @@ impl MeshCache {
 
     /// Load meshes from a GLTF file (stub when feature disabled)
     #[cfg(not(feature = "gltf-support"))]
-    pub fn load_gltf(&mut self, _device: &wgpu::Device, _path: &str) -> anyhow::Result<Vec<String>> {
+    pub fn load_gltf(
+        &mut self,
+        _device: &wgpu::Device,
+        _path: &str,
+    ) -> anyhow::Result<Vec<String>> {
         anyhow::bail!("GLTF support not enabled")
     }
 }

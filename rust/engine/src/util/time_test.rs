@@ -79,8 +79,16 @@ mod tests {
         let fps = timer.fps();
 
         // FPS should be approximately 60, with reasonable tolerance
-        assert!(fps > 0.0, "FPS should be greater than 0 after 1 second, got {}", fps);
-        assert!(fps >= 50.0 && fps <= 70.0, "FPS should be approximately 60, got {}", fps);
+        assert!(
+            fps > 0.0,
+            "FPS should be greater than 0 after 1 second, got {}",
+            fps
+        );
+        assert!(
+            fps >= 50.0 && fps <= 70.0,
+            "FPS should be approximately 60, got {}",
+            fps
+        );
     }
 
     #[test]

@@ -39,8 +39,7 @@ impl LiveBridge {
     pub fn load_scene(&mut self, json: &str) -> Result<()> {
         log::info!("Loading scene from JSON");
 
-        let scene: Scene = serde_json::from_str(json)
-            .context("Failed to parse scene JSON")?;
+        let scene: Scene = serde_json::from_str(json).context("Failed to parse scene JSON")?;
 
         log::info!("Loaded scene with {} entities", scene.entities.len());
 
@@ -53,8 +52,8 @@ impl LiveBridge {
 
     /// Apply a batch of diffs to the scene
     pub fn apply_diff(&mut self, diff_json: &str) -> Result<()> {
-        let batch: DiffBatch = serde_json::from_str(diff_json)
-            .context("Failed to parse diff batch JSON")?;
+        let batch: DiffBatch =
+            serde_json::from_str(diff_json).context("Failed to parse diff batch JSON")?;
 
         // Check sequence ordering (optional: could allow skipping)
         if batch.sequence <= self.last_sequence {
@@ -66,7 +65,11 @@ impl LiveBridge {
             return Ok(());
         }
 
-        log::debug!("Applying diff batch {} with {} diffs", batch.sequence, batch.diffs.len());
+        log::debug!(
+            "Applying diff batch {} with {} diffs",
+            batch.sequence,
+            batch.diffs.len()
+        );
 
         for diff in &batch.diffs {
             self.apply_single_diff(diff)?;
@@ -101,10 +104,9 @@ impl LiveBridge {
 
                 // Add components
                 for component in components {
-                    entity.components.insert(
-                        component.component_type.clone(),
-                        component.data.clone(),
-                    );
+                    entity
+                        .components
+                        .insert(component.component_type.clone(), component.data.clone());
                 }
 
                 self.scene.entities.push(entity);
@@ -114,9 +116,9 @@ impl LiveBridge {
                 log::debug!("Removing entity: {}", persistent_id);
 
                 let entity_id = EntityId::from_persistent_id(persistent_id);
-                self.scene.entities.retain(|e| {
-                    e.entity_id() != Some(entity_id)
-                });
+                self.scene
+                    .entities
+                    .retain(|e| e.entity_id() != Some(entity_id));
             }
 
             SceneDiff::UpdateEntity {
@@ -127,9 +129,12 @@ impl LiveBridge {
                 log::debug!("Updating entity: {}", persistent_id);
 
                 let entity_id = EntityId::from_persistent_id(persistent_id);
-                if let Some(entity) = self.scene.entities.iter_mut().find(|e| {
-                    e.entity_id() == Some(entity_id)
-                }) {
+                if let Some(entity) = self
+                    .scene
+                    .entities
+                    .iter_mut()
+                    .find(|e| e.entity_id() == Some(entity_id))
+                {
                     if let Some(new_name) = name {
                         entity.name = Some(new_name.clone());
                     }
@@ -152,15 +157,20 @@ impl LiveBridge {
                 );
 
                 let entity_id = EntityId::from_persistent_id(entity_persistent_id);
-                if let Some(entity) = self.scene.entities.iter_mut().find(|e| {
-                    e.entity_id() == Some(entity_id)
-                }) {
-                    entity.components.insert(
-                        component.component_type.clone(),
-                        component.data.clone(),
-                    );
+                if let Some(entity) = self
+                    .scene
+                    .entities
+                    .iter_mut()
+                    .find(|e| e.entity_id() == Some(entity_id))
+                {
+                    entity
+                        .components
+                        .insert(component.component_type.clone(), component.data.clone());
                 } else {
-                    log::warn!("Entity not found for component set: {}", entity_persistent_id);
+                    log::warn!(
+                        "Entity not found for component set: {}",
+                        entity_persistent_id
+                    );
                 }
             }
 
@@ -175,12 +185,18 @@ impl LiveBridge {
                 );
 
                 let entity_id = EntityId::from_persistent_id(entity_persistent_id);
-                if let Some(entity) = self.scene.entities.iter_mut().find(|e| {
-                    e.entity_id() == Some(entity_id)
-                }) {
+                if let Some(entity) = self
+                    .scene
+                    .entities
+                    .iter_mut()
+                    .find(|e| e.entity_id() == Some(entity_id))
+                {
                     entity.components.remove(component_type);
                 } else {
-                    log::warn!("Entity not found for component removal: {}", entity_persistent_id);
+                    log::warn!(
+                        "Entity not found for component removal: {}",
+                        entity_persistent_id
+                    );
                 }
             }
         }
@@ -192,10 +208,12 @@ impl LiveBridge {
     fn rebuild_scene_graph(&mut self) -> Result<()> {
         log::debug!("Rebuilding scene graph");
 
-        let graph = SceneGraph::build(&self.scene)
-            .context("Failed to rebuild scene graph")?;
+        let graph = SceneGraph::build(&self.scene).context("Failed to rebuild scene graph")?;
 
-        log::debug!("Scene graph rebuilt with {} entities", graph.entity_ids().len());
+        log::debug!(
+            "Scene graph rebuilt with {} entities",
+            graph.entity_ids().len()
+        );
 
         self.scene_graph = Some(graph);
         Ok(())
@@ -239,7 +257,9 @@ mod tests {
         let mut bridge = LiveBridge::new(registry);
 
         // Start with empty scene
-        bridge.load_scene(r#"{"entities": [], "metadata": {}}"#).unwrap();
+        bridge
+            .load_scene(r#"{"entities": [], "metadata": {}}"#)
+            .unwrap();
 
         // Add entity via diff
         let diff_json = r#"{
@@ -257,7 +277,10 @@ mod tests {
         bridge.apply_diff(diff_json).unwrap();
 
         assert_eq!(bridge.scene().entities.len(), 1);
-        assert_eq!(bridge.scene().entities[0].name, Some("Test Entity".to_string()));
+        assert_eq!(
+            bridge.scene().entities[0].name,
+            Some("Test Entity".to_string())
+        );
     }
 
     #[test]
@@ -334,7 +357,9 @@ mod tests {
         let registry = create_default_registry();
         let mut bridge = LiveBridge::new(registry);
 
-        bridge.load_scene(r#"{"entities": [], "metadata": {}}"#).unwrap();
+        bridge
+            .load_scene(r#"{"entities": [], "metadata": {}}"#)
+            .unwrap();
 
         // Apply sequence 5
         let diff_json = r#"{

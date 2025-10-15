@@ -8,126 +8,150 @@ pub fn create_cube() -> Mesh {
             position: [-0.5, -0.5, 0.5],
             normal: [0.0, 0.0, 1.0],
             uv: [0.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, -0.5, 0.5],
             normal: [0.0, 0.0, 1.0],
             uv: [1.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, 0.5, 0.5],
             normal: [0.0, 0.0, 1.0],
             uv: [1.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-0.5, 0.5, 0.5],
             normal: [0.0, 0.0, 1.0],
             uv: [0.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         // Back face (z = -0.5)
         Vertex {
             position: [0.5, -0.5, -0.5],
             normal: [0.0, 0.0, -1.0],
             uv: [0.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-0.5, -0.5, -0.5],
             normal: [0.0, 0.0, -1.0],
             uv: [1.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-0.5, 0.5, -0.5],
             normal: [0.0, 0.0, -1.0],
             uv: [1.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, 0.5, -0.5],
             normal: [0.0, 0.0, -1.0],
             uv: [0.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         // Top face (y = 0.5)
         Vertex {
             position: [-0.5, 0.5, 0.5],
             normal: [0.0, 1.0, 0.0],
             uv: [0.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, 0.5, 0.5],
             normal: [0.0, 1.0, 0.0],
             uv: [1.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, 0.5, -0.5],
             normal: [0.0, 1.0, 0.0],
             uv: [1.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-0.5, 0.5, -0.5],
             normal: [0.0, 1.0, 0.0],
             uv: [0.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         // Bottom face (y = -0.5)
         Vertex {
             position: [-0.5, -0.5, -0.5],
             normal: [0.0, -1.0, 0.0],
             uv: [0.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, -0.5, -0.5],
             normal: [0.0, -1.0, 0.0],
             uv: [1.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, -0.5, 0.5],
             normal: [0.0, -1.0, 0.0],
             uv: [1.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-0.5, -0.5, 0.5],
             normal: [0.0, -1.0, 0.0],
             uv: [0.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         // Right face (x = 0.5)
         Vertex {
             position: [0.5, -0.5, 0.5],
             normal: [1.0, 0.0, 0.0],
             uv: [0.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, -0.5, -0.5],
             normal: [1.0, 0.0, 0.0],
             uv: [1.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, 0.5, -0.5],
             normal: [1.0, 0.0, 0.0],
             uv: [1.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [0.5, 0.5, 0.5],
             normal: [1.0, 0.0, 0.0],
             uv: [0.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         // Left face (x = -0.5)
         Vertex {
             position: [-0.5, -0.5, -0.5],
             normal: [-1.0, 0.0, 0.0],
             uv: [0.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-0.5, -0.5, 0.5],
             normal: [-1.0, 0.0, 0.0],
             uv: [1.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-0.5, 0.5, 0.5],
             normal: [-1.0, 0.0, 0.0],
             uv: [1.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-0.5, 0.5, -0.5],
             normal: [-1.0, 0.0, 0.0],
             uv: [0.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
     ];
 
@@ -170,6 +194,7 @@ pub fn create_sphere(segments: u32, rings: u32) -> Mesh {
                 position: [x, y, z],
                 normal: [x, y, z], // For unit sphere, normal = position
                 uv: [u, v],
+                tangent: [0.0, 0.0, 0.0, 1.0],
             });
         }
     }
@@ -202,21 +227,25 @@ pub fn create_plane(size: f32) -> Mesh {
             position: [-half, 0.0, -half],
             normal: [0.0, 1.0, 0.0],
             uv: [0.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [half, 0.0, -half],
             normal: [0.0, 1.0, 0.0],
             uv: [1.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [half, 0.0, half],
             normal: [0.0, 1.0, 0.0],
             uv: [1.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-half, 0.0, half],
             normal: [0.0, 1.0, 0.0],
             uv: [0.0, 1.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         },
     ];
 

@@ -50,7 +50,8 @@ impl App {
 
         // Initialize scene renderer
         log::info!("Initializing scene renderer...");
-        let mut scene_renderer = SceneRenderer::new(&renderer.device, &renderer.config, &renderer.queue);
+        let mut scene_renderer =
+            SceneRenderer::new(&renderer.device, &renderer.config, &renderer.queue);
         scene_renderer.load_scene(&renderer.device, &renderer.queue, &scene);
 
         // Initialize camera
@@ -71,16 +72,16 @@ impl App {
             if let Some(camera_comp) =
                 entity.get_component::<crate::ecs::components::camera::CameraComponent>("Camera")
             {
-                log::debug!("Found Camera component - isMain: {}", camera_comp.isMain);
-                if camera_comp.isMain {
+                log::debug!("Found Camera component - is_main: {}", camera_comp.is_main);
+                if camera_comp.is_main {
                     log::info!("Found main camera in scene: {:?}", entity.name);
                     log::debug!("  FOV: {}", camera_comp.fov);
                     log::debug!("  Near: {}", camera_comp.near);
                     log::debug!("  Far: {}", camera_comp.far);
-                    log::debug!("  Projection Type: {}", camera_comp.projectionType);
-                    log::debug!("  Orthographic Size: {}", camera_comp.orthographicSize);
-                    log::debug!("  Clear Flags: {:?}", camera_comp.clearFlags);
-                    log::debug!("  Skybox Texture: {:?}", camera_comp.skyboxTexture);
+                    log::debug!("  Projection Type: {}", camera_comp.projection_type);
+                    log::debug!("  Orthographic Size: {}", camera_comp.orthographic_size);
+                    log::debug!("  Clear Flags: {:?}", camera_comp.clear_flags);
+                    log::debug!("  Skybox Texture: {:?}", camera_comp.skybox_texture);
 
                     camera.apply_component(&camera_comp);
 
@@ -211,8 +212,13 @@ impl App {
                 });
 
         // Render the scene
-        self.scene_renderer
-            .render(&mut encoder, &view, &self.camera, &self.renderer.queue, &self.renderer.device);
+        self.scene_renderer.render(
+            &mut encoder,
+            &view,
+            &self.camera,
+            &self.renderer.queue,
+            &self.renderer.device,
+        );
 
         self.renderer
             .queue

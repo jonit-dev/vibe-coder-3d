@@ -13,8 +13,8 @@ pub use ipc::SocketIpcAdapter;
 #[cfg(all(feature = "wasm", target_arch = "wasm32"))]
 mod wasm {
     use super::*;
-    use wasm_bindgen::prelude::*;
     use vibe_ecs_bridge::create_default_registry;
+    use wasm_bindgen::prelude::*;
 
     /// WASM-accessible live bridge
     #[wasm_bindgen]

@@ -34,7 +34,11 @@ mod tests {
 
         // In Vulkan/WGPU NDC, near = 0.0, far = 1.0
         // Note: projection_matrix alone returns GL-style (-1..1), but view_projection_matrix converts to WGPU (0..1)
-        assert!(ndc_z >= 0.0 && ndc_z <= 1.0, "NDC z should be in [0, 1], got {}", ndc_z);
+        assert!(
+            ndc_z >= 0.0 && ndc_z <= 1.0,
+            "NDC z should be in [0, 1], got {}",
+            ndc_z
+        );
     }
 
     /// Test that orthographic projection matches Three.js OrthographicCamera
@@ -145,8 +149,8 @@ mod tests {
         assert_eq!(camera_comp.fov, 60.0);
         assert_eq!(camera_comp.near, 0.1);
         assert_eq!(camera_comp.far, 100.0); // Our default is more conservative
-        assert_eq!(camera_comp.projectionType, "perspective");
-        assert_eq!(camera_comp.orthographicSize, 10.0);
+        assert_eq!(camera_comp.projection_type, "perspective");
+        assert_eq!(camera_comp.orthographic_size, 10.0);
     }
 
     /// Test that background color is properly applied (Three.js Scene.background)
@@ -158,17 +162,18 @@ mod tests {
             fov: 60.0,
             near: 0.1,
             far: 1000.0,
-            isMain: true,
-            projectionType: "perspective".to_string(),
-            orthographicSize: 10.0,
-            backgroundColor: Some(Color {
+            is_main: true,
+            projection_type: "perspective".to_string(),
+            orthographic_size: 10.0,
+            background_color: Some(Color {
                 r: 0.2,
                 g: 0.4,
                 b: 0.6,
                 a: 1.0,
             }),
-            clearFlags: Some("solidColor".to_string()),
-            skyboxTexture: None,
+            clear_flags: Some("solidColor".to_string()),
+            skybox_texture: None,
+            ..Default::default()
         };
 
         camera.apply_component(&camera_comp);
@@ -189,12 +194,13 @@ mod tests {
             fov: 60.0,
             near: 0.1,
             far: 1000.0,
-            isMain: true,
-            projectionType: "perspective".to_string(),
-            orthographicSize: 10.0,
-            backgroundColor: None,
-            clearFlags: None,
-            skyboxTexture: None,
+            is_main: true,
+            projection_type: "perspective".to_string(),
+            orthographic_size: 10.0,
+            background_color: None,
+            clear_flags: None,
+            skybox_texture: None,
+            ..Default::default()
         };
 
         camera.apply_component(&camera_comp_persp);
@@ -202,7 +208,7 @@ mod tests {
 
         // Switch to orthographic
         let camera_comp_ortho = CameraComponent {
-            projectionType: "orthographic".to_string(),
+            projection_type: "orthographic".to_string(),
             ..camera_comp_persp
         };
 
@@ -319,23 +325,24 @@ mod tests {
             fov: 60.0,
             near: 0.1,
             far: 1000.0,
-            isMain: true, // Main camera
-            projectionType: "perspective".to_string(),
-            orthographicSize: 10.0,
-            backgroundColor: None,
-            clearFlags: None,
-            skyboxTexture: None,
+            is_main: true, // Main camera
+            projection_type: "perspective".to_string(),
+            orthographic_size: 10.0,
+            background_color: None,
+            clear_flags: None,
+            skybox_texture: None,
+            ..Default::default()
         };
 
         let camera_secondary = CameraComponent {
-            isMain: false, // Not main
+            is_main: false, // Not main
             ..camera_main
         };
 
-        assert!(camera_main.isMain);
-        assert!(!camera_secondary.isMain);
+        assert!(camera_main.is_main);
+        assert!(!camera_secondary.is_main);
 
-        // In app.rs, only isMain: true camera is applied
+        // In app.rs, only is_main: true camera is applied
     }
 
     /// Test view-projection matrix composition (Three.js order)
@@ -358,7 +365,12 @@ mod tests {
         let manual_array = manual_view_proj.to_cols_array();
 
         for (a, b) in view_proj_array.iter().zip(manual_array.iter()) {
-            assert!((a - b).abs() < 0.0001, "Matrix element mismatch: {} vs {}", a, b);
+            assert!(
+                (a - b).abs() < 0.0001,
+                "Matrix element mismatch: {} vs {}",
+                a,
+                b
+            );
         }
     }
 
@@ -369,17 +381,18 @@ mod tests {
             fov: 60.0,
             near: 0.1,
             far: 1000.0,
-            isMain: true,
-            projectionType: "perspective".to_string(),
-            orthographicSize: 10.0,
-            backgroundColor: None,
-            clearFlags: Some("skybox".to_string()),
-            skyboxTexture: Some("path/to/skybox.hdr".to_string()),
+            is_main: true,
+            projection_type: "perspective".to_string(),
+            orthographic_size: 10.0,
+            background_color: None,
+            clear_flags: Some("skybox".to_string()),
+            skybox_texture: Some("path/to/skybox.hdr".to_string()),
+            ..Default::default()
         };
 
         let camera_solid = CameraComponent {
-            clearFlags: Some("solidColor".to_string()),
-            backgroundColor: Some(Color {
+            clear_flags: Some("solidColor".to_string()),
+            background_color: Some(Color {
                 r: 0.5,
                 g: 0.5,
                 b: 0.5,
@@ -388,8 +401,8 @@ mod tests {
             ..camera_skybox
         };
 
-        assert_eq!(camera_skybox.clearFlags, Some("skybox".to_string()));
-        assert_eq!(camera_solid.clearFlags, Some("solidColor".to_string()));
+        assert_eq!(camera_skybox.clear_flags, Some("skybox".to_string()));
+        assert_eq!(camera_solid.clear_flags, Some("solidColor".to_string()));
 
         // Note: clearFlags parsed but not yet applied in rendering
     }

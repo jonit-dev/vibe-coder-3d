@@ -186,11 +186,11 @@ mod tests {
         assert_eq!(camera_comp.fov, 60.0);
         assert_eq!(camera_comp.near, 0.1);
         assert_eq!(camera_comp.far, 1000.0);
-        assert!(camera_comp.isMain);
-        assert_eq!(camera_comp.projectionType, "perspective");
+        assert!(camera_comp.is_main);
+        assert_eq!(camera_comp.projection_type, "perspective");
 
         // Verify background color
-        let bg = camera_comp.backgroundColor.as_ref().unwrap();
+        let bg = camera_comp.background_color.as_ref().unwrap();
         assert_eq!(bg.r, 0.2);
         assert_eq!(bg.g, 0.3);
         assert_eq!(bg.b, 0.4);

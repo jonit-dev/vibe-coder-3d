@@ -90,11 +90,11 @@ impl Camera {
         self.far = camera_comp.far;
 
         // Apply projection type
-        self.projection_type = match camera_comp.projectionType.as_str() {
+        self.projection_type = match camera_comp.projection_type.as_str() {
             "orthographic" => ProjectionType::Orthographic,
             _ => ProjectionType::Perspective,
         };
-        self.orthographic_size = camera_comp.orthographicSize;
+        self.orthographic_size = camera_comp.orthographic_size;
 
         log::info!(
             "Applied camera settings: projection={:?}, fov={:.1}°, near={}, far={}, ortho_size={}",
@@ -106,7 +106,7 @@ impl Camera {
         );
 
         // Apply background color if specified
-        if let Some(ref bg) = camera_comp.backgroundColor {
+        if let Some(ref bg) = camera_comp.background_color {
             self.background_color = Color {
                 r: bg.r as f64,
                 g: bg.g as f64,

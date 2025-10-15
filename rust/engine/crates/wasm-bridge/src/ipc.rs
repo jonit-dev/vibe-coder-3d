@@ -147,8 +147,7 @@ mod tests {
 
         let registry = create_default_registry();
         let bridge = LiveBridge::new(registry);
-        let mut adapter = FileIpcAdapter::new(&scene_path, bridge)
-            .with_diff_path(&diff_path);
+        let mut adapter = FileIpcAdapter::new(&scene_path, bridge).with_diff_path(&diff_path);
 
         adapter.load_initial_scene().unwrap();
 

@@ -515,26 +515,29 @@ mod tests {
         // CARGO_MANIFEST_DIR = /path/to/rust/engine/crates/scene-graph
         // We want: /path/to/rust/game/scenes/fml.json
         let scene_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()  // -> crates
+            .parent() // -> crates
             .unwrap()
-            .parent()  // -> engine
+            .parent() // -> engine
             .unwrap()
-            .parent()  // -> rust
+            .parent() // -> rust
             .unwrap()
             .join("game/scenes/fml.json");
 
-        let json = std::fs::read_to_string(&scene_path)
-            .expect("Failed to read fml.json");
-        let scene: Scene = serde_json::from_str(&json)
-            .expect("Failed to parse fml.json");
+        let json = std::fs::read_to_string(&scene_path).expect("Failed to read fml.json");
+        let scene: Scene = serde_json::from_str(&json).expect("Failed to parse fml.json");
 
         // Verify scene has entities
         assert_eq!(scene.entities.len(), 5, "Scene should have 5 entities");
 
         // Debug print entity info
         for (idx, entity) in scene.entities.iter().enumerate() {
-            eprintln!("Entity {}: name={:?}, persistentId={:?}, has_entity_id={}",
-                idx, entity.name, entity.persistentId, entity.entity_id().is_some());
+            eprintln!(
+                "Entity {}: name={:?}, persistentId={:?}, has_entity_id={}",
+                idx,
+                entity.name,
+                entity.persistentId,
+                entity.entity_id().is_some()
+            );
         }
 
         // Build scene graph
@@ -550,6 +553,10 @@ mod tests {
         let instances = graph.extract_renderables(&scene);
 
         // Should find 2 renderable entities (Cube 0 and Cube 0 Copy)
-        assert_eq!(instances.len(), 2, "Should find 2 renderable entities (2 cubes)");
+        assert_eq!(
+            instances.len(),
+            2,
+            "Should find 2 renderable entities (2 cubes)"
+        );
     }
 }

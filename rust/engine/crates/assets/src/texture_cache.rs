@@ -14,6 +14,9 @@ pub struct GpuTexture {
 pub struct TextureCache {
     textures: HashMap<String, GpuTexture>,
     default_texture: Option<GpuTexture>,
+    default_normal: Option<GpuTexture>,
+    default_black: Option<GpuTexture>,
+    default_gray: Option<GpuTexture>,
 }
 
 impl TextureCache {
@@ -21,26 +24,45 @@ impl TextureCache {
         Self {
             textures: HashMap::new(),
             default_texture: None,
+            default_normal: None,
+            default_black: None,
+            default_gray: None,
         }
     }
 
-    /// Initialize with a default 1x1 white texture
+    /// Initialize with default textures (white, normal, black, gray)
     pub fn initialize_default(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
-        log::info!("Creating default texture...");
+        log::info!("Creating default textures...");
 
-        // 1x1 white texture
+        // 1x1 white texture (for albedo/emissive fallback)
         let white_pixel = [255u8, 255, 255, 255];
-        let default_texture = self.create_texture_from_bytes(
-            device,
-            queue,
-            &white_pixel,
-            1,
-            1,
-            "default",
-        ).expect("Failed to create default texture");
-
+        let default_texture = self
+            .create_texture_from_bytes(device, queue, &white_pixel, 1, 1, "default_white")
+            .expect("Failed to create default white texture");
         self.default_texture = Some(default_texture);
-        log::info!("Default texture created");
+
+        // 1x1 normal map (flat normal pointing up: 128, 128, 255)
+        let normal_pixel = [128u8, 128, 255, 255];
+        let default_normal = self
+            .create_texture_from_bytes(device, queue, &normal_pixel, 1, 1, "default_normal")
+            .expect("Failed to create default normal texture");
+        self.default_normal = Some(default_normal);
+
+        // 1x1 black texture (for occlusion/metallic fallback)
+        let black_pixel = [0u8, 0, 0, 255];
+        let default_black = self
+            .create_texture_from_bytes(device, queue, &black_pixel, 1, 1, "default_black")
+            .expect("Failed to create default black texture");
+        self.default_black = Some(default_black);
+
+        // 1x1 gray texture (for roughness fallback - 0.7 roughness = ~179 in 0-255 range)
+        let gray_pixel = [179u8, 179, 179, 255];
+        let default_gray = self
+            .create_texture_from_bytes(device, queue, &gray_pixel, 1, 1, "default_gray")
+            .expect("Failed to create default gray texture");
+        self.default_gray = Some(default_gray);
+
+        log::info!("Default textures created (white, normal, black, gray)");
     }
 
     /// Load texture from raw RGBA pixels
@@ -59,16 +81,14 @@ impl TextureCache {
             return Ok(());
         }
 
-        log::info!("Loading texture from RGBA pixels: {} ({}x{})", id, width, height);
-
-        let texture = self.create_texture_from_bytes(
-            device,
-            queue,
-            rgba,
-            width,
-            height,
+        log::info!(
+            "Loading texture from RGBA pixels: {} ({}x{})",
             id,
-        )?;
+            width,
+            height
+        );
+
+        let texture = self.create_texture_from_bytes(device, queue, rgba, width, height, id)?;
 
         self.textures.insert(id.to_string(), texture);
         log::info!("Loaded texture '{}' ({}x{})", id, width, height);
@@ -99,17 +119,16 @@ impl TextureCache {
         let rgba = img.to_rgba8();
         let dimensions = rgba.dimensions();
 
-        let texture = self.create_texture_from_bytes(
-            device,
-            queue,
-            &rgba,
-            dimensions.0,
-            dimensions.1,
-            id,
-        )?;
+        let texture =
+            self.create_texture_from_bytes(device, queue, &rgba, dimensions.0, dimensions.1, id)?;
 
         self.textures.insert(id.to_string(), texture);
-        log::info!("Loaded texture '{}' ({}x{})", id, dimensions.0, dimensions.1);
+        log::info!(
+            "Loaded texture '{}' ({}x{})",
+            id,
+            dimensions.0,
+            dimensions.1
+        );
 
         Ok(())
     }
@@ -130,23 +149,21 @@ impl TextureCache {
         log::info!("Loading texture from: {}", path);
 
         // Load image from file
-        let img = image::open(path)
-            .with_context(|| format!("Failed to load image: {}", path))?;
+        let img = image::open(path).with_context(|| format!("Failed to load image: {}", path))?;
 
         let rgba = img.to_rgba8();
         let dimensions = rgba.dimensions();
 
-        let texture = self.create_texture_from_bytes(
-            device,
-            queue,
-            &rgba,
-            dimensions.0,
-            dimensions.1,
-            path,
-        )?;
+        let texture =
+            self.create_texture_from_bytes(device, queue, &rgba, dimensions.0, dimensions.1, path)?;
 
         self.textures.insert(path.to_string(), texture);
-        log::info!("Loaded texture '{}' ({}x{})", path, dimensions.0, dimensions.1);
+        log::info!(
+            "Loaded texture '{}' ({}x{})",
+            path,
+            dimensions.0,
+            dimensions.1
+        );
 
         Ok(())
     }
@@ -216,13 +233,38 @@ impl TextureCache {
     /// Get texture by path, returns default if not found
     pub fn get(&self, path: &str) -> &GpuTexture {
         self.textures.get(path).unwrap_or_else(|| {
-            self.default_texture.as_ref().expect("Default texture not initialized")
+            self.default_texture
+                .as_ref()
+                .expect("Default texture not initialized")
         })
     }
 
-    /// Get default texture
+    /// Get default white texture
     pub fn default(&self) -> &GpuTexture {
-        self.default_texture.as_ref().expect("Default texture not initialized")
+        self.default_texture
+            .as_ref()
+            .expect("Default texture not initialized")
+    }
+
+    /// Get default normal map texture (flat normal)
+    pub fn default_normal(&self) -> &GpuTexture {
+        self.default_normal
+            .as_ref()
+            .expect("Default normal texture not initialized")
+    }
+
+    /// Get default black texture (for metallic/occlusion)
+    pub fn default_black(&self) -> &GpuTexture {
+        self.default_black
+            .as_ref()
+            .expect("Default black texture not initialized")
+    }
+
+    /// Get default gray texture (for roughness)
+    pub fn default_gray(&self) -> &GpuTexture {
+        self.default_gray
+            .as_ref()
+            .expect("Default gray texture not initialized")
     }
 
     /// Check if texture exists

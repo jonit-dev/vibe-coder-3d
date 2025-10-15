@@ -1,10 +1,14 @@
 use super::{
+    material_uniform::{
+        MaterialUniform, ALPHA_MODE_BLEND, TEXTURE_ALBEDO, TEXTURE_EMISSIVE, TEXTURE_METALLIC,
+        TEXTURE_NORMAL, TEXTURE_OCCLUSION, TEXTURE_ROUGHNESS,
+    },
     pipeline::{InstanceRaw, LightUniform, RenderPipeline},
     Camera,
 };
-use vibe_assets::{MaterialCache, MeshCache, TextureCache};
 use crate::ecs::{components::transform::Transform, SceneData};
 use glam::{Mat4, Vec3};
+use vibe_assets::{MaterialCache, MeshCache, TextureCache};
 use vibe_scene_graph::SceneGraph;
 use wgpu::util::DeviceExt;
 
@@ -27,7 +31,11 @@ pub struct SceneRenderer {
 }
 
 impl SceneRenderer {
-    pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, queue: &wgpu::Queue) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        config: &wgpu::SurfaceConfiguration,
+        queue: &wgpu::Queue,
+    ) -> Self {
         let mut mesh_cache = MeshCache::new();
         mesh_cache.initialize_primitives(device);
 
@@ -63,7 +71,10 @@ impl SceneRenderer {
         // Build scene graph for transform hierarchy
         let mut scene_graph = match SceneGraph::build(scene) {
             Ok(graph) => {
-                log::info!("Built scene graph with {} entities", graph.entity_ids().len());
+                log::info!(
+                    "Built scene graph with {} entities",
+                    graph.entity_ids().len()
+                );
                 graph
             }
             Err(e) => {
@@ -201,7 +212,8 @@ impl SceneRenderer {
 
                             self.light_uniform.spot_position = [position.x, position.y, position.z];
                             self.light_uniform.spot_intensity = light.intensity;
-                            self.light_uniform.spot_direction = [light.directionX, light.directionY, light.directionZ];
+                            self.light_uniform.spot_direction =
+                                [light.directionX, light.directionY, light.directionZ];
                             self.light_uniform.spot_angle = light.angle;
                             self.light_uniform.spot_color = light_color;
                             self.light_uniform.spot_penumbra = light.penumbra;
@@ -214,7 +226,6 @@ impl SceneRenderer {
                     }
                 }
             }
-
         }
 
         // Extract renderable entities using scene graph (includes world transforms from hierarchy)
@@ -235,24 +246,40 @@ impl SceneRenderer {
 
                         match load_gltf_full(model_path) {
                             Ok(gltf_data) => {
-                                log::info!("Loaded {} mesh(es) and {} texture(s) from GLTF model",
-                                    gltf_data.meshes.len(), gltf_data.images.len());
+                                log::info!(
+                                    "Loaded {} mesh(es) and {} texture(s) from GLTF model",
+                                    gltf_data.meshes.len(),
+                                    gltf_data.images.len()
+                                );
 
-                                // Load textures into texture cache
+                                // Load textures into texture cache and remember the first one for fallback use
+                                let mut first_texture_id: Option<String> = None;
                                 for (idx, gltf_image) in gltf_data.images.iter().enumerate() {
-                                    let texture_id = gltf_image.name.as_ref()
-                                        .map(|n| n.clone())
-                                        .unwrap_or_else(|| format!("{}_texture_{}", model_path, idx));
+                                    let texture_id =
+                                        gltf_image.name.as_ref().map(|n| n.clone()).unwrap_or_else(
+                                            || format!("{}_texture_{}", model_path, idx),
+                                        );
 
-                                    if let Err(e) = self.texture_cache.load_from_rgba_pixels(
+                                    let load_result = self.texture_cache.load_from_rgba_pixels(
                                         device,
                                         queue,
                                         &gltf_image.data,
                                         gltf_image.width,
                                         gltf_image.height,
-                                        &texture_id
-                                    ) {
-                                        log::error!("Failed to load texture '{}': {}", texture_id, e);
+                                        &texture_id,
+                                    );
+
+                                    if let Err(e) = load_result {
+                                        log::error!(
+                                            "Failed to load texture '{}': {}",
+                                            texture_id,
+                                            e
+                                        );
+                                        continue;
+                                    }
+
+                                    if first_texture_id.is_none() {
+                                        first_texture_id = Some(texture_id.clone());
                                     }
                                 }
 
@@ -263,12 +290,8 @@ impl SceneRenderer {
                                     // Upload mesh directly (vibe_assets::Mesh)
                                     self.mesh_cache.upload_mesh(device, &mesh_name, vibe_mesh);
 
-                                    // Use the first texture from GLTF if available
-                                    let texture_override = if !gltf_data.images.is_empty() {
-                                        Some("texture_0".to_string())
-                                    } else {
-                                        None
-                                    };
+                                    // Use the first successfully loaded texture from the GLTF if available
+                                    let texture_override = first_texture_id.clone();
 
                                     // Create a renderable entity for each mesh in the GLTF
                                     self.entities.push(RenderableEntity {
@@ -289,7 +312,10 @@ impl SceneRenderer {
 
                     #[cfg(not(feature = "gltf-support"))]
                     {
-                        log::warn!("GLTF support not enabled, ignoring modelPath: {}", model_path);
+                        log::warn!(
+                            "GLTF support not enabled, ignoring modelPath: {}",
+                            model_path
+                        );
                         log::warn!("Compile with --features gltf-support to enable GLTF loading");
                     }
                 }
@@ -347,21 +373,21 @@ impl SceneRenderer {
                 let color_rgb = material.color_rgb();
 
                 log::debug!(
-                    "Instance #{}: mesh='{}', material='{}', color=RGB({:.2}, {:.2}, {:.2}), metallic={}, roughness={}",
+                    "Instance #{}: mesh='{}', material='{}', color=RGB({:.2}, {:.2}, {:.2}), metalness={}, roughness={}",
                     idx,
                     e.mesh_id,
                     mat_id,
                     color_rgb.x,
                     color_rgb.y,
                     color_rgb.z,
-                    material.metallic,
+                    material.metalness,
                     material.roughness
                 );
 
                 InstanceRaw::with_material(
                     e.transform,
                     [color_rgb.x, color_rgb.y, color_rgb.z],
-                    material.metallic,
+                    material.metalness,
                     material.roughness,
                 )
             })
@@ -393,53 +419,204 @@ impl SceneRenderer {
         // Update lights
         self.pipeline.update_lights(queue, &self.light_uniform);
 
-        // Create default texture bind group (white texture for materials without textures)
-        let default_texture = self.texture_cache.default();
-        let default_texture_bind_group = self.pipeline.create_texture_bind_group(
-            device,
-            &default_texture.view,
-            &default_texture.sampler,
-        );
+        // Get default fallback textures
+        let default_white = self.texture_cache.default();
+        let default_normal = self.texture_cache.default_normal();
+        let default_black = self.texture_cache.default_black();
+        let default_gray = self.texture_cache.default_gray();
 
-        // Pre-create texture bind groups for each entity
+        // Pre-create texture and material bind groups for each entity
         let mut texture_bind_groups: Vec<wgpu::BindGroup> = Vec::new();
+        let mut material_bind_groups: Vec<wgpu::BindGroup> = Vec::new();
+        let mut material_uniform_buffers: Vec<wgpu::Buffer> = Vec::new();
+        let mut entity_alpha_modes: Vec<u32> = Vec::new();
+
         for entity in &self.entities {
-            let bind_group = if let Some(ref texture_override) = entity.texture_override {
-                // GLTF models have texture override (e.g., "texture_0")
+            // Determine which textures to use (or fallback to defaults)
+            let (
+                albedo_view,
+                has_albedo,
+                normal_view,
+                has_normal,
+                metallic_view,
+                has_metallic,
+                roughness_view,
+                has_roughness,
+                emissive_view,
+                has_emissive,
+                occlusion_view,
+                has_occlusion,
+            ) = if let Some(ref texture_override) = entity.texture_override {
+                let has_texture = self.texture_cache.contains(texture_override);
                 let texture = self.texture_cache.get(texture_override);
-                self.pipeline.create_texture_bind_group(
-                    device,
+                (
                     &texture.view,
-                    &texture.sampler,
+                    has_texture,
+                    &default_normal.view,
+                    false,
+                    &default_black.view,
+                    false,
+                    &default_gray.view,
+                    false,
+                    &default_black.view,
+                    false,
+                    &default_white.view,
+                    false,
                 )
             } else if let Some(ref material_id) = entity.material_id {
                 let material = self.material_cache.get(material_id);
 
-                // If material has albedo texture, create bind group for it
-                if let Some(ref texture_id) = material.albedoTexture {
-                    let texture = self.texture_cache.get(texture_id);
-                    self.pipeline.create_texture_bind_group(
-                        device,
-                        &texture.view,
-                        &texture.sampler,
-                    )
-                } else {
-                    // Use default white texture
-                    self.pipeline.create_texture_bind_group(
-                        device,
-                        &default_texture.view,
-                        &default_texture.sampler,
-                    )
-                }
+                let (albedo_view, has_albedo) = material
+                    .albedoTexture
+                    .as_ref()
+                    .and_then(|id| {
+                        self.texture_cache
+                            .contains(id)
+                            .then(|| (&self.texture_cache.get(id).view, true))
+                    })
+                    .unwrap_or((&default_white.view, false));
+
+                let (normal_view, has_normal) = material
+                    .normalTexture
+                    .as_ref()
+                    .and_then(|id| {
+                        self.texture_cache
+                            .contains(id)
+                            .then(|| (&self.texture_cache.get(id).view, true))
+                    })
+                    .unwrap_or((&default_normal.view, false));
+
+                let (metallic_view, has_metallic) = material
+                    .metallicTexture
+                    .as_ref()
+                    .and_then(|id| {
+                        self.texture_cache
+                            .contains(id)
+                            .then(|| (&self.texture_cache.get(id).view, true))
+                    })
+                    .unwrap_or((&default_black.view, false));
+
+                let (roughness_view, has_roughness) = material
+                    .roughnessTexture
+                    .as_ref()
+                    .and_then(|id| {
+                        self.texture_cache
+                            .contains(id)
+                            .then(|| (&self.texture_cache.get(id).view, true))
+                    })
+                    .unwrap_or((&default_gray.view, false));
+
+                let (emissive_view, has_emissive) = material
+                    .emissiveTexture
+                    .as_ref()
+                    .and_then(|id| {
+                        self.texture_cache
+                            .contains(id)
+                            .then(|| (&self.texture_cache.get(id).view, true))
+                    })
+                    .unwrap_or((&default_black.view, false));
+
+                let (occlusion_view, has_occlusion) = material
+                    .occlusionTexture
+                    .as_ref()
+                    .and_then(|id| {
+                        self.texture_cache
+                            .contains(id)
+                            .then(|| (&self.texture_cache.get(id).view, true))
+                    })
+                    .unwrap_or((&default_white.view, false));
+
+                (
+                    albedo_view,
+                    has_albedo,
+                    normal_view,
+                    has_normal,
+                    metallic_view,
+                    has_metallic,
+                    roughness_view,
+                    has_roughness,
+                    emissive_view,
+                    has_emissive,
+                    occlusion_view,
+                    has_occlusion,
+                )
             } else {
-                // No material, use default white texture
-                self.pipeline.create_texture_bind_group(
-                    device,
-                    &default_texture.view,
-                    &default_texture.sampler,
+                (
+                    &default_white.view,
+                    false,
+                    &default_normal.view,
+                    false,
+                    &default_black.view,
+                    false,
+                    &default_gray.view,
+                    false,
+                    &default_black.view,
+                    false,
+                    &default_white.view,
+                    false,
                 )
             };
+
+            // Create bind group with all 6 textures
+            let bind_group = self.pipeline.create_multi_texture_bind_group(
+                device,
+                albedo_view,
+                normal_view,
+                metallic_view,
+                roughness_view,
+                emissive_view,
+                occlusion_view,
+                &default_white.sampler, // Use white texture's sampler (they all share same sampler settings)
+            );
             texture_bind_groups.push(bind_group);
+
+            // Build material uniform for this entity
+            let mut material_uniform = entity
+                .material_id
+                .as_ref()
+                .map(|id| MaterialUniform::from_material(self.material_cache.get(id)))
+                .unwrap_or_else(MaterialUniform::new);
+
+            let mut flags = material_uniform.texture_flags();
+            if entity.texture_override.is_some() && has_albedo {
+                flags |= TEXTURE_ALBEDO;
+            }
+
+            if !has_albedo {
+                flags &= !TEXTURE_ALBEDO;
+            }
+            if !has_normal {
+                flags &= !TEXTURE_NORMAL;
+            }
+            if !has_metallic {
+                flags &= !TEXTURE_METALLIC;
+            }
+            if !has_roughness {
+                flags &= !TEXTURE_ROUGHNESS;
+            }
+            if !has_emissive {
+                flags &= !TEXTURE_EMISSIVE;
+            }
+            if !has_occlusion {
+                flags &= !TEXTURE_OCCLUSION;
+            }
+            material_uniform.set_texture_flags(flags);
+
+            let alpha_mode = material_uniform.alpha_mode();
+            entity_alpha_modes.push(alpha_mode);
+
+            let material_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Material Uniform Buffer"),
+                contents: bytemuck::cast_slice(&[material_uniform]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
+
+            let material_bind_group = self
+                .pipeline
+                .create_material_bind_group(device, &material_buffer);
+
+            material_uniform_buffers.push(material_buffer);
+            material_bind_groups.push(material_bind_group);
         }
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -464,33 +641,70 @@ impl SceneRenderer {
             timestamp_writes: None,
         });
 
-        render_pass.set_pipeline(&self.pipeline.pipeline);
-        render_pass.set_bind_group(0, &self.pipeline.camera_bind_group, &[]);
-        // Start with default texture (will be overridden per entity if needed)
-        render_pass.set_bind_group(1, &default_texture_bind_group, &[]);
-
         if let Some(instance_buffer) = &self.instance_buffer {
+            let mut opaque_indices: Vec<usize> = Vec::new();
+            let mut transparent_draws: Vec<(usize, f32)> = Vec::new();
+
+            for (i, alpha_mode) in entity_alpha_modes.iter().enumerate() {
+                if *alpha_mode == ALPHA_MODE_BLEND {
+                    let position = self.entities[i].transform.w_axis.truncate();
+                    let distance = (camera.position - position).length();
+                    transparent_draws.push((i, distance));
+                } else {
+                    opaque_indices.push(i);
+                }
+            }
+
+            transparent_draws
+                .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
             render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
 
-            // Render each entity individually with correct texture
-            for (i, entity) in self.entities.iter().enumerate() {
-                let mesh_id = entity.mesh_id.as_str();
+            if !opaque_indices.is_empty() {
+                render_pass.set_pipeline(&self.pipeline.opaque_pipeline);
+                render_pass.set_bind_group(0, &self.pipeline.camera_bind_group, &[]);
 
-                // Bind the texture for this entity
-                render_pass.set_bind_group(1, &texture_bind_groups[i], &[]);
+                for &i in &opaque_indices {
+                    let mesh_id = self.entities[i].mesh_id.as_str();
+                    render_pass.set_bind_group(1, &texture_bind_groups[i], &[]);
+                    render_pass.set_bind_group(2, &material_bind_groups[i], &[]);
 
-                // Draw this entity
-                if let Some(gpu_mesh) = self.mesh_cache.get(mesh_id) {
-                    render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
-                    render_pass.set_index_buffer(
-                        gpu_mesh.index_buffer.slice(..),
-                        wgpu::IndexFormat::Uint32,
-                    );
-                    render_pass.draw_indexed(
-                        0..gpu_mesh.index_count,
-                        0,
-                        i as u32..(i + 1) as u32,
-                    );
+                    if let Some(gpu_mesh) = self.mesh_cache.get(mesh_id) {
+                        render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
+                        render_pass.set_index_buffer(
+                            gpu_mesh.index_buffer.slice(..),
+                            wgpu::IndexFormat::Uint32,
+                        );
+                        render_pass.draw_indexed(
+                            0..gpu_mesh.index_count,
+                            0,
+                            i as u32..(i + 1) as u32,
+                        );
+                    }
+                }
+            }
+
+            if !transparent_draws.is_empty() {
+                render_pass.set_pipeline(&self.pipeline.transparent_pipeline);
+                render_pass.set_bind_group(0, &self.pipeline.camera_bind_group, &[]);
+
+                for (i, _) in &transparent_draws {
+                    let mesh_id = self.entities[*i].mesh_id.as_str();
+                    render_pass.set_bind_group(1, &texture_bind_groups[*i], &[]);
+                    render_pass.set_bind_group(2, &material_bind_groups[*i], &[]);
+
+                    if let Some(gpu_mesh) = self.mesh_cache.get(mesh_id) {
+                        render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
+                        render_pass.set_index_buffer(
+                            gpu_mesh.index_buffer.slice(..),
+                            wgpu::IndexFormat::Uint32,
+                        );
+                        render_pass.draw_indexed(
+                            0..gpu_mesh.index_count,
+                            0,
+                            *i as u32..(*i + 1) as u32,
+                        );
+                    }
                 }
             }
         }

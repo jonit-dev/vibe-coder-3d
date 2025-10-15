@@ -44,18 +44,83 @@ pub struct CameraComponent {
     pub near: f32,
     #[serde(default = "default_far")]
     pub far: f32,
+    #[serde(default, rename = "isMain")]
+    pub is_main: bool,
+    #[serde(default = "default_projection_type", rename = "projectionType")]
+    pub projection_type: String,
+    #[serde(default = "default_orthographic_size", rename = "orthographicSize")]
+    pub orthographic_size: f32,
     #[serde(default)]
-    pub isMain: bool,
-    #[serde(default = "default_projection_type")]
-    pub projectionType: String,
-    #[serde(default = "default_orthographic_size")]
-    pub orthographicSize: f32,
+    pub depth: i32,
+
+    // Background and clear behavior
+    #[serde(default, rename = "clearFlags")]
+    pub clear_flags: Option<String>,
+    #[serde(default, rename = "backgroundColor")]
+    pub background_color: Option<CameraColor>,
+    #[serde(default, rename = "skyboxTexture")]
+    pub skybox_texture: Option<String>,
+
+    // Control & follow
+    #[serde(default, rename = "controlMode")]
+    pub control_mode: Option<String>, // "locked" | "free"
+    #[serde(default, rename = "enableSmoothing")]
+    pub enable_smoothing: bool,
+    #[serde(default, rename = "followTarget")]
+    pub follow_target: Option<u32>,
+    #[serde(default, rename = "followOffset")]
+    pub follow_offset: Option<[f32; 3]>,
+    #[serde(default = "default_smoothing_speed", rename = "smoothingSpeed")]
+    pub smoothing_speed: f32,
+    #[serde(default = "default_rotation_smoothing", rename = "rotationSmoothing")]
+    pub rotation_smoothing: f32,
+
+    // Viewport (normalized 0..1)
+    #[serde(default, rename = "viewportRect")]
+    pub viewport_rect: Option<ViewportRect>,
+
+    // HDR / Tone Mapping
     #[serde(default)]
-    pub backgroundColor: Option<CameraColor>,
+    pub hdr: bool,
+    #[serde(default, rename = "toneMapping")]
+    pub tone_mapping: Option<String>, // none | linear | reinhard | cineon | aces
+    #[serde(
+        default = "default_tone_mapping_exposure",
+        rename = "toneMappingExposure"
+    )]
+    pub tone_mapping_exposure: f32,
+
+    // Post-processing
+    #[serde(default, rename = "enablePostProcessing")]
+    pub enable_post_processing: bool,
+    #[serde(default, rename = "postProcessingPreset")]
+    pub post_processing_preset: Option<String>,
+
+    // Skybox transforms
+    #[serde(default, rename = "skyboxScale")]
+    pub skybox_scale: Option<[f32; 3]>,
+    #[serde(default, rename = "skyboxRotation")]
+    pub skybox_rotation: Option<[f32; 3]>,
+    #[serde(default, rename = "skyboxRepeat")]
+    pub skybox_repeat: Option<[f32; 2]>,
+    #[serde(default, rename = "skyboxOffset")]
+    pub skybox_offset: Option<[f32; 2]>,
+    #[serde(default = "default_skybox_intensity", rename = "skyboxIntensity")]
+    pub skybox_intensity: f32,
+    #[serde(default, rename = "skyboxBlur")]
+    pub skybox_blur: f32,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ViewportRect {
     #[serde(default)]
-    pub clearFlags: Option<String>,
+    pub x: f32,
     #[serde(default)]
-    pub skyboxTexture: Option<String>,
+    pub y: f32,
+    #[serde(default = "default_one")]
+    pub width: f32,
+    #[serde(default = "default_one")]
+    pub height: f32,
 }
 
 fn default_fov() -> f32 {
@@ -72,6 +137,18 @@ fn default_projection_type() -> String {
 }
 fn default_orthographic_size() -> f32 {
     10.0
+}
+fn default_smoothing_speed() -> f32 {
+    5.0
+}
+fn default_rotation_smoothing() -> f32 {
+    5.0
+}
+fn default_tone_mapping_exposure() -> f32 {
+    1.0
+}
+fn default_skybox_intensity() -> f32 {
+    1.0
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

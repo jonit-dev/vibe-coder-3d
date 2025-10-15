@@ -12,17 +12,11 @@ pub struct Material {
     #[serde(default = "default_color")]
     pub color: String, // Hex color like "#ff0000"
 
-    #[serde(default = "default_metallic")]
-    pub metallic: f32,
-
     #[serde(default = "default_roughness")]
     pub roughness: f32,
 
     #[serde(default)]
     pub emissive: Option<String>, // Hex color
-
-    #[serde(default = "default_opacity")]
-    pub opacity: f32,
 
     // Shader type
     #[serde(default = "default_shader")]
@@ -76,6 +70,15 @@ pub struct Material {
 
     #[serde(default = "default_one")]
     pub textureRepeatY: f32,
+
+    #[serde(default)]
+    pub transparent: bool,
+
+    #[serde(default = "default_alpha_mode")]
+    pub alphaMode: String,
+
+    #[serde(default = "default_alpha_cutoff")]
+    pub alphaCutoff: f32,
 }
 
 fn default_color() -> String {
@@ -87,11 +90,7 @@ fn default_metallic() -> f32 {
 }
 
 fn default_roughness() -> f32 {
-    0.5
-}
-
-fn default_opacity() -> f32 {
-    1.0
+    0.7
 }
 
 fn default_shader() -> String {
@@ -104,6 +103,14 @@ fn default_material_type() -> String {
 
 fn default_one() -> f32 {
     1.0
+}
+
+fn default_alpha_mode() -> String {
+    "opaque".to_string()
+}
+
+fn default_alpha_cutoff() -> f32 {
+    0.5
 }
 
 impl Material {
@@ -148,10 +155,8 @@ impl MaterialCache {
             id: "default".to_string(),
             name: Some("Default Material".to_string()),
             color: "#cccccc".to_string(),
-            metallic: 0.0,
-            roughness: 0.5,
+            roughness: 0.7,
             emissive: None,
-            opacity: 1.0,
             shader: "standard".to_string(),
             materialType: "solid".to_string(),
             metalness: 0.0,
@@ -168,6 +173,9 @@ impl MaterialCache {
             textureOffsetY: 0.0,
             textureRepeatX: 1.0,
             textureRepeatY: 1.0,
+            transparent: false,
+            alphaMode: "opaque".to_string(),
+            alphaCutoff: 0.5,
         };
 
         Self {
@@ -194,9 +202,8 @@ impl MaterialCache {
                         material.color_rgb().y,
                         material.color_rgb().z
                     );
-                    log::debug!("  Metallic: {}", material.metallic);
+                    log::debug!("  Metalness: {}", material.metalness);
                     log::debug!("  Roughness: {}", material.roughness);
-                    log::debug!("  Opacity: {}", material.opacity);
                     if let Some(ref emissive) = material.emissive {
                         let emissive_rgb = material.emissive_rgb();
                         log::debug!(

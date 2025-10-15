@@ -5,21 +5,13 @@ use vibe_ecs_bridge::decoders::create_default_registry;
 /// Extract unknown field name from serde error message
 /// Example: "unknown field `foo`, expected one of ..." -> "foo"
 fn extract_unknown_field(error_msg: &str) -> Option<&str> {
-    error_msg
-        .split("unknown field `")
-        .nth(1)?
-        .split('`')
-        .next()
+    error_msg.split("unknown field `").nth(1)?.split('`').next()
 }
 
 /// Extract missing field name from serde error message
 /// Example: "missing field `bar`" -> "bar"
 fn extract_missing_field(error_msg: &str) -> Option<&str> {
-    error_msg
-        .split("missing field `")
-        .nth(1)?
-        .split('`')
-        .next()
+    error_msg.split("missing field `").nth(1)?.split('`').next()
 }
 
 /// Validate a scene and log warnings for unimplemented components/properties
@@ -28,7 +20,11 @@ pub fn validate_scene(scene: &SceneData) {
     let mut unimplemented_components = HashSet::new();
     let mut entity_warnings = Vec::new();
 
-    log::info!("Validating scene '{}' with {} entities...", scene.metadata.name, scene.entities.len());
+    log::info!(
+        "Validating scene '{}' with {} entities...",
+        scene.metadata.name,
+        scene.entities.len()
+    );
 
     for entity in &scene.entities {
         let entity_name = entity.name.as_deref().unwrap_or("<unnamed>");
@@ -102,7 +98,10 @@ pub fn validate_scene(scene: &SceneData) {
         log::warn!("⚠️  UNIMPLEMENTED COMPONENTS DETECTED");
         log::warn!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         log::warn!("");
-        log::warn!("The following {} component type(s) are present in the scene but not", unimplemented_components.len());
+        log::warn!(
+            "The following {} component type(s) are present in the scene but not",
+            unimplemented_components.len()
+        );
         log::warn!("yet implemented in the Rust engine:");
         log::warn!("");
 
@@ -119,7 +118,10 @@ pub fn validate_scene(scene: &SceneData) {
 
     // Log detailed per-entity warnings if there are many
     if entity_warnings.len() > 10 {
-        log::debug!("Detailed component warnings ({} total):", entity_warnings.len());
+        log::debug!(
+            "Detailed component warnings ({} total):",
+            entity_warnings.len()
+        );
         for warning in entity_warnings.iter().take(10) {
             log::debug!("  {}", warning);
         }
@@ -157,13 +159,14 @@ mod tests {
                 persistentId: Some("entity-1".to_string()),
                 name: Some("Test Entity".to_string()),
                 parentPersistentId: None,
-                components: vec![
-                    ("Transform".to_string(), json!({
+                components: vec![(
+                    "Transform".to_string(),
+                    json!({
                         "position": [0.0, 0.0, 0.0],
                         "rotation": [0.0, 0.0, 0.0, 1.0],
                         "scale": [1.0, 1.0, 1.0]
-                    }))
-                ]
+                    }),
+                )]
                 .into_iter()
                 .collect(),
             }],
@@ -192,11 +195,12 @@ mod tests {
                 persistentId: Some("entity-1".to_string()),
                 name: Some("Test Entity".to_string()),
                 parentPersistentId: None,
-                components: vec![
-                    ("UnimplementedComponent".to_string(), json!({
+                components: vec![(
+                    "UnimplementedComponent".to_string(),
+                    json!({
                         "someProperty": "someValue"
-                    }))
-                ]
+                    }),
+                )]
                 .into_iter()
                 .collect(),
             }],

@@ -128,7 +128,7 @@ mod tests {
         assert_eq!(camera.fov, 75.0);
         assert_eq!(camera.near, 0.5);
         assert_eq!(camera.far, 200.0);
-        assert_eq!(camera.isMain, true);
+        assert_eq!(camera.is_main, true);
     }
 
     #[test]

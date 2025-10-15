@@ -8,6 +8,7 @@ pub mod depth_texture;
 mod integration_test;
 #[cfg(test)]
 mod lighting_test;
+pub mod material_uniform;
 // Material, MeshCache, and Vertex now from vibe-assets crate
 // Removed: pub mod material; - using vibe_assets::Material instead
 // #[cfg(test)]
@@ -26,8 +27,9 @@ pub mod vertex; // Keep for backward compat with tests
 mod vertex_test;
 
 pub use camera::Camera;
+pub use material_uniform::MaterialUniform;
 // Re-export from vibe-assets crate
-pub use vibe_assets::{Material, MaterialCache, MeshCache, Mesh, Vertex};
 pub use pipeline::RenderPipeline;
 pub use renderer::Renderer;
 pub use scene_renderer::SceneRenderer;
+pub use vibe_assets::{Material, MaterialCache, Mesh, MeshCache, Vertex};

@@ -73,8 +73,14 @@ mod tests {
         // Check that view_projection_matrix returns the correct multiplication
         for i in 0..4 {
             for j in 0..4 {
-                assert!((vp_matrix.col(i)[j] - expected.col(i)[j]).abs() < 0.001,
-                    "Mismatch at [{}, {}]: {} vs {}", i, j, vp_matrix.col(i)[j], expected.col(i)[j]);
+                assert!(
+                    (vp_matrix.col(i)[j] - expected.col(i)[j]).abs() < 0.001,
+                    "Mismatch at [{}, {}]: {} vs {}",
+                    i,
+                    j,
+                    vp_matrix.col(i)[j],
+                    expected.col(i)[j]
+                );
             }
         }
     }
@@ -106,12 +112,13 @@ mod tests {
             fov: 90.0,
             near: 0.1,
             far: 100.0,
-            isMain: true,
-            projectionType: "perspective".to_string(),
-            orthographicSize: 10.0,
-            backgroundColor: None,
-            clearFlags: None,
-            skyboxTexture: None,
+            is_main: true,
+            projection_type: "perspective".to_string(),
+            orthographic_size: 10.0,
+            background_color: None,
+            clear_flags: None,
+            skybox_texture: None,
+            ..Default::default()
         };
 
         camera.apply_component(&component);
@@ -126,12 +133,13 @@ mod tests {
             fov: 60.0,
             near: 0.5,
             far: 500.0,
-            isMain: true,
-            projectionType: "perspective".to_string(),
-            orthographicSize: 10.0,
-            backgroundColor: None,
-            clearFlags: None,
-            skyboxTexture: None,
+            is_main: true,
+            projection_type: "perspective".to_string(),
+            orthographic_size: 10.0,
+            background_color: None,
+            clear_flags: None,
+            skybox_texture: None,
+            ..Default::default()
         };
 
         camera.apply_component(&component);
@@ -147,12 +155,13 @@ mod tests {
             fov: 45.0,
             near: 1.0,
             far: 2000.0,
-            isMain: false,
-            projectionType: "perspective".to_string(),
-            orthographicSize: 10.0,
-            backgroundColor: None,
-            clearFlags: None,
-            skyboxTexture: None,
+            is_main: false,
+            projection_type: "perspective".to_string(),
+            orthographic_size: 10.0,
+            background_color: None,
+            clear_flags: None,
+            skybox_texture: None,
+            ..Default::default()
         };
 
         camera.apply_component(&component);

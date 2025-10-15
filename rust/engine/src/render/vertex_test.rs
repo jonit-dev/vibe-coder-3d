@@ -8,18 +8,20 @@ mod tests {
             position: [1.0, 2.0, 3.0],
             normal: [0.0, 1.0, 0.0],
             uv: [0.5, 0.5],
+            tangent: [0.0, 0.0, 1.0, 1.0],
         };
 
         assert_eq!(vertex.position, [1.0, 2.0, 3.0]);
         assert_eq!(vertex.normal, [0.0, 1.0, 0.0]);
         assert_eq!(vertex.uv, [0.5, 0.5]);
+        assert_eq!(vertex.tangent, [0.0, 0.0, 1.0, 1.0]);
     }
 
     #[test]
     fn test_vertex_size() {
-        // Verify vertex size matches expected layout (3 + 3 + 2 floats = 8 floats = 32 bytes)
+        // Verify vertex size matches expected layout (3 + 3 + 2 + 4 floats = 12 floats = 48 bytes)
         let size = std::mem::size_of::<Vertex>();
-        assert_eq!(size, 32);
+        assert_eq!(size, 48);
     }
 
     #[test]
@@ -42,8 +44,8 @@ mod tests {
     fn test_vertex_desc_attributes_count() {
         let desc = Vertex::desc();
 
-        // Should have 3 attributes (position, normal, uv)
-        assert_eq!(desc.attributes.len(), 3);
+        // Should have 4 attributes (position, normal, uv, tangent)
+        assert_eq!(desc.attributes.len(), 4);
     }
 
     #[test]
@@ -77,22 +79,35 @@ mod tests {
     }
 
     #[test]
+    fn test_vertex_desc_tangent_attribute() {
+        let desc = Vertex::desc();
+        let tangent_attr = &desc.attributes[3];
+
+        assert_eq!(tangent_attr.offset, std::mem::size_of::<[f32; 8]>() as u64);
+        assert_eq!(tangent_attr.shader_location, 3);
+        assert_eq!(tangent_attr.format, wgpu::VertexFormat::Float32x4);
+    }
+
+    #[test]
     fn test_mesh_new() {
         let vertices = vec![
             Vertex {
                 position: [0.0, 0.0, 0.0],
                 normal: [0.0, 1.0, 0.0],
                 uv: [0.0, 0.0],
+                tangent: [0.0, 0.0, 0.0, 1.0],
             },
             Vertex {
                 position: [1.0, 0.0, 0.0],
                 normal: [0.0, 1.0, 0.0],
                 uv: [1.0, 0.0],
+                tangent: [0.0, 0.0, 0.0, 1.0],
             },
             Vertex {
                 position: [0.5, 1.0, 0.0],
                 normal: [0.0, 1.0, 0.0],
                 uv: [0.5, 1.0],
+                tangent: [0.0, 0.0, 0.0, 1.0],
             },
         ];
 
@@ -104,6 +119,11 @@ mod tests {
         assert_eq!(mesh.indices.len(), 3);
         assert_eq!(mesh.vertices[0].position, [0.0, 0.0, 0.0]);
         assert_eq!(mesh.indices[0], 0);
+        let tangent = mesh.vertices[0].tangent;
+        let tangent_len_sq =
+            tangent[0] * tangent[0] + tangent[1] * tangent[1] + tangent[2] * tangent[2];
+        assert!(tangent_len_sq > 0.0);
+        assert!((mesh.vertices[0].tangent[3].abs() - 1.0).abs() < 1e-3);
     }
 
     #[test]
@@ -120,6 +140,7 @@ mod tests {
             position: [1.0, 2.0, 3.0],
             normal: [0.0, 1.0, 0.0],
             uv: [0.5, 0.5],
+            tangent: [0.0, 0.0, 0.0, 1.0],
         };
 
         let v2 = v1; // Copy
@@ -129,6 +150,7 @@ mod tests {
         assert_eq!(v1.position, v3.position);
         assert_eq!(v1.normal, v2.normal);
         assert_eq!(v1.uv, v2.uv);
+        assert_eq!(v1.tangent, v2.tangent);
     }
 
     #[test]
@@ -139,6 +161,7 @@ mod tests {
         assert_eq!(vertex.position, [0.0, 0.0, 0.0]);
         assert_eq!(vertex.normal, [0.0, 0.0, 0.0]);
         assert_eq!(vertex.uv, [0.0, 0.0]);
+        assert_eq!(vertex.tangent, [0.0, 0.0, 0.0, 0.0]);
     }
 
     #[test]
@@ -148,11 +171,13 @@ mod tests {
                 position: [1.0, 2.0, 3.0],
                 normal: [0.0, 1.0, 0.0],
                 uv: [0.5, 0.5],
+                tangent: [0.0, 0.0, 0.0, 1.0],
             },
             Vertex {
                 position: [4.0, 5.0, 6.0],
                 normal: [0.0, 0.0, 1.0],
                 uv: [0.25, 0.75],
+                tangent: [0.0, 0.0, 0.0, 1.0],
             },
         ];
 
@@ -175,6 +200,7 @@ mod tests {
                 position: [i as f32, 0.0, 0.0],
                 normal: [0.0, 1.0, 0.0],
                 uv: [0.0, 0.0],
+                tangent: [0.0, 0.0, 0.0, 1.0],
             });
             indices.push(i);
         }

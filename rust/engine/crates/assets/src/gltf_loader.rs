@@ -16,7 +16,7 @@ pub struct GltfData {
 #[cfg(feature = "gltf-support")]
 pub struct GltfImage {
     pub name: Option<String>,
-    pub data: Vec<u8>,  // Raw RGBA pixels
+    pub data: Vec<u8>, // Raw RGBA pixels
     pub width: u32,
     pub height: u32,
     pub format: GltfImageFormat,
@@ -43,7 +43,11 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
     // Check if file exists first for better error messages
     let path_obj = Path::new(path);
     if !path_obj.exists() {
-        anyhow::bail!("GLTF file does not exist: {} (cwd: {:?})", path, std::env::current_dir());
+        anyhow::bail!(
+            "GLTF file does not exist: {} (cwd: {:?})",
+            path,
+            std::env::current_dir()
+        );
     }
 
     let (document, buffers, images) = gltf::import(path)
@@ -76,7 +80,12 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
             // Read texture coordinates (optional, default to 0)
             let tex_coords = reader
                 .read_tex_coords(0)
-                .map(|coords| coords.into_f32().map(|uv| Vec2::from(uv)).collect::<Vec<_>>())
+                .map(|coords| {
+                    coords
+                        .into_f32()
+                        .map(|uv| Vec2::from(uv))
+                        .collect::<Vec<_>>()
+                })
                 .unwrap_or_else(|| vec![Vec2::ZERO; positions.len()]);
 
             // Build vertices
@@ -88,6 +97,7 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
                     position: [pos.x, pos.y, pos.z],
                     normal: [norm.x, norm.y, norm.z],
                     uv: [uv.x, uv.y],
+                    tangent: [0.0, 0.0, 0.0, 1.0],
                 })
                 .collect::<Vec<_>>();
 
@@ -104,7 +114,7 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
                 indices.len()
             );
 
-            meshes.push(Mesh { vertices, indices });
+            meshes.push(Mesh::new(vertices, indices));
         }
     }
 
@@ -122,12 +132,13 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
             let rgba_data = match img_data.format {
                 gltf::image::Format::R8G8B8 => {
                     // Convert RGB to RGBA by adding alpha channel
-                    let mut rgba = Vec::with_capacity((img_data.width * img_data.height * 4) as usize);
+                    let mut rgba =
+                        Vec::with_capacity((img_data.width * img_data.height * 4) as usize);
                     for chunk in img_data.pixels.chunks(3) {
                         rgba.push(chunk[0]); // R
                         rgba.push(chunk[1]); // G
                         rgba.push(chunk[2]); // B
-                        rgba.push(255);      // A (fully opaque)
+                        rgba.push(255); // A (fully opaque)
                     }
                     rgba
                 }

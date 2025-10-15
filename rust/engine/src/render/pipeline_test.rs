@@ -273,11 +273,7 @@ mod tests {
 
         // Create view and projection matrices
         let camera_pos = glam::Vec3::new(0.0, 2.0, 5.0);
-        let view = Mat4::look_at_rh(
-            camera_pos,
-            glam::Vec3::ZERO,
-            glam::Vec3::Y,
-        );
+        let view = Mat4::look_at_rh(camera_pos, glam::Vec3::ZERO, glam::Vec3::Y);
         let projection = Mat4::perspective_rh(60.0_f32.to_radians(), 16.0 / 9.0, 0.1, 1000.0);
 
         let view_proj = projection * view;
