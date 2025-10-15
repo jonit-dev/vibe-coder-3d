@@ -69,8 +69,8 @@ mod tests {
         // Simulate frames over one second
         let frame_duration = Duration::from_millis(16); // ~60 FPS
 
-        for _ in 0..62 {
-            // Slightly more than 1 second worth of frames
+        for _ in 0..65 {
+            // 65 * 16ms = 1040ms, slightly more than 1 second to trigger FPS calculation
             std::thread::sleep(frame_duration);
             timer.tick();
         }
@@ -79,8 +79,8 @@ mod tests {
         let fps = timer.fps();
 
         // FPS should be approximately 60, with reasonable tolerance
-        assert!(fps > 0.0);
-        assert!(fps >= 50.0 && fps <= 70.0);
+        assert!(fps > 0.0, "FPS should be greater than 0 after 1 second, got {}", fps);
+        assert!(fps >= 50.0 && fps <= 70.0, "FPS should be approximately 60, got {}", fps);
     }
 
     #[test]

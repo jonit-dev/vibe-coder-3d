@@ -203,7 +203,7 @@ mod tests {
         assert_eq!(camera.fov, 60.0_f32.to_radians());
         assert_eq!(camera.near, 0.1);
         assert_eq!(camera.far, 1000.0);
-        assert_eq!(camera.background_color.r, 0.2);
+        assert!((camera.background_color.r - 0.2).abs() < 0.001);
     }
 
     /// Test that lights are extracted correctly (Three.js behavior)

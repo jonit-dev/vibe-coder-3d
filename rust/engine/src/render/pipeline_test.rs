@@ -17,7 +17,8 @@ mod tests {
 
         // Create a translation matrix
         let translation = Mat4::from_translation(glam::Vec3::new(1.0, 2.0, 3.0));
-        uniform.update_view_proj(translation);
+        let camera_pos = glam::Vec3::new(1.0, 2.0, 3.0);
+        uniform.update_view_proj(translation, camera_pos);
         // Just verify it doesn't panic
     }
 
@@ -27,19 +28,21 @@ mod tests {
 
         // Update with first matrix
         let mat1 = Mat4::from_scale(glam::Vec3::new(2.0, 2.0, 2.0));
-        uniform.update_view_proj(mat1);
+        let camera_pos1 = glam::Vec3::new(0.0, 0.0, 0.0);
+        uniform.update_view_proj(mat1, camera_pos1);
 
         // Update with second matrix
         let mat2 = Mat4::from_rotation_y(std::f32::consts::PI / 2.0);
-        uniform.update_view_proj(mat2);
+        let camera_pos2 = glam::Vec3::new(5.0, 5.0, 5.0);
+        uniform.update_view_proj(mat2, camera_pos2);
         // Just verify multiple updates work
     }
 
     #[test]
     fn test_camera_uniform_size() {
-        // Verify size matches expected layout (4x4 matrix = 16 floats = 64 bytes)
+        // Verify size matches expected layout (4x4 matrix + vec4 camera_position = 16 + 4 floats = 80 bytes)
         let size = std::mem::size_of::<CameraUniform>();
-        assert_eq!(size, 64);
+        assert_eq!(size, 80);
     }
 
     #[test]
@@ -258,8 +261,9 @@ mod tests {
 
         // Create a perspective projection matrix
         let projection = Mat4::perspective_rh(60.0_f32.to_radians(), 16.0 / 9.0, 0.1, 1000.0);
+        let camera_pos = glam::Vec3::new(0.0, 2.0, 5.0);
 
-        uniform.update_view_proj(projection);
+        uniform.update_view_proj(projection, camera_pos);
         // Just verify projection matrices can be set
     }
 
@@ -268,15 +272,16 @@ mod tests {
         let mut uniform = CameraUniform::new();
 
         // Create view and projection matrices
+        let camera_pos = glam::Vec3::new(0.0, 2.0, 5.0);
         let view = Mat4::look_at_rh(
-            glam::Vec3::new(0.0, 2.0, 5.0),
+            camera_pos,
             glam::Vec3::ZERO,
             glam::Vec3::Y,
         );
         let projection = Mat4::perspective_rh(60.0_f32.to_radians(), 16.0 / 9.0, 0.1, 1000.0);
 
         let view_proj = projection * view;
-        uniform.update_view_proj(view_proj);
+        uniform.update_view_proj(view_proj, camera_pos);
         // Just verify combined matrices can be set
     }
 }

@@ -63,12 +63,18 @@ mod tests {
     fn test_camera_view_projection_matrix() {
         let camera = Camera::new(1920, 1080);
         let vp_matrix = camera.view_projection_matrix();
-        let expected = camera.projection_matrix() * camera.view_matrix();
+
+        // view_projection_matrix applies WGPU conversion matrix
+        const OPENGL_TO_WGPU_MATRIX: Mat4 = Mat4::from_cols_array(&[
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.5, 1.0,
+        ]);
+        let expected = OPENGL_TO_WGPU_MATRIX * camera.projection_matrix() * camera.view_matrix();
 
         // Check that view_projection_matrix returns the correct multiplication
         for i in 0..4 {
             for j in 0..4 {
-                assert!((vp_matrix.col(i)[j] - expected.col(i)[j]).abs() < 0.001);
+                assert!((vp_matrix.col(i)[j] - expected.col(i)[j]).abs() < 0.001,
+                    "Mismatch at [{}, {}]: {} vs {}", i, j, vp_matrix.col(i)[j], expected.col(i)[j]);
             }
         }
     }

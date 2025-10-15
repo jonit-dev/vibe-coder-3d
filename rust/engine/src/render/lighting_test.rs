@@ -232,14 +232,14 @@ mod tests {
         // Three.js uses: attenuation = 1.0 - smoothstep(0, range, distance)
         // Or: attenuation = max(0, 1 - (distance / range))^2
 
-        let range = 10.0;
-        let distances = vec![0.0, 5.0, 10.0, 15.0];
-        let expected_attenuations = vec![1.0, 0.25, 0.0, 0.0]; // (1 - d/r)^2
+        let range = 10.0_f32;
+        let distances = vec![0.0_f32, 5.0_f32, 10.0_f32, 15.0_f32];
+        let expected_attenuations = vec![1.0_f32, 0.25_f32, 0.0_f32, 0.0_f32]; // (1 - d/r)^2
 
         for (distance, expected) in distances.iter().zip(expected_attenuations.iter()) {
-            let attenuation = (1.0 - (distance / range).min(1.0)).max(0.0);
+            let attenuation = (1.0_f32 - (distance / range).min(1.0_f32)).max(0.0_f32);
             let attenuation_sq = attenuation * attenuation;
-            assert!((attenuation_sq - expected).abs() < 0.01);
+            assert!((attenuation_sq - expected).abs() < 0.01_f32);
         }
     }
 
@@ -253,14 +253,14 @@ mod tests {
 
         let light_dir = Vec3::new(0.0, 1.0, 0.0).normalize();
         let normal = Vec3::new(0.0, 1.0, 0.0).normalize();
-        let view_dir = Vec3::new(0.0, 0.0, 1.0).normalize();
 
         // Diffuse
         let diffuse = normal.dot(light_dir).max(0.0);
         assert_eq!(diffuse, 1.0); // Normal facing light
 
-        // Specular (simplified)
-        let reflect_dir = (-light_dir).reflect(normal);
+        // Specular (simplified using reflect formula: r = 2 * dot(n, l) * n - l)
+        let reflect_dir = 2.0 * normal.dot(-light_dir) * normal - (-light_dir);
+        let view_dir = Vec3::new(0.0, 0.0, 1.0).normalize();
         let spec = view_dir.dot(reflect_dir).max(0.0).powf(32.0);
         assert!(spec >= 0.0 && spec <= 1.0);
     }

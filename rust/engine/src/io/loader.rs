@@ -21,6 +21,9 @@ pub fn load_scene<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneData> {
         scene.entities.len()
     );
 
+    // Validate scene and warn about unimplemented components
+    super::validation::validate_scene(&scene);
+
     Ok(scene)
 }
 

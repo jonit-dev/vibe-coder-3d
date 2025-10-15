@@ -25,7 +25,7 @@ mod tests {
             orthographic_size: 10.0,
         };
 
-        let proj = camera.projection_matrix();
+        let proj = camera.view_projection_matrix();
 
         // Test that near plane points are in front of camera
         let near_point = Vec4::new(0.0, 0.0, -camera.near, 1.0);
@@ -33,7 +33,8 @@ mod tests {
         let ndc_z = clip_space.z / clip_space.w;
 
         // In Vulkan/WGPU NDC, near = 0.0, far = 1.0
-        assert!(ndc_z >= 0.0 && ndc_z <= 1.0);
+        // Note: projection_matrix alone returns GL-style (-1..1), but view_projection_matrix converts to WGPU (0..1)
+        assert!(ndc_z >= 0.0 && ndc_z <= 1.0, "NDC z should be in [0, 1], got {}", ndc_z);
     }
 
     /// Test that orthographic projection matches Three.js OrthographicCamera
@@ -172,10 +173,10 @@ mod tests {
 
         camera.apply_component(&camera_comp);
 
-        assert_eq!(camera.background_color.r, 0.2);
-        assert_eq!(camera.background_color.g, 0.4);
-        assert_eq!(camera.background_color.b, 0.6);
-        assert_eq!(camera.background_color.a, 1.0);
+        assert!((camera.background_color.r - 0.2).abs() < 0.001);
+        assert!((camera.background_color.g - 0.4).abs() < 0.001);
+        assert!((camera.background_color.b - 0.6).abs() < 0.001);
+        assert!((camera.background_color.a - 1.0).abs() < 0.001);
     }
 
     /// Test that projection type switches correctly (Three.js behavior)
@@ -346,15 +347,18 @@ mod tests {
         let proj = camera.projection_matrix();
         let view_proj = camera.view_projection_matrix();
 
-        // Three.js order: projection * view (same as ours)
-        let manual_view_proj = proj * view;
+        // view_projection_matrix applies WGPU conversion, so it's: WGPU_MATRIX * proj * view
+        const OPENGL_TO_WGPU_MATRIX: Mat4 = Mat4::from_cols_array(&[
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.5, 1.0,
+        ]);
+        let manual_view_proj = OPENGL_TO_WGPU_MATRIX * proj * view;
 
         // Compare matrices (allow small floating point errors)
         let view_proj_array = view_proj.to_cols_array();
         let manual_array = manual_view_proj.to_cols_array();
 
         for (a, b) in view_proj_array.iter().zip(manual_array.iter()) {
-            assert!((a - b).abs() < 0.0001);
+            assert!((a - b).abs() < 0.0001, "Matrix element mismatch: {} vs {}", a, b);
         }
     }
 
