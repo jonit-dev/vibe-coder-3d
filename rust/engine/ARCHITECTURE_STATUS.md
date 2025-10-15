@@ -45,6 +45,22 @@
 
 **Tests**: Inherits tests from main engine (material_test.rs, primitives_test.rs, vertex_test.rs, gltf_loader tests)
 
+### ✅ Phase 6: Live Bridge
+
+- Created `vibe-wasm-bridge` workspace crate for live scene synchronization
+- SceneDiff format with add/remove/update operations
+- DiffBatch with sequence ordering to prevent stale updates
+- LiveBridge for applying incremental scene changes
+- FileIpcAdapter for native file-based IPC
+- Optional WASM bindings for browser integration (feature-gated)
+- Sequence validation to reject out-of-order diffs
+
+**Status**: Complete. Editor-engine live sync ready.
+
+**Tests**: 10 tests covering all diff operations and IPC adapters
+
+**Total Tests**: 35 passing
+
 ## Architecture Overview
 
 ```
@@ -80,6 +96,12 @@
 │  ├─ MeshCache (GPU buffers, primitives)                     │
 │  ├─ TextureCache (image loading, GPU textures)              │
 │  └─ Vertex/Mesh types                                       │
+│                                                              │
+│  vibe-wasm-bridge                                            │
+│  ├─ SceneDiff (add/remove/update operations)                │
+│  ├─ LiveBridge (apply diffs, sequence validation)           │
+│  ├─ FileIpcAdapter (native file-based sync)                 │
+│  └─ WASM bindings (optional, browser integration)           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -145,11 +167,13 @@ for instance in instances {
 - GLTF loading with feature flag
 - Next: URI-based asset addressing, asset hot-reloading
 
-### Phase 6: Live Bridge
+### Phase 6: Live Bridge (Complete ✅)
 
-- WASM/native bridge for editor live-sync
-- SceneDiff format (add/update/remove entities/components)
-- IPC for non-WASM preview
+- Implemented SceneDiff format with 5 operation types
+- LiveBridge with sequence validation
+- FileIpcAdapter for file-based IPC
+- Optional WASM bindings feature
+- Next: Socket-based IPC, WebSocket integration
 
 ### Phase 7-9: Advanced Rendering
 
