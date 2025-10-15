@@ -275,4 +275,3 @@ This PRD specifies a minimal, isolated Rust engine that consumes existing fullâ€
 - GPU supporting modern `wgpu` backends; X11/Wayland on Linux (initial target)
 - Editor continues writing full scene dumps to `rust/game/scenes/`
 - Optional: JSON Schemas in `rust/game/schema/` aligned with exported components
-

@@ -8,7 +8,34 @@ use glam::{Vec2, Vec3};
 use std::path::Path;
 
 #[cfg(feature = "gltf-support")]
+pub struct GltfData {
+    pub meshes: Vec<Mesh>,
+    pub images: Vec<GltfImage>,
+}
+
+#[cfg(feature = "gltf-support")]
+pub struct GltfImage {
+    pub name: Option<String>,
+    pub data: Vec<u8>,
+    pub format: GltfImageFormat,
+}
+
+#[cfg(feature = "gltf-support")]
+#[derive(Debug, Clone, Copy)]
+pub enum GltfImageFormat {
+    Png,
+    Jpeg,
+    Unknown,
+}
+
+#[cfg(feature = "gltf-support")]
 pub fn load_gltf(path: &str) -> Result<Vec<Mesh>> {
+    let gltf_data = load_gltf_full(path)?;
+    Ok(gltf_data.meshes)
+}
+
+#[cfg(feature = "gltf-support")]
+pub fn load_gltf_full(path: &str) -> Result<GltfData> {
     log::info!("Loading GLTF model from: {}", path);
 
     // Check if file exists first for better error messages
@@ -17,7 +44,7 @@ pub fn load_gltf(path: &str) -> Result<Vec<Mesh>> {
         anyhow::bail!("GLTF file does not exist: {} (cwd: {:?})", path, std::env::current_dir());
     }
 
-    let (document, buffers, _images) = gltf::import(path)
+    let (document, buffers, images) = gltf::import(path)
         .map_err(|e| anyhow::anyhow!("gltf::import failed: {:?}", e))
         .with_context(|| format!("Failed to load GLTF file: {}", path))?;
 
@@ -79,8 +106,34 @@ pub fn load_gltf(path: &str) -> Result<Vec<Mesh>> {
         }
     }
 
-    log::info!("Loaded {} mesh(es) from GLTF file", meshes.len());
-    Ok(meshes)
+    // Extract images/textures
+    let gltf_images = images
+        .into_iter()
+        .enumerate()
+        .map(|(idx, img_data)| {
+            let format = match img_data.format {
+                gltf::image::Format::R8G8B8 | gltf::image::Format::R8G8B8A8 => GltfImageFormat::Png,
+                _ => GltfImageFormat::Unknown,
+            };
+
+            GltfImage {
+                name: Some(format!("texture_{}", idx)),
+                data: img_data.pixels,
+                format,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    log::info!(
+        "Loaded {} mesh(es) and {} texture(s) from GLTF file",
+        meshes.len(),
+        gltf_images.len()
+    );
+
+    Ok(GltfData {
+        meshes,
+        images: gltf_images,
+    })
 }
 
 #[cfg(not(feature = "gltf-support"))]
