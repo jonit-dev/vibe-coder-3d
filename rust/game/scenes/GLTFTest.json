@@ -111,7 +111,7 @@
           "scale": [1, 1, 1]
         },
         "MeshRenderer": {
-          "modelPath": "public/assets/models/FarmHouse/farm_house_basic_shaded.glb",
+          "modelPath": "/home/jonit/projects/vibe-coder-3d/public/assets/models/FarmHouse/farm_house_basic_shaded.glb",
           "materialId": "gltf-default",
           "enabled": true,
           "castShadows": true,

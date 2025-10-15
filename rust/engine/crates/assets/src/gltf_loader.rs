@@ -11,7 +11,14 @@ use std::path::Path;
 pub fn load_gltf(path: &str) -> Result<Vec<Mesh>> {
     log::info!("Loading GLTF model from: {}", path);
 
+    // Check if file exists first for better error messages
+    let path_obj = Path::new(path);
+    if !path_obj.exists() {
+        anyhow::bail!("GLTF file does not exist: {} (cwd: {:?})", path, std::env::current_dir());
+    }
+
     let (document, buffers, _images) = gltf::import(path)
+        .map_err(|e| anyhow::anyhow!("gltf::import failed: {:?}", e))
         .with_context(|| format!("Failed to load GLTF file: {}", path))?;
 
     let mut meshes = Vec::new();
