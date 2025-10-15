@@ -174,7 +174,28 @@ async function syncAssets() {
 
         if (!isDryRun) {
           await ensureDir(dirname(destPath));
-          await copyFile(sourcePath, destPath);
+
+          // For GLB/GLTF files, dequantize to remove KHR_mesh_quantization
+          // (Rust gltf crate doesn't support it, but Three.js does)
+          const ext = extname(relativePath).toLowerCase();
+          if (ext === '.glb' || ext === '.gltf') {
+            try {
+              const { execSync } = await import('child_process');
+              // Use gltf-transform to remove quantization
+              execSync(`npx --yes @gltf-transform/cli dequantize "${sourcePath}" "${destPath}"`, {
+                stdio: 'pipe',
+              });
+              if (isVerbose) {
+                console.log(`    🔧 Dequantized for Rust compatibility`);
+              }
+            } catch (e) {
+              // If dequantization fails, just copy the file
+              console.warn(`    ⚠️  Dequantization failed, copying as-is: ${e.message}`);
+              await copyFile(sourcePath, destPath);
+            }
+          } else {
+            await copyFile(sourcePath, destPath);
+          }
         }
 
         // Update cache

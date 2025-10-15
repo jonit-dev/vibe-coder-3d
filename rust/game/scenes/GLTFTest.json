@@ -101,17 +101,17 @@
       }
     },
     {
-      "persistentId": "model-testcube",
-      "name": "Test Cube GLTF",
+      "persistentId": "model-farmhouse",
+      "name": "Farm House GLTF",
       "parentPersistentId": null,
       "components": {
         "Transform": {
-          "position": [0, 1.5, 0],
+          "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1],
-          "scale": [2, 2, 2]
+          "scale": [1, 1, 1]
         },
         "MeshRenderer": {
-          "modelPath": "rust/game/assets/models/test-cube.glb",
+          "modelPath": "rust/game/assets/models/FarmHouse/farm_house_basic_shaded.glb",
           "materialId": "gltf-default",
           "enabled": true,
           "castShadows": true,
