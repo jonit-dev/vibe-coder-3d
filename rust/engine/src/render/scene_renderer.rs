@@ -263,7 +263,7 @@ impl SceneRenderer {
                                 continue; // Skip the default primitive logic below
                             }
                             Err(e) => {
-                                log::error!("Failed to load GLTF model '{}': {}", model_path, e);
+                                log::error!("Failed to load GLTF model '{}': {:?}", model_path, e);
                                 log::warn!("Falling back to primitive mesh");
                             }
                         }
