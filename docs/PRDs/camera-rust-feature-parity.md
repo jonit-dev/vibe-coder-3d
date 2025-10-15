@@ -486,4 +486,3 @@ Implementing complete camera feature parity unlocks consistent scene behavior be
 - Skybox textures provided as standard 2D equirectangular images; cubemaps may be added later.
 - Texture system in `vibe_assets` is available; additional loaders may be required for HDR formats.
 - WGPU limits and surface formats allow the passes described (no MSAA assumed initially).
-

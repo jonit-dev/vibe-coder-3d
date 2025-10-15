@@ -44,7 +44,8 @@ rust/engine/
 │   │   ├── camera_orbit.rs      # Orbit controller for a Camera
 │   │   ├── lines.rs             # Line renderer (wgpu pipeline, vertex fmt)
 │   │   ├── colliders.rs         # Build line lists from Rapier colliders
-│   │   └── overlay.rs           # HUD text rendering (fps, stats)
+│   │   ├── overlay.rs           # HUD text rendering (fps, stats)
+│   │   └── profiler.rs          # GPU profiler wrapper (wgpu-profiler)
 │   └── util/
 │       └── time.rs
 └── crates/
@@ -64,7 +65,7 @@ rust/engine/
 
   1. Create `src/debug/{mod,config}.rs` with state and toggles.
   2. Add `DebugState` to `App`: stores `enabled`, `show_hud`, `show_colliders`, `use_debug_camera`.
-  3. Register hotkeys: F1 toggle HUD, F2 toggle colliders, F3 toggle debug camera.
+  3. Register hotkeys: F1 toggle HUD, F2 toggle colliders, F3 toggle debug camera, F4 toggle GPU profiler.
 
 - **Phase 3: Orbit Camera Controller (0.75 day)**
 
@@ -89,8 +90,16 @@ rust/engine/
   2. Show top‑left lines: FPS, frame ms, rigid bodies, colliders, draw calls (if available).
   3. Respect `show_hud` toggle; keep font atlas persistent; minimal allocation per frame.
 
+- **Phase 5.5: GPU Profiler Integration (0.5 day)**
+
+  1. Add `wgpu-profiler` dependency to `Cargo.toml`.
+  2. Create `src/debug/profiler.rs` wrapping `GpuProfiler` lifecycle.
+  3. Integrate profiler scopes in `scene_renderer.rs`: wrap geometry pass, transparent pass, and debug passes.
+  4. Add GPU timing metrics to debug HUD: "GPU: geometry 2.3ms, transparent 0.8ms, debug 0.1ms".
+  5. Expose toggle (F4) to show/hide GPU profiler stats on HUD.
+
 - **Phase 6: Polish & Docs (0.5 day)**
-  1. Update README/docs with usage examples and hotkeys.
+  1. Update README/docs with usage examples and hotkeys (including F4 for GPU profiler).
   2. Add tests for config parsing and collider line builders (unit level).
 
 ## File and Directory Structures
@@ -105,7 +114,8 @@ rust/engine/
 │ ├── config.rs
 │ ├── camera_orbit.rs
 │ ├── lines.rs
-│ └── overlay.rs
+│ ├── overlay.rs
+│ └── profiler.rs
 └── docs/PRDs/rust-debug-mode-prd.md
 ```
 
@@ -240,6 +250,111 @@ impl DebugOverlay {
 }
 ```
 
+- **GPU Profiler Wrapper**
+
+```rust
+// rust/engine/src/debug/profiler.rs
+use wgpu_profiler::{GpuProfiler, GpuProfilerSettings};
+use std::collections::HashMap;
+
+pub struct DebugProfiler {
+    profiler: GpuProfiler,
+    enabled: bool,
+}
+
+impl DebugProfiler {
+    pub fn new(device: &wgpu::Device) -> Self {
+        let profiler = GpuProfiler::new(GpuProfilerSettings::default())
+            .expect("Failed to create GPU profiler");
+        Self { profiler, enabled: false }
+    }
+
+    pub fn toggle(&mut self) {
+        self.enabled = !self.enabled;
+    }
+
+    pub fn begin_scope(&mut self, label: &str, encoder: &mut wgpu::CommandEncoder, device: &wgpu::Device) {
+        if self.enabled {
+            self.profiler.begin_scope(label, encoder, device);
+        }
+    }
+
+    pub fn end_scope(&mut self, encoder: &mut wgpu::CommandEncoder) {
+        if self.enabled {
+            self.profiler.end_scope(encoder);
+        }
+    }
+
+    pub fn resolve_queries(&mut self, encoder: &mut wgpu::CommandEncoder) {
+        if self.enabled {
+            self.profiler.resolve_queries(encoder);
+        }
+    }
+
+    pub fn end_frame(&mut self) -> Option<Vec<wgpu_profiler::GpuTimerScopeResult>> {
+        if self.enabled {
+            self.profiler.end_frame()
+        } else {
+            None
+        }
+    }
+
+    /// Get formatted timing strings for HUD display
+    pub fn format_timings(&self) -> Vec<String> {
+        if !self.enabled {
+            return vec![];
+        }
+
+        // Process last frame's results
+        let mut lines = vec!["GPU Timings:".to_string()];
+        // ... format timing results from profiler
+        lines
+    }
+}
+```
+
+- **Scene Renderer Integration**
+
+```rust
+// rust/engine/src/render/scene_renderer.rs (additions to render())
+pub fn render(
+    &mut self,
+    encoder: &mut wgpu::CommandEncoder,
+    view: &wgpu::TextureView,
+    camera: &Camera,
+    queue: &wgpu::Queue,
+    device: &wgpu::Device,
+    profiler: Option<&mut DebugProfiler>,
+) {
+    // Update camera and lights...
+
+    if let Some(profiler) = profiler {
+        profiler.begin_scope("geometry_pass", encoder, device);
+    }
+
+    // Create render pass and draw geometry...
+    {
+        let mut render_pass = encoder.begin_render_pass(...);
+        // ... render opaque entities
+    }
+
+    if let Some(profiler) = profiler {
+        profiler.end_scope(encoder);
+        profiler.begin_scope("transparent_pass", encoder, device);
+    }
+
+    // Render transparent entities...
+    {
+        let mut render_pass = encoder.begin_render_pass(...);
+        // ... render transparent entities
+    }
+
+    if let Some(profiler) = profiler {
+        profiler.end_scope(encoder);
+    }
+}
+```
+
 - **App Integration**
 
 ```rust
@@ -249,14 +364,55 @@ struct DebugState {
     show_hud: bool,
     show_colliders: bool,
     use_debug_camera: bool,
+    show_gpu_profiler: bool,
+    profiler: Option<DebugProfiler>,
 }
 
 impl App {
-    fn input(&mut self, event: &winit::event::WindowEvent) -> bool { /* handle hotkeys + mouse */ false }
+    fn input(&mut self, event: &winit::event::WindowEvent) -> bool {
+        // Handle hotkeys: F1 (HUD), F2 (colliders), F3 (camera), F4 (GPU profiler)
+        // Handle mouse input for orbit camera
+        false
+    }
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        // 1) render scene
+        let mut encoder = ...;
+
+        // 1) render scene with profiler scopes
+        self.scene_renderer.render(&mut encoder, view, camera, queue, device, self.debug_state.profiler.as_mut());
+
         // 2) if debug && colliders: build line batch -> draw with line renderer
-        // 3) if debug && hud: overlay.draw(["FPS: ..", "ms: ..", "Bodies: .."])
+        if self.debug_state.show_colliders {
+            // ... draw collider gizmos
+        }
+
+        // 3) resolve GPU profiler queries
+        if let Some(profiler) = &mut self.debug_state.profiler {
+            profiler.resolve_queries(&mut encoder);
+        }
+
+        // 4) if debug && hud: overlay.draw with FPS + GPU timings
+        if self.debug_state.show_hud {
+            let mut lines = vec![
+                format!("FPS: {}", fps),
+                format!("Frame: {:.2}ms", frame_ms),
+            ];
+
+            // Add GPU profiler stats if enabled
+            if self.debug_state.show_gpu_profiler {
+                if let Some(profiler) = &self.debug_state.profiler {
+                    lines.extend(profiler.format_timings());
+                }
+            }
+
+            overlay.draw(&mut encoder, view, &lines);
+        }
+
+        // 5) Submit encoder and advance profiler frame
+        queue.submit([encoder.finish()]);
+        if let Some(profiler) = &mut self.debug_state.profiler {
+            profiler.end_frame();
+        }
+
         Ok(())
     }
 }
@@ -287,6 +443,7 @@ DEBUG_MODE=true
 - F1: Toggle HUD overlay
 - F2: Toggle collider gizmos
 - F3: Switch between main camera and orbit camera
+- F4: Toggle GPU profiler stats on HUD
 
 ## Testing Strategy
 
@@ -357,8 +514,9 @@ sequenceDiagram
 - Phase 3: 0.75 day
 - Phase 4: 1.0 day
 - Phase 5: 0.75 day
+- Phase 5.5: 0.5 day (GPU profiler)
 - Phase 6: 0.5 day
-- **Total**: ~4.0 days
+- **Total**: ~4.5 days
 
 ## Acceptance Criteria
 
@@ -366,8 +524,10 @@ sequenceDiagram
 - F1 toggles a top‑left HUD showing FPS and frame time.
 - F2 toggles yellow collider outlines for supported shapes; no crash without physics.
 - F3 switches between scene main camera and an orbit‑controlled camera.
+- F4 toggles GPU profiler stats on HUD (geometry pass, transparent pass timings in milliseconds).
+- GPU profiler shows accurate timings for render passes (validated against known workloads).
 - No debug rendering occurs when debug is disabled; no measurable perf regression.
-- Docs updated with usage and hotkeys.
+- Docs updated with usage and hotkeys (including F4).
 
 ## Conclusion
 
@@ -377,6 +537,8 @@ This plan adds a robust, low‑overhead debug mode that is easy to enable in any
 
 - `dotenvy` for `.env` loading (or equivalent) in `rust/engine` binary.
 - `glyphon` (or `wgpu_glyph` as fallback) for text rendering overlay.
+- `wgpu-profiler` v0.16+ for GPU timing measurements (compatible with wgpu 0.19).
 - Existing `PhysicsWorld` and Rapier 3D are available for collider access.
 - Winit is the window/input backend; mouse events and scroll deltas are accessible.
 - No multi‑camera simultaneous rendering required at this phase; we toggle active camera.
+- GPU supports timestamp queries (required for wgpu-profiler; gracefully degrades if not available).

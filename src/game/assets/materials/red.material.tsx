@@ -2,6 +2,6 @@ import { defineMaterial } from '@core/lib/serialization/assets/defineMaterials';
 
 export default defineMaterial({
   "id": "red",
-  "name": "Red Material",
+  "name": "red",
   "color": "#ff0000"
 });
