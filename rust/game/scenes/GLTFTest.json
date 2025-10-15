@@ -1,0 +1,221 @@
+{
+  "metadata": {
+    "name": "GLTFTest",
+    "version": 1,
+    "timestamp": "2025-10-14T00:00:00.000Z",
+    "author": "Claude Code",
+    "description": "Test scene demonstrating GLTF model loading with lighting"
+  },
+  "entities": [
+    {
+      "persistentId": "camera-main",
+      "name": "Main Camera",
+      "parentPersistentId": null,
+      "components": {
+        "Transform": {
+          "position": [3, 4, 8],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "isMain": true,
+          "backgroundColor": {
+            "r": 0.2,
+            "g": 0.3,
+            "b": 0.4,
+            "a": 1.0
+          }
+        }
+      }
+    },
+    {
+      "persistentId": "light-ambient",
+      "name": "Ambient Light",
+      "parentPersistentId": null,
+      "components": {
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.3,
+            "g": 0.3,
+            "b": 0.3
+          },
+          "intensity": 0.5,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "persistentId": "light-directional",
+      "name": "Directional Light",
+      "parentPersistentId": null,
+      "components": {
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1.0,
+            "g": 0.95,
+            "b": 0.8
+          },
+          "intensity": 0.8,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": 0.5,
+          "directionY": -1.0,
+          "directionZ": 0.5
+        }
+      }
+    },
+    {
+      "persistentId": "light-point",
+      "name": "Point Light",
+      "parentPersistentId": null,
+      "components": {
+        "Transform": {
+          "position": [-3, 3, 2],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "point",
+          "color": {
+            "r": 0.3,
+            "g": 0.7,
+            "b": 1.0
+          },
+          "intensity": 1.5,
+          "enabled": true,
+          "castShadow": false,
+          "range": 10.0,
+          "decay": 1.0
+        }
+      }
+    },
+    {
+      "persistentId": "model-farmhouse",
+      "name": "Farm House GLTF",
+      "parentPersistentId": null,
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "/home/jonit/projects/vibe-coder-3d/public/assets/models/FarmHouse/farm_house_basic_shaded.glb",
+          "materialId": "gltf-default",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "persistentId": "cube-reference",
+      "name": "Reference Cube",
+      "parentPersistentId": null,
+      "components": {
+        "Transform": {
+          "position": [4, 1, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "persistentId": "sphere-reference",
+      "name": "Reference Sphere",
+      "parentPersistentId": null,
+      "components": {
+        "Transform": {
+          "position": [-4, 1, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "metallic",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "persistentId": "plane-ground",
+      "name": "Ground Plane",
+      "parentPersistentId": null,
+      "components": {
+        "Transform": {
+          "position": [0, -0.1, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [20, 1, 20]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "gltf-default",
+      "name": "GLTF Default Material",
+      "color": "#FFFFFF",
+      "metalness": 0.0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0.0
+    },
+    {
+      "id": "red",
+      "name": "Red Material",
+      "color": "#FF3333",
+      "metalness": 0.0,
+      "roughness": 0.5,
+      "emissive": "#000000",
+      "emissiveIntensity": 0.0
+    },
+    {
+      "id": "metallic",
+      "name": "Metallic Material",
+      "color": "#AAAAAA",
+      "metalness": 0.9,
+      "roughness": 0.1,
+      "emissive": "#000000",
+      "emissiveIntensity": 0.0
+    },
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "color": "#3A5F3A",
+      "metalness": 0.0,
+      "roughness": 0.95,
+      "emissive": "#000000",
+      "emissiveIntensity": 0.0
+    }
+  ],
+  "prefabs": [],
+  "inputAssets": null,
+  "lockedEntityIds": []
+}
