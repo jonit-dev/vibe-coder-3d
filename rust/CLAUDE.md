@@ -4,6 +4,10 @@
 
 This folder contains the native Rust engine that renders 3D scenes using wgpu. It consumes JSON scene files exported by the TypeScript editor and renders them with native GPU acceleration.
 
+## Critical
+
+- Must use snake_case for variable naming in Rust!
+
 ## Project Structure
 
 ```
