@@ -8,7 +8,12 @@ use super::{
 };
 use crate::ecs::{components::transform::Transform, SceneData};
 use glam::{Mat4, Vec3};
+use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use vibe_assets::{MaterialCache, MeshCache, TextureCache};
+use vibe_ecs_bridge::MeshRendererMaterialOverride;
+use vibe_scene::EntityId;
 use vibe_scene_graph::SceneGraph;
 use wgpu::util::DeviceExt;
 
@@ -234,6 +239,10 @@ impl SceneRenderer {
         log::info!("Found {} renderable instances", renderable_instances.len());
 
         for instance in renderable_instances {
+            let materials_list = instance.materials.clone();
+            let inline_override = instance.material_override.clone();
+            let mut inline_material_cache: HashMap<Option<String>, String> = HashMap::new();
+
             // Check if this entity has a modelPath for GLTF loading
             if let Some(ref model_path) = instance.model_path {
                 if !model_path.is_empty() {
@@ -246,15 +255,21 @@ impl SceneRenderer {
 
                         match load_gltf_full(model_path) {
                             Ok(gltf_data) => {
+                                let vibe_assets::GltfData {
+                                    meshes,
+                                    mesh_textures,
+                                    images,
+                                } = gltf_data;
+
                                 log::info!(
                                     "Loaded {} mesh(es) and {} texture(s) from GLTF model",
-                                    gltf_data.meshes.len(),
-                                    gltf_data.images.len()
+                                    meshes.len(),
+                                    images.len()
                                 );
 
                                 // Load textures into texture cache and remember the first one for fallback use
                                 let mut first_texture_id: Option<String> = None;
-                                for (idx, gltf_image) in gltf_data.images.iter().enumerate() {
+                                for (idx, gltf_image) in images.iter().enumerate() {
                                     let texture_id =
                                         gltf_image.name.as_ref().map(|n| n.clone()).unwrap_or_else(
                                             || format!("{}_texture_{}", model_path, idx),
@@ -284,20 +299,36 @@ impl SceneRenderer {
                                 }
 
                                 // Upload all meshes from the GLTF file
-                                for (idx, vibe_mesh) in gltf_data.meshes.into_iter().enumerate() {
+                                for (idx, vibe_mesh) in meshes.into_iter().enumerate() {
                                     let mesh_name = format!("{}_{}", model_path, idx);
 
                                     // Upload mesh directly (vibe_assets::Mesh)
                                     self.mesh_cache.upload_mesh(device, &mesh_name, vibe_mesh);
 
-                                    // Use the first successfully loaded texture from the GLTF if available
-                                    let texture_override = first_texture_id.clone();
+                                    // Use the primitive-specific texture if available, otherwise fallback
+                                    let texture_override = mesh_textures
+                                        .get(idx)
+                                        .cloned()
+                                        .flatten()
+                                        .or_else(|| first_texture_id.clone());
+
+                                    let base_material_id = materials_list
+                                        .as_ref()
+                                        .and_then(|list| list.get(idx).cloned())
+                                        .or_else(|| instance.material_id.clone());
+                                    let final_material_id = self.resolve_material_id(
+                                        base_material_id,
+                                        inline_override.as_ref(),
+                                        instance.entity_id,
+                                        idx,
+                                        &mut inline_material_cache,
+                                    );
 
                                     // Create a renderable entity for each mesh in the GLTF
                                     self.entities.push(RenderableEntity {
                                         transform: instance.world_transform,
                                         mesh_id: mesh_name,
-                                        material_id: instance.material_id.clone(),
+                                        material_id: final_material_id,
                                         texture_override,
                                     });
                                 }
@@ -327,7 +358,17 @@ impl SceneRenderer {
                 .clone()
                 .unwrap_or_else(|| "cube".to_string());
 
-            let material_id = instance.material_id.clone();
+            let base_material_id = materials_list
+                .as_ref()
+                .and_then(|list| list.get(0).cloned())
+                .or_else(|| instance.material_id.clone());
+            let material_id = self.resolve_material_id(
+                base_material_id,
+                inline_override.as_ref(),
+                instance.entity_id,
+                0,
+                &mut inline_material_cache,
+            );
 
             log::debug!(
                 "  ✓ Renderable: mesh='{}', material={:?}, world_transform={:?}",
@@ -708,5 +749,144 @@ impl SceneRenderer {
                 }
             }
         }
+    }
+
+    fn resolve_material_id(
+        &mut self,
+        base_material_id: Option<String>,
+        inline_override: Option<&MeshRendererMaterialOverride>,
+        entity_id: EntityId,
+        variant_index: usize,
+        cache: &mut HashMap<Option<String>, String>,
+    ) -> Option<String> {
+        if let Some(override_data) = inline_override {
+            if let Some(existing) = cache.get(&base_material_id) {
+                return Some(existing.clone());
+            }
+            let new_id = self.create_inline_material(
+                base_material_id.as_deref(),
+                override_data,
+                entity_id,
+                variant_index,
+            );
+            cache.insert(base_material_id.clone(), new_id.clone());
+            Some(new_id)
+        } else {
+            base_material_id
+        }
+    }
+
+    fn create_inline_material(
+        &mut self,
+        base_material_id: Option<&str>,
+        override_data: &MeshRendererMaterialOverride,
+        entity_id: EntityId,
+        variant_index: usize,
+    ) -> String {
+        let mut material = base_material_id
+            .and_then(|id| {
+                if self.material_cache.contains(id) {
+                    Some(self.material_cache.get(id).clone())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| self.material_cache.default().clone());
+
+        if let Some(shader) = override_data.shader.as_ref() {
+            material.shader = shader.clone();
+        }
+        if let Some(material_type) = override_data.material_type.as_ref() {
+            material.materialType = material_type.clone();
+        }
+        if let Some(color) = override_data.color.as_ref() {
+            material.color = color.clone();
+        }
+        if let Some(metalness) = override_data.metalness {
+            material.metalness = metalness;
+        }
+        if let Some(roughness) = override_data.roughness {
+            material.roughness = roughness;
+        }
+        if let Some(normal_scale) = override_data.normal_scale {
+            material.normalScale = normal_scale;
+        }
+        if let Some(occlusion_strength) = override_data.occlusion_strength {
+            material.occlusionStrength = occlusion_strength;
+        }
+        if let Some(texture_offset_x) = override_data.texture_offset_x {
+            material.textureOffsetX = texture_offset_x;
+        }
+        if let Some(texture_offset_y) = override_data.texture_offset_y {
+            material.textureOffsetY = texture_offset_y;
+        }
+        if let Some(texture_repeat_x) = override_data.texture_repeat_x {
+            material.textureRepeatX = texture_repeat_x;
+        }
+        if let Some(texture_repeat_y) = override_data.texture_repeat_y {
+            material.textureRepeatY = texture_repeat_y;
+        }
+
+        if let Some(emissive) = override_data.emissive.as_ref() {
+            material.emissive = Some(emissive.clone());
+        }
+        if let Some(emissive_intensity) = override_data.emissive_intensity {
+            material.emissiveIntensity = emissive_intensity;
+        }
+
+        if let Some(albedo_texture) = override_data.albedo_texture.as_ref() {
+            material.albedoTexture = Some(albedo_texture.clone());
+        }
+        if let Some(normal_texture) = override_data.normal_texture.as_ref() {
+            material.normalTexture = Some(normal_texture.clone());
+        }
+        if let Some(metallic_texture) = override_data.metallic_texture.as_ref() {
+            material.metallicTexture = Some(metallic_texture.clone());
+        }
+        if let Some(roughness_texture) = override_data.roughness_texture.as_ref() {
+            material.roughnessTexture = Some(roughness_texture.clone());
+        }
+        if let Some(emissive_texture) = override_data.emissive_texture.as_ref() {
+            material.emissiveTexture = Some(emissive_texture.clone());
+        }
+        if let Some(occlusion_texture) = override_data.occlusion_texture.as_ref() {
+            material.occlusionTexture = Some(occlusion_texture.clone());
+        }
+
+        if let Some(transparent) = override_data.transparent {
+            material.transparent = transparent;
+        }
+        if let Some(alpha_mode) = override_data.alpha_mode.as_ref() {
+            material.alphaMode = alpha_mode.clone();
+        }
+        if let Some(alpha_cutoff) = override_data.alpha_cutoff {
+            material.alphaCutoff = alpha_cutoff;
+        }
+
+        let inline_id =
+            self.generate_inline_material_id(base_material_id, entity_id, variant_index);
+        material.id = inline_id.clone();
+        if material.name.is_none() {
+            material.name = Some(format!("Inline {}", inline_id));
+        }
+
+        self.material_cache.insert(material.clone());
+        inline_id
+    }
+
+    fn generate_inline_material_id(
+        &self,
+        base_material_id: Option<&str>,
+        entity_id: EntityId,
+        variant_index: usize,
+    ) -> String {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(entity_id.as_u64());
+        hasher.write_usize(variant_index);
+        if let Some(id) = base_material_id {
+            id.hash(&mut hasher);
+        }
+        let hash = hasher.finish();
+        format!("inline-{hash:x}")
     }
 }

@@ -1,5 +1,7 @@
 mod gltf_loader;
 mod material;
+#[cfg(test)]
+mod material_test;
 mod mesh_cache;
 mod primitives;
 mod texture_cache;

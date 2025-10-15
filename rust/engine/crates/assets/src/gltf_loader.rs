@@ -10,6 +10,7 @@ use std::path::Path;
 #[cfg(feature = "gltf-support")]
 pub struct GltfData {
     pub meshes: Vec<Mesh>,
+    pub mesh_textures: Vec<Option<String>>,
     pub images: Vec<GltfImage>,
 }
 
@@ -54,7 +55,47 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
         .map_err(|e| anyhow::anyhow!("gltf::import failed: {:?}", e))
         .with_context(|| format!("Failed to load GLTF file: {}", path))?;
 
+    // Convert images up-front and generate stable IDs
+    let mut image_id_map: Vec<String> = Vec::new();
+    let mut gltf_images = Vec::new();
+    for (idx, img_data) in images.into_iter().enumerate() {
+        let format = match img_data.format {
+            gltf::image::Format::R8G8B8 | gltf::image::Format::R8G8B8A8 => GltfImageFormat::Png,
+            _ => GltfImageFormat::Unknown,
+        };
+
+        let rgba_data = match img_data.format {
+            gltf::image::Format::R8G8B8 => {
+                let mut rgba = Vec::with_capacity((img_data.width * img_data.height * 4) as usize);
+                for chunk in img_data.pixels.chunks(3) {
+                    rgba.push(chunk[0]);
+                    rgba.push(chunk[1]);
+                    rgba.push(chunk[2]);
+                    rgba.push(255);
+                }
+                rgba
+            }
+            gltf::image::Format::R8G8B8A8 => img_data.pixels,
+            _ => {
+                log::warn!("Unsupported image format: {:?}", img_data.format);
+                img_data.pixels
+            }
+        };
+
+        let texture_id = format!("{}#image{}", path, idx);
+        image_id_map.push(texture_id.clone());
+
+        gltf_images.push(GltfImage {
+            name: Some(texture_id),
+            data: rgba_data,
+            width: img_data.width,
+            height: img_data.height,
+            format,
+        });
+    }
+
     let mut meshes = Vec::new();
+    let mut mesh_textures = Vec::new();
 
     for gltf_mesh in document.meshes() {
         let mesh_name = gltf_mesh.name().unwrap_or("Unnamed");
@@ -63,32 +104,23 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
         for primitive in gltf_mesh.primitives() {
             let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
 
-            // Read positions (required)
             let positions = reader
                 .read_positions()
                 .context("GLTF mesh missing positions")?
-                .map(|p| Vec3::from(p))
+                .map(Vec3::from)
                 .collect::<Vec<_>>();
 
-            // Read normals (required)
             let normals = reader
                 .read_normals()
                 .context("GLTF mesh missing normals")?
-                .map(|n| Vec3::from(n))
+                .map(Vec3::from)
                 .collect::<Vec<_>>();
 
-            // Read texture coordinates (optional, default to 0)
             let tex_coords = reader
                 .read_tex_coords(0)
-                .map(|coords| {
-                    coords
-                        .into_f32()
-                        .map(|uv| Vec2::from(uv))
-                        .collect::<Vec<_>>()
-                })
+                .map(|coords| coords.into_f32().map(Vec2::from).collect::<Vec<_>>())
                 .unwrap_or_else(|| vec![Vec2::ZERO; positions.len()]);
 
-            // Build vertices
             let vertices = positions
                 .iter()
                 .zip(normals.iter())
@@ -101,66 +133,34 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
                 })
                 .collect::<Vec<_>>();
 
-            // Read indices (required for indexed meshes)
             let indices = reader
                 .read_indices()
                 .context("GLTF mesh missing indices")?
                 .into_u32()
                 .collect::<Vec<_>>();
 
+            let mut base_color_texture_id: Option<String> = None;
+            let material = primitive.material();
+            let pbr = material.pbr_metallic_roughness();
+            if let Some(base_texture) = pbr.base_color_texture() {
+                let texture = base_texture.texture();
+                let source_index = texture.source().index();
+                if let Some(id) = image_id_map.get(source_index) {
+                    base_color_texture_id = Some(id.clone());
+                }
+            }
+
             log::debug!(
-                "  Primitive: {} vertices, {} indices",
+                "  Primitive: {} vertices, {} indices, base_color_texture={:?}",
                 vertices.len(),
-                indices.len()
+                indices.len(),
+                base_color_texture_id
             );
 
             meshes.push(Mesh::new(vertices, indices));
+            mesh_textures.push(base_color_texture_id);
         }
     }
-
-    // Extract images/textures and convert to RGBA
-    let gltf_images = images
-        .into_iter()
-        .enumerate()
-        .map(|(idx, img_data)| {
-            let format = match img_data.format {
-                gltf::image::Format::R8G8B8 | gltf::image::Format::R8G8B8A8 => GltfImageFormat::Png,
-                _ => GltfImageFormat::Unknown,
-            };
-
-            // Convert RGB to RGBA if needed
-            let rgba_data = match img_data.format {
-                gltf::image::Format::R8G8B8 => {
-                    // Convert RGB to RGBA by adding alpha channel
-                    let mut rgba =
-                        Vec::with_capacity((img_data.width * img_data.height * 4) as usize);
-                    for chunk in img_data.pixels.chunks(3) {
-                        rgba.push(chunk[0]); // R
-                        rgba.push(chunk[1]); // G
-                        rgba.push(chunk[2]); // B
-                        rgba.push(255); // A (fully opaque)
-                    }
-                    rgba
-                }
-                gltf::image::Format::R8G8B8A8 => {
-                    // Already RGBA
-                    img_data.pixels
-                }
-                _ => {
-                    log::warn!("Unsupported image format: {:?}", img_data.format);
-                    img_data.pixels
-                }
-            };
-
-            GltfImage {
-                name: Some(format!("texture_{}", idx)),
-                data: rgba_data,
-                width: img_data.width,
-                height: img_data.height,
-                format,
-            }
-        })
-        .collect::<Vec<_>>();
 
     log::info!(
         "Loaded {} mesh(es) and {} texture(s) from GLTF file",
@@ -170,6 +170,7 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
 
     Ok(GltfData {
         meshes,
+        mesh_textures,
         images: gltf_images,
     })
 }

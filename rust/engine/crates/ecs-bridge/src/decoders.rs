@@ -234,6 +234,10 @@ pub struct MeshRenderer {
     #[serde(default)]
     pub materialId: Option<String>,
     #[serde(default)]
+    pub materials: Option<Vec<String>>,
+    #[serde(default)]
+    pub material: Option<MeshRendererMaterialOverride>,
+    #[serde(default)]
     pub modelPath: Option<String>,
     #[serde(default = "default_enabled")]
     pub enabled: bool,
@@ -247,6 +251,54 @@ pub struct MeshRenderer {
 pub struct Material {
     #[serde(default)]
     pub id: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct MeshRendererMaterialOverride {
+    #[serde(default)]
+    pub shader: Option<String>,
+    #[serde(default, rename = "materialType")]
+    pub material_type: Option<String>,
+    #[serde(default)]
+    pub color: Option<String>,
+    #[serde(default, rename = "albedoTexture")]
+    pub albedo_texture: Option<String>,
+    #[serde(default, rename = "normalTexture")]
+    pub normal_texture: Option<String>,
+    #[serde(default, rename = "normalScale")]
+    pub normal_scale: Option<f32>,
+    #[serde(default)]
+    pub metalness: Option<f32>,
+    #[serde(default, rename = "metallicTexture")]
+    pub metallic_texture: Option<String>,
+    #[serde(default)]
+    pub roughness: Option<f32>,
+    #[serde(default, rename = "roughnessTexture")]
+    pub roughness_texture: Option<String>,
+    #[serde(default)]
+    pub emissive: Option<String>,
+    #[serde(default, rename = "emissiveIntensity")]
+    pub emissive_intensity: Option<f32>,
+    #[serde(default, rename = "emissiveTexture")]
+    pub emissive_texture: Option<String>,
+    #[serde(default, rename = "occlusionTexture")]
+    pub occlusion_texture: Option<String>,
+    #[serde(default, rename = "occlusionStrength")]
+    pub occlusion_strength: Option<f32>,
+    #[serde(default, rename = "textureOffsetX")]
+    pub texture_offset_x: Option<f32>,
+    #[serde(default, rename = "textureOffsetY")]
+    pub texture_offset_y: Option<f32>,
+    #[serde(default, rename = "textureRepeatX")]
+    pub texture_repeat_x: Option<f32>,
+    #[serde(default, rename = "textureRepeatY")]
+    pub texture_repeat_y: Option<f32>,
+    #[serde(default)]
+    pub transparent: Option<bool>,
+    #[serde(default, rename = "alphaMode")]
+    pub alpha_mode: Option<String>,
+    #[serde(default, rename = "alphaCutoff")]
+    pub alpha_cutoff: Option<f32>,
 }
 
 // ============================================================================
@@ -430,7 +482,7 @@ mod tests {
         let decoded = decoder.decode(&json).unwrap();
         let camera = decoded.downcast_ref::<CameraComponent>().unwrap();
         assert_eq!(camera.fov, 75.0);
-        assert!(camera.isMain);
+        assert!(camera.is_main);
     }
 
     #[test]

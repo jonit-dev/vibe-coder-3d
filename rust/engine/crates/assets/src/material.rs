@@ -250,6 +250,12 @@ impl MaterialCache {
     pub fn is_empty(&self) -> bool {
         self.materials.is_empty()
     }
+
+    /// Insert or replace a material in the cache (used for inline overrides)
+    pub fn insert(&mut self, material: Material) {
+        log::debug!("Inserting override material '{}'", material.id);
+        self.materials.insert(material.id.clone(), material);
+    }
 }
 
 impl Default for MaterialCache {

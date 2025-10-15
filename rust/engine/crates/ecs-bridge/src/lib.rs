@@ -7,7 +7,8 @@ use vibe_scene::ComponentKindId;
 
 // Re-export commonly used types
 pub use decoders::{
-    create_default_registry, CameraComponent, Light, LightColor, Material, MeshRenderer, Transform,
+    create_default_registry, CameraComponent, Light, LightColor, Material, MeshRenderer,
+    MeshRendererMaterialOverride, Transform,
 };
 
 /// Component capabilities - describes what a component affects

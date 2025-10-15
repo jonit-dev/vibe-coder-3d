@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use glam::{Mat4, Quat, Vec3};
 use std::collections::{HashMap, HashSet};
-use vibe_ecs_bridge::Transform;
+use vibe_ecs_bridge::{MeshRenderer, MeshRendererMaterialOverride, Transform};
 use vibe_scene::{Entity, EntityId, Scene};
 
 /// Scene graph with parent/child relationships and transform propagation
@@ -247,6 +247,8 @@ pub struct RenderableInstance {
     pub world_transform: Mat4,
     pub mesh_id: Option<String>,
     pub material_id: Option<String>,
+    pub materials: Option<Vec<String>>,
+    pub material_override: Option<MeshRendererMaterialOverride>,
     pub model_path: Option<String>,
     pub cast_shadows: bool,
     pub receive_shadows: bool,
@@ -270,14 +272,14 @@ impl SceneGraph {
                     .unwrap_or(Mat4::IDENTITY);
 
                 // Parse MeshRenderer component
-                if let Some(renderer) =
-                    entity.get_component::<vibe_ecs_bridge::MeshRenderer>("MeshRenderer")
-                {
+                if let Some(renderer) = entity.get_component::<MeshRenderer>("MeshRenderer") {
                     instances.push(RenderableInstance {
                         entity_id,
                         world_transform,
                         mesh_id: renderer.meshId.clone(),
                         material_id: renderer.materialId.clone(),
+                        materials: renderer.materials.clone(),
+                        material_override: renderer.material.clone(),
                         model_path: renderer.modelPath.clone(),
                         cast_shadows: renderer.castShadows,
                         receive_shadows: renderer.receiveShadows,
