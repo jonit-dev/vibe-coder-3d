@@ -50,8 +50,8 @@ impl App {
 
         // Initialize scene renderer
         log::info!("Initializing scene renderer...");
-        let mut scene_renderer = SceneRenderer::new(&renderer.device, &renderer.config);
-        scene_renderer.load_scene(&renderer.device, &scene);
+        let mut scene_renderer = SceneRenderer::new(&renderer.device, &renderer.config, &renderer.queue);
+        scene_renderer.load_scene(&renderer.device, &renderer.queue, &scene);
 
         // Initialize camera
         let mut camera = Camera::new(width, height);
@@ -212,7 +212,7 @@ impl App {
 
         // Render the scene
         self.scene_renderer
-            .render(&mut encoder, &view, &self.camera, &self.renderer.queue);
+            .render(&mut encoder, &view, &self.camera, &self.renderer.queue, &self.renderer.device);
 
         self.renderer
             .queue

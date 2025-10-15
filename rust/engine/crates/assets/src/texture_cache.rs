@@ -43,6 +43,39 @@ impl TextureCache {
         log::info!("Default texture created");
     }
 
+    /// Load texture from raw RGBA pixels
+    pub fn load_from_rgba_pixels(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        rgba: &[u8],
+        width: u32,
+        height: u32,
+        id: &str,
+    ) -> anyhow::Result<()> {
+        // Check if already loaded
+        if self.textures.contains_key(id) {
+            log::debug!("Texture '{}' already cached", id);
+            return Ok(());
+        }
+
+        log::info!("Loading texture from RGBA pixels: {} ({}x{})", id, width, height);
+
+        let texture = self.create_texture_from_bytes(
+            device,
+            queue,
+            rgba,
+            width,
+            height,
+            id,
+        )?;
+
+        self.textures.insert(id.to_string(), texture);
+        log::info!("Loaded texture '{}' ({}x{})", id, width, height);
+
+        Ok(())
+    }
+
     /// Load texture from raw image data (PNG, JPEG, etc.)
     pub fn load_from_image_data(
         &mut self,

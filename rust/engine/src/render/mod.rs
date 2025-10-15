@@ -9,9 +9,9 @@ mod integration_test;
 #[cfg(test)]
 mod lighting_test;
 // Material, MeshCache, and Vertex now from vibe-assets crate
-pub mod material; // Keep for backward compat with tests
-#[cfg(test)]
-mod material_test;
+// Removed: pub mod material; - using vibe_assets::Material instead
+// #[cfg(test)]
+// mod material_test;
 pub mod mesh_cache; // Keep for backward compat with tests
 pub mod pipeline;
 #[cfg(test)]

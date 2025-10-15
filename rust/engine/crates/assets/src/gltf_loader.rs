@@ -16,7 +16,9 @@ pub struct GltfData {
 #[cfg(feature = "gltf-support")]
 pub struct GltfImage {
     pub name: Option<String>,
-    pub data: Vec<u8>,
+    pub data: Vec<u8>,  // Raw RGBA pixels
+    pub width: u32,
+    pub height: u32,
     pub format: GltfImageFormat,
 }
 
@@ -106,7 +108,7 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
         }
     }
 
-    // Extract images/textures
+    // Extract images/textures and convert to RGBA
     let gltf_images = images
         .into_iter()
         .enumerate()
@@ -116,9 +118,34 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
                 _ => GltfImageFormat::Unknown,
             };
 
+            // Convert RGB to RGBA if needed
+            let rgba_data = match img_data.format {
+                gltf::image::Format::R8G8B8 => {
+                    // Convert RGB to RGBA by adding alpha channel
+                    let mut rgba = Vec::with_capacity((img_data.width * img_data.height * 4) as usize);
+                    for chunk in img_data.pixels.chunks(3) {
+                        rgba.push(chunk[0]); // R
+                        rgba.push(chunk[1]); // G
+                        rgba.push(chunk[2]); // B
+                        rgba.push(255);      // A (fully opaque)
+                    }
+                    rgba
+                }
+                gltf::image::Format::R8G8B8A8 => {
+                    // Already RGBA
+                    img_data.pixels
+                }
+                _ => {
+                    log::warn!("Unsupported image format: {:?}", img_data.format);
+                    img_data.pixels
+                }
+            };
+
             GltfImage {
                 name: Some(format!("texture_{}", idx)),
-                data: img_data.pixels,
+                data: rgba_data,
+                width: img_data.width,
+                height: img_data.height,
                 format,
             }
         })

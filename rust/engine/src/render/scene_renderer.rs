@@ -1,9 +1,8 @@
 use super::{
-    material::MaterialCache,
-    mesh_cache::MeshCache,
     pipeline::{InstanceRaw, LightUniform, RenderPipeline},
     Camera,
 };
+use vibe_assets::{MaterialCache, MeshCache, TextureCache};
 use crate::ecs::{components::transform::Transform, SceneData};
 use glam::{Mat4, Vec3};
 use vibe_scene_graph::SceneGraph;
@@ -13,11 +12,13 @@ pub struct RenderableEntity {
     pub transform: Mat4,
     pub mesh_id: String,
     pub material_id: Option<String>,
+    pub texture_override: Option<String>, // Override texture for GLTF models
 }
 
 pub struct SceneRenderer {
     pub mesh_cache: MeshCache,
     pub material_cache: MaterialCache,
+    pub texture_cache: TextureCache,
     pub pipeline: RenderPipeline,
     pub entities: Vec<RenderableEntity>,
     pub instance_buffer: Option<wgpu::Buffer>,
@@ -26,17 +27,22 @@ pub struct SceneRenderer {
 }
 
 impl SceneRenderer {
-    pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> Self {
+    pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, queue: &wgpu::Queue) -> Self {
         let mut mesh_cache = MeshCache::new();
         mesh_cache.initialize_primitives(device);
 
         let material_cache = MaterialCache::new();
+
+        let mut texture_cache = TextureCache::new();
+        texture_cache.initialize_default(device, queue);
+
         let pipeline = RenderPipeline::new(device, config);
         let depth_texture = super::depth_texture::DepthTexture::create(device, config);
 
         Self {
             mesh_cache,
             material_cache,
+            texture_cache,
             pipeline,
             entities: Vec::new(),
             instance_buffer: None,
@@ -45,7 +51,7 @@ impl SceneRenderer {
         }
     }
 
-    pub fn load_scene(&mut self, device: &wgpu::Device, scene: &SceneData) {
+    pub fn load_scene(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, scene: &SceneData) {
         log::info!("Loading scene entities for rendering...");
         log::debug!("Scene has {} total entities", scene.entities.len());
         self.entities.clear();
@@ -225,39 +231,51 @@ impl SceneRenderer {
                     // Try to load GLTF model
                     #[cfg(feature = "gltf-support")]
                     {
-                        use vibe_assets::load_gltf;
+                        use vibe_assets::load_gltf_full;
 
-                        match load_gltf(model_path) {
-                            Ok(meshes) => {
-                                log::info!("Loaded {} mesh(es) from GLTF model", meshes.len());
+                        match load_gltf_full(model_path) {
+                            Ok(gltf_data) => {
+                                log::info!("Loaded {} mesh(es) and {} texture(s) from GLTF model",
+                                    gltf_data.meshes.len(), gltf_data.images.len());
+
+                                // Load textures into texture cache
+                                for (idx, gltf_image) in gltf_data.images.iter().enumerate() {
+                                    let texture_id = gltf_image.name.as_ref()
+                                        .map(|n| n.clone())
+                                        .unwrap_or_else(|| format!("{}_texture_{}", model_path, idx));
+
+                                    if let Err(e) = self.texture_cache.load_from_rgba_pixels(
+                                        device,
+                                        queue,
+                                        &gltf_image.data,
+                                        gltf_image.width,
+                                        gltf_image.height,
+                                        &texture_id
+                                    ) {
+                                        log::error!("Failed to load texture '{}': {}", texture_id, e);
+                                    }
+                                }
 
                                 // Upload all meshes from the GLTF file
-                                for (idx, vibe_mesh) in meshes.into_iter().enumerate() {
+                                for (idx, vibe_mesh) in gltf_data.meshes.into_iter().enumerate() {
                                     let mesh_name = format!("{}_{}", model_path, idx);
 
-                                    // Convert vibe_assets::Mesh to local Mesh type
-                                    let local_vertices: Vec<super::vertex::Vertex> = vibe_mesh
-                                        .vertices
-                                        .into_iter()
-                                        .map(|v| super::vertex::Vertex {
-                                            position: v.position,
-                                            normal: v.normal,
-                                            uv: v.uv,
-                                        })
-                                        .collect();
+                                    // Upload mesh directly (vibe_assets::Mesh)
+                                    self.mesh_cache.upload_mesh(device, &mesh_name, vibe_mesh);
 
-                                    let local_mesh = super::vertex::Mesh {
-                                        vertices: local_vertices,
-                                        indices: vibe_mesh.indices,
+                                    // Use the first texture from GLTF if available
+                                    let texture_override = if !gltf_data.images.is_empty() {
+                                        Some("texture_0".to_string())
+                                    } else {
+                                        None
                                     };
-
-                                    self.mesh_cache.upload_mesh(device, &mesh_name, local_mesh);
 
                                     // Create a renderable entity for each mesh in the GLTF
                                     self.entities.push(RenderableEntity {
                                         transform: instance.world_transform,
                                         mesh_id: mesh_name,
                                         material_id: instance.material_id.clone(),
+                                        texture_override,
                                     });
                                 }
                                 continue; // Skip the default primitive logic below
@@ -296,6 +314,7 @@ impl SceneRenderer {
                 transform: instance.world_transform,
                 mesh_id,
                 material_id,
+                texture_override: None, // Primitive meshes don't have texture overrides
             });
         }
 
@@ -365,6 +384,7 @@ impl SceneRenderer {
         view: &wgpu::TextureView,
         camera: &Camera,
         queue: &wgpu::Queue,
+        device: &wgpu::Device,
     ) {
         // Update camera
         self.pipeline
@@ -372,6 +392,55 @@ impl SceneRenderer {
 
         // Update lights
         self.pipeline.update_lights(queue, &self.light_uniform);
+
+        // Create default texture bind group (white texture for materials without textures)
+        let default_texture = self.texture_cache.default();
+        let default_texture_bind_group = self.pipeline.create_texture_bind_group(
+            device,
+            &default_texture.view,
+            &default_texture.sampler,
+        );
+
+        // Pre-create texture bind groups for each entity
+        let mut texture_bind_groups: Vec<wgpu::BindGroup> = Vec::new();
+        for entity in &self.entities {
+            let bind_group = if let Some(ref texture_override) = entity.texture_override {
+                // GLTF models have texture override (e.g., "texture_0")
+                let texture = self.texture_cache.get(texture_override);
+                self.pipeline.create_texture_bind_group(
+                    device,
+                    &texture.view,
+                    &texture.sampler,
+                )
+            } else if let Some(ref material_id) = entity.material_id {
+                let material = self.material_cache.get(material_id);
+
+                // If material has albedo texture, create bind group for it
+                if let Some(ref texture_id) = material.albedoTexture {
+                    let texture = self.texture_cache.get(texture_id);
+                    self.pipeline.create_texture_bind_group(
+                        device,
+                        &texture.view,
+                        &texture.sampler,
+                    )
+                } else {
+                    // Use default white texture
+                    self.pipeline.create_texture_bind_group(
+                        device,
+                        &default_texture.view,
+                        &default_texture.sampler,
+                    )
+                }
+            } else {
+                // No material, use default white texture
+                self.pipeline.create_texture_bind_group(
+                    device,
+                    &default_texture.view,
+                    &default_texture.sampler,
+                )
+            };
+            texture_bind_groups.push(bind_group);
+        }
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Scene Render Pass"),
@@ -397,41 +466,20 @@ impl SceneRenderer {
 
         render_pass.set_pipeline(&self.pipeline.pipeline);
         render_pass.set_bind_group(0, &self.pipeline.camera_bind_group, &[]);
+        // Start with default texture (will be overridden per entity if needed)
+        render_pass.set_bind_group(1, &default_texture_bind_group, &[]);
 
         if let Some(instance_buffer) = &self.instance_buffer {
             render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
 
-            // Group entities by mesh for efficient rendering
-            let mut current_mesh: Option<&str> = None;
-            let mut instance_start = 0;
-
+            // Render each entity individually with correct texture
             for (i, entity) in self.entities.iter().enumerate() {
                 let mesh_id = entity.mesh_id.as_str();
 
-                if Some(mesh_id) != current_mesh {
-                    // Render previous batch if exists
-                    if let Some(prev_mesh) = current_mesh {
-                        if let Some(gpu_mesh) = self.mesh_cache.get(prev_mesh) {
-                            render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
-                            render_pass.set_index_buffer(
-                                gpu_mesh.index_buffer.slice(..),
-                                wgpu::IndexFormat::Uint32,
-                            );
-                            render_pass.draw_indexed(
-                                0..gpu_mesh.index_count,
-                                0,
-                                instance_start as u32..i as u32,
-                            );
-                        }
-                    }
+                // Bind the texture for this entity
+                render_pass.set_bind_group(1, &texture_bind_groups[i], &[]);
 
-                    current_mesh = Some(mesh_id);
-                    instance_start = i;
-                }
-            }
-
-            // Render final batch
-            if let Some(mesh_id) = current_mesh {
+                // Draw this entity
                 if let Some(gpu_mesh) = self.mesh_cache.get(mesh_id) {
                     render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
                     render_pass.set_index_buffer(
@@ -441,7 +489,7 @@ impl SceneRenderer {
                     render_pass.draw_indexed(
                         0..gpu_mesh.index_count,
                         0,
-                        instance_start as u32..self.entities.len() as u32,
+                        i as u32..(i + 1) as u32,
                     );
                 }
             }

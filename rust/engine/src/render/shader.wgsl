@@ -54,6 +54,13 @@ var<uniform> camera: CameraUniform;
 @group(0) @binding(1)
 var<uniform> lights: LightUniform;
 
+// Texture sampling (group 1)
+@group(1) @binding(0)
+var albedo_texture: texture_2d<f32>;
+
+@group(1) @binding(1)
+var albedo_sampler: sampler;
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) normal: vec3<f32>,
@@ -192,7 +199,11 @@ fn calculate_spot_light(
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let normal = normalize(in.world_normal);
-    let base_color = in.color;
+
+    // Sample texture and multiply with material color
+    let texture_color = textureSample(albedo_texture, albedo_sampler, in.uv);
+    let base_color = in.color * texture_color.rgb;
+
     let metallic = in.metallic_roughness.x;
     let roughness = in.metallic_roughness.y;
 

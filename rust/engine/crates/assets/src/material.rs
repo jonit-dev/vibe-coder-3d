@@ -27,6 +27,55 @@ pub struct Material {
     // Shader type
     #[serde(default = "default_shader")]
     pub shader: String,
+
+    // Material type
+    #[serde(default = "default_material_type")]
+    pub materialType: String,
+
+    // PBR properties (Three.js naming)
+    #[serde(default = "default_metallic")]
+    pub metalness: f32, // Also support Three.js "metalness"
+
+    #[serde(default)]
+    pub emissiveIntensity: f32,
+
+    // Texture maps (optional) - matching Three.js MaterialDefinition
+    #[serde(default)]
+    pub albedoTexture: Option<String>,
+
+    #[serde(default)]
+    pub normalTexture: Option<String>,
+
+    #[serde(default)]
+    pub metallicTexture: Option<String>,
+
+    #[serde(default)]
+    pub roughnessTexture: Option<String>,
+
+    #[serde(default)]
+    pub emissiveTexture: Option<String>,
+
+    #[serde(default)]
+    pub occlusionTexture: Option<String>,
+
+    // Texture transform
+    #[serde(default = "default_one")]
+    pub normalScale: f32,
+
+    #[serde(default = "default_one")]
+    pub occlusionStrength: f32,
+
+    #[serde(default)]
+    pub textureOffsetX: f32,
+
+    #[serde(default)]
+    pub textureOffsetY: f32,
+
+    #[serde(default = "default_one")]
+    pub textureRepeatX: f32,
+
+    #[serde(default = "default_one")]
+    pub textureRepeatY: f32,
 }
 
 fn default_color() -> String {
@@ -47,6 +96,14 @@ fn default_opacity() -> f32 {
 
 fn default_shader() -> String {
     "standard".to_string()
+}
+
+fn default_material_type() -> String {
+    "solid".to_string()
+}
+
+fn default_one() -> f32 {
+    1.0
 }
 
 impl Material {
@@ -96,6 +153,21 @@ impl MaterialCache {
             emissive: None,
             opacity: 1.0,
             shader: "standard".to_string(),
+            materialType: "solid".to_string(),
+            metalness: 0.0,
+            emissiveIntensity: 0.0,
+            albedoTexture: None,
+            normalTexture: None,
+            metallicTexture: None,
+            roughnessTexture: None,
+            emissiveTexture: None,
+            occlusionTexture: None,
+            normalScale: 1.0,
+            occlusionStrength: 1.0,
+            textureOffsetX: 0.0,
+            textureOffsetY: 0.0,
+            textureRepeatX: 1.0,
+            textureRepeatY: 1.0,
         };
 
         Self {

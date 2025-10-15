@@ -175,6 +175,7 @@ pub struct RenderPipeline {
     pub camera_bind_group: wgpu::BindGroup,
     pub camera_buffer: wgpu::Buffer,
     pub light_buffer: wgpu::Buffer,
+    pub texture_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl RenderPipeline {
@@ -239,16 +240,40 @@ impl RenderPipeline {
             label: Some("camera_bind_group"),
         });
 
+        // Create texture bind group layout (group 1)
+        let texture_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("texture_bind_group_layout"),
+            });
+
         // Load shader
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
 
-        // Create pipeline layout
+        // Create pipeline layout with both bind group layouts
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[&camera_bind_group_layout],
+            bind_group_layouts: &[&camera_bind_group_layout, &texture_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -299,6 +324,7 @@ impl RenderPipeline {
             camera_bind_group,
             camera_buffer,
             light_buffer,
+            texture_bind_group_layout,
         }
     }
 
@@ -314,5 +340,28 @@ impl RenderPipeline {
 
     pub fn update_lights(&self, queue: &wgpu::Queue, lights: &LightUniform) {
         queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[*lights]));
+    }
+
+    /// Create a texture bind group for a given texture
+    pub fn create_texture_bind_group(
+        &self,
+        device: &wgpu::Device,
+        texture_view: &wgpu::TextureView,
+        sampler: &wgpu::Sampler,
+    ) -> wgpu::BindGroup {
+        device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &self.texture_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(sampler),
+                },
+            ],
+            label: Some("texture_bind_group"),
+        })
     }
 }
