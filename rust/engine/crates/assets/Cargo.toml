@@ -16,7 +16,8 @@ log = "0.4"
 image = "0.24"
 
 # GLTF loading
-gltf = { version = "1.4", features = ["utils"], optional = true }
+# Note: extensions feature allows handling models with unsupported extensions like KHR_mesh_quantization
+gltf = { version = "1.4", features = ["utils", "extensions"], optional = true }
 
 [features]
 default = ["gltf-support"]
