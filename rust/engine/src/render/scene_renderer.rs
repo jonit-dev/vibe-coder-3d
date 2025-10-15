@@ -195,7 +195,67 @@ impl SceneRenderer {
         log::info!("Found {} renderable instances", renderable_instances.len());
 
         for instance in renderable_instances {
-            // Only include enabled renderers
+            // Check if this entity has a modelPath for GLTF loading
+            if let Some(ref model_path) = instance.model_path {
+                if !model_path.is_empty() {
+                    log::info!("Loading GLTF model from: {}", model_path);
+
+                    // Try to load GLTF model
+                    #[cfg(feature = "gltf-support")]
+                    {
+                        use vibe_assets::load_gltf;
+
+                        match load_gltf(model_path) {
+                            Ok(meshes) => {
+                                log::info!("Loaded {} mesh(es) from GLTF model", meshes.len());
+
+                                // Upload all meshes from the GLTF file
+                                for (idx, vibe_mesh) in meshes.into_iter().enumerate() {
+                                    let mesh_name = format!("{}_{}", model_path, idx);
+
+                                    // Convert vibe_assets::Mesh to local Mesh type
+                                    let local_vertices: Vec<super::vertex::Vertex> = vibe_mesh
+                                        .vertices
+                                        .into_iter()
+                                        .map(|v| super::vertex::Vertex {
+                                            position: v.position,
+                                            normal: v.normal,
+                                            uv: v.uv,
+                                        })
+                                        .collect();
+
+                                    let local_mesh = super::vertex::Mesh {
+                                        vertices: local_vertices,
+                                        indices: vibe_mesh.indices,
+                                    };
+
+                                    self.mesh_cache.upload_mesh(device, &mesh_name, local_mesh);
+
+                                    // Create a renderable entity for each mesh in the GLTF
+                                    self.entities.push(RenderableEntity {
+                                        transform: instance.world_transform,
+                                        mesh_id: mesh_name,
+                                        material_id: instance.material_id.clone(),
+                                    });
+                                }
+                                continue; // Skip the default primitive logic below
+                            }
+                            Err(e) => {
+                                log::error!("Failed to load GLTF model '{}': {}", model_path, e);
+                                log::warn!("Falling back to primitive mesh");
+                            }
+                        }
+                    }
+
+                    #[cfg(not(feature = "gltf-support"))]
+                    {
+                        log::warn!("GLTF support not enabled, ignoring modelPath: {}", model_path);
+                        log::warn!("Compile with --features gltf-support to enable GLTF loading");
+                    }
+                }
+            }
+
+            // Use primitive mesh (default or fallback)
             let mesh_id = instance
                 .mesh_id
                 .clone()
