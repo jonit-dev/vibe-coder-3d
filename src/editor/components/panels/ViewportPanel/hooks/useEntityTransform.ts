@@ -6,10 +6,14 @@ import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 interface IUseEntityTransformProps {
   transform: { data: ITransformData } | null | undefined;
   isTransforming: boolean;
-  isPlaying: boolean;
+  isPhysicsDriven?: boolean;
 }
 
-export const useEntityTransform = ({ transform, isTransforming }: IUseEntityTransformProps) => {
+export const useEntityTransform = ({
+  transform,
+  isTransforming,
+  isPhysicsDriven = false,
+}: IUseEntityTransformProps) => {
   const meshRef = useRef<THREE.Group | THREE.Mesh | THREE.Object3D | null>(null);
   const lastSyncedTransform = useRef<string>('');
 
@@ -41,6 +45,18 @@ export const useEntityTransform = ({ transform, isTransforming }: IUseEntityTran
         return;
       }
 
+      if (isPhysicsDriven) {
+        if (force) {
+          object.position.set(0, 0, 0);
+          object.rotation.set(0, 0, 0);
+          object.scale.set(1, 1, 1);
+          object.updateMatrix();
+          object.updateMatrixWorld(true);
+          lastSyncedTransform.current = 'physics-driven';
+        }
+        return;
+      }
+
       const { position, rotation, scale } = transformData;
 
       // Mesh rotation is in radians; component data is in degrees
@@ -65,7 +81,11 @@ export const useEntityTransform = ({ transform, isTransforming }: IUseEntityTran
 
       const transformHash = `${position.join(',')},${rotation.join(',')},${scale.join(',')}`;
 
-      if (force || lastSyncedTransform.current !== transformHash || !(posMatches && rotMatches && scaleMatches)) {
+      if (
+        force ||
+        lastSyncedTransform.current !== transformHash ||
+        !(posMatches && rotMatches && scaleMatches)
+      ) {
         object.position.set(position[0], position[1], position[2]);
         object.rotation.set(rotRadX, rotRadY, rotRadZ);
         object.scale.set(scale[0], scale[1], scale[2]);
@@ -76,7 +96,7 @@ export const useEntityTransform = ({ transform, isTransforming }: IUseEntityTran
         lastSyncedTransform.current = transformHash;
       }
     },
-    [transformData, isTransforming],
+    [transformData, isTransforming, isPhysicsDriven],
   );
 
   // Sync mesh transform from ComponentManager (single source of truth)

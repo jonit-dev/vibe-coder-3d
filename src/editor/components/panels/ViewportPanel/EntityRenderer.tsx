@@ -58,12 +58,6 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       setIsTransforming,
     });
 
-    const { meshRef, meshInstanceRef, position, scale, rotationRadians } = useEntityTransform({
-      transform,
-      isTransforming: isTransformingLocal,
-      isPlaying,
-    });
-
     const {
       meshType,
       entityColor,
@@ -73,6 +67,12 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     } = useEntityMesh({
       entityComponents,
       isPlaying,
+    });
+
+    const { meshRef, meshInstanceRef, position, scale, rotationRadians } = useEntityTransform({
+      transform,
+      isTransforming: isTransformingLocal,
+      isPhysicsDriven: shouldHavePhysics,
     });
 
     const { colliderType, colliderConfig, hasCustomColliders } = useEntityColliders({
@@ -96,7 +96,22 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     const terrainComponent = React.useMemo(
       () => entityComponents.find((c) => c.type === 'Terrain'),
       [entityComponents.find((c) => c.type === 'Terrain')],
-    ) as { type: string; data: { size: [number, number]; segments: [number, number]; heightScale: number; noiseEnabled: boolean; noiseSeed: number; noiseFrequency: number; noiseOctaves: number; noisePersistence: number; noiseLacunarity: number; }; } | undefined;
+    ) as
+      | {
+          type: string;
+          data: {
+            size: [number, number];
+            segments: [number, number];
+            heightScale: number;
+            noiseEnabled: boolean;
+            noiseSeed: number;
+            noiseFrequency: number;
+            noiseOctaves: number;
+            noisePersistence: number;
+            noiseLacunarity: number;
+          };
+        }
+      | undefined;
 
     const { terrainColliderKey, enhancedColliderConfig, hasEffectiveCustomColliders } =
       useColliderConfiguration({
@@ -194,7 +209,11 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
           rotationRadians={rotationRadians}
           scale={scale}
           enhancedColliderConfig={enhancedColliderConfig}
-          meshCollider={meshCollider && Object.keys(meshCollider.data || {}).length > 0 ? meshCollider as { data: IMeshColliderData } : null}
+          meshCollider={
+            meshCollider && Object.keys(meshCollider.data || {}).length > 0
+              ? (meshCollider as { data: IMeshColliderData })
+              : null
+          }
         />
       </group>
     );
@@ -230,7 +249,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
 
     // All props are equal, skip re-render
     return true;
-  }
+  },
 );
 
 EntityRenderer.displayName = 'EntityRenderer';
