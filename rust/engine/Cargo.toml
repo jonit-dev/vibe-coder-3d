@@ -5,6 +5,7 @@ members = [
     "crates/ecs-bridge",
     "crates/scene-graph",
     "crates/assets",
+    "crates/wasm-bridge",
 ]
 
 [package]
@@ -18,6 +19,7 @@ vibe-scene = { path = "crates/scene" }
 vibe-ecs-bridge = { path = "crates/ecs-bridge" }
 vibe-scene-graph = { path = "crates/scene-graph" }
 vibe-assets = { path = "crates/assets" }
+vibe-wasm-bridge = { path = "crates/wasm-bridge" }
 
 # Core rendering
 wgpu = "0.19"

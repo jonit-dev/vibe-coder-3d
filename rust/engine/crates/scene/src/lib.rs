@@ -57,13 +57,36 @@ impl From<String> for ComponentKindId {
 /// Scene metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Metadata {
+    #[serde(default = "default_scene_name")]
     pub name: String,
+    #[serde(default)]
     pub version: u32,
+    #[serde(default = "default_timestamp")]
     pub timestamp: String,
     #[serde(default)]
     pub author: Option<String>,
     #[serde(default)]
     pub description: Option<String>,
+}
+
+fn default_scene_name() -> String {
+    "Untitled Scene".to_string()
+}
+
+fn default_timestamp() -> String {
+    "2025-01-01T00:00:00Z".to_string()
+}
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Self {
+            name: default_scene_name(),
+            version: 0,
+            timestamp: default_timestamp(),
+            author: None,
+            description: None,
+        }
+    }
 }
 
 /// Entity in the scene
