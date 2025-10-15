@@ -6,6 +6,8 @@ use crate::{
 };
 use anyhow::Context;
 use std::{path::PathBuf, sync::Arc};
+use vibe_ecs_bridge::create_default_registry;
+use vibe_physics::{populate_physics_world, PhysicsWorld};
 use winit::{
     dpi::PhysicalSize,
     event::*,
@@ -21,6 +23,8 @@ pub struct App {
     camera: Camera,
     scene: SceneData,
     timer: FrameTimer,
+    physics_world: PhysicsWorld,
+    physics_accumulator: f32,
 }
 
 impl App {
@@ -107,6 +111,26 @@ impl App {
         // Initialize timer
         let timer = FrameTimer::new();
 
+        // Initialize physics world
+        log::info!("Initializing physics world...");
+        let mut physics_world = PhysicsWorld::new();
+        let registry = create_default_registry();
+
+        match populate_physics_world(&mut physics_world, &scene, &registry) {
+            Ok(count) => {
+                log::info!("Physics initialized with {} entities", count);
+                let stats = physics_world.stats();
+                log::info!(
+                    "  Rigid bodies: {}, Colliders: {}",
+                    stats.rigid_body_count,
+                    stats.collider_count
+                );
+            }
+            Err(e) => {
+                log::warn!("Failed to populate physics world: {}", e);
+            }
+        }
+
         Ok(Self {
             window,
             renderer,
@@ -114,6 +138,8 @@ impl App {
             camera,
             scene,
             timer,
+            physics_world,
+            physics_accumulator: 0.0,
         })
     }
 
@@ -196,6 +222,63 @@ impl App {
 
     fn update(&mut self) {
         self.timer.tick();
+
+        // Fixed timestep physics update (60 Hz)
+        const PHYSICS_TIMESTEP: f32 = 1.0 / 60.0;
+        self.physics_accumulator += self.timer.delta_seconds();
+
+        // Run physics steps (with max iterations to prevent spiral of death)
+        let mut steps = 0;
+        const MAX_PHYSICS_STEPS: u32 = 5;
+
+        while self.physics_accumulator >= PHYSICS_TIMESTEP && steps < MAX_PHYSICS_STEPS {
+            self.physics_world.step(PHYSICS_TIMESTEP);
+            self.physics_accumulator -= PHYSICS_TIMESTEP;
+            steps += 1;
+        }
+
+        // Sync physics transforms back to renderable entities
+        if steps > 0 {
+            let stats = self.physics_world.stats();
+            let mut any_updated = false;
+            for i in 0..stats.rigid_body_count {
+                if let Some((entity_id, (position, rotation))) = self
+                    .physics_world
+                    .entity_to_body
+                    .iter()
+                    .nth(i)
+                    .and_then(|(id, handle)| {
+                        self.physics_world.rigid_bodies.get(*handle).map(|body| {
+                            let iso = body.position();
+                            let pos = glam::Vec3::new(
+                                iso.translation.x,
+                                iso.translation.y,
+                                iso.translation.z,
+                            );
+                            let rot = glam::Quat::from_xyzw(
+                                iso.rotation.i,
+                                iso.rotation.j,
+                                iso.rotation.k,
+                                iso.rotation.w,
+                            );
+                            (*id, (pos, rot))
+                        })
+                    })
+                {
+                    if self
+                        .scene_renderer
+                        .update_entity_transform(entity_id, position, rotation)
+                    {
+                        any_updated = true;
+                    }
+                }
+            }
+
+            if any_updated {
+                self.scene_renderer
+                    .rebuild_instance_buffer(&self.renderer.device);
+            }
+        }
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {

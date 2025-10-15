@@ -301,6 +301,159 @@ pub struct MeshRendererMaterialOverride {
     pub alpha_cutoff: Option<f32>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct RigidBodyMaterial {
+    #[serde(default = "default_friction")]
+    pub friction: f32,
+    #[serde(default = "default_restitution")]
+    pub restitution: f32,
+    #[serde(default = "default_density")]
+    pub density: f32,
+}
+
+fn default_friction() -> f32 {
+    0.7
+}
+
+fn default_restitution() -> f32 {
+    0.3
+}
+
+fn default_density() -> f32 {
+    1.0
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct RigidBody {
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
+    #[serde(default = "default_body_type")]
+    pub bodyType: String,
+    #[serde(default, rename = "type")]
+    pub type_: Option<String>, // Legacy field for backward compat
+    #[serde(default = "default_mass")]
+    pub mass: f32,
+    #[serde(default = "default_gravity_scale")]
+    pub gravityScale: f32,
+    #[serde(default = "default_can_sleep")]
+    pub canSleep: bool,
+    #[serde(default)]
+    pub material: Option<RigidBodyMaterial>,
+}
+
+fn default_body_type() -> String {
+    "dynamic".to_string()
+}
+
+fn default_mass() -> f32 {
+    1.0
+}
+
+fn default_gravity_scale() -> f32 {
+    1.0
+}
+
+fn default_can_sleep() -> bool {
+    true
+}
+
+impl RigidBody {
+    /// Get the body type, preferring bodyType over legacy type field
+    /// If only legacy "type" field is provided, use that instead of default
+    pub fn get_body_type(&self) -> &str {
+        // If type_ is explicitly set and bodyType is the default, prefer type_
+        if let Some(ref type_) = self.type_ {
+            if self.bodyType == "dynamic" {
+                // bodyType is default, so legacy type takes precedence
+                return type_;
+            }
+        }
+        // Otherwise use bodyType (either explicitly set or default)
+        &self.bodyType
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct MeshColliderSize {
+    #[serde(default = "default_one")]
+    pub width: f32,
+    #[serde(default = "default_one")]
+    pub height: f32,
+    #[serde(default = "default_one")]
+    pub depth: f32,
+    #[serde(default = "default_radius")]
+    pub radius: f32,
+    #[serde(default = "default_radius")]
+    pub capsuleRadius: f32,
+    #[serde(default = "default_capsule_height")]
+    pub capsuleHeight: f32,
+}
+
+fn default_radius() -> f32 {
+    0.5
+}
+
+fn default_capsule_height() -> f32 {
+    2.0
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PhysicsMaterialData {
+    #[serde(default = "default_friction")]
+    pub friction: f32,
+    #[serde(default = "default_restitution")]
+    pub restitution: f32,
+    #[serde(default = "default_density")]
+    pub density: f32,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct MeshCollider {
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
+    #[serde(default = "default_collider_type")]
+    pub colliderType: String,
+    #[serde(default)]
+    pub isTrigger: bool,
+    #[serde(default = "default_center")]
+    pub center: [f32; 3],
+    #[serde(default)]
+    pub size: MeshColliderSize,
+    #[serde(default)]
+    pub physicsMaterial: PhysicsMaterialData,
+}
+
+fn default_collider_type() -> String {
+    "box".to_string()
+}
+
+fn default_center() -> [f32; 3] {
+    [0.0, 0.0, 0.0]
+}
+
+impl Default for MeshColliderSize {
+    fn default() -> Self {
+        Self {
+            width: default_one(),
+            height: default_one(),
+            depth: default_one(),
+            radius: default_radius(),
+            capsuleRadius: default_radius(),
+            capsuleHeight: default_capsule_height(),
+        }
+    }
+}
+
+impl Default for PhysicsMaterialData {
+    fn default() -> Self {
+        Self {
+            friction: default_friction(),
+            restitution: default_restitution(),
+            density: default_density(),
+        }
+    }
+}
+
 // ============================================================================
 // Decoders
 // ============================================================================
@@ -430,6 +583,56 @@ impl IComponentDecoder for MaterialDecoder {
     }
 }
 
+pub struct RigidBodyDecoder;
+
+impl IComponentDecoder for RigidBodyDecoder {
+    fn can_decode(&self, kind: &str) -> bool {
+        kind == "RigidBody"
+    }
+
+    fn decode(&self, value: &Value) -> Result<Box<dyn Any>> {
+        let component: RigidBody = serde_json::from_value(value.clone())?;
+        Ok(Box::new(component))
+    }
+
+    fn capabilities(&self) -> ComponentCapabilities {
+        ComponentCapabilities {
+            affects_rendering: false,
+            requires_pass: None,
+            stable: true,
+        }
+    }
+
+    fn component_kinds(&self) -> Vec<ComponentKindId> {
+        vec![ComponentKindId::new("RigidBody")]
+    }
+}
+
+pub struct MeshColliderDecoder;
+
+impl IComponentDecoder for MeshColliderDecoder {
+    fn can_decode(&self, kind: &str) -> bool {
+        kind == "MeshCollider"
+    }
+
+    fn decode(&self, value: &Value) -> Result<Box<dyn Any>> {
+        let component: MeshCollider = serde_json::from_value(value.clone())?;
+        Ok(Box::new(component))
+    }
+
+    fn capabilities(&self) -> ComponentCapabilities {
+        ComponentCapabilities {
+            affects_rendering: false,
+            requires_pass: None,
+            stable: true,
+        }
+    }
+
+    fn component_kinds(&self) -> Vec<ComponentKindId> {
+        vec![ComponentKindId::new("MeshCollider")]
+    }
+}
+
 // ============================================================================
 // Helper to create a fully populated registry
 // ============================================================================
@@ -443,6 +646,8 @@ pub fn create_default_registry() -> ComponentRegistry {
     registry.register(LightDecoder);
     registry.register(MeshRendererDecoder);
     registry.register(MaterialDecoder);
+    registry.register(RigidBodyDecoder);
+    registry.register(MeshColliderDecoder);
     registry
 }
 
@@ -532,6 +737,121 @@ mod tests {
     }
 
     #[test]
+    fn test_rigid_body_decoder() {
+        let decoder = RigidBodyDecoder;
+        assert!(decoder.can_decode("RigidBody"));
+        assert!(!decoder.can_decode("MeshCollider"));
+
+        let json = serde_json::json!({
+            "enabled": true,
+            "bodyType": "dynamic",
+            "mass": 5.0,
+            "gravityScale": 0.5,
+            "canSleep": false,
+            "material": {
+                "friction": 0.8,
+                "restitution": 0.5,
+                "density": 2.0
+            }
+        });
+
+        let decoded = decoder.decode(&json).unwrap();
+        let rigid_body = decoded.downcast_ref::<RigidBody>().unwrap();
+        assert_eq!(rigid_body.enabled, true);
+        assert_eq!(rigid_body.bodyType, "dynamic");
+        assert_eq!(rigid_body.mass, 5.0);
+        assert_eq!(rigid_body.gravityScale, 0.5);
+        assert_eq!(rigid_body.canSleep, false);
+        assert!(rigid_body.material.is_some());
+        let material = rigid_body.material.as_ref().unwrap();
+        assert_eq!(material.friction, 0.8);
+        assert_eq!(material.restitution, 0.5);
+        assert_eq!(material.density, 2.0);
+    }
+
+    #[test]
+    fn test_rigid_body_decoder_defaults() {
+        let decoder = RigidBodyDecoder;
+        let json = serde_json::json!({});
+
+        let decoded = decoder.decode(&json).unwrap();
+        let rigid_body = decoded.downcast_ref::<RigidBody>().unwrap();
+        assert_eq!(rigid_body.enabled, true);
+        assert_eq!(rigid_body.bodyType, "dynamic");
+        assert_eq!(rigid_body.mass, 1.0);
+        assert_eq!(rigid_body.gravityScale, 1.0);
+        assert_eq!(rigid_body.canSleep, true);
+    }
+
+    #[test]
+    fn test_rigid_body_legacy_type_field() {
+        let json = serde_json::json!({
+            "type": "static"
+        });
+
+        let rigid_body: RigidBody = serde_json::from_value(json).unwrap();
+        assert_eq!(rigid_body.get_body_type(), "static");
+    }
+
+    #[test]
+    fn test_mesh_collider_decoder() {
+        let decoder = MeshColliderDecoder;
+        assert!(decoder.can_decode("MeshCollider"));
+        assert!(!decoder.can_decode("RigidBody"));
+
+        let json = serde_json::json!({
+            "enabled": true,
+            "colliderType": "sphere",
+            "isTrigger": true,
+            "center": [1.0, 2.0, 3.0],
+            "size": {
+                "width": 2.0,
+                "height": 3.0,
+                "depth": 1.5,
+                "radius": 1.0,
+                "capsuleRadius": 0.8,
+                "capsuleHeight": 3.0
+            },
+            "physicsMaterial": {
+                "friction": 0.9,
+                "restitution": 0.2,
+                "density": 1.5
+            }
+        });
+
+        let decoded = decoder.decode(&json).unwrap();
+        let collider = decoded.downcast_ref::<MeshCollider>().unwrap();
+        assert_eq!(collider.enabled, true);
+        assert_eq!(collider.colliderType, "sphere");
+        assert_eq!(collider.isTrigger, true);
+        assert_eq!(collider.center, [1.0, 2.0, 3.0]);
+        assert_eq!(collider.size.radius, 1.0);
+        assert_eq!(collider.physicsMaterial.friction, 0.9);
+    }
+
+    #[test]
+    fn test_mesh_collider_decoder_defaults() {
+        let decoder = MeshColliderDecoder;
+        let json = serde_json::json!({});
+
+        let decoded = decoder.decode(&json).unwrap();
+        let collider = decoded.downcast_ref::<MeshCollider>().unwrap();
+        assert_eq!(collider.enabled, true);
+        assert_eq!(collider.colliderType, "box");
+        assert_eq!(collider.isTrigger, false);
+        assert_eq!(collider.center, [0.0, 0.0, 0.0]);
+        assert_eq!(collider.size.width, 1.0);
+        assert_eq!(collider.size.height, 1.0);
+        assert_eq!(collider.size.depth, 1.0);
+        assert_eq!(collider.size.radius, 0.5);
+        assert_eq!(collider.size.capsuleRadius, 0.5);
+        assert_eq!(collider.size.capsuleHeight, 2.0);
+        assert_eq!(collider.physicsMaterial.friction, 0.7);
+        assert_eq!(collider.physicsMaterial.restitution, 0.3);
+        assert_eq!(collider.physicsMaterial.density, 1.0);
+    }
+
+    #[test]
     fn test_default_registry() {
         let registry = create_default_registry();
 
@@ -540,6 +860,8 @@ mod tests {
         assert!(registry.has_decoder("Light"));
         assert!(registry.has_decoder("MeshRenderer"));
         assert!(registry.has_decoder("Material"));
+        assert!(registry.has_decoder("RigidBody"));
+        assert!(registry.has_decoder("MeshCollider"));
         assert!(!registry.has_decoder("Unknown"));
     }
 
@@ -571,5 +893,15 @@ mod tests {
         let json = serde_json::json!({"id": "mat-1"});
         let decoded = registry.decode("Material", &json).unwrap();
         assert!(decoded.downcast_ref::<Material>().is_some());
+
+        // Test RigidBody
+        let json = serde_json::json!({"mass": 2.0});
+        let decoded = registry.decode("RigidBody", &json).unwrap();
+        assert!(decoded.downcast_ref::<RigidBody>().is_some());
+
+        // Test MeshCollider
+        let json = serde_json::json!({"colliderType": "sphere"});
+        let decoded = registry.decode("MeshCollider", &json).unwrap();
+        assert!(decoded.downcast_ref::<MeshCollider>().is_some());
     }
 }

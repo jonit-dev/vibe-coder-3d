@@ -1,0 +1,30 @@
+[package]
+name = "vibe-physics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Physics engine
+rapier3d = { version = "0.17", features = ["dim3", "parallel"] }
+
+# Math
+glam = { version = "0.27", features = ["serde"] }
+nalgebra = "0.32"
+
+# Internal workspace dependencies
+vibe-scene = { path = "../scene" }
+vibe-ecs-bridge = { path = "../ecs-bridge" }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+log = "0.4"
+
+# Collections
+hashbrown = "0.14"
+
+[dev-dependencies]
+env_logger = "0.11"
+serde_json = "1.0"

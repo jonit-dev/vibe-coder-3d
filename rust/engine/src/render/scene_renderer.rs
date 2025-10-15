@@ -7,7 +7,7 @@ use super::{
     Camera,
 };
 use crate::ecs::{components::transform::Transform, SceneData};
-use glam::{Mat4, Vec3};
+use glam::{Mat4, Quat, Vec3};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -18,6 +18,7 @@ use vibe_scene_graph::SceneGraph;
 use wgpu::util::DeviceExt;
 
 pub struct RenderableEntity {
+    pub entity_id: Option<EntityId>,
     pub transform: Mat4,
     pub mesh_id: String,
     pub material_id: Option<String>,
@@ -326,6 +327,7 @@ impl SceneRenderer {
 
                                     // Create a renderable entity for each mesh in the GLTF
                                     self.entities.push(RenderableEntity {
+                                        entity_id: Some(instance.entity_id),
                                         transform: instance.world_transform,
                                         mesh_id: mesh_name,
                                         material_id: final_material_id,
@@ -378,6 +380,7 @@ impl SceneRenderer {
             );
 
             self.entities.push(RenderableEntity {
+                entity_id: Some(instance.entity_id),
                 transform: instance.world_transform,
                 mesh_id,
                 material_id,
@@ -888,5 +891,29 @@ impl SceneRenderer {
         }
         let hash = hasher.finish();
         format!("inline-{hash:x}")
+    }
+
+    /// Update entity transform from physics, keeping original scale intact.
+    /// Returns true when any instance changed.
+    pub fn update_entity_transform(
+        &mut self,
+        entity_id: EntityId,
+        position: Vec3,
+        rotation: Quat,
+    ) -> bool {
+        let mut updated = false;
+        for entity in &mut self.entities {
+            if entity.entity_id == Some(entity_id) {
+                let (scale, _, _) = entity.transform.to_scale_rotation_translation();
+                entity.transform = Mat4::from_scale_rotation_translation(scale, rotation, position);
+                updated = true;
+            }
+        }
+        updated
+    }
+
+    /// Rebuild GPU instance buffer with latest transforms/material data
+    pub fn rebuild_instance_buffer(&mut self, device: &wgpu::Device) {
+        self.update_instance_buffer(device);
     }
 }
