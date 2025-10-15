@@ -178,7 +178,29 @@ impl SceneRenderer {
                             }
                         }
                         "spot" => {
-                            log::debug!("    Spot lights not yet implemented");
+                            log::info!(
+                                "  ✓ Using spot light: intensity={}, angle={}, penumbra={}, range={}, color={:?}",
+                                light.intensity,
+                                light.angle,
+                                light.penumbra,
+                                light.range,
+                                light_color
+                            );
+
+                            // Get transform for spot light position
+                            let transform = entity
+                                .get_component::<Transform>("Transform")
+                                .unwrap_or_default();
+                            let position = transform.position_vec3();
+
+                            self.light_uniform.spot_position = [position.x, position.y, position.z];
+                            self.light_uniform.spot_intensity = light.intensity;
+                            self.light_uniform.spot_direction = [light.directionX, light.directionY, light.directionZ];
+                            self.light_uniform.spot_angle = light.angle;
+                            self.light_uniform.spot_color = light_color;
+                            self.light_uniform.spot_penumbra = light.penumbra;
+                            self.light_uniform.spot_range = light.range;
+                            self.light_uniform.spot_decay = light.decay;
                         }
                         _ => {
                             log::warn!("    Unknown light type: {}", light.lightType);

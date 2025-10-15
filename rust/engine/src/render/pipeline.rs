@@ -48,6 +48,17 @@ pub struct LightUniform {
     pub point_intensity_1: f32,
     pub point_color_1: [f32; 3],
     pub point_range_1: f32,
+
+    // Spot light
+    pub spot_position: [f32; 3],
+    pub spot_intensity: f32,
+    pub spot_direction: [f32; 3],
+    pub spot_angle: f32,
+    pub spot_color: [f32; 3],
+    pub spot_penumbra: f32,
+    pub spot_range: f32,
+    pub spot_decay: f32,
+    _padding: [f32; 2], // Align to 16 bytes
 }
 
 impl LightUniform {
@@ -73,6 +84,17 @@ impl LightUniform {
             point_intensity_1: 0.0,
             point_color_1: [1.0, 1.0, 1.0],
             point_range_1: 10.0,
+
+            // No spot light by default
+            spot_position: [0.0, 0.0, 0.0],
+            spot_intensity: 0.0,
+            spot_direction: [0.0, -1.0, 0.0], // pointing down
+            spot_angle: 45.0_f32.to_radians(),
+            spot_color: [1.0, 1.0, 1.0],
+            spot_penumbra: 0.1,
+            spot_range: 10.0,
+            spot_decay: 1.0,
+            _padding: [0.0; 2],
         }
     }
 }

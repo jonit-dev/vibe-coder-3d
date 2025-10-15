@@ -27,6 +27,16 @@ struct LightUniform {
     point_intensity_1: f32,
     point_color_1: vec3<f32>,
     point_range_1: f32,
+
+    // Spot light
+    spot_position: vec3<f32>,
+    spot_intensity: f32,
+    spot_direction: vec3<f32>,
+    spot_angle: f32,  // Inner cone angle in radians
+    spot_color: vec3<f32>,
+    spot_penumbra: f32,  // Outer cone softness (0-1)
+    spot_range: f32,
+    spot_decay: f32,
 };
 
 struct InstanceInput {
@@ -123,6 +133,62 @@ fn calculate_point_light(
     return color * intensity * attenuation_sq * (diffuse * 0.7 + spec);
 }
 
+// Calculate spot light contribution
+fn calculate_spot_light(
+    position: vec3<f32>,
+    direction: vec3<f32>,
+    color: vec3<f32>,
+    intensity: f32,
+    angle: f32,
+    penumbra: f32,
+    range: f32,
+    world_pos: vec3<f32>,
+    normal: vec3<f32>,
+    view_dir: vec3<f32>,
+    roughness: f32
+) -> vec3<f32> {
+    if (intensity <= 0.0) {
+        return vec3<f32>(0.0);
+    }
+
+    let light_vec = position - world_pos;
+    let distance = length(light_vec);
+
+    // Range attenuation
+    let attenuation = max(0.0, 1.0 - (distance / range));
+    let attenuation_sq = attenuation * attenuation;
+
+    if (attenuation_sq <= 0.0) {
+        return vec3<f32>(0.0);
+    }
+
+    let light_dir = normalize(light_vec);
+    let spot_dir = normalize(direction);
+
+    // Cone attenuation (Three.js-style spot light)
+    let angle_cos = dot(-light_dir, spot_dir);
+    let outer_angle = angle + (penumbra * angle);  // Penumbra extends the cone
+    let outer_cos = cos(outer_angle);
+    let inner_cos = cos(angle);
+
+    // Smooth falloff from inner to outer cone
+    let spot_effect = smoothstep(outer_cos, inner_cos, angle_cos);
+
+    if (spot_effect <= 0.0) {
+        return vec3<f32>(0.0);
+    }
+
+    // Diffuse
+    let diffuse = max(dot(normal, light_dir), 0.0);
+
+    // Specular
+    let reflect_dir = reflect(-light_dir, normal);
+    let spec_strength = (1.0 - roughness) * 0.5;
+    let spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32.0) * spec_strength;
+
+    return color * intensity * attenuation_sq * spot_effect * (diffuse * 0.7 + spec);
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let normal = normalize(in.world_normal);
@@ -167,6 +233,21 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         lights.point_color_1,
         lights.point_intensity_1,
         lights.point_range_1,
+        in.world_position,
+        normal,
+        view_dir,
+        roughness
+    );
+
+    // Spot light
+    lighting += calculate_spot_light(
+        lights.spot_position,
+        lights.spot_direction,
+        lights.spot_color,
+        lights.spot_intensity,
+        lights.spot_angle,
+        lights.spot_penumbra,
+        lights.spot_range,
         in.world_position,
         normal,
         view_dir,
