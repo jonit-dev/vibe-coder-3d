@@ -214,27 +214,27 @@ pub struct Light {
 **Integration Status**:
 
 - ✅ `lightType`: Full support (directional, ambient, point, spot parsed)
-- ✅ `color`: Full support
+- ✅ `color`: Full support + rendered
 - ✅ `intensity`: Full support + rendered
 - ✅ `enabled`: Full support + filters disabled lights
 - ⚠️ `castShadow`: Parsed but shadows not yet implemented
-- ✅ `directionX/Y/Z`: Full support + rendered for directional lights
-- ✅ `range`: Full support + rendered for point lights
-- ✅ `decay`: Parsed but not used (standard attenuation formula instead)
-- ⚠️ `angle`: Parsed but spot lights not yet implemented
-- ⚠️ `penumbra`: Parsed but spot lights not yet implemented
+- ✅ `directionX/Y/Z`: Full support + rendered for directional and spot lights
+- ✅ `range`: Full support + rendered for point and spot lights
+- ✅ `decay`: Full support + rendered for spot lights
+- ✅ `angle`: Full support + rendered for spot lights
+- ✅ `penumbra`: Full support + rendered for spot lights
 - ⚠️ `shadowMapSize`: Parsed but shadows not yet implemented
 - ⚠️ `shadowBias`: Parsed but shadows not yet implemented
 - ⚠️ `shadowRadius`: Parsed but shadows not yet implemented
 
-**Coverage**: 17/17 fields (100% parsed, 70% actively used)
+**Coverage**: 17/17 fields (100% parsed, 85% actively used)
 
 **Current Rendering Support**:
 
 - ✅ Directional lights (direction, color, intensity) - fully rendered
 - ✅ Ambient lights (color, intensity) - fully rendered
-- ✅ Point lights (position, color, intensity, range) - fully rendered with attenuation
-- ❌ Spot lights - parsed but shader support not yet added
+- ✅ Point lights (position, color, intensity, range) - fully rendered with distance attenuation
+- ✅ Spot lights (position, direction, color, intensity, angle, penumbra, range, decay) - fully rendered with cone attenuation
 
 ---
 
@@ -369,13 +369,13 @@ pub struct MeshRenderer {
 
 **Status**: ✅ **FULLY IMPLEMENTED**
 
-- ✅ LightUniform struct with 1x directional, 1x ambient, 2x point lights
+- ✅ LightUniform struct with 1x directional, 1x ambient, 2x point, 1x spot light
 - ✅ Updated shader with PBR lighting calculations
 - ✅ Scene light extraction from Light components
 - ✅ Dynamic light application based on scene data
 - ✅ Specular highlights based on roughness
 - ✅ Distance-based attenuation for point lights
-- ⚠️ Spot lights parsed but not rendered (shader support needed)
+- ✅ Spot lights with Three.js-style cone attenuation and smooth falloff
 - ⚠️ Shadow mapping not implemented (castShadow parsed but not used)
 
 ### 3. ✅ Parent-Child Hierarchy - COMPLETED
@@ -417,10 +417,10 @@ pub struct MeshRenderer {
 - ✅ Basic rendering (meshId → primitives)
 - ✅ Material lookup (materialId → MaterialCache)
 - ✅ Enabled flag
+- ✅ GLTF model loading (modelPath with `gltf-support` feature)
 
-**Missing** (77% of fields):
+**Missing** (69% of fields):
 
-- ❌ GLTF model loading (modelPath)
 - ❌ Multi-submesh materials array
 - ❌ Shadow casting/receiving (not implemented)
 - ❌ Inline material overrides (entire `material` object)
@@ -430,18 +430,63 @@ pub struct MeshRenderer {
 
 ### 6. Texture System - Not Implemented
 
-**Status**: ❌ **MISSING**
+**Status**: ❌ **MISSING** (Deferred from Priority 1 - requires extensive pipeline refactoring)
 
-**Missing**:
+**Current Implementation**:
 
-- ❌ Texture loading from disk
-- ❌ Texture caching (TextureCache exists but not used)
-- ❌ Texture sampling in shader
-- ❌ UV coordinate handling
-- ❌ Texture transforms (offset, repeat)
-- ❌ Normal mapping
-- ❌ PBR texture maps (metallic, roughness, AO)
-- ❌ Emissive textures
+- ✅ TextureCache exists in `vibe-assets` crate
+- ✅ GpuTexture type defined
+- ✅ Basic texture loading code present
+- ❌ Not integrated into rendering pipeline
+
+**Missing Integration Work**:
+
+1. **Pipeline Bind Group Refactoring** (Major):
+
+   - Current: Single bind group (@group(0)) for camera + lights
+   - Required: Multiple bind groups:
+     - @group(0): Camera uniform
+     - @group(1): Lights uniform
+     - @group(2): Material textures (per-material)
+   - Impact: Requires rewriting pipeline setup, shader bindings, and render loop
+
+2. **Shader Texture Sampling**:
+
+   - ❌ Add texture/sampler declarations to shader.wgsl
+   - ❌ Update Material uniform to include texture flags
+   - ❌ Implement conditional texture sampling vs color in fragment shader
+   - ❌ Add UV coordinate handling (currently passed but unused)
+
+3. **Material System Extension**:
+
+   - ❌ Extend Material struct with texture path fields
+   - ❌ Load textures from disk on material creation
+   - ❌ Store GpuTexture references in MaterialCache
+   - ❌ Create bind groups per material with textures
+
+4. **Texture Features**:
+
+   - ❌ Albedo/base color texture sampling
+   - ❌ Normal mapping (tangent space calculations)
+   - ❌ Metallic/roughness texture maps (packed or separate)
+   - ❌ Ambient occlusion texture
+   - ❌ Emissive textures
+   - ❌ Texture transforms (offset, repeat via UV manipulation)
+
+5. **Instance Rendering Changes**:
+   - Current: All instances batched by mesh
+   - Required: Group by mesh AND material (for bind group switching)
+   - Impact: Render loop changes to minimize bind group rebinds
+
+**Effort Estimate**: 20-30 hours (blocked on pipeline architecture decision)
+
+**Recommended Approach**:
+
+1. Prototype bind group layout refactoring in separate branch
+2. Validate performance impact of per-material bind groups
+3. Implement albedo texture support first as proof-of-concept
+4. Incrementally add normal maps, PBR maps, etc.
+5. Optimize batching strategy for minimal bind group changes
 
 ### 7. Shadow Mapping - Not Implemented
 
