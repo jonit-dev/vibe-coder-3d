@@ -1,4 +1,8 @@
 use crate::{
+    debug::{
+        append_collider_lines, DebugConfig, DebugHud, DebugProfiler, DebugState, LineBatch,
+        LineRenderer, OrbitController,
+    },
     ecs::SceneData,
     io,
     render::{Camera, Renderer, SceneRenderer},
@@ -25,6 +29,13 @@ pub struct App {
     timer: FrameTimer,
     physics_world: PhysicsWorld,
     physics_accumulator: f32,
+    debug_state: DebugState,
+    debug_camera: Option<Camera>,
+    orbit_controller: Option<OrbitController>,
+    line_renderer: Option<LineRenderer>,
+    line_batch: LineBatch,
+    debug_hud: Option<DebugHud>,
+    debug_profiler: Option<DebugProfiler>,
 }
 
 impl App {
@@ -32,6 +43,7 @@ impl App {
         scene_path: PathBuf,
         width: u32,
         height: u32,
+        debug_config: DebugConfig,
         event_loop: &EventLoop<()>,
     ) -> anyhow::Result<Self> {
         // Load the scene
@@ -139,6 +151,40 @@ impl App {
             }
         }
 
+        // Initialize debug state and debug subsystems
+        let debug_state = DebugState::new(debug_config.is_enabled());
+        let (debug_camera, orbit_controller, line_renderer, debug_hud, debug_profiler) =
+            if debug_config.is_enabled() {
+                log::info!("Debug subsystem initialized");
+                log::info!("  Hotkeys:");
+                log::info!("    F1 - Toggle HUD");
+                log::info!("    F2 - Toggle collider gizmos");
+                log::info!("    F3 - Toggle debug camera (RMB=orbit, MMB=pan, scroll=zoom)");
+                log::info!("    F4 - Toggle GPU profiler");
+
+                let debug_cam = camera.clone();
+                let orbit_ctrl = OrbitController::new_from_camera(&camera);
+                let line_rend = LineRenderer::new(&renderer.device, &renderer.config);
+                let hud = DebugHud::new(
+                    &renderer.device,
+                    &renderer.queue,
+                    renderer.config.format,
+                    width,
+                    height,
+                );
+                let profiler = DebugProfiler::new(&renderer.device);
+
+                (
+                    Some(debug_cam),
+                    Some(orbit_ctrl),
+                    Some(line_rend),
+                    Some(hud),
+                    Some(profiler),
+                )
+            } else {
+                (None, None, None, None, None)
+            };
+
         Ok(Self {
             window,
             renderer,
@@ -148,6 +194,13 @@ impl App {
             timer,
             physics_world,
             physics_accumulator: 0.0,
+            debug_state,
+            debug_camera,
+            orbit_controller,
+            line_renderer,
+            line_batch: LineBatch::new(),
+            debug_hud,
+            debug_profiler,
         })
     }
 
@@ -225,14 +278,121 @@ impl App {
         // Recreate depth texture to match new surface size
         self.scene_renderer.depth_texture =
             crate::render::depth_texture::DepthTexture::create(&self.renderer.device, &self.renderer.config);
+
+        // Resize debug HUD if present
+        if let Some(ref mut hud) = self.debug_hud {
+            hud.resize(new_size.width, new_size.height);
+        }
     }
 
-    fn input(&mut self, _event: &WindowEvent) -> bool {
+    fn input(&mut self, event: &WindowEvent) -> bool {
+        // Handle debug hotkeys
+        if self.debug_state.enabled {
+            if let WindowEvent::KeyboardInput {
+                event: KeyEvent {
+                    state: ElementState::Pressed,
+                    physical_key: PhysicalKey::Code(key_code),
+                    ..
+                },
+                ..
+            } = event {
+                match key_code {
+                    KeyCode::F1 => {
+                        self.debug_state.toggle_hud();
+                        return true;
+                    }
+                    KeyCode::F2 => {
+                        self.debug_state.toggle_colliders();
+                        return true;
+                    }
+                    KeyCode::F3 => {
+                        self.debug_state.toggle_debug_camera();
+
+                        // Toggle orbit controller when switching to debug camera
+                        if let Some(ref mut orbit_ctrl) = self.orbit_controller {
+                            orbit_ctrl.set_enabled(self.debug_state.use_debug_camera);
+
+                            if self.debug_state.use_debug_camera {
+                                log::info!("Debug camera ENABLED - use Right-click to orbit, Middle-click to pan, Scroll to zoom");
+
+                                // Sync orbit controller from current camera state
+                                orbit_ctrl.sync_from_camera(&self.camera);
+
+                                // Create a copy of the camera for debug use
+                                if let Some(ref mut debug_cam) = self.debug_camera {
+                                    *debug_cam = self.camera.clone();
+                                }
+                            } else {
+                                log::info!("Debug camera DISABLED - using main scene camera");
+                            }
+                        }
+
+                        return true;
+                    }
+                    KeyCode::F4 => {
+                        self.debug_state.toggle_gpu_profiler();
+                        return true;
+                    }
+                    _ => {}
+                }
+            }
+
+            // Handle orbit controller mouse input when debug camera is active
+            if self.debug_state.use_debug_camera {
+                if let Some(ref mut orbit_ctrl) = self.orbit_controller {
+                    match event {
+                        WindowEvent::MouseInput { button, state, .. } => {
+                            orbit_ctrl.handle_mouse_button(*button, *state);
+                            return true;
+                        }
+                        WindowEvent::CursorMoved { position, .. } => {
+                            orbit_ctrl.handle_mouse_move(glam::Vec2::new(
+                                position.x as f32,
+                                position.y as f32,
+                            ));
+                            return true;
+                        }
+                        WindowEvent::MouseWheel { delta, .. } => {
+                            let scroll_delta = match delta {
+                                MouseScrollDelta::LineDelta(_x, y) => *y,
+                                MouseScrollDelta::PixelDelta(pos) => pos.y as f32 / 100.0,
+                            };
+                            orbit_ctrl.handle_scroll(scroll_delta);
+                            return true;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
         false
     }
 
     fn update(&mut self) {
         self.timer.tick();
+
+        // Update debug HUD stats if enabled
+        if self.debug_state.show_hud {
+            if let Some(ref mut hud) = self.debug_hud {
+                let stats = self.physics_world.stats();
+                hud.update_stats(
+                    self.timer.fps(),
+                    self.timer.delta_seconds() * 1000.0, // Convert to ms
+                    stats.rigid_body_count,
+                    stats.collider_count,
+                );
+            }
+        }
+
+        // Update debug camera if active
+        if self.debug_state.use_debug_camera {
+            if let (Some(ref mut orbit_ctrl), Some(ref mut debug_cam)) =
+                (&mut self.orbit_controller, &mut self.debug_camera)
+            {
+                orbit_ctrl.update_camera(debug_cam);
+            }
+        }
 
         // Fixed timestep physics update (60 Hz)
         const PHYSICS_TIMESTEP: f32 = 1.0 / 60.0;
@@ -305,14 +465,83 @@ impl App {
                     label: Some("Render Encoder"),
                 });
 
+        // Use debug camera if active, otherwise use main camera
+        let active_camera = if self.debug_state.use_debug_camera {
+            self.debug_camera.as_ref().unwrap_or(&self.camera)
+        } else {
+            &self.camera
+        };
+
         // Render the scene
         self.scene_renderer.render(
             &mut encoder,
             &view,
-            &self.camera,
+            active_camera,
             &self.renderer.queue,
             &self.renderer.device,
         );
+
+        // Render debug collider gizmos if enabled
+        if self.debug_state.show_colliders {
+            if let Some(ref mut line_renderer) = self.line_renderer {
+                // Clear and rebuild line batch from physics world
+                self.line_batch.clear();
+                append_collider_lines(&self.physics_world, &mut self.line_batch);
+
+                if !self.line_batch.is_empty() {
+                    // Update camera matrix
+                    line_renderer.update_camera(&self.renderer.queue, active_camera);
+
+                    // Upload line vertices
+                    line_renderer.upload(
+                        &self.renderer.device,
+                        &self.renderer.queue,
+                        &self.line_batch,
+                    );
+
+                    // Create render pass for lines
+                    {
+                        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: Some("Debug Lines Render Pass"),
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: &view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Load, // Don't clear, draw on top
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                                view: &self.scene_renderer.depth_texture.view,
+                                depth_ops: Some(wgpu::Operations {
+                                    load: wgpu::LoadOp::Load, // Use existing depth
+                                    store: wgpu::StoreOp::Store,
+                                }),
+                                stencil_ops: None,
+                            }),
+                            timestamp_writes: None,
+                            occlusion_query_set: None,
+                        });
+
+                        line_renderer.draw(&mut render_pass, self.line_batch.vertex_count());
+                    }
+                }
+            }
+        }
+
+        // Render debug HUD if enabled
+        if self.debug_state.show_hud {
+            if let Some(ref mut hud) = self.debug_hud {
+                if let Err(e) = hud.render(
+                    &self.renderer.device,
+                    &self.renderer.queue,
+                    &mut encoder,
+                    &view,
+                ) {
+                    log::warn!("Failed to render debug HUD: {}", e);
+                }
+            }
+        }
 
         self.renderer
             .queue

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 mod app;
 mod assets;
+mod debug;
 mod ecs;
 mod io;
 mod render;
@@ -23,20 +24,56 @@ struct Args {
     /// Window height
     #[arg(long, default_value_t = 720)]
     height: u32,
+
+    /// Enable debug mode (overrides DEBUG_MODE env var)
+    #[arg(long, default_value_t = false)]
+    debug: bool,
+
+    /// Enable verbose logging (shows wgpu/debug logs)
+    #[arg(short, long, default_value_t = false)]
+    verbose: bool,
 }
 
 fn main() -> anyhow::Result<()> {
-    // Initialize logger
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    // Load .env early; ignore if missing
+    let _ = dotenvy::dotenv();
 
+    // Parse CLI arguments
     let args = Args::parse();
+
+    // Create debug config (merges CLI and env)
+    let debug_config = debug::DebugConfig::from_env_and_cli(args.debug);
+
+    // Initialize logger with smart filtering
+    // - Default: info level, but silence wgpu_core and wgpu_hal (too verbose)
+    // - Debug mode: debug level for our code, info for wgpu
+    // - Verbose flag: show everything including wgpu internals
+    let filter = if args.verbose {
+        // Verbose: show everything at debug/trace level
+        if debug_config.is_enabled() {
+            "debug,wgpu_core=debug,wgpu_hal=debug"
+        } else {
+            "info,wgpu_core=debug,wgpu_hal=debug"
+        }
+    } else {
+        // Normal: silence noisy subsystems
+        if debug_config.is_enabled() {
+            "info,wgpu_core=warn,wgpu_hal=warn,naga=warn,cosmic_text=warn,vibe_engine::render::scene_renderer=warn"
+        } else {
+            "info,wgpu_core=warn,wgpu_hal=warn,naga=warn,cosmic_text=warn"
+        }
+    };
+
+    env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or(filter)
+    ).init();
 
     // Resolve scene path
     let scene_path = resolve_scene_path(&args.scene)?;
     log::info!("Loading scene from: {}", scene_path.display());
 
     // Run the application
-    pollster::block_on(run(scene_path, args.width, args.height))
+    pollster::block_on(run(scene_path, args.width, args.height, debug_config))
 }
 
 fn resolve_scene_path(scene: &str) -> anyhow::Result<PathBuf> {
@@ -69,7 +106,7 @@ fn resolve_scene_path(scene: &str) -> anyhow::Result<PathBuf> {
     }
 }
 
-async fn run(scene_path: PathBuf, width: u32, height: u32) -> anyhow::Result<()> {
+async fn run(scene_path: PathBuf, width: u32, height: u32, debug_config: debug::DebugConfig) -> anyhow::Result<()> {
     log::info!("Initializing Vibe Coder Engine...");
 
     // Create event loop
@@ -77,7 +114,7 @@ async fn run(scene_path: PathBuf, width: u32, height: u32) -> anyhow::Result<()>
         .map_err(|e| anyhow::anyhow!("Failed to create event loop: {}", e))?;
 
     // Create the app
-    let app = app::App::new(scene_path, width, height, &event_loop).await?;
+    let app = app::App::new(scene_path, width, height, debug_config, &event_loop).await?;
 
     log::info!("Entering render loop...");
     app.run(event_loop)?;

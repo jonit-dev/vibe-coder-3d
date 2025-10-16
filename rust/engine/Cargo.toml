@@ -23,6 +23,10 @@ vibe-assets = { path = "crates/assets" }
 vibe-wasm-bridge = { path = "crates/wasm-bridge" }
 vibe-physics = { path = "crates/physics" }
 
+# Physics (for debug collider visualization)
+rapier3d = { version = "0.17", features = ["dim3"] }
+parry3d = "0.13"
+
 # Core rendering
 wgpu = "0.19"
 winit = "0.29"
@@ -49,8 +53,15 @@ log = "0.4"
 # CLI
 clap = { version = "4.5", features = ["derive"] }
 
+# Environment variables
+dotenvy = "0.15"
+
 # Async runtime helper
 pollster = "0.3"
+
+# Debug tools
+wgpu-profiler = "0.16"
+glyphon = "0.5"
 
 [features]
 default = ["gltf-support"]
