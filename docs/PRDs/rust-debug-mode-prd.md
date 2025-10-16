@@ -60,18 +60,21 @@ rust/engine/
   2. Load `.env` at startup via `dotenvy::dotenv().ok()`; read `DEBUG_MODE` env.
   3. Implement `DebugConfig` merging CLI over env; expose `is_enabled()`.
   4. If enabled, set log filter to `debug` (unless overridden by user) and pass config into `App`.
+  5. remember adding .env to gitignore (add a .env.example with defaults). Warn on logs if .env is not present - tell to cp from example file
 
 - **Phase 2: Debug Subsystem Skeleton (0.5 day)**
 
   1. Create `src/debug/{mod,config}.rs` with state and toggles.
   2. Add `DebugState` to `App`: stores `enabled`, `show_hud`, `show_colliders`, `use_debug_camera`.
-  3. Register hotkeys: F1 toggle HUD, F2 toggle colliders, F3 toggle debug camera, F4 toggle GPU profiler.
+  3. Register hotkeys: F1 toggle HUD, F2 toggle colliders, F3 toggle debug camera, F4 toggle GPU profiler. add visual small indication somehow on the screen about these
 
 - **Phase 3: Orbit Camera Controller (0.75 day)**
 
-  1. Implement `camera_orbit.rs` that updates a `Camera` using mouse (rotate, pan) and wheel (zoom).
-  2. Wire winit input events in `App::input()` to the orbit controller when `use_debug_camera`.
-  3. Maintain a dedicated `debug_camera` initialized from main camera position/target.
+Remember its a debug only camera. Not available on the final build
+
+1. Implement `camera_orbit.rs` that updates a `Camera` using mouse (rotate, pan) and wheel (zoom).
+2. Wire winit input events in `App::input()` to the orbit controller when `use_debug_camera`.
+3. Maintain a dedicated `debug_camera` initialized from main camera position/target.
 
 - **Phase 4: Collider Gizmos (1.0 day)**
 
