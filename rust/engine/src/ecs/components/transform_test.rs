@@ -54,10 +54,10 @@ mod tests {
 
     #[test]
     fn test_rotation_quat_with_euler_angles() {
-        // Test that Euler angles (3 values) from TypeScript are properly converted
+        // Test that Euler angles (3 values) from TypeScript are properly converted from degrees
         let transform = Transform {
             position: None,
-            rotation: Some(vec![0.0, 0.0, std::f32::consts::FRAC_PI_2]), // 90 degrees around Z
+            rotation: Some(vec![0.0, 0.0, 90.0]), // 90 degrees around Z (in degrees)
             scale: None,
         };
 
@@ -188,10 +188,10 @@ mod tests {
 
     #[test]
     fn test_deserialization_euler_from_typescript() {
-        // Test that TypeScript format (3-value Euler angles) deserializes correctly
+        // Test that TypeScript format (3-value Euler angles in degrees) deserializes correctly
         let json = r#"{
             "position": [1.0, 2.0, 3.0],
-            "rotation": [0.0, 0.0, 1.57],
+            "rotation": [0.0, 0.0, 90.0],
             "scale": [2.0, 2.0, 2.0]
         }"#;
 
@@ -202,9 +202,9 @@ mod tests {
         assert_eq!(transform.rotation.as_ref().map(|r| r.len()), Some(3));
         assert_eq!(transform.scale, Some([2.0, 2.0, 2.0]));
 
-        // Verify it converts to quaternion correctly
+        // Verify it converts to quaternion correctly (90 degrees = PI/2 radians)
         let quat = transform.rotation_quat();
-        let expected = Quat::from_euler(glam::EulerRot::XYZ, 0.0, 0.0, 1.57);
+        let expected = Quat::from_euler(glam::EulerRot::XYZ, 0.0, 0.0, std::f32::consts::FRAC_PI_2);
         assert!((quat.x - expected.x).abs() < 0.001);
         assert!((quat.y - expected.y).abs() < 0.001);
         assert!((quat.z - expected.z).abs() < 0.001);

@@ -100,13 +100,16 @@ mod tests {
     fn test_create_sphere_positions_unit_radius() {
         let sphere = create_sphere(16, 8);
 
-        // For a unit sphere, all positions should be approximately 1.0 from origin
+        // Sphere has radius 0.5 to match Three.js default
+        let expected_radius = 0.5;
+        let expected_radius_sq = expected_radius * expected_radius;
+
         for vertex in &sphere.vertices {
             let distance_sq = vertex.position[0] * vertex.position[0]
                 + vertex.position[1] * vertex.position[1]
                 + vertex.position[2] * vertex.position[2];
 
-            assert!((distance_sq - 1.0).abs() < 0.001);
+            assert!((distance_sq - expected_radius_sq).abs() < 0.001);
         }
     }
 
@@ -156,22 +159,23 @@ mod tests {
         // Check that vertices are at correct positions
         let positions: Vec<[f32; 3]> = plane.vertices.iter().map(|v| v.position).collect();
 
-        // Should contain corners at ±half
-        assert!(positions.contains(&[-half, 0.0, -half]));
-        assert!(positions.contains(&[half, 0.0, -half]));
-        assert!(positions.contains(&[half, 0.0, half]));
-        assert!(positions.contains(&[-half, 0.0, half]));
+        // Plane is in XY plane (Z=0), facing +Z
+        // Should contain corners at ±half in X and Y
+        assert!(positions.contains(&[-half, -half, 0.0]));
+        assert!(positions.contains(&[half, -half, 0.0]));
+        assert!(positions.contains(&[half, half, 0.0]));
+        assert!(positions.contains(&[-half, half, 0.0]));
     }
 
     #[test]
     fn test_create_plane_normals() {
         let plane = create_plane(10.0);
 
-        // All normals should point up (Y+)
+        // All normals should point forward (Z+) - plane is in XY plane
         for vertex in &plane.vertices {
             assert_eq!(vertex.normal[0], 0.0);
-            assert_eq!(vertex.normal[1], 1.0);
-            assert_eq!(vertex.normal[2], 0.0);
+            assert_eq!(vertex.normal[1], 0.0);
+            assert_eq!(vertex.normal[2], 1.0);
         }
     }
 

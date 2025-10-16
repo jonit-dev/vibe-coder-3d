@@ -16,7 +16,8 @@ export class RustSchemaExporter {
     logger.info('Exporting component schemas', { outputDir });
 
     const registry = ComponentRegistry.getInstance();
-    const components = registry.getAllComponents();
+    const componentIds = registry.listComponents();
+    const components = componentIds.map(id => registry.get(id)).filter(c => c !== undefined);
 
     for (const component of components) {
       const schema = component.schema;
@@ -87,7 +88,7 @@ export class RustSchemaExporter {
       case 'ZodString':
         return { type: 'string' };
 
-      case 'ZodNumber':
+      case 'ZodNumber': {
         const numberSchema: any = { type: 'number' };
         // Check for min/max constraints
         if (field._def?.checks) {
@@ -97,6 +98,7 @@ export class RustSchemaExporter {
           }
         }
         return numberSchema;
+      }
 
       case 'ZodBoolean':
         return { type: 'boolean' };
@@ -115,7 +117,7 @@ export class RustSchemaExporter {
           maxItems: field._def.items.length,
         };
 
-      case 'ZodObject':
+      case 'ZodObject': {
         const shape = field._def.shape();
         const properties: Record<string, any> = {};
         for (const [key, value] of Object.entries(shape)) {
@@ -125,6 +127,7 @@ export class RustSchemaExporter {
           type: 'object',
           properties,
         };
+      }
 
       case 'ZodEnum':
         return {
@@ -135,10 +138,11 @@ export class RustSchemaExporter {
       case 'ZodOptional':
         return this.parseZodField(field._def.innerType);
 
-      case 'ZodDefault':
+      case 'ZodDefault': {
         const defaultSchema = this.parseZodField(field._def.innerType);
         defaultSchema.default = field._def.defaultValue();
         return defaultSchema;
+      }
 
       default:
         logger.warn('Unknown Zod type', { typeName });

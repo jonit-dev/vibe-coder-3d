@@ -1,7 +1,7 @@
 import type { ISceneStore } from '../../../core/lib/serialization/common/ISceneStore';
 import {
-  sanitizePascalCase,
   sanitizeComponentName,
+  sanitizePascalCase,
 } from '../../../core/lib/serialization/common/NameUtils';
 import type { IMaterialDefinition } from '../../../core/materials/Material.types';
 import type { IPrefabDefinition } from '../../../core/prefabs/Prefab.types';
@@ -187,7 +187,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     }
 
     // Generate KISS scene file with entities + path references
-    const sceneName = sanitizeComponentName(cleanName);
+    const sceneName = sanitizePascalCase(cleanName);
     const sceneContent = this.generateSceneWithPaths(
       compressedEntities as never[],
       metadata,

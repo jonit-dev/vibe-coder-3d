@@ -192,9 +192,14 @@ pub fn create_sphere(segments: u32, rings: u32) -> Mesh {
             let u = segment as f32 / segments as f32;
             let v = ring as f32 / rings as f32;
 
+            // Normal is the normalized direction from center to point
+            let nx = sin_phi * cos_theta;
+            let ny = cos_phi;
+            let nz = sin_phi * sin_theta;
+
             vertices.push(Vertex {
                 position: [x, y, z],
-                normal: [x, y, z], // For unit sphere, normal = position
+                normal: [nx, ny, nz], // Unit length normal
                 uv: [u, v],
                 tangent: [0.0, 0.0, 0.0, 1.0],
             });
@@ -221,7 +226,8 @@ pub fn create_sphere(segments: u32, rings: u32) -> Mesh {
 }
 
 /// Generate a plane mesh matching Three.js PlaneGeometry(1,1)
-/// Orientation: XY plane facing +Z (so no -90 deg X rotation needed)
+/// Orientation: XY plane facing +Z (Three.js default)
+/// Note: In Three.js, planes are vertical by default. Rotate -90° around X to make horizontal.
 pub fn create_plane(size: f32) -> Mesh {
     let half = size / 2.0;
     log::debug!(
@@ -238,25 +244,25 @@ pub fn create_plane(size: f32) -> Mesh {
         Vertex {
             position: [-half, -half, 0.0],
             normal: [0.0, 0.0, 1.0],
-            uv: [0.0, 1.0],
+            uv: [0.0, 0.0],
             tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [half, -half, 0.0],
             normal: [0.0, 0.0, 1.0],
-            uv: [1.0, 1.0],
+            uv: [1.0, 0.0],
             tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [half, half, 0.0],
             normal: [0.0, 0.0, 1.0],
-            uv: [1.0, 0.0],
+            uv: [1.0, 1.0],
             tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
             position: [-half, half, 0.0],
             normal: [0.0, 0.0, 1.0],
-            uv: [0.0, 0.0],
+            uv: [0.0, 1.0],
             tangent: [0.0, 0.0, 0.0, 1.0],
         },
     ];
