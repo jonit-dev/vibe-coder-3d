@@ -1,4 +1,5 @@
 pub mod decoders;
+pub mod transform_utils;
 
 use anyhow::Result;
 use serde_json::Value;
@@ -10,6 +11,12 @@ pub use decoders::{
     create_default_registry, CameraComponent, Light, LightColor, Material, MeshCollider,
     MeshColliderSize, MeshRenderer, MeshRendererMaterialOverride, PhysicsMaterialData, RigidBody,
     RigidBodyMaterial, Transform,
+};
+
+// Re-export transform utilities for standardized conversions
+pub use transform_utils::{
+    position_to_vec3, position_to_vec3_opt, rotation_to_quat, rotation_to_quat_opt,
+    scale_to_vec3, scale_to_vec3_opt,
 };
 
 /// Component capabilities - describes what a component affects

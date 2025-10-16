@@ -7,6 +7,7 @@ This folder contains the native Rust engine that renders 3D scenes using wgpu. I
 ## Critical
 
 - Must use snake_case for variable naming in Rust!
+- **ALWAYS use `vibe_ecs_bridge::transform_utils` for rotation conversions** - TypeScript stores rotations in DEGREES, Rust expects RADIANS
 
 ## Project Structure
 
@@ -743,9 +744,138 @@ vibe-assets = { path = "crates/assets" }
 - [Learn wgpu](https://sotrh.github.io/learn-wgpu/)
 - [Rust Book](https://doc.rust-lang.org/book/)
 
+## ECS Feature Parity
+
+When adding or modifying components to maintain parity with TypeScript:
+
+- **Read** `ECS_PARITY_GUIDELINES.md` for comprehensive parity requirements
+- **Use** `vibe_ecs_bridge::transform_utils` for ALL transform conversions
+- **Test** with real scene files from the TypeScript editor
+- **Verify** visual and physics behavior matches Three.js exactly
+
+The parity guidelines document covers:
+- Component structure requirements
+- Decoder implementation patterns
+- Transform coordinate system conversions (degrees vs radians!)
+- Testing strategy
+- Common parity violations and fixes
+
 ## Questions?
 
 - Check `README.md` for quickstart and commands
 - Check `IMPLEMENTATION.md` for architecture details
 - Check `INTEGRATION_AUDIT.md` for TS ↔ Rust integration status
+- Check `ECS_PARITY_GUIDELINES.md` for component parity standards
 - Read inline code comments for specific implementation details
+
+## Transform Coordinate System Conventions
+
+### Critical: Degrees vs Radians
+
+**THE BUG WE FIXED**: TypeScript/JSON stores rotation as Euler angles in **DEGREES**, but Rust math libraries (glam) expect **RADIANS**.
+
+**ALWAYS use the standardized conversion utilities from `vibe-ecs-bridge/transform_utils.rs`** to avoid this bug:
+
+```rust
+use vibe_ecs_bridge::{rotation_to_quat, position_to_vec3, scale_to_vec3};
+
+// ✅ CORRECT - uses standardized utilities
+let rotation = rotation_to_quat(&[-90.0, 0.0, 0.0]); // Handles degrees → radians
+let position = position_to_vec3(&[0.0, 1.0, -10.0]);
+let scale = scale_to_vec3(&[10.0, 10.0, 1.0]);
+
+// ❌ WRONG - manual conversion is error-prone
+let rotation = Quat::from_euler(glam::EulerRot::XYZ, -90.0, 0.0, 0.0); // WRONG! Treats as radians
+```
+
+### Why This Matters
+
+**Example Bug**: A plane with rotation `[-90, 0, 0]` degrees:
+- ✅ **Correct**: Convert `-90°` → `-π/2 radians` → horizontal plane (floor)
+- ❌ **Wrong**: Use `-90` as radians → `-5156°` rotation → slanted plane (ramp)
+
+This caused physics objects to slide downhill instead of falling straight down!
+
+### Standardized Conversion Functions
+
+Located in `rust/engine/crates/ecs-bridge/src/transform_utils.rs`:
+
+| Function | Input | Output | Notes |
+|----------|-------|--------|-------|
+| `rotation_to_quat(rotation: &[f32])` | 3-elem (Euler degrees) or 4-elem (quat) | `Quat` | **Auto-detects format** |
+| `rotation_to_quat_opt(rotation: Option<&Vec<f32>>)` | Optional rotation | `Quat` | Returns `IDENTITY` if None |
+| `position_to_vec3(position: &[f32; 3])` | XYZ array | `Vec3` | Simple conversion |
+| `position_to_vec3_opt(position: Option<&[f32; 3]>)` | Optional position | `Vec3` | Returns `ZERO` if None |
+| `scale_to_vec3(scale: &[f32; 3])` | XYZ array | `Vec3` | Simple conversion |
+| `scale_to_vec3_opt(scale: Option<&[f32; 3]>)` | Optional scale | `Vec3` | Returns `ONE` if None |
+
+### Where to Use These Utilities
+
+**Required in ALL code that reads Transform components:**
+
+1. ✅ **Scene graph** (`vibe-scene-graph`) - used in `extract_local_transform()`
+2. ✅ **Physics system** (`vibe-physics`) - used in `get_transform()`
+3. ✅ **Rendering** - if directly reading transforms (usually uses scene graph)
+4. ✅ **Any new system** that processes entity transforms
+
+### Euler Rotation Order
+
+Both Three.js and Rust use **XYZ Euler order** by default:
+- Three.js: `new THREE.Euler(x, y, z, 'XYZ')`
+- Rust: `Quat::from_euler(glam::EulerRot::XYZ, x, y, z)`
+
+This is already handled by `rotation_to_quat()`.
+
+### Coordinate System
+
+- **Right-handed coordinate system** (matches Three.js)
+- **Y-up** (Y axis is vertical)
+- **+Z is forward** in default camera orientation
+- **+X is right**
+
+### Testing Transform Conversions
+
+The `transform_utils` module has comprehensive tests:
+
+```bash
+cd rust/engine/crates/ecs-bridge
+cargo test transform_utils
+```
+
+Key test cases:
+- ✅ 90° Euler → π/2 radians quaternion
+- ✅ -90° Euler (plane rotation) → correct horizontal orientation
+- ✅ Quaternion passthrough (no conversion)
+- ✅ Zero rotation → identity quaternion
+- ✅ Invalid array lengths → identity with warning
+
+### Adding New Transform-Related Code
+
+When adding new code that processes transforms:
+
+1. **Import standardized utilities:**
+   ```rust
+   use vibe_ecs_bridge::{rotation_to_quat_opt, position_to_vec3_opt, scale_to_vec3_opt};
+   ```
+
+2. **Use them for ALL conversions:**
+   ```rust
+   let position = position_to_vec3_opt(transform.position.as_ref());
+   let rotation = rotation_to_quat_opt(transform.rotation.as_ref());
+   let scale = scale_to_vec3_opt(transform.scale.as_ref());
+   ```
+
+3. **Never manually convert degrees → radians** - always use `rotation_to_quat()`
+
+4. **Document that your code uses standardized conversions** in comments
+
+### Migration Checklist
+
+When reviewing existing transform code:
+
+- [ ] Does it read rotation from JSON/Transform component?
+- [ ] Does it use `rotation_to_quat()` or manual conversion?
+- [ ] If manual: Does it call `.to_radians()` on Euler angles?
+- [ ] If missing `.to_radians()`: **BUG! Fix immediately**
+- [ ] Replace all manual conversions with standardized utilities
+

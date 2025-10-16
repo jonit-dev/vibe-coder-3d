@@ -1,7 +1,10 @@
 use anyhow::{Context, Result};
-use glam::{Mat4, Quat, Vec3};
+use glam::{Mat4, Vec3};
 use std::collections::{HashMap, HashSet};
-use vibe_ecs_bridge::{MeshRenderer, MeshRendererMaterialOverride, Transform};
+use vibe_ecs_bridge::{
+    position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt, MeshRenderer,
+    MeshRendererMaterialOverride, Transform,
+};
 use vibe_scene::{Entity, EntityId, Scene};
 
 /// Scene graph with parent/child relationships and transform propagation
@@ -69,41 +72,16 @@ impl SceneGraph {
     }
 
     /// Extract local transform matrix from entity's Transform component
+    ///
+    /// Uses standardized transform utilities to convert TypeScript/JSON conventions
+    /// to Rust math types (e.g., degrees → radians)
     fn extract_local_transform(entity: &Entity) -> Mat4 {
         if let Some(transform) = entity.get_component::<Transform>("Transform") {
-            // Position
-            let position = transform
-                .position
-                .map(|p| Vec3::new(p[0], p[1], p[2]))
-                .unwrap_or(Vec3::ZERO);
-
-            // Rotation (handle both Euler angles and quaternions)
-            // IMPORTANT: Editor stores Euler angles in DEGREES (x, y, z)
-            // Match Three.js which also uses degrees in authoring but radians internally
-            let rotation = transform
-                .rotation
-                .as_ref()
-                .map(|r| match r.len() {
-                    3 => {
-                        // Convert degrees -> radians
-                        let x = r[0].to_radians();
-                        let y = r[1].to_radians();
-                        let z = r[2].to_radians();
-                        Quat::from_euler(glam::EulerRot::XYZ, x, y, z)
-                    }
-                    4 => Quat::from_xyzw(r[0], r[1], r[2], r[3]),
-                    _ => {
-                        log::warn!("Invalid rotation array length: {}, using identity", r.len());
-                        Quat::IDENTITY
-                    }
-                })
-                .unwrap_or(Quat::IDENTITY);
-
-            // Scale
-            let scale = transform
-                .scale
-                .map(|s| Vec3::new(s[0], s[1], s[2]))
-                .unwrap_or(Vec3::ONE);
+            // Use standardized conversion utilities from vibe-ecs-bridge
+            // These handle TypeScript conventions (degrees for rotation, etc.)
+            let position = position_to_vec3_opt(transform.position.as_ref());
+            let rotation = rotation_to_quat_opt(transform.rotation.as_ref());
+            let scale = scale_to_vec3_opt(transform.scale.as_ref());
 
             Mat4::from_scale_rotation_translation(scale, rotation, position)
         } else {

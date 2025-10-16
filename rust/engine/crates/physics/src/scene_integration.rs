@@ -1,6 +1,9 @@
 use anyhow::{Context, Result};
-use glam::{Quat, Vec3};
-use vibe_ecs_bridge::{ComponentRegistry, MeshCollider, RigidBody};
+use glam::Vec3;
+use vibe_ecs_bridge::{
+    position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt, ComponentRegistry,
+    MeshCollider, RigidBody,
+};
 use vibe_scene::{Entity, Scene};
 
 use crate::{
@@ -90,41 +93,25 @@ fn get_component<T: 'static>(
 }
 
 /// Extract transform from entity (position, rotation, scale)
-fn get_transform(entity: &Entity, registry: &ComponentRegistry) -> (Vec3, Quat, Vec3) {
+///
+/// Uses standardized transform utilities to convert TypeScript/JSON conventions
+/// to Rust math types (e.g., degrees → radians)
+fn get_transform(
+    entity: &Entity,
+    registry: &ComponentRegistry,
+) -> (Vec3, glam::Quat, Vec3) {
     use vibe_ecs_bridge::Transform;
 
     if let Some(transform) = get_component::<Transform>(entity, "Transform", registry) {
-        let position = transform
-            .position
-            .map(|p| Vec3::new(p[0], p[1], p[2]))
-            .unwrap_or(Vec3::ZERO);
-
-        let rotation = if let Some(ref rot) = transform.rotation {
-            if rot.len() == 4 {
-                // Quaternion [x, y, z, w]
-                Quat::from_xyzw(rot[0], rot[1], rot[2], rot[3])
-            } else if rot.len() == 3 {
-                // Euler angles [x, y, z] in DEGREES (from TypeScript/JSON)
-                // Convert to radians for glam
-                let x_rad = rot[0].to_radians();
-                let y_rad = rot[1].to_radians();
-                let z_rad = rot[2].to_radians();
-                Quat::from_euler(glam::EulerRot::XYZ, x_rad, y_rad, z_rad)
-            } else {
-                Quat::IDENTITY
-            }
-        } else {
-            Quat::IDENTITY
-        };
-
-        let scale = transform
-            .scale
-            .map(|s| Vec3::new(s[0], s[1], s[2]))
-            .unwrap_or(Vec3::ONE);
+        // Use standardized conversion utilities from vibe-ecs-bridge
+        // These handle TypeScript conventions (degrees for rotation, etc.)
+        let position = position_to_vec3_opt(transform.position.as_ref());
+        let rotation = rotation_to_quat_opt(transform.rotation.as_ref());
+        let scale = scale_to_vec3_opt(transform.scale.as_ref());
 
         (position, rotation, scale)
     } else {
-        (Vec3::ZERO, Quat::IDENTITY, Vec3::ONE)
+        (Vec3::ZERO, glam::Quat::IDENTITY, Vec3::ONE)
     }
 }
 
@@ -132,7 +119,7 @@ fn get_transform(entity: &Entity, registry: &ComponentRegistry) -> (Vec3, Quat, 
 fn build_rigid_body(
     component: &RigidBody,
     position: Vec3,
-    rotation: Quat,
+    rotation: glam::Quat,
 ) -> Result<rapier3d::dynamics::RigidBody> {
     let body_type = RigidBodyType::from_str(component.get_body_type());
 
