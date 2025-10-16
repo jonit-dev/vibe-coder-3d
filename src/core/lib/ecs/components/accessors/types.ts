@@ -214,7 +214,7 @@ export interface IRigidBodyData {
   restitution?: number;
   friction?: number;
   enabled?: boolean;
-  bodyType?: 'dynamic' | 'kinematic' | 'static';
+  bodyType?: 'dynamic' | 'kinematic' | 'fixed';
   gravityScale?: number;
   canSleep?: boolean;
   material?: {

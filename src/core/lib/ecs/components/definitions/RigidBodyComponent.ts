@@ -45,7 +45,7 @@ export const rigidBodyComponent = ComponentFactory.create({
     const bodyType = getStringFromHash(component.bodyTypeHash[eid]) || 'dynamic';
     return {
       enabled: Boolean(component.enabled[eid]),
-      bodyType: bodyType as 'dynamic' | 'kinematic' | 'static',
+      bodyType: bodyType as 'dynamic' | 'kinematic' | 'fixed',
       type: bodyType,
       mass: component.mass[eid],
       gravityScale: component.gravityScale[eid],

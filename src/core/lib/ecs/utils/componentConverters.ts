@@ -168,7 +168,7 @@ export const RigidBodyConverter = {
     const bodyType = getStringFromHash(RigidBody.bodyTypeHash[eid]) || 'dynamic';
     return {
       enabled: Boolean(RigidBody.enabled[eid]),
-      bodyType: bodyType as 'dynamic' | 'kinematic' | 'static',
+      bodyType: bodyType as 'dynamic' | 'kinematic' | 'fixed',
       type: bodyType,
       mass: RigidBody.mass[eid],
       gravityScale: RigidBody.gravityScale[eid],

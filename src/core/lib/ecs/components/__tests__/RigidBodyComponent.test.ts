@@ -44,7 +44,7 @@ describe('RigidBodyComponent', () => {
     });
 
     it('should support different body types', () => {
-      const bodyTypes: IRigidBodyData['bodyType'][] = ['dynamic', 'kinematic', 'static'];
+      const bodyTypes: IRigidBodyData['bodyType'][] = ['dynamic', 'kinematic', 'fixed'];
 
       bodyTypes.forEach((bodyType) => {
         const rigidBody: IRigidBodyData = {
@@ -53,23 +53,23 @@ describe('RigidBodyComponent', () => {
           bodyType,
         };
 
-        expect(['dynamic', 'kinematic', 'static']).toContain(rigidBody.bodyType);
+        expect(['dynamic', 'kinematic', 'fixed']).toContain(rigidBody.bodyType);
       });
     });
 
-    it('should handle static body configuration', () => {
-      const staticBody: IRigidBodyData = {
-        type: 'static',
+    it('should handle fixed body configuration', () => {
+      const fixedBody: IRigidBodyData = {
+        type: 'fixed',
         mass: 0,
         isStatic: true,
-        bodyType: 'static',
+        bodyType: 'fixed',
         canSleep: false,
       };
 
-      expect(staticBody.isStatic).toBe(true);
-      expect(staticBody.mass).toBe(0);
-      expect(staticBody.bodyType).toBe('static');
-      expect(staticBody.canSleep).toBe(false);
+      expect(fixedBody.isStatic).toBe(true);
+      expect(fixedBody.mass).toBe(0);
+      expect(fixedBody.bodyType).toBe('fixed');
+      expect(fixedBody.canSleep).toBe(false);
     });
 
     it('should handle kinematic body configuration', () => {
