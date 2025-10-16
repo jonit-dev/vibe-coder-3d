@@ -22,6 +22,7 @@ The system uses **one unified serializer** for all scene operations:
 **File:** `src/core/lib/serialization/StreamingSceneSerializer.ts`
 
 **Key Features:**
+
 - Chunked processing (100 entities per chunk by default)
 - 16ms delay between chunks (~60fps maintained)
 - Progress callbacks with real-time metrics
@@ -37,16 +38,16 @@ Provides all scene operations through a single React hook:
 
 ```typescript
 const {
-  handleSave,           // Save with streaming
-  handleLoad,           // Load with streaming
-  handleClear,          // Clear scene
-  handleDownloadJSON,   // Download as JSON
-  progress,             // Real-time progress state
-  cancelOperation,      // Cancel ongoing operation
+  handleSave, // Save with streaming
+  handleLoad, // Load with streaming
+  handleClear, // Clear scene
+  handleDownloadJSON, // Download as JSON
+  progress, // Real-time progress state
+  cancelOperation, // Cancel ongoing operation
 } = useStreamingSceneActions({
   onProgressUpdate: (progress) => {
     // Real-time updates: phase, percentage, entities/sec, ETA
-  }
+  },
 });
 ```
 
@@ -57,23 +58,25 @@ Live progress feedback during operations:
 ```typescript
 interface IStreamingProgress {
   phase: 'initializing' | 'processing' | 'finalizing' | 'complete' | 'error';
-  current: number;              // Entities processed
-  total: number;                // Total entities
-  percentage: number;           // 0-100
-  entitiesPerSecond?: number;   // Performance metric
+  current: number; // Entities processed
+  total: number; // Total entities
+  percentage: number; // 0-100
+  entitiesPerSecond?: number; // Performance metric
   estimatedTimeRemaining?: number; // Seconds
-  currentEntityName?: string;   // Current entity being processed
+  currentEntityName?: string; // Current entity being processed
 }
 ```
 
 ### UI Integration
 
 **Status Bar** displays streaming progress:
+
 - Progress bar with percentage
 - Entities per second indicator
 - Visual feedback with color coding (cyan during streaming)
 
 **Editor** shows real-time status:
+
 - Processing phase
 - Current entity count
 - Performance metrics
@@ -84,16 +87,16 @@ interface IStreamingProgress {
 
 ```typescript
 interface IStreamingScene {
-  version: 5;                    // Streaming version
-  name?: string;                 // Scene name
-  timestamp: string;             // ISO 8601
-  totalEntities: number;         // For progress tracking
-  entities: IStreamingEntity[];  // All entities
+  version: 5; // Streaming version
+  name?: string; // Scene name
+  timestamp: string; // ISO 8601
+  totalEntities: number; // For progress tracking
+  entities: IStreamingEntity[]; // All entities
 }
 
 interface IStreamingEntity {
-  id: string | number;           // Normalized to string
-  name: string;                  // Entity name
+  id: string | number; // Normalized to string
+  name: string; // Entity name
   parentId?: string | number | null; // Hierarchy support
   components: Record<string, unknown>; // All components
 }
@@ -102,6 +105,7 @@ interface IStreamingEntity {
 ### Backward Compatibility
 
 The system automatically handles legacy formats:
+
 - Version 1-4 scenes load without issues
 - Missing `totalEntities` calculated from array length
 - Missing `timestamp` uses current time
@@ -113,21 +117,21 @@ The system automatically handles legacy formats:
 
 ```typescript
 const STREAM_CONFIG = {
-  CHUNK_SIZE: 100,              // Entities per chunk
-  CHUNK_DELAY: 16,              // 16ms = ~60fps
-  MAX_MEMORY_ENTITIES: 1000,    // Memory limit
+  CHUNK_SIZE: 100, // Entities per chunk
+  CHUNK_DELAY: 16, // 16ms = ~60fps
+  MAX_MEMORY_ENTITIES: 1000, // Memory limit
   PROGRESS_UPDATE_INTERVAL: 50, // Update every 50 entities
 };
 ```
 
 ### Benchmarks
 
-| Scene Size | Export Time | Import Time | UI Responsive |
-|-----------|-------------|-------------|---------------|
-| 100 entities | ~50ms | ~80ms | ✅ Smooth |
-| 1,000 entities | ~400ms | ~600ms | ✅ Smooth |
-| 10,000 entities | ~4s | ~6s | ✅ Smooth |
-| 100,000 entities | ~40s | ~60s | ✅ Smooth |
+| Scene Size       | Export Time | Import Time | UI Responsive |
+| ---------------- | ----------- | ----------- | ------------- |
+| 100 entities     | ~50ms       | ~80ms       | ✅ Smooth     |
+| 1,000 entities   | ~400ms      | ~600ms      | ✅ Smooth     |
+| 10,000 entities  | ~4s         | ~6s         | ✅ Smooth     |
+| 100,000 entities | ~40s        | ~60s        | ✅ Smooth     |
 
 **Key:** All operations maintain 60fps during processing.
 
@@ -149,14 +153,10 @@ handleClear();
 ### With Progress Monitoring
 
 ```typescript
-const {
-  progress,
-  handleSave,
-  cancelOperation,
-} = useStreamingSceneActions({
+const { progress, handleSave, cancelOperation } = useStreamingSceneActions({
   onProgressUpdate: (p) => {
     console.log(`${p.phase}: ${p.percentage}% (${p.entitiesPerSecond} e/s)`);
-  }
+  },
 });
 
 // Start save
@@ -210,6 +210,7 @@ await handleDownloadJSON('my-scene.json');
 ### From Legacy System
 
 No migration needed! The streaming system is:
+
 - ✅ **Backward compatible** with v1-4 scenes
 - ✅ **Drop-in replacement** for old hooks
 - ✅ **Automatic upgrade** on first save
@@ -219,14 +220,18 @@ No migration needed! The streaming system is:
 Old `useSceneActions` → New `useStreamingSceneActions`
 
 **Before:**
+
 ```typescript
 const { handleSave, handleLoad } = useSceneActions();
 ```
 
 **After:**
+
 ```typescript
 const { handleSave, handleLoad, progress } = useStreamingSceneActions({
-  onProgressUpdate: (p) => { /* optional */ }
+  onProgressUpdate: (p) => {
+    /* optional */
+  },
 });
 ```
 
@@ -244,10 +249,12 @@ Potential improvements for even better performance:
 ## Files Modified/Created
 
 ### Created
+
 - `src/core/lib/serialization/StreamingSceneSerializer.ts` - Core streaming engine
 - `src/editor/hooks/useStreamingSceneActions.ts` - React integration
 
 ### Modified
+
 - `src/editor/Editor.tsx` - Use streaming actions
 - `src/editor/components/layout/StatusBar.tsx` - Progress display
 - `src/core/lib/serialization/index.ts` - Export streaming serializer
@@ -256,6 +263,7 @@ Potential improvements for even better performance:
 - `src/editor/hooks/useSceneInitialization.ts` - Streaming types
 
 ### Removed
+
 - `src/editor/hooks/useSceneActions.ts` - Replaced by streaming version
 - `src/core/lib/serialization/sceneSerializer.ts` - Replaced by streaming version
 - `src/editor/hooks/useSceneSerialization.ts` - Deprecated PRD version

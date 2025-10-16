@@ -1,6 +1,5 @@
 # Externalized Asset Library and Generic Asset Endpoints
 
-
 ## Overview
 
 - **Context & Goals**: Externalize scene assets (materials, inputs, prefabs, scripts) into reusable files, referenced by path, to shrink scene files and promote reuse. Build a generalized abstraction to support additional asset categories beyond materials. Ensure editor UI loads from external files instead of hardcoded defaults.
@@ -231,6 +230,7 @@ Externalizing assets into a reusable library, adding generic asset endpoints, an
 ## Implementation Summary (Completed: 2025-10-11)
 
 ### ✅ Phase 1: Discovery & Abstractions (Completed)
+
 - Created `AssetTypes.ts` with generic `AssetType` enum and helper functions
 - Added `script` type to support future script assets
 - Created `defineScripts.ts` to match existing define helpers pattern
@@ -238,12 +238,14 @@ Externalizing assets into a reusable library, adding generic asset endpoints, an
 - Exported all asset utilities from serialization index
 
 **Files Created/Modified:**
+
 - `src/core/lib/serialization/assets/AssetTypes.ts` (new)
 - `src/core/lib/serialization/assets/defineScripts.ts` (new)
 - `src/core/lib/serialization/assets/AssetReferenceResolver.ts` (updated)
 - `src/core/lib/serialization/index.ts` (updated)
 
 ### ✅ Phase 2: Asset Library Layout & Initial Files (Completed)
+
 - Created directory structure: `src/game/assets/{materials,inputs,prefabs,scripts}`
 - Migrated default material from `MaterialRegistry` to `Default.material.tsx`
 - Migrated test materials from `materialsStore` to external files:
@@ -252,12 +254,14 @@ Externalizing assets into a reusable library, adding generic asset endpoints, an
 - Migrated default input from `inputStore` to `Default.input.tsx`
 
 **Files Created:**
+
 - `src/game/assets/materials/common/Default.material.tsx`
 - `src/game/assets/materials/common/TestMaterial.material.tsx`
 - `src/game/assets/materials/CrateTexture.material.tsx`
 - `src/game/assets/inputs/Default.input.tsx`
 
 ### ✅ Phase 3: Loader/Serializer Enhancements (Completed)
+
 - Created `AssetLibraryCatalog` for scanning and indexing library assets
 - Extended `MultiFileSceneSerializer` to prefer library refs (`@/`) over scene refs (`./`)
 - Updated serializer to check catalog and use library refs when available
@@ -265,11 +269,13 @@ Externalizing assets into a reusable library, adding generic asset endpoints, an
 - Added support for async serialization in multi-file serializer
 
 **Files Created/Modified:**
+
 - `src/core/lib/serialization/assets/AssetLibraryCatalog.ts` (new)
 - `src/core/lib/serialization/multi-file/MultiFileSceneSerializer.ts` (updated)
 - `src/core/lib/serialization/multi-file/MultiFileSceneLoader.ts` (updated)
 
 ### ✅ Phase 4: Editor Store Refactor (Completed)
+
 - Created `BrowserAssetLoader` for client-side asset loading via `import.meta.glob`
 - Refactored `materialsStore` to load library materials via `BrowserAssetLoader`
 - Removed hardcoded `ensureTestMaterials` function
@@ -278,12 +284,14 @@ Externalizing assets into a reusable library, adding generic asset endpoints, an
 - Cleaned up `console.log` from `prefabsStore`
 
 **Files Created/Modified:**
+
 - `src/core/lib/serialization/assets/BrowserAssetLoader.ts` (new)
 - `src/editor/store/materialsStore.ts` (updated)
 - `src/editor/store/inputStore.ts` (updated)
 - `src/editor/store/prefabsStore.ts` (updated)
 
 ### ✅ Phase 5: API Endpoints for Assets (Completed)
+
 - Created `IAssetStore` interface with save/load/list/delete operations
 - Implemented `FsAssetStore` for filesystem-based asset persistence
 - Created `createAssetsApi` Vite plugin with routes:
@@ -295,23 +303,28 @@ Externalizing assets into a reusable library, adding generic asset endpoints, an
 - Updated Vite watch ignore patterns for asset files
 
 **Files Created/Modified:**
+
 - `src/plugins/assets-api/IAssetStore.ts` (new)
 - `src/plugins/assets-api/FsAssetStore.ts` (new)
 - `src/plugins/assets-api/createAssetsApi.ts` (new)
 - `vite.config.ts` (updated)
 
 ### 📝 Phase 6: Documentation (Completed)
+
 - Created comprehensive `CLAUDE.md` documentation in assets folder
 - Documented architecture, API, usage patterns, and troubleshooting
 - Added migration guide from hardcoded to external assets
 
 **Files Created:**
+
 - `src/core/lib/serialization/assets/CLAUDE.md` (new)
 
 ### 🚧 Remaining Tasks (Optional/Future)
+
 These tasks were not critical for the core functionality and can be addressed as needed:
 
 1. **Phase 6 (Original): UI Integration** - Optional
+
    - Update MaterialBrowserModal to use external assets
    - Update PrefabBrowserModal to use external assets
    - Add "Create New Asset" flows in UI

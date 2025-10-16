@@ -3,6 +3,7 @@
 ## Overview
 
 - **Context & Goals**
+
   - Add frustum culling to the Rust engine to drastically reduce draw calls and improve rendering performance.
   - Only render entities that are visible within the camera's view frustum.
   - Target 50-90% reduction in draw calls for typical scenes with entities outside the view.
@@ -17,6 +18,7 @@
 ## Proposed Solution
 
 - **High-level Summary**
+
   - Implement frustum extraction from camera view-projection matrix.
   - Compute axis-aligned bounding boxes (AABB) for all meshes (primitives + GLTF).
   - Before rendering, test each entity's world-space AABB against the camera frustum.
@@ -46,6 +48,7 @@ rust/engine/
 ## Implementation Plan
 
 - **Phase 1: AABB Computation (0.75 day)**
+
   1. Add `parry3d` dependency to `Cargo.toml` for geometry primitives.
   2. Create `src/render/bounds.rs` with `Aabb` struct wrapping `parry3d::bounding_volume::Aabb`.
   3. Implement `Aabb::from_vertices(vertices: &[Vertex])` to compute min/max bounds.
@@ -54,6 +57,7 @@ rust/engine/
   6. Write unit tests for AABB computation with known cube/sphere vertices.
 
 - **Phase 2: Frustum Extraction (0.5 day)**
+
   1. Create `src/render/frustum.rs` with `Frustum` struct containing 6 planes.
   2. Implement `Frustum::from_view_projection(view_proj: Mat4)` to extract frustum planes.
   3. Use standard frustum extraction from view-projection matrix (6 planes from matrix rows).
@@ -61,6 +65,7 @@ rust/engine/
   5. Write unit tests verifying plane normals and distances for identity/simple matrices.
 
 - **Phase 3: Intersection Tests (0.5 day)**
+
   1. In `frustum.rs`, implement `Frustum::intersects_aabb(&self, aabb: &Aabb) -> bool`.
   2. Use standard AABB-plane intersection test (check AABB against all 6 planes).
   3. Early-out optimization: if AABB is entirely on negative side of any plane, it's culled.
@@ -68,6 +73,7 @@ rust/engine/
   5. Write unit tests with known frustum and AABB positions (inside, outside, intersecting).
 
 - **Phase 4: Integration into Renderer (0.75 day)**
+
   1. In `scene_renderer.rs`, extract camera frustum at start of `render()`.
   2. Before entity render loop, filter entities by frustum visibility:
      - Get mesh AABB from `mesh_cache`
@@ -79,6 +85,7 @@ rust/engine/
   5. Log culling ratio at debug level: `"Rendered {visible}/{total} entities ({culled} culled)"`.
 
 - **Phase 5: Debug HUD Integration (0.25 day)**
+
   1. Add culling stats to `DebugState`: `total_entities`, `visible_entities`, `culled_entities`.
   2. Update debug HUD overlay to display culling metrics when enabled.
   3. Show percentage: `"Culled: 73/100 (73%)"`.
@@ -96,13 +103,13 @@ rust/engine/
 /root-directory/
 ├── rust/engine/Cargo.toml
 ├── rust/engine/src/render/
-│   ├── scene_renderer.rs
-│   ├── camera.rs
-│   ├── frustum.rs              # NEW
-│   └── bounds.rs               # NEW
+│ ├── scene_renderer.rs
+│ ├── camera.rs
+│ ├── frustum.rs # NEW
+│ └── bounds.rs # NEW
 ├── rust/engine/crates/assets/src/
-│   ├── mesh_cache.rs           # add AABB field
-│   └── vertex.rs
+│ ├── mesh_cache.rs # add AABB field
+│ └── vertex.rs
 └── docs/PRDs/rust-frustum-culling-prd.md
 ```
 
@@ -350,6 +357,7 @@ cargo run --release -- --scene MaterialParityDemo
 ```
 
 Expected log output:
+
 ```
 [DEBUG] Rendered 23/156 entities (133 culled)
 ```
@@ -399,15 +407,15 @@ Colliders: 12
 
 ## Edge Cases
 
-| Edge Case | Remediation |
-|-----------|-------------|
-| Entity with no mesh | Skip culling test; entity won't be rendered anyway |
-| AABB computation for empty mesh | Return degenerate AABB (min=max=origin); always culled |
-| Camera inside large entity's AABB | Intersection test returns true; entity rendered |
-| Near plane clipping large entities | Conservative AABB transform includes all corners; renders correctly |
-| Orthographic camera | Frustum extraction works identically; planes are parallel |
+| Edge Case                           | Remediation                                                         |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| Entity with no mesh                 | Skip culling test; entity won't be rendered anyway                  |
+| AABB computation for empty mesh     | Return degenerate AABB (min=max=origin); always culled              |
+| Camera inside large entity's AABB   | Intersection test returns true; entity rendered                     |
+| Near plane clipping large entities  | Conservative AABB transform includes all corners; renders correctly |
+| Orthographic camera                 | Frustum extraction works identically; planes are parallel           |
 | Extremely small entities (< 1 unit) | AABB precision sufficient; floating point stable for typical scales |
-| Mesh with extreme vertex positions | AABB computed from actual vertices; handles any scale |
+| Mesh with extreme vertex positions  | AABB computed from actual vertices; handles any scale               |
 
 ## Sequence Diagram
 
@@ -444,22 +452,24 @@ sequenceDiagram
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Incorrect culling (visible entities not rendered) | Comprehensive unit tests with known frustum/AABB pairs; visual validation |
-| AABB transform performance overhead | Transform AABBs only for entities passing coarse tests; cache when possible |
-| Conservative AABB over-estimates bounds | Acceptable trade-off; better to render extra than miss visible entities |
-| Frustum plane extraction numerical issues | Use normalized planes; test with various camera configurations |
-| Large entity count (10k+) culling overhead | Future: spatial acceleration (octree/BVH); current solution handles 1k entities well |
+| Risk                                              | Mitigation                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Incorrect culling (visible entities not rendered) | Comprehensive unit tests with known frustum/AABB pairs; visual validation            |
+| AABB transform performance overhead               | Transform AABBs only for entities passing coarse tests; cache when possible          |
+| Conservative AABB over-estimates bounds           | Acceptable trade-off; better to render extra than miss visible entities              |
+| Frustum plane extraction numerical issues         | Use normalized planes; test with various camera configurations                       |
+| Large entity count (10k+) culling overhead        | Future: spatial acceleration (octree/BVH); current solution handles 1k entities well |
 
 ## Performance Targets
 
 - **Typical Scene (100 entities, 30 visible)**
+
   - Culling overhead: < 0.1ms per frame
   - Draw call reduction: ~70%
   - FPS improvement: 40-60%
 
 - **Large Scene (500 entities, 100 visible)**
+
   - Culling overhead: < 0.3ms per frame
   - Draw call reduction: ~80%
   - FPS improvement: 60-80%

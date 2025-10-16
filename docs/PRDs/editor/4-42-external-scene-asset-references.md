@@ -244,16 +244,16 @@
  */
 
 export type AssetReference =
-  | { materialId: string }              // Inline material (legacy)
-  | { materialRef: string }             // External material
-  | { prefabId: string }                // Inline prefab (legacy)
-  | { prefabRef: string }               // External prefab
-  | { inputAssetId: string }            // Inline input (legacy)
-  | { inputAssetRef: string };          // External input
+  | { materialId: string } // Inline material (legacy)
+  | { materialRef: string } // External material
+  | { prefabId: string } // Inline prefab (legacy)
+  | { prefabRef: string } // External prefab
+  | { inputAssetId: string } // Inline input (legacy)
+  | { inputAssetRef: string }; // External input
 
 export interface IAssetRefResolutionContext {
-  sceneFolder: string;              // e.g., 'src/game/scenes/Forest'
-  assetLibraryRoot: string;         // e.g., 'src/game/assets'
+  sceneFolder: string; // e.g., 'src/game/scenes/Forest'
+  assetLibraryRoot: string; // e.g., 'src/game/assets'
   format: 'single-file' | 'multi-file';
 }
 
@@ -266,7 +266,7 @@ export class AssetReferenceResolver {
   async resolve<T>(
     ref: string,
     context: IAssetRefResolutionContext,
-    assetType: 'material' | 'prefab' | 'input'
+    assetType: 'material' | 'prefab' | 'input',
   ): Promise<T> {
     const cacheKey = `${context.sceneFolder}:${ref}`;
 
@@ -292,14 +292,14 @@ export class AssetReferenceResolver {
   private resolvePath(
     ref: string,
     context: IAssetRefResolutionContext,
-    assetType: 'material' | 'prefab' | 'input'
+    assetType: 'material' | 'prefab' | 'input',
   ): string {
     // Absolute reference: @/materials/common/Stone
     if (ref.startsWith('@/')) {
       return path.join(
         context.assetLibraryRoot,
         ref.replace('@/', ''),
-        `${path.basename(ref)}.${assetType}.tsx`
+        `${path.basename(ref)}.${assetType}.tsx`,
       );
     }
 
@@ -308,7 +308,7 @@ export class AssetReferenceResolver {
       return path.join(
         context.sceneFolder,
         ref.replace('./', ''),
-        `${path.basename(ref)}.${assetType}.tsx`
+        `${path.basename(ref)}.${assetType}.tsx`,
       );
     }
 
@@ -387,7 +387,7 @@ export default defineScene({
         Transform: { position: [-5, 0, 0] },
         MeshRenderer: {
           meshId: 'tree',
-          materialRef: './materials/OakBark',  // Scene-specific material
+          materialRef: './materials/OakBark', // Scene-specific material
         },
       },
     },
@@ -399,7 +399,7 @@ export default defineScene({
         Transform: { position: [10, 0, 0] },
         MeshRenderer: {
           meshId: 'wall',
-          materialRef: '@/materials/common/Stone',  // Shared library material
+          materialRef: '@/materials/common/Stone', // Shared library material
         },
       },
     },
@@ -480,19 +480,19 @@ import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
 
 export interface IMultiFileSceneData {
-  index: string;              // Forest.index.tsx content
-  materials?: string;         // Forest.materials.tsx content
-  prefabs?: string;           // Forest.prefabs.tsx content
-  inputs?: string;            // Forest.inputs.tsx content
-  metadata?: string;          // Forest.metadata.json content
+  index: string; // Forest.index.tsx content
+  materials?: string; // Forest.materials.tsx content
+  prefabs?: string; // Forest.prefabs.tsx content
+  inputs?: string; // Forest.inputs.tsx content
+  metadata?: string; // Forest.metadata.json content
 }
 
 export interface IMultiFileSerializeOptions {
-  extractMaterials?: boolean;     // Extract to .materials.tsx
-  extractPrefabs?: boolean;       // Extract to .prefabs.tsx
-  extractInputs?: boolean;        // Extract to .inputs.tsx
-  compressEntities?: boolean;     // Apply default omission (from existing system)
-  sharedAssetThreshold?: number;  // Min usage count to suggest shared library (default: 3)
+  extractMaterials?: boolean; // Extract to .materials.tsx
+  extractPrefabs?: boolean; // Extract to .prefabs.tsx
+  extractInputs?: boolean; // Extract to .inputs.tsx
+  compressEntities?: boolean; // Apply default omission (from existing system)
+  sharedAssetThreshold?: number; // Min usage count to suggest shared library (default: 3)
 }
 
 export class MultiFileSceneSerializer extends SceneSerializer {
@@ -528,8 +528,9 @@ export class MultiFileSceneSerializer extends SceneSerializer {
     let materialReferences: Map<string, string> = new Map();
 
     if (extractMaterials && serialized.materials.length > 0) {
-      ({ materials: sceneMaterials, references: materialReferences } =
-        this.extractMaterials(serialized.materials));
+      ({ materials: sceneMaterials, references: materialReferences } = this.extractMaterials(
+        serialized.materials,
+      ));
     }
 
     // Separate prefabs if enabled
@@ -791,15 +792,11 @@ export class MultiFileSceneLoader extends SceneLoader {
     }
 
     if (assetRefs.prefabs) {
-      loadPromises.push(
-        this.loadAssetFile(path.join(sceneFolder, assetRefs.prefabs), 'prefabs'),
-      );
+      loadPromises.push(this.loadAssetFile(path.join(sceneFolder, assetRefs.prefabs), 'prefabs'));
     }
 
     if (assetRefs.inputs) {
-      loadPromises.push(
-        this.loadAssetFile(path.join(sceneFolder, assetRefs.inputs), 'inputs'),
-      );
+      loadPromises.push(this.loadAssetFile(path.join(sceneFolder, assetRefs.inputs), 'inputs'));
     }
 
     await Promise.all(loadPromises);
@@ -832,8 +829,8 @@ export class MultiFileSceneLoader extends SceneLoader {
               ...entity.components,
               MeshRenderer: {
                 ...meshRenderer,
-                material: materialData,  // Inline material for deserialization
-                materialRef: undefined,  // Remove reference
+                material: materialData, // Inline material for deserialization
+                materialRef: undefined, // Remove reference
               },
             },
           };
@@ -974,6 +971,7 @@ yarn migrate-scene Forest.tsx --format=multi-file --auto-detect-shared
 ### Unit Tests
 
 1. **AssetReferenceResolver**
+
    - Resolve absolute references (`@/materials/Stone`)
    - Resolve relative references (`./materials/TreeGreen`)
    - Handle missing asset files with clear errors
@@ -981,6 +979,7 @@ yarn migrate-scene Forest.tsx --format=multi-file --auto-detect-shared
    - Clear cache on hot-reload
 
 2. **MultiFileSceneSerializer**
+
    - Extract materials to separate file
    - Extract prefabs to separate file
    - Extract input assets to separate file
@@ -989,6 +988,7 @@ yarn migrate-scene Forest.tsx --format=multi-file --auto-detect-shared
    - Maintain entity compression
 
 3. **MultiFileSceneLoader**
+
    - Detect multi-file vs single-file format
    - Load all asset files in folder
    - Resolve asset references correctly
@@ -1004,16 +1004,19 @@ yarn migrate-scene Forest.tsx --format=multi-file --auto-detect-shared
 ### Integration Tests
 
 1. **Round-trip serialization**
+
    - Save multi-file → Load → Verify identical ECS state
    - Test with complex scene (Forest.tsx)
    - Verify visual output matches original
 
 2. **Asset reference resolution**
+
    - Scene-specific material shadows shared library
    - Prefab references materials correctly
    - Circular dependency detection works
 
 3. **Backward compatibility**
+
    - Single-file scenes load without changes
    - Multi-file and single-file scenes coexist
    - Mixed references work (inline + external)
@@ -1025,18 +1028,18 @@ yarn migrate-scene Forest.tsx --format=multi-file --auto-detect-shared
 
 ## Edge Cases
 
-| Edge Case | Remediation |
-|-----------|-------------|
-| Missing asset file referenced in index | Log warning, use default asset, continue loading with degraded assets |
-| Circular prefab dependencies | Detect cycles during load, throw error with dependency chain visualization |
-| Asset ID conflicts (scene vs shared) | Scene-specific asset shadows shared asset with same ID (scene takes precedence) |
-| Mixed inline and external references | Support both in same scene, resolve references first, then inline assets |
-| Asset file corruption | Validate with Zod schema, fallback to defaults, log detailed error |
-| Scene folder structure mismatch | Detect format automatically, support both old and new structures |
-| Large asset files (>10MB) | Stream asset files during load, show progress indicator |
-| Git merge conflicts in multi-file scene | Conflicts isolated to specific asset files, easier to resolve than monolithic file |
-| Shared asset updated breaks scene | Asset versioning system detects breaking changes, warn on load |
-| Empty asset files (no materials/prefabs) | Skip file generation for empty assets, only create index file |
+| Edge Case                                | Remediation                                                                        |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| Missing asset file referenced in index   | Log warning, use default asset, continue loading with degraded assets              |
+| Circular prefab dependencies             | Detect cycles during load, throw error with dependency chain visualization         |
+| Asset ID conflicts (scene vs shared)     | Scene-specific asset shadows shared asset with same ID (scene takes precedence)    |
+| Mixed inline and external references     | Support both in same scene, resolve references first, then inline assets           |
+| Asset file corruption                    | Validate with Zod schema, fallback to defaults, log detailed error                 |
+| Scene folder structure mismatch          | Detect format automatically, support both old and new structures                   |
+| Large asset files (>10MB)                | Stream asset files during load, show progress indicator                            |
+| Git merge conflicts in multi-file scene  | Conflicts isolated to specific asset files, easier to resolve than monolithic file |
+| Shared asset updated breaks scene        | Asset versioning system detects breaking changes, warn on load                     |
+| Empty asset files (no materials/prefabs) | Skip file generation for empty assets, only create index file                      |
 
 ## Sequence Diagram
 
@@ -1129,18 +1132,18 @@ sequenceDiagram
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| File I/O overhead from multiple files | Cache asset files in memory, lazy-load only when referenced, benchmark and optimize |
-| Asset reference resolution complexity | Comprehensive test coverage, clear error messages, validation on save |
-| Breaking changes to existing scenes | Maintain backward compatibility forever, provide automated migration tool |
-| Git merge conflicts in folder structure | Each asset in separate file reduces conflict surface, provide merge guide |
-| Performance degradation on load | Parallel asset loading, streaming for large files, show progress indicators |
-| Circular dependencies in prefabs | Detect at serialization time, prevent invalid references, visualize dependency graph |
-| Asset ID conflicts across scenes | Namespacing with scene prefix, global registry validation, warn on conflicts |
-| Migration tool data loss | Dry-run mode, validation before/after, rollback mechanism, comprehensive tests |
-| Increased complexity for simple scenes | Single-file format remains default and fully supported, multi-file is opt-in |
-| Team coordination on shared assets | Asset versioning, change logs, pull request reviews required for shared assets |
+| Risk                                    | Mitigation                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------ |
+| File I/O overhead from multiple files   | Cache asset files in memory, lazy-load only when referenced, benchmark and optimize  |
+| Asset reference resolution complexity   | Comprehensive test coverage, clear error messages, validation on save                |
+| Breaking changes to existing scenes     | Maintain backward compatibility forever, provide automated migration tool            |
+| Git merge conflicts in folder structure | Each asset in separate file reduces conflict surface, provide merge guide            |
+| Performance degradation on load         | Parallel asset loading, streaming for large files, show progress indicators          |
+| Circular dependencies in prefabs        | Detect at serialization time, prevent invalid references, visualize dependency graph |
+| Asset ID conflicts across scenes        | Namespacing with scene prefix, global registry validation, warn on conflicts         |
+| Migration tool data loss                | Dry-run mode, validation before/after, rollback mechanism, comprehensive tests       |
+| Increased complexity for simple scenes  | Single-file format remains default and fully supported, multi-file is opt-in         |
+| Team coordination on shared assets      | Asset versioning, change logs, pull request reviews required for shared assets       |
 
 ## Timeline
 

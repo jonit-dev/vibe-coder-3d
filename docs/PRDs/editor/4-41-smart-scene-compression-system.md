@@ -683,24 +683,23 @@ materials: [
     color: '#2d5016',
     roughness: 0.7,
     // All other fields use MATERIAL_DEFAULTS
-  }
-],
-
-// Entity (3-5 lines vs 87 lines - 94% reduction!)
-{
-  name: 'Tree 0',
-  components: {
-    Transform: {
-      position: [-2.25, 0, 0],
-      // rotation and scale omitted (default [0,0,0] and [1,1,1])
-    },
-    MeshRenderer: {
-      meshId: 'tree',
-      materialId: 'mat_a3f2c1b8d4e5',  // Reference extracted material
-      // enabled, castShadows, receiveShadows, modelPath all omitted (defaults)
-    },
   },
-}
+],
+  // Entity (3-5 lines vs 87 lines - 94% reduction!)
+  {
+    name: 'Tree 0',
+    components: {
+      Transform: {
+        position: [-2.25, 0, 0],
+        // rotation and scale omitted (default [0,0,0] and [1,1,1])
+      },
+      MeshRenderer: {
+        meshId: 'tree',
+        materialId: 'mat_a3f2c1b8d4e5', // Reference extracted material
+        // enabled, castShadows, receiveShadows, modelPath all omitted (defaults)
+      },
+    },
+  };
 ```
 
 ### Example: Camera Component Compression
@@ -775,6 +774,7 @@ const saveTsxScene = async (name: string, options: { compress?: boolean } = {}) 
 ### Unit Tests
 
 1. **DefaultOmitter**
+
    - Omit primitive defaults (numbers, strings, booleans)
    - Omit array defaults (position, rotation, scale)
    - Omit nested object defaults (material properties)
@@ -783,6 +783,7 @@ const saveTsxScene = async (name: string, options: { compress?: boolean } = {}) 
    - Restore defaults during deserialization
 
 2. **MaterialHasher**
+
    - Generate consistent hashes for identical materials
    - Generate different hashes for different materials
    - Handle hash collisions gracefully
@@ -797,17 +798,20 @@ const saveTsxScene = async (name: string, options: { compress?: boolean } = {}) 
 ### Integration Tests
 
 1. **Round-trip serialization**
+
    - Serialize scene → Deserialize → Verify identical ECS state
    - Test with Test.tsx (small scene)
    - Test with Forest.tsx (large scene)
    - Verify visual output is identical
 
 2. **Compression metrics**
+
    - Test.tsx: Verify 60-70% size reduction
    - Forest.tsx: Verify 70-80% size reduction
    - Measure serialization performance (should be < 100ms for 1000 entities)
 
 3. **Material extraction**
+
    - 100 entities with same material → 1 material in registry
    - 100 entities with 10 unique materials → 10 materials in registry
    - Verify material references are correct
@@ -818,18 +822,18 @@ const saveTsxScene = async (name: string, options: { compress?: boolean } = {}) 
 
 ## Edge Cases
 
-| Edge Case | Remediation |
-|-----------|-------------|
-| Component with all default values | Serialize empty object `{}`, restore all defaults on deserialize |
-| Material hash collision | Append counter to ID: `mat_abc123_1`, `mat_abc123_2` |
-| Nested defaults partially customized | Only omit fully-matching nested fields, keep partial objects |
-| Invalid numeric precision | Clamp to 6 decimals, validate range remains valid |
-| Empty material definitions | Use MATERIAL_DEFAULTS, don't extract to registry |
-| Component type not in defaults registry | Serialize full data without omission, log warning |
-| Floating point comparison tolerance | Use epsilon of 1e-6 for equality checks |
-| Material ID conflicts with existing registry | Generate new unique ID with counter suffix |
-| Scene with zero materials | Skip material extraction, serialize entities only |
-| Very large scenes (10,000+ entities) | Process in batches, show progress, use streaming serialization |
+| Edge Case                                    | Remediation                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| Component with all default values            | Serialize empty object `{}`, restore all defaults on deserialize |
+| Material hash collision                      | Append counter to ID: `mat_abc123_1`, `mat_abc123_2`             |
+| Nested defaults partially customized         | Only omit fully-matching nested fields, keep partial objects     |
+| Invalid numeric precision                    | Clamp to 6 decimals, validate range remains valid                |
+| Empty material definitions                   | Use MATERIAL_DEFAULTS, don't extract to registry                 |
+| Component type not in defaults registry      | Serialize full data without omission, log warning                |
+| Floating point comparison tolerance          | Use epsilon of 1e-6 for equality checks                          |
+| Material ID conflicts with existing registry | Generate new unique ID with counter suffix                       |
+| Scene with zero materials                    | Skip material extraction, serialize entities only                |
+| Very large scenes (10,000+ entities)         | Process in batches, show progress, use streaming serialization   |
 
 ## Sequence Diagram
 
@@ -880,16 +884,16 @@ sequenceDiagram
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Default values change in future component updates | Version defaults registry, migrate old scenes with converter, store version metadata |
-| Hash collision rate higher than expected | Use full SHA-256 (32 chars) instead of truncated, add secondary collision detection |
-| Deserialization performance degradation | Benchmark with large scenes, optimize default restoration, consider caching merged defaults |
-| Breaking changes to existing workflows | Make compression opt-in via flag, provide migration script, maintain backward compatibility |
-| Material extraction changes game behavior | Extensive visual regression testing, validate material properties match exactly |
-| Precision loss from rounding | Use 6 decimals (sufficient for game engines), validate against tolerance thresholds |
-| Memory usage spike during extraction | Process materials in batches, stream large scenes, use lazy evaluation |
-| Complex nested defaults hard to compare | Implement recursive deep comparison, add extensive test coverage for edge cases |
+| Risk                                              | Mitigation                                                                                  |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Default values change in future component updates | Version defaults registry, migrate old scenes with converter, store version metadata        |
+| Hash collision rate higher than expected          | Use full SHA-256 (32 chars) instead of truncated, add secondary collision detection         |
+| Deserialization performance degradation           | Benchmark with large scenes, optimize default restoration, consider caching merged defaults |
+| Breaking changes to existing workflows            | Make compression opt-in via flag, provide migration script, maintain backward compatibility |
+| Material extraction changes game behavior         | Extensive visual regression testing, validate material properties match exactly             |
+| Precision loss from rounding                      | Use 6 decimals (sufficient for game engines), validate against tolerance thresholds         |
+| Memory usage spike during extraction              | Process materials in batches, stream large scenes, use lazy evaluation                      |
+| Complex nested defaults hard to compare           | Implement recursive deep comparison, add extensive test coverage for edge cases             |
 
 ## Timeline
 
