@@ -1,6 +1,6 @@
 use glam::{Mat4, Quat, Vec3};
-use vibe_physics::PhysicsWorld;
 use rapier3d::prelude::*;
+use vibe_physics::PhysicsWorld;
 
 use super::lines::LineBatch;
 
@@ -9,198 +9,251 @@ const SPHERE_SEGMENTS: u32 = 16;
 
 /// Generate debug lines for all colliders in the physics world
 pub fn append_collider_lines(world: &PhysicsWorld, batch: &mut LineBatch) {
-    for (_entity_id, collider_handles) in &world.entity_to_colliders {
-        for collider_handle in collider_handles {
-            if let Some(collider) = world.colliders.get(*collider_handle) {
-                append_collider_shape(collider, batch);
+    // Iterate through all colliders
+    for (_handle, collider) in world.colliders.iter() {
+        // Get the collider's position in world space
+        let position = collider.position();
+        let translation = Vec3::new(
+            position.translation.x,
+            position.translation.y,
+            position.translation.z,
+        );
+        let rotation = Quat::from_xyzw(
+            position.rotation.i,
+            position.rotation.j,
+            position.rotation.k,
+            position.rotation.w,
+        );
+
+        // Get the shape and draw appropriate debug lines
+        match collider.shape().shape_type() {
+            ShapeType::Cuboid => {
+                if let Some(cuboid) = collider.shape().as_cuboid() {
+                    draw_cuboid(batch, translation, rotation, cuboid);
+                }
+            }
+            ShapeType::Ball => {
+                if let Some(ball) = collider.shape().as_ball() {
+                    draw_ball(batch, translation, ball);
+                }
+            }
+            ShapeType::Capsule => {
+                if let Some(capsule) = collider.shape().as_capsule() {
+                    draw_capsule(batch, translation, rotation, capsule);
+                }
+            }
+            ShapeType::Cylinder => {
+                if let Some(cylinder) = collider.shape().as_cylinder() {
+                    draw_cylinder(batch, translation, rotation, cylinder);
+                }
+            }
+            ShapeType::ConvexPolyhedron => {
+                if let Some(convex) = collider.shape().as_convex_polyhedron() {
+                    draw_convex_polyhedron(batch, translation, rotation, convex);
+                }
+            }
+            ShapeType::TriMesh => {
+                if let Some(trimesh) = collider.shape().as_trimesh() {
+                    draw_trimesh(batch, translation, rotation, trimesh);
+                }
+            }
+            _ => {
+                // For unsupported shapes, draw a small cross at the position
+                draw_cross(batch, translation, 0.1);
             }
         }
     }
 }
 
-fn append_collider_shape(collider: &Collider, batch: &mut LineBatch) {
-
-    // Get collider position and rotation
-    let iso = collider.position();
-    let translation = Vec3::new(
-        iso.translation.x,
-        iso.translation.y,
-        iso.translation.z,
-    );
-    let rotation = Quat::from_xyzw(
-        iso.rotation.i,
-        iso.rotation.j,
-        iso.rotation.k,
-        iso.rotation.w,
+/// Draw a cuboid (box) collider
+fn draw_cuboid(batch: &mut LineBatch, position: Vec3, rotation: Quat, cuboid: &Cuboid) {
+    let half_extents = Vec3::new(
+        cuboid.half_extents.x,
+        cuboid.half_extents.y,
+        cuboid.half_extents.z,
     );
 
-    // Create transform matrix
-    let transform = Mat4::from_rotation_translation(rotation, translation);
-
-    match collider.shape().shape_type() {
-        ShapeType::Cuboid => {
-            if let Some(cuboid) = collider.shape().as_cuboid() {
-                append_cuboid(cuboid, transform, batch);
-            }
-        }
-        ShapeType::Ball => {
-            if let Some(ball) = collider.shape().as_ball() {
-                append_ball(ball, translation, batch);
-            }
-        }
-        ShapeType::Capsule => {
-            if let Some(capsule) = collider.shape().as_capsule() {
-                append_capsule(capsule, transform, batch);
-            }
-        }
-        ShapeType::Cylinder => {
-            if let Some(cylinder) = collider.shape().as_cylinder() {
-                append_cylinder(cylinder, transform, batch);
-            }
-        }
-        ShapeType::ConvexPolyhedron => {
-            // For convex shapes, fall back to AABB for now
-            let aabb = collider.compute_aabb();
-            append_aabb(&aabb, batch);
-        }
-        ShapeType::TriMesh => {
-            // For triangle meshes, fall back to AABB
-            let aabb = collider.compute_aabb();
-            append_aabb(&aabb, batch);
-        }
-        _ => {
-            // For any other shape types, draw AABB
-            let aabb = collider.compute_aabb();
-            append_aabb(&aabb, batch);
-        }
-    }
-}
-
-fn append_cuboid(cuboid: &Cuboid, transform: Mat4, batch: &mut LineBatch) {
-    let half_extents = cuboid.half_extents;
-    let he = Vec3::new(half_extents.x, half_extents.y, half_extents.z);
-
-    // Define 8 corners of the cuboid in local space
+    // Define the 8 corners of the box in local space
     let corners = [
-        Vec3::new(-he.x, -he.y, -he.z),
-        Vec3::new(he.x, -he.y, -he.z),
-        Vec3::new(he.x, -he.y, he.z),
-        Vec3::new(-he.x, -he.y, he.z),
-        Vec3::new(-he.x, he.y, -he.z),
-        Vec3::new(he.x, he.y, -he.z),
-        Vec3::new(he.x, he.y, he.z),
-        Vec3::new(-he.x, he.y, he.z),
+        Vec3::new(-half_extents.x, -half_extents.y, -half_extents.z),
+        Vec3::new(half_extents.x, -half_extents.y, -half_extents.z),
+        Vec3::new(half_extents.x, -half_extents.y, half_extents.z),
+        Vec3::new(-half_extents.x, -half_extents.y, half_extents.z),
+        Vec3::new(-half_extents.x, half_extents.y, -half_extents.z),
+        Vec3::new(half_extents.x, half_extents.y, -half_extents.z),
+        Vec3::new(half_extents.x, half_extents.y, half_extents.z),
+        Vec3::new(-half_extents.x, half_extents.y, half_extents.z),
     ];
 
     // Transform corners to world space
-    let transformed: Vec<Vec3> = corners
+    let world_corners: Vec<Vec3> = corners
         .iter()
-        .map(|&corner| transform.transform_point3(corner))
+        .map(|&corner| position + rotation * corner)
         .collect();
 
-    // Bottom face
-    batch.add_line(transformed[0], transformed[1], COLLIDER_COLOR);
-    batch.add_line(transformed[1], transformed[2], COLLIDER_COLOR);
-    batch.add_line(transformed[2], transformed[3], COLLIDER_COLOR);
-    batch.add_line(transformed[3], transformed[0], COLLIDER_COLOR);
+    // Draw bottom face
+    batch.add_line(world_corners[0], world_corners[1], COLLIDER_COLOR);
+    batch.add_line(world_corners[1], world_corners[2], COLLIDER_COLOR);
+    batch.add_line(world_corners[2], world_corners[3], COLLIDER_COLOR);
+    batch.add_line(world_corners[3], world_corners[0], COLLIDER_COLOR);
 
-    // Top face
-    batch.add_line(transformed[4], transformed[5], COLLIDER_COLOR);
-    batch.add_line(transformed[5], transformed[6], COLLIDER_COLOR);
-    batch.add_line(transformed[6], transformed[7], COLLIDER_COLOR);
-    batch.add_line(transformed[7], transformed[4], COLLIDER_COLOR);
+    // Draw top face
+    batch.add_line(world_corners[4], world_corners[5], COLLIDER_COLOR);
+    batch.add_line(world_corners[5], world_corners[6], COLLIDER_COLOR);
+    batch.add_line(world_corners[6], world_corners[7], COLLIDER_COLOR);
+    batch.add_line(world_corners[7], world_corners[4], COLLIDER_COLOR);
 
-    // Vertical edges
-    batch.add_line(transformed[0], transformed[4], COLLIDER_COLOR);
-    batch.add_line(transformed[1], transformed[5], COLLIDER_COLOR);
-    batch.add_line(transformed[2], transformed[6], COLLIDER_COLOR);
-    batch.add_line(transformed[3], transformed[7], COLLIDER_COLOR);
+    // Draw vertical edges
+    batch.add_line(world_corners[0], world_corners[4], COLLIDER_COLOR);
+    batch.add_line(world_corners[1], world_corners[5], COLLIDER_COLOR);
+    batch.add_line(world_corners[2], world_corners[6], COLLIDER_COLOR);
+    batch.add_line(world_corners[3], world_corners[7], COLLIDER_COLOR);
 }
 
-fn append_ball(ball: &Ball, center: Vec3, batch: &mut LineBatch) {
-    batch.add_sphere(center, ball.radius, COLLIDER_COLOR, SPHERE_SEGMENTS);
+/// Draw a ball (sphere) collider
+fn draw_ball(batch: &mut LineBatch, position: Vec3, ball: &Ball) {
+    batch.add_sphere(position, ball.radius, COLLIDER_COLOR, SPHERE_SEGMENTS);
 }
 
-fn append_capsule(capsule: &Capsule, transform: Mat4, batch: &mut LineBatch) {
+/// Draw a capsule collider
+fn draw_capsule(batch: &mut LineBatch, position: Vec3, rotation: Quat, capsule: &Capsule) {
     let half_height = capsule.half_height();
     let radius = capsule.radius;
 
-    // Capsule is aligned along Y axis in local space
-    let top_center = Vec3::new(0.0, half_height, 0.0);
-    let bottom_center = Vec3::new(0.0, -half_height, 0.0);
+    // Capsule axis is along Y in local space
+    let axis = rotation * Vec3::Y;
+    let top = position + axis * half_height;
+    let bottom = position - axis * half_height;
 
-    // Transform to world space
-    let top_world = transform.transform_point3(top_center);
-    let bottom_world = transform.transform_point3(bottom_center);
+    // Draw the cylinder part (vertical lines)
+    let perpendicular = if axis.dot(Vec3::X).abs() < 0.9 {
+        axis.cross(Vec3::X).normalize()
+    } else {
+        axis.cross(Vec3::Y).normalize()
+    };
 
-    // Draw top and bottom spheres
-    batch.add_sphere(top_world, radius, COLLIDER_COLOR, SPHERE_SEGMENTS);
-    batch.add_sphere(bottom_world, radius, COLLIDER_COLOR, SPHERE_SEGMENTS);
-
-    // Draw connecting lines (4 vertical edges around the capsule)
-    for i in 0..4 {
-        let angle = (i as f32 / 4.0) * std::f32::consts::TAU;
-        let offset = Vec3::new(radius * angle.cos(), 0.0, radius * angle.sin());
-
-        let top = transform.transform_point3(top_center + offset);
-        let bottom = transform.transform_point3(bottom_center + offset);
-
-        batch.add_line(bottom, top, COLLIDER_COLOR);
+    for i in 0..8 {
+        let angle = (i as f32 / 8.0) * std::f32::consts::TAU;
+        let offset = (perpendicular * angle.cos() + axis.cross(perpendicular) * angle.sin()) * radius;
+        batch.add_line(top + offset, bottom + offset, COLLIDER_COLOR);
     }
+
+    // Draw top and bottom hemispheres as circles
+    batch.add_sphere(top, radius, COLLIDER_COLOR, 8);
+    batch.add_sphere(bottom, radius, COLLIDER_COLOR, 8);
 }
 
-fn append_cylinder(cylinder: &Cylinder, transform: Mat4, batch: &mut LineBatch) {
+/// Draw a cylinder collider
+fn draw_cylinder(batch: &mut LineBatch, position: Vec3, rotation: Quat, cylinder: &Cylinder) {
     let half_height = cylinder.half_height;
     let radius = cylinder.radius;
 
+    // Cylinder axis is along Y in local space
+    let axis = rotation * Vec3::Y;
+    let top_center = position + axis * half_height;
+    let bottom_center = position - axis * half_height;
+
+    // Get perpendicular vectors for drawing circles
+    let perpendicular = if axis.dot(Vec3::X).abs() < 0.9 {
+        axis.cross(Vec3::X).normalize()
+    } else {
+        axis.cross(Vec3::Y).normalize()
+    };
+    let perpendicular2 = axis.cross(perpendicular).normalize();
+
     // Draw top and bottom circles
-    let segments = SPHERE_SEGMENTS;
-
-    // Bottom circle
+    let segments = 16;
     for i in 0..segments {
         let angle1 = (i as f32 / segments as f32) * std::f32::consts::TAU;
         let angle2 = ((i + 1) as f32 / segments as f32) * std::f32::consts::TAU;
 
-        let p1_local = Vec3::new(radius * angle1.cos(), -half_height, radius * angle1.sin());
-        let p2_local = Vec3::new(radius * angle2.cos(), -half_height, radius * angle2.sin());
+        let offset1 = (perpendicular * angle1.cos() + perpendicular2 * angle1.sin()) * radius;
+        let offset2 = (perpendicular * angle2.cos() + perpendicular2 * angle2.sin()) * radius;
 
-        let p1 = transform.transform_point3(p1_local);
-        let p2 = transform.transform_point3(p2_local);
-
-        batch.add_line(p1, p2, COLLIDER_COLOR);
+        // Top circle
+        batch.add_line(top_center + offset1, top_center + offset2, COLLIDER_COLOR);
+        // Bottom circle
+        batch.add_line(
+            bottom_center + offset1,
+            bottom_center + offset2,
+            COLLIDER_COLOR,
+        );
     }
 
-    // Top circle
-    for i in 0..segments {
-        let angle1 = (i as f32 / segments as f32) * std::f32::consts::TAU;
-        let angle2 = ((i + 1) as f32 / segments as f32) * std::f32::consts::TAU;
-
-        let p1_local = Vec3::new(radius * angle1.cos(), half_height, radius * angle1.sin());
-        let p2_local = Vec3::new(radius * angle2.cos(), half_height, radius * angle2.sin());
-
-        let p1 = transform.transform_point3(p1_local);
-        let p2 = transform.transform_point3(p2_local);
-
-        batch.add_line(p1, p2, COLLIDER_COLOR);
-    }
-
-    // Vertical edges (4 lines)
+    // Draw vertical lines connecting top and bottom
     for i in 0..4 {
         let angle = (i as f32 / 4.0) * std::f32::consts::TAU;
-        let offset_xz = Vec3::new(radius * angle.cos(), 0.0, radius * angle.sin());
-
-        let bottom = transform.transform_point3(Vec3::new(offset_xz.x, -half_height, offset_xz.z));
-        let top = transform.transform_point3(Vec3::new(offset_xz.x, half_height, offset_xz.z));
-
-        batch.add_line(bottom, top, COLLIDER_COLOR);
+        let offset = (perpendicular * angle.cos() + perpendicular2 * angle.sin()) * radius;
+        batch.add_line(top_center + offset, bottom_center + offset, COLLIDER_COLOR);
     }
 }
 
-fn append_aabb(aabb: &parry3d::bounding_volume::Aabb, batch: &mut LineBatch) {
-    let min = Vec3::new(aabb.mins.x, aabb.mins.y, aabb.mins.z);
-    let max = Vec3::new(aabb.maxs.x, aabb.maxs.y, aabb.maxs.z);
-    batch.add_box(min, max, COLLIDER_COLOR);
+/// Draw a convex polyhedron collider
+fn draw_convex_polyhedron(
+    batch: &mut LineBatch,
+    position: Vec3,
+    rotation: Quat,
+    convex: &ConvexPolyhedron,
+) {
+    let vertices = convex.points();
+
+    // Transform vertices to world space
+    let world_vertices: Vec<Vec3> = vertices
+        .iter()
+        .map(|v| position + rotation * Vec3::new(v.x, v.y, v.z))
+        .collect();
+
+    // Draw edges - Rapier doesn't expose edges directly, so we draw all possible edges
+    // This is inefficient but works for visualization
+    for i in 0..world_vertices.len() {
+        for j in (i + 1)..world_vertices.len() {
+            let dist = (world_vertices[i] - world_vertices[j]).length();
+            // Only draw edges between nearby vertices (heuristic)
+            if dist < 2.0 {
+                batch.add_line(world_vertices[i], world_vertices[j], COLLIDER_COLOR);
+            }
+        }
+    }
 }
 
-// Tests are integration-level and require a full physics world
-// See tests in vibe-physics crate or integration tests
+/// Draw a triangle mesh collider
+fn draw_trimesh(batch: &mut LineBatch, position: Vec3, rotation: Quat, trimesh: &TriMesh) {
+    let vertices = trimesh.vertices();
+    let indices = trimesh.indices();
+
+    // Transform vertices to world space
+    let world_vertices: Vec<Vec3> = vertices
+        .iter()
+        .map(|v| position + rotation * Vec3::new(v.x, v.y, v.z))
+        .collect();
+
+    // Draw all triangle edges
+    for triangle in indices {
+        let v0 = world_vertices[triangle[0] as usize];
+        let v1 = world_vertices[triangle[1] as usize];
+        let v2 = world_vertices[triangle[2] as usize];
+
+        batch.add_line(v0, v1, COLLIDER_COLOR);
+        batch.add_line(v1, v2, COLLIDER_COLOR);
+        batch.add_line(v2, v0, COLLIDER_COLOR);
+    }
+}
+
+/// Draw a small cross marker at a position (for unsupported shapes)
+fn draw_cross(batch: &mut LineBatch, position: Vec3, size: f32) {
+    batch.add_line(
+        position - Vec3::X * size,
+        position + Vec3::X * size,
+        COLLIDER_COLOR,
+    );
+    batch.add_line(
+        position - Vec3::Y * size,
+        position + Vec3::Y * size,
+        COLLIDER_COLOR,
+    );
+    batch.add_line(
+        position - Vec3::Z * size,
+        position + Vec3::Z * size,
+        COLLIDER_COLOR,
+    );
+}

@@ -4,6 +4,7 @@ mod camera_behavior_test;
 #[cfg(test)]
 mod camera_test;
 pub mod depth_texture;
+pub mod shadows;
 #[cfg(test)]
 mod integration_test;
 #[cfg(test)]

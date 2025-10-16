@@ -3,7 +3,8 @@ use super::{
         MaterialUniform, ALPHA_MODE_BLEND, TEXTURE_ALBEDO, TEXTURE_EMISSIVE, TEXTURE_METALLIC,
         TEXTURE_NORMAL, TEXTURE_OCCLUSION, TEXTURE_ROUGHNESS,
     },
-    pipeline::{InstanceRaw, LightUniform, RenderPipeline},
+    pipeline::{InstanceRaw, LightUniform, RenderPipeline, ShadowUniform},
+    shadows::{calculate_directional_light_matrix, ShadowConfig, ShadowResources},
     Camera,
 };
 use crate::ecs::{components::transform::Transform, SceneData};
@@ -34,6 +35,9 @@ pub struct SceneRenderer {
     pub instance_buffer: Option<wgpu::Buffer>,
     pub light_uniform: LightUniform,
     pub depth_texture: super::depth_texture::DepthTexture,
+    pub shadow_resources: ShadowResources,
+    pub shadow_bind_group: wgpu::BindGroup, // For main pass (includes texture)
+    pub shadow_uniform_bind_group: wgpu::BindGroup, // For shadow pass (uniform only)
 }
 
 impl SceneRenderer {
@@ -53,6 +57,30 @@ impl SceneRenderer {
         let pipeline = RenderPipeline::new(device, config);
         let depth_texture = super::depth_texture::DepthTexture::create(device, config);
 
+        // Initialize shadow resources
+        let shadow_config = ShadowConfig::default();
+        let shadow_resources = ShadowResources::new(device, shadow_config);
+
+        // Create shadow bind group for first directional light map (for main pass)
+        let dir_map_view = &shadow_resources
+            .get_directional_map(0)
+            .expect("at least one directional shadow map")
+            .view;
+        let shadow_bind_group = pipeline.create_shadow_bind_group(
+            device,
+            dir_map_view,
+            &shadow_resources.compare_sampler,
+        );
+
+        // Create shadow uniform-only bind group (for shadow pass)
+        let shadow_uniform_bind_group = pipeline.create_shadow_uniform_bind_group(device);
+
+        log::info!(
+            "Shadow system initialized: {} directional, {} spot lights",
+            shadow_resources.directional_maps.len(),
+            shadow_resources.spot_maps.len()
+        );
+
         Self {
             mesh_cache,
             material_cache,
@@ -62,6 +90,9 @@ impl SceneRenderer {
             instance_buffer: None,
             light_uniform: LightUniform::new(),
             depth_texture,
+            shadow_resources,
+            shadow_bind_group,
+            shadow_uniform_bind_group,
         }
     }
 
@@ -93,6 +124,14 @@ impl SceneRenderer {
 
         // Reset lights to defaults
         self.light_uniform = LightUniform::new();
+        let mut dir_shadow_enabled: bool = false;
+        let mut dir_shadow_bias: f32 = 0.0005;
+        let mut dir_shadow_radius: f32 = 2.0;
+        let mut dir_light_dir: Vec3 = Vec3::new(0.5, -1.0, 0.5);
+        // Parity config defaults
+        self.light_uniform.physically_correct_lights = 1.0; // match Three.js default true in modern renderer
+        self.light_uniform.exposure = 1.0; // toneMappingExposure
+        self.light_uniform.tone_mapping = 1.0; // ACES on
 
         // Extract lights from scene
         let mut directional_light_set = false;
@@ -147,6 +186,11 @@ impl SceneRenderer {
                                 self.light_uniform.directional_intensity = light.intensity;
                                 self.light_uniform.directional_color = light_color;
                                 self.light_uniform.directional_enabled = 1.0;
+                                dir_shadow_enabled = light.castShadow;
+                                dir_shadow_bias = light.shadowBias;
+                                dir_shadow_radius = light.shadowRadius;
+                                dir_light_dir =
+                                    Vec3::new(light.directionX, light.directionY, light.directionZ);
                                 directional_light_set = true;
                             } else {
                                 log::debug!("    Skipping (directional light already set)");
@@ -188,12 +232,14 @@ impl SceneRenderer {
                                     self.light_uniform.point_intensity_0 = light.intensity;
                                     self.light_uniform.point_color_0 = light_color;
                                     self.light_uniform.point_range_0 = light.range;
+                                    self.light_uniform.point_decay_0 = light.decay;
                                 } else {
                                     self.light_uniform.point_position_1 =
                                         [position.x, position.y, position.z];
                                     self.light_uniform.point_intensity_1 = light.intensity;
                                     self.light_uniform.point_color_1 = light_color;
                                     self.light_uniform.point_range_1 = light.range;
+                                    self.light_uniform.point_decay_1 = light.decay;
                                 }
                                 point_light_count += 1;
                             } else {
@@ -404,6 +450,20 @@ impl SceneRenderer {
         if !self.entities.is_empty() {
             self.update_instance_buffer(device);
         }
+
+        // Compute scene bounds and update shadow uniform for directional light
+        let (scene_center, scene_radius) = self.compute_scene_bounds();
+        let mut shadow_uniform = ShadowUniform::new();
+        if directional_light_set {
+            let vp = calculate_directional_light_matrix(dir_light_dir, scene_center, scene_radius);
+            shadow_uniform.update_directional(
+                vp,
+                dir_shadow_enabled,
+                dir_shadow_bias,
+                dir_shadow_radius,
+            );
+        }
+        self.pipeline.update_shadows(queue, &shadow_uniform);
     }
 
     fn update_instance_buffer(&mut self, device: &wgpu::Device) {
@@ -458,6 +518,23 @@ impl SceneRenderer {
         log::debug!("Instance buffer created successfully");
     }
 
+    fn compute_scene_bounds(&self) -> (Vec3, f32) {
+        if self.entities.is_empty() {
+            return (Vec3::ZERO, 10.0);
+        }
+
+        let mut min_v = Vec3::splat(f32::INFINITY);
+        let mut max_v = Vec3::splat(f32::NEG_INFINITY);
+        for e in &self.entities {
+            let p = e.transform.w_axis.truncate();
+            min_v = min_v.min(p);
+            max_v = max_v.max(p);
+        }
+        let center = (min_v + max_v) * 0.5;
+        let radius = (max_v - center).length().max(5.0);
+        (center, radius)
+    }
+
     pub fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
@@ -466,7 +543,54 @@ impl SceneRenderer {
         queue: &wgpu::Queue,
         device: &wgpu::Device,
     ) {
-        // Update camera
+        // 0) Render directional shadow map (simple: render all instances as casters)
+        // Wrap in a scope to ensure shadow_pass is dropped before main render pass
+        {
+            if let Some(dir_map) = self.shadow_resources.get_directional_map(0) {
+                if let Some(instance_buffer) = &self.instance_buffer {
+                    let mut shadow_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Directional Shadow Pass"),
+                        color_attachments: &[],
+                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                            view: &dir_map.view,
+                            depth_ops: Some(wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(1.0),
+                                store: wgpu::StoreOp::Store,
+                            }),
+                            stencil_ops: None,
+                        }),
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+
+                    shadow_pass.set_pipeline(&self.pipeline.shadow_pipeline);
+                    shadow_pass.set_vertex_buffer(1, instance_buffer.slice(..));
+                    // Bind empty groups for indices 0-2, shadow uniform at index 3
+                    shadow_pass.set_bind_group(0, &self.pipeline.empty_bind_group, &[]);
+                    shadow_pass.set_bind_group(1, &self.pipeline.empty_bind_group, &[]);
+                    shadow_pass.set_bind_group(2, &self.pipeline.empty_bind_group, &[]);
+                    // Use uniform-only bind group (no texture) to avoid usage conflict
+                    shadow_pass.set_bind_group(3, &self.shadow_uniform_bind_group, &[]);
+
+                    for (i, entity) in self.entities.iter().enumerate() {
+                        if let Some(gpu_mesh) = self.mesh_cache.get(entity.mesh_id.as_str()) {
+                            shadow_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
+                            shadow_pass.set_index_buffer(
+                                gpu_mesh.index_buffer.slice(..),
+                                wgpu::IndexFormat::Uint32,
+                            );
+                            shadow_pass.draw_indexed(
+                                0..gpu_mesh.index_count,
+                                0,
+                                i as u32..(i + 1) as u32,
+                            );
+                        }
+                    }
+                    // shadow_pass is dropped here when it goes out of scope
+                }
+            }
+        } // Scope ends here, ensuring shadow_pass is fully dropped
+          // Update camera
         self.pipeline
             .update_camera(queue, camera.view_projection_matrix(), camera.position);
 
@@ -717,6 +841,8 @@ impl SceneRenderer {
             if !opaque_indices.is_empty() {
                 render_pass.set_pipeline(&self.pipeline.opaque_pipeline);
                 render_pass.set_bind_group(0, &self.pipeline.camera_bind_group, &[]);
+                // Bind shadow group (dir shadow used in fs_main)
+                render_pass.set_bind_group(3, &self.shadow_bind_group, &[]);
 
                 for &i in &opaque_indices {
                     let mesh_id = self.entities[i].mesh_id.as_str();
@@ -741,6 +867,7 @@ impl SceneRenderer {
             if !transparent_draws.is_empty() {
                 render_pass.set_pipeline(&self.pipeline.transparent_pipeline);
                 render_pass.set_bind_group(0, &self.pipeline.camera_bind_group, &[]);
+                render_pass.set_bind_group(3, &self.shadow_bind_group, &[]);
 
                 for (i, _) in &transparent_draws {
                     let mesh_id = self.entities[*i].mesh_id.as_str();

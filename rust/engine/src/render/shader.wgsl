@@ -37,7 +37,32 @@ struct LightUniform {
     spot_penumbra: f32,  // Outer cone softness (0-1)
     spot_range: f32,
     spot_decay: f32,
+    // Parity extras
+    point_decay_0: f32,
+    point_decay_1: f32,
+    physically_correct_lights: f32,
+    exposure: f32,
+    tone_mapping: f32,
 };
+
+struct ShadowUniform {
+    dir_light_vp: mat4x4<f32>,
+    spot_light_vp: mat4x4<f32>,
+    shadow_bias: f32,
+    shadow_radius: f32,
+    dir_shadow_enabled: f32,
+    spot_shadow_enabled: f32,
+};
+
+// Shadow bindings (group 3)
+@group(3) @binding(0)
+var<uniform> shadows: ShadowUniform;
+
+@group(3) @binding(1)
+var shadow_map: texture_depth_2d;
+
+@group(3) @binding(2)
+var shadow_sampler: sampler_comparison;
 
 struct MaterialUniform {
     emissive_color_intensity: vec4<f32>,
@@ -145,9 +170,79 @@ fn vs_main(
 }
 
 // Fragment shader
+// ACES Filmic tone mapping (approx)
+fn aces_film(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Three.js parity: punctualLightIntensityToIrradianceFactor
+fn punctual_to_irradiance(distance: f32, cutoff: f32, decay: f32, physically_correct: bool) -> f32 {
+    if (physically_correct) {
+        let denom = max(pow(distance, decay), 0.01);
+        var falloff = 1.0 / denom;
+        if (cutoff > 0.0) {
+            let x = distance / cutoff;
+            // pow2( saturate( 1.0 - pow4( x ) ) )
+            let v = clamp(1.0 - pow(x, 4.0), 0.0, 1.0);
+            falloff = falloff * (v * v);
+        }
+        return falloff;
+    } else {
+        if (cutoff > 0.0 && decay > 0.0) {
+            return pow(clamp(-distance / cutoff + 1.0, 0.0, 1.0), decay);
+        }
+        return 1.0;
+    }
+}
+
 
 fn has_flag(flags: u32, mask: u32) -> bool {
     return (flags & mask) != 0u;
+}
+
+// 3x3 PCF shadow sampling (screen-space kernel in texel units)
+fn sample_shadow_pcf(uv: vec2<f32>, depth_ref: f32, radius: f32) -> f32 {
+    let dims = vec2<f32>(textureDimensions(shadow_map));
+    let texel_size = 1.0 / dims;
+    var sum: f32 = 0.0;
+
+    // Unrolled 3x3 kernel - WGSL doesn't allow dynamic array indexing in loops
+    sum += textureSampleCompare(shadow_map, shadow_sampler, uv + vec2<f32>(-1.0, -1.0) * texel_size * radius, depth_ref);
+    sum += textureSampleCompare(shadow_map, shadow_sampler, uv + vec2<f32>( 0.0, -1.0) * texel_size * radius, depth_ref);
+    sum += textureSampleCompare(shadow_map, shadow_sampler, uv + vec2<f32>( 1.0, -1.0) * texel_size * radius, depth_ref);
+    sum += textureSampleCompare(shadow_map, shadow_sampler, uv + vec2<f32>(-1.0,  0.0) * texel_size * radius, depth_ref);
+    sum += textureSampleCompare(shadow_map, shadow_sampler, uv + vec2<f32>( 0.0,  0.0) * texel_size * radius, depth_ref);
+    sum += textureSampleCompare(shadow_map, shadow_sampler, uv + vec2<f32>( 1.0,  0.0) * texel_size * radius, depth_ref);
+    sum += textureSampleCompare(shadow_map, shadow_sampler, uv + vec2<f32>(-1.0,  1.0) * texel_size * radius, depth_ref);
+    sum += textureSampleCompare(shadow_map, shadow_sampler, uv + vec2<f32>( 0.0,  1.0) * texel_size * radius, depth_ref);
+    sum += textureSampleCompare(shadow_map, shadow_sampler, uv + vec2<f32>( 1.0,  1.0) * texel_size * radius, depth_ref);
+
+    return sum / 9.0;
+}
+
+// Vertex shader for shadow depth rendering
+struct ShadowVertexOutput {
+    @builtin(position) clip_position: vec4<f32>,
+};
+
+@vertex
+fn vs_shadow(model: VertexInput, instance: InstanceInput) -> ShadowVertexOutput {
+    let model_matrix = mat4x4<f32>(
+        instance.model_matrix_0,
+        instance.model_matrix_1,
+        instance.model_matrix_2,
+        instance.model_matrix_3,
+    );
+    let world_position = model_matrix * vec4<f32>(model.position, 1.0);
+    var out: ShadowVertexOutput;
+    // Directional shadow only for now
+    out.clip_position = shadows.dir_light_vp * world_position;
+    return out;
 }
 
 // Calculate point light contribution
@@ -160,7 +255,9 @@ fn calculate_point_light(
     normal: vec3<f32>,
     view_dir: vec3<f32>,
     metallic: f32,
-    roughness: f32
+    roughness: f32,
+    decay: f32,
+    physically_correct: bool
 ) -> vec3<f32> {
     if (intensity <= 0.0) {
         return vec3<f32>(0.0);
@@ -169,11 +266,9 @@ fn calculate_point_light(
     let light_vec = position - world_pos;
     let distance = length(light_vec);
 
-    // Attenuation based on distance and range
-    let attenuation = max(0.0, 1.0 - (distance / range));
-    let attenuation_sq = attenuation * attenuation;
-
-    if (attenuation_sq <= 0.0) {
+    // Parity attenuation
+    let falloff = punctual_to_irradiance(distance, range, decay, physically_correct);
+    if (falloff <= 0.0) {
         return vec3<f32>(0.0);
     }
 
@@ -187,7 +282,7 @@ fn calculate_point_light(
     let spec_strength = mix(0.04, 1.0, metallic) * (1.0 - roughness);
     let spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32.0) * spec_strength;
 
-    return color * intensity * attenuation_sq * (diffuse * 0.7 + spec);
+    return color * intensity * falloff * (diffuse * 0.7 + spec);
 }
 
 // Calculate spot light contribution
@@ -203,7 +298,8 @@ fn calculate_spot_light(
     normal: vec3<f32>,
     view_dir: vec3<f32>,
     metallic: f32,
-    roughness: f32
+    roughness: f32,
+    physically_correct: bool
 ) -> vec3<f32> {
     if (intensity <= 0.0) {
         return vec3<f32>(0.0);
@@ -212,11 +308,9 @@ fn calculate_spot_light(
     let light_vec = position - world_pos;
     let distance = length(light_vec);
 
-    // Range attenuation
-    let attenuation = max(0.0, 1.0 - (distance / range));
-    let attenuation_sq = attenuation * attenuation;
-
-    if (attenuation_sq <= 0.0) {
+    // Range attenuation (same as point with decay)
+    let falloff = punctual_to_irradiance(distance, range, 1.0, physically_correct);
+    if (falloff <= 0.0) {
         return vec3<f32>(0.0);
     }
 
@@ -244,7 +338,7 @@ fn calculate_spot_light(
     let spec_strength = mix(0.04, 1.0, metallic) * (1.0 - roughness);
     let spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32.0) * spec_strength;
 
-    return color * intensity * attenuation_sq * spot_effect * (diffuse * 0.7 + spec);
+    return color * intensity * falloff * spot_effect * (diffuse * 0.7 + spec);
 }
 
 @fragment
@@ -308,7 +402,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Ambient light with occlusion
     var lighting = lights.ambient_color * lights.ambient_intensity * occlusion;
 
-    // Directional light
+    // Directional light (with shadow)
     if (lights.directional_enabled > 0.5) {
         let light_dir = normalize(-lights.directional_direction);
         let diffuse = max(dot(normal, light_dir), 0.0);
@@ -318,7 +412,19 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let spec_strength = mix(0.04, 1.0, metallic) * (1.0 - roughness);
         let spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32.0) * spec_strength;
 
-        lighting += lights.directional_color * lights.directional_intensity * (diffuse * 0.7 + spec);
+        var visibility = 1.0;
+        if (shadows.dir_shadow_enabled > 0.5) {
+            // Transform world to light clip space
+            let light_clip = shadows.dir_light_vp * vec4<f32>(in.world_position, 1.0);
+            let ndc = light_clip.xyz / light_clip.w;
+            let uv = ndc.xy * 0.5 + vec2<f32>(0.5, 0.5);
+            let depth_ref = ndc.z - shadows.shadow_bias;
+            if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
+                visibility = sample_shadow_pcf(uv, depth_ref, shadows.shadow_radius);
+            }
+        }
+
+        lighting += lights.directional_color * lights.directional_intensity * (diffuse * 0.7 + spec) * visibility;
     }
 
     // Point light 0
@@ -331,7 +437,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         normal,
         view_dir,
         metallic,
-        roughness
+        roughness,
+        lights.point_decay_0,
+        (lights.physically_correct_lights > 0.5)
     );
 
     // Point light 1
@@ -344,7 +452,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         normal,
         view_dir,
         metallic,
-        roughness
+        roughness,
+        lights.point_decay_1,
+        (lights.physically_correct_lights > 0.5)
     );
 
     // Spot light
@@ -360,7 +470,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         normal,
         view_dir,
         metallic,
-        roughness
+        roughness,
+        (lights.physically_correct_lights > 0.5)
     );
 
     // Apply lighting to base color
@@ -377,7 +488,17 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         return vec4<f32>(final_color, alpha);
     }
 
-    let final_color = lit_color + emissive;
+    var final_color = lit_color + emissive;
+
+    // Tone mapping + exposure to match Three.js defaults
+    if (lights.tone_mapping > 0.5) {
+        final_color = aces_film(final_color * lights.exposure);
+    } else {
+        final_color = final_color * lights.exposure;
+    }
+
+    // Gamma to sRGB output (approx Three.js renderer.outputColorSpace = sRGB)
+    final_color = pow(final_color, vec3<f32>(1.0 / 2.2));
 
     return vec4<f32>(final_color, alpha);
 }

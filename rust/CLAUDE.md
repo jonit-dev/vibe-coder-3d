@@ -6,6 +6,7 @@ This folder contains the native Rust engine that renders 3D scenes using wgpu. I
 
 ## Critical
 
+- Always respect SRP, DRY, KISS, YAGNI principles.
 - Must use snake_case for variable naming in Rust!
 - **ALWAYS use `vibe_ecs_bridge::transform_utils` for rotation conversions** - TypeScript stores rotations in DEGREES, Rust expects RADIANS
 
@@ -369,6 +370,7 @@ pub fn rotation_quat(&self) -> Quat {
 ```
 
 **Why this matters:**
+
 - A plane rotated `-90°` around X in TS must become `-π/2` radians in Rust
 - Without conversion, rotations will be ~57x too small (1 radian ≈ 57.3 degrees)
 - This causes objects to appear in wrong orientations or not visible at all
@@ -422,6 +424,7 @@ node scripts/validate-scene.cjs rust/game/scenes/testphysics.json
 ```
 
 The validator checks:
+
 - ✓ Rotation format (degrees vs radians, array vs object)
 - ✓ Camera vec3/vec2 fields (array vs object format)
 - ✓ Component structure and required fields
@@ -754,6 +757,7 @@ When adding or modifying components to maintain parity with TypeScript:
 - **Verify** visual and physics behavior matches Three.js exactly
 
 The parity guidelines document covers:
+
 - Component structure requirements
 - Decoder implementation patterns
 - Transform coordinate system conversions (degrees vs radians!)
@@ -791,6 +795,7 @@ let rotation = Quat::from_euler(glam::EulerRot::XYZ, -90.0, 0.0, 0.0); // WRONG!
 ### Why This Matters
 
 **Example Bug**: A plane with rotation `[-90, 0, 0]` degrees:
+
 - ✅ **Correct**: Convert `-90°` → `-π/2 radians` → horizontal plane (floor)
 - ❌ **Wrong**: Use `-90` as radians → `-5156°` rotation → slanted plane (ramp)
 
@@ -800,14 +805,14 @@ This caused physics objects to slide downhill instead of falling straight down!
 
 Located in `rust/engine/crates/ecs-bridge/src/transform_utils.rs`:
 
-| Function | Input | Output | Notes |
-|----------|-------|--------|-------|
-| `rotation_to_quat(rotation: &[f32])` | 3-elem (Euler degrees) or 4-elem (quat) | `Quat` | **Auto-detects format** |
-| `rotation_to_quat_opt(rotation: Option<&Vec<f32>>)` | Optional rotation | `Quat` | Returns `IDENTITY` if None |
-| `position_to_vec3(position: &[f32; 3])` | XYZ array | `Vec3` | Simple conversion |
-| `position_to_vec3_opt(position: Option<&[f32; 3]>)` | Optional position | `Vec3` | Returns `ZERO` if None |
-| `scale_to_vec3(scale: &[f32; 3])` | XYZ array | `Vec3` | Simple conversion |
-| `scale_to_vec3_opt(scale: Option<&[f32; 3]>)` | Optional scale | `Vec3` | Returns `ONE` if None |
+| Function                                            | Input                                   | Output | Notes                      |
+| --------------------------------------------------- | --------------------------------------- | ------ | -------------------------- |
+| `rotation_to_quat(rotation: &[f32])`                | 3-elem (Euler degrees) or 4-elem (quat) | `Quat` | **Auto-detects format**    |
+| `rotation_to_quat_opt(rotation: Option<&Vec<f32>>)` | Optional rotation                       | `Quat` | Returns `IDENTITY` if None |
+| `position_to_vec3(position: &[f32; 3])`             | XYZ array                               | `Vec3` | Simple conversion          |
+| `position_to_vec3_opt(position: Option<&[f32; 3]>)` | Optional position                       | `Vec3` | Returns `ZERO` if None     |
+| `scale_to_vec3(scale: &[f32; 3])`                   | XYZ array                               | `Vec3` | Simple conversion          |
+| `scale_to_vec3_opt(scale: Option<&[f32; 3]>)`       | Optional scale                          | `Vec3` | Returns `ONE` if None      |
 
 ### Where to Use These Utilities
 
@@ -821,6 +826,7 @@ Located in `rust/engine/crates/ecs-bridge/src/transform_utils.rs`:
 ### Euler Rotation Order
 
 Both Three.js and Rust use **XYZ Euler order** by default:
+
 - Three.js: `new THREE.Euler(x, y, z, 'XYZ')`
 - Rust: `Quat::from_euler(glam::EulerRot::XYZ, x, y, z)`
 
@@ -843,6 +849,7 @@ cargo test transform_utils
 ```
 
 Key test cases:
+
 - ✅ 90° Euler → π/2 radians quaternion
 - ✅ -90° Euler (plane rotation) → correct horizontal orientation
 - ✅ Quaternion passthrough (no conversion)
@@ -854,11 +861,13 @@ Key test cases:
 When adding new code that processes transforms:
 
 1. **Import standardized utilities:**
+
    ```rust
    use vibe_ecs_bridge::{rotation_to_quat_opt, position_to_vec3_opt, scale_to_vec3_opt};
    ```
 
 2. **Use them for ALL conversions:**
+
    ```rust
    let position = position_to_vec3_opt(transform.position.as_ref());
    let rotation = rotation_to_quat_opt(transform.rotation.as_ref());
@@ -879,3 +888,27 @@ When reviewing existing transform code:
 - [ ] If missing `.to_radians()`: **BUG! Fix immediately**
 - [ ] Replace all manual conversions with standardized utilities
 
+## Post-Implementation Verification
+
+**CRITICAL**: After creating any new code (components, systems, utilities, etc.), you MUST verify that:
+
+1. **Engine Integration**: The new code is properly hooked into the engine
+   - Components are registered in the component registry
+   - Systems are initialized and called in the render/update loop
+   - Resources are properly managed (creation, caching, cleanup)
+   - New modules are exported in `mod.rs` files
+
+2. **Run Tests**: Execute the full test suite to catch integration issues
+   ```bash
+   cargo test
+   ```
+
+3. **Verification Checklist**:
+   - [ ] New components registered in component registry?
+   - [ ] New systems called in app.rs update/render loop?
+   - [ ] New modules exported in parent mod.rs?
+   - [ ] All tests passing?
+   - [ ] Code follows naming conventions (snake_case)?
+   - [ ] Error handling uses anyhow::Result with context?
+
+**Why This Matters**: Code that isn't properly integrated will silently fail at runtime. Tests catch these issues early.
