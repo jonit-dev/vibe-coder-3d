@@ -99,8 +99,16 @@ impl App {
                         log::debug!("    Scale: {:?}", transform.scale);
 
                         camera.position = transform.position_vec3();
+
+                        // Calculate target from rotation
+                        // Default forward is +Z in right-handed coordinate system
+                        let rotation = transform.rotation_quat();
+                        let forward = rotation * glam::Vec3::new(0.0, 0.0, 1.0);
+                        camera.target = camera.position + forward;
+
                         log::info!("  Applied camera position: {:?}", camera.position);
-                        log::debug!("  Camera rotation (quat): {:?}", transform.rotation_quat());
+                        log::info!("  Applied camera target: {:?} (from rotation {:?})", camera.target, rotation);
+                        log::debug!("  Camera forward vector: {:?}", forward);
                     }
 
                     break;
@@ -214,6 +222,9 @@ impl App {
     fn resize(&mut self, new_size: PhysicalSize<u32>) {
         self.renderer.resize(new_size);
         self.camera.update_aspect(new_size.width, new_size.height);
+        // Recreate depth texture to match new surface size
+        self.scene_renderer.depth_texture =
+            crate::render::depth_texture::DepthTexture::create(&self.renderer.device, &self.renderer.config);
     }
 
     fn input(&mut self, _event: &WindowEvent) -> bool {

@@ -326,6 +326,106 @@ pub fn parse_component<T: DeserializeOwned>(
 }
 ```
 
+### Critical Data Format Differences
+
+#### Rotation Units: Degrees vs Radians
+
+**CRITICAL:** TypeScript stores rotations as **Euler angles in DEGREES**, but Rust math libraries expect **RADIANS**.
+
+```typescript
+// TypeScript (src/core/lib/ecs/components/TransformComponent.ts)
+export interface ITransformData {
+  position: [number, number, number];
+  rotation: [number, number, number]; // Euler angles in DEGREES
+  scale: [number, number, number];
+}
+```
+
+```rust
+// ✅ GOOD - Rust Transform converts degrees to radians
+pub fn rotation_quat(&self) -> Quat {
+    self.rotation
+        .as_ref()
+        .map(|r| {
+            match r.len() {
+                3 => {
+                    // Euler angles in DEGREES from TypeScript
+                    // Convert to radians for glam
+                    let x_rad = r[0].to_radians();
+                    let y_rad = r[1].to_radians();
+                    let z_rad = r[2].to_radians();
+                    Quat::from_euler(glam::EulerRot::XYZ, x_rad, y_rad, z_rad)
+                }
+                4 => {
+                    // Quaternion [x, y, z, w] - use directly
+                    Quat::from_xyzw(r[0], r[1], r[2], r[3])
+                }
+                _ => Quat::IDENTITY
+            }
+        })
+        .unwrap_or(Quat::IDENTITY)
+}
+```
+
+**Why this matters:**
+- A plane rotated `-90°` around X in TS must become `-π/2` radians in Rust
+- Without conversion, rotations will be ~57x too small (1 radian ≈ 57.3 degrees)
+- This causes objects to appear in wrong orientations or not visible at all
+
+#### Vec3/Vec2 Object vs Array Format
+
+TypeScript components may export vectors as either arrays OR objects:
+
+```json
+// Array format (older scenes)
+"followOffset": [0, 5, -10]
+
+// Object format (editor-generated scenes)
+"followOffset": {"x": 0, "y": 5, "z": -10}
+"skyboxRepeat": {"u": 1, "v": 1}
+```
+
+**Solution:** Use custom deserializers that accept both formats:
+
+```rust
+fn deserialize_optional_vec3<'de, D>(deserializer: D) -> Result<Option<[f32; 3]>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Vec3Format {
+        Array([f32; 3]),
+        Object(Vec3Object),
+    }
+
+    Ok(
+        Option::<Vec3Format>::deserialize(deserializer)?.map(|v| match v {
+            Vec3Format::Array(arr) => arr,
+            Vec3Format::Object(obj) => [obj.x, obj.y, obj.z],
+        }),
+    )
+}
+```
+
+### Scene Validation
+
+Before loading scenes in Rust, validate them with the Node.js script:
+
+```bash
+# Validate a scene file
+yarn validate:scene rust/game/scenes/testphysics.json
+
+# Or directly
+node scripts/validate-scene.cjs rust/game/scenes/testphysics.json
+```
+
+The validator checks:
+- ✓ Rotation format (degrees vs radians, array vs object)
+- ✓ Camera vec3/vec2 fields (array vs object format)
+- ✓ Component structure and required fields
+- ✓ Material references and definitions
+
 ## Common Patterns
 
 ### Feature-Gated Code

@@ -78,11 +78,19 @@ impl SceneGraph {
                 .unwrap_or(Vec3::ZERO);
 
             // Rotation (handle both Euler angles and quaternions)
+            // IMPORTANT: Editor stores Euler angles in DEGREES (x, y, z)
+            // Match Three.js which also uses degrees in authoring but radians internally
             let rotation = transform
                 .rotation
                 .as_ref()
                 .map(|r| match r.len() {
-                    3 => Quat::from_euler(glam::EulerRot::XYZ, r[0], r[1], r[2]),
+                    3 => {
+                        // Convert degrees -> radians
+                        let x = r[0].to_radians();
+                        let y = r[1].to_radians();
+                        let z = r[2].to_radians();
+                        Quat::from_euler(glam::EulerRot::XYZ, x, y, z)
+                    }
                     4 => Quat::from_xyzw(r[0], r[1], r[2], r[3]),
                     _ => {
                         log::warn!("Invalid rotation array length: {}, using identity", r.len());

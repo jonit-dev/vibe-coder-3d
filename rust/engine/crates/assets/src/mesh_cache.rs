@@ -1,4 +1,4 @@
-use super::{primitives, vertex::Mesh};
+use super::{primitives, primitives_cylinders, primitives_torus, vertex::Mesh};
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 
@@ -22,17 +22,32 @@ impl MeshCache {
     pub fn initialize_primitives(&mut self, device: &wgpu::Device) {
         log::info!("Initializing primitive meshes...");
 
-        // Create cube
+        // Basic shapes (existing)
         let cube = primitives::create_cube();
         self.upload_mesh(device, "cube", cube);
 
-        // Create sphere
         let sphere = primitives::create_sphere(32, 16);
         self.upload_mesh(device, "sphere", sphere);
 
-        // Create plane
-        let plane = primitives::create_plane(10.0);
+        let plane = primitives::create_plane(1.0);
         self.upload_mesh(device, "plane", plane);
+
+        // Cylindrical shapes (Phase 1 - matching Three.js exactly)
+        let cylinder = primitives_cylinders::create_cylinder(0.5, 1.0, 32);
+        self.upload_mesh(device, "cylinder", cylinder);
+
+        let cone = primitives_cylinders::create_cone(0.5, 1.0, 32);
+        self.upload_mesh(device, "cone", cone);
+
+        let capsule = primitives_cylinders::create_capsule(0.3, 0.4, 4, 16);
+        self.upload_mesh(device, "capsule", capsule);
+
+        // Torus shapes (Phase 1)
+        let torus = primitives_torus::create_torus(0.5, 0.2, 16, 100);
+        self.upload_mesh(device, "torus", torus);
+
+        let torus_knot = primitives_torus::create_torus_knot(0.4, 0.1, 64, 8, 2, 3);
+        self.upload_mesh(device, "torusKnot", torus_knot);
 
         log::info!("Loaded {} primitive meshes", self.meshes.len());
     }

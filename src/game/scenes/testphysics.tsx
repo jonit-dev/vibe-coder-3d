@@ -3,14 +3,14 @@ import { defineScene } from './defineScene';
 /**
  * testphysics
  * Scene with 6 entities
- * Generated: 2025-10-15T19:53:57.102Z
+ * Generated: 2025-10-15T21:16:33.495Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
   "name": "testphysics",
   "version": 1,
-  "timestamp": "2025-10-15T19:53:57.102Z",
+  "timestamp": "2025-10-15T21:16:33.495Z",
   "description": "Scene with 6 entities"
 },
   entities: [
@@ -87,8 +87,8 @@ export default defineScene({
       "Transform": {
         "position": [
           -2.25,
-          2,
-          0
+          4.25,
+          3
         ]
       },
       "MeshRenderer": {
@@ -150,7 +150,8 @@ export default defineScene({
       },
       "RigidBody": {
         "bodyType": "fixed",
-        "type": "fixed"
+        "type": "fixed",
+        "canSleep": false
       },
       "MeshCollider": {
         "center": [
@@ -183,8 +184,8 @@ export default defineScene({
       },
       "Transform": {
         "position": [
-          1.75,
-          2,
+          0,
+          5.25,
           0
         ]
       },
@@ -223,8 +224,5 @@ export default defineScene({
     materials: ["@/materials/default","@/materials/red"],
     inputs: ["@/inputs/defaultInput"],
     prefabs: ["@/prefabs/trees"]
-  },
-  lockedEntityIds: [
-  9
-]
+  }
 });

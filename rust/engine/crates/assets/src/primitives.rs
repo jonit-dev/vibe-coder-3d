@@ -167,7 +167,7 @@ pub fn create_cube() -> Mesh {
     Mesh::new(vertices, indices)
 }
 
-/// Generate a sphere mesh (UV sphere)
+/// Generate a sphere mesh (UV sphere) matching Three.js default radius = 0.5
 pub fn create_sphere(segments: u32, rings: u32) -> Mesh {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
@@ -183,9 +183,11 @@ pub fn create_sphere(segments: u32, rings: u32) -> Mesh {
             let sin_theta = theta.sin();
             let cos_theta = theta.cos();
 
-            let x = sin_phi * cos_theta;
-            let y = cos_phi;
-            let z = sin_phi * sin_theta;
+            // Radius 0.5 to match Three.js <sphereGeometry args={[0.5, ...]}>
+            let r = 0.5;
+            let x = r * sin_phi * cos_theta;
+            let y = r * cos_phi;
+            let z = r * sin_phi * sin_theta;
 
             let u = segment as f32 / segments as f32;
             let v = ring as f32 / rings as f32;
@@ -218,33 +220,43 @@ pub fn create_sphere(segments: u32, rings: u32) -> Mesh {
     Mesh::new(vertices, indices)
 }
 
-/// Generate a plane mesh (XZ plane, facing up)
+/// Generate a plane mesh matching Three.js PlaneGeometry(1,1)
+/// Orientation: XY plane facing +Z (so no -90 deg X rotation needed)
 pub fn create_plane(size: f32) -> Mesh {
     let half = size / 2.0;
+    log::debug!(
+        "Creating plane: size={}, half={}, bounds=[{}, {}] to [{}, {}]",
+        size,
+        half,
+        -half,
+        -half,
+        half,
+        half
+    );
 
     let vertices = vec![
         Vertex {
-            position: [-half, 0.0, -half],
-            normal: [0.0, 1.0, 0.0],
-            uv: [0.0, 0.0],
+            position: [-half, -half, 0.0],
+            normal: [0.0, 0.0, 1.0],
+            uv: [0.0, 1.0],
             tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
-            position: [half, 0.0, -half],
-            normal: [0.0, 1.0, 0.0],
-            uv: [1.0, 0.0],
-            tangent: [0.0, 0.0, 0.0, 1.0],
-        },
-        Vertex {
-            position: [half, 0.0, half],
-            normal: [0.0, 1.0, 0.0],
+            position: [half, -half, 0.0],
+            normal: [0.0, 0.0, 1.0],
             uv: [1.0, 1.0],
             tangent: [0.0, 0.0, 0.0, 1.0],
         },
         Vertex {
-            position: [-half, 0.0, half],
-            normal: [0.0, 1.0, 0.0],
-            uv: [0.0, 1.0],
+            position: [half, half, 0.0],
+            normal: [0.0, 0.0, 1.0],
+            uv: [1.0, 0.0],
+            tangent: [0.0, 0.0, 0.0, 1.0],
+        },
+        Vertex {
+            position: [-half, half, 0.0],
+            normal: [0.0, 0.0, 1.0],
+            uv: [0.0, 0.0],
             tangent: [0.0, 0.0, 0.0, 1.0],
         },
     ];

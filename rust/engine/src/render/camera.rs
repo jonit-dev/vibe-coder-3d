@@ -105,7 +105,7 @@ impl Camera {
             self.orthographic_size
         );
 
-        // Apply background color if specified
+        // Apply background color if specified, otherwise match Three.js default
         if let Some(ref bg) = camera_comp.background_color {
             self.background_color = Color {
                 r: bg.r as f64,
@@ -120,6 +120,18 @@ impl Camera {
                 bg.b,
                 bg.a
             );
+
+            // If alpha is 0 (editor often uses transparent background for skybox),
+            // fall back to a dark gray similar to R3F default clear so content is visible.
+            if bg.a <= 0.0 {
+                self.background_color = Color {
+                    r: 0.02,
+                    g: 0.02,
+                    b: 0.02,
+                    a: 1.0,
+                };
+                log::info!("Background alpha=0 -> using neutral fallback color");
+            }
         }
     }
 }

@@ -104,8 +104,12 @@ fn get_transform(entity: &Entity, registry: &ComponentRegistry) -> (Vec3, Quat, 
                 // Quaternion [x, y, z, w]
                 Quat::from_xyzw(rot[0], rot[1], rot[2], rot[3])
             } else if rot.len() == 3 {
-                // Euler angles [x, y, z] in radians
-                Quat::from_euler(glam::EulerRot::XYZ, rot[0], rot[1], rot[2])
+                // Euler angles [x, y, z] in DEGREES (from TypeScript/JSON)
+                // Convert to radians for glam
+                let x_rad = rot[0].to_radians();
+                let y_rad = rot[1].to_radians();
+                let z_rad = rot[2].to_radians();
+                Quat::from_euler(glam::EulerRot::XYZ, x_rad, y_rad, z_rad)
             } else {
                 Quat::IDENTITY
             }

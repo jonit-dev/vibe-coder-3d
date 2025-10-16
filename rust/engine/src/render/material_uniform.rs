@@ -79,7 +79,7 @@ impl MaterialUniform {
             alpha_mode = ALPHA_MODE_BLEND;
         }
 
-        let mut uniform = Self {
+        let uniform = Self {
             emissive_color_intensity: [
                 emissive_rgb.x,
                 emissive_rgb.y,

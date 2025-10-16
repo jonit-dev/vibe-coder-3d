@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::any::Any;
 use vibe_scene::ComponentKindId;
@@ -9,6 +9,59 @@ use crate::{ComponentCapabilities, IComponentDecoder};
 // ============================================================================
 // Component Types (duplicated from main engine for now, will refactor later)
 // ============================================================================
+
+// Helper structs for deserializing object-based vectors
+#[derive(Debug, Deserialize, Clone)]
+struct Vec3Object {
+    x: f32,
+    y: f32,
+    z: f32,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct Vec2Object {
+    u: f32,
+    v: f32,
+}
+
+// Custom deserializers that handle both array and object formats
+fn deserialize_optional_vec3<'de, D>(deserializer: D) -> Result<Option<[f32; 3]>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Vec3Format {
+        Array([f32; 3]),
+        Object(Vec3Object),
+    }
+
+    Ok(
+        Option::<Vec3Format>::deserialize(deserializer)?.map(|v| match v {
+            Vec3Format::Array(arr) => arr,
+            Vec3Format::Object(obj) => [obj.x, obj.y, obj.z],
+        }),
+    )
+}
+
+fn deserialize_optional_vec2<'de, D>(deserializer: D) -> Result<Option<[f32; 2]>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Vec2Format {
+        Array([f32; 2]),
+        Object(Vec2Object),
+    }
+
+    Ok(
+        Option::<Vec2Format>::deserialize(deserializer)?.map(|v| match v {
+            Vec2Format::Array(arr) => arr,
+            Vec2Format::Object(obj) => [obj.u, obj.v],
+        }),
+    )
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Transform {
@@ -68,7 +121,11 @@ pub struct CameraComponent {
     pub enable_smoothing: bool,
     #[serde(default, rename = "followTarget")]
     pub follow_target: Option<u32>,
-    #[serde(default, rename = "followOffset")]
+    #[serde(
+        default,
+        rename = "followOffset",
+        deserialize_with = "deserialize_optional_vec3"
+    )]
     pub follow_offset: Option<[f32; 3]>,
     #[serde(default = "default_smoothing_speed", rename = "smoothingSpeed")]
     pub smoothing_speed: f32,
@@ -97,13 +154,29 @@ pub struct CameraComponent {
     pub post_processing_preset: Option<String>,
 
     // Skybox transforms
-    #[serde(default, rename = "skyboxScale")]
+    #[serde(
+        default,
+        rename = "skyboxScale",
+        deserialize_with = "deserialize_optional_vec3"
+    )]
     pub skybox_scale: Option<[f32; 3]>,
-    #[serde(default, rename = "skyboxRotation")]
+    #[serde(
+        default,
+        rename = "skyboxRotation",
+        deserialize_with = "deserialize_optional_vec3"
+    )]
     pub skybox_rotation: Option<[f32; 3]>,
-    #[serde(default, rename = "skyboxRepeat")]
+    #[serde(
+        default,
+        rename = "skyboxRepeat",
+        deserialize_with = "deserialize_optional_vec2"
+    )]
     pub skybox_repeat: Option<[f32; 2]>,
-    #[serde(default, rename = "skyboxOffset")]
+    #[serde(
+        default,
+        rename = "skyboxOffset",
+        deserialize_with = "deserialize_optional_vec2"
+    )]
     pub skybox_offset: Option<[f32; 2]>,
     #[serde(default = "default_skybox_intensity", rename = "skyboxIntensity")]
     pub skybox_intensity: f32,

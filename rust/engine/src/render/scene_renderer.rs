@@ -74,7 +74,7 @@ impl SceneRenderer {
         self.material_cache
             .load_from_scene(scene.materials.as_ref());
 
-        // Build scene graph for transform hierarchy
+        // Build scene graph for transform hierarchy (uses deg->rad for Euler to match Three.js)
         let mut scene_graph = match SceneGraph::build(scene) {
             Ok(graph) => {
                 log::info!(
@@ -372,11 +372,21 @@ impl SceneRenderer {
                 &mut inline_material_cache,
             );
 
-            log::debug!(
-                "  ✓ Renderable: mesh='{}', material={:?}, world_transform={:?}",
+            // Extract position from transform matrix for logging
+            let pos = instance.world_transform.w_axis;
+            let scale = Vec3::new(
+                instance.world_transform.x_axis.length(),
+                instance.world_transform.y_axis.length(),
+                instance.world_transform.z_axis.length(),
+            );
+
+            log::info!(
+                "  ✓ Renderable entity {:?}: mesh='{}', material={:?}, pos=[{:.2}, {:.2}, {:.2}], scale=[{:.2}, {:.2}, {:.2}]",
+                instance.entity_id,
                 &mesh_id,
                 &material_id,
-                instance.world_transform
+                pos.x, pos.y, pos.z,
+                scale.x, scale.y, scale.z
             );
 
             self.entities.push(RenderableEntity {
