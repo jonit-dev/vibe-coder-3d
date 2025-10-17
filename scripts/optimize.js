@@ -17,7 +17,7 @@
  */
 
 import { config } from 'dotenv';
-import { readdir } from 'fs/promises';
+import { readdir, mkdir } from 'fs/promises';
 import { join, relative, basename } from 'path';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
@@ -139,9 +139,15 @@ async function optimizeModel(model, blenderAvailable) {
 
   // If Blender decimation is enabled and available
   if (useBlender && blenderAvailable && ENV.autoDecimate) {
-    const outputPath = path.replace('.glb', '-decimated.glb');
+    // Save to glb/ subdirectory where the app loads models from
+    const modelDir = join(ENV.modelsDir, dir);
+    const glbDir = join(modelDir, 'glb');
+    const outputPath = join(glbDir, file);
 
     try {
+      // Ensure glb directory exists
+      await mkdir(glbDir, { recursive: true });
+
       await decimateWithBlender(path, outputPath, {
         ratio: analysis.recommendedRatio,
         textureSize: 1024,
@@ -149,8 +155,9 @@ async function optimizeModel(model, blenderAvailable) {
         silent: args.silent,
       });
 
-      logger.info(`✅ Decimated ${dir}/${file}`, {
-        output: basename(outputPath),
+      logger.success(`Decimated ${dir}/${file}`, {
+        output: `glb/${file}`,
+        location: relative(process.cwd(), outputPath),
       });
 
       return { success: true, decimated: true, outputPath };
