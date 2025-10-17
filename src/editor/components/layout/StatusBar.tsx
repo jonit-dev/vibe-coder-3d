@@ -61,6 +61,72 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
         ? 'LOW'
         : 'ORIG';
 
+  // Triangle counting and budget calculation
+  const [triangleCount, setTriangleCount] = React.useState(0);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    // Detect if mobile
+    const checkMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
+    setIsMobile(checkMobile);
+
+    const countTriangles = () => {
+      try {
+        const scene = (window as any).__r3fScene;
+        if (!scene) return 0;
+
+        let count = 0;
+        scene.traverse((obj: any) => {
+          if (obj.geometry) {
+            const geometry = obj.geometry;
+            if (geometry.index) {
+              count += geometry.index.count / 3;
+            } else if (geometry.attributes?.position) {
+              count += geometry.attributes.position.count / 3;
+            }
+          }
+        });
+        return Math.floor(count);
+      } catch {
+        return 0;
+      }
+    };
+
+    const interval = setInterval(() => {
+      const count = countTriangles();
+      setTriangleCount(count);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate budget status
+  const mobileBudget = 500000; // 500k triangles for mobile
+  const desktopBudget = 2000000; // 2M triangles for desktop
+  const budget = isMobile ? mobileBudget : desktopBudget;
+  const budgetPercentage = (triangleCount / budget) * 100;
+
+  // Determine color based on budget
+  let budgetColor = 'text-green-400';
+  let budgetStatus = 'Good';
+  let budgetTooltip = 'Triangle count is within optimal range for smooth 60 FPS';
+
+  if (budgetPercentage > 100) {
+    budgetColor = 'text-red-400';
+    budgetStatus = 'Critical';
+    budgetTooltip = `Scene exceeds ${isMobile ? 'mobile' : 'desktop'} budget by ${Math.round(budgetPercentage - 100)}%! Performance will suffer. Reduce LOD quality or use mesh instancing.`;
+  } else if (budgetPercentage > 80) {
+    budgetColor = 'text-orange-400';
+    budgetStatus = 'High';
+    budgetTooltip = `Scene is at ${Math.round(budgetPercentage)}% of ${isMobile ? 'mobile' : 'desktop'} budget. Consider optimizing for better performance.`;
+  } else if (budgetPercentage > 50) {
+    budgetColor = 'text-yellow-400';
+    budgetStatus = 'Moderate';
+    budgetTooltip = `Scene is at ${Math.round(budgetPercentage)}% of ${isMobile ? 'mobile' : 'desktop'} budget. Performance is good.`;
+  }
+
   return (
     <footer className="h-8 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-t border-gray-800/50 flex items-center text-xs text-gray-400 relative overflow-hidden">
       {/* Animated background effect */}
@@ -169,9 +235,15 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
 
           <div className="w-px h-4 bg-gray-700"></div>
 
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="text-gray-500">VibeEngine</span>
-            <span className="text-cyan-400">Ready</span>
+          {/* Triangle Budget Display */}
+          <div className="flex items-center space-x-2 text-xs cursor-help" title={budgetTooltip}>
+            <span className="text-gray-500">Triangles:</span>
+            <span className={`font-mono font-bold ${budgetColor}`}>
+              {triangleCount.toLocaleString()}
+            </span>
+            <span className="text-gray-600">/</span>
+            <span className="text-gray-500 font-mono">{(budget / 1000).toFixed(0)}k</span>
+            <span className={`text-[10px] ${budgetColor}`}>({budgetStatus})</span>
           </div>
         </div>
       </div>
