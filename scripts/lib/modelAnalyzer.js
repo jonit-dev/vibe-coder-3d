@@ -30,21 +30,34 @@ export function getTriangleCount(document) {
 
 /**
  * Classify model based on triangle count
+ * Based on industry LOD standards for Three.js/WebGL
  */
 export function classifyModel(triangleCount) {
-  if (triangleCount > 40000) return 'hero';
-  if (triangleCount > 10000) return 'prop';
+  // LOD0 High: 20k-80k for hero models
+  if (triangleCount > 20000) return 'hero';
+  // LOD1 Medium: 5k-20k for props
+  if (triangleCount > 5000) return 'prop';
+  // LOD2 Low: 1k-5k for background
   return 'background';
 }
 
 /**
  * Get target metrics for model classification
+ * Targets based on WebGL/Three.js LOD best practices
  */
 export function getTargetMetrics(classification) {
   const targets = {
-    hero: { ideal: 40000, max: 50000, name: 'Hero Character' },
-    prop: { ideal: 10000, max: 15000, name: 'Environment Prop' },
-    background: { ideal: 3000, max: 5000, name: 'Background Object' },
+    // LOD0: Desktop high-end (50k-100k), Mobile high-end (20k-40k)
+    // Target middle ground: 50k ideal, 80k max
+    hero: { ideal: 50000, max: 80000, name: 'Hero Character/Main Prop' },
+
+    // LOD1: Desktop (20k-50k), Mobile (10k-20k)
+    // Target: 20k ideal, 50k max
+    prop: { ideal: 20000, max: 50000, name: 'Environment Prop' },
+
+    // LOD2: Desktop (5k-20k), Mobile (2k-10k)
+    // Target: 5k ideal, 20k max
+    background: { ideal: 5000, max: 20000, name: 'Background Object' },
   };
 
   return targets[classification] || targets.prop;

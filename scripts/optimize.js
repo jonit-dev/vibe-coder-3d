@@ -193,14 +193,20 @@ async function checkComplexity(models) {
 
 /**
  * Generate LOD variants from base model
+ * Based on industry LOD benchmarks:
+ * - LOD0 (base): 20k-80k (hero), 5k-20k (prop), 1k-5k (background)
+ * - LOD1 (high_fidelity): 40% of base (targeting mid-range)
+ * - LOD2 (low_fidelity): 10% of base (targeting low-end/distant view)
  */
 async function generateLODVariants(baseModelPath, modelDir, fileName) {
   const lodDir = join(modelDir, 'lod');
   await mkdir(lodDir, { recursive: true });
 
   const lodVariants = [
-    { name: 'high_fidelity', ratio: 0.75, error: 0.01 },
-    { name: 'low_fidelity', ratio: 0.35, error: 0.1 },
+    // LOD1: 40% of base (e.g., 50k → 20k, 20k → 8k, 5k → 2k)
+    { name: 'high_fidelity', ratio: 0.4, error: 0.01 },
+    // LOD2: 10% of base (e.g., 50k → 5k, 20k → 2k, 5k → 500)
+    { name: 'low_fidelity', ratio: 0.1, error: 0.1 },
   ];
 
   const results = [];

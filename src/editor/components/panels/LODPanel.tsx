@@ -94,23 +94,23 @@ export const LODPanel: React.FC<ILODPanelProps> = ({ isExpanded }) => {
     setQuality(newQuality);
   };
 
-  // Collapsed view - show minimal info
+  // Collapsed view - show minimal inline info
   if (!isExpanded) {
     if (!selectedId || !hasLODModel) {
       return (
-        <div className="px-3 py-2 text-xs text-gray-500 border-t border-gray-700">
-          LOD: <span className="text-gray-600">No model selected</span>
-        </div>
+        <span className="text-xs text-gray-500">
+          <span className="text-gray-600">—</span>
+        </span>
       );
     }
 
     return (
-      <div className="px-3 py-2 text-xs border-t border-gray-700 flex items-center justify-between">
+      <span className="text-xs flex items-center gap-2">
         <span className="text-gray-400">
           LOD: <span className="text-cyan-400 font-mono">{quality}</span>
         </span>
         <span className="text-gray-500 text-[10px]">{triangleCount.toLocaleString()} tris</span>
-      </div>
+      </span>
     );
   }
 

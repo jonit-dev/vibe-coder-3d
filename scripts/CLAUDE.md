@@ -144,18 +144,29 @@ Otherwise skipped (instant).
 
 ## Model Classification
 
-Automatically determined by triangle count:
+Based on WebGL/Three.js industry LOD benchmarks:
 
-- **Hero** (>40K triangles): Main characters, key props
+- **Hero** (>20K triangles): Main characters, key props
 
-  - Target: 40K triangles ideal, 50K max
+  - Desktop: 50K-100K | Mobile: 20K-40K
+  - Target: 50K ideal, 80K max
 
-- **Prop** (10K-40K triangles): Environment objects
+- **Prop** (5K-20K triangles): Environment objects
 
-  - Target: 10K triangles ideal, 15K max
+  - Desktop: 20K-50K | Mobile: 10K-20K
+  - Target: 20K ideal, 50K max
 
-- **Background** (<10K triangles): Filler objects
-  - Target: 3K triangles ideal, 5K max
+- **Background** (<5K triangles): Filler objects
+  - Desktop: 5K-20K | Mobile: 2K-10K
+  - Target: 5K ideal, 20K max
+
+### LOD Variant Targets
+
+Generated automatically from base model:
+
+- **LOD0 (Base)**: Targets above
+- **LOD1 (high_fidelity)**: 40% of base (e.g., 50K → 20K)
+- **LOD2 (low_fidelity)**: 10% of base (e.g., 50K → 5K)
 
 ## Configuration
 
@@ -178,10 +189,10 @@ BLENDER_PATH=blender                  # Path to Blender executable
 # Texture
 MAX_TEXTURE_SIZE=2048                 # Maximum texture dimension
 
-# LOD
+# LOD (Based on industry benchmarks)
 ENABLE_LOD_GENERATION=true
-LOD_HIGH_RATIO=0.75                   # High fidelity (75% of base)
-LOD_LOW_RATIO=0.35                    # Low fidelity (35% of base)
+LOD_HIGH_RATIO=0.4                    # High fidelity (40% of base, targets 20k-50k)
+LOD_LOW_RATIO=0.1                     # Low fidelity (10% of base, targets 5k-20k)
 ```
 
 ## Quality Recommendations

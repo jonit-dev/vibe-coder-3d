@@ -28,7 +28,7 @@ interface ILODState {
 export const useLODStore = create<ILODState>((set, get) => ({
   // Default state
   quality: 'original',
-  autoSwitch: false,
+  autoSwitch: true,
   distanceThresholds: {
     high: 50,
     low: 100,

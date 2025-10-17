@@ -340,16 +340,13 @@ const Editor: React.FC = () => {
         statusMessage={statusMessage}
         stats={stats}
         streamingProgress={progress.isActive ? progress : undefined}
+        lodPanelCollapsed={<LODPanel isExpanded={false} />}
       />
 
-      {/* LOD Panel - Shows LOD controls and statistics */}
-      {isLODExpanded ? (
+      {/* LOD Panel - Shows LOD controls when expanded */}
+      {isLODExpanded && (
         <div className="fixed bottom-10 right-4 z-50">
           <LODPanel isExpanded={true} />
-        </div>
-      ) : (
-        <div className="fixed bottom-0 left-0 right-0 z-40">
-          <LODPanel isExpanded={false} />
         </div>
       )}
     </div>

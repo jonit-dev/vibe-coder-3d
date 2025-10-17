@@ -6,11 +6,13 @@ import { useFPS } from '@/editor/hooks/useFPS';
 import { StatusIndicator } from '../shared/StatusIndicator';
 import { useEditorStore } from '@/editor/store/editorStore';
 import { Logger } from '@core/lib/logger';
+import { useLODStore } from '@core/state/lodStore';
 
 const logger = Logger.create('StatusBar');
 
 export interface IStatusBarProps {
   statusMessage: string;
+  lodPanelCollapsed?: React.ReactNode;
   shortcuts?: Array<{
     key: string;
     description: string;
@@ -31,6 +33,7 @@ export interface IStatusBarProps {
 
 export const StatusBar: React.FC<IStatusBarProps> = ({
   statusMessage,
+  lodPanelCollapsed,
   shortcuts = [
     { key: 'Ctrl+N', description: 'Add Object' },
     { key: 'Ctrl+S', description: 'Save Scene' },
@@ -44,6 +47,19 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
   const rendererLabel = 'WebGL';
   const isLODExpanded = useEditorStore((state) => state.isLODExpanded);
   const setIsLODExpanded = useEditorStore((state) => state.setIsLODExpanded);
+
+  // Get LOD quality from store
+  const lodQuality = useLODStore((state) => state.quality);
+  const autoSwitch = useLODStore((state) => state.autoSwitch);
+
+  // Format quality for display
+  const qualityLabel = autoSwitch
+    ? 'AUTO'
+    : lodQuality === 'high_fidelity'
+      ? 'HIGH'
+      : lodQuality === 'low_fidelity'
+        ? 'LOW'
+        : 'ORIG';
 
   return (
     <footer className="h-8 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-t border-gray-800/50 flex items-center text-xs text-gray-400 relative overflow-hidden">
@@ -127,7 +143,7 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
 
           <div className="w-px h-4 bg-gray-700"></div>
 
-          {/* LOD Button */}
+          {/* LOD Button - shows current quality */}
           <button
             onClick={() => {
               const newValue = !isLODExpanded;
@@ -142,11 +158,14 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
                 ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-600/50'
                 : 'hover:bg-gray-800/50 text-gray-400 hover:text-cyan-400'
             }`}
-            title="Toggle LOD Panel"
+            title={`Toggle LOD Panel (Current: ${qualityLabel})`}
           >
             <TbBoxMultiple className="w-4 h-4" />
-            <span className="text-xs">LOD</span>
+            <span className="text-xs font-mono">{qualityLabel}</span>
           </button>
+
+          {/* Collapsed LOD Panel - renders inline when not expanded */}
+          {lodPanelCollapsed}
 
           <div className="w-px h-4 bg-gray-700"></div>
 

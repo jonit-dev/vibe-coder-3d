@@ -18,7 +18,7 @@ export const LODSystemDemo: React.FC = () => {
   const setQuality = useLODStore((state) => state.setQuality);
   const setAutoSwitch = useLODStore((state) => state.setAutoSwitch);
   const [triangleCount, setTriangleCount] = React.useState(0);
-  const [showWireframe, setShowWireframe] = React.useState(false);
+  const [showWireframe, setShowWireframe] = React.useState(true);
   const [isChanging, setIsChanging] = React.useState(false);
 
   // Count triangles in the scene
