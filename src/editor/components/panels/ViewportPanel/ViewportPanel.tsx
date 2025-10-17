@@ -150,6 +150,10 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
             shadows="percentage"
             gl={{
               powerPreference: 'high-performance',
+              // Preserve drawing buffer to help with context recovery
+              preserveDrawingBuffer: false,
+              // Enable fail if major performance caveat
+              failIfMajorPerformanceCaveat: false,
             }}
             onCreated={({ camera, gl }) => {
               // Fix camera orientation - look at origin from a good angle
@@ -158,6 +162,31 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
               // Ensure shadow mapping is enabled with good settings
               gl.shadowMap.enabled = true;
               gl.shadowMap.type = 2; // PCFSoftShadowMap
+
+              // Add WebGL context loss/restore handlers
+              const canvas = gl.domElement;
+
+              canvas.addEventListener(
+                'webglcontextlost',
+                (event) => {
+                  event.preventDefault();
+                  logger.error('WebGL context lost! Attempting recovery...', {
+                    timestamp: new Date().toISOString(),
+                  });
+                },
+                false,
+              );
+
+              canvas.addEventListener(
+                'webglcontextrestored',
+                () => {
+                  logger.info('WebGL context restored successfully', {
+                    timestamp: new Date().toISOString(),
+                  });
+                  // Context will be automatically recreated by Three.js/React Three Fiber
+                },
+                false,
+              );
 
               // Initialize InputManager with the canvas element
               const inputManager = InputManager.getInstance();

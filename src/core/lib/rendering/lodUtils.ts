@@ -1,4 +1,12 @@
 import type { LODQuality } from '@core/state/lodStore';
+import { Logger } from '@core/lib/logger';
+
+const logger = Logger.create('lodUtils');
+
+// Throttle logging to prevent spam
+let lastLogTime = 0;
+let lastLoggedPath = '';
+const LOG_THROTTLE_MS = 2000; // Only log once per 2 seconds for same path
 
 /**
  * LOD Path Utilities - Pure functions for LOD path resolution
@@ -26,6 +34,21 @@ export function extractQualityFromPath(path: string): LODQuality | null {
  * Pure function with no side effects
  */
 export function getLODPath(basePath: string, quality: LODQuality): string {
+  const result = _getLODPathInternal(basePath, quality);
+
+  // Throttled logging - only log if path changed or enough time passed
+  const now = Date.now();
+  const pathKey = `${basePath}:${quality}`;
+  if (pathKey !== lastLoggedPath || now - lastLogTime > LOG_THROTTLE_MS) {
+    lastLogTime = now;
+    lastLoggedPath = pathKey;
+    logger.info('📦 LOD path → ' + quality, { basePath, result });
+  }
+
+  return result;
+}
+
+function _getLODPathInternal(basePath: string, quality: LODQuality): string {
   // Original quality = base path unchanged
   if (quality === 'original') {
     return basePath;
@@ -63,12 +86,36 @@ export function getLODPath(basePath: string, quality: LODQuality): string {
 }
 
 /**
+ * Normalize a path that might be an LOD variant back to its original form
+ * E.g., '/assets/models/Model/lod/Model.high_fidelity.glb' -> '/assets/models/Model/glb/Model.glb'
+ */
+export function normalizeToOriginalPath(path: string): string {
+  // If already an original path (no LOD suffix), return as-is
+  if (!hasLODQuality(path)) {
+    return path;
+  }
+
+  // Remove quality suffix
+  const withoutQuality = path.replace('.high_fidelity.', '.').replace('.low_fidelity.', '.');
+
+  // Replace /lod/ with /glb/ if present
+  if (withoutQuality.includes('/lod/')) {
+    return withoutQuality.replace('/lod/', '/glb/');
+  }
+
+  return withoutQuality;
+}
+
+/**
  * Get all LOD paths for a model
  */
 export function getAllLODPaths(basePath: string): Record<LODQuality, string> {
+  // Normalize to ensure we start from the original path
+  const originalPath = normalizeToOriginalPath(basePath);
+
   return {
-    original: basePath,
-    high_fidelity: getLODPath(basePath, 'high_fidelity'),
-    low_fidelity: getLODPath(basePath, 'low_fidelity'),
+    original: originalPath,
+    high_fidelity: getLODPath(originalPath, 'high_fidelity'),
+    low_fidelity: getLODPath(originalPath, 'low_fidelity'),
   };
 }

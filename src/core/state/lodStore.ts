@@ -36,8 +36,15 @@ export const useLODStore = create<ILODState>((set, get) => ({
 
   // Actions
   setQuality: (quality) => {
-    logger.info('Quality changed', { from: get().quality, to: quality });
-    set({ quality, autoSwitch: false }); // Disable auto-switch when manually setting quality
+    const currentAutoSwitch = get().autoSwitch;
+    logger.info('Quality changed', {
+      from: get().quality,
+      to: quality,
+      autoSwitch: currentAutoSwitch,
+      action: currentAutoSwitch ? 'keeping auto-switch ON' : 'auto-switch already OFF',
+    });
+    // Only update quality, preserve auto-switch state
+    set({ quality });
   },
 
   setAutoSwitch: (autoSwitch) => {
@@ -60,12 +67,19 @@ export const useLODStore = create<ILODState>((set, get) => ({
 
     const { high, low } = state.distanceThresholds;
 
+    // Simple threshold-based quality determination
+    // Note: Smoothing is handled in EntityMesh.tsx via distance smoothing (0.8/0.2)
+    // and change threshold (0.5 units), so no hysteresis needed here
+    let quality: LODQuality;
+
     if (distance < high) {
-      return 'original';
+      quality = 'original';
     } else if (distance < low) {
-      return 'high_fidelity';
+      quality = 'high_fidelity';
     } else {
-      return 'low_fidelity';
+      quality = 'low_fidelity';
     }
+
+    return quality;
   },
 }));
