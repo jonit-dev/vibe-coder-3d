@@ -235,11 +235,11 @@ const CustomModelMesh: React.FC<{
     // PERFORMANCE: Matrix updates now handled by ModelMatrixSystem (batched)
     // See: performance-audit-report.md #4 - removes N individual useFrame hooks
 
-    // CRITICAL: Use lodPath as key to force remount when LOD changes
+    // CRITICAL: Use lodPath as key on primitive (not group) to force remount when LOD changes
     // This ensures TransformControls properly detaches before the mesh changes
+    // while preserving the group's transform (position/rotation/scale)
     return (
       <group
-        key={lodPath}
         ref={groupRefCallback}
         userData={{ entityId }}
         onClick={onMeshClick}
@@ -249,7 +249,7 @@ const CustomModelMesh: React.FC<{
         visible={renderingContributions.visible}
         frustumCulled={true}
       >
-        <primitive object={modelScene} />
+        <primitive key={lodPath} object={modelScene} />
       </group>
     );
   },
