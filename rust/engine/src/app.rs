@@ -297,36 +297,27 @@ impl App {
         }
 
         // Sync physics transforms back to renderable entities
+        // Use direct iteration instead of O(n^2) nth() pattern
         if steps > 0 {
-            let stats = self.physics_world.stats();
             let mut any_updated = false;
-            for i in 0..stats.rigid_body_count {
-                if let Some((entity_id, (position, rotation))) = self
-                    .physics_world
-                    .entity_to_body
-                    .iter()
-                    .nth(i)
-                    .and_then(|(id, handle)| {
-                        self.physics_world.rigid_bodies.get(*handle).map(|body| {
-                            let iso = body.position();
-                            let pos = glam::Vec3::new(
-                                iso.translation.x,
-                                iso.translation.y,
-                                iso.translation.z,
-                            );
-                            let rot = glam::Quat::from_xyzw(
-                                iso.rotation.i,
-                                iso.rotation.j,
-                                iso.rotation.k,
-                                iso.rotation.w,
-                            );
-                            (*id, (pos, rot))
-                        })
-                    })
-                {
+            for (entity_id, body_handle) in self.physics_world.entity_to_body.iter() {
+                if let Some(body) = self.physics_world.rigid_bodies.get(*body_handle) {
+                    let iso = body.position();
+                    let position = glam::Vec3::new(
+                        iso.translation.x,
+                        iso.translation.y,
+                        iso.translation.z,
+                    );
+                    let rotation = glam::Quat::from_xyzw(
+                        iso.rotation.i,
+                        iso.rotation.j,
+                        iso.rotation.k,
+                        iso.rotation.w,
+                    );
+
                     if self
                         .scene_renderer
-                        .update_entity_transform(entity_id, position, rotation)
+                        .update_entity_transform(*entity_id, position, rotation)
                     {
                         any_updated = true;
                     }

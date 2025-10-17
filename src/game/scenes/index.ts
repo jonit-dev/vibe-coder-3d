@@ -1,39 +1,63 @@
-/**
- * Game Scene definitions index
- * Register all game-specific scenes
- */
+import { sceneRegistry, SceneLoader, EntityManager, componentRegistry } from '@core';
+import TestPhysicsScene from './testphysics';
+import ExampleMultiFileScene from './examplemultifile';
+import FmlScene from './fml';
 
-import { sceneRegistry, EntityManager, componentRegistry, SceneLoader } from '@core/index';
-import ExampleMultiFileScene from './exampleMultiFile';
-
-// Register all game scenes function
 export function registerAllScenes(): void {
-  // Register ExampleMultiFile scene (single-file format with global asset references)
+  // Register testphysics scene
   sceneRegistry.defineScene(
-    'example-multi-file',
+    'testphysics',
     async () => {
       const sceneLoader = new SceneLoader();
       const entityManager = EntityManager.getInstance();
-      const registry = componentRegistry;
+      const componentManager = componentRegistry;
 
-      await sceneLoader.load(ExampleMultiFileScene.data, entityManager, registry, {
-        refreshMaterials: () => {
-          // Materials already loaded, no store refresh needed in game runtime
-        },
-        refreshPrefabs: () => {
-          // Prefabs already loaded, no store refresh needed in game runtime
-        },
-        setLockedEntityIds: (lockedIds: number[]) => {
-          // Access editor store through window global to avoid import during game runtime
-          if (typeof window !== 'undefined' && (window as any).__editorStore) {
-            (window as any).__editorStore.setState({ lockedEntityIds: new Set(lockedIds) });
-          }
-        },
+      await sceneLoader.load(TestPhysicsScene.data, entityManager, componentManager, {
+        refreshMaterials: () => {},
+        refreshPrefabs: () => {},
+      });
+    },
+    {
+      name: TestPhysicsScene.metadata.name,
+      description: TestPhysicsScene.metadata.description || 'Physics test scene',
+    },
+  );
+
+  // Register examplemultifile scene
+  sceneRegistry.defineScene(
+    'examplemultifile',
+    async () => {
+      const sceneLoader = new SceneLoader();
+      const entityManager = EntityManager.getInstance();
+      const componentManager = componentRegistry;
+
+      await sceneLoader.load(ExampleMultiFileScene.data, entityManager, componentManager, {
+        refreshMaterials: () => {},
+        refreshPrefabs: () => {},
       });
     },
     {
       name: ExampleMultiFileScene.metadata.name,
-      description: ExampleMultiFileScene.metadata.description || 'Example single-file scene',
+      description: ExampleMultiFileScene.metadata.description || 'Example multi-file scene',
+    },
+  );
+
+  // Register fml scene
+  sceneRegistry.defineScene(
+    'fml',
+    async () => {
+      const sceneLoader = new SceneLoader();
+      const entityManager = EntityManager.getInstance();
+      const componentManager = componentRegistry;
+
+      await sceneLoader.load(FmlScene.data, entityManager, componentManager, {
+        refreshMaterials: () => {},
+        refreshPrefabs: () => {},
+      });
+    },
+    {
+      name: FmlScene.metadata.name,
+      description: FmlScene.metadata.description || 'FML scene',
     },
   );
 }

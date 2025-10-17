@@ -4,7 +4,7 @@ use super::{
         TEXTURE_NORMAL, TEXTURE_OCCLUSION, TEXTURE_ROUGHNESS,
     },
     pipeline::{InstanceRaw, LightUniform, RenderPipeline, ShadowUniform},
-    shadows::{calculate_directional_light_matrix, ShadowConfig, ShadowResources},
+    shadows::{ShadowConfig, ShadowResources},
     Camera,
 };
 use crate::ecs::{components::transform::Transform, SceneData};
@@ -17,6 +17,17 @@ use vibe_ecs_bridge::MeshRendererMaterialOverride;
 use vibe_scene::EntityId;
 use vibe_scene_graph::SceneGraph;
 use wgpu::util::DeviceExt;
+
+// Modular helpers
+mod instances;
+mod lights;
+mod materials;
+mod shadows;
+mod sorting;
+mod textures;
+
+use shadows::ShadowBinder;
+use sorting::DrawSorter;
 
 pub struct RenderableEntity {
     pub entity_id: Option<EntityId>,
@@ -62,15 +73,18 @@ impl SceneRenderer {
         let shadow_resources = ShadowResources::new(device, shadow_config);
 
         // Create shadow bind group for first directional light map (for main pass)
-        let dir_map_view = &shadow_resources
-            .get_directional_map(0)
-            .expect("at least one directional shadow map")
-            .view;
-        let shadow_bind_group = pipeline.create_shadow_bind_group(
-            device,
-            dir_map_view,
-            &shadow_resources.compare_sampler,
-        );
+        // Gracefully handle missing shadow maps instead of panicking
+        let shadow_bind_group = if let Some(dir_map) = shadow_resources.get_directional_map(0) {
+            pipeline.create_shadow_bind_group(device, &dir_map.view, &shadow_resources.compare_sampler)
+        } else {
+            log::warn!("No directional shadow maps configured; shadows will be disabled");
+            // Create a bind group with a dummy texture to avoid shader errors
+            pipeline.create_shadow_bind_group(
+                device,
+                &texture_cache.default().view, // Use default white texture as placeholder
+                &shadow_resources.compare_sampler,
+            )
+        };
 
         // Create shadow uniform-only bind group (for shadow pass)
         let shadow_uniform_bind_group = pipeline.create_shadow_uniform_bind_group(device);
@@ -106,19 +120,19 @@ impl SceneRenderer {
             .load_from_scene(scene.materials.as_ref());
 
         // Build scene graph for transform hierarchy (uses deg->rad for Euler to match Three.js)
-        let mut scene_graph = match SceneGraph::build(scene) {
+        let scene_graph_result = SceneGraph::build(scene);
+        let mut scene_graph = match scene_graph_result {
             Ok(graph) => {
                 log::info!(
                     "Built scene graph with {} entities",
                     graph.entity_ids().len()
                 );
-                graph
+                Some(graph)
             }
             Err(e) => {
                 log::error!("Failed to build scene graph: {}", e);
-                log::warn!("Falling back to flat hierarchy (no parent transforms)");
-                // Continue with empty graph - will process entities manually below
-                return;
+                log::warn!("Falling back to flat hierarchy (no parent transforms) - entities will still render with local transforms");
+                None
             }
         };
 
@@ -281,8 +295,15 @@ impl SceneRenderer {
         }
 
         // Extract renderable entities using scene graph (includes world transforms from hierarchy)
-        log::info!("Extracting renderable entities from scene graph...");
-        let renderable_instances = scene_graph.extract_renderables(scene);
+        // If scene graph build failed, extract renderables with flat hierarchy (local transforms only)
+        log::info!("Extracting renderable entities...");
+        let renderable_instances = if let Some(ref mut graph) = scene_graph {
+            log::debug!("Using scene graph with hierarchical transforms");
+            graph.extract_renderables(scene)
+        } else {
+            log::warn!("Using flat hierarchy fallback - extracting entities with local transforms only");
+            extract_renderables_flat(scene)
+        };
         log::info!("Found {} renderable instances", renderable_instances.len());
 
         for instance in renderable_instances {
@@ -451,18 +472,20 @@ impl SceneRenderer {
             self.update_instance_buffer(device);
         }
 
-        // Compute scene bounds and update shadow uniform for directional light
-        let (scene_center, scene_radius) = self.compute_scene_bounds();
-        let mut shadow_uniform = ShadowUniform::new();
-        if directional_light_set {
-            let vp = calculate_directional_light_matrix(dir_light_dir, scene_center, scene_radius);
-            shadow_uniform.update_directional(
-                vp,
+        // Compute scene bounds and update shadow uniform for directional light using ShadowBinder
+        let (scene_center, scene_radius) = ShadowBinder::compute_scene_bounds(&self.entities);
+        let shadow_uniform = if directional_light_set {
+            ShadowBinder::update_directional(
+                dir_light_dir,
+                scene_center,
+                scene_radius,
                 dir_shadow_enabled,
                 dir_shadow_bias,
                 dir_shadow_radius,
-            );
-        }
+            )
+        } else {
+            ShadowUniform::new()
+        };
         self.pipeline.update_shadows(queue, &shadow_uniform);
     }
 
@@ -516,23 +539,6 @@ impl SceneRenderer {
         );
 
         log::debug!("Instance buffer created successfully");
-    }
-
-    fn compute_scene_bounds(&self) -> (Vec3, f32) {
-        if self.entities.is_empty() {
-            return (Vec3::ZERO, 10.0);
-        }
-
-        let mut min_v = Vec3::splat(f32::INFINITY);
-        let mut max_v = Vec3::splat(f32::NEG_INFINITY);
-        for e in &self.entities {
-            let p = e.transform.w_axis.truncate();
-            min_v = min_v.min(p);
-            max_v = max_v.max(p);
-        }
-        let center = (min_v + max_v) * 0.5;
-        let radius = (max_v - center).length().max(5.0);
-        (center, radius)
     }
 
     pub fn render(
@@ -820,21 +826,9 @@ impl SceneRenderer {
         });
 
         if let Some(instance_buffer) = &self.instance_buffer {
-            let mut opaque_indices: Vec<usize> = Vec::new();
-            let mut transparent_draws: Vec<(usize, f32)> = Vec::new();
-
-            for (i, alpha_mode) in entity_alpha_modes.iter().enumerate() {
-                if *alpha_mode == ALPHA_MODE_BLEND {
-                    let position = self.entities[i].transform.w_axis.truncate();
-                    let distance = (camera.position - position).length();
-                    transparent_draws.push((i, distance));
-                } else {
-                    opaque_indices.push(i);
-                }
-            }
-
-            transparent_draws
-                .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            // Use DrawSorter to bucket and sort entities
+            let (opaque_indices, transparent_draws) =
+                DrawSorter::bucket_and_sort(&entity_alpha_modes, &self.entities, camera.position);
 
             render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
 
@@ -1053,4 +1047,63 @@ impl SceneRenderer {
     pub fn rebuild_instance_buffer(&mut self, device: &wgpu::Device) {
         self.update_instance_buffer(device);
     }
+}
+
+/// Fallback for extracting renderables when scene graph build fails
+/// Uses local transforms only (no parent hierarchy)
+fn extract_renderables_flat(scene: &SceneData) -> Vec<vibe_scene_graph::RenderableInstance> {
+    use vibe_ecs_bridge::transform_utils::{position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt};
+
+    let mut instances = Vec::new();
+
+    for entity in &scene.entities {
+        // Only process entities with MeshRenderer component
+        if !entity.has_component("MeshRenderer") {
+            continue;
+        }
+
+        let mesh_renderer = match entity.get_component::<vibe_ecs_bridge::MeshRenderer>("MeshRenderer") {
+            Some(mr) => mr,
+            None => continue,
+        };
+
+        // Skip if not enabled
+        if !mesh_renderer.enabled {
+            continue;
+        }
+
+        // Get transform (use identity if missing)
+        let transform = entity.get_component::<Transform>("Transform");
+
+        let position = transform.as_ref().and_then(|t| t.position.as_ref()).map(|p| *p);
+        let rotation = transform.as_ref().and_then(|t| t.rotation.as_ref());
+        let scale = transform.as_ref().and_then(|t| t.scale.as_ref()).map(|s| *s);
+
+        // Build local transform matrix
+        let pos_vec = position_to_vec3_opt(position.as_ref());
+        let rot_quat = rotation_to_quat_opt(rotation);
+        let scale_vec = scale_to_vec3_opt(scale.as_ref());
+
+        let world_transform = Mat4::from_scale_rotation_translation(scale_vec, rot_quat, pos_vec);
+
+        // Convert Option<u32> to EntityId
+        let entity_id = match entity.id {
+            Some(id_num) => vibe_scene::EntityId::new(id_num as u64),
+            None => continue, // Skip entities without IDs
+        };
+
+        instances.push(vibe_scene_graph::RenderableInstance {
+            entity_id,
+            world_transform,
+            mesh_id: mesh_renderer.meshId.clone(),
+            material_id: mesh_renderer.materialId.clone(),
+            materials: mesh_renderer.materials.clone(),
+            material_override: Some(mesh_renderer.material_override),
+            model_path: mesh_renderer.modelPath.clone(),
+            cast_shadows: mesh_renderer.castShadows,
+            receive_shadows: mesh_renderer.receiveShadows,
+        });
+    }
+
+    instances
 }

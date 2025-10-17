@@ -22,6 +22,7 @@ import { InputSettingsModal } from './components/shared/InputSettingsModal';
 import { usePrefabs } from './components/prefabs/hooks/usePrefabs';
 import { PrefabCreateModal } from './components/prefabs/PrefabCreateModal';
 import { PrefabBrowserModal } from './components/prefabs/PrefabBrowserModal';
+import { LODPanel } from './components/panels/LODPanel';
 import { usePrefabsStore } from './store/prefabsStore';
 import { useAutoSelection } from './hooks/useAutoSelection';
 import { useEditorHandlers } from './hooks/useEditorHandlers';
@@ -65,7 +66,7 @@ const Editor: React.FC = () => {
   } = useUIState();
   const { isPlaying, setIsPlaying } = usePhysicsState();
   const { statusMessage, setStatusMessage, performanceMetrics } = useAppState();
-  const { isMaterialsExpanded, setIsMaterialsExpanded } = useUIState();
+  const { isMaterialsExpanded, setIsMaterialsExpanded, isLODExpanded } = useUIState();
 
   // Gizmo mode state for viewport
   const [gizmoMode, setGizmoMode] = useState<GizmoMode>('translate');
@@ -340,6 +341,17 @@ const Editor: React.FC = () => {
         stats={stats}
         streamingProgress={progress.isActive ? progress : undefined}
       />
+
+      {/* LOD Panel - Shows LOD controls and statistics */}
+      {isLODExpanded ? (
+        <div className="fixed bottom-10 right-4 z-50">
+          <LODPanel isExpanded={true} />
+        </div>
+      ) : (
+        <div className="fixed bottom-0 left-0 right-0 z-40">
+          <LODPanel isExpanded={false} />
+        </div>
+      )}
     </div>
   );
 };

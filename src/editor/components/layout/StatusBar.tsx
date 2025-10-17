@@ -1,8 +1,13 @@
 import React from 'react';
 import { FiActivity, FiHardDrive, FiWifi, FiZap } from 'react-icons/fi';
+import { TbBoxMultiple } from 'react-icons/tb';
 
 import { useFPS } from '@/editor/hooks/useFPS';
 import { StatusIndicator } from '../shared/StatusIndicator';
+import { useEditorStore } from '@/editor/store/editorStore';
+import { Logger } from '@core/lib/logger';
+
+const logger = Logger.create('StatusBar');
 
 export interface IStatusBarProps {
   statusMessage: string;
@@ -37,6 +42,9 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
 }) => {
   const fps = useFPS();
   const rendererLabel = 'WebGL';
+  const isLODExpanded = useEditorStore((state) => state.isLODExpanded);
+  const setIsLODExpanded = useEditorStore((state) => state.setIsLODExpanded);
+
   return (
     <footer className="h-8 bg-gradient-to-r from-[#0a0a0b] via-[#12121a] to-[#0a0a0b] border-t border-gray-800/50 flex items-center text-xs text-gray-400 relative overflow-hidden">
       {/* Animated background effect */}
@@ -116,6 +124,29 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
               <span className="text-xs">{shortcut.description}</span>
             </div>
           ))}
+
+          <div className="w-px h-4 bg-gray-700"></div>
+
+          {/* LOD Button */}
+          <button
+            onClick={() => {
+              const newValue = !isLODExpanded;
+              logger.info('LOD button clicked', {
+                currentState: isLODExpanded,
+                newState: newValue,
+              });
+              setIsLODExpanded(newValue);
+            }}
+            className={`flex items-center space-x-2 px-3 py-1 rounded transition-colors ${
+              isLODExpanded
+                ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-600/50'
+                : 'hover:bg-gray-800/50 text-gray-400 hover:text-cyan-400'
+            }`}
+            title="Toggle LOD Panel"
+          >
+            <TbBoxMultiple className="w-4 h-4" />
+            <span className="text-xs">LOD</span>
+          </button>
 
           <div className="w-px h-4 bg-gray-700"></div>
 

@@ -28,6 +28,9 @@ export default defineScene({
           fov: 20,
           isMain: true,
           backgroundColor: {
+            r: 0,
+            g: 0,
+            b: 0,
             a: 0,
           },
         },

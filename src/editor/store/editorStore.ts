@@ -49,6 +49,8 @@ interface IEditorStore {
   setIsLeftPanelCollapsed: (collapsed: boolean) => void;
   isMaterialsExpanded: boolean;
   setIsMaterialsExpanded: (expanded: boolean) => void;
+  isLODExpanded: boolean;
+  setIsLODExpanded: (expanded: boolean) => void;
 
   // Performance monitoring
   performanceMetrics: IPerformanceMetrics;
@@ -140,6 +142,8 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
   // Panel states
   isChatExpanded: false,
   setIsChatExpanded: (expanded) => set({ isChatExpanded: expanded }),
+  isLODExpanded: false,
+  setIsLODExpanded: (expanded) => set({ isLODExpanded: expanded }),
   isLeftPanelCollapsed: false,
   setIsLeftPanelCollapsed: (collapsed) => set({ isLeftPanelCollapsed: collapsed }),
   isMaterialsExpanded: false,

@@ -1,13 +1,16 @@
 import { ModelErrorBoundary } from '@/editor/components/shared/ModelErrorBoundary';
 import { ModelLoadingMesh } from '@/editor/components/shared/ModelLoadingMesh';
 import { useGLTF } from '@react-three/drei';
-import { ThreeEvent, useThree } from '@react-three/fiber';
+import { invalidate, ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import React, { Suspense, useCallback, useEffect, useMemo } from 'react';
 import type { Group, Mesh, Object3D } from 'three';
+import { Box3, OrthographicCamera, Vector3 } from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import type { IRenderingContributions } from '@/core/types/entities';
 import { compareMaterials, deepEqual, shallowEqual } from '@/core/utils/comparison';
+import { useLOD } from '@core/hooks/useLOD';
+import { Logger } from '@core/lib/logger';
 // import { useAutoLOD } from './AutoLOD'; // Disabled - offline optimization is sufficient
 import { CameraEntity } from './CameraEntity';
 import { useEntityRegistration } from './hooks/useEntityRegistration';
@@ -16,6 +19,8 @@ import { LightEntity } from './LightEntity';
 import { MaterialRenderer } from './MaterialRenderer';
 import type { IEntityMeshProps } from './types';
 import { isMeshRendererData } from './utils';
+
+const logger = Logger.create('EntityMesh');
 
 // Custom Model Mesh Component - FIXED VERSION
 const CustomModelMesh: React.FC<{
@@ -34,10 +39,100 @@ const CustomModelMesh: React.FC<{
     onMeshClick,
     onMeshDoubleClick,
   }) => {
+    // Apply LOD system - automatically switches between original/high_fidelity/low_fidelity
+    // based on global LOD quality setting or distance
+    const [lodDistance, setLodDistance] = React.useState<number | undefined>(undefined);
+    const selfGroupRef = React.useRef<Group | null>(null);
+    const tmpVecRef = React.useRef(new Vector3());
+    const lastEmitRef = React.useRef<number | null>(null);
+    const smoothedRef = React.useRef<number | null>(null);
+    const lastTickMsRef = React.useRef(0);
+
+    // Compute effective camera distance (accounts for ortho zoom) with heavy smoothing
+    // to prevent rapid LOD switching that breaks TransformControls
+    useFrame(({ clock }) => {
+      if (!selfGroupRef.current) return;
+
+      const nowMs = clock.elapsedTime * 1000;
+      // Throttle updates to 5Hz (was 10Hz) to reduce LOD switching frequency
+      if (nowMs - lastTickMsRef.current < 200) return;
+      lastTickMsRef.current = nowMs;
+
+      // Get world position of this model
+      const worldPos = tmpVecRef.current;
+      worldPos.setFromMatrixPosition(selfGroupRef.current.matrixWorld);
+
+      // Measure distance
+      let dist = camera.position.distanceTo(worldPos);
+
+      // Adjust for orthographic zoom (zoom in => lower effective distance)
+      if (camera instanceof OrthographicCamera) {
+        const zoom = Math.max(0.0001, (camera as OrthographicCamera).zoom);
+        dist = dist / zoom;
+      }
+
+      // Heavy smoothing to avoid rapid toggling near thresholds (was 0.85/0.15, now 0.95/0.05)
+      if (smoothedRef.current == null) {
+        smoothedRef.current = dist;
+      } else {
+        smoothedRef.current = smoothedRef.current * 0.95 + dist * 0.05;
+      }
+
+      const smoothed = smoothedRef.current;
+
+      // Only emit state update when change is very significant (was 0.25, now 1.0)
+      // This prevents frequent LOD switches during normal camera movement
+      const last = lastEmitRef.current;
+      if (last == null || Math.abs(smoothed - last) > 1.0) {
+        lastEmitRef.current = smoothed;
+        setLodDistance(smoothed);
+        // Ensure a frame is rendered if frameloop="demand"
+        invalidate();
+      }
+    });
+
+    // Apply LOD system - automatically switches between original/high_fidelity/low_fidelity
+    // based on global LOD quality setting or distance
+    const lodPath = useLOD({ basePath: modelPath, distance: lodDistance });
+
+    // Log LOD path changes (only when actually switching)
+    const prevLodPathRef = React.useRef<string>(lodPath);
+    React.useEffect(() => {
+      if (lodPath !== prevLodPathRef.current) {
+        logger.info('🔄 LOD model switched', {
+          from: prevLodPathRef.current,
+          to: lodPath,
+          entityId,
+          distance: lodDistance,
+        });
+        prevLodPathRef.current = lodPath;
+      }
+    }, [lodPath, entityId, lodDistance]);
+
     // Don't wrap useGLTF in try-catch - it throws promises for Suspense, not errors
     // The Suspense boundary in the parent component will handle loading states
-    const { scene } = useGLTF(modelPath);
+    const { scene } = useGLTF(lodPath);
     const { gl, scene: r3fScene, camera } = useThree();
+
+    // Log model details for debugging LOD switching
+    React.useEffect(() => {
+      let triangles = 0;
+      scene.traverse((obj) => {
+        if ('geometry' in obj && obj.geometry) {
+          const geom = obj.geometry as any;
+          if (geom.index) {
+            triangles += geom.index.count / 3;
+          } else if (geom.attributes?.position) {
+            triangles += geom.attributes.position.count / 3;
+          }
+        }
+      });
+      logger.info('Model loaded from LOD path', {
+        path: lodPath,
+        triangles: Math.floor(triangles),
+        entityId,
+      });
+    }, [scene, lodPath]);
 
     // NOTE: Runtime AutoLOD disabled - offline optimization via scripts/optimize-models.js is more reliable
     // SimplifyModifier has issues with interleaved buffers and certain geometry types
@@ -46,8 +141,20 @@ const CustomModelMesh: React.FC<{
     const modelScene = useMemo(() => {
       // Clone the cached scene so multiple entities don't mutate the same instance
       const clonedScene = SkeletonUtils.clone(scene) as Group;
-      clonedScene.position.set(0, 0, 0);
+
+      // Calculate bounding box to find the actual center
+      const box = new Box3();
+      box.setFromObject(clonedScene);
+
+      // Get the center of the bounding box
+      const center = new Vector3();
+      box.getCenter(center);
+
+      // Offset the scene so its bounding box center is at origin
+      // This ensures consistent centering across all LOD levels
+      clonedScene.position.set(-center.x, -center.y, -center.z);
       clonedScene.rotation.set(0, 0, 0);
+      clonedScene.scale.set(1, 1, 1);
       clonedScene.matrixAutoUpdate = true;
 
       // Ensure all children respect parent transforms and enable frustum culling
@@ -59,8 +166,18 @@ const CustomModelMesh: React.FC<{
         }
       });
 
+      // CRITICAL: Force update world matrix to ensure transforms are applied
+      clonedScene.updateMatrixWorld(true);
+
+      logger.debug('Model centered', {
+        entityId,
+        lodPath,
+        originalCenter: [center.x, center.y, center.z],
+        offset: [-center.x, -center.y, -center.z],
+      });
+
       return clonedScene;
-    }, [scene]);
+    }, [scene, entityId, lodPath]);
 
     // Shader warm-up: Precompile using the REAL scene + camera so lighting variants match
     useEffect(() => {
@@ -92,6 +209,9 @@ const CustomModelMesh: React.FC<{
           node.rotation.set(0, 0, 0);
           node.scale.set(1, 1, 1);
 
+          // Store local ref for distance calculations
+          selfGroupRef.current = node;
+
           if (typeof meshInstanceRef === 'function') {
             meshInstanceRef(node);
           } else if (meshInstanceRef && 'current' in meshInstanceRef) {
@@ -104,6 +224,10 @@ const CustomModelMesh: React.FC<{
           (meshInstanceRef as React.MutableRefObject<Group | Mesh | Object3D | null>).current =
             null;
         }
+        // Clear local ref when unmounted
+        if (!node) {
+          selfGroupRef.current = null;
+        }
       },
       [meshInstanceRef, entityId],
     );
@@ -111,8 +235,11 @@ const CustomModelMesh: React.FC<{
     // PERFORMANCE: Matrix updates now handled by ModelMatrixSystem (batched)
     // See: performance-audit-report.md #4 - removes N individual useFrame hooks
 
+    // CRITICAL: Use lodPath as key to force remount when LOD changes
+    // This ensures TransformControls properly detaches before the mesh changes
     return (
       <group
+        key={lodPath}
         ref={groupRefCallback}
         userData={{ entityId }}
         onClick={onMeshClick}

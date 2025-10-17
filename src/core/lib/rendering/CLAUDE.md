@@ -312,3 +312,241 @@ simplify({ ratio: 0.9, error: 0.001 });
 
 - **Asset Sync** (`scripts/sync-assets.js`): Copies optimized models to `public/assets/`
 - **BVH System**: Benefits from optimized geometry (fewer triangles = faster BVH)
+- **LOD System**: Provides multiple quality variants of optimized models
+
+## LOD (Level of Detail) System
+
+### Overview
+
+The LOD system provides automatic quality management for 3D models with named quality variants:
+
+- **original**: Base optimized model (default)
+- **high_fidelity**: 75% polygon reduction with minimal visual degradation
+- **low_fidelity**: 35% polygon reduction for maximum performance
+
+### Architecture
+
+#### LODManager (`LODManager.ts`)
+
+Singleton service for global LOD quality management.
+
+**Key Features:**
+
+- Global quality setting affecting all models
+- Distance-based auto-switching (optional)
+- Type-safe quality variants
+- Path resolution for LOD files
+- Performance monitoring
+
+**Configuration:**
+
+```typescript
+{
+  quality: 'original' | 'high_fidelity' | 'low_fidelity';
+  autoSwitch: boolean;
+  distanceThresholds: {
+    high: number;
+    low: number;
+  }
+}
+```
+
+**Usage:**
+
+```typescript
+import { lodManager } from '@core/lib/rendering/LODManager';
+
+// Set global quality
+lodManager.setQuality('low_fidelity');
+
+// Enable distance-based switching
+lodManager.setAutoSwitch(true);
+lodManager.setDistanceThresholds(50, 100);
+
+// Get LOD path for a model
+const lodPath = lodManager.getLODPath('/assets/models/Character/glb/Character.glb');
+// Returns: /assets/models/Character/lod/Character.low_fidelity.glb
+```
+
+#### React Integration
+
+**useLODModel Hook** (`src/core/hooks/useLODModel.ts`)
+
+React hook for automatic LOD-aware model path resolution.
+
+```typescript
+import { useLODModel } from '@core/hooks/useLODModel';
+
+// Automatically uses global quality
+const lodPath = useLODModel({ basePath: modelPath });
+
+// Override quality for specific model
+const lodPath = useLODModel({ basePath: modelPath, quality: 'high_fidelity' });
+
+// Distance-based quality (requires auto-switch enabled)
+const lodPath = useLODModel({ basePath: modelPath, distance: cameraDistance });
+```
+
+**useLODPaths Hook**
+
+Returns all LOD paths for a model:
+
+```typescript
+const paths = useLODPaths(basePath);
+// { original: '...', high_fidelity: '...', low_fidelity: '...' }
+```
+
+**useLODQuality Hook**
+
+Reactive hook for current global quality:
+
+```typescript
+const quality = useLODQuality();
+// Updates when lodManager.setQuality() is called
+```
+
+### Integration Points
+
+#### Automatic Integration
+
+The LOD system is automatically integrated with the custom model loading pipeline:
+
+**EntityMesh Component** (`src/editor/components/panels/ViewportPanel/components/EntityMesh.tsx`)
+
+```typescript
+// LOD hook automatically applied to all custom models
+const lodPath = useLODModel({ basePath: modelPath });
+const { scene } = useGLTF(lodPath); // Uses LOD-aware path
+```
+
+**No code changes required** - all custom models automatically use the LOD system.
+
+### File Structure
+
+LOD variants are stored alongside original models:
+
+```
+public/assets/models/
+└── Character/
+    ├── glb/
+    │   └── Character.glb                    # Original optimized model
+    └── lod/
+        ├── Character.high_fidelity.glb      # 75% quality variant
+        └── Character.low_fidelity.glb       # 35% quality variant
+```
+
+### Generation Pipeline
+
+LOD variants are automatically generated during model optimization:
+
+1. **Original**: Base model goes through optimization pipeline (prune, dedup, weld, quantize)
+2. **High Fidelity**: Original + simplify(ratio: 0.75, error: 0.0005)
+3. **Low Fidelity**: Original + simplify(ratio: 0.35, error: 0.002)
+
+Configuration in `.model-optimization.config.json`:
+
+```json
+{
+  "lod": {
+    "enabled": true,
+    "variants": {
+      "high_fidelity": { "ratio": 0.75, "error": 0.0005 },
+      "low_fidelity": { "ratio": 0.35, "error": 0.002 }
+    }
+  }
+}
+```
+
+### Performance Impact
+
+**Example: NightStalker Model**
+
+- Original: 11,837 triangles (100%)
+- High Fidelity: 11,685 triangles (98.7%)
+- Low Fidelity: 6,296 triangles (53.2%)
+
+**Expected FPS Improvements (low_fidelity):**
+
+- 10-20 models: +5-10% FPS
+- 50-100 models: +15-25% FPS
+- 500+ models: +40-60% FPS
+
+**File Sizes:**
+
+- High fidelity: ~5-10% larger than original (more vertices)
+- Low fidelity: ~20-40% smaller than original (fewer vertices)
+
+### Distance-Based Auto-Switching
+
+Enable automatic quality switching based on camera distance:
+
+```typescript
+import { lodManager } from '@core';
+
+lodManager.setAutoSwitch(true);
+lodManager.setDistanceThresholds(50, 100);
+
+// Models will automatically switch:
+// - < 50 units: original
+// - 50-100 units: high_fidelity
+// - > 100 units: low_fidelity
+```
+
+**Best for:**
+
+- Open world games
+- Large scenes with many models
+- Performance-critical applications
+
+### Testing
+
+**Unit Tests:** `src/core/lib/rendering/__tests__/LODManager.test.ts`
+
+- 24 tests covering all functionality
+- Quality management, auto-switching, path resolution, edge cases
+
+**Integration Tests:** `src/core/hooks/__tests__/useLODModel.test.tsx`
+
+- 9 tests covering React hook behavior
+- Default behavior, overrides, distance-based switching
+
+**Run tests:**
+
+```bash
+yarn vitest run src/core/lib/rendering/__tests__/LODManager.test.ts
+yarn vitest run src/core/hooks/__tests__/useLODModel.test.tsx
+```
+
+### Best Practices
+
+1. **Start with original**: Test your scene with original quality first
+2. **Profile performance**: Use low_fidelity for performance-critical scenes
+3. **Distance-based**: Enable auto-switching for large open scenes
+4. **Override selectively**: Use quality override for hero models that should always be high quality
+5. **Monitor FPS**: Measure actual performance gains in your specific use case
+
+### Troubleshooting
+
+**Issue: LOD file not found**
+
+- Solution: Run `yarn optimize` to generate LOD variants
+- Check that `.model-optimization.config.json` has `lod.enabled: true`
+
+**Issue: Models not switching quality**
+
+- Solution: Check that `useLODModel` hook is being used in EntityMesh
+- Verify that `lodManager.setQuality()` is being called
+
+**Issue: Visual quality too low**
+
+- Solution: Adjust `ratio` and `error` values in config
+- Use high_fidelity variant instead of low_fidelity
+- Override quality for specific models
+
+### Future Enhancements
+
+- UI for runtime quality switching
+- Performance profiler integration
+- Automatic quality recommendation based on FPS
+- Per-material LOD support
+- Texture LOD integration

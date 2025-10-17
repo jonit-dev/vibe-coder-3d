@@ -239,3 +239,20 @@ export type {
   IShapeMetadata,
   ICustomShapeDescriptor,
 } from './lib/rendering/shapes/IShapeDescriptor';
+
+// LOD System
+export { useLODStore } from './state/lodStore';
+export type { LODQuality, ILODDistanceThresholds } from './state/lodStore';
+export { useLOD, useLODQuality, useLODActions } from './hooks/useLOD';
+export type { IUseLODOptions } from './hooks/useLOD';
+export {
+  getLODPath,
+  getAllLODPaths,
+  hasLODQuality,
+  extractQualityFromPath,
+} from './lib/rendering/lodUtils';
+
+// Deprecated: Use useLOD instead
+export { lodManager } from './lib/rendering/LODManager';
+export { useLODModel, useLODPaths } from './hooks/useLODModel';
+export type { IUseLODModelOptions } from './hooks/useLODModel';

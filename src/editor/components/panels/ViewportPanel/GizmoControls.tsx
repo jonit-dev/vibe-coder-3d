@@ -1,13 +1,14 @@
 import { TransformControls } from '@react-three/drei';
 import React, { MutableRefObject, useCallback, useRef } from 'react';
-import { Object3D, Group, Mesh } from 'three';
+import { Group, Mesh, Object3D } from 'three';
 import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
 
 import { ComponentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
-import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { Logger } from '@/core/lib/logger';
+import { getRigidBody } from '@/core/lib/scripting/adapters/physics-binding';
+import { useComponentManager } from '@/editor/hooks/useComponentManager';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -192,6 +193,37 @@ function updateTransformThroughComponentManager(
     }
 
     logger.debug(`ECS update completed for entity ${entityId}`);
+
+    // If a physics body exists for this entity, sync its transform immediately
+    try {
+      const rb = getRigidBody(entityId);
+      if (rb) {
+        if (mode === 'translate') {
+          const p = updatedTransform.position as [number, number, number];
+          rb.setTranslation({ x: p[0], y: p[1], z: p[2] }, true);
+        } else if (mode === 'rotate') {
+          const r = updatedTransform.rotation as [number, number, number];
+          // Convert Euler (deg) to quaternion
+          const x = (r[0] * Math.PI) / 180;
+          const y = (r[1] * Math.PI) / 180;
+          const z = (r[2] * Math.PI) / 180;
+          // ZYX order quaternion (Rapier expects quaternion components)
+          const cx = Math.cos(x * 0.5),
+            sx = Math.sin(x * 0.5);
+          const cy = Math.cos(y * 0.5),
+            sy = Math.sin(y * 0.5);
+          const cz = Math.cos(z * 0.5),
+            sz = Math.sin(z * 0.5);
+          const qw = cz * cy * cx + sz * sy * sx;
+          const qx = cz * cy * sx - sz * sy * cx;
+          const qy = cz * sy * cx + sz * cy * sx;
+          const qz = sz * cy * cx - cz * sy * sx;
+          rb.setRotation({ w: qw, x: qx, y: qy, z: qz }, true);
+        }
+      }
+    } catch (e) {
+      logger.warn(`Failed to sync physics rigid body for entity ${entityId}:`, e);
+    }
   } else {
     logger.debug(`No changes detected, skipping ECS update for entity ${entityId}`);
   }
@@ -223,27 +255,54 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
       meshRefMatrixAutoUpdate: meshRef?.current?.matrixAutoUpdate,
     });
 
-    // Force re-render when meshRef becomes available
+    // Force re-render when meshRef becomes available AND is in scene graph
+    // Use a ref-based approach to avoid issues with React strict equality on object refs
     React.useEffect(() => {
-      if (meshRef.current) {
-        logger.debug(`meshRef became available:`, {
+      const mesh = meshRef.current;
+      if (mesh && mesh.parent) {
+        logger.debug(`meshRef became available and attached to scene:`, {
           entityId,
-          meshRefType: meshRef.current.type,
-          meshRefPosition: [
-            meshRef.current.position.x,
-            meshRef.current.position.y,
-            meshRef.current.position.z,
-          ],
+          meshRefType: mesh.type,
+          hasParent: !!mesh.parent,
+          meshRefPosition: [mesh.position.x, mesh.position.y, mesh.position.z],
         });
         setForceUpdate((prev) => prev + 1);
       }
-    }, [meshRef.current]);
+    }, [meshRef, entityId]);
+
+    // Monitor mesh parent status to detect when it gets detached (e.g., during LOD switches)
+    // This ensures we unmount TransformControls before the mesh is removed from scene graph
+    React.useEffect(() => {
+      if (!meshRef.current) return;
+
+      const mesh = meshRef.current;
+      let animationFrameId: number;
+
+      const checkParentStatus = () => {
+        if (!mesh.parent) {
+          logger.debug(
+            `Mesh became detached from scene graph for entity ${entityId}, forcing update`,
+          );
+          setForceUpdate((prev) => prev + 1);
+          return; // Stop checking once detached
+        }
+        animationFrameId = requestAnimationFrame(checkParentStatus);
+      };
+
+      // Start monitoring
+      animationFrameId = requestAnimationFrame(checkParentStatus);
+
+      return () => {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
+    }, [meshRef.current, entityId]);
 
     // Throttled update function for smooth performance
     const handleTransformUpdate = useCallback(() => {
       if (!meshRef.current) {
-        logger.debug(`handleTransformUpdate skipped - no meshRef for entity ${entityId}`,
-        );
+        logger.debug(`handleTransformUpdate skipped - no meshRef for entity ${entityId}`);
         return;
       }
 
@@ -337,11 +396,57 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
       return null;
     }
 
+    // CRITICAL FIX: Don't render if mesh is not in scene graph
+    // This prevents TransformControls errors during LOD model switching
+    // Check both parent and that the object is actually traversable from the scene
+    const mesh = meshRef.current;
+    if (!mesh.parent) {
+      logger.debug(`Skipping render - mesh not attached to scene graph for entity ${entityId}`);
+      return null;
+    }
+
+    // Additional safety check: Verify mesh is actually part of a valid scene hierarchy
+    // by checking if it has a root parent (prevents attaching to detached subgraphs)
+    let current = mesh.parent;
+    let hasValidRoot = false;
+    let depth = 0;
+    const maxDepth = 100; // Prevent infinite loops
+
+    while (current && depth < maxDepth) {
+      if (!current.parent) {
+        // Found root - check if it's a valid Scene or similar
+        hasValidRoot = current.type === 'Scene' || !current.parent;
+        break;
+      }
+      current = current.parent;
+      depth++;
+    }
+
+    if (!hasValidRoot && depth >= maxDepth) {
+      logger.warn(
+        `Mesh hierarchy too deep or circular for entity ${entityId}, skipping TransformControls`,
+      );
+      return null;
+    }
+
+    if (!hasValidRoot) {
+      logger.debug(
+        `Skipping render - mesh not part of valid scene hierarchy for entity ${entityId}`,
+        {
+          meshType: mesh.type,
+          parentType: mesh.parent?.type,
+          depth,
+        },
+      );
+      return null;
+    }
+
     logger.debug(`Rendering TransformControls for entity ${entityId}:`, {
       mode,
       meshRefType: meshRef.current.type,
       meshRefConstructor: meshRef.current.constructor.name,
       attachingToObject: !!meshRef.current,
+      hasParent: !!meshRef.current.parent,
     });
 
     // Attach controls directly to the target object

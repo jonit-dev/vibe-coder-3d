@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import * as THREE from 'three';
 
 import { EngineLoop } from '@/core/components/EngineLoop';
+import { SceneStatsExporter } from '../../debug/SceneStatsExporter';
 
 import { CameraBackgroundManager } from '@/core/components/cameras/CameraBackgroundManager';
 import { CameraControlsManager } from '@/core/components/cameras/CameraControlsManager';
@@ -24,6 +25,7 @@ import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
 
 import { useEditorStore } from '../../../store/editorStore';
 
+import { lodManager } from '@/core/lib/rendering/LODManager';
 import { AxesIndicator } from './components/AxesIndicator';
 import { CameraPerformanceController } from './components/CameraPerformanceController';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
@@ -47,6 +49,12 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
     // Track viewport initialization
     useEffect(() => {
       logger.milestone('Viewport Panel Mounted');
+      try {
+        // Enable LOD auto-switching globally in editor viewport
+        lodManager.setAutoSwitch(true);
+      } catch (error) {
+        logger.error('Failed to initialize LOD manager', { error });
+      }
       return () => {
         logger.milestone('Viewport Panel Unmounted');
       };
@@ -162,10 +170,14 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
                 cameraPosition: camera.position.toArray(),
                 viewportSize: `${gl.domElement.width}x${gl.domElement.height}`,
               });
+
+              // LOD auto-switch already enabled in mount effect
             }}
           >
             {/* Selection framer: provides frame function for double-click */}
             <SelectionFramer />
+            {/* Scene stats exporter: exposes scene to window for LOD demo */}
+            <SceneStatsExporter />
             {/* Adaptive quality: DPR + shadow updates throttling while moving */}
             <CameraPerformanceController />
             {/* Camera System Connector - connects editor camera to camera system */}
