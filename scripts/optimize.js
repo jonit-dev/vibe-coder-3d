@@ -18,9 +18,12 @@
 
 import { config } from 'dotenv';
 import { readdir, mkdir } from 'fs/promises';
-import { join, relative, basename } from 'path';
+import { join, relative, basename, extname } from 'path';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { simplify, weld, prune, dedup } from '@gltf-transform/functions';
+import { MeshoptSimplifier, MeshoptEncoder } from 'meshoptimizer';
+import draco3d from 'draco3dgltf';
 import { analyzeModel } from './lib/modelAnalyzer.js';
 import {
   checkBlenderInstalled,
@@ -29,9 +32,19 @@ import {
 } from './lib/blenderDecimator.js';
 import { logger } from './lib/logger.js';
 
+// Initialize meshoptimizer
+await MeshoptSimplifier.ready;
+
 // Load environment
 config();
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+
+// Initialize glTF I/O with all dependencies
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
+  'draco3d.decoder': await draco3d.createDecoderModule(),
+  'draco3d.encoder': await draco3d.createEncoderModule(),
+  'meshopt.decoder': MeshoptSimplifier,
+  'meshopt.encoder': MeshoptEncoder,
+});
 
 // Parse CLI args
 const args = {
@@ -111,6 +124,60 @@ async function checkComplexity(models) {
 }
 
 /**
+ * Generate LOD variants from base model
+ */
+async function generateLODVariants(baseModelPath, modelDir, fileName) {
+  const lodDir = join(modelDir, 'lod');
+  await mkdir(lodDir, { recursive: true });
+
+  const lodVariants = [
+    { name: 'high_fidelity', ratio: 0.75, error: 0.01 },
+    { name: 'low_fidelity', ratio: 0.35, error: 0.1 },
+  ];
+
+  const results = [];
+
+  for (const variant of lodVariants) {
+    const outputPath = join(lodDir, `${fileName}.${variant.name}.glb`);
+
+    try {
+      logger.info(`Generating ${variant.name} LOD...`, {
+        ratio: `${(variant.ratio * 100).toFixed(0)}%`,
+      });
+
+      // Load base model
+      const document = await io.read(baseModelPath);
+
+      // Apply pre-processing
+      await document.transform(prune(), dedup(), weld({ tolerance: 0.0001 }));
+
+      // Apply simplification
+      await document.transform(
+        simplify({ simplifier: MeshoptSimplifier, ratio: variant.ratio, error: variant.error }),
+      );
+
+      // Write LOD variant
+      await io.write(outputPath, document);
+
+      // Get stats
+      const triangles = analyzeModel(document).triangleCount;
+
+      logger.success(`Generated ${variant.name}`, {
+        output: `lod/${fileName}.${variant.name}.glb`,
+        triangles: triangles.toLocaleString(),
+      });
+
+      results.push({ variant: variant.name, path: outputPath, triangles });
+    } catch (err) {
+      logger.error(`Failed to generate ${variant.name} LOD`, { error: err.message });
+      results.push({ variant: variant.name, error: err.message });
+    }
+  }
+
+  return results;
+}
+
+/**
  * Optimize a single model
  */
 async function optimizeModel(model, blenderAvailable) {
@@ -160,7 +227,16 @@ async function optimizeModel(model, blenderAvailable) {
         location: relative(process.cwd(), outputPath),
       });
 
-      return { success: true, decimated: true, outputPath };
+      // Generate LOD variants from the decimated base model
+      const fileName = basename(file, extname(file));
+      const lodResults = await generateLODVariants(outputPath, modelDir, fileName);
+
+      return {
+        success: true,
+        decimated: true,
+        outputPath,
+        lodVariants: lodResults,
+      };
     } catch (err) {
       logger.error(`Failed to decimate ${dir}/${file}`, { error: err.message });
       return { success: false, error: err.message };
