@@ -1,5 +1,5 @@
 {
-  "pipelineVersion": 1,
+  "pipelineVersion": 4,
   "geometry": {
     "quantize": {
       "position": 14,
@@ -9,8 +9,8 @@
       "generic": 12
     },
     "simplify": {
-      "enabled": true,
-      "ratio": 0.6,
+      "enabled": false,
+      "ratio": 1.0,
       "error": 0.001
     }
   },
@@ -41,12 +41,12 @@
     "enabled": true,
     "variants": {
       "high_fidelity": {
-        "ratio": 0.75,
-        "error": 0.0005
+        "ratio": 0.25,
+        "error": 0.01
       },
       "low_fidelity": {
-        "ratio": 0.35,
-        "error": 0.002
+        "ratio": 0.25,
+        "error": 0.1
       }
     }
   }

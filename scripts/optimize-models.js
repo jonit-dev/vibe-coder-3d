@@ -260,13 +260,28 @@ async function generateLODs(document, config, baseDir, modelName) {
   for (const [variantName, variantConfig] of Object.entries(config.lod.variants)) {
     const lodDoc = cloneDocument(document);
 
+    // CRITICAL: Weld vertices before simplification for meshopt to work properly
     await lodDoc.transform(
+      weld(),
       simplify({
         simplifier: MeshoptSimplifier,
         ratio: variantConfig.ratio,
         error: variantConfig.error,
       }),
+      // CRITICAL: Re-center after simplification to ensure consistent centering across all LOD levels
+      // Without this, simplified models can have shifted centers causing visual misalignment
+      center({ pivot: 'center' }),
     );
+
+    // Apply mesh compression to LOD variant
+    if (config.compression.method === 'draco' || config.compression.method === 'both') {
+      await lodDoc.transform(
+        draco({
+          encodeSpeed: config.compression.draco.encodeSpeed,
+          decodeSpeed: config.compression.draco.decodeSpeed,
+        }),
+      );
+    }
 
     const lodPath = join(lodDir, `${modelName}.${variantName}.glb`);
     await io.write(lodPath, lodDoc);
@@ -302,6 +317,19 @@ async function optimizeModel(filePath, config, configHash, silent = false) {
     // Load the model
     const document = await io.read(filePath);
     const originalModelStats = getModelStats(document);
+
+    // Clone document BEFORE heavy optimization for LOD generation
+    // This ensures LOD simplification can work on clean, unquantized geometry
+    const lodSourceDoc = cloneDocument(document);
+
+    // Apply minimal optimization to LOD source (no quantization yet)
+    await lodSourceDoc.transform(
+      prune(),
+      dedup(),
+      weld(),
+      center({ pivot: 'center' }),
+      joinMeshes({ keepNamed: true, keepMeshes: false }),
+    );
 
     // Apply texture processing
     await processTextures(document, config);
@@ -355,6 +383,10 @@ async function optimizeModel(filePath, config, configHash, silent = false) {
       );
     }
 
+    // CRITICAL: Generate LOD variants from unquantized source BEFORE mesh compression
+    // Simplification requires uncompressed, unquantized geometry
+    const lodOutputs = await generateLODs(lodSourceDoc, config, modelDir, modelName);
+
     // Apply mesh compression
     if (config.compression.method === 'draco' || config.compression.method === 'both') {
       await document.transform(
@@ -383,9 +415,6 @@ async function optimizeModel(filePath, config, configHash, silent = false) {
     const optimizedStats = await stat(baseOutputPath);
     const optimizedSize = optimizedStats.size;
     const optimizedModelStats = getModelStats(document);
-
-    // Generate LOD variants
-    const lodOutputs = await generateLODs(document, config, modelDir, modelName);
 
     // Calculate size reduction
     const sizeReduction = ((1 - optimizedSize / originalSize) * 100).toFixed(1);
