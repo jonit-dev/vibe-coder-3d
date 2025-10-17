@@ -56,6 +56,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
     const [entityIds, setEntityIds] = useState<number[]>([]);
     const [lightIds, setLightIds] = useState<number[]>([]);
     const isPlaying = useEditorStore((state) => state.isPlaying);
+    const selectedIds = useEditorStore((state) => state.selectedIds);
     const groupSelection = useGroupSelection();
     const { getEntitiesWithComponent, hasComponent } = useComponentRegistry();
 
@@ -105,19 +106,13 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
       : false;
 
     // PERFORMANCE: Pre-compute selection info to prevent re-renders
-    // groupSelection methods create new references on every call, causing all entities to re-render
-    const selectedIdsSet = React.useMemo(
-      () => new Set(groupSelection.selectedIds),
-      [groupSelection.selectedIds],
-    );
+    // Use selectedIds directly from store to avoid dependency on groupSelection object
+    const selectedIdsSet = React.useMemo(() => new Set(selectedIds), [selectedIds]);
     const primarySelectionId = React.useMemo(
-      () => (groupSelection.selectedIds.length > 0 ? groupSelection.selectedIds[0] : null),
-      [groupSelection.selectedIds],
+      () => (selectedIds.length > 0 ? selectedIds[0] : null),
+      [selectedIds],
     );
-    const hasMultipleSelected = React.useMemo(
-      () => groupSelection.selectedIds.length > 1,
-      [groupSelection.selectedIds],
-    );
+    const hasMultipleSelected = React.useMemo(() => selectedIds.length > 1, [selectedIds]);
 
     // Notify camera system when a camera entity is selected
     useEffect(() => {

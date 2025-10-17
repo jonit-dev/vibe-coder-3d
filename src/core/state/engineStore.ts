@@ -25,7 +25,7 @@ export const useEngineStore = create<IEngineState>((set) => ({
   fps: 60,
   shadows: true,
   quality: 'medium',
-  bvhCulling: true, // Enabled by default for better performance (1.5-4x fewer draw calls)
+  bvhCulling: true, // Enabled by default - uses layers system to preserve physics simulation
   debug: false,
   showFps: false,
 

@@ -249,10 +249,13 @@ export class BVHManager {
         bounds.applyMatrix4(mesh.matrixWorld);
 
         // Check if bounds intersect frustum
+        // Use layers instead of visible to preserve physics simulation
         if (!this.frustum.intersectsBox(bounds)) {
-          mesh.visible = false;
+          mesh.layers.disable(0); // Hide from camera layer 0 (rendering only)
           culledObjects++;
           return;
+        } else {
+          mesh.layers.enable(0); // Show in camera layer 0
         }
       } else {
         // Fallback to standard bounding sphere check
@@ -261,15 +264,17 @@ export class BVHManager {
           sphere.applyMatrix4(mesh.matrixWorld);
 
           if (!this.frustum.intersectsSphere(sphere)) {
-            mesh.visible = false;
+            mesh.layers.disable(0); // Hide from camera layer 0 (rendering only)
             culledObjects++;
             return;
+          } else {
+            mesh.layers.enable(0); // Show in camera layer 0
           }
         }
       }
 
-      // Object is visible
-      mesh.visible = true;
+      // Object is visible - ensure it's on layer 0
+      mesh.layers.enable(0);
     });
 
     // Update statistics
