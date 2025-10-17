@@ -129,6 +129,19 @@ const CustomModelMesh: React.FC<{
     // based on global LOD quality setting or distance
     const lodPath = useLOD({ basePath: modelPath, distance: lodDistance });
 
+    // Preload all LOD variants to prevent flashing when switching
+    // This keeps models in the cache so transitions are instant
+    const lodPathOriginal = useLOD({ basePath: modelPath, quality: 'original' });
+    const lodPathHigh = useLOD({ basePath: modelPath, quality: 'high_fidelity' });
+    const lodPathLow = useLOD({ basePath: modelPath, quality: 'low_fidelity' });
+
+    React.useEffect(() => {
+      // Preload all variants in the background
+      useGLTF.preload(lodPathOriginal);
+      useGLTF.preload(lodPathHigh);
+      useGLTF.preload(lodPathLow);
+    }, [lodPathOriginal, lodPathHigh, lodPathLow]);
+
     // Log LOD path changes (only when actually switching)
     const prevLodPathRef = React.useRef<string>(lodPath);
     React.useEffect(() => {
@@ -145,6 +158,7 @@ const CustomModelMesh: React.FC<{
 
     // Don't wrap useGLTF in try-catch - it throws promises for Suspense, not errors
     // The Suspense boundary in the parent component will handle loading states
+    // Since we preload all variants, this should never suspend after initial load
     const { scene } = useGLTF(lodPath);
     const { gl, scene: r3fScene, camera } = useThree();
 
