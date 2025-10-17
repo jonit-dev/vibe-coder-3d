@@ -353,9 +353,8 @@ for obj in meshes:
     bpy.ops.object.modifier_apply(modifier=smooth.name)
     
     # Keep vertex normals to maintain model smoothness
-    mesh = obj.data
-    mesh.use_auto_smooth = True
-    mesh.auto_smooth_angle = 0.523599  # 30 degrees
+    # Note: use_auto_smooth was removed in Blender 4.1+
+    # Smooth shading is now controlled by the Smooth modifier above
     
     obj.select_set(False)
     print(f"[INFO] Reduced {obj.name} to {len(obj.data.vertices)} vertices")

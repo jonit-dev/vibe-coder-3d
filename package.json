@@ -59,6 +59,7 @@
     "adm-zip": "^0.5.16",
     "bitecs": "^0.3.40",
     "daisyui": "^5.0.28",
+    "dotenv": "^17.2.3",
     "draco3dgltf": "^1.5.7",
     "howler": "^2.2.4",
     "meshoptimizer": "^0.23.0",
