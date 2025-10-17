@@ -17,8 +17,10 @@
  */
 
 import { config } from 'dotenv';
-import { readdir, mkdir } from 'fs/promises';
-import { join, relative, basename, extname } from 'path';
+import { readdir, mkdir, readFile, writeFile, stat } from 'fs/promises';
+import { join, relative, basename, extname, dirname } from 'path';
+import { createHash } from 'crypto';
+import { fileURLToPath } from 'url';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { simplify, weld, prune, dedup } from '@gltf-transform/functions';
@@ -31,6 +33,9 @@ import {
   shouldUseBlender,
 } from './lib/blenderDecimator.js';
 import { logger } from './lib/logger.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const projectRoot = join(__dirname, '..');
 
 // Initialize meshoptimizer
 await MeshoptSimplifier.ready;
@@ -54,13 +59,76 @@ const args = {
   silent: process.argv.includes('--silent'),
 };
 
+// Manifest path
+const manifestPath = join(projectRoot, '.model-optimization-manifest.json');
+
 // Environment config
 const ENV = {
   useBlender: process.env.USE_BLENDER_DECIMATION === 'true',
   autoDecimate: process.env.AUTO_DECIMATE_MODELS === 'true',
   blenderPath: process.env.BLENDER_PATH || 'blender',
-  modelsDir: process.env.MODELS_DIR || 'public/assets/models',
+  modelsDir: process.env.MODELS_DIR || 'src/game/assets/models',
 };
+
+/**
+ * Load or create optimization manifest
+ */
+async function loadManifest() {
+  try {
+    const content = await readFile(manifestPath, 'utf-8');
+    return JSON.parse(content);
+  } catch {
+    return { version: 1, optimized: {} };
+  }
+}
+
+/**
+ * Save optimization manifest
+ */
+async function saveManifest(manifest) {
+  await writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+}
+
+/**
+ * Calculate file hash for caching
+ */
+async function getFileHash(filePath) {
+  const content = await readFile(filePath);
+  return createHash('sha256').update(content).digest('hex').slice(0, 16);
+}
+
+/**
+ * Check if model needs optimization
+ */
+async function needsOptimization(modelPath, manifest) {
+  if (args.force) return true;
+
+  const relativePath = relative(projectRoot, modelPath);
+  const entry = manifest.optimized[relativePath];
+
+  if (!entry) return true;
+
+  // Check if source file changed
+  try {
+    const currentHash = await getFileHash(modelPath);
+    if (currentHash !== entry.sourceHash) return true;
+
+    // Check if output files exist
+    const modelDir = dirname(modelPath);
+    const fileName = basename(modelPath, extname(modelPath));
+    const glbPath = join(modelDir, 'glb', `${fileName}.glb`);
+    const lodHighPath = join(modelDir, 'lod', `${fileName}.high_fidelity.glb`);
+    const lodLowPath = join(modelDir, 'lod', `${fileName}.low_fidelity.glb`);
+
+    await stat(glbPath);
+    await stat(lodHighPath);
+    await stat(lodLowPath);
+
+    return false; // All files exist and source unchanged
+  } catch {
+    return true; // File doesn't exist or error checking
+  }
+}
 
 /**
  * Find all source models
@@ -254,6 +322,9 @@ async function optimizeModel(model, blenderAvailable) {
 async function main() {
   logger.info('🚀 Starting model optimization', { args, env: ENV });
 
+  // Load manifest
+  const manifest = await loadManifest();
+
   // Find models
   const models = await findModels(ENV.modelsDir, args.model);
   logger.info(`Found ${models.length} model(s)`);
@@ -263,8 +334,32 @@ async function main() {
     return;
   }
 
-  // Analyze complexity
-  const analyzed = await checkComplexity(models);
+  // Check which models need optimization (caching)
+  const modelsToOptimize = [];
+  const modelsSkippedCache = [];
+
+  for (const model of models) {
+    const needs = await needsOptimization(model.path, manifest);
+    if (needs) {
+      modelsToOptimize.push(model);
+    } else {
+      modelsSkippedCache.push(model);
+    }
+  }
+
+  if (modelsSkippedCache.length > 0 && !args.silent) {
+    logger.info(`Skipping ${modelsSkippedCache.length} cached model(s)`, {
+      cached: modelsSkippedCache.map((m) => `${m.dir}/${m.file}`),
+    });
+  }
+
+  if (modelsToOptimize.length === 0) {
+    logger.info('All models are up to date');
+    return;
+  }
+
+  // Analyze complexity for models that need optimization
+  const analyzed = await checkComplexity(modelsToOptimize);
 
   // If check-only mode, stop here
   if (args.checkOnly) {
@@ -291,7 +386,25 @@ async function main() {
   for (const model of analyzed) {
     const result = await optimizeModel(model, blenderAvailable);
     results.push({ ...model, result });
+
+    // Update manifest if successful
+    if (result.success) {
+      const relativePath = relative(projectRoot, model.path);
+      const sourceHash = await getFileHash(model.path);
+
+      manifest.optimized[relativePath] = {
+        sourceHash,
+        timestamp: Date.now(),
+        outputs: {
+          base: result.outputPath,
+          lodVariants: result.lodVariants?.map((v) => v.path) || [],
+        },
+      };
+    }
   }
+
+  // Save manifest
+  await saveManifest(manifest);
 
   // Summary
   const successful = results.filter((r) => r.result?.success).length;
@@ -302,6 +415,7 @@ async function main() {
     total: results.length,
     successful,
     skipped,
+    cached: modelsSkippedCache.length,
     failed,
   });
 }

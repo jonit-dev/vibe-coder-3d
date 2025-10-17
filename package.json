@@ -7,12 +7,12 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "node scripts/sync-assets.js --silent && node scripts/optimize-models.js --silent & vite",
+    "dev": "node scripts/sync-assets.js --silent && node scripts/optimize.js --silent & vite",
     "dev:nosync": "vite",
     "dev:sync": "node scripts/sync-assets.js",
-    "optimize": "node scripts/optimize-models.js",
-    "optimize:force": "node scripts/optimize-models.js --force",
-    "build": "node scripts/sync-assets.js --once --silent && node scripts/optimize-models.js --silent && tsc && vite build",
+    "optimize": "node scripts/optimize.js",
+    "optimize:force": "node scripts/optimize.js --force",
+    "build": "node scripts/sync-assets.js --once --silent && node scripts/optimize.js --silent && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run --silent",
     "test:ui": "vitest --ui",
