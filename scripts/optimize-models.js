@@ -1,19 +1,35 @@
 #!/usr/bin/env node
 
-import { readdir, stat, readFile, writeFile } from 'fs/promises';
-import { join, dirname, relative } from 'path';
+import { readdir, stat, readFile, writeFile, mkdir, access } from 'fs/promises';
+import { join, dirname, relative, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
-import { NodeIO } from '@gltf-transform/core';
+import { NodeIO, Document } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { prune, dedup, quantize, weld, simplify, textureCompress } from '@gltf-transform/functions';
+import {
+  prune,
+  dedup,
+  quantize,
+  weld,
+  simplify,
+  textureCompress,
+  draco,
+  resample,
+  cloneDocument,
+  center,
+  reorder,
+  join as joinMeshes,
+  palette,
+} from '@gltf-transform/functions';
 import draco3d from 'draco3dgltf';
-import { MeshoptSimplifier } from 'meshoptimizer';
+import { MeshoptSimplifier, MeshoptEncoder } from 'meshoptimizer';
+import sharp from 'sharp';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, '..');
 const modelsDir = join(projectRoot, 'public/assets/models');
 const manifestPath = join(projectRoot, '.model-optimization-manifest.json');
+const configPath = join(projectRoot, '.model-optimization.config.json');
 
 // Initialize meshoptimizer
 await MeshoptSimplifier.ready;
@@ -22,11 +38,49 @@ await MeshoptSimplifier.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
   'draco3d.decoder': await draco3d.createDecoderModule(),
   'draco3d.encoder': await draco3d.createEncoderModule(),
+  'meshopt.decoder': MeshoptSimplifier,
+  'meshopt.encoder': MeshoptEncoder,
 });
 
 /**
+ * Load optimization configuration
+ */
+async function loadConfig() {
+  try {
+    const content = await readFile(configPath, 'utf-8');
+    return JSON.parse(content);
+  } catch {
+    // Return default config if file doesn't exist
+    return {
+      pipelineVersion: 1,
+      geometry: {
+        quantize: { position: 14, normal: 10, texcoord: 12, color: 8, generic: 12 },
+        simplify: { enabled: true, ratio: 0.6, error: 0.001 },
+      },
+      compression: {
+        method: 'draco',
+        draco: { encodeSpeed: 5, decodeSpeed: 5 },
+        meshopt: { level: 'medium' },
+      },
+      textures: {
+        resize: { enabled: true, max: 2048, powerOfTwo: true },
+        ktx2: { enabled: false, mode: 'ETC1S', quality: 128, uastcZstandard: 18 },
+      },
+      lod: { enabled: true, ratios: [1.0, 0.5, 0.25] },
+    };
+  }
+}
+
+/**
+ * Calculate hash for configuration to detect config changes
+ */
+function getConfigHash(config) {
+  const configString = JSON.stringify(config);
+  return createHash('sha256').update(configString).digest('hex');
+}
+
+/**
  * Load or create optimization manifest
- * Manifest tracks file hashes to prevent re-optimization
  */
 async function loadManifest() {
   try {
@@ -57,17 +111,21 @@ async function getFileHash(filePath) {
 }
 
 /**
- * Recursively find all GLB/GLTF files
+ * Recursively find all GLB files (excluding glb/ and lod/ subdirectories)
  */
-async function findModelFiles(dir, fileList = []) {
+async function findModelFiles(dir, fileList = [], isRoot = true) {
   const entries = await readdir(dir, { withFileTypes: true });
 
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
 
     if (entry.isDirectory()) {
-      await findModelFiles(fullPath, fileList);
-    } else if (entry.isFile() && (entry.name.endsWith('.glb') || entry.name.endsWith('.gltf'))) {
+      // Skip glb and lod subdirectories as they contain generated outputs
+      if (entry.name === 'glb' || entry.name === 'lod') {
+        continue;
+      }
+      await findModelFiles(fullPath, fileList, false);
+    } else if (entry.isFile() && entry.name.endsWith('.glb')) {
       fileList.push(fullPath);
     }
   }
@@ -76,50 +134,311 @@ async function findModelFiles(dir, fileList = []) {
 }
 
 /**
- * Optimize a single model file
+ * Get model statistics for reporting
  */
-async function optimizeModel(filePath, silent = false) {
-  const relativePath = relative(modelsDir, filePath);
+function getModelStats(document) {
+  const root = document.getRoot();
+  let triangleCount = 0;
+  let vertexCount = 0;
 
+  for (const mesh of root.listMeshes()) {
+    for (const primitive of mesh.listPrimitives()) {
+      const indices = primitive.getIndices();
+      const position = primitive.getAttribute('POSITION');
+
+      if (indices) {
+        triangleCount += indices.getCount() / 3;
+      }
+      if (position) {
+        vertexCount += position.getCount();
+      }
+    }
+  }
+
+  return { triangleCount, vertexCount, textureCount: root.listTextures().length };
+}
+
+/**
+ * Ensure directory exists
+ */
+async function ensureDir(dirPath) {
   try {
-    // Load the model
-    const document = await io.read(filePath);
+    await access(dirPath);
+  } catch {
+    await mkdir(dirPath, { recursive: true });
+  }
+}
 
-    // Apply optimization transforms
-    await document.transform(
-      // Remove unused nodes, materials, textures, etc.
-      prune(),
-      // Merge duplicate vertex and texture data
-      dedup(),
-      // Weld duplicate vertices
-      weld(),
-      // Quantize vertex attributes (reduces file size)
-      quantize({
-        quantizePosition: 14, // bits for position
-        quantizeNormal: 10, // bits for normals
-        quantizeTexcoord: 12, // bits for UVs
-        quantizeColor: 8, // bits for vertex colors
-        quantizeGeneric: 12, // bits for other attributes
+/**
+ * Resize textures to power-of-two if needed
+ */
+async function processTextures(document, config) {
+  if (!config.textures.resize.enabled) return;
+
+  const root = document.getRoot();
+  const textures = root.listTextures();
+
+  for (const texture of textures) {
+    const image = texture.getImage();
+    if (!image) continue;
+
+    const mimeType = texture.getMimeType();
+    if (!mimeType || (!mimeType.includes('png') && !mimeType.includes('jpeg'))) {
+      continue;
+    }
+
+    try {
+      const sharpImage = sharp(Buffer.from(image));
+      const metadata = await sharpImage.metadata();
+      const { width, height } = metadata;
+
+      // Check if resizing is needed
+      const maxDim = config.textures.resize.max;
+      const needsResize =
+        width > maxDim ||
+        height > maxDim ||
+        (config.textures.resize.powerOfTwo && (!isPowerOfTwo(width) || !isPowerOfTwo(height)));
+
+      if (needsResize) {
+        let newWidth = width;
+        let newHeight = height;
+
+        // Scale down if exceeds max
+        if (width > maxDim || height > maxDim) {
+          const scale = maxDim / Math.max(width, height);
+          newWidth = Math.floor(width * scale);
+          newHeight = Math.floor(height * scale);
+        }
+
+        // Adjust to power of two
+        if (config.textures.resize.powerOfTwo) {
+          newWidth = nearestPowerOfTwo(newWidth);
+          newHeight = nearestPowerOfTwo(newHeight);
+        }
+
+        const resizedBuffer = await sharpImage
+          .resize(newWidth, newHeight, { fit: 'fill' })
+          .toBuffer();
+
+        texture.setImage(new Uint8Array(resizedBuffer));
+      }
+    } catch (err) {
+      // Skip texture if processing fails
+      continue;
+    }
+  }
+}
+
+/**
+ * Check if number is power of two
+ */
+function isPowerOfTwo(n) {
+  return n > 0 && (n & (n - 1)) === 0;
+}
+
+/**
+ * Get nearest power of two
+ */
+function nearestPowerOfTwo(n) {
+  return Math.pow(2, Math.round(Math.log2(n)));
+}
+
+/**
+ * Generate LOD variants for a model
+ */
+async function generateLODs(document, config, baseDir, modelName) {
+  if (!config.lod.enabled || !config.lod.variants) {
+    return [];
+  }
+
+  const lodDir = join(baseDir, 'lod');
+  await ensureDir(lodDir);
+
+  const lodOutputs = [];
+
+  // Generate each named LOD variant
+  for (const [variantName, variantConfig] of Object.entries(config.lod.variants)) {
+    const lodDoc = cloneDocument(document);
+
+    await lodDoc.transform(
+      simplify({
+        simplifier: MeshoptSimplifier,
+        ratio: variantConfig.ratio,
+        error: variantConfig.error,
       }),
-      // Simplify geometry - reduce polygon count by 75% for real-time performance
-      // For high-poly models, this is essential for smooth editing/zooming
-      // ratio: 0.25 = keep 25% of triangles, error: 0.01 = allow 1% visual deviation
-      simplify({ simplifier: MeshoptSimplifier, ratio: 0.25, error: 0.01 }),
     );
 
-    // Write the optimized model back to the same location
-    await io.write(filePath, document);
+    const lodPath = join(lodDir, `${modelName}.${variantName}.glb`);
+    await io.write(lodPath, lodDoc);
+
+    const lodStats = await stat(lodPath);
+    const modelStats = getModelStats(lodDoc);
+
+    lodOutputs.push({
+      name: variantName,
+      path: lodPath,
+      size: lodStats.size,
+      ratio: variantConfig.ratio,
+      triangles: modelStats.triangleCount,
+    });
+  }
+
+  return lodOutputs;
+}
+
+/**
+ * Optimize a single model file
+ */
+async function optimizeModel(filePath, config, configHash, silent = false) {
+  const relativePath = relative(modelsDir, filePath);
+  const modelDir = dirname(filePath);
+  const modelName = basename(filePath, extname(filePath));
+
+  try {
+    // Get original file size
+    const originalStats = await stat(filePath);
+    const originalSize = originalStats.size;
+
+    // Load the model
+    const document = await io.read(filePath);
+    const originalModelStats = getModelStats(document);
+
+    // Apply texture processing
+    await processTextures(document, config);
+
+    // Apply geometry optimization transforms
+    await document.transform(
+      prune(),
+      dedup(),
+      weld(),
+      center({ pivot: 'center' }), // Center model at origin for proper gizmo alignment
+      joinMeshes({ keepNamed: true, keepMeshes: false }), // Merge compatible meshes (fewer draw calls)
+      reorder({ encoder: MeshoptEncoder }), // Optimize vertex cache locality (GPU performance)
+      quantize({
+        quantizePosition: config.geometry.quantize.position,
+        quantizeNormal: config.geometry.quantize.normal,
+        quantizeTexcoord: config.geometry.quantize.texcoord,
+        quantizeColor: config.geometry.quantize.color,
+        quantizeGeneric: config.geometry.quantize.generic,
+      }),
+    );
+
+    // Apply simplification if enabled (for base LOD0)
+    if (config.geometry.simplify.enabled) {
+      await document.transform(
+        simplify({
+          simplifier: MeshoptSimplifier,
+          ratio: config.geometry.simplify.ratio,
+          error: config.geometry.simplify.error,
+        }),
+      );
+    }
+
+    // Optimize animations if present
+    const root = document.getRoot();
+    if (root.listAnimations().length > 0) {
+      await document.transform(
+        resample({ tolerance: 0.0001 }), // Optimize animation keyframes
+      );
+    }
+
+    // Apply texture compression (KTX2)
+    if (config.textures.ktx2.enabled) {
+      await document.transform(
+        textureCompress({
+          encoder: 'ktx2',
+          slots: /^(baseColor|metallicRoughness|normal|occlusion|emissive)$/,
+          targetFormat: config.textures.ktx2.mode.toLowerCase(), // 'etc1s' or 'uastc'
+          quality: config.textures.ktx2.quality,
+          uastcZstandard: config.textures.ktx2.uastcZstandard,
+        }),
+      );
+    }
+
+    // Apply mesh compression
+    if (config.compression.method === 'draco' || config.compression.method === 'both') {
+      await document.transform(
+        draco({
+          encodeSpeed: config.compression.draco.encodeSpeed,
+          decodeSpeed: config.compression.draco.decodeSpeed,
+        }),
+      );
+    }
+
+    // Note: Meshopt compression is applied via encoder during write
+
+    // Only create glb subdirectory if not already in one
+    const isInGlbDir = basename(modelDir) === 'glb';
+    const glbDir = isInGlbDir ? modelDir : join(modelDir, 'glb');
+
+    if (!isInGlbDir) {
+      await ensureDir(glbDir);
+    }
+
+    // Write optimized base model
+    const baseOutputPath = join(glbDir, basename(filePath));
+    await io.write(baseOutputPath, document);
+
+    // Get optimized file size and stats
+    const optimizedStats = await stat(baseOutputPath);
+    const optimizedSize = optimizedStats.size;
+    const optimizedModelStats = getModelStats(document);
+
+    // Generate LOD variants
+    const lodOutputs = await generateLODs(document, config, modelDir, modelName);
+
+    // Calculate size reduction
+    const sizeReduction = ((1 - optimizedSize / originalSize) * 100).toFixed(1);
+    const triangleReduction = (
+      (1 - optimizedModelStats.triangleCount / originalModelStats.triangleCount) *
+      100
+    ).toFixed(1);
 
     if (!silent) {
       console.log(`✅ Optimized: ${relativePath}`);
+      console.log(
+        `   Size: ${(originalSize / 1024).toFixed(1)}KB → ${(optimizedSize / 1024).toFixed(1)}KB (-${sizeReduction}%)`,
+      );
+      console.log(
+        `   Triangles: ${originalModelStats.triangleCount.toFixed(0)} → ${optimizedModelStats.triangleCount.toFixed(0)} (-${triangleReduction}%)`,
+      );
+      if (lodOutputs.length > 0) {
+        console.log(`   LODs: Generated ${lodOutputs.length} variant(s)`);
+        lodOutputs.forEach((lod) => {
+          const lodTriReduction = (
+            (1 - lod.triangles / originalModelStats.triangleCount) *
+            100
+          ).toFixed(1);
+          console.log(
+            `     - ${lod.name}: ${(lod.size / 1024).toFixed(1)}KB, ${lod.triangles.toFixed(0)} tris (-${lodTriReduction}%)`,
+          );
+        });
+      }
     }
 
-    return true;
+    return {
+      success: true,
+      outputs: {
+        lod0: { path: baseOutputPath, size: optimizedSize },
+        ...lodOutputs.reduce((acc, lod, idx) => {
+          acc[`lod${lod.level}`] = { path: lod.path, size: lod.size };
+          return acc;
+        }, {}),
+      },
+      stats: {
+        originalSize,
+        optimizedSize,
+        sizeReduction: parseFloat(sizeReduction),
+        originalTriangles: originalModelStats.triangleCount,
+        optimizedTriangles: optimizedModelStats.triangleCount,
+        triangleReduction: parseFloat(triangleReduction),
+      },
+    };
   } catch (err) {
     if (!silent) {
       console.error(`❌ Failed to optimize ${relativePath}:`, err.message);
     }
-    return false;
+    return { success: false, error: err.message };
   }
 }
 
@@ -131,11 +450,20 @@ async function main() {
   const isForce = process.argv.includes('--force');
 
   if (!isSilent) {
-    console.log('🔧 Starting model optimization...');
+    console.log('🔧 Starting model optimization pipeline...');
   }
 
   try {
-    // Load manifest to check which files were already optimized
+    // Load configuration
+    const config = await loadConfig();
+    const configHash = getConfigHash(config);
+
+    if (!isSilent) {
+      console.log(`📋 Config version: ${config.pipelineVersion}`);
+      console.log(`🔑 Config hash: ${configHash.substring(0, 8)}...`);
+    }
+
+    // Load manifest
     const manifest = await loadManifest();
 
     // Find all model files
@@ -154,22 +482,42 @@ async function main() {
 
     let optimizedCount = 0;
     let skippedCount = 0;
+    const stats = {
+      totalOriginalSize: 0,
+      totalOptimizedSize: 0,
+      totalOriginalTriangles: 0,
+      totalOptimizedTriangles: 0,
+    };
 
     for (const filePath of modelFiles) {
       const relativePath = relative(projectRoot, filePath);
       const currentHash = await getFileHash(filePath);
 
-      // Check if file was already optimized
-      const previousHash = manifest.optimized[relativePath];
-      const needsOptimization = isForce || !previousHash || previousHash !== currentHash;
+      // Check if file needs optimization
+      const manifestEntry = manifest.optimized[relativePath];
+      const needsOptimization =
+        isForce ||
+        !manifestEntry ||
+        manifestEntry.fileHash !== currentHash ||
+        manifestEntry.configHash !== configHash;
 
       if (needsOptimization) {
-        const success = await optimizeModel(filePath, isSilent);
-        if (success) {
-          // Update manifest with new hash after optimization
-          const newHash = await getFileHash(filePath);
-          manifest.optimized[relativePath] = newHash;
+        const result = await optimizeModel(filePath, config, configHash, isSilent);
+
+        if (result.success) {
+          // Update manifest with INPUT file hash (not output)
+          manifest.optimized[relativePath] = {
+            fileHash: currentHash,
+            configHash,
+            outputs: result.outputs,
+            timestamp: Date.now(),
+          };
+
           optimizedCount++;
+          stats.totalOriginalSize += result.stats.originalSize;
+          stats.totalOptimizedSize += result.stats.optimizedSize;
+          stats.totalOriginalTriangles += result.stats.originalTriangles;
+          stats.totalOptimizedTriangles += result.stats.optimizedTriangles;
         }
       } else {
         if (!isSilent) {
@@ -186,10 +534,30 @@ async function main() {
       console.log(`\n📊 Summary:`);
       console.log(`   ✅ Optimized: ${optimizedCount}`);
       console.log(`   ⏭️  Skipped: ${skippedCount}`);
+
+      if (optimizedCount > 0) {
+        const totalSizeReduction = (
+          (1 - stats.totalOptimizedSize / stats.totalOriginalSize) *
+          100
+        ).toFixed(1);
+        const totalTriangleReduction = (
+          (1 - stats.totalOptimizedTriangles / stats.totalOriginalTriangles) *
+          100
+        ).toFixed(1);
+
+        console.log(
+          `   💾 Total size: ${(stats.totalOriginalSize / 1024).toFixed(1)}KB → ${(stats.totalOptimizedSize / 1024).toFixed(1)}KB (-${totalSizeReduction}%)`,
+        );
+        console.log(
+          `   🔺 Total triangles: ${stats.totalOriginalTriangles.toFixed(0)} → ${stats.totalOptimizedTriangles.toFixed(0)} (-${totalTriangleReduction}%)`,
+        );
+      }
+
       console.log('✨ Model optimization complete');
     }
   } catch (err) {
     console.error('❌ Optimization failed:', err.message);
+    console.error(err.stack);
     process.exit(1);
   }
 }

@@ -1,0 +1,53 @@
+{
+  "pipelineVersion": 1,
+  "geometry": {
+    "quantize": {
+      "position": 14,
+      "normal": 10,
+      "texcoord": 12,
+      "color": 8,
+      "generic": 12
+    },
+    "simplify": {
+      "enabled": true,
+      "ratio": 0.6,
+      "error": 0.001
+    }
+  },
+  "compression": {
+    "method": "draco",
+    "draco": {
+      "encodeSpeed": 5,
+      "decodeSpeed": 5
+    },
+    "meshopt": {
+      "level": "medium"
+    }
+  },
+  "textures": {
+    "resize": {
+      "enabled": true,
+      "max": 2048,
+      "powerOfTwo": true
+    },
+    "ktx2": {
+      "enabled": true,
+      "mode": "ETC1S",
+      "quality": 128,
+      "uastcZstandard": 18
+    }
+  },
+  "lod": {
+    "enabled": true,
+    "variants": {
+      "high_fidelity": {
+        "ratio": 0.75,
+        "error": 0.0005
+      },
+      "low_fidelity": {
+        "ratio": 0.35,
+        "error": 0.002
+      }
+    }
+  }
+}
