@@ -138,7 +138,14 @@ const CustomModelMesh: React.FC<{
     // SimplifyModifier has issues with interleaved buffers and certain geometry types
     // We use offline 75% triangle reduction instead (501k → 125k triangles)
 
-    const modelScene = useMemo(() => {
+    // Store the model scene in a ref to manually update it when LOD changes
+    const modelSceneRef = React.useRef<Group | null>(null);
+    const containerGroupRef = React.useRef<Group | null>(null);
+
+    // Update model when scene changes (LOD switch)
+    React.useEffect(() => {
+      if (!containerGroupRef.current) return;
+
       // Clone the cached scene so multiple entities don't mutate the same instance
       const clonedScene = SkeletonUtils.clone(scene) as Group;
 
@@ -176,7 +183,21 @@ const CustomModelMesh: React.FC<{
         offset: [-center.x, -center.y, -center.z],
       });
 
-      return clonedScene;
+      // Remove old model if exists
+      if (modelSceneRef.current && containerGroupRef.current) {
+        containerGroupRef.current.remove(modelSceneRef.current);
+      }
+
+      // Add new model
+      containerGroupRef.current.add(clonedScene);
+      modelSceneRef.current = clonedScene;
+
+      return () => {
+        // Cleanup on unmount
+        if (modelSceneRef.current && containerGroupRef.current) {
+          containerGroupRef.current.remove(modelSceneRef.current);
+        }
+      };
     }, [scene, entityId, lodPath]);
 
     // Shader warm-up: Precompile using the REAL scene + camera so lighting variants match
@@ -193,7 +214,7 @@ const CustomModelMesh: React.FC<{
       });
 
       return () => cancelAnimationFrame(rafId);
-    }, [gl, r3fScene, camera, modelScene]);
+    }, [gl, r3fScene, camera, lodPath]);
 
     // Use callback ref to ensure proper Group integration with transform system
     const groupRefCallback = useCallback(
@@ -209,8 +230,9 @@ const CustomModelMesh: React.FC<{
           node.rotation.set(0, 0, 0);
           node.scale.set(1, 1, 1);
 
-          // Store local ref for distance calculations
+          // Store refs for LOD model swapping
           selfGroupRef.current = node;
+          containerGroupRef.current = node;
 
           if (typeof meshInstanceRef === 'function') {
             meshInstanceRef(node);
@@ -227,6 +249,7 @@ const CustomModelMesh: React.FC<{
         // Clear local ref when unmounted
         if (!node) {
           selfGroupRef.current = null;
+          containerGroupRef.current = null;
         }
       },
       [meshInstanceRef, entityId],
@@ -235,9 +258,8 @@ const CustomModelMesh: React.FC<{
     // PERFORMANCE: Matrix updates now handled by ModelMatrixSystem (batched)
     // See: performance-audit-report.md #4 - removes N individual useFrame hooks
 
-    // CRITICAL: Use lodPath as key on primitive (not group) to force remount when LOD changes
-    // This ensures TransformControls properly detaches before the mesh changes
-    // while preserving the group's transform (position/rotation/scale)
+    // NOTE: Model is manually added/removed in useEffect to prevent centering loss during LOD switches
+    // The group persists and maintains its transform while only the child model changes
     return (
       <group
         ref={groupRefCallback}
@@ -248,9 +270,7 @@ const CustomModelMesh: React.FC<{
         receiveShadow={renderingContributions.receiveShadow}
         visible={renderingContributions.visible}
         frustumCulled={true}
-      >
-        <primitive key={lodPath} object={modelScene} />
-      </group>
+      />
     );
   },
   // Custom comparison function to prevent unnecessary re-renders
