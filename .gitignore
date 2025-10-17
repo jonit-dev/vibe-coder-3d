@@ -39,3 +39,8 @@ Thumbs.db
 .model-optimization-manifest.json
 
 .serena/cache
+
+# Environment variables
+.env
+.env.local
+.env.*.local

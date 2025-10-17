@@ -4,6 +4,7 @@ import { readdir, stat, readFile, writeFile, mkdir, access } from 'fs/promises';
 import { join, dirname, relative, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
+import { config } from 'dotenv';
 import { NodeIO, Document } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import {
@@ -25,9 +26,54 @@ import draco3d from 'draco3dgltf';
 import { MeshoptSimplifier, MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
 
+// Load environment variables
+config();
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, '..');
-const modelsDir = join(projectRoot, 'public/assets/models');
+
+// Environment-based configuration
+const ENV = {
+  // Platform settings
+  platform: process.env.PLATFORM || 'desktop',
+  isMobile: process.env.IS_MOBILE === 'true',
+  webglCompat: process.env.WEBGL_COMPAT_MODE === 'true',
+
+  // Optimization settings
+  aggressiveOptimization: process.env.AGGRESSIVE_MODEL_OPTIMIZATION === 'true',
+  autoDecimate: process.env.AUTO_DECIMATE_MODELS === 'true',
+  autoDecimateRatio: parseFloat(process.env.AUTO_DECIMATE_RATIO || '0.1'),
+  autoDecimateError: parseFloat(process.env.AUTO_DECIMATE_ERROR || '0.1'),
+  useBlender: process.env.USE_BLENDER_DECIMATION === 'true',
+  blenderPath: process.env.BLENDER_PATH || '',
+  minTriangles: parseInt(process.env.OPTIMIZATION_MIN_TRIANGLES || '1000', 10),
+
+  // Texture settings
+  maxTextureSize: parseInt(process.env.MAX_TEXTURE_SIZE || '2048', 10),
+  enableTextureCompression: process.env.ENABLE_TEXTURE_COMPRESSION !== 'false',
+  textureQuality: parseInt(process.env.TEXTURE_COMPRESSION_QUALITY || '128', 10),
+  forcePOT: process.env.FORCE_POT_TEXTURES !== 'false',
+
+  // LOD settings
+  enableLOD: process.env.ENABLE_LOD_GENERATION !== 'false',
+  lodHighRatio: parseFloat(process.env.LOD_HIGH_RATIO || '0.25'),
+  lodLowRatio: parseFloat(process.env.LOD_LOW_RATIO || '0.25'),
+  lodHighError: parseFloat(process.env.LOD_HIGH_ERROR || '0.01'),
+  lodLowError: parseFloat(process.env.LOD_LOW_ERROR || '0.1'),
+
+  // Compression settings
+  meshCompression: process.env.MESH_COMPRESSION || 'draco',
+  dracoEncodeSpeed: parseInt(process.env.DRACO_ENCODE_SPEED || '5', 10),
+  dracoDecodeSpeed: parseInt(process.env.DRACO_DECODE_SPEED || '5', 10),
+
+  // Development settings
+  verbose: process.env.VERBOSE_OPTIMIZATION === 'true',
+  forceReoptimize: process.env.FORCE_REOPTIMIZE === 'true',
+  checkComplexity: process.env.CHECK_MODEL_COMPLEXITY !== 'false',
+  warnOnComplex: process.env.WARN_ON_COMPLEX_MODELS !== 'false',
+};
+
+const modelsDir = join(projectRoot, process.env.MODELS_DIR || 'public/assets/models');
 const manifestPath = join(projectRoot, '.model-optimization-manifest.json');
 const configPath = join(projectRoot, '.model-optimization.config.json');
 
@@ -44,31 +90,82 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
 
 /**
  * Load optimization configuration
+ * Merges file-based config with environment variables
  */
 async function loadConfig() {
+  let fileConfig = {};
+
   try {
     const content = await readFile(configPath, 'utf-8');
-    return JSON.parse(content);
+    fileConfig = JSON.parse(content);
   } catch {
-    // Return default config if file doesn't exist
-    return {
-      pipelineVersion: 1,
-      geometry: {
-        quantize: { position: 14, normal: 10, texcoord: 12, color: 8, generic: 12 },
-        simplify: { enabled: true, ratio: 0.6, error: 0.001 },
-      },
-      compression: {
-        method: 'draco',
-        draco: { encodeSpeed: 5, decodeSpeed: 5 },
-        meshopt: { level: 'medium' },
-      },
-      textures: {
-        resize: { enabled: true, max: 2048, powerOfTwo: true },
-        ktx2: { enabled: false, mode: 'ETC1S', quality: 128, uastcZstandard: 18 },
-      },
-      lod: { enabled: true, ratios: [1.0, 0.5, 0.25] },
-    };
+    // File doesn't exist, will use env-based defaults
   }
+
+  // Build config from environment variables, with file overrides
+  const config = {
+    pipelineVersion: fileConfig.pipelineVersion || 4,
+    geometry: {
+      quantize: fileConfig.geometry?.quantize || {
+        position: 14,
+        normal: 10,
+        texcoord: 12,
+        color: 8,
+        generic: 12,
+      },
+      simplify: {
+        enabled: fileConfig.geometry?.simplify?.enabled ?? !ENV.aggressiveOptimization,
+        ratio: fileConfig.geometry?.simplify?.ratio || (ENV.aggressiveOptimization ? 0.3 : 1.0),
+        error: fileConfig.geometry?.simplify?.error || (ENV.aggressiveOptimization ? 0.1 : 0.001),
+      },
+    },
+    compression: {
+      method: fileConfig.compression?.method || ENV.meshCompression,
+      draco: {
+        encodeSpeed: fileConfig.compression?.draco?.encodeSpeed || ENV.dracoEncodeSpeed,
+        decodeSpeed: fileConfig.compression?.draco?.decodeSpeed || ENV.dracoDecodeSpeed,
+      },
+      meshopt: fileConfig.compression?.meshopt || { level: 'medium' },
+    },
+    textures: {
+      resize: {
+        enabled: fileConfig.textures?.resize?.enabled ?? true,
+        max: fileConfig.textures?.resize?.max || ENV.maxTextureSize,
+        powerOfTwo: fileConfig.textures?.resize?.powerOfTwo ?? ENV.forcePOT,
+      },
+      ktx2: {
+        enabled: fileConfig.textures?.ktx2?.enabled ?? ENV.enableTextureCompression,
+        mode: fileConfig.textures?.ktx2?.mode || 'ETC1S',
+        quality: fileConfig.textures?.ktx2?.quality || ENV.textureQuality,
+        uastcZstandard: fileConfig.textures?.ktx2?.uastcZstandard || 18,
+      },
+    },
+    lod: {
+      enabled: fileConfig.lod?.enabled ?? ENV.enableLOD,
+      variants: fileConfig.lod?.variants || {
+        high_fidelity: {
+          ratio: ENV.lodHighRatio,
+          error: ENV.lodHighError,
+        },
+        low_fidelity: {
+          ratio: ENV.lodLowRatio,
+          error: ENV.lodLowError,
+        },
+      },
+    },
+  };
+
+  // Apply mobile-specific overrides
+  if (ENV.isMobile) {
+    config.textures.resize.max = Math.min(config.textures.resize.max, 1024);
+    config.lod.variants.high_fidelity.ratio = Math.min(
+      config.lod.variants.high_fidelity.ratio,
+      0.5,
+    );
+    config.lod.variants.low_fidelity.ratio = Math.min(config.lod.variants.low_fidelity.ratio, 0.3);
+  }
+
+  return config;
 }
 
 /**
@@ -476,10 +573,17 @@ async function optimizeModel(filePath, config, configHash, silent = false) {
  */
 async function main() {
   const isSilent = process.argv.includes('--silent');
-  const isForce = process.argv.includes('--force');
+  const isForce = process.argv.includes('--force') || ENV.forceReoptimize;
 
   if (!isSilent) {
     console.log('🔧 Starting model optimization pipeline...');
+    console.log(`📱 Platform: ${ENV.platform}${ENV.isMobile ? ' (mobile)' : ''}`);
+    if (ENV.aggressiveOptimization) {
+      console.log('⚡ Aggressive optimization enabled');
+    }
+    if (ENV.autoDecimate) {
+      console.log(`🔪 Auto-decimation enabled (ratio: ${ENV.autoDecimateRatio})`);
+    }
   }
 
   try {
