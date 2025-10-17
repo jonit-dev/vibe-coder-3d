@@ -1,10 +1,10 @@
+import { InputManager } from '@/core/lib/input/InputManager';
+import { Logger } from '@core/lib/logger';
 import { OrbitControls } from '@react-three/drei';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import React, { useEffect, useState } from 'react';
 import * as THREE from 'three';
-import { Logger } from '@core/lib/logger';
-import { InputManager } from '@/core/lib/input/InputManager';
 
 import { EngineLoop } from '@/core/components/EngineLoop';
 
@@ -13,25 +13,26 @@ import { CameraControlsManager } from '@/core/components/cameras/CameraControlsM
 import { CameraFollowManager } from '@/core/components/cameras/CameraFollowManager';
 import { GameCameraManager } from '@/core/components/cameras/GameCameraManager';
 import { EnvironmentLighting } from '@/core/components/lighting/EnvironmentLighting';
+import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 import { useEvent } from '@/core/hooks/useEvent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { isValidEntityId } from '@/core/lib/ecs/utils';
 import { setSelectedCameraEntity } from '@/core/systems/cameraSystem';
 import { ModelMatrixSystem } from '@/core/systems/ModelMatrixSystem';
-import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 import { GizmoMode } from '@/editor/hooks/useEditorKeyboard';
 import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
 
 import { useEditorStore } from '../../../store/editorStore';
 
+import { AxesIndicator } from './components/AxesIndicator';
+import { CameraPerformanceController } from './components/CameraPerformanceController';
+import { CameraSystemConnector } from './components/CameraSystemConnector';
+import { GizmoModeSelector } from './components/GizmoModeSelector';
+import { PhysicsBindingManager } from './components/PhysicsBindingManager';
+import { ViewportHeader } from './components/ViewportHeader';
 import { EntityRenderer } from './EntityRenderer';
 import { GroupGizmoControls } from './GroupGizmoControls';
 import { LightRenderer } from './LightRenderer';
-import { AxesIndicator } from './components/AxesIndicator';
-import { CameraSystemConnector } from './components/CameraSystemConnector';
-import { GizmoModeSelector } from './components/GizmoModeSelector';
-import { ViewportHeader } from './components/ViewportHeader';
-import { PhysicsBindingManager } from './components/PhysicsBindingManager';
 
 export interface IViewportPanelProps {
   entityId: number | null; // selected entity - can be null
@@ -103,6 +104,21 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
       ? hasComponent(entityId, KnownComponentTypes.CAMERA)
       : false;
 
+    // PERFORMANCE: Pre-compute selection info to prevent re-renders
+    // groupSelection methods create new references on every call, causing all entities to re-render
+    const selectedIdsSet = React.useMemo(
+      () => new Set(groupSelection.selectedIds),
+      [groupSelection.selectedIds],
+    );
+    const primarySelectionId = React.useMemo(
+      () => (groupSelection.selectedIds.length > 0 ? groupSelection.selectedIds[0] : null),
+      [groupSelection.selectedIds],
+    );
+    const hasMultipleSelected = React.useMemo(
+      () => groupSelection.selectedIds.length > 1,
+      [groupSelection.selectedIds],
+    );
+
     // Notify camera system when a camera entity is selected
     useEffect(() => {
       if (selectedEntityIsCamera && isValidEntityId(entityId)) {
@@ -155,6 +171,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
           >
             {/* Selection framer: provides frame function for double-click */}
             <SelectionFramer />
+            {/* Adaptive quality: DPR + shadow updates throttling while moving */}
+            <CameraPerformanceController />
             {/* Camera System Connector - connects editor camera to camera system */}
             <CameraSystemConnector />
 
@@ -197,11 +215,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
 
               {/* Render all entities */}
               {entityIds.map((id) => {
-                const isSelected = groupSelection.isSelected(id);
-                const isPrimary = groupSelection.isPrimarySelection(id);
-                const hasMultipleSelected = groupSelection.selectedIds.length > 1;
-
-                // logger.debug(`Entity ${id}: selected=${isSelected}, isPrimary=${isPrimary}, multipleSelected=${hasMultipleSelected}`);
+                // PERFORMANCE: Use memoized values instead of function calls
+                const isSelected = selectedIdsSet.has(id);
+                const isPrimary = primarySelectionId === id;
 
                 return (
                   <EntityRenderer
@@ -250,9 +266,10 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
                 enableZoom={true}
                 enableRotate={true}
                 dampingFactor={0.05}
-                enableDamping={true}
+                enableDamping={false}
                 minDistance={1}
                 maxDistance={100}
+                zoomSpeed={0.5}
                 key="editor-controls" // Ensure different instances
               />
             )}

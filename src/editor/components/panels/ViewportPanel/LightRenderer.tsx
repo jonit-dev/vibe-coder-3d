@@ -91,6 +91,8 @@ export const LightRenderer: React.FC<ILightRendererProps> = React.memo(({ entity
             shadow-camera-right={50}
             shadow-camera-top={50}
             shadow-camera-bottom={-50}
+            shadow-camera-near={0.5}
+            shadow-camera-far={500}
           />
         </group>
       );

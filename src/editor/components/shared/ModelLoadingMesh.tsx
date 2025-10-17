@@ -16,7 +16,14 @@ interface IModelLoadingMeshProps {
 }
 
 export const ModelLoadingMesh: React.FC<IModelLoadingMeshProps> = React.memo(
-  ({ meshRef, meshInstanceRef, entityId, renderingContributions, onMeshClick, onMeshDoubleClick }) => {
+  ({
+    meshRef,
+    meshInstanceRef,
+    entityId,
+    renderingContributions,
+    onMeshClick,
+    onMeshDoubleClick,
+  }) => {
     const loadingMeshRef = useRef<Mesh>(null);
 
     // Animate loading mesh with a gentle pulsing effect
@@ -27,9 +34,10 @@ export const ModelLoadingMesh: React.FC<IModelLoadingMeshProps> = React.memo(
       }
     });
 
-    const resolvedRef = (meshInstanceRef as React.Ref<Group | Mesh | Object3D | null>)
-      || (meshRef as React.Ref<Group | Mesh | Object3D | null>)
-      || (loadingMeshRef as unknown as React.Ref<Group | Mesh | Object3D | null>);
+    const resolvedRef =
+      (meshInstanceRef as React.Ref<Group | Mesh | Object3D | null>) ||
+      (meshRef as React.Ref<Group | Mesh | Object3D | null>) ||
+      (loadingMeshRef as unknown as React.Ref<Group | Mesh | Object3D | null>);
 
     return (
       <mesh
@@ -40,6 +48,7 @@ export const ModelLoadingMesh: React.FC<IModelLoadingMeshProps> = React.memo(
         castShadow={renderingContributions.castShadow}
         receiveShadow={renderingContributions.receiveShadow}
         visible={renderingContributions.visible}
+        frustumCulled={true}
       >
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#ffd700" transparent opacity={0.7} wireframe />

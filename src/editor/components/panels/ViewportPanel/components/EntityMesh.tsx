@@ -1,13 +1,14 @@
 import { ModelErrorBoundary } from '@/editor/components/shared/ModelErrorBoundary';
 import { ModelLoadingMesh } from '@/editor/components/shared/ModelLoadingMesh';
 import { useGLTF } from '@react-three/drei';
-import { ThreeEvent } from '@react-three/fiber';
-import React, { Suspense, useCallback, useMemo } from 'react';
+import { ThreeEvent, useThree } from '@react-three/fiber';
+import React, { Suspense, useCallback, useEffect, useMemo } from 'react';
 import type { Group, Mesh, Object3D } from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import type { IRenderingContributions } from '@/core/types/entities';
-import { compareMaterials, shallowEqual, deepEqual } from '@/core/utils/comparison';
+import { compareMaterials, deepEqual, shallowEqual } from '@/core/utils/comparison';
+// import { useAutoLOD } from './AutoLOD'; // Disabled - offline optimization is sufficient
 import { CameraEntity } from './CameraEntity';
 import { useEntityRegistration } from './hooks/useEntityRegistration';
 import { useTextureLoading } from './hooks/useTextureLoading';
@@ -25,10 +26,22 @@ const CustomModelMesh: React.FC<{
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
 }> = React.memo(
-  ({ modelPath, meshInstanceRef, renderingContributions, entityId, onMeshClick, onMeshDoubleClick }) => {
+  ({
+    modelPath,
+    meshInstanceRef,
+    renderingContributions,
+    entityId,
+    onMeshClick,
+    onMeshDoubleClick,
+  }) => {
     // Don't wrap useGLTF in try-catch - it throws promises for Suspense, not errors
     // The Suspense boundary in the parent component will handle loading states
     const { scene } = useGLTF(modelPath);
+    const { gl, scene: r3fScene, camera } = useThree();
+
+    // NOTE: Runtime AutoLOD disabled - offline optimization via scripts/optimize-models.js is more reliable
+    // SimplifyModifier has issues with interleaved buffers and certain geometry types
+    // We use offline 75% triangle reduction instead (501k → 125k triangles)
 
     const modelScene = useMemo(() => {
       // Clone the cached scene so multiple entities don't mutate the same instance
@@ -37,38 +50,59 @@ const CustomModelMesh: React.FC<{
       clonedScene.rotation.set(0, 0, 0);
       clonedScene.matrixAutoUpdate = true;
 
-      // Ensure all children respect parent transforms
+      // Ensure all children respect parent transforms and enable frustum culling
       clonedScene.traverse((child) => {
         child.matrixAutoUpdate = true;
+        // Enable frustum culling for all meshes (major performance optimization)
+        if ('isMesh' in child && child.isMesh) {
+          (child as Mesh).frustumCulled = true;
+        }
       });
 
       return clonedScene;
     }, [scene]);
 
+    // Shader warm-up: Precompile using the REAL scene + camera so lighting variants match
+    useEffect(() => {
+      if (!gl || !r3fScene || !camera) return;
+
+      // Defer to next frame to ensure this model is attached to the scene graph
+      const rafId = requestAnimationFrame(() => {
+        try {
+          gl.compile(r3fScene, camera);
+        } catch (error) {
+          console.error('[PERF] Shader precompile failed:', error);
+        }
+      });
+
+      return () => cancelAnimationFrame(rafId);
+    }, [gl, r3fScene, camera, modelScene]);
+
     // Use callback ref to ensure proper Group integration with transform system
     const groupRefCallback = useCallback(
-      (groupRef: Group | null) => {
-        if (groupRef) {
+      (node: Group | null) => {
+        if (node) {
           // CRITICAL: Ensure the group can be transformed by gizmos and physics
-          groupRef.matrixAutoUpdate = true;
-          groupRef.userData = { ...groupRef.userData, entityId };
+          node.matrixAutoUpdate = true;
+          node.userData = { ...node.userData, entityId };
 
           // IMPORTANT: Start the group at origin to match other mesh types
           // The transform system will apply the actual entity position
-          groupRef.position.set(0, 0, 0);
-          groupRef.rotation.set(0, 0, 0);
-          groupRef.scale.set(1, 1, 1);
+          node.position.set(0, 0, 0);
+          node.rotation.set(0, 0, 0);
+          node.scale.set(1, 1, 1);
 
           if (typeof meshInstanceRef === 'function') {
-            meshInstanceRef(groupRef);
+            meshInstanceRef(node);
           } else if (meshInstanceRef && 'current' in meshInstanceRef) {
             (meshInstanceRef as React.MutableRefObject<Group | Mesh | Object3D | null>).current =
-              groupRef;
+              node;
           }
         } else if (typeof meshInstanceRef === 'function') {
           meshInstanceRef(null);
         } else if (meshInstanceRef && 'current' in meshInstanceRef) {
-          (meshInstanceRef as React.MutableRefObject<Group | Mesh | Object3D | null>).current = null;
+          (meshInstanceRef as React.MutableRefObject<Group | Mesh | Object3D | null>).current =
+            null;
         }
       },
       [meshInstanceRef, entityId],
@@ -86,6 +120,7 @@ const CustomModelMesh: React.FC<{
         castShadow={renderingContributions.castShadow}
         receiveShadow={renderingContributions.receiveShadow}
         visible={renderingContributions.visible}
+        frustumCulled={true}
       >
         <primitive object={modelScene} />
       </group>
@@ -163,6 +198,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
               castShadow={renderingContributions.castShadow}
               receiveShadow={renderingContributions.receiveShadow}
               visible={renderingContributions.visible}
+              frustumCulled={true}
             >
               <boxGeometry args={[1, 1, 1]} />
               <meshStandardMaterial color="#ff4444" wireframe />
@@ -232,6 +268,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
             castShadow={renderingContributions.castShadow}
             receiveShadow={renderingContributions.receiveShadow}
             visible={renderingContributions.visible}
+            frustumCulled={true}
           >
             {/* Simple geometry fallback while textures load */}
             {meshType === 'cube' && <boxGeometry args={[1, 1, 1]} />}

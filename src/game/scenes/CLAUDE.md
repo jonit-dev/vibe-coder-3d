@@ -2,6 +2,18 @@
 
 **Purpose**: Define game scenes as pure data with zero boilerplate.
 
+## Naming Convention
+
+**CRITICAL:** Scene files MUST be named in all lowercase:
+
+- ✅ `testphysics.tsx`
+- ✅ `examplemultifile.tsx`
+- ✅ `fml.tsx`
+- ❌ `TestPhysics.tsx` - WRONG
+- ❌ `ExampleMultiFile.tsx` - WRONG
+
+The scene loader expects lowercase filenames to match JSON references.
+
 ## Scene File Structure
 
 Scene files are **100% data definitions** with NO loading logic:

@@ -41,7 +41,7 @@ export class ModelErrorBoundary extends React.Component<
       // Return fallback mesh or default error mesh
       return (
         this.props.fallbackMesh || (
-          <mesh>
+          <mesh frustumCulled={true}>
             <boxGeometry args={[1, 1, 1]} />
             <meshStandardMaterial color="#ff4444" wireframe />
           </mesh>

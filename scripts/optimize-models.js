@@ -8,11 +8,15 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { prune, dedup, quantize, weld, simplify, textureCompress } from '@gltf-transform/functions';
 import draco3d from 'draco3dgltf';
+import { MeshoptSimplifier } from 'meshoptimizer';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, '..');
 const modelsDir = join(projectRoot, 'public/assets/models');
 const manifestPath = join(projectRoot, '.model-optimization-manifest.json');
+
+// Initialize meshoptimizer
+await MeshoptSimplifier.ready;
 
 // Initialize glTF I/O with extensions
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
@@ -97,9 +101,10 @@ async function optimizeModel(filePath, silent = false) {
         quantizeColor: 8, // bits for vertex colors
         quantizeGeneric: 12, // bits for other attributes
       }),
-      // Optional: simplify geometry (reduce poly count)
-      // Uncomment if you want to reduce polygon count
-      // simplify({ simplifier: MeshoptSimplifier, ratio: 0.9, error: 0.001 }),
+      // Simplify geometry - reduce polygon count by 75% for real-time performance
+      // For high-poly models, this is essential for smooth editing/zooming
+      // ratio: 0.25 = keep 25% of triangles, error: 0.01 = allow 1% visual deviation
+      simplify({ simplifier: MeshoptSimplifier, ratio: 0.25, error: 0.01 }),
     );
 
     // Write the optimized model back to the same location

@@ -34,7 +34,6 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
     // Use the provided material directly
     const materialDef = material;
 
-
     const isStandardShader = materialDef.shader === 'standard';
 
     if (isStandardShader) {
@@ -48,6 +47,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
           visible={renderingContributions.visible}
           onClick={onMeshClick}
           onDoubleClick={onMeshDoubleClick}
+          frustumCulled={true}
         >
           <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
           <meshStandardMaterial
@@ -83,6 +83,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
           visible={renderingContributions.visible}
           onClick={onMeshClick}
           onDoubleClick={onMeshDoubleClick}
+          frustumCulled={true}
         >
           <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
           <meshBasicMaterial
