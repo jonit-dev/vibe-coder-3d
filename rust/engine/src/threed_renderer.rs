@@ -339,11 +339,8 @@ impl ThreeDRenderer {
         let gm = Gm::new(mesh, material);
         self.meshes.push(gm);
 
-        log::debug!("Loaded mesh with transform: pos=({}, {}, {})",
-            transform.map(|t| position_to_vec3_opt(t.position.as_ref())).unwrap_or(glam::Vec3::ZERO).x,
-            transform.map(|t| position_to_vec3_opt(t.position.as_ref())).unwrap_or(glam::Vec3::ZERO).y,
-            transform.map(|t| position_to_vec3_opt(t.position.as_ref())).unwrap_or(glam::Vec3::ZERO).z
-        );
+        let mesh_pos = transform.map(|t| position_to_vec3_opt(t.position.as_ref())).unwrap_or(glam::Vec3::ZERO);
+        log::info!("Loaded mesh at position: ({}, {}, {})", mesh_pos.x, mesh_pos.y, mesh_pos.z);
 
         Ok(())
     }
@@ -450,16 +447,23 @@ impl ThreeDRenderer {
             let pos = position_to_vec3_opt(t.position.as_ref());
             let rotation = rotation_to_quat_opt(t.rotation.as_ref());
 
+            log::debug!("Camera transform - Raw position: {:?}, Raw rotation: {:?}", t.position, t.rotation);
+            log::debug!("Camera transform - Parsed position: {:?}, Parsed rotation: {:?}", pos, rotation);
+
             // Calculate forward direction from rotation
-            // Three.js camera default forward is -Z (camera looks down negative Z axis)
-            let forward = rotation * glam::Vec3::new(0.0, 0.0, -1.0);
+            // Three.js camera default forward is +Z (camera at negative Z looks toward positive Z)
+            // When camera is at (0,0,-5) with no rotation, it should look toward (0,0,0) and beyond
+            let forward = rotation * glam::Vec3::new(0.0, 0.0, 1.0);
             let target_pos = pos + forward;
+
+            log::debug!("Camera - Forward vector: {:?}, Target position: {:?}", forward, target_pos);
 
             (
                 vec3(pos.x, pos.y, pos.z),
                 vec3(target_pos.x, target_pos.y, target_pos.z),
             )
         } else {
+            log::debug!("Camera - Using default position/target (no transform)");
             (vec3(0.0, 2.0, 5.0), vec3(0.0, 0.0, 0.0))
         };
 
