@@ -21,7 +21,6 @@ export const LODPanel: React.FC<ILODPanelProps> = ({ isExpanded }) => {
   const autoSwitch = useLODStore((state) => state.autoSwitch);
   const setQuality = useLODStore((state) => state.setQuality);
   const setAutoSwitch = useLODStore((state) => state.setAutoSwitch);
-  const getQualityForDistance = useLODStore((state) => state.getQualityForDistance);
 
   const selectedId = useEditorStore((state) => state.selectedId);
 

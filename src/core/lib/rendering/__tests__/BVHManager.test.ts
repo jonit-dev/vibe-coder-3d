@@ -28,6 +28,7 @@ describe('BVHManager', () => {
 
     // Create test mesh
     const geometry = new BoxGeometry(1, 1, 1);
+    geometry.computeBoundingSphere(); // CRITICAL: Ensure bounding sphere is computed for frustum culling
     const material = new MeshStandardMaterial();
     mesh = new Mesh(geometry, material);
     mesh.position.set(0, 0, 0);

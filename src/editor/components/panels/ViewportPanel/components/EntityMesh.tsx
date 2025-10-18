@@ -2,7 +2,7 @@ import { ModelErrorBoundary } from '@/editor/components/shared/ModelErrorBoundar
 import { ModelLoadingMesh } from '@/editor/components/shared/ModelLoadingMesh';
 import { useGLTF } from '@react-three/drei';
 import { invalidate, ThreeEvent, useFrame, useThree } from '@react-three/fiber';
-import React, { Suspense, useCallback, useEffect, useMemo } from 'react';
+import React, { Suspense, useCallback, useEffect } from 'react';
 import type { Group, Mesh, Object3D } from 'three';
 import { Box3, OrthographicCamera, Vector3 } from 'three';
 import { SkeletonUtils } from 'three-stdlib';

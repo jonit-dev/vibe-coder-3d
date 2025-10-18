@@ -91,7 +91,7 @@ describe('useLODModel', () => {
       },
       {
         base: '/assets/models/Rock.glb',
-        expected: '/assets/models/Rock.high_fidelity.glb',
+        expected: '/assets/models/lod/Rock.high_fidelity.glb',
       },
     ];
 

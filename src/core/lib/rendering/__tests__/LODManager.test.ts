@@ -177,7 +177,7 @@ describe('LODManager', () => {
     it('should handle paths without glb directory', () => {
       const basePath = '/assets/models/Character.glb';
       const result = lodManager.getLODPath(basePath, 'high_fidelity');
-      expect(result).toBe('/assets/models/Character.high_fidelity.glb');
+      expect(result).toBe('/assets/models/lod/Character.high_fidelity.glb');
     });
 
     it('should handle paths with different extensions', () => {
