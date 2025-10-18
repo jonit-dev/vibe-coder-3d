@@ -35,6 +35,8 @@ pub struct RenderableEntity {
     pub mesh_id: String,
     pub material_id: Option<String>,
     pub texture_override: Option<String>, // Override texture for GLTF models
+    pub cast_shadows: bool,
+    pub receive_shadows: bool,
 }
 
 pub struct SceneRenderer {
@@ -399,6 +401,8 @@ impl SceneRenderer {
                                         mesh_id: mesh_name,
                                         material_id: final_material_id,
                                         texture_override,
+                                        cast_shadows: instance.cast_shadows,
+                                        receive_shadows: instance.receive_shadows,
                                     });
                                 }
                                 continue; // Skip the default primitive logic below
@@ -462,6 +466,8 @@ impl SceneRenderer {
                 mesh_id,
                 material_id,
                 texture_override: None, // Primitive meshes don't have texture overrides
+                cast_shadows: instance.cast_shadows,
+                receive_shadows: instance.receive_shadows,
             });
         }
 
@@ -579,6 +585,11 @@ impl SceneRenderer {
                     shadow_pass.set_bind_group(3, &self.shadow_uniform_bind_group, &[]);
 
                     for (i, entity) in self.entities.iter().enumerate() {
+                        // Only render shadow-casting entities
+                        if !entity.cast_shadows {
+                            continue;
+                        }
+
                         if let Some(gpu_mesh) = self.mesh_cache.get(entity.mesh_id.as_str()) {
                             shadow_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
                             shadow_pass.set_index_buffer(

@@ -74,6 +74,8 @@ mod tests {
             mesh_id: "cube".to_string(),
             material_id: None,
             texture_override: None,
+            cast_shadows: true,
+            receive_shadows: true,
         }];
 
         let (center, radius) = ShadowBinder::compute_scene_bounds(&entities);
@@ -91,6 +93,8 @@ mod tests {
                 mesh_id: "cube".to_string(),
                 material_id: None,
                 texture_override: None,
+                cast_shadows: true,
+                receive_shadows: true,
             },
             RenderableEntity {
                 entity_id: None,
@@ -98,6 +102,8 @@ mod tests {
                 mesh_id: "sphere".to_string(),
                 material_id: None,
                 texture_override: None,
+                cast_shadows: true,
+                receive_shadows: true,
             },
         ];
 

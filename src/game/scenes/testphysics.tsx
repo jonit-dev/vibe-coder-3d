@@ -49,6 +49,10 @@ export default defineScene({
         Light: {
           lightType: 'directional',
           intensity: 0.8,
+          castShadow: true,
+          directionX: -0.5,
+          directionY: -1,
+          directionZ: -0.5,
         },
       },
     },
