@@ -12,8 +12,7 @@ use vibe_physics::{populate_physics_world, PhysicsWorld};
 use winit::{
     dpi::PhysicalSize,
     event::*,
-    event_loop::EventLoop,
-    keyboard::{KeyCode, PhysicalKey},
+    event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
 
@@ -180,11 +179,11 @@ impl App {
         })
     }
 
-    pub fn run(mut self, event_loop: EventLoop<()>) -> anyhow::Result<()> {
+    pub fn run(mut self, event_loop: EventLoop<()>) {
         let mut last_fps_log = std::time::Instant::now();
 
-        event_loop
-            .run(move |event, control_flow| {
+        event_loop.run(move |event, _, control_flow| {
+            *control_flow = ControlFlow::Poll;
                 match event {
                     Event::WindowEvent {
                         ref event,
@@ -192,60 +191,60 @@ impl App {
                     } if window_id == self.window.id() => {
                         if !self.input(event) {
                             match event {
-                                WindowEvent::CloseRequested
-                                | WindowEvent::KeyboardInput {
-                                    event:
-                                        KeyEvent {
+                                WindowEvent::CloseRequested => {
+                                    log::info!("Exit requested");
+                                    *control_flow = ControlFlow::Exit;
+                                }
+                                WindowEvent::KeyboardInput {
+                                    input:
+                                        KeyboardInput {
                                             state: ElementState::Pressed,
-                                            physical_key: PhysicalKey::Code(KeyCode::Escape),
+                                            virtual_keycode: Some(VirtualKeyCode::Escape),
                                             ..
                                         },
                                     ..
                                 } => {
-                                    log::info!("Exit requested");
-                                    control_flow.exit();
+                                    log::info!("Exit requested (Escape key)");
+                                    *control_flow = ControlFlow::Exit;
                                 }
                                 WindowEvent::Resized(physical_size) => {
                                     self.resize(*physical_size);
-                                }
-                                WindowEvent::RedrawRequested => {
-                                    self.update();
-
-                                    match self.render() {
-                                        Ok(_) => {}
-                                        Err(wgpu::SurfaceError::Lost) => {
-                                            self.resize(self.renderer.size)
-                                        }
-                                        Err(wgpu::SurfaceError::OutOfMemory) => {
-                                            log::error!("Out of memory");
-                                            control_flow.exit();
-                                        }
-                                        Err(e) => log::warn!("Render error: {:?}", e),
-                                    }
-
-                                    // Log FPS every second
-                                    if last_fps_log.elapsed().as_secs_f32() >= 1.0 {
-                                        log::info!(
-                                            "FPS: {:.1}, Frame time: {:.2}ms",
-                                            self.timer.fps(),
-                                            self.timer.delta_seconds() * 1000.0
-                                        );
-                                        last_fps_log = std::time::Instant::now();
-                                    }
                                 }
                                 _ => {}
                             }
                         }
                     }
-                    Event::AboutToWait => {
+                    Event::RedrawRequested(_) => {
+                        self.update();
+
+                        match self.render() {
+                            Ok(_) => {}
+                            Err(wgpu::SurfaceError::Lost) => {
+                                self.resize(self.renderer.size)
+                            }
+                            Err(wgpu::SurfaceError::OutOfMemory) => {
+                                log::error!("Out of memory");
+                                *control_flow = ControlFlow::Exit;
+                            }
+                            Err(e) => log::warn!("Render error: {:?}", e),
+                        }
+
+                        // Log FPS every second
+                        if last_fps_log.elapsed().as_secs_f32() >= 1.0 {
+                            log::info!(
+                                "FPS: {:.1}, Frame time: {:.2}ms",
+                                self.timer.fps(),
+                                self.timer.delta_seconds() * 1000.0
+                            );
+                            last_fps_log = std::time::Instant::now();
+                        }
+                    }
+                    Event::MainEventsCleared => {
                         self.window.request_redraw();
                     }
                     _ => {}
                 }
             })
-            .context("Event loop error")?;
-
-        Ok(())
     }
 
     fn resize(&mut self, new_size: PhysicalSize<u32>) {

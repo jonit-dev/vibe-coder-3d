@@ -22,7 +22,7 @@ impl Renderer {
 
         log::info!("Creating surface...");
         let surface = instance
-            .create_surface(window)
+            .create_surface(window.clone())
             .context("Failed to create surface")?;
 
         log::info!("Requesting adapter...");

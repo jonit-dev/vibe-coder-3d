@@ -29,7 +29,9 @@ parry3d = "0.13"
 
 # Core rendering
 wgpu = "0.19"
-winit = "0.29"
+winit = "0.28"  # Must match three-d's winit version
+three-d = "0.17"
+three-d-asset = "0.7"
 
 # Math
 glam = { version = "0.27", features = ["serde"] }
@@ -64,8 +66,9 @@ wgpu-profiler = "0.16"
 glyphon = "0.5"
 
 [features]
-default = ["gltf-support"]
+default = ["gltf-support", "threed-only"]
 gltf-support = ["gltf"]
+threed-only = []  # Disable old wgpu renderer to avoid winit compatibility issues
 
 [[bin]]
 name = "vibe-engine"
