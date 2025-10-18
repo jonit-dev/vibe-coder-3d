@@ -1098,7 +1098,7 @@ fn extract_renderables_flat(scene: &SceneData) -> Vec<vibe_scene_graph::Renderab
             mesh_id: mesh_renderer.meshId.clone(),
             material_id: mesh_renderer.materialId.clone(),
             materials: mesh_renderer.materials.clone(),
-            material_override: Some(mesh_renderer.material_override),
+            material_override: mesh_renderer.material.clone(),
             model_path: mesh_renderer.modelPath.clone(),
             cast_shadows: mesh_renderer.castShadows,
             receive_shadows: mesh_renderer.receiveShadows,
