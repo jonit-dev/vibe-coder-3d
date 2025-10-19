@@ -365,7 +365,6 @@ impl ThreeDRenderer {
         // Generate shadow maps for lights that cast shadows
         self.generate_shadow_maps();
 
-        let lights = self.collect_lights();
         let settings = self.prepare_render_settings();
         let mut tone_restore: Option<(ToneMapping, ColorMapping)> = None;
 
@@ -379,29 +378,42 @@ impl ThreeDRenderer {
         if let Some(post_settings) = settings.post_settings.clone() {
             self.ensure_post_process_targets();
 
-            let render_target = {
-                let color_target = self
-                    .hdr_color_texture
-                    .as_mut()
-                    .expect("HDR color texture not initialized")
-                    .as_color_target(None);
-                let depth_target = self
-                    .hdr_depth_texture
-                    .as_mut()
-                    .expect("HDR depth texture not initialized")
-                    .as_depth_target();
-                RenderTarget::new(color_target, depth_target)
-            };
+            // Create raw pointer for split borrowing before any other borrows
+            let self_ptr = self as *const Self;
 
-            if let Some(clear_state) = settings.clear_state {
-                render_target.clear(clear_state);
-            }
+            // Render to HDR target in a scope so it drops before we access hdr_color_texture again
+            {
+                let render_target = {
+                    let color_target = self
+                        .hdr_color_texture
+                        .as_mut()
+                        .expect("HDR color texture not initialized")
+                        .as_color_target(None);
+                    let depth_target = self
+                        .hdr_depth_texture
+                        .as_mut()
+                        .expect("HDR depth texture not initialized")
+                        .as_depth_target();
+                    RenderTarget::new(color_target, depth_target)
+                };
 
-            if settings.render_skybox {
-                self.skybox_renderer.render(&render_target, &self.camera);
-            }
+                if let Some(clear_state) = settings.clear_state {
+                    render_target.clear(clear_state);
+                }
 
-            render_target.render(&self.camera, &self.meshes, &lights);
+                if settings.render_skybox {
+                    self.skybox_renderer.render(&render_target, &self.camera);
+                }
+
+                // Use raw pointer to split borrows safely
+                // Safety: We're borrowing different fields - lights (immutable) vs hdr textures (mutable via render_target)
+                // These fields don't overlap, so this is safe
+                let lights;
+                unsafe {
+                    lights = (*self_ptr).collect_lights();
+                }
+                render_target.render(&self.camera, &self.meshes, &lights);
+            } // render_target dropped here
 
             let color_texture =
                 three_d::ColorTexture::Single(self.hdr_color_texture.as_ref().unwrap());
@@ -421,6 +433,8 @@ impl ThreeDRenderer {
                 self.skybox_renderer.render(&screen, &self.camera);
             }
 
+            // Collect lights just before rendering to avoid borrow checker issues
+            let lights = self.collect_lights();
             screen.render(&self.camera, &self.meshes, &lights);
         }
 
@@ -705,6 +719,17 @@ impl ThreeDRenderer {
         }
 
         lights
+    }
+
+    /// Helper method to render with lights, splitting borrows properly
+    fn render_scene_with_lights(
+        &self,
+        render_target: &RenderTarget,
+        camera: &Camera,
+        meshes: &[Gm<Mesh, PhysicalMaterial>],
+    ) {
+        let lights = self.collect_lights();
+        render_target.render(camera, meshes, &lights);
     }
 
     fn generate_shadow_maps(&mut self) {

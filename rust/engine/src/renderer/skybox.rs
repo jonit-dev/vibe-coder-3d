@@ -5,8 +5,9 @@ use std::sync::Arc;
 
 use anyhow::{Context as AnyhowContext, Result};
 use three_d::{
-    Camera, ClearState, ColorMapping, ColorMaterial, Context, CpuMesh, CpuTexture, Effect, Light,
-    Mat3, Mat4, Mesh, Program, RenderStates, RenderTarget, Skybox, Srgba, ToneMapping, Vec3,
+    Camera, ClearState, ColorMapping, ColorMaterial, Context, CpuMesh, CpuTexture, Deg, Effect,
+    Light, Mat3, Mat4, Mesh, Program, RenderStates, RenderTarget, Skybox, SquareMatrix, Srgba,
+    ToneMapping, Vec3,
 };
 
 use super::camera_loader::CameraConfig;
@@ -110,10 +111,9 @@ impl SkyboxRenderer {
         let texture = Arc::clone(skybox.texture());
 
         let rotation = config.skybox_rotation.map_or(Mat3::identity(), |rot| {
-            let x = rot.x.to_radians();
-            let y = rot.y.to_radians();
-            let z = rot.z.to_radians();
-            Mat3::from_angle_z(z) * Mat3::from_angle_y(y) * Mat3::from_angle_x(x)
+            Mat3::from_angle_z(Deg(rot.z))
+                * Mat3::from_angle_y(Deg(rot.y))
+                * Mat3::from_angle_x(Deg(rot.x))
         });
 
         let scale = config
@@ -170,10 +170,10 @@ impl SkyboxRenderer {
         let transform = config
             .skybox_scale
             .map(|s| Mat4::from_nonuniform_scale(s.x, s.y, s.z))
-            .unwrap_or(Mat4::from_uniform_scale(500.0));
+            .unwrap_or(Mat4::from_scale(500.0));
 
-        let mut gm = mesh;
-        gm.set_transformation(transform);
+        let mut fallback_mesh = mesh;
+        fallback_mesh.set_transformation(transform);
 
         self.fallback_color = ColorMaterial {
             color,
@@ -184,7 +184,7 @@ impl SkyboxRenderer {
             },
             ..Default::default()
         };
-        self.fallback = Some(gm);
+        self.fallback = Some(fallback_mesh);
     }
 
     /// Render the skybox.
@@ -192,7 +192,7 @@ impl SkyboxRenderer {
     pub fn render(&self, render_target: &RenderTarget, camera: &Camera) {
         if let Some(instance) = &self.textured {
             render_target.clear_partially(
-                camera.viewport(),
+                camera.viewport().into(),
                 ClearState::depth(1.0), // ensure skybox renders behind scene
             );
 
@@ -200,7 +200,7 @@ impl SkyboxRenderer {
             render_target.render_with_effect(&effect, camera, [&instance.skybox], &[], None, None);
         } else if let Some(ref mesh) = self.fallback {
             render_target
-                .clear_partially(camera.viewport(), ClearState::depth(1.0))
+                .clear_partially(camera.viewport().into(), ClearState::depth(1.0))
                 .render_with_material(&self.fallback_color, camera, [mesh], &[]);
         }
     }
