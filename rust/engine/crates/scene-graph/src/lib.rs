@@ -206,6 +206,11 @@ impl SceneGraph {
         &self.entity_ids
     }
 
+    /// Get number of entities in the scene graph
+    pub fn entity_count(&self) -> usize {
+        self.entity_ids.len()
+    }
+
     /// Get parent of an entity
     pub fn get_parent(&self, id: EntityId) -> Option<EntityId> {
         let idx = *self.id_to_index.get(&id)?;

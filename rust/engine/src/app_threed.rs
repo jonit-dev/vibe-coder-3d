@@ -26,12 +26,12 @@ pub struct AppThreeD {
 impl AppThreeD {
     /// Create with test scene (primitives)
     pub fn new(width: u32, height: u32, event_loop: &EventLoop<()>) -> anyhow::Result<Self> {
-        // Create window
-        log::info!("Creating window for three-d POC...");
+        // Create fullscreen window
+        log::info!("Creating fullscreen window for three-d POC...");
         let window = Arc::new(
             WindowBuilder::new()
                 .with_title("Vibe Coder Engine - three-d POC")
-                .with_inner_size(PhysicalSize::new(width, height))
+                .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
                 .build(event_loop)
                 .context("Failed to create window")?,
         );
@@ -60,15 +60,15 @@ impl AppThreeD {
         height: u32,
         event_loop: &EventLoop<()>,
     ) -> anyhow::Result<Self> {
-        // Create window
-        log::info!("Creating window for three-d scene renderer...");
+        // Create fullscreen window
+        log::info!("Creating fullscreen window for three-d scene renderer...");
         let window = Arc::new(
             WindowBuilder::new()
                 .with_title(format!(
                     "Vibe Coder Engine - three-d - {}",
                     scene_path.display()
                 ))
-                .with_inner_size(PhysicalSize::new(width, height))
+                .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)))
                 .build(event_loop)
                 .context("Failed to create window")?,
         );
@@ -219,6 +219,7 @@ impl AppThreeD {
     }
 
     fn render(&mut self) -> anyhow::Result<()> {
-        self.renderer.render()
+        let delta_time = self.timer.delta_seconds();
+        self.renderer.render(delta_time)
     }
 }

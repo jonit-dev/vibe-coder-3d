@@ -11,11 +11,12 @@ use vibe_ecs_bridge::decoders::{
 use vibe_ecs_bridge::ComponentRegistry;
 use vibe_scene::Scene as SceneData;
 use vibe_scene::{Entity, EntityId};
+use vibe_scene_graph::SceneGraph;
 
 // Import renderer modules
 use crate::renderer::{
-    create_camera, load_camera, load_light, load_mesh_renderer, EnhancedDirectionalLight,
-    EnhancedSpotLight, LoadedLight, MaterialManager,
+    create_camera, load_camera, load_light, load_mesh_renderer, CameraConfig,
+    EnhancedDirectionalLight, EnhancedSpotLight, LoadedLight, MaterialManager,
 };
 
 /// ThreeDRenderer - Rendering backend using three-d library for PBR rendering
@@ -29,6 +30,8 @@ pub struct ThreeDRenderer {
     _windowed_context: WindowedContext,
     context: Context,
     camera: Camera,
+    camera_config: Option<CameraConfig>,
+    scene_graph: Option<SceneGraph>,
     meshes: Vec<Gm<Mesh, PhysicalMaterial>>,
     mesh_entity_ids: Vec<EntityId>, // Parallel array: entity ID for each mesh
     mesh_scales: Vec<GlamVec3>,     // Parallel array: final local scale per mesh
@@ -42,6 +45,10 @@ pub struct ThreeDRenderer {
     mesh_cache: HashMap<String, CpuMesh>,
     material_manager: MaterialManager,
     component_registry: ComponentRegistry,
+
+    // Camera follow smoothing
+    last_camera_position: Vec3,
+    last_camera_target: Vec3,
 }
 
 impl ThreeDRenderer {
@@ -49,11 +56,19 @@ impl ThreeDRenderer {
     pub fn new(window: Arc<WinitWindow>) -> Result<Self> {
         log::info!("Initializing three-d renderer...");
 
-        // Create three-d WindowedContext from winit window
+        // Create three-d WindowedContext from winit window with MSAA antialiasing
         let size = window.inner_size();
-        let windowed_context =
-            WindowedContext::from_winit_window(window.as_ref(), Default::default())
-                .with_context(|| "Failed to create three-d context from window")?;
+        let windowed_context = WindowedContext::from_winit_window(
+            window.as_ref(),
+            SurfaceSettings {
+                // Enable 4x MSAA for smooth edges on geometry
+                multisamples: 4,
+                ..Default::default()
+            },
+        )
+        .with_context(|| "Failed to create three-d context from window")?;
+
+        log::info!("  MSAA: 4x (antialiasing enabled)");
 
         // WindowedContext implements Deref<Target = Context>, so we can clone the context
         let context: Context = windowed_context.clone();
@@ -76,10 +91,15 @@ impl ThreeDRenderer {
         // Create component registry for decoding ECS components
         let component_registry = vibe_ecs_bridge::decoders::create_default_registry();
 
+        let initial_pos = vec3(0.0, 2.0, 5.0);
+        let initial_target = vec3(0.0, 0.0, 0.0);
+
         Ok(Self {
             _windowed_context: windowed_context,
             context,
             camera,
+            camera_config: None,
+            scene_graph: None,
             meshes: Vec::new(),
             mesh_entity_ids: Vec::new(),
             mesh_scales: Vec::new(),
@@ -91,6 +111,8 @@ impl ThreeDRenderer {
             mesh_cache: HashMap::new(),
             material_manager: MaterialManager::new(),
             component_registry,
+            last_camera_position: initial_pos,
+            last_camera_target: initial_target,
         })
     }
 
@@ -144,9 +166,77 @@ impl ThreeDRenderer {
         Ok(())
     }
 
+    /// Update camera based on follow system and other camera features
+    pub fn update_camera_internal(&mut self, delta_time: f32) {
+        // Clone config to avoid borrow checker issues
+        let config = if let Some(ref cfg) = self.camera_config {
+            cfg.clone()
+        } else {
+            return; // No camera config
+        };
+
+        // Check if camera follow is enabled
+        if let Some(follow_target_id) = config.follow_target {
+            self.update_camera_follow(&config, follow_target_id, delta_time);
+        }
+    }
+
+    /// Update camera to follow a target entity
+    fn update_camera_follow(&mut self, config: &CameraConfig, target_id: u32, delta_time: f32) {
+        // Get target entity's world transform from scene graph
+        let target_transform = if let Some(ref mut graph) = self.scene_graph {
+            let entity_id = EntityId::new(target_id as u64);
+            graph.get_world_transform(entity_id)
+        } else {
+            return; // No scene graph, can't follow
+        };
+
+        let target_matrix = if let Some(mat) = target_transform {
+            mat
+        } else {
+            log::warn!("Camera follow target entity {} not found in scene", target_id);
+            return;
+        };
+
+        // Extract position from target's world matrix
+        let target_pos = target_matrix.w_axis.truncate();
+        let target_vec3 = vec3(target_pos.x, target_pos.y, target_pos.z);
+
+        // Apply follow offset
+        let offset = config.follow_offset.unwrap_or(vec3(0.0, 2.0, -5.0));
+        let desired_position = target_vec3 + offset;
+
+        // Apply smoothing if enabled
+        let new_position = if config.enable_smoothing {
+            let smoothing_factor = (config.smoothing_speed * delta_time).min(1.0);
+            self.last_camera_position * (1.0 - smoothing_factor) + desired_position * smoothing_factor
+        } else {
+            desired_position
+        };
+
+        // Update camera look target (smoothed towards entity position)
+        let desired_target = target_vec3;
+        let new_target = if config.enable_smoothing {
+            let rotation_factor = (config.rotation_smoothing * delta_time).min(1.0);
+            self.last_camera_target * (1.0 - rotation_factor) + desired_target * rotation_factor
+        } else {
+            desired_target
+        };
+
+        // Update camera view
+        self.camera.set_view(new_position, new_target, vec3(0.0, 1.0, 0.0));
+
+        // Store for next frame smoothing
+        self.last_camera_position = new_position;
+        self.last_camera_target = new_target;
+    }
+
     /// Render a frame
-    pub fn render(&mut self) -> Result<()> {
+    pub fn render(&mut self, delta_time: f32) -> Result<()> {
         self.log_first_frame();
+
+        // Update camera (follow system, etc.)
+        self.update_camera_internal(delta_time);
 
         // Generate shadow maps for lights that cast shadows
         self.generate_shadow_maps();
@@ -155,6 +245,7 @@ impl ThreeDRenderer {
         let lights = self.collect_lights();
 
         // Render to default framebuffer (screen)
+        // Note: MSAA antialiasing is enabled via WindowedContext creation (see new())
         RenderTarget::screen(&self.context, self.window_size.0, self.window_size.1)
             .clear(ClearState::color_and_depth(0.2, 0.3, 0.4, 1.0, 1.0))
             .render(&self.camera, &self.meshes, &lights);
@@ -226,6 +317,14 @@ impl ThreeDRenderer {
     pub async fn load_scene(&mut self, scene: &SceneData) -> Result<()> {
         self.log_scene_load_start(scene);
         self.clear_scene();
+
+        // Build scene graph for transform hierarchy and camera follow
+        log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        log::info!("SCENE GRAPH");
+        log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        let scene_graph = SceneGraph::build(scene)?;
+        log::info!("Scene graph built with {} entities", scene_graph.entity_count());
+        self.scene_graph = Some(scene_graph);
 
         // Load materials
         self.load_materials(scene);
@@ -371,6 +470,8 @@ impl ThreeDRenderer {
     ) -> Result<()> {
         if let Some(config) = load_camera(camera_component, transform)? {
             self.camera = create_camera(&config, self.window_size);
+            // Store camera config for follow system and other features
+            self.camera_config = Some(config);
         }
         Ok(())
     }

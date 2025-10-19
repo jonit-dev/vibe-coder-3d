@@ -268,7 +268,7 @@ pub struct Light {
     pub shadowMapSize: u32,
     #[serde(default = "default_shadow_bias")]
     pub shadowBias: f32,
-    #[serde(default = "default_one")]
+    #[serde(default = "default_shadow_radius")]
     pub shadowRadius: f32,
 }
 
@@ -294,10 +294,13 @@ fn default_penumbra() -> f32 {
     0.1
 }
 fn default_shadow_map_size() -> u32 {
-    1024
+    2048  // Higher resolution for smoother shadows (was 1024)
 }
 fn default_shadow_bias() -> f32 {
-    -0.0001
+    -0.0001  // Prevents shadow acne
+}
+fn default_shadow_radius() -> f32 {
+    2.0  // PCF filtering radius for soft shadow edges (was 1.0)
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

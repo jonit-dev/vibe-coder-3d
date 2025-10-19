@@ -88,7 +88,7 @@ impl MaterialManager {
             log::debug!("Loading albedo texture: {}", albedo_path);
             match self.texture_cache.load_texture(albedo_path).await {
                 Ok(texture) => {
-                    cpu_material.albedo_texture = Some((*texture).clone());
+                    cpu_material.albedo_texture = Some(texture.as_ref().clone());
                     log::debug!("Albedo texture loaded successfully");
                 }
                 Err(e) => log::warn!("Failed to load albedo texture '{}': {}", albedo_path, e),
@@ -100,7 +100,7 @@ impl MaterialManager {
             log::debug!("Loading normal texture: {}", normal_path);
             match self.texture_cache.load_texture(normal_path).await {
                 Ok(texture) => {
-                    cpu_material.normal_texture = Some((*texture).clone());
+                    cpu_material.normal_texture = Some(texture.as_ref().clone());
                     // Apply normal scale (defaults to 1.0 in material)
                     // Note: three-d may not have a direct normal_scale field
                     log::debug!("Normal texture loaded (scale: {})", material.normalScale);
@@ -114,7 +114,7 @@ impl MaterialManager {
             log::debug!("Loading metallic texture: {}", metallic_path);
             match self.texture_cache.load_texture(metallic_path).await {
                 Ok(texture) => {
-                    cpu_material.metallic_roughness_texture = Some((*texture).clone());
+                    cpu_material.metallic_roughness_texture = Some(texture.as_ref().clone());
                     log::debug!("Metallic texture loaded successfully");
                 }
                 Err(e) => log::warn!("Failed to load metallic texture '{}': {}", metallic_path, e),
@@ -127,7 +127,7 @@ impl MaterialManager {
                 log::debug!("Loading roughness texture: {}", roughness_path);
                 match self.texture_cache.load_texture(roughness_path).await {
                     Ok(texture) => {
-                        cpu_material.metallic_roughness_texture = Some((*texture).clone());
+                        cpu_material.metallic_roughness_texture = Some(texture.as_ref().clone());
                         log::debug!("Roughness texture loaded successfully");
                     }
                     Err(e) => log::warn!("Failed to load roughness texture '{}': {}", roughness_path, e),
@@ -140,7 +140,7 @@ impl MaterialManager {
             log::debug!("Loading emissive texture: {}", emissive_path);
             match self.texture_cache.load_texture(emissive_path).await {
                 Ok(texture) => {
-                    cpu_material.emissive_texture = Some((*texture).clone());
+                    cpu_material.emissive_texture = Some(texture.as_ref().clone());
                     log::debug!("Emissive texture loaded successfully");
                 }
                 Err(e) => log::warn!("Failed to load emissive texture '{}': {}", emissive_path, e),
@@ -152,7 +152,7 @@ impl MaterialManager {
             log::debug!("Loading occlusion texture: {}", occlusion_path);
             match self.texture_cache.load_texture(occlusion_path).await {
                 Ok(texture) => {
-                    cpu_material.occlusion_texture = Some((*texture).clone());
+                    cpu_material.occlusion_texture = Some(texture.as_ref().clone());
                     // Apply occlusion strength (defaults to 1.0 in material)
                     // Note: three-d may not have a direct occlusion_strength field
                     log::debug!("Occlusion texture loaded (strength: {})", material.occlusionStrength);
@@ -161,8 +161,7 @@ impl MaterialManager {
             }
         }
 
-        // TODO: Apply UV transforms
-        // Note: three-d's CpuMaterial doesn't have a uv_transform field in the public API
+        // NOTE: UV transforms not supported by three-d's CpuMaterial public API
         // UV transforms would need to be handled at the shader level or via custom material implementation
         let has_uv_transforms = material.textureOffsetX != 0.0
             || material.textureOffsetY != 0.0
