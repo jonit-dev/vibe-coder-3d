@@ -1,0 +1,280 @@
+{
+  "metadata": {
+    "name": "testskybox",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Visual test scene for skybox parameters: texture, intensity, blur, scale, rotation"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "cam-skybox-001"
+        },
+        "Transform": {
+          "position": [0, 2, -5],
+          "rotation": [10, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 70,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "skybox",
+          "skyboxTexture": "/assets/skybox/default-skybox.hdr",
+          "backgroundColor": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "skyboxScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "skyboxRotation": {
+            "x": 0,
+            "y": 45,
+            "z": 0
+          },
+          "skyboxRepeat": {
+            "u": 1,
+            "v": 1
+          },
+          "skyboxOffset": {
+            "u": 0,
+            "v": 0
+          },
+          "skyboxIntensity": 1.5,
+          "skyboxBlur": 0.1
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light (Sun)",
+      "components": {
+        "PersistentId": {
+          "id": "light-directional-001"
+        },
+        "Transform": {
+          "position": [10, 15, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 0.95,
+            "b": 0.85
+          },
+          "intensity": 1.2,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.7,
+          "directionY": -1,
+          "directionZ": -0.3,
+          "shadowMapSize": 2048,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1.5
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light (Sky)",
+      "components": {
+        "PersistentId": {
+          "id": "light-ambient-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.5,
+            "g": 0.6,
+            "b": 0.7
+          },
+          "intensity": 0.4,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-ground-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [20, 20, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "grass",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Reflective Sphere",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-reflective"
+        },
+        "Transform": {
+          "position": [0, 1.5, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1.5, 1.5, 1.5]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "chrome",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Matte Cube Left",
+      "components": {
+        "PersistentId": {
+          "id": "cube-matte-left"
+        },
+        "Transform": {
+          "position": [-3, 0.5, 0],
+          "rotation": [0, 30, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "matte-white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Matte Cube Right",
+      "components": {
+        "PersistentId": {
+          "id": "cube-matte-right"
+        },
+        "Transform": {
+          "position": [3, 0.5, 0],
+          "rotation": [0, -30, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "matte-white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Semi-Reflective Sphere Back",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-semi-reflective"
+        },
+        "Transform": {
+          "position": [0, 1, 4],
+          "rotation": [0, 0, 0],
+          "scale": [1.2, 1.2, 1.2]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "semi-metal",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "grass",
+      "name": "Grass Ground",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#3a7030",
+      "metalness": 0,
+      "roughness": 0.95,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "chrome",
+      "name": "Chrome Metal",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ffffff",
+      "metalness": 1,
+      "roughness": 0.05,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "semi-metal",
+      "name": "Semi-Metallic",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ccaa88",
+      "metalness": 0.6,
+      "roughness": 0.3,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "matte-white",
+      "name": "Matte White",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#eeeeee",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}

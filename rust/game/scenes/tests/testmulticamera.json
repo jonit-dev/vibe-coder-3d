@@ -1,0 +1,342 @@
+{
+  "metadata": {
+    "name": "testmulticamera",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Visual test scene for multi-camera split-screen rendering with viewportRect"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Left Camera (Main)",
+      "components": {
+        "PersistentId": {
+          "id": "cam-left-001"
+        },
+        "Transform": {
+          "position": [-4, 2, -6],
+          "rotation": [10, 30, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.1,
+            "g": 0.15,
+            "b": 0.2,
+            "a": 1
+          },
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 0.5,
+            "height": 1
+          },
+          "depth": 0
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Right Camera",
+      "components": {
+        "PersistentId": {
+          "id": "cam-right-001"
+        },
+        "Transform": {
+          "position": [4, 2, -6],
+          "rotation": [10, -30, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": false,
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.2,
+            "g": 0.1,
+            "b": 0.15,
+            "a": 1
+          },
+          "viewportRect": {
+            "x": 0.5,
+            "y": 0,
+            "width": 0.5,
+            "height": 1
+          },
+          "depth": 1
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-directional-001"
+        },
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-ambient-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.3,
+            "g": 0.3,
+            "b": 0.35
+          },
+          "intensity": 0.5,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-ground-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [15, 15, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Center Sphere",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-center"
+        },
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Left Cube",
+      "components": {
+        "PersistentId": {
+          "id": "cube-left"
+        },
+        "Transform": {
+          "position": [-3, 0.5, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Right Cube",
+      "components": {
+        "PersistentId": {
+          "id": "cube-right"
+        },
+        "Transform": {
+          "position": [3, 0.5, 0],
+          "rotation": [0, -45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "blue",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Back Tall Cube",
+      "components": {
+        "PersistentId": {
+          "id": "cube-tall"
+        },
+        "Transform": {
+          "position": [0, 1.5, 3],
+          "rotation": [0, 20, 0],
+          "scale": [1, 3, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "green",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 15,
+      "name": "Front Small Sphere",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-small"
+        },
+        "Transform": {
+          "position": [0, 0.5, -2],
+          "rotation": [0, 0, 0],
+          "scale": [0.5, 0.5, 0.5]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "yellow",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#445566",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "white",
+      "name": "White Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#eeeeee",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "red",
+      "name": "Red Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff3333",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "blue",
+      "name": "Blue Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#3333ff",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "green",
+      "name": "Green Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#33ff33",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "yellow",
+      "name": "Yellow Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ffff33",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}

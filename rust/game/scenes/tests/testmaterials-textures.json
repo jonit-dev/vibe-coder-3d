@@ -1,0 +1,376 @@
+{
+  "metadata": {
+    "name": "testmaterials-textures",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Visual test scene for textured materials: albedo, normal, metallic/roughness, emissive, occlusion"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "cam-textures-001"
+        },
+        "Transform": {
+          "position": [0, 2, -6],
+          "rotation": [15, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.1,
+            "g": 0.1,
+            "b": 0.12,
+            "a": 1
+          },
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-directional-001"
+        },
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-ambient-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.3,
+            "g": 0.3,
+            "b": 0.35
+          },
+          "intensity": 0.4,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Cube - Albedo Only",
+      "components": {
+        "PersistentId": {
+          "id": "cube-albedo"
+        },
+        "Transform": {
+          "position": [-3, 0.5, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "albedo-only",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Cube - Albedo + Normal",
+      "components": {
+        "PersistentId": {
+          "id": "cube-albedo-normal"
+        },
+        "Transform": {
+          "position": [-1, 0.5, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "albedo-normal",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Cube - Full PBR",
+      "components": {
+        "PersistentId": {
+          "id": "cube-pbr"
+        },
+        "Transform": {
+          "position": [1, 0.5, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "full-pbr",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Sphere - Emissive Texture",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-emissive"
+        },
+        "Transform": {
+          "position": [3, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "emissive-texture",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Plane - Tiled Texture",
+      "components": {
+        "PersistentId": {
+          "id": "plane-tiled"
+        },
+        "Transform": {
+          "position": [0, 0.01, 2],
+          "rotation": [-90, 0, 0],
+          "scale": [3, 3, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "tiled-grass",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 15,
+      "name": "Cube - Missing Texture (Fallback)",
+      "components": {
+        "PersistentId": {
+          "id": "cube-missing"
+        },
+        "Transform": {
+          "position": [0, 0.5, -2],
+          "rotation": [0, 30, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "missing-texture",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 20,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-ground-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [10, 10, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "albedo-only",
+      "name": "Albedo Texture Only",
+      "shader": "standard",
+      "materialType": "texture",
+      "color": "#ffffff",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "albedoTexture": "/assets/textures/crate-texture.png",
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "albedo-normal",
+      "name": "Albedo + Normal Map",
+      "shader": "standard",
+      "materialType": "texture",
+      "color": "#ffffff",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "albedoTexture": "/assets/textures/crate-texture.png",
+      "normalTexture": "/assets/textures/crate-normal.png",
+      "normalScale": 1.5,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "full-pbr",
+      "name": "Full PBR Textures",
+      "shader": "standard",
+      "materialType": "texture",
+      "color": "#ffffff",
+      "metalness": 0.5,
+      "roughness": 0.5,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "albedoTexture": "/assets/textures/crate-texture.png",
+      "normalTexture": "/assets/textures/crate-normal.png",
+      "metallicTexture": "/assets/textures/crate-metallic.png",
+      "roughnessTexture": "/assets/textures/crate-roughness.png",
+      "occlusionTexture": "/assets/textures/crate-ao.png",
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "emissive-texture",
+      "name": "Emissive Texture",
+      "shader": "standard",
+      "materialType": "texture",
+      "color": "#888888",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#ffffff",
+      "emissiveIntensity": 2,
+      "albedoTexture": "/assets/textures/crate-texture.png",
+      "emissiveTexture": "/assets/textures/crate-emissive.png",
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "tiled-grass",
+      "name": "Tiled Grass Texture",
+      "shader": "standard",
+      "materialType": "texture",
+      "color": "#ffffff",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "albedoTexture": "/assets/textures/grass.png",
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 4,
+      "textureRepeatY": 4
+    },
+    {
+      "id": "missing-texture",
+      "name": "Missing Texture (Fallback Test)",
+      "shader": "standard",
+      "materialType": "texture",
+      "color": "#ff00ff",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "albedoTexture": "/assets/textures/does-not-exist.png",
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#222222",
+      "metalness": 0,
+      "roughness": 1,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}

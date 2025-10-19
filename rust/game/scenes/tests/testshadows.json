@@ -1,0 +1,302 @@
+{
+  "metadata": {
+    "name": "testshadows",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Visual test scene for shadow rendering and parameters"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "cam-shadows-001"
+        },
+        "Transform": {
+          "position": [0, 5, -10],
+          "rotation": [20, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.1,
+            "g": 0.15,
+            "b": 0.2,
+            "a": 1
+          },
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light with Shadows",
+      "components": {
+        "PersistentId": {
+          "id": "light-directional-shadow"
+        },
+        "Transform": {
+          "position": [10, 15, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 0.95,
+            "b": 0.9
+          },
+          "intensity": 1,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.7,
+          "directionY": -1,
+          "directionZ": -0.3,
+          "shadowMapSize": 2048,
+          "shadowBias": -0.0001,
+          "shadowRadius": 2
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-ambient-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.4,
+            "g": 0.4,
+            "b": 0.5
+          },
+          "intensity": 0.4,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Spot Light with Sharp Shadows",
+      "components": {
+        "PersistentId": {
+          "id": "light-spot-sharp"
+        },
+        "Transform": {
+          "position": [-5, 8, 0],
+          "rotation": [-60, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "spot",
+          "color": {
+            "r": 1,
+            "g": 0.8,
+            "b": 0.6
+          },
+          "intensity": 2,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": 0.5,
+          "directionY": -0.866,
+          "directionZ": 0,
+          "range": 20,
+          "decay": 2,
+          "angle": 0.524,
+          "penumbra": 0.05,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-ground-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [20, 20, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Tall Box (Casts Shadow)",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-box-tall"
+        },
+        "Transform": {
+          "position": [0, 1.5, 0],
+          "rotation": [0, 30, 0],
+          "scale": [1, 3, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Sphere (Casts Shadow)",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-sphere-shadow"
+        },
+        "Transform": {
+          "position": [3, 1, 2],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Cube (No Shadow)",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-cube-noshadow"
+        },
+        "Transform": {
+          "position": [-3, 0.5, 2],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Floating Sphere",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-sphere-floating"
+        },
+        "Transform": {
+          "position": [-2, 2.5, -2],
+          "rotation": [0, 0, 0],
+          "scale": [0.8, 0.8, 0.8]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": false
+        }
+      }
+    },
+    {
+      "id": 15,
+      "name": "Small Cube Under Spot",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-cube-spot"
+        },
+        "Transform": {
+          "position": [-5, 0.5, 0],
+          "rotation": [0, 20, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "white",
+      "name": "White Diffuse",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#dddddd",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "red",
+      "name": "Red Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff4444",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#556677",
+      "metalness": 0,
+      "roughness": 0.95,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}

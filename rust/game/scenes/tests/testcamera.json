@@ -1,0 +1,360 @@
+{
+  "metadata": {
+    "name": "testcamera",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Visual test scene for camera parameters: projection types, FOV, near/far, follow target"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Perspective Camera (Main)",
+      "components": {
+        "PersistentId": {
+          "id": "cam-perspective-001"
+        },
+        "Transform": {
+          "position": [0, 3, -8],
+          "rotation": [15, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 75,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "isMain": true,
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.2,
+            "g": 0.3,
+            "b": 0.4,
+            "a": 1
+          },
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "depth": 0,
+          "controlMode": "free",
+          "enableSmoothing": false,
+          "followTarget": 0,
+          "followOffset": {
+            "x": 0,
+            "y": 3,
+            "z": -8
+          },
+          "smoothingSpeed": 2,
+          "rotationSmoothing": 1.5
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-directional-001"
+        },
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-ambient-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.4,
+            "g": 0.4,
+            "b": 0.45
+          },
+          "intensity": 0.5,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-ground-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [20, 20, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "grid-ground",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Near Cube (Tests Near Plane)",
+      "components": {
+        "PersistentId": {
+          "id": "cube-near"
+        },
+        "Transform": {
+          "position": [0, 1, -2],
+          "rotation": [0, 45, 0],
+          "scale": [0.5, 0.5, 0.5]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Mid Sphere",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-mid"
+        },
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "green",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Far Cube (Tests Far Plane)",
+      "components": {
+        "PersistentId": {
+          "id": "cube-far"
+        },
+        "Transform": {
+          "position": [0, 2, 15],
+          "rotation": [0, 30, 0],
+          "scale": [2, 2, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "blue",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Left Reference Sphere",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-left"
+        },
+        "Transform": {
+          "position": [-3, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 15,
+      "name": "Right Reference Sphere",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-right"
+        },
+        "Transform": {
+          "position": [3, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 16,
+      "name": "Depth Test Cube 1",
+      "components": {
+        "PersistentId": {
+          "id": "cube-depth-1"
+        },
+        "Transform": {
+          "position": [-1.5, 0.5, 3],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "yellow",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 17,
+      "name": "Depth Test Cube 2",
+      "components": {
+        "PersistentId": {
+          "id": "cube-depth-2"
+        },
+        "Transform": {
+          "position": [1.5, 0.5, 3],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "yellow",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "grid-ground",
+      "name": "Grid Ground",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#556677",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "red",
+      "name": "Red Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff4444",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "green",
+      "name": "Green Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#44ff44",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "blue",
+      "name": "Blue Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#4444ff",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "white",
+      "name": "White Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#dddddd",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "yellow",
+      "name": "Yellow Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ffff44",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}

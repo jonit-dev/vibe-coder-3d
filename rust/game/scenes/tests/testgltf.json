@@ -1,0 +1,262 @@
+{
+  "metadata": {
+    "name": "testgltf",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Visual test scene for GLTF model loading via modelPath"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "cam-gltf-001"
+        },
+        "Transform": {
+          "position": [0, 2, -5],
+          "rotation": [10, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.15,
+            "g": 0.15,
+            "b": 0.18,
+            "a": 1
+          },
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-directional-001"
+        },
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1.5
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-ambient-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.4,
+            "g": 0.4,
+            "b": 0.45
+          },
+          "intensity": 0.5,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-ground-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [10, 10, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "GLTF Model - Simple",
+      "components": {
+        "PersistentId": {
+          "id": "gltf-simple-001"
+        },
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "",
+          "materialId": "default",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": "/assets/models/suzanne.glb"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "GLTF Model - With Custom Material",
+      "components": {
+        "PersistentId": {
+          "id": "gltf-custom-mat"
+        },
+        "Transform": {
+          "position": [3, 0.5, 0],
+          "rotation": [0, 45, 0],
+          "scale": [0.8, 0.8, 0.8]
+        },
+        "MeshRenderer": {
+          "meshId": "",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": "/assets/models/cube.glb"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "GLTF Model - Scaled",
+      "components": {
+        "PersistentId": {
+          "id": "gltf-scaled"
+        },
+        "Transform": {
+          "position": [-3, 0.5, 0],
+          "rotation": [0, -30, 0],
+          "scale": [1.5, 1.5, 1.5]
+        },
+        "MeshRenderer": {
+          "meshId": "",
+          "materialId": "default",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": "/assets/models/sphere.glb"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Comparison Primitive Sphere",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-primitive"
+        },
+        "Transform": {
+          "position": [0, 1, 2.5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "blue",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "default",
+      "name": "Default GLTF Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#cccccc",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "red",
+      "name": "Red Override",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff4444",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "blue",
+      "name": "Blue Comparison",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#4444ff",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#333333",
+      "metalness": 0,
+      "roughness": 0.95,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}

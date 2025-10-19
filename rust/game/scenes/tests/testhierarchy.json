@@ -1,0 +1,482 @@
+{
+  "metadata": {
+    "name": "testhierarchy",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Visual test scene for parent/child transform hierarchy and propagation"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "cam-hierarchy-001"
+        },
+        "Transform": {
+          "position": [0, 3, -10],
+          "rotation": [15, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.1,
+            "g": 0.1,
+            "b": 0.12,
+            "a": 1
+          },
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-directional-001"
+        },
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1.5
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-ambient-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.4,
+            "g": 0.4,
+            "b": 0.45
+          },
+          "intensity": 0.5,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-ground-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [15, 15, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 20,
+      "name": "Parent - Rotating Arm",
+      "parent": null,
+      "components": {
+        "PersistentId": {
+          "id": "parent-arm"
+        },
+        "Transform": {
+          "position": [-3, 1, 0],
+          "rotation": [0, 45, 0],
+          "scale": [2, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 21,
+      "name": "Child 1 - Sphere at End",
+      "parent": 20,
+      "components": {
+        "PersistentId": {
+          "id": "child-sphere-1"
+        },
+        "Transform": {
+          "position": [1, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [0.5, 0.5, 0.5]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "blue",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 22,
+      "name": "Child 2 - Sphere at Other End",
+      "parent": 20,
+      "components": {
+        "PersistentId": {
+          "id": "child-sphere-2"
+        },
+        "Transform": {
+          "position": [-1, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [0.5, 0.5, 0.5]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "green",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 30,
+      "name": "Parent - Scaled Base",
+      "parent": null,
+      "components": {
+        "PersistentId": {
+          "id": "parent-scaled"
+        },
+        "Transform": {
+          "position": [3, 0.5, 0],
+          "rotation": [0, 0, 0],
+          "scale": [2, 2, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "yellow",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 31,
+      "name": "Child - Small Cube on Top",
+      "parent": 30,
+      "components": {
+        "PersistentId": {
+          "id": "child-small-cube"
+        },
+        "Transform": {
+          "position": [0, 0.75, 0],
+          "rotation": [0, 45, 0],
+          "scale": [0.3, 0.3, 0.3]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "white",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 32,
+      "name": "Grandchild - Tiny Sphere",
+      "parent": 31,
+      "components": {
+        "PersistentId": {
+          "id": "grandchild-sphere"
+        },
+        "Transform": {
+          "position": [0, 0.5, 0],
+          "rotation": [0, 0, 0],
+          "scale": [0.5, 0.5, 0.5]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 40,
+      "name": "Parent - Complex Hierarchy Root",
+      "parent": null,
+      "components": {
+        "PersistentId": {
+          "id": "parent-complex"
+        },
+        "Transform": {
+          "position": [0, 2, 3],
+          "rotation": [0, 0, 15],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "purple",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 41,
+      "name": "Child - Arm 1",
+      "parent": 40,
+      "components": {
+        "PersistentId": {
+          "id": "child-arm-1"
+        },
+        "Transform": {
+          "position": [1, 0, 0],
+          "rotation": [0, 0, 30],
+          "scale": [1.5, 0.3, 0.3]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "cyan",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 42,
+      "name": "Child - Arm 2",
+      "parent": 40,
+      "components": {
+        "PersistentId": {
+          "id": "child-arm-2"
+        },
+        "Transform": {
+          "position": [-1, 0, 0],
+          "rotation": [0, 0, -30],
+          "scale": [1.5, 0.3, 0.3]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "cyan",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 43,
+      "name": "Grandchild - End of Arm 1",
+      "parent": 41,
+      "components": {
+        "PersistentId": {
+          "id": "grandchild-end-1"
+        },
+        "Transform": {
+          "position": [0.75, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [0.4, 0.4, 0.4]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "orange",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 44,
+      "name": "Grandchild - End of Arm 2",
+      "parent": 42,
+      "components": {
+        "PersistentId": {
+          "id": "grandchild-end-2"
+        },
+        "Transform": {
+          "position": [-0.75, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [0.4, 0.4, 0.4]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "orange",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#334455",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "red",
+      "name": "Red Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff3333",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "blue",
+      "name": "Blue Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#3333ff",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "green",
+      "name": "Green Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#33ff33",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "yellow",
+      "name": "Yellow Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ffff33",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "white",
+      "name": "White Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#eeeeee",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "purple",
+      "name": "Purple Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#aa33aa",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "cyan",
+      "name": "Cyan Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#33aaaa",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "orange",
+      "name": "Orange Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff8833",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}

@@ -1,0 +1,371 @@
+{
+  "metadata": {
+    "name": "testmaterials",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Visual test scene for solid material properties: metalness, roughness, emissive"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "cam-materials-001"
+        },
+        "Transform": {
+          "position": [0, 2, -8],
+          "rotation": [10, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.15,
+            "g": 0.15,
+            "b": 0.15,
+            "a": 1
+          },
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-directional-001"
+        },
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1,
+          "enabled": true,
+          "castShadow": false,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-ambient-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.2,
+            "g": 0.2,
+            "b": 0.2
+          },
+          "intensity": 0.3,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Sphere - Rough Non-Metal",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-rough-nonmetal"
+        },
+        "Transform": {
+          "position": [-4, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "rough-nonmetal",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Sphere - Smooth Non-Metal",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-smooth-nonmetal"
+        },
+        "Transform": {
+          "position": [-2, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "smooth-nonmetal",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Sphere - Rough Metal",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-rough-metal"
+        },
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "rough-metal",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "Sphere - Smooth Metal",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-smooth-metal"
+        },
+        "Transform": {
+          "position": [2, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "smooth-metal",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 14,
+      "name": "Sphere - Emissive",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-emissive"
+        },
+        "Transform": {
+          "position": [4, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "emissive-blue",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 15,
+      "name": "Cube - Red Emissive",
+      "components": {
+        "PersistentId": {
+          "id": "cube-emissive-red"
+        },
+        "Transform": {
+          "position": [-3, 0.5, 2],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "emissive-red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 16,
+      "name": "Cube - Green Emissive",
+      "components": {
+        "PersistentId": {
+          "id": "cube-emissive-green"
+        },
+        "Transform": {
+          "position": [3, 0.5, 2],
+          "rotation": [0, -45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "emissive-green",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 20,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "mesh-ground-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [15, 15, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "rough-nonmetal",
+      "name": "Rough Non-Metal",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#8888ff",
+      "metalness": 0,
+      "roughness": 1,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "smooth-nonmetal",
+      "name": "Smooth Non-Metal",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#88ff88",
+      "metalness": 0,
+      "roughness": 0.1,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "rough-metal",
+      "name": "Rough Metal",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ffaa44",
+      "metalness": 1,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "smooth-metal",
+      "name": "Smooth Metal",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#cccccc",
+      "metalness": 1,
+      "roughness": 0.1,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "emissive-blue",
+      "name": "Emissive Blue",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#2244aa",
+      "metalness": 0,
+      "roughness": 0.5,
+      "emissive": "#4488ff",
+      "emissiveIntensity": 1.5,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "emissive-red",
+      "name": "Emissive Red",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#aa2222",
+      "metalness": 0,
+      "roughness": 0.5,
+      "emissive": "#ff4444",
+      "emissiveIntensity": 2,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "emissive-green",
+      "name": "Emissive Green",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#22aa22",
+      "metalness": 0,
+      "roughness": 0.5,
+      "emissive": "#44ff44",
+      "emissiveIntensity": 1.8,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#333333",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}
