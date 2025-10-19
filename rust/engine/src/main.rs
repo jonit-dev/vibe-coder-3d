@@ -40,6 +40,10 @@ struct Args {
     /// Custom screenshot output path (requires --screenshot)
     #[arg(long)]
     screenshot_path: Option<PathBuf>,
+
+    /// Delay in milliseconds before taking screenshot (default: 2000ms)
+    #[arg(long, default_value_t = 2000)]
+    screenshot_delay: u64,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -124,7 +128,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
             PathBuf::from(format!("screenshots/{}.png", scene_name))
         };
 
-        return app.screenshot(output_path);
+        return app.screenshot(output_path, args.screenshot_delay);
     }
 
     log::info!("Entering render loop...");

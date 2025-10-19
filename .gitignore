@@ -44,3 +44,6 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Rust engine screenshots (temporary test outputs)
+rust/engine/screenshots/

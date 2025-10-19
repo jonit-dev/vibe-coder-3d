@@ -557,37 +557,75 @@ impl ThreeDRenderer {
         Ok(())
     }
 
-    /// Capture a screenshot using the xcap crate (OS-level window capture)
-    pub fn capture_window_screenshot(
-        &self,
-        window_title: &str,
+    /// Capture a screenshot by rendering to a texture and saving it
+    pub fn render_to_screenshot(
+        &mut self,
         path: &std::path::Path,
+        physics_world: Option<&vibe_physics::PhysicsWorld>,
     ) -> Result<()> {
-        log::info!("Capturing window screenshot to: {}", path.display());
+        log::info!("Rendering screenshot to: {}", path.display());
 
-        // Get all windows
-        let windows = xcap::Window::all().with_context(|| "Failed to enumerate windows")?;
+        // Generate shadow maps first (required for proper rendering)
+        self.generate_shadow_maps();
 
-        // Find our window by title
-        let target_window = windows
-            .iter()
-            .find(|w| {
-                w.title()
-                    .to_lowercase()
-                    .contains(&window_title.to_lowercase())
-            })
-            .with_context(|| format!("Window with title '{}' not found", window_title))?;
+        let width = self.window_size.0;
+        let height = self.window_size.1;
 
-        log::debug!("Found window: {}", target_window.title());
+        // Create a color texture to render to
+        let mut color_texture = Texture2D::new_empty::<[u8; 4]>(
+            &self.context,
+            width,
+            height,
+            Interpolation::Nearest,
+            Interpolation::Nearest,
+            None,
+            Wrapping::ClampToEdge,
+            Wrapping::ClampToEdge,
+        );
 
-        // Capture the window
-        let image = target_window
-            .capture_image()
-            .with_context(|| "Failed to capture window image")?;
+        // Create a depth texture
+        let mut depth_texture = DepthTexture2D::new::<f32>(
+            &self.context,
+            width,
+            height,
+            Wrapping::ClampToEdge,
+            Wrapping::ClampToEdge,
+        );
 
-        // Save the image
-        image
-            .save(path)
+        // Create render target
+        let render_target =
+            RenderTarget::new(color_texture.as_color_target(None), depth_texture.as_depth_target());
+
+        // Clear the render target
+        render_target.clear(ClearState::color_and_depth(0.0, 0.0, 0.0, 1.0, 1.0));
+
+        // Render skybox if enabled
+        if let Some(ref config) = self.camera_config {
+            if config.clear_flags.as_deref() == Some("skybox") {
+                self.skybox_renderer.render(&render_target, &self.camera);
+            }
+        }
+
+        // Collect lights and render scene
+        let lights = self.collect_lights();
+        render_target.render(&self.camera, &self.meshes, &lights);
+
+        // Render debug overlay if physics world is provided
+        if let Some(physics) = physics_world {
+            self.render_debug_overlay(&render_target, Some(physics))?;
+        }
+
+        // Read pixels from the render target (RGBA u8 format)
+        let pixels: Vec<[u8; 4]> = render_target.read_color();
+
+        // Flatten the pixel data into a byte vec
+        let bytes: Vec<u8> = pixels.into_iter().flat_map(|pixel| pixel).collect();
+
+        // Create and save the image
+        let img = image::RgbaImage::from_raw(width, height, bytes)
+            .with_context(|| "Failed to create image from pixels")?;
+
+        img.save(path)
             .with_context(|| format!("Failed to save screenshot to {}", path.display()))?;
 
         log::info!("Screenshot saved successfully");

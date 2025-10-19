@@ -166,8 +166,8 @@ impl AppThreeD {
         })
     }
 
-    /// Run in screenshot mode - renders one frame, captures window, and exits
-    pub fn screenshot(mut self, output_path: PathBuf) -> anyhow::Result<()> {
+    /// Run in screenshot mode - renders directly to texture and saves
+    pub fn screenshot(mut self, output_path: PathBuf, delay_ms: u64) -> anyhow::Result<()> {
         log::info!(
             "Screenshot mode enabled - target path: {}",
             output_path.display()
@@ -178,20 +178,32 @@ impl AppThreeD {
             std::fs::create_dir_all(parent).context("Failed to create screenshot directory")?;
         }
 
-        // Render one frame to the screen
-        log::info!("Rendering frame...");
-        self.render()?;
+        // Render multiple frames to ensure everything is initialized and loaded
+        let num_warmup_frames = if delay_ms > 0 {
+            (delay_ms / 16).max(1) as u32  // ~60fps, minimum 1 frame
+        } else {
+            5  // Default: render 5 frames
+        };
 
-        // Give the window system a moment to display the frame
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        log::info!("Rendering {} warmup frames...", num_warmup_frames);
+        for i in 0..num_warmup_frames {
+            // Update physics for each frame
+            if let Some(ref mut physics_world) = self.physics_world {
+                physics_world.step(1.0 / 60.0);
+                self.renderer.sync_physics_transforms(physics_world);
+            }
 
-        // Get window title for capture
-        let window_title = self.window.title();
-        log::info!("Capturing window: {}", window_title);
+            // Render to screen
+            self.render()?;
 
-        // Capture the window screenshot
+            // Small delay between frames
+            std::thread::sleep(std::time::Duration::from_millis(16)); // ~60fps
+        }
+
+        // Capture screenshot after warmup
+        log::info!("Capturing screenshot...");
         self.renderer
-            .capture_window_screenshot(&window_title, &output_path)?;
+            .render_to_screenshot(&output_path, self.physics_world.as_ref())?;
 
         log::info!("Screenshot complete, exiting...");
         Ok(())
