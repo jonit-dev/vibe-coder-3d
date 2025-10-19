@@ -14,7 +14,7 @@ TypeScript Editor → RustSceneSerializer → JSON File → Rust Engine Loader �
 | ------------------ | ----------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------- |
 | **Transform**      | ✅ TransformComponent.ts      | ✅ transform.rs                                     | 🟢 Full Support (Euler + Quat)                                               |
 | **MeshRenderer**   | ✅ MeshRendererComponent.ts   | ✅ mesh_renderer.rs                                 | 🟢 Mostly Complete (85% coverage, textures + overrides working)              |
-| **Camera**         | ✅ CameraComponent.ts         | ✅ camera.rs                                        | 🟡 Partial (100% parsed, 40% rendered; follow live, HDR/post/skybox pending) |
+| **Camera**         | ✅ CameraComponent.ts         | ✅ camera.rs                                        | 🟢 ~80% Rendered (HDR/post/skybox live; control mode + multi-camera pending) |
 | **Light**          | ✅ LightComponent.ts          | ✅ light.rs                                         | 🟢 Full THREE.JS Parity (100% complete)                                      |
 | **RigidBody**      | ✅ RigidBodyComponent.ts      | ✅ components.rs, decoders.rs, scene_integration.rs | 🟢 Full Support (100% coverage)                                              |
 | **MeshCollider**   | ✅ MeshColliderComponent.ts   | ✅ components.rs, decoders.rs, scene_integration.rs | 🟢 Full Support (100% coverage)                                              |
@@ -153,10 +153,10 @@ pub struct CameraComponent {
 - ✅ `isMain`: Full support - determines which camera to use
 - ✅ `projectionType`: **FULLY IMPLEMENTED** - supports perspective and orthographic cameras
 - ✅ `orthographicSize`: **FULLY IMPLEMENTED** - used for orthographic projection
-- ✅ `backgroundColor`: Full support - parsed and available in CameraConfig
+- ✅ `backgroundColor`: **RENDERED** - drives clear color via clearFlags
 - ✅ `depth`: **FULLY PARSED** - camera render order (available in CameraConfig for future multi-camera support)
 - ✅ `clearFlags`: **FULLY PARSED** - parsed and available in CameraConfig
-- ✅ `skyboxTexture`: **FULLY PARSED** - parsed and available in CameraConfig (rendering pending)
+- ✅ `skyboxTexture`: **RENDERED** - loads HDR/equirectangular textures for skybox pass
 - ✅ `controlMode`: **FULLY PARSED** - camera control mode stored in CameraConfig
 - ✅ `enableSmoothing`: **RENDERED** - toggles runtime smoothing in the follow system
 - ✅ `followTarget`: **RENDERED** - actively follows the specified entity via SceneGraph
@@ -164,17 +164,17 @@ pub struct CameraComponent {
 - ✅ `smoothingSpeed`: **RENDERED** - drives positional interpolation for follow smoothing
 - ✅ `rotationSmoothing`: **RENDERED** - drives look-target interpolation during follow
 - ✅ `viewportRect`: **FULLY IMPLEMENTED** - normalized viewport coordinates converted to pixels and used in camera creation
-- ✅ `hdr`: **FULLY PARSED** - HDR flag available in CameraConfig (rendering pending)
-- ✅ `toneMapping`: **FULLY PARSED** - tone mapping mode stored (none/linear/reinhard/cineon/aces)
-- ✅ `toneMappingExposure`: **FULLY PARSED** - exposure value available
-- ✅ `enablePostProcessing`: **FULLY PARSED** - post-processing toggle available
-- ✅ `postProcessingPreset`: **FULLY PARSED** - preset name stored (none/cinematic/realistic/stylized)
-- ✅ `skyboxScale`: **FULLY PARSED** - converted to Vec3 and stored
-- ✅ `skyboxRotation`: **FULLY PARSED** - converted to Vec3 (Euler degrees) and stored
-- ✅ `skyboxRepeat`: **FULLY PARSED** - converted to (f32, f32) tuple and stored
-- ✅ `skyboxOffset`: **FULLY PARSED** - converted to (f32, f32) tuple and stored
-- ✅ `skyboxIntensity`: **FULLY PARSED** - HDR intensity value available
-- ✅ `skyboxBlur`: **FULLY PARSED** - blur amount (0-1) stored
+- ✅ `hdr`: **RENDERED** - toggles HDR framebuffer + tone-mapping workflow
+- ✅ `toneMapping`: **RENDERED** - selects runtime tone operator (none/linear/reinhard/cineon/aces)
+- ✅ `toneMappingExposure`: **RENDERED** - feeds exposure multiplier into grading pass
+- ✅ `enablePostProcessing`: **RENDERED** - enables color grading effect chain
+- ✅ `postProcessingPreset`: **RENDERED** - applies cinematic/realistic/stylized curves
+- ✅ `skyboxScale`: **RENDERED** - scales sampling direction for skybox quad
+- ✅ `skyboxRotation`: **RENDERED** - Euler rotation applied in cube sampling
+- ✅ `skyboxRepeat`: **PARSED** - stored for future UV transform support
+- ✅ `skyboxOffset`: **PARSED** - stored for future UV transform support
+- ✅ `skyboxIntensity`: **RENDERED** - multiplies cube map radiance
+- ✅ `skyboxBlur`: **RENDERED** - controls mip-level blur via LOD sampling
 
 **Coverage**: 30/30 fields (100%) - ALL FIELDS PARSED AND AVAILABLE
 
@@ -183,11 +183,11 @@ pub struct CameraComponent {
 - ✅ Basic camera (fov, near, far, position, rotation) - **FULLY RENDERED**
 - ✅ Projection types (perspective, orthographic) - **FULLY RENDERED**
 - ✅ Viewport rect (multi-camera viewports) - **FULLY RENDERED**
-- ✅ Background color - **PARSED** (rendering via clearFlags pending)
+- ✅ Background color - **FULLY RENDERED** (clearFlags drive solid color clears)
 - ✅ Camera follow system - **FULLY IMPLEMENTED** (SceneGraph-powered follow with smoothing)
-- 🟡 HDR & tone mapping - **PARSED** (render pipeline pending)
-- 🟡 Post-processing - **PARSED** (effects pipeline pending)
-- 🟡 Skybox rendering - **PARSED** (skybox pass pending)
+- ✅ HDR & tone mapping - **FULLY IMPLEMENTED** (tone operator selection + exposure pipeline)
+- ✅ Post-processing - **FULLY IMPLEMENTED** (presets feed color grading effect)
+- ✅ Skybox rendering - **FULLY IMPLEMENTED** (HDR skybox with intensity/blur controls; repeat/offset queued)
 
 ---
 
@@ -656,10 +656,8 @@ pub struct MeshRenderer {
 **Parsed and Available (Rendering Pending)**:
 
 - 🟡 Camera control mode (locked/free) - data structure ready
-- 🟡 HDR rendering - flag and exposure parsed, render pipeline pending
-- 🟡 Tone mapping (none, linear, reinhard, cineon, aces) - mode parsed, shader pending
-- 🟡 Post-processing (enable, presets) - flags parsed, effects pipeline pending
-- 🟡 Skybox rendering (texture, scale, rotation, repeat, offset, intensity, blur) - all fields parsed, skybox pass pending
+- 🟡 Camera control mode (locked/free) - data structure ready for future input integration
+- 🟡 Skybox repeat/offset - values parsed, awaiting shader-based UV transform support
 
 ### 5. ✅ MeshRenderer - Mostly Complete (90% coverage)
 
@@ -677,10 +675,11 @@ pub struct MeshRenderer {
 - ✅ **Async scene loading** - Entire pipeline made async for texture loading
 - ✅ **GLTF model loading** - `modelPath` support with automatic mesh conversion (October 2025)
 
-**Missing** (10% of fields):
+**Missing** (5% of fields):
 
 - ❌ Multi-submesh materials array (multi-mesh GLTF support)
-- ⚠️ Shadow casting/receiving flags parsed but not yet used in rendering
+- ✅ Shadow casting flags - **FULLY IMPLEMENTED** (castShadows filters shadow generation per mesh)
+- ⚠️ Shadow receiving flags - Parsed (material-side receiving handled by three-d automatically)
 - ⚠️ UV transforms (offset, repeat) - Not supported by three-d API
 
 ### 6. ✅ Texture System - FULLY IMPLEMENTED
@@ -814,7 +813,7 @@ Custom shader injection (enhanced_lights.rs:171-234):
 
 ### Partially Working 🟡
 
-1. ✅ **Camera component** - **100% PARSED** (all fields available in CameraConfig; rendering: 40% complete with basic camera, projections, follow system implemented; HDR/post-processing/skybox rendering pending)
+1. ✅ **Camera component** - **100% PARSED** (rendering: ~80% complete with follow system, HDR/tone mapping, post-processing, and textured skybox live; multi-camera/control-mode pending)
 2. ✅ **MeshRenderer component** - **85% complete** (textures and inline material overrides working; missing: GLTF, multi-submesh, UV transforms)
 3. 🟡 Prefabs (parsed but not instantiated)
 
@@ -823,16 +822,14 @@ Custom shader injection (enhanced_lights.rs:171-234):
 1. ✅ **GLTF model loading** - IMPLEMENTED (modelPath support added)
 2. ✅ **Physics** - FULLY IMPLEMENTED (RigidBody + MeshCollider with Rapier3D, 25 tests passing)
 3. ❌ **Multi-camera rendering** (viewportRect, camera depth fields parsed, rendering pending)
-4. ❌ **HDR & Tone mapping** (hdr, toneMapping, exposure fields parsed, pipeline pending)
-5. ❌ **Post-processing** (presets, effects fields parsed, pipeline pending)
-6. ❌ **Skybox rendering** (skyboxTexture, transform properties fields parsed, rendering pending)
-7. ❌ **Scripts execution**
-8. ❌ **Audio** (Sound component)
-9. ❌ **Terrain rendering**
-10. ❌ **Custom shapes**
-11. ❌ **Instanced rendering** (component-driven)
-12. ❌ **Prefab instantiation**
-13. ⚠️ **UV transforms** (offset, repeat) - Not supported by three-d API (requires custom shader)
+4. ❌ **Camera control mode** (locked/free behaviour not yet integrated)
+5. ❌ **Scripts execution**
+6. ❌ **Audio** (Sound component)
+7. ❌ **Terrain rendering**
+8. ❌ **Custom shapes**
+9. ❌ **Instanced rendering** (component-driven)
+10. ❌ **Prefab instantiation**
+11. ⚠️ **UV transforms** (offset, repeat) - Not supported by three-d API (requires custom shader)
 
 ---
 
@@ -909,12 +906,12 @@ Custom shader injection (enhanced_lights.rs:171-234):
    - Render multiple cameras per frame
    - **Effort**: 8-10 hours
 
-9. 🟢 **HDR & Tone mapping** (LOW-MEDIUM IMPACT)
+9. ✅ **HDR & Tone mapping** (COMPLETED)
 
-   - Implement HDR rendering pipeline
-   - Add tone mapping operators (linear, reinhard, cineon, aces)
-   - Support toneMappingExposure
-   - **Effort**: 12-16 hours
+   - ✅ Integrated HDR render path feeding post-processing
+   - ✅ Runtime tone operator selection (none/linear/reinhard/cineon/aces)
+   - ✅ Exposure parameter wired into grading effect
+   - **Effort**: 12-16 hours → COMPLETED alongside post pipeline
 
 10. ✅ **Inline material overrides** (FULLY COMPLETED)
     - ✅ Parse MeshRenderer.material object
@@ -967,10 +964,10 @@ Custom shader injection (enhanced_lights.rs:171-234):
 - ✅ All 30 camera fields now parsed and available in CameraConfig
 - ✅ Orthographic projection support added
 - ✅ Viewport rect support for multi-camera rendering
-- ✅ Follow system fields parsed (update logic pending)
-- ✅ HDR/tone mapping fields parsed (render pipeline pending)
-- ✅ Post-processing fields parsed (effects pipeline pending)
-- ✅ Skybox fields parsed (skybox pass pending)
+- ✅ Follow system now live (SceneGraph follow + smoothing)
+- ✅ HDR/tone mapping pipeline active (camera tone mapping + exposure grading)
+- ✅ Post-processing presets applied in runtime grading pass
+- ✅ Skybox rendering live (HDR texture with intensity/blur controls)
 
 ---
 
