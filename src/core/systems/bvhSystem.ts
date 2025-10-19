@@ -49,11 +49,6 @@ export const initBVHSystem = (scene: Scene, camera: Camera, processScene = false
       logger.info('Processing scene for BVH (this may take a moment for large scenes)...');
       bvhManager.processScene(scene);
     }
-
-    logger.info('BVH System initialized', {
-      enabled: state.enabled,
-      sceneProcessed: processScene,
-    });
   } catch (error) {
     logger.error('Failed to initialize BVH system', { error });
   }
@@ -118,8 +113,6 @@ export const setBVHSystemEnabled = (enabled: boolean): void => {
       state.enabled = false;
     }
   }
-
-  logger.info(`BVH System ${enabled ? 'enabled' : 'disabled'}`);
 };
 
 /**
@@ -165,5 +158,4 @@ export const disposeBVHSystem = (): void => {
   bvhManager.dispose();
   state.scene = null;
   state.camera = null;
-  logger.info('BVH System disposed');
 };

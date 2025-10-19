@@ -41,7 +41,6 @@ const state: IInstanceSystemState = {
  */
 export const initInstanceSystem = (scene: THREE.Scene): void => {
   state.scene = scene;
-  logger.info('Instance System initialized');
 };
 
 /**
@@ -425,6 +424,4 @@ export const cleanupInstanceSystem = (): void => {
   state.geometryCache.clear();
   state.materialCache.clear();
   InstanceBufferPool.clear();
-
-  logger.info('Instance System cleaned up');
 };

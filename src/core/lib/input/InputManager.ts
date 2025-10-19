@@ -44,8 +44,6 @@ export class InputManager {
     this.mouse = new MouseInput(canvas);
     this.actionRuntime = new InputActionRuntime(this.keyboard, this.mouse);
     this.initialized = true;
-
-    logger.info('InputManager initialized');
   }
 
   /**

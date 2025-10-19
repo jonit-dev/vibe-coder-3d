@@ -23,8 +23,6 @@ export class MouseInput {
     canvas.addEventListener('mousemove', this.handleMouseMove);
     canvas.addEventListener('wheel', this.handleWheel);
     document.addEventListener('pointerlockchange', this.handlePointerLockChange);
-
-    logger.debug('MouseInput initialized');
   }
 
   private handleMouseDown = (event: MouseEvent): void => {

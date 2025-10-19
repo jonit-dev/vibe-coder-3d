@@ -30,11 +30,6 @@ export const LODPanel: React.FC<ILODPanelProps> = ({ isExpanded }) => {
   const [cameraDistance, setCameraDistance] = useState<number | null>(null);
   const [effectiveQuality, setEffectiveQuality] = useState<LODQuality>(quality);
 
-  // Debug logging
-  React.useEffect(() => {
-    logger.info('LODPanel render state', { isExpanded, selectedId, hasLODModel });
-  }, [isExpanded, selectedId, hasLODModel]);
-
   // Check if selected entity has a custom model (LOD-capable)
   useEffect(() => {
     if (!selectedId) {

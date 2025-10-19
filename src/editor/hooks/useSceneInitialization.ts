@@ -23,12 +23,8 @@ export const useSceneInitialization = ({
 
   // Register scenes once on mount
   useEffect(() => {
-    const stepTracker = logger.createStepTracker('Scene Registration');
-    stepTracker.step('Core Scenes Registration');
     registerCoreScenes();
-    stepTracker.step('Game Extensions Registration');
     registerGameExtensions();
-    stepTracker.complete();
   }, [logger]);
 
   // Initialize scene once on mount
@@ -44,35 +40,25 @@ export const useSceneInitialization = ({
 
       hasInitialized.current = true;
 
-      const stepTracker = logger.createStepTracker('Scene Initialization');
       try {
-        stepTracker.step('Checking Existing Entities');
         const existingEntities = entityManager.getAllEntities();
 
         if (existingEntities.length > 0) {
-          stepTracker.step('Scene Already Initialized');
           onStatusMessage('Scene already initialized');
-          stepTracker.complete();
           return;
         }
 
-        stepTracker.step('Loading Last Scene');
         const lastSceneLoaded = await loadLastScene();
 
         if (lastSceneLoaded) {
-          stepTracker.step('Last Scene Loaded Successfully');
           onStatusMessage('Loaded last scene from storage');
         } else {
-          stepTracker.step('Loading Default Scene');
           await loadScene('default', true);
-          stepTracker.step('Default Scene Load Complete');
           onStatusMessage('Loaded default scene with camera and lights');
         }
-        stepTracker.complete();
       } catch (error) {
         logger.error('Failed to initialize scene', { error });
         onStatusMessage('Failed to load scene');
-        stepTracker.complete();
       }
     };
 

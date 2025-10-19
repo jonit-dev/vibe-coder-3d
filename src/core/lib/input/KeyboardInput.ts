@@ -22,7 +22,6 @@ export class KeyboardInput {
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
     window.addEventListener('blur', this.handleBlur);
-    logger.debug('KeyboardInput initialized');
   }
 
   private handleKeyDown = (event: KeyboardEvent): void => {

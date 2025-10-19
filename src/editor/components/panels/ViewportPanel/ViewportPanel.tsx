@@ -191,14 +191,6 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
               // Initialize InputManager with the canvas element
               const inputManager = InputManager.getInstance();
               inputManager.initialize(gl.domElement);
-              logger.info('InputManager initialized with canvas');
-
-              // Track when 3D canvas is ready
-              logger.milestone('3D Canvas Created and Ready', {
-                shadowMapping: true,
-                cameraPosition: camera.position.toArray(),
-                viewportSize: `${gl.domElement.width}x${gl.domElement.height}`,
-              });
 
               // LOD auto-switch already enabled in mount effect
             }}
