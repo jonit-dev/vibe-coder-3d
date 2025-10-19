@@ -78,10 +78,6 @@ export class BVHManager {
 
     // Apply BVH extensions to Three.js prototypes
     this.initializeBVHExtensions();
-
-    logger.info('BVHManager initialized', {
-      config: this.config,
-    });
   }
 
   /**
@@ -113,8 +109,6 @@ export class BVHManager {
       if (this.config.enableRaycastAcceleration) {
         Mesh.prototype.raycast = acceleratedRaycast;
       }
-
-      logger.debug('BVH extensions applied to Three.js prototypes');
     } catch (error) {
       logger.error('Failed to initialize BVH extensions', { error });
     }
@@ -364,10 +358,6 @@ export class BVHManager {
    * Dispose all BVH structures and clean up
    */
   public dispose(): void {
-    logger.info('Disposing BVHManager', {
-      meshCount: this.meshes.size,
-    });
-
     for (const mesh of this.meshes.values()) {
       if (mesh.geometry.boundsTree) {
         mesh.geometry.disposeBoundsTree();

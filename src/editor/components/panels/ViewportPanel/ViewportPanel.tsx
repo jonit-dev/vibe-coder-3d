@@ -48,16 +48,12 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
 
     // Track viewport initialization
     useEffect(() => {
-      logger.milestone('Viewport Panel Mounted');
       try {
         // Enable LOD auto-switching globally in editor viewport
         lodManager.setAutoSwitch(true);
       } catch (error) {
         logger.error('Failed to initialize LOD manager', { error });
       }
-      return () => {
-        logger.milestone('Viewport Panel Unmounted');
-      };
     }, []);
 
     // Get all entities with a Transform from new ECS system
@@ -420,7 +416,6 @@ const SelectionFramer: React.FC = () => {
   useEffect(() => {
     (window as Window & { __frameEntity?: (entityId: number) => void }).__frameEntity =
       _frameEntity;
-    logger.debug('Frame function registered on window');
   }, [camera, getComponentData]);
 
   return null;

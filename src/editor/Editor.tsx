@@ -44,11 +44,7 @@ const editorLogger = Logger.create('Editor:Main');
 const Editor: React.FC = () => {
   // Track editor initialization
   useEffect(() => {
-    editorLogger.milestone('Editor Component Mounted');
-
-    return () => {
-      editorLogger.milestone('Editor Component Unmounted');
-    };
+    return () => {};
   }, []);
 
   // Component registry hook for entity validation

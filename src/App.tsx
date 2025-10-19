@@ -13,7 +13,6 @@ const startupLogger = Logger.create('App:Startup');
 
 // Record app start time globally
 (window as { __appStartTime?: number }).__appStartTime = performance.now();
-startupLogger.milestone('App Start');
 
 /**
  * Main App component
@@ -28,23 +27,13 @@ export default function App() {
     }
 
     // Track ECS initialization
-    const completeECSInit = startupLogger.startTracker('ECS System Initialization');
     initializeECS();
     (window as { __ecsSystemInitialized?: boolean }).__ecsSystemInitialized = true;
-    completeECSInit();
 
     // Initialize prefabs asynchronously
-    const completePrefabInit = startupLogger.startTracker('Prefab System Initialization');
-    initPrefabs()
-      .then(() => {
-        completePrefabInit();
-      })
-      .catch((error) => {
-        startupLogger.error('Failed to initialize prefabs:', error);
-        completePrefabInit();
-      });
-
-    startupLogger.milestone('App Initialization Complete');
+    initPrefabs().catch((error) => {
+      startupLogger.error('Failed to initialize prefabs:', error);
+    });
   }, []);
 
   return (

@@ -15,10 +15,6 @@ if (import.meta.env.PROD) {
   Logger.configureForDevelopment();
 }
 
-// Initialize the new ECS system
-const logger = Logger.create('Main');
-logger.info('🚀 ECS system ready with enhanced logging...');
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
