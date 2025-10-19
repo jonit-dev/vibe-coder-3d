@@ -38,6 +38,20 @@ pub fn primitive_base_scale(mesh_id: Option<&str>) -> GlamVec3 {
         primitive if primitive.contains("octahedron") => GlamVec3::ONE,
         primitive if primitive.contains("dodecahedron") => GlamVec3::ONE,
         primitive if primitive.contains("icosahedron") => GlamVec3::ONE,
+        // Decorative shapes
+        primitive if primitive.contains("star") => GlamVec3::ONE,
+        primitive if primitive.contains("heart") => GlamVec3::ONE,
+        primitive if primitive.contains("diamond") => GlamVec3::ONE,
+        primitive if primitive.contains("cross") => GlamVec3::ONE,
+        primitive if primitive.contains("tube") => GlamVec3::ONE,
+        // Mathematical shapes
+        primitive if primitive.contains("helix") => GlamVec3::ONE,
+        primitive if primitive.contains("mobius") => GlamVec3::ONE,
+        // Environment shapes
+        primitive if primitive.contains("tree") => GlamVec3::ONE,
+        primitive if primitive.contains("rock") => GlamVec3::ONE,
+        primitive if primitive.contains("bush") => GlamVec3::ONE,
+        primitive if primitive.contains("grass") => GlamVec3::ONE,
         _ => default_scale,
     }
 }
@@ -149,6 +163,64 @@ pub fn create_primitive_mesh(mesh_id: Option<&str>) -> CpuMesh {
             mesh if mesh.contains("spiralstairs") || mesh.contains("spiral") && mesh.contains("stair") => {
                 log::info!("    Creating:    Spiral Stairs (12 steps, 1 turn)");
                 let vibe_mesh = vibe_assets::create_spiral_stairs(1.0, 2.0, 12, 1.0);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            // Decorative shapes
+            mesh if mesh.contains("star") || mesh == "Star" => {
+                log::info!("    Creating:    Star (5 points)");
+                let vibe_mesh = vibe_assets::create_star(0.5, 0.25, 5, 0.2);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("heart") || mesh == "Heart" => {
+                log::info!("    Creating:    Heart (parametric curve)");
+                let vibe_mesh = vibe_assets::create_heart(0.5, 0.2, 32);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("diamond") || mesh == "Diamond" => {
+                log::info!("    Creating:    Diamond (faceted gem)");
+                let vibe_mesh = vibe_assets::create_diamond(0.5, 0.8, 0.4, 8);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("cross") || mesh == "Cross" => {
+                log::info!("    Creating:    Cross (3D plus sign)");
+                let vibe_mesh = vibe_assets::create_cross(1.0, 0.3);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("tube") || mesh == "Tube" => {
+                log::info!("    Creating:    Tube (curved cylinder)");
+                let vibe_mesh = vibe_assets::create_tube(0.5, 0.1, 32, 16);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            // Mathematical shapes
+            mesh if mesh.contains("helix") || mesh == "Helix" => {
+                log::info!("    Creating:    Helix (spiral, 3 coils)");
+                let vibe_mesh = vibe_assets::create_helix(0.5, 2.0, 0.1, 3.0, 32, 8);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("mobius") || mesh == "MobiusStrip" => {
+                log::info!("    Creating:    Mobius Strip (non-orientable surface)");
+                let vibe_mesh = vibe_assets::create_mobius_strip(0.5, 0.3, 64);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            // Environment shapes
+            mesh if mesh.contains("tree") || mesh == "Tree" => {
+                log::info!("    Creating:    Tree (trunk + foliage)");
+                let vibe_mesh = vibe_assets::create_tree(0.1, 1.0, 0.5, 1.0, 8);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("rock") || mesh == "Rock" => {
+                log::info!("    Creating:    Rock (irregular sphere)");
+                let vibe_mesh = vibe_assets::create_rock(0.5, 0.3, 16);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("bush") || mesh == "Bush" => {
+                log::info!("    Creating:    Bush (spherical foliage)");
+                let vibe_mesh = vibe_assets::create_bush(0.5, 8);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("grass") || mesh == "Grass" => {
+                log::info!("    Creating:    Grass (blade cluster, 5 blades)");
+                let vibe_mesh = vibe_assets::create_grass(0.05, 0.3, 5);
                 convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
             _ => {
