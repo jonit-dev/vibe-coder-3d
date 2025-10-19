@@ -25,7 +25,7 @@
           "projectionType": "perspective",
           "isMain": true,
           "clearFlags": "skybox",
-          "skyboxTexture": "/assets/skybox/default-skybox.hdr",
+          "skyboxTexture": "/assets/skyboxes/ocean_horizon.jpg",
           "backgroundColor": {
             "r": 0,
             "g": 0,

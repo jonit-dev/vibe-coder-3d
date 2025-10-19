@@ -29,14 +29,48 @@ impl TextureCache {
 
         log::info!("Loading texture: {}", path);
 
-        // Load via three_d_asset
-        let mut loaded = three_d_asset::io::load_async(&[path])
-            .await
-            .with_context(|| format!("Failed to load texture from path: {}", path))?;
+        // Transform path: /assets/... -> ../game/assets/...
+        // This handles scene JSON paths that reference /assets/* to actual file locations
+        let resolved_path = if path.starts_with("/assets/") {
+            format!("../game{}", path)
+        } else if path.starts_with("assets/") {
+            format!("../game/{}", path)
+        } else {
+            path.to_string()
+        };
 
-        let cpu_texture: CpuTexture = loaded
-            .deserialize("")
-            .with_context(|| format!("Failed to deserialize texture: {}", path))?;
+        log::debug!("Resolved texture path: {} -> {}", path, resolved_path);
+
+        // Load via three_d_asset
+        let mut loaded = match three_d_asset::io::load_async(&[&resolved_path]).await {
+            Ok(assets) => {
+                log::debug!("Successfully loaded asset file: {}", resolved_path);
+                assets
+            }
+            Err(e) => {
+                return Err(anyhow::anyhow!(
+                    "Failed to load texture file '{}' (resolved: {}): {}",
+                    path,
+                    resolved_path,
+                    e
+                ));
+            }
+        };
+
+        let cpu_texture: CpuTexture = match loaded.deserialize("") {
+            Ok(tex) => {
+                log::debug!("Successfully deserialized texture: {}", path);
+                tex
+            }
+            Err(e) => {
+                return Err(anyhow::anyhow!(
+                    "Failed to deserialize texture '{}' (resolved: {}): {}",
+                    path,
+                    resolved_path,
+                    e
+                ));
+            }
+        };
 
         let rc_texture = Rc::new(cpu_texture);
 

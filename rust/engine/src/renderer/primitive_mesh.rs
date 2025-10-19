@@ -36,16 +36,22 @@ pub fn create_primitive_mesh(mesh_id: Option<&str>) -> CpuMesh {
     if let Some(id) = mesh_id {
         match id {
             mesh if mesh.contains("cube") || mesh.contains("box") => {
-                log::info!("    Creating:    Cube primitive");
-                CpuMesh::cube()
+                log::info!("    Creating:    Cube primitive (with UVs)");
+                use vibe_assets::create_cube;
+                let vibe_mesh = create_cube();
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
             mesh if mesh.contains("sphere") => {
-                log::info!("    Creating:    Sphere primitive (16 segments)");
-                CpuMesh::sphere(16)
+                log::info!("    Creating:    Sphere primitive (with UVs, 16x16 segments)");
+                use vibe_assets::create_sphere;
+                let vibe_mesh = create_sphere(16, 16);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
             mesh if mesh.contains("plane") => {
-                log::info!("    Creating:    Plane primitive");
-                CpuMesh::square()
+                log::info!("    Creating:    Plane primitive (with UVs, size 1.0)");
+                use vibe_assets::create_plane;
+                let vibe_mesh = create_plane(1.0);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
             // Platonic solids - use vibe_assets implementations for Three.js parity
             mesh if mesh.contains("tetrahedron") || mesh == "Tetrahedron" => {
@@ -69,13 +75,17 @@ pub fn create_primitive_mesh(mesh_id: Option<&str>) -> CpuMesh {
                 convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
             _ => {
-                log::warn!("    Unknown mesh type: {}, using cube", id);
-                CpuMesh::cube()
+                log::warn!("    Unknown mesh type: {}, using cube (with UVs)", id);
+                use vibe_assets::create_cube;
+                let vibe_mesh = create_cube();
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
         }
     } else {
-        log::info!("    Creating:    Default cube");
-        CpuMesh::cube()
+        log::info!("    Creating:    Default cube (with UVs)");
+        use vibe_assets::create_cube;
+        let vibe_mesh = create_cube();
+        convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
     }
 }
 

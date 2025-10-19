@@ -85,13 +85,13 @@ impl MaterialManager {
 
         // ✅ Load albedo texture
         if let Some(ref albedo_path) = material.albedoTexture {
-            log::debug!("Loading albedo texture: {}", albedo_path);
+            log::info!("🎨 Loading albedo texture: {}", albedo_path);
             match self.texture_cache.load_texture(albedo_path).await {
                 Ok(texture) => {
                     cpu_material.albedo_texture = Some(texture.as_ref().clone());
-                    log::debug!("Albedo texture loaded successfully");
+                    log::info!("✅ Albedo texture loaded successfully");
                 }
-                Err(e) => log::warn!("Failed to load albedo texture '{}': {}", albedo_path, e),
+                Err(e) => log::warn!("❌ Failed to load albedo texture '{}': {}", albedo_path, e),
             }
         }
 
