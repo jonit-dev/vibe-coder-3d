@@ -15,7 +15,7 @@ TypeScript Editor → RustSceneSerializer → JSON File → Rust Engine Loader �
 | **Transform**      | ✅ TransformComponent.ts      | ✅ transform.rs     | 🟢 Full Support (Euler + Quat)   |
 | **MeshRenderer**   | ✅ MeshRendererComponent.ts   | ✅ mesh_renderer.rs | 🟡 Partial (missing textures)    |
 | **Camera**         | ✅ CameraComponent.ts         | ✅ camera.rs        | 🟡 Partial (missing many fields) |
-| **Light**          | ✅ LightComponent.ts          | ✅ light.rs         | 🟢 Fully Implemented + Rendered  |
+| **Light**          | ✅ LightComponent.ts          | ✅ light.rs         | 🟡 Partial (shadows & spot params missing) |
 | **RigidBody**      | ✅ RigidBodyComponent.ts      | ❌ Not implemented  | 🔴 Missing                       |
 | **MeshCollider**   | ✅ MeshColliderComponent.ts   | ❌ Not implemented  | 🔴 Missing                       |
 | **Script**         | ✅ ScriptComponent.ts         | ❌ Not implemented  | 🔴 Missing                       |
@@ -213,28 +213,28 @@ pub struct Light {
 
 **Integration Status**:
 
-- ✅ `lightType`: Full support (directional, ambient, point, spot parsed)
-- ✅ `color`: Full support + rendered
-- ✅ `intensity`: Full support + rendered
-- ✅ `enabled`: Full support + filters disabled lights
-- ⚠️ `castShadow`: Parsed but shadows not yet implemented
-- ✅ `directionX/Y/Z`: Full support + rendered for directional and spot lights
-- ✅ `range`: Full support + rendered for point and spot lights
-- ✅ `decay`: Full support + rendered for spot lights
-- ✅ `angle`: Full support + rendered for spot lights
-- ✅ `penumbra`: Full support + rendered for spot lights
-- ⚠️ `shadowMapSize`: Parsed but shadows not yet implemented
-- ⚠️ `shadowBias`: Parsed but shadows not yet implemented
-- ⚠️ `shadowRadius`: Parsed but shadows not yet implemented
+- ✅ `lightType`: Parsed and mapped to directional, ambient, point, and spot constructors
+- ✅ `color`: Converted to `Srgba` and applied
+- ✅ `intensity`: Passed through to three-d lights
+- ❌ `enabled`: Ignored (lights render even when disabled)
+- ⚠️ `castShadow`: Parsed but only logged; no shadow pipeline yet
+- ✅ `directionX/Y/Z`: Used for directional and spot lights (Z flipped to three-d coordinates)
+- ⚠️ `range`: Parsed but not wired; attenuation always `Attenuation::default()`
+- ⚠️ `decay`: Parsed but not wired; same default attenuation
+- ⚠️ `angle`: Parsed but replaced with hard-coded `radians(0.5)`
+- ⚠️ `penumbra`: Parsed but unused
+- ⚠️ `shadowMapSize`: Parsed but unused (shadows TODO)
+- ⚠️ `shadowBias`: Parsed but unused
+- ⚠️ `shadowRadius`: Parsed but unused
 
-**Coverage**: 17/17 fields (100% parsed, 85% actively used)
+**Coverage**: 15/15 fields parsed, ~6 actively used (40%)
 
 **Current Rendering Support**:
 
-- ✅ Directional lights (direction, color, intensity) - fully rendered
-- ✅ Ambient lights (color, intensity) - fully rendered
-- ✅ Point lights (position, color, intensity, range) - fully rendered with distance attenuation
-- ✅ Spot lights (position, direction, color, intensity, angle, penumbra, range, decay) - fully rendered with cone attenuation
+- ✅ Directional lights (direction, color, intensity) render with correct orientation
+- ✅ Ambient lights (color, intensity) render as global fill
+- 🟡 Point lights render at correct positions but ignore `range`/`decay` (default attenuation)
+- 🟡 Spot lights render with Z-flipped direction but use fixed cone angle/attenuation, penumbra ignored
 
 ---
 
@@ -354,29 +354,27 @@ pub struct MeshRenderer {
 
 ## 🔧 Critical Integration Gaps
 
-### 1. ✅ Material System - COMPLETED
+### 1. Material System - Basic PBR (Textures Outstanding)
 
-**Status**: ✅ **FULLY IMPLEMENTED**
+**Status**: 🟡 **PARTIALLY IMPLEMENTED**
 
-- ✅ Material struct with PBR properties
-- ✅ MaterialCache for storage and lookup
-- ✅ Hex color parsing to RGB
-- ✅ Applied to rendering pipeline
-- ✅ Fallback to default material
-- ⚠️ Textures not yet supported (all texture-related fields missing)
+- ✅ `MaterialManager` caches material JSON by ID
+- ✅ Hex color strings converted to `Srgba`
+- ✅ Metallic and roughness scalars passed into `PhysicalMaterial`
+- ✅ Default/fallback material provided when ID missing
+- ⚠️ Emissive fields parsed but not applied to material
+- ❌ No texture bindings (albedo/normal/metallic/roughness/emissive/AO)
+- ❌ No inline overrides from `MeshRenderer.material`
 
-### 2. ✅ Dynamic Lighting System - COMPLETED
+### 2. Dynamic Lighting System - Partial
 
-**Status**: ✅ **FULLY IMPLEMENTED**
+**Status**: 🟡 **PARTIALLY IMPLEMENTED**
 
-- ✅ LightUniform struct with 1x directional, 1x ambient, 2x point, 1x spot light
-- ✅ Updated shader with PBR lighting calculations
-- ✅ Scene light extraction from Light components
-- ✅ Dynamic light application based on scene data
-- ✅ Specular highlights based on roughness
-- ✅ Distance-based attenuation for point lights
-- ✅ Spot lights with Three.js-style cone attenuation and smooth falloff
-- ⚠️ Shadow mapping not implemented (castShadow parsed but not used)
+- ✅ Directional and ambient lights instantiate with correct direction/color/intensity
+- ✅ Point lights spawn at scene positions (Z flipped) using three-d defaults
+- ✅ Spot lights created and oriented, but cone angle/attenuation hard-coded
+- ⚠️ `enabled`, `range`, `decay`, `angle`, `penumbra` not yet mapped to three-d values
+- ⚠️ Shadow-related fields ignored; no shadow map pipeline in place
 
 ### 3. ✅ Parent-Child Hierarchy - COMPLETED
 
@@ -414,10 +412,9 @@ pub struct MeshRenderer {
 
 **Implemented**:
 
-- ✅ Basic rendering (meshId → primitives)
-- ✅ Material lookup (materialId → MaterialCache)
-- ✅ Enabled flag
-- ✅ GLTF model loading (modelPath with `gltf-support` feature)
+- ✅ Basic primitive rendering (`meshId` → cube/sphere/plane)
+- ✅ Material lookup (`materialId` → `MaterialManager`) with PBR color/metalness/roughness
+- ✅ `enabled` flag respected (disabled entities skipped)
 
 **Missing** (69% of fields):
 
@@ -523,7 +520,7 @@ pub struct MeshRenderer {
 
 1. 🟡 **Camera component** - 30% complete (missing viewport, HDR, post-processing, skybox, follow system)
 2. 🟡 **MeshRenderer component** - 23% complete (missing textures, inline material overrides, GLTF, multi-submesh)
-3. 🟡 **Light component** - 100% parsed, 70% rendered (missing spot lights, shadows)
+3. 🟡 **Light component** - 100% parsed, ~40% of fields applied (no shadows, ignores enable/range/spot params)
 4. 🟡 Prefabs (parsed but not instantiated)
 
 ### Missing ❌
@@ -531,7 +528,7 @@ pub struct MeshRenderer {
 1. ❌ **GLTF model loading** (modelPath ignored)
 2. ❌ **Textures** (all texture fields: albedo, normal, metallic, roughness, emissive, AO)
 3. ❌ **Shadows** (no shadow mapping - castShadows/receiveShadows parsed)
-4. ❌ **Spot lights** (parsed but shader support not added)
+4. ❌ **Spot light parameter mapping** (angle, penumbra, decay, range still ignored)
 5. ❌ **Camera follow system** (followTarget, followOffset, smoothing)
 6. ❌ **Multi-camera rendering** (viewportRect, camera depth)
 7. ❌ **HDR & Tone mapping** (hdr, toneMapping, exposure)
@@ -563,17 +560,17 @@ pub struct MeshRenderer {
 
 2. 🔴 **Add texture support** (HIGH IMPACT)
 
-   - Load albedo textures from Material or MeshRenderer
-   - Sample in fragment shader
-   - Use wgpu texture bind groups
-   - Support UV transforms (offset, repeat)
+   - Load albedo/normal/metallic/roughness/emissive maps via `three_d_asset::io::load_async`
+   - Extend `MaterialData` to capture texture URIs and wrap modes
+   - Populate `CpuMaterial` texture slots when building `PhysicalMaterial`
+   - Apply texture transforms (offset/repeat) by updating mesh UV matrices
    - **Effort**: 16-20 hours
-   - **Blocks**: Textured materials, normal mapping, PBR maps
+   - **Blocks**: Textured materials, normal mapping, emissive/AO rendering
 
-3. 🟡 **Implement spot light support** (MEDIUM IMPACT)
-   - Add spot light calculations to shader
-   - Use angle and penumbra from Light component
-   - Apply cone attenuation
+3. 🟡 **Implement spot light parameter mapping** (MEDIUM IMPACT)
+   - Wire `angle`/`penumbra`/`range`/`decay` into `SpotLight::set_cone` and attenuation APIs
+   - Respect `enabled` and skip disabled lights entirely
+   - Tune defaults against Three.js reference scenes
    - **Effort**: 4-6 hours
 
 ### Priority 2: Visual Quality (High)

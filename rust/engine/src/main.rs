@@ -5,6 +5,7 @@ mod app_threed;
 mod debug;
 mod ecs;
 mod io;
+mod renderer;
 mod threed_renderer;
 mod util;
 

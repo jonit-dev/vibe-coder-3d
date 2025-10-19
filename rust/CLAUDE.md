@@ -10,6 +10,250 @@ This folder contains the native Rust engine that renders 3D scenes using wgpu. I
 - Must use snake_case for variable naming in Rust!
 - **ALWAYS use `vibe_ecs_bridge::transform_utils` for rotation conversions** - TypeScript stores rotations in DEGREES, Rust expects RADIANS
 
+## Code Organization Principles (SRP, DRY, KISS, YAGNI)
+
+### Single Responsibility Principle (SRP)
+
+**Rule**: Each module, struct, or function should have ONE clear responsibility.
+
+```rust
+// ❌ BAD - God object doing everything
+pub struct Renderer {
+    // Rendering
+    context: Context,
+    meshes: Vec<Mesh>,
+
+    // Material management
+    materials: HashMap<String, Material>,
+
+    // Mesh loading
+    mesh_cache: HashMap<String, CpuMesh>,
+
+    // Scene parsing
+    component_registry: ComponentRegistry,
+
+    // 500+ lines of mixed concerns...
+}
+
+// ✅ GOOD - Separated responsibilities
+pub struct Renderer {
+    context: Context,
+    meshes: Vec<Mesh>,
+    material_manager: MaterialManager,  // Delegated responsibility
+}
+
+pub struct MaterialManager {
+    cache: HashMap<String, MaterialData>,
+}
+
+impl MaterialManager {
+    pub fn create_physical_material(&self, context: &Context, material: &MaterialData) -> PhysicalMaterial {
+        // Focused on ONE thing: material creation
+    }
+}
+```
+
+**Guidelines**:
+- Keep structs focused on ONE domain (rendering, materials, physics, etc.)
+- Extract helper modules when a file exceeds ~300-400 lines
+- Each function should do ONE thing and do it well
+- Use composition over inheritance (Rust makes this natural)
+
+### Don't Repeat Yourself (DRY)
+
+**Rule**: Extract common code into reusable utilities to avoid duplication.
+
+```rust
+// ❌ BAD - Repeated Z-flip coordinate conversion
+let position = vec3(pos.x, pos.y, -pos.z);  // Repeated 8 times in the file
+let direction = vec3(dir_x, dir_y, -dir_z);  // Same pattern, same mistake risk
+
+// ✅ GOOD - Centralized conversion utilities
+// In renderer/coordinate_conversion.rs
+pub fn threejs_to_threed_position(pos: GlamVec3) -> Vec3 {
+    Vec3::new(pos.x, pos.y, -pos.z)
+}
+
+pub fn threejs_to_threed_direction(dir_x: f32, dir_y: f32, dir_z: f32) -> Vec3 {
+    Vec3::new(dir_x, dir_y, -dir_z)
+}
+
+// Used everywhere consistently
+let position = threejs_to_threed_position(pos);
+let direction = threejs_to_threed_direction(light.directionX, light.directionY, light.directionZ);
+```
+
+**Guidelines**:
+- Create utility modules for repeated patterns (coordinate conversion, transform utils, etc.)
+- Extract common logging patterns into helper functions
+- Use `const` for repeated magic numbers
+- Don't copy-paste code - refactor into a shared function
+
+### Keep It Simple, Stupid (KISS)
+
+**Rule**: Prefer simple, clear solutions over complex, clever ones.
+
+```rust
+// ❌ BAD - Overly complex with unclear flow
+fn load_entity(&mut self, entity: &Entity) -> Result<()> {
+    match entity.components.get("MeshRenderer") {
+        Some(mr) => match self.component_registry.decode("MeshRenderer", mr) {
+            Ok(boxed) => match boxed.downcast::<MeshRenderer>() {
+                Ok(mesh_renderer) => {
+                    // 50+ lines of mesh creation inline...
+                }
+                Err(e) => log::warn!("Downcast failed"),
+            }
+            Err(e) => log::warn!("Decode failed"),
+        }
+        None => {}
+    }
+    // Repeat for Light, Camera, Transform...
+}
+
+// ✅ GOOD - Simple, clear delegation
+fn load_entity(&mut self, entity: &Entity) -> Result<()> {
+    let transform = self.get_component::<Transform>(entity, "Transform");
+
+    if let Some(mesh_renderer) = self.get_component::<MeshRenderer>(entity, "MeshRenderer") {
+        self.handle_mesh_renderer(entity, &mesh_renderer, transform.as_ref())?;
+    }
+
+    if let Some(light) = self.get_component::<LightComponent>(entity, "Light") {
+        self.handle_light(&light, transform.as_ref())?;
+    }
+
+    Ok(())
+}
+
+fn get_component<T: 'static>(&self, entity: &Entity, name: &str) -> Option<T>
+where T: serde::de::DeserializeOwned {
+    // Complexity hidden in one reusable method
+}
+```
+
+**Guidelines**:
+- Break complex functions into smaller, named helper functions
+- Prefer clear variable names over comments explaining unclear names
+- Avoid deep nesting (max 3-4 levels)
+- Delegate complexity to specialized modules
+
+### You Aren't Gonna Need It (YAGNI)
+
+**Rule**: Don't add functionality until you actually need it.
+
+```rust
+// ❌ BAD - Premature optimization and unused features
+pub struct MaterialManager {
+    cache: HashMap<String, MaterialData>,
+    lru_eviction: bool,  // Not needed yet
+    max_cache_size: usize,  // Not needed yet
+    hit_count: HashMap<String, usize>,  // Not needed yet
+    async_loader: Option<AsyncLoader>,  // Not needed yet
+}
+
+// ✅ GOOD - Only what's needed now
+pub struct MaterialManager {
+    cache: HashMap<String, MaterialData>,
+}
+
+// Add features when they're actually required:
+// - LRU eviction when memory becomes an issue
+// - Async loading when load times become a problem
+// - Hit counting when profiling shows cache issues
+```
+
+**Guidelines**:
+- Implement features when they're needed, not "just in case"
+- Don't add configuration options for hypothetical use cases
+- Avoid "future-proofing" - requirements change, your assumptions will be wrong
+- Trust that refactoring is easier than maintaining unused code
+
+### Avoiding Verbose and Convoluted Code
+
+**Rules**:
+1. **File Size Limit**: Keep files under 500 lines. If larger, split into submodules.
+2. **Function Size Limit**: Functions over 50 lines should be refactored into smaller helpers.
+3. **Clear Module Boundaries**: Each module should export a clean, minimal public API.
+
+```rust
+// ❌ BAD - 900+ line monolithic file
+// src/threed_renderer.rs (before refactoring)
+impl ThreeDRenderer {
+    fn load_mesh_renderer(&mut self, ...) {
+        // 170+ lines of inline mesh creation, material handling, transform conversion...
+    }
+
+    fn load_light(&mut self, ...) {
+        // 120+ lines of inline light creation with repeated patterns...
+    }
+
+    fn load_camera(&mut self, ...) {
+        // 100+ lines of inline camera setup...
+    }
+
+    fn create_material(&self, ...) {
+        // Inline material creation...
+    }
+
+    fn primitive_base_scale(...) {
+        // Inline utility function...
+    }
+}
+
+// ✅ GOOD - Modular structure
+// src/renderer/
+// ├── mod.rs                    (clean re-exports)
+// ├── material_manager.rs       (120 lines, focused on materials)
+// ├── mesh_loader.rs            (70 lines, focused on mesh loading)
+// ├── light_loader.rs           (140 lines, focused on light creation)
+// ├── camera_loader.rs          (90 lines, focused on camera setup)
+// ├── transform_utils.rs        (200 lines, focused on transform conversions)
+// ├── coordinate_conversion.rs  (40 lines, focused on coordinate systems)
+// └── primitive_mesh.rs         (60 lines, focused on primitive creation)
+
+// src/threed_renderer.rs (after refactoring - 480 lines)
+impl ThreeDRenderer {
+    fn handle_mesh_renderer(&mut self, entity: &Entity, mesh_renderer: &MeshRenderer, transform: Option<&Transform>) -> Result<()> {
+        let (gm, final_scale) = load_mesh_renderer(&self.context, entity, mesh_renderer, transform, &self.material_manager)?;
+        self.meshes.push(gm);
+        self.mesh_entity_ids.push(entity.entity_id().unwrap_or(EntityId::new(0)));
+        self.mesh_scales.push(final_scale);
+        Ok(())
+    }
+
+    fn handle_light(&mut self, light: &LightComponent, transform: Option<&Transform>) -> Result<()> {
+        if let Some(loaded_light) = load_light(&self.context, light, transform)? {
+            match loaded_light {
+                LoadedLight::Directional(light) => self.directional_lights.push(light),
+                LoadedLight::Point(light) => self.point_lights.push(light),
+                LoadedLight::Spot(light) => self.spot_lights.push(light),
+                LoadedLight::Ambient(light) => self.ambient_light = Some(light),
+            }
+        }
+        Ok(())
+    }
+}
+```
+
+**Benefits of this approach**:
+- Each module can be understood in isolation
+- Easy to add new features (e.g., new light types → modify light_loader.rs only)
+- Easy to test (each module has focused tests)
+- Easy to reuse (material_manager can be used by other systems)
+- Reduced cognitive load (work on one concept at a time)
+
+### Refactoring Checklist
+
+When you notice code getting complex, ask:
+
+- [ ] Is this file over 500 lines? → Split into submodules
+- [ ] Is this function over 50 lines? → Extract helper functions
+- [ ] Am I copy-pasting code? → Create a utility function
+- [ ] Does this struct have multiple unrelated responsibilities? → Split into focused structs
+- [ ] Am I adding code "just in case"? → Wait until it's actually needed
+- [ ] Would a newcomer understand this easily? → Simplify or add clear documentation
+
 ## Project Structure
 
 ```
