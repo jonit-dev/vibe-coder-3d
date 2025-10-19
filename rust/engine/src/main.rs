@@ -44,6 +44,14 @@ struct Args {
     /// Delay in milliseconds before taking screenshot (default: 2000ms)
     #[arg(long, default_value_t = 2000)]
     screenshot_delay: u64,
+
+    /// Screenshot scale factor (0.1 to 1.0) - reduces resolution to save tokens
+    #[arg(long, default_value_t = 1.0)]
+    screenshot_scale: f32,
+
+    /// JPEG quality (1-100) - only applies if output path ends with .jpg/.jpeg
+    #[arg(long, default_value_t = 85)]
+    screenshot_quality: u8,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -128,7 +136,27 @@ async fn run(args: Args) -> anyhow::Result<()> {
             PathBuf::from(format!("screenshots/{}.png", scene_name))
         };
 
-        return app.screenshot(output_path, args.screenshot_delay);
+        // Validate screenshot scale
+        let scale = args.screenshot_scale.clamp(0.1, 1.0);
+        if scale != args.screenshot_scale {
+            log::warn!(
+                "Screenshot scale clamped to valid range: {} -> {}",
+                args.screenshot_scale,
+                scale
+            );
+        }
+
+        // Validate JPEG quality
+        let quality = args.screenshot_quality.clamp(1, 100);
+        if quality != args.screenshot_quality {
+            log::warn!(
+                "JPEG quality clamped to valid range: {} -> {}",
+                args.screenshot_quality,
+                quality
+            );
+        }
+
+        return app.screenshot(output_path, args.screenshot_delay, scale, quality);
     }
 
     log::info!("Entering render loop...");

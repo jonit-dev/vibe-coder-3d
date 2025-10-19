@@ -710,6 +710,204 @@ impl IComponentDecoder for MeshColliderDecoder {
 }
 
 // ============================================================================
+// PrefabInstance Component
+// ============================================================================
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PrefabInstance {
+    #[serde(default)]
+    pub prefabId: String,
+    #[serde(default = "default_version")]
+    pub version: u32,
+    #[serde(default)]
+    pub instanceUuid: String,
+    #[serde(default)]
+    pub overridePatch: Option<Value>,
+}
+
+fn default_version() -> u32 {
+    1
+}
+
+pub struct PrefabInstanceDecoder;
+
+impl IComponentDecoder for PrefabInstanceDecoder {
+    fn can_decode(&self, kind: &str) -> bool {
+        kind == "PrefabInstance"
+    }
+
+    fn decode(&self, value: &Value) -> Result<Box<dyn Any>> {
+        let component: PrefabInstance = serde_json::from_value(value.clone())?;
+        Ok(Box::new(component))
+    }
+
+    fn capabilities(&self) -> ComponentCapabilities {
+        ComponentCapabilities {
+            affects_rendering: false,
+            requires_pass: None,
+            stable: true,
+        }
+    }
+
+    fn component_kinds(&self) -> Vec<ComponentKindId> {
+        vec![ComponentKindId::new("PrefabInstance")]
+    }
+}
+
+// ============================================================================
+// Instanced Component
+// ============================================================================
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct InstanceData {
+    pub position: [f32; 3],
+    #[serde(default)]
+    pub rotation: Option<[f32; 3]>,
+    #[serde(default)]
+    pub scale: Option<[f32; 3]>,
+    #[serde(default)]
+    pub color: Option<[f32; 3]>,
+    #[serde(default)]
+    pub userData: Option<Value>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Instanced {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default = "default_capacity")]
+    pub capacity: u32,
+    #[serde(default)]
+    pub baseMeshId: String,
+    #[serde(default)]
+    pub baseMaterialId: String,
+    #[serde(default)]
+    pub instances: Vec<InstanceData>,
+    #[serde(default = "default_true")]
+    pub castShadows: bool,
+    #[serde(default = "default_true")]
+    pub receiveShadows: bool,
+    #[serde(default = "default_true")]
+    pub frustumCulled: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_capacity() -> u32 {
+    100
+}
+
+pub struct InstancedDecoder;
+
+impl IComponentDecoder for InstancedDecoder {
+    fn can_decode(&self, kind: &str) -> bool {
+        kind == "Instanced"
+    }
+
+    fn decode(&self, value: &Value) -> Result<Box<dyn Any>> {
+        let component: Instanced = serde_json::from_value(value.clone())?;
+        Ok(Box::new(component))
+    }
+
+    fn capabilities(&self) -> ComponentCapabilities {
+        ComponentCapabilities {
+            affects_rendering: true,
+            requires_pass: Some("geometry"),
+            stable: true,
+        }
+    }
+
+    fn component_kinds(&self) -> Vec<ComponentKindId> {
+        vec![ComponentKindId::new("Instanced")]
+    }
+}
+
+// ============================================================================
+// Terrain Component
+// ============================================================================
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Terrain {
+    #[serde(default = "default_size")]
+    pub size: [f32; 2],
+    #[serde(default = "default_segments")]
+    pub segments: [u32; 2],
+    #[serde(default = "default_height_scale")]
+    pub heightScale: f32,
+    #[serde(default = "default_true")]
+    pub noiseEnabled: bool,
+    #[serde(default = "default_noise_seed")]
+    pub noiseSeed: u32,
+    #[serde(default = "default_noise_frequency")]
+    pub noiseFrequency: f32,
+    #[serde(default = "default_noise_octaves")]
+    pub noiseOctaves: u8,
+    #[serde(default = "default_noise_persistence")]
+    pub noisePersistence: f32,
+    #[serde(default = "default_noise_lacunarity")]
+    pub noiseLacunarity: f32,
+}
+
+fn default_size() -> [f32; 2] {
+    [20.0, 20.0]
+}
+
+fn default_segments() -> [u32; 2] {
+    [129, 129]
+}
+
+fn default_height_scale() -> f32 {
+    2.0
+}
+
+fn default_noise_seed() -> u32 {
+    1337
+}
+
+fn default_noise_frequency() -> f32 {
+    4.0
+}
+
+fn default_noise_octaves() -> u8 {
+    4
+}
+
+fn default_noise_persistence() -> f32 {
+    0.5
+}
+
+fn default_noise_lacunarity() -> f32 {
+    2.0
+}
+
+pub struct TerrainDecoder;
+
+impl IComponentDecoder for TerrainDecoder {
+    fn can_decode(&self, kind: &str) -> bool {
+        kind == "Terrain"
+    }
+
+    fn decode(&self, value: &Value) -> Result<Box<dyn Any>> {
+        let component: Terrain = serde_json::from_value(value.clone())?;
+        Ok(Box::new(component))
+    }
+
+    fn capabilities(&self) -> ComponentCapabilities {
+        ComponentCapabilities {
+            affects_rendering: true,
+            requires_pass: Some("geometry"),
+            stable: true,
+        }
+    }
+
+    fn component_kinds(&self) -> Vec<ComponentKindId> {
+        vec![ComponentKindId::new("Terrain")]
+    }
+}
+
+// ============================================================================
 // Helper to create a fully populated registry
 // ============================================================================
 
@@ -724,6 +922,9 @@ pub fn create_default_registry() -> ComponentRegistry {
     registry.register(MaterialDecoder);
     registry.register(RigidBodyDecoder);
     registry.register(MeshColliderDecoder);
+    registry.register(PrefabInstanceDecoder);
+    registry.register(InstancedDecoder);
+    registry.register(TerrainDecoder);
     registry
 }
 
@@ -979,5 +1180,213 @@ mod tests {
         let json = serde_json::json!({"colliderType": "sphere"});
         let decoded = registry.decode("MeshCollider", &json).unwrap();
         assert!(decoded.downcast_ref::<MeshCollider>().is_some());
+
+        // Test PrefabInstance
+        let json = serde_json::json!({"prefabId": "prefab-1"});
+        let decoded = registry.decode("PrefabInstance", &json).unwrap();
+        assert!(decoded.downcast_ref::<PrefabInstance>().is_some());
+
+        // Test Instanced
+        let json = serde_json::json!({"baseMeshId": "cube", "baseMaterialId": "mat-1"});
+        let decoded = registry.decode("Instanced", &json).unwrap();
+        assert!(decoded.downcast_ref::<Instanced>().is_some());
+
+        // Test Terrain
+        let json = serde_json::json!({"size": [20.0, 20.0]});
+        let decoded = registry.decode("Terrain", &json).unwrap();
+        assert!(decoded.downcast_ref::<Terrain>().is_some());
+    }
+
+    // ============================================================================
+    // PrefabInstance Component Tests
+    // ============================================================================
+
+    #[test]
+    fn test_prefab_instance_decoder() {
+        let decoder = PrefabInstanceDecoder;
+        assert!(decoder.can_decode("PrefabInstance"));
+        assert!(!decoder.can_decode("Transform"));
+
+        let json = serde_json::json!({
+            "prefabId": "tree-prefab",
+            "version": 2,
+            "instanceUuid": "abc-123",
+            "overridePatch": {"color": "red"}
+        });
+
+        let decoded = decoder.decode(&json).unwrap();
+        let component = decoded.downcast_ref::<PrefabInstance>().unwrap();
+        assert_eq!(component.prefabId, "tree-prefab");
+        assert_eq!(component.version, 2);
+        assert_eq!(component.instanceUuid, "abc-123");
+        assert!(component.overridePatch.is_some());
+    }
+
+    #[test]
+    fn test_prefab_instance_decoder_defaults() {
+        let decoder = PrefabInstanceDecoder;
+        let json = serde_json::json!({});
+
+        let decoded = decoder.decode(&json).unwrap();
+        let component = decoded.downcast_ref::<PrefabInstance>().unwrap();
+        assert_eq!(component.prefabId, "");
+        assert_eq!(component.version, 1);
+        assert_eq!(component.instanceUuid, "");
+        assert!(component.overridePatch.is_none());
+    }
+
+    #[test]
+    fn test_prefab_instance_capabilities() {
+        let decoder = PrefabInstanceDecoder;
+        let caps = decoder.capabilities();
+        assert!(!caps.affects_rendering);
+        assert!(caps.requires_pass.is_none());
+        assert!(caps.stable);
+    }
+
+    // ============================================================================
+    // Instanced Component Tests
+    // ============================================================================
+
+    #[test]
+    fn test_instanced_decoder() {
+        let decoder = InstancedDecoder;
+        assert!(decoder.can_decode("Instanced"));
+        assert!(!decoder.can_decode("Transform"));
+
+        let json = serde_json::json!({
+            "enabled": true,
+            "capacity": 500,
+            "baseMeshId": "cube",
+            "baseMaterialId": "mat-1",
+            "instances": [
+                {
+                    "position": [1.0, 2.0, 3.0],
+                    "rotation": [0.0, 90.0, 0.0],
+                    "scale": [1.0, 1.0, 1.0],
+                    "color": [1.0, 0.0, 0.0]
+                },
+                {
+                    "position": [4.0, 5.0, 6.0]
+                }
+            ],
+            "castShadows": true,
+            "receiveShadows": false,
+            "frustumCulled": true
+        });
+
+        let decoded = decoder.decode(&json).unwrap();
+        let component = decoded.downcast_ref::<Instanced>().unwrap();
+        assert_eq!(component.enabled, true);
+        assert_eq!(component.capacity, 500);
+        assert_eq!(component.baseMeshId, "cube");
+        assert_eq!(component.baseMaterialId, "mat-1");
+        assert_eq!(component.instances.len(), 2);
+        assert_eq!(component.instances[0].position, [1.0, 2.0, 3.0]);
+        assert_eq!(component.instances[0].rotation, Some([0.0, 90.0, 0.0]));
+        assert_eq!(component.instances[0].scale, Some([1.0, 1.0, 1.0]));
+        assert_eq!(component.instances[0].color, Some([1.0, 0.0, 0.0]));
+        assert_eq!(component.instances[1].position, [4.0, 5.0, 6.0]);
+        assert_eq!(component.instances[1].rotation, None);
+        assert_eq!(component.castShadows, true);
+        assert_eq!(component.receiveShadows, false);
+        assert_eq!(component.frustumCulled, true);
+    }
+
+    #[test]
+    fn test_instanced_decoder_defaults() {
+        let decoder = InstancedDecoder;
+        let json = serde_json::json!({});
+
+        let decoded = decoder.decode(&json).unwrap();
+        let component = decoded.downcast_ref::<Instanced>().unwrap();
+        assert_eq!(component.enabled, true);
+        assert_eq!(component.capacity, 100);
+        assert_eq!(component.baseMeshId, "");
+        assert_eq!(component.baseMaterialId, "");
+        assert_eq!(component.instances.len(), 0);
+        assert_eq!(component.castShadows, true);
+        assert_eq!(component.receiveShadows, true);
+        assert_eq!(component.frustumCulled, true);
+    }
+
+    #[test]
+    fn test_instanced_capabilities() {
+        let decoder = InstancedDecoder;
+        let caps = decoder.capabilities();
+        assert!(caps.affects_rendering);
+        assert_eq!(caps.requires_pass, Some("geometry"));
+        assert!(caps.stable);
+    }
+
+    // ============================================================================
+    // Terrain Component Tests
+    // ============================================================================
+
+    #[test]
+    fn test_terrain_decoder() {
+        let decoder = TerrainDecoder;
+        assert!(decoder.can_decode("Terrain"));
+        assert!(!decoder.can_decode("Transform"));
+
+        let json = serde_json::json!({
+            "size": [40.0, 40.0],
+            "segments": [257, 257],
+            "heightScale": 5.0,
+            "noiseEnabled": true,
+            "noiseSeed": 42,
+            "noiseFrequency": 8.0,
+            "noiseOctaves": 6,
+            "noisePersistence": 0.6,
+            "noiseLacunarity": 2.5
+        });
+
+        let decoded = decoder.decode(&json).unwrap();
+        let component = decoded.downcast_ref::<Terrain>().unwrap();
+        assert_eq!(component.size, [40.0, 40.0]);
+        assert_eq!(component.segments, [257, 257]);
+        assert_eq!(component.heightScale, 5.0);
+        assert_eq!(component.noiseEnabled, true);
+        assert_eq!(component.noiseSeed, 42);
+        assert_eq!(component.noiseFrequency, 8.0);
+        assert_eq!(component.noiseOctaves, 6);
+        assert_eq!(component.noisePersistence, 0.6);
+        assert_eq!(component.noiseLacunarity, 2.5);
+    }
+
+    #[test]
+    fn test_terrain_decoder_defaults() {
+        let decoder = TerrainDecoder;
+        let json = serde_json::json!({});
+
+        let decoded = decoder.decode(&json).unwrap();
+        let component = decoded.downcast_ref::<Terrain>().unwrap();
+        assert_eq!(component.size, [20.0, 20.0]);
+        assert_eq!(component.segments, [129, 129]);
+        assert_eq!(component.heightScale, 2.0);
+        assert_eq!(component.noiseEnabled, true);
+        assert_eq!(component.noiseSeed, 1337);
+        assert_eq!(component.noiseFrequency, 4.0);
+        assert_eq!(component.noiseOctaves, 4);
+        assert_eq!(component.noisePersistence, 0.5);
+        assert_eq!(component.noiseLacunarity, 2.0);
+    }
+
+    #[test]
+    fn test_terrain_capabilities() {
+        let decoder = TerrainDecoder;
+        let caps = decoder.capabilities();
+        assert!(caps.affects_rendering);
+        assert_eq!(caps.requires_pass, Some("geometry"));
+        assert!(caps.stable);
+    }
+
+    #[test]
+    fn test_default_registry_has_new_components() {
+        let registry = create_default_registry();
+
+        assert!(registry.has_decoder("PrefabInstance"));
+        assert!(registry.has_decoder("Instanced"));
+        assert!(registry.has_decoder("Terrain"));
     }
 }

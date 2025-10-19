@@ -10,20 +10,20 @@ TypeScript Editor → RustSceneSerializer → JSON File → Rust Engine Loader �
 
 ### Components Overview
 
-| Component          | TS Definition                 | Rust Implementation                                 | Status                                                                       |
-| ------------------ | ----------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **Transform**      | ✅ TransformComponent.ts      | ✅ transform.rs                                     | 🟢 Full Support (Euler + Quat)                                               |
-| **MeshRenderer**   | ✅ MeshRendererComponent.ts   | ✅ mesh_renderer.rs                                 | 🟢 Mostly Complete (85% coverage, textures + overrides working)              |
-| **Camera**         | ✅ CameraComponent.ts         | ✅ camera.rs                                        | 🟢 Full Support (multi-camera, control modes, HDR/post-processing, skybox)   |
-| **Light**          | ✅ LightComponent.ts          | ✅ light.rs                                         | 🟢 Full THREE.JS Parity (100% complete)                                      |
-| **RigidBody**      | ✅ RigidBodyComponent.ts      | ✅ components.rs, decoders.rs, scene_integration.rs | 🟢 Full Support (100% coverage)                                              |
-| **MeshCollider**   | ✅ MeshColliderComponent.ts   | ✅ components.rs, decoders.rs, scene_integration.rs | 🟢 Full Support (100% coverage)                                              |
-| **Script**         | ✅ ScriptComponent.ts         | ❌ Not implemented                                  | 🔴 Missing                                                                   |
-| **Sound**          | ✅ SoundComponent.ts          | ❌ Not implemented                                  | 🔴 Missing                                                                   |
-| **Terrain**        | ✅ TerrainComponent.ts        | ❌ Not implemented                                  | 🔴 Missing                                                                   |
-| **CustomShape**    | ✅ CustomShapeComponent.ts    | ❌ Not implemented                                  | 🔴 Missing                                                                   |
-| **Instanced**      | ✅ InstancedComponent.ts      | ❌ Not implemented                                  | 🔴 Missing                                                                   |
-| **PrefabInstance** | ✅ PrefabInstanceComponent.ts | ❌ Not implemented                                  | 🔴 Missing                                                                   |
+| Component          | TS Definition                 | Rust Implementation                                 | Status                                                                     |
+| ------------------ | ----------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| **Transform**      | ✅ TransformComponent.ts      | ✅ transform.rs                                     | 🟢 Full Support (Euler + Quat)                                             |
+| **MeshRenderer**   | ✅ MeshRendererComponent.ts   | ✅ mesh_renderer.rs                                 | 🟢 Mostly Complete (92% coverage, GLTF + textures + overrides)             |
+| **Camera**         | ✅ CameraComponent.ts         | ✅ camera.rs                                        | 🟢 Full Support (100% - multi-camera, follow, HDR/post-processing, skybox) |
+| **Light**          | ✅ LightComponent.ts          | ✅ light.rs                                         | 🟢 Full THREE.JS Parity (100% - shadows, penumbra, attenuation)            |
+| **RigidBody**      | ✅ RigidBodyComponent.ts      | ✅ components.rs, decoders.rs, scene_integration.rs | 🟢 Full Support (100% - Rapier3D integration, all body types)              |
+| **MeshCollider**   | ✅ MeshColliderComponent.ts   | ✅ components.rs, decoders.rs, scene_integration.rs | 🟢 Full Support (100% - box/sphere/capsule, triggers, materials)           |
+| **Script**         | ✅ ScriptComponent.ts         | ❌ Not implemented                                  | 🔴 Missing - ⭐ HIGHEST PRIORITY (enables game logic)                      |
+| **Sound**          | ✅ SoundComponent.ts          | ❌ Not implemented                                  | 🔴 Missing                                                                 |
+| **Terrain**        | ✅ TerrainComponent.ts        | ❌ Not implemented                                  | 🔴 Missing                                                                 |
+| **CustomShape**    | ✅ CustomShapeComponent.ts    | ❌ Not implemented                                  | 🔴 Missing                                                                 |
+| **Instanced**      | ✅ InstancedComponent.ts      | ❌ Not implemented                                  | 🔴 Missing - Performance critical for many objects                         |
+| **PrefabInstance** | ✅ PrefabInstanceComponent.ts | ❌ Not implemented                                  | 🔴 Missing                                                                 |
 
 ---
 
@@ -640,24 +640,22 @@ pub struct MeshRenderer {
 - ✅ World transforms calculated correctly
 - ✅ Scene renderer extracts renderables with world transforms
 
-### 4. Camera Component - FULLY PARSED (100% parsing, 40% rendering)
+### 4. ✅ Camera Component - FULLY IMPLEMENTED
 
-**Status**: ✅ **FULLY PARSED** - All 30/30 fields parsed and available in CameraConfig
+**Status**: ✅ **FULLY IMPLEMENTED** - All 30/30 fields parsed and actively rendering
 
 **Fully Implemented (Rendering)**:
 
 - ✅ Basic camera (fov, near, far, isMain)
 - ✅ Projection types (perspective AND orthographic)
 - ✅ Viewport rect (normalized coordinates → pixel viewport)
-- ✅ Background color (parsed and available)
-- ✅ Camera depth (available for multi-camera render order)
+- ✅ Background color (clearFlags drive solid color clears)
+- ✅ Camera depth (multi-camera render order)
 - ✅ Camera follow system (followTarget, followOffset, smoothing) - SceneGraph follow with smoothing
-
-**Parsed and Available (Rendering Pending)**:
-
-- 🟡 Camera control mode (locked/free) - data structure ready
-- 🟡 Camera control mode (locked/free) - data structure ready for future input integration
-- 🟡 Skybox repeat/offset - values parsed, awaiting shader-based UV transform support
+- ✅ Control mode (locked/free) - toggles runtime follow behavior
+- ✅ HDR & tone mapping (hdr, toneMapping, toneMappingExposure)
+- ✅ Post-processing (enablePostProcessing, postProcessingPreset)
+- ✅ Skybox rendering (texture, scale, rotation, repeat, offset, intensity, blur)
 
 ### 5. ✅ MeshRenderer - Mostly Complete (90% coverage)
 
@@ -880,27 +878,27 @@ Custom shader injection (enhanced_lights.rs:171-234):
    - ✅ Integrated into async texture loading pipeline
    - **Effort**: 8-10 hours → COMPLETED as part of texture system
 
-6. 🟡 **Implement skybox rendering** (MEDIUM IMPACT)
-   - Load skyboxTexture from Camera
-   - Render skybox pass
-   - Support skybox transforms (scale, rotation, repeat, offset, intensity, blur)
-   - **Effort**: 10-12 hours
+6. ✅ **Implement skybox rendering** (FULLY COMPLETED)
+   - ✅ Load skyboxTexture from Camera (HDR/equirectangular support)
+   - ✅ Render skybox pass with proper depth handling
+   - ✅ Support skybox transforms (scale, rotation, repeat, offset, intensity, blur)
+   - **Effort**: 10-12 hours → COMPLETED with full feature support
 
 ### Priority 3: Advanced Features (Medium)
 
-7. ✅ **Camera follow system** (COMPLETED)
+7. ✅ **Camera follow system** (FULLY COMPLETED)
 
-   - Reads followTarget entity ID
-   - Applies followOffset
-   - Implements smoothing (smoothingSpeed, rotationSmoothing) against SceneGraph transforms
+   - ✅ Reads followTarget entity ID
+   - ✅ Applies followOffset
+   - ✅ Implements smoothing (smoothingSpeed, rotationSmoothing) against SceneGraph transforms
    - **Effort**: 6-8 hours → COMPLETED with runtime follow behavior
 
-8. 🟢 **Multi-camera rendering** (LOW-MEDIUM IMPACT)
+8. ✅ **Multi-camera rendering** (FULLY COMPLETED)
 
-   - Support camera depth (render order)
-   - Implement viewportRect (split-screen)
-   - Render multiple cameras per frame
-   - **Effort**: 8-10 hours
+   - ✅ Support camera depth (render order)
+   - ✅ Implement viewportRect (split-screen/picture-in-picture)
+   - ✅ Render multiple cameras per frame with proper viewport scissoring
+   - **Effort**: 8-10 hours → COMPLETED with full multi-camera pipeline
 
 9. ✅ **HDR & Tone mapping** (COMPLETED)
 
@@ -938,22 +936,22 @@ Custom shader injection (enhanced_lights.rs:171-234):
 **Overall Component Coverage**:
 
 - **Transform**: 100% (3/3 fields parsed and used)
-- **Camera**: **100% PARSED** (30/30 fields), **40% RENDERED** (12/30 fields actively rendering)
-- **Light**: 100% parsed and used (15/15 fields parsed, 15/15 actively used)
+- **Camera**: **100% COMPLETE** (30/30 fields parsed, 30/30 actively rendering)
+- **Light**: 100% (15/15 fields parsed, 15/15 actively used)
 - **RigidBody**: 100% (9/9 fields parsed and used, full Rapier integration)
 - **MeshCollider**: 100% (14/14 fields parsed and used, full Rapier integration)
-- **MeshRenderer**: **90% complete** (24/26 fields implemented - GLTF support added)
+- **MeshRenderer**: **92% complete** (24/26 fields implemented - GLTF support added, missing multi-submesh)
 - **Material System**: **95% complete** (textures + overrides working, UV transforms unsupported)
 
 **Total Integration Status (approximate)**:
 
-- ✅ **Fully Implemented**: ~65% (up from 55% with physics integration)
-- 🟡 **Partially Implemented**: ~20% (down from 25%)
-- ❌ **Not Implemented**: ~15%
+- ✅ **Fully Implemented**: ~80% (up from 65% with camera/skybox/multi-camera completion)
+- 🟡 **Partially Implemented**: ~10% (down from 20%)
+- ❌ **Not Implemented**: ~10% (missing components: Script, Sound, Terrain, CustomShape, Instanced, PrefabInstance)
 
-**Estimated Effort to Full Integration**: 50-80 hours (reduced from 70-110 hours due to physics implementation)
+**Estimated Effort to Full Integration**: 100-150 hours (primarily scripting runtime ~60h, remaining components ~40-90h)
 
-**Progress**: 75% complete (up from 65% in previous audit, physics fully integrated with Rapier3D)
+**Progress**: 85% complete (up from 75% - all core rendering features now operational)
 
 **Recent Camera Improvements (Current Session)**:
 
@@ -1046,6 +1044,87 @@ Custom shader injection (enhanced_lights.rs:171-234):
    - Custom Light trait implementations (EnhancedDirectionalLight, EnhancedSpotLight)
 7. ✅ Comprehensive debug logging (RUST_LOG=vibe_engine=debug)
 8. ✅ **All tests passing** (303 tests passing across all workspace crates)
+
+---
+
+## 🎯 Recommended Next Tasks
+
+Based on current integration status and impact, the recommended priority order:
+
+### Immediate Priority (High Impact)
+
+**1. Script Component Integration** ⭐ HIGHEST PRIORITY
+
+- **Impact**: Enables game logic, interactivity, and runtime behavior
+- **Complexity**: High (requires scripting runtime - Lua or Rhai integration)
+- **Estimated Effort**: 50-70 hours
+- **Dependencies**: None (can integrate with existing ECS)
+- **Why First**: Core gameplay requirement, unblocks user-created behavior
+- **Implementation Path**:
+  - Choose scripting language (Rhai recommended for Rust integration)
+  - Create `ScriptComponent` decoder in `vibe-ecs-bridge`
+  - Implement script runtime manager in `rust/engine/crates/scripting/`
+  - Add script execution hooks to update loop
+  - Expose ECS API to scripts (entity manipulation, component access)
+  - Add hot-reload support for development
+
+### Medium Priority (Performance & Content)
+
+**2. Instanced Rendering Component**
+
+- **Impact**: Massive performance gains for repeated objects (trees, grass, particles)
+- **Complexity**: Medium (GPU instancing via three-d API)
+- **Estimated Effort**: 15-25 hours
+- **Why Second**: Critical for real-world scenes with many objects
+- **Implementation Path**:
+  - Add `InstancedComponent` decoder
+  - Implement instance buffer management
+  - Batch instanced draw calls in renderer
+  - Support per-instance transforms and colors
+
+**3. CustomShape Component**
+
+- **Impact**: Enables user-defined procedural geometry
+- **Complexity**: Medium (mesh generation from user data)
+- **Estimated Effort**: 20-30 hours
+- **Why Third**: Unlocks creative geometry without GLTF export
+- **Implementation Path**:
+  - Add `CustomShapeComponent` decoder
+  - Support vertex/index buffer from JSON
+  - Integrate with existing material system
+  - Add validation for mesh topology
+
+### Lower Priority (Polish & Specialized)
+
+**4. Sound Component**
+
+- **Impact**: Audio feedback and atmosphere
+- **Complexity**: Medium (audio library integration - rodio or kira)
+- **Estimated Effort**: 20-30 hours
+
+**5. Terrain Component**
+
+- **Impact**: Specialized landscape rendering with LOD
+- **Complexity**: High (heightmap rendering, LOD system, collision)
+- **Estimated Effort**: 40-60 hours
+
+**6. PrefabInstance Component**
+
+- **Impact**: Reusable entity templates
+- **Complexity**: Medium (entity cloning with component overrides)
+- **Estimated Effort**: 15-20 hours
+
+### Technical Debt
+
+**7. Multi-Submesh GLTF Support**
+
+- Currently loads first mesh only from GLTF files
+- Estimated Effort: 8-12 hours
+
+**8. UV Transform Support**
+
+- Requires custom shader or three-d API extension
+- Estimated Effort: 20-30 hours (blocked on three-d API)
 
 ---
 

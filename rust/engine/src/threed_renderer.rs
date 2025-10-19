@@ -6,7 +6,7 @@ use three_d::*;
 use winit::window::Window as WinitWindow;
 
 use vibe_ecs_bridge::decoders::{
-    CameraComponent, Light as LightComponent, MeshRenderer, Transform,
+    CameraComponent, Instanced, Light as LightComponent, MeshRenderer, Terrain, Transform,
 };
 use vibe_ecs_bridge::ComponentRegistry;
 use vibe_scene::Scene as SceneData;
@@ -16,9 +16,10 @@ use vibe_scene_graph::SceneGraph;
 // Import renderer modules
 use crate::renderer::coordinate_conversion::threejs_to_threed_position;
 use crate::renderer::{
-    apply_post_processing, create_camera, load_camera, load_light, load_mesh_renderer,
-    CameraConfig, ColorGradingEffect, DebugLineRenderer, EnhancedDirectionalLight,
-    EnhancedSpotLight, LoadedLight, MaterialManager, PostProcessSettings, SkyboxRenderer,
+    apply_post_processing, create_camera, generate_terrain, load_camera, load_instanced,
+    load_light, load_mesh_renderer, CameraConfig, ColorGradingEffect, DebugLineRenderer,
+    EnhancedDirectionalLight, EnhancedSpotLight, LoadedLight, MaterialManager,
+    PostProcessSettings, SkyboxRenderer,
 };
 
 /// ThreeDRenderer - Rendering backend using three-d library for PBR rendering
@@ -562,14 +563,24 @@ impl ThreeDRenderer {
         &mut self,
         path: &std::path::Path,
         physics_world: Option<&vibe_physics::PhysicsWorld>,
+        scale: f32,
+        quality: u8,
     ) -> Result<()> {
         log::info!("Rendering screenshot to: {}", path.display());
 
         // Generate shadow maps first (required for proper rendering)
         self.generate_shadow_maps();
 
-        let width = self.window_size.0;
-        let height = self.window_size.1;
+        // Calculate scaled dimensions
+        let width = ((self.window_size.0 as f32) * scale).max(1.0) as u32;
+        let height = ((self.window_size.1 as f32) * scale).max(1.0) as u32;
+
+        log::info!(
+            "  Resolution: {}x{} (scale: {:.2})",
+            width,
+            height,
+            scale
+        );
 
         // Create a color texture to render to
         let mut color_texture = Texture2D::new_empty::<[u8; 4]>(
@@ -621,14 +632,50 @@ impl ThreeDRenderer {
         // Flatten the pixel data into a byte vec
         let bytes: Vec<u8> = pixels.into_iter().flat_map(|pixel| pixel).collect();
 
-        // Create and save the image
+        // Create the image
         let img = image::RgbaImage::from_raw(width, height, bytes)
             .with_context(|| "Failed to create image from pixels")?;
 
-        img.save(path)
-            .with_context(|| format!("Failed to save screenshot to {}", path.display()))?;
+        // Determine output format from file extension
+        let extension = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|s| s.to_lowercase());
 
-        log::info!("Screenshot saved successfully");
+        match extension.as_deref() {
+            Some("jpg") | Some("jpeg") => {
+                // Convert RGBA to RGB (JPEG doesn't support alpha)
+                let rgb_img = image::DynamicImage::ImageRgba8(img).to_rgb8();
+
+                // Save as JPEG with specified quality
+                use image::codecs::jpeg::JpegEncoder;
+                let file =
+                    std::fs::File::create(path).with_context(|| "Failed to create output file")?;
+                let mut encoder = JpegEncoder::new_with_quality(file, quality);
+                encoder
+                    .encode(
+                        rgb_img.as_raw(),
+                        width,
+                        height,
+                        image::ColorType::Rgb8.into(),
+                    )
+                    .with_context(|| "Failed to encode JPEG")?;
+                log::info!("Screenshot saved as JPEG (quality: {})", quality);
+            }
+            Some("png") | None => {
+                // Save as PNG (image crate will use default compression)
+                img.save(path)
+                    .with_context(|| format!("Failed to save PNG to {}", path.display()))?;
+                log::info!("Screenshot saved as PNG");
+            }
+            _ => {
+                // Fallback to default save for other formats
+                img.save(path)
+                    .with_context(|| format!("Failed to save screenshot to {}", path.display()))?;
+                log::info!("Screenshot saved successfully");
+            }
+        }
+
         Ok(())
     }
 
@@ -923,6 +970,18 @@ impl ThreeDRenderer {
                 .await?;
         }
 
+        // Check for Instanced
+        if let Some(instanced) = self.get_component::<Instanced>(entity, "Instanced") {
+            self.handle_instanced(entity, &instanced, transform.as_ref())
+                .await?;
+        }
+
+        // Check for Terrain
+        if let Some(terrain) = self.get_component::<Terrain>(entity, "Terrain") {
+            self.handle_terrain(entity, &terrain, transform.as_ref())
+                .await?;
+        }
+
         // Check for Light
         if let Some(light) = self.get_component::<LightComponent>(entity, "Light") {
             self.handle_light(&light, transform.as_ref())?;
@@ -998,6 +1057,87 @@ impl ThreeDRenderer {
                 "      Shadows → cast: {}, receive: {}, final scale [{:.2}, {:.2}, {:.2}]",
                 mesh_renderer.castShadows,
                 mesh_renderer.receiveShadows,
+                final_scale.x,
+                final_scale.y,
+                final_scale.z
+            );
+        }
+
+        Ok(())
+    }
+
+    async fn handle_instanced(
+        &mut self,
+        entity: &Entity,
+        instanced: &Instanced,
+        transform: Option<&Transform>,
+    ) -> Result<()> {
+        let instances = load_instanced(
+            &self.context,
+            entity,
+            instanced,
+            transform,
+            &mut self.material_manager,
+        )
+        .await?;
+
+        let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
+        let instance_count = instances.len();
+
+        // Each instance becomes a separate mesh (three-d doesn't have native GPU instancing)
+        for (idx, (gm, final_scale)) in instances.into_iter().enumerate() {
+            self.meshes.push(gm);
+            self.mesh_entity_ids.push(entity_id);
+            self.mesh_scales.push(final_scale);
+            self.mesh_cast_shadows.push(instanced.castShadows);
+            self.mesh_receive_shadows.push(instanced.receiveShadows);
+
+            if idx < 3 {
+                log::info!(
+                    "    Instance {}: shadows (cast: {}, recv: {}), scale [{:.2}, {:.2}, {:.2}]",
+                    idx,
+                    instanced.castShadows,
+                    instanced.receiveShadows,
+                    final_scale.x,
+                    final_scale.y,
+                    final_scale.z
+                );
+            }
+        }
+
+        if instance_count > 3 {
+            log::info!("    ... and {} more instances added", instance_count - 3);
+        }
+
+        Ok(())
+    }
+
+    async fn handle_terrain(
+        &mut self,
+        entity: &Entity,
+        terrain: &Terrain,
+        transform: Option<&Transform>,
+    ) -> Result<()> {
+        let meshes = generate_terrain(
+            &self.context,
+            entity,
+            terrain,
+            transform,
+            &mut self.material_manager,
+        )
+        .await?;
+
+        let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
+
+        for (gm, final_scale) in meshes.into_iter() {
+            self.meshes.push(gm);
+            self.mesh_entity_ids.push(entity_id);
+            self.mesh_scales.push(final_scale);
+            self.mesh_cast_shadows.push(true); // Terrains cast shadows by default
+            self.mesh_receive_shadows.push(true); // Terrains receive shadows by default
+
+            log::info!(
+                "    Terrain mesh added: scale [{:.2}, {:.2}, {:.2}]",
                 final_scale.x,
                 final_scale.y,
                 final_scale.z

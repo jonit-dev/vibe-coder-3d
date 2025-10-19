@@ -91,6 +91,16 @@ pub fn rotation_to_quat_opt(rotation: Option<&Vec<f32>>) -> Quat {
         .unwrap_or(Quat::IDENTITY)
 }
 
+/// Convert optional TypeScript rotation array to Quaternion
+///
+/// Returns `Quat::IDENTITY` if rotation is None
+/// Handles fixed-size arrays (e.g., from InstanceData)
+pub fn rotation_to_quat_array_opt(rotation: Option<&[f32; 3]>) -> Quat {
+    rotation
+        .map(|r| rotation_to_quat(r))
+        .unwrap_or(Quat::IDENTITY)
+}
+
 /// Convert TypeScript position array to Vec3
 ///
 /// # Examples

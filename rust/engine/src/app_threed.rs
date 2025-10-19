@@ -167,10 +167,18 @@ impl AppThreeD {
     }
 
     /// Run in screenshot mode - renders directly to texture and saves
-    pub fn screenshot(mut self, output_path: PathBuf, delay_ms: u64) -> anyhow::Result<()> {
+    pub fn screenshot(
+        mut self,
+        output_path: PathBuf,
+        delay_ms: u64,
+        scale: f32,
+        quality: u8,
+    ) -> anyhow::Result<()> {
         log::info!(
-            "Screenshot mode enabled - target path: {}",
-            output_path.display()
+            "Screenshot mode enabled - target path: {}, scale: {:.2}, quality: {}",
+            output_path.display(),
+            scale,
+            quality
         );
 
         // Ensure output directory exists
@@ -202,8 +210,12 @@ impl AppThreeD {
 
         // Capture screenshot after warmup
         log::info!("Capturing screenshot...");
-        self.renderer
-            .render_to_screenshot(&output_path, self.physics_world.as_ref())?;
+        self.renderer.render_to_screenshot(
+            &output_path,
+            self.physics_world.as_ref(),
+            scale,
+            quality,
+        )?;
 
         log::info!("Screenshot complete, exiting...");
         Ok(())
