@@ -39,7 +39,7 @@ pub fn convert_transform_to_matrix(
 
     log_transform_conversion(transform, &position, &rotation, &scale, &base_scale);
 
-    // Convert Three.js coordinates to three-d coordinates (flip Z)
+    // Convert Three.js coordinates to three-d coordinates (axes already match)
     let pos = threejs_to_threed_position(position);
     let (axis, angle) = rotation.to_axis_angle();
     let axis_3d = glam_axis_to_threed(axis);
@@ -83,15 +83,11 @@ pub fn convert_camera_transform(transform: &Transform) -> (Vec3, Vec3) {
     log::info!("    Rotation (quat): {:?}", rotation);
 
     // Calculate target position from rotation
-    // Three.js: right-handed, Y-up, camera looks down +Z
-    // three-d: right-handed, Y-up, camera looks down -Z
+    // Three.js and three-d both use right-handed, Y-up coordinates with +Z forward.
     let forward_threejs = rotation * glam::Vec3::Z;
 
-    // Convert forward vector to three-d coordinate system (negate Z axis only)
-    let forward_threed = glam::Vec3::new(forward_threejs.x, forward_threejs.y, -forward_threejs.z);
-
-    // Convert position to three-d coordinate system (negate Z)
-    let pos_threed = glam::Vec3::new(pos.x, pos.y, -pos.z);
+    let forward_threed = glam::Vec3::new(forward_threejs.x, forward_threejs.y, forward_threejs.z);
+    let pos_threed = glam::Vec3::new(pos.x, pos.y, pos.z);
 
     // Calculate target in three-d space
     let target_threed = pos_threed + forward_threed;
@@ -99,13 +95,13 @@ pub fn convert_camera_transform(transform: &Transform) -> (Vec3, Vec3) {
     log::info!("  Coordinate Conversion:");
     log::info!("    Three.js forward: {:?}", forward_threejs);
     log::info!(
-        "    three-d forward:  [{:.2}, {:.2}, {:.2}] (Z negated)",
+        "    three-d forward:  [{:.2}, {:.2}, {:.2}]",
         forward_threed.x,
         forward_threed.y,
         forward_threed.z
     );
     log::info!(
-        "    three-d position: [{:.2}, {:.2}, {:.2}] (Z negated)",
+        "    three-d position: [{:.2}, {:.2}, {:.2}]",
         pos_threed.x,
         pos_threed.y,
         pos_threed.z
@@ -169,20 +165,14 @@ fn log_transform_conversion(
     );
 }
 
-fn log_coordinate_conversion(pos: &Vec3, original_z: f32, axis: &Vec3, angle: f32, scale: &Vec3) {
+fn log_coordinate_conversion(pos: &Vec3, _original_z: f32, axis: &Vec3, angle: f32, scale: &Vec3) {
     log::info!("");
     log::info!("    three-d COORDINATE SYSTEM CONVERSION:");
-    log::info!("      ┌─────────────────────────────────────────────────────┐");
-    log::info!("      │ CRITICAL: Z-axis flip for three-d compatibility     │");
-    log::info!("      │ Three.js:  +Z is forward                            │");
-    log::info!("      │ three-d:   -Z is forward                            │");
-    log::info!("      └─────────────────────────────────────────────────────┘");
     log::info!(
-        "      Position (three-d): [{:.4}, {:.4}, {:.4}] ← Z FLIPPED from {:.4}",
+        "      Position (three-d): [{:.4}, {:.4}, {:.4}] (no axis flip needed)",
         pos.x,
         pos.y,
-        pos.z,
-        original_z
+        pos.z
     );
     log::info!(
         "      Rotation axis: [{:.4}, {:.4}, {:.4}]",

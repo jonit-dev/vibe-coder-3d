@@ -372,7 +372,7 @@ fn test_camera_skybox_transforms() {
 }
 
 #[test]
-fn test_camera_non_main_skipped() {
+fn test_camera_non_main_loaded() {
     let camera = CameraComponent {
         fov: 60.0,
         near: 0.1,
@@ -407,10 +407,12 @@ fn test_camera_non_main_skipped() {
     let result = load_camera(&camera, None);
     assert!(result.is_ok());
 
-    // Non-main camera should return None (for now - multi-camera support pending)
-    assert!(result.unwrap().is_none());
+    let config_opt = result.unwrap();
+    assert!(config_opt.is_some());
+    let config = config_opt.unwrap();
+    assert!(!config.is_main);
 
-    println!("✅ Non-main cameras correctly skipped (multi-camera support pending)");
+    println!("✅ Non-main cameras parsed for multi-camera rendering");
 }
 
 #[test]

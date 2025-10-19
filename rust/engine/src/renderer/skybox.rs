@@ -7,7 +7,7 @@ use anyhow::{Context as AnyhowContext, Result};
 use three_d::{
     Camera, ClearState, ColorMapping, ColorMaterial, Context, CpuMesh, CpuTexture, Deg, Effect,
     Light, Mat3, Mat4, Mesh, Program, RenderStates, RenderTarget, Skybox, SquareMatrix, Srgba,
-    ToneMapping, Vec3,
+    ToneMapping, Vec2, Vec3,
 };
 
 use super::camera_loader::CameraConfig;
@@ -22,6 +22,8 @@ struct SkyboxInstance {
     scale: Vec3,
     tint: Vec3,
     max_lod: f32,
+    repeat: Vec2,
+    offset: Vec2,
 }
 
 impl SkyboxInstance {
@@ -33,6 +35,8 @@ impl SkyboxInstance {
             rotation: self.rotation,
             scale: self.scale,
             tint: self.tint,
+            repeat: self.repeat,
+            offset: self.offset,
         }
     }
 }
@@ -123,6 +127,12 @@ impl SkyboxRenderer {
 
         let tint = Vec3::new(1.0, 1.0, 1.0);
 
+        let repeat = config.skybox_repeat.unwrap_or((1.0, 1.0));
+        let repeat_vec = Vec2::new(repeat.0.max(0.0001), repeat.1.max(0.0001));
+
+        let offset = config.skybox_offset.unwrap_or((0.0, 0.0));
+        let offset_vec = Vec2::new(offset.0, offset.1);
+
         let max_dimension = texture.width().max(texture.height()).max(1) as f32;
         let max_lod = max_dimension.log2().max(0.0);
 
@@ -135,6 +145,8 @@ impl SkyboxRenderer {
             scale,
             tint,
             max_lod,
+            repeat: repeat_vec,
+            offset: offset_vec,
         });
 
         self.fallback = None;
@@ -231,6 +243,8 @@ struct SkyboxEffect {
     rotation: Mat3,
     scale: Vec3,
     tint: Vec3,
+    repeat: Vec2,
+    offset: Vec2,
 }
 
 impl Effect for SkyboxEffect {
@@ -249,12 +263,39 @@ impl Effect for SkyboxEffect {
             uniform mat3 skyRotation;
             uniform vec3 skyScale;
             uniform vec3 skyTint;
+            uniform vec2 skyRepeat;
+            uniform vec2 skyOffset;
+
+            const float PI = 3.1415926535897932384626433832795;
+
+            vec3 apply_repeat_offset(vec3 direction) {{
+                vec3 dir = normalize(direction);
+                float yaw = atan(dir.z, dir.x);
+                float pitch = asin(clamp(dir.y, -1.0, 1.0));
+
+                vec2 uv;
+                uv.x = yaw / (2.0 * PI) + 0.5;
+                uv.y = 0.5 - pitch / PI;
+
+                vec2 transformed = uv * skyRepeat + skyOffset;
+                transformed = fract(transformed);
+
+                float newYaw = (transformed.x - 0.5) * 2.0 * PI;
+                float newPitch = (0.5 - transformed.y) * PI;
+
+                vec3 result;
+                result.x = cos(newPitch) * cos(newYaw);
+                result.y = sin(newPitch);
+                result.z = cos(newPitch) * sin(newYaw);
+                return normalize(result);
+            }}
 
             in vec3 coords;
             layout (location = 0) out vec4 outColor;
 
             void main() {{
                 vec3 direction = normalize(skyRotation * (coords * skyScale));
+                direction = apply_repeat_offset(direction);
                 vec3 color = textureLod(texture0, direction, lodLevel).rgb;
                 color = color * intensity * skyTint;
                 color = tone_mapping(color);
@@ -293,6 +334,8 @@ impl Effect for SkyboxEffect {
         program.use_uniform("skyRotation", self.rotation);
         program.use_uniform("skyScale", self.scale);
         program.use_uniform("skyTint", self.tint);
+        program.use_uniform("skyRepeat", self.repeat);
+        program.use_uniform("skyOffset", self.offset);
         camera.tone_mapping.use_uniforms(program);
         camera.color_mapping.use_uniforms(program);
     }

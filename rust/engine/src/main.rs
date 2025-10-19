@@ -29,6 +29,10 @@ struct Args {
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
 
+    /// Enable debug mode (collider outlines, FPS display, ground grid)
+    #[arg(short, long, default_value_t = false)]
+    debug: bool,
+
     /// Take a screenshot and exit (saves to screenshots/<scene_name>.png)
     #[arg(long)]
     screenshot: bool,
@@ -93,11 +97,17 @@ async fn run(args: Args) -> anyhow::Result<()> {
         // Load specific scene
         let scene_path = resolve_scene_path(&args.scene)?;
         log::info!("Loading scene: {}", scene_path.display());
-        app_threed::AppThreeD::with_scene(scene_path, args.width, args.height, &event_loop)?
+        app_threed::AppThreeD::with_scene(
+            scene_path,
+            args.width,
+            args.height,
+            args.debug,
+            &event_loop,
+        )?
     } else {
         // Use test scene (POC)
         log::info!("Using test scene (POC mode)");
-        app_threed::AppThreeD::new(args.width, args.height, &event_loop)?
+        app_threed::AppThreeD::new(args.width, args.height, args.debug, &event_loop)?
     };
 
     // Handle screenshot mode

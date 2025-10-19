@@ -14,10 +14,11 @@ use vibe_scene::{Entity, EntityId};
 use vibe_scene_graph::SceneGraph;
 
 // Import renderer modules
+use crate::renderer::coordinate_conversion::threejs_to_threed_position;
 use crate::renderer::{
     apply_post_processing, create_camera, load_camera, load_light, load_mesh_renderer,
-    CameraConfig, ColorGradingEffect, EnhancedDirectionalLight, EnhancedSpotLight, LoadedLight,
-    MaterialManager, PostProcessSettings, SkyboxRenderer,
+    CameraConfig, ColorGradingEffect, DebugLineRenderer, EnhancedDirectionalLight,
+    EnhancedSpotLight, LoadedLight, MaterialManager, PostProcessSettings, SkyboxRenderer,
 };
 
 /// ThreeDRenderer - Rendering backend using three-d library for PBR rendering
@@ -49,8 +50,10 @@ pub struct ThreeDRenderer {
     material_manager: MaterialManager,
     component_registry: ComponentRegistry,
     skybox_renderer: SkyboxRenderer,
+    debug_line_renderer: DebugLineRenderer,
     hdr_color_texture: Option<Texture2D>,
     hdr_depth_texture: Option<three_d::DepthTexture2D>,
+    additional_cameras: Vec<AdditionalCamera>,
 
     // Camera follow smoothing
     last_camera_position: Vec3,
@@ -61,6 +64,24 @@ struct RenderSettings {
     clear_state: Option<ClearState>,
     render_skybox: bool,
     post_settings: Option<PostProcessSettings>,
+}
+
+struct AdditionalCamera {
+    camera: Camera,
+    config: CameraConfig,
+    skybox_renderer: SkyboxRenderer,
+    last_position: Vec3,
+    last_target: Vec3,
+}
+
+struct CameraEntry {
+    depth: i32,
+    variant: CameraVariant,
+}
+
+enum CameraVariant {
+    Main,
+    Additional(usize),
 }
 
 impl ThreeDRenderer {
@@ -106,6 +127,8 @@ impl ThreeDRenderer {
         let initial_pos = vec3(0.0, 2.0, 5.0);
         let initial_target = vec3(0.0, 0.0, 0.0);
 
+        let debug_line_renderer = DebugLineRenderer::new(&context);
+
         Ok(Self {
             _windowed_context: windowed_context,
             context,
@@ -126,8 +149,10 @@ impl ThreeDRenderer {
             material_manager: MaterialManager::new(),
             component_registry,
             skybox_renderer: SkyboxRenderer::new(),
+            debug_line_renderer,
             hdr_color_texture: None,
             hdr_depth_texture: None,
+            additional_cameras: Vec::new(),
             last_camera_position: initial_pos,
             last_camera_target: initial_target,
         })
@@ -189,131 +214,63 @@ impl ThreeDRenderer {
 
     /// Update camera based on follow system and other camera features
     pub fn update_camera_internal(&mut self, delta_time: f32) {
-        // Clone config to avoid borrow checker issues
-        let config = if let Some(ref cfg) = self.camera_config {
-            cfg.clone()
-        } else {
-            return; // No camera config
-        };
-
-        // Check if camera follow is enabled
-        if let Some(follow_target_id) = config.follow_target {
-            self.update_camera_follow(&config, follow_target_id, delta_time);
-        }
-    }
-
-    /// Update camera to follow a target entity
-    fn update_camera_follow(&mut self, config: &CameraConfig, target_id: u32, delta_time: f32) {
-        // Get target entity's world transform from scene graph
-        let target_transform = if let Some(ref mut graph) = self.scene_graph {
-            let entity_id = EntityId::new(target_id as u64);
-            graph.get_world_transform(entity_id)
-        } else {
-            return; // No scene graph, can't follow
-        };
-
-        let target_matrix = if let Some(mat) = target_transform {
-            mat
-        } else {
-            log::warn!(
-                "Camera follow target entity {} not found in scene",
-                target_id
-            );
-            return;
-        };
-
-        // Extract position from target's world matrix
-        let target_pos = target_matrix.w_axis.truncate();
-        let target_vec3 = vec3(target_pos.x, target_pos.y, target_pos.z);
-
-        // Apply follow offset
-        let offset = config.follow_offset.unwrap_or(vec3(0.0, 2.0, -5.0));
-        let desired_position = target_vec3 + offset;
-
-        // Apply smoothing if enabled
-        let new_position = if config.enable_smoothing {
-            let smoothing_factor = (config.smoothing_speed * delta_time).min(1.0);
-            self.last_camera_position * (1.0 - smoothing_factor)
-                + desired_position * smoothing_factor
-        } else {
-            desired_position
-        };
-
-        // Update camera look target (smoothed towards entity position)
-        let desired_target = target_vec3;
-        let new_target = if config.enable_smoothing {
-            let rotation_factor = (config.rotation_smoothing * delta_time).min(1.0);
-            self.last_camera_target * (1.0 - rotation_factor) + desired_target * rotation_factor
-        } else {
-            desired_target
-        };
-
-        // Update camera view
-        self.camera
-            .set_view(new_position, new_target, vec3(0.0, 1.0, 0.0));
-
-        // Store for next frame smoothing
-        self.last_camera_position = new_position;
-        self.last_camera_target = new_target;
-    }
-
-    fn prepare_render_settings(&self) -> RenderSettings {
-        let default_clear = ClearState::color_and_depth(0.2, 0.3, 0.4, 1.0, 1.0);
-
-        if let Some(ref config) = self.camera_config {
-            let background = config.background_color.unwrap_or((0.2, 0.3, 0.4, 1.0));
-            let solid_clear = ClearState::color_and_depth(
-                background.0,
-                background.1,
-                background.2,
-                background.3,
-                1.0,
-            );
-
-            let mut render_skybox = false;
-
-            let clear_state = match config
-                .clear_flags
-                .as_deref()
-                .map(|s| s.to_ascii_lowercase())
-                .unwrap_or_else(|| "solidcolor".to_string())
-                .as_str()
-            {
-                "skybox" => {
-                    if self.skybox_renderer.is_loaded() {
-                        render_skybox = true;
-                        Some(ClearState::depth(1.0))
-                    } else {
-                        log::warn!(
-                            "Camera clearFlags set to 'skybox' but no skybox texture loaded; falling back to solid color."
-                        );
-                        Some(solid_clear)
-                    }
-                }
-                "depthonly" => Some(ClearState::depth(1.0)),
-                "dontclear" => None,
-                "solidcolor" => Some(solid_clear),
-                other => {
-                    log::warn!(
-                        "Unknown clear flag '{}', defaulting to solid color clear.",
-                        other
+        if let Some(ref config) = self.camera_config.clone() {
+            if let Some(target_id) = Self::follow_target_if_locked(&config) {
+                let target_vec3 =
+                    Self::compute_follow_target_position(self.scene_graph.as_mut(), target_id);
+                if let Some(target_vec3) = target_vec3 {
+                    Self::apply_follow_to_camera(
+                        &mut self.camera,
+                        &config,
+                        target_vec3,
+                        &mut self.last_camera_position,
+                        &mut self.last_camera_target,
+                        delta_time,
                     );
-                    Some(solid_clear)
+                } else {
+                    log::warn!(
+                        "Camera follow target entity {} not found in scene",
+                        target_id
+                    );
                 }
+            }
+        }
+
+        for idx in 0..self.additional_cameras.len() {
+            let follow_target = {
+                let cam = &self.additional_cameras[idx];
+                Self::follow_target_if_locked(&cam.config)
             };
 
-            let post_settings = PostProcessSettings::from_camera(config);
+            if let Some(target_id) = follow_target {
+                let target_vec3 =
+                    Self::compute_follow_target_position(self.scene_graph.as_mut(), target_id);
 
-            RenderSettings {
-                clear_state,
-                render_skybox,
-                post_settings,
-            }
-        } else {
-            RenderSettings {
-                clear_state: Some(default_clear),
-                render_skybox: false,
-                post_settings: None,
+                if let Some(target_vec3) = target_vec3 {
+                    let (config, camera, last_position, last_target) = {
+                        let cam = &mut self.additional_cameras[idx];
+                        (
+                            &cam.config,
+                            &mut cam.camera,
+                            &mut cam.last_position,
+                            &mut cam.last_target,
+                        )
+                    };
+
+                    Self::apply_follow_to_camera(
+                        camera,
+                        config,
+                        target_vec3,
+                        last_position,
+                        last_target,
+                        delta_time,
+                    );
+                } else {
+                    log::warn!(
+                        "Camera follow target entity {} not found in scene",
+                        target_id
+                    );
+                }
             }
         }
     }
@@ -356,7 +313,12 @@ impl ThreeDRenderer {
     }
 
     /// Render a frame
-    pub fn render(&mut self, delta_time: f32) -> Result<()> {
+    pub fn render(
+        &mut self,
+        delta_time: f32,
+        debug_mode: bool,
+        physics_world: Option<&vibe_physics::PhysicsWorld>,
+    ) -> Result<()> {
         self.log_first_frame();
 
         // Update camera (follow system, etc.)
@@ -365,85 +327,229 @@ impl ThreeDRenderer {
         // Generate shadow maps for lights that cast shadows
         self.generate_shadow_maps();
 
-        let settings = self.prepare_render_settings();
-        let mut tone_restore: Option<(ToneMapping, ColorMapping)> = None;
+        let mut camera_entries = Vec::new();
+        if let Some(ref config) = self.camera_config {
+            camera_entries.push(CameraEntry {
+                depth: config.depth,
+                variant: CameraVariant::Main,
+            });
+        }
+        for (idx, cam) in self.additional_cameras.iter().enumerate() {
+            camera_entries.push(CameraEntry {
+                depth: cam.config.depth,
+                variant: CameraVariant::Additional(idx),
+            });
+        }
+        camera_entries.sort_by(|a, b| a.depth.cmp(&b.depth));
 
-        if let Some(ref post_settings) = settings.post_settings {
-            if post_settings.apply_tone_mapping {
-                tone_restore = Some((self.camera.tone_mapping, self.camera.color_mapping));
-                self.camera.disable_tone_and_color_mapping();
+        let screen = RenderTarget::screen(&self.context, self.window_size.0, self.window_size.1);
+
+        for entry in camera_entries {
+            match entry.variant {
+                CameraVariant::Main => {
+                    let Some(ref config) = self.camera_config.clone() else {
+                        continue;
+                    };
+                    let scissor: ScissorBox = self.camera.viewport().into();
+                    let settings =
+                        Self::prepare_render_settings_for(config, self.skybox_renderer.is_loaded());
+
+                    let mut tone_restore: Option<(ToneMapping, ColorMapping)> = None;
+                    if let Some(ref post_settings) = settings.post_settings {
+                        if post_settings.apply_tone_mapping {
+                            tone_restore =
+                                Some((self.camera.tone_mapping, self.camera.color_mapping));
+                            self.camera.disable_tone_and_color_mapping();
+                        }
+                    }
+
+                    if let Some(post_settings) = settings.post_settings.clone() {
+                        self.ensure_post_process_targets();
+
+                        // Manually collect light references to avoid borrowing all of self
+                        let mut lights: Vec<&dyn Light> = Vec::new();
+                        for light in &self.directional_lights {
+                            lights.push(light);
+                        }
+                        for light in &self.point_lights {
+                            lights.push(light);
+                        }
+                        for light in &self.spot_lights {
+                            lights.push(light);
+                        }
+                        if let Some(ref ambient) = self.ambient_light {
+                            lights.push(ambient);
+                        }
+
+                        {
+                            let render_target = {
+                                let color_target = self
+                                    .hdr_color_texture
+                                    .as_mut()
+                                    .expect("HDR color texture not initialized")
+                                    .as_color_target(None);
+                                let depth_target = self
+                                    .hdr_depth_texture
+                                    .as_mut()
+                                    .expect("HDR depth texture not initialized")
+                                    .as_depth_target();
+                                RenderTarget::new(color_target, depth_target)
+                            };
+
+                            if let Some(clear_state) = settings.clear_state {
+                                render_target.clear_partially(scissor, clear_state);
+                            }
+
+                            if settings.render_skybox {
+                                self.skybox_renderer.render(&render_target, &self.camera);
+                            }
+
+                            render_target.render(&self.camera, &self.meshes, &lights);
+                        }
+
+                        let color_texture =
+                            three_d::ColorTexture::Single(self.hdr_color_texture.as_ref().unwrap());
+                        let effect = ColorGradingEffect::from(post_settings);
+                        apply_post_processing(
+                            &screen,
+                            effect,
+                            &self.camera,
+                            color_texture,
+                            scissor,
+                        );
+                    } else {
+                        if let Some(clear_state) = settings.clear_state {
+                            screen.clear_partially(scissor, clear_state);
+                        }
+
+                        if settings.render_skybox {
+                            self.skybox_renderer.render(&screen, &self.camera);
+                        }
+
+                        let lights = self.collect_lights();
+                        screen.render(&self.camera, &self.meshes, &lights);
+                    }
+
+                    if let Some((tone, color)) = tone_restore {
+                        self.camera.tone_mapping = tone;
+                        self.camera.color_mapping = color;
+                    }
+                }
+                CameraVariant::Additional(index) => {
+                    if index >= self.additional_cameras.len() {
+                        continue;
+                    }
+
+                    let config_clone = {
+                        let cam = &self.additional_cameras[index];
+                        cam.config.clone()
+                    };
+                    let skybox_loaded = {
+                        let cam = &self.additional_cameras[index];
+                        cam.skybox_renderer.is_loaded()
+                    };
+                    let settings = Self::prepare_render_settings_for(&config_clone, skybox_loaded);
+
+                    let scissor: ScissorBox = {
+                        let cam = &self.additional_cameras[index];
+                        cam.camera.viewport().into()
+                    };
+
+                    let mut tone_restore: Option<(ToneMapping, ColorMapping)> = None;
+                    if let Some(ref post_settings) = settings.post_settings {
+                        if post_settings.apply_tone_mapping {
+                            let cam = &mut self.additional_cameras[index];
+                            tone_restore =
+                                Some((cam.camera.tone_mapping, cam.camera.color_mapping));
+                            cam.camera.disable_tone_and_color_mapping();
+                        }
+                    }
+
+                    if let Some(post_settings) = settings.post_settings.clone() {
+                        self.ensure_post_process_targets();
+
+                        // Manually collect light references to avoid borrowing all of self
+                        let mut lights: Vec<&dyn Light> = Vec::new();
+                        for light in &self.directional_lights {
+                            lights.push(light);
+                        }
+                        for light in &self.point_lights {
+                            lights.push(light);
+                        }
+                        for light in &self.spot_lights {
+                            lights.push(light);
+                        }
+                        if let Some(ref ambient) = self.ambient_light {
+                            lights.push(ambient);
+                        }
+
+                        {
+                            let render_target = {
+                                let color_target = self
+                                    .hdr_color_texture
+                                    .as_mut()
+                                    .expect("HDR color texture not initialized")
+                                    .as_color_target(None);
+                                let depth_target = self
+                                    .hdr_depth_texture
+                                    .as_mut()
+                                    .expect("HDR depth texture not initialized")
+                                    .as_depth_target();
+                                RenderTarget::new(color_target, depth_target)
+                            };
+
+                            if let Some(clear_state) = settings.clear_state {
+                                render_target.clear_partially(scissor, clear_state);
+                            }
+
+                            if settings.render_skybox {
+                                let skybox_renderer =
+                                    &self.additional_cameras[index].skybox_renderer;
+                                let camera_ref = &self.additional_cameras[index].camera;
+                                skybox_renderer.render(&render_target, camera_ref);
+                            }
+
+                            let camera_ref = &self.additional_cameras[index].camera;
+                            render_target.render(camera_ref, &self.meshes, &lights);
+                        }
+
+                        let color_texture =
+                            three_d::ColorTexture::Single(self.hdr_color_texture.as_ref().unwrap());
+                        let effect = ColorGradingEffect::from(post_settings);
+                        let camera_ref = &self.additional_cameras[index].camera;
+                        apply_post_processing(&screen, effect, camera_ref, color_texture, scissor);
+                    } else {
+                        if let Some(clear_state) = settings.clear_state {
+                            screen.clear_partially(scissor, clear_state);
+                        }
+
+                        if settings.render_skybox {
+                            let skybox_renderer = &self.additional_cameras[index].skybox_renderer;
+                            let camera_ref = &self.additional_cameras[index].camera;
+                            skybox_renderer.render(&screen, camera_ref);
+                        }
+
+                        let lights = self.collect_lights();
+                        let camera_ref = &self.additional_cameras[index].camera;
+                        screen.render(camera_ref, &self.meshes, &lights);
+                    }
+
+                    if let Some((tone, color)) = tone_restore {
+                        let cam = &mut self.additional_cameras[index];
+                        cam.camera.tone_mapping = tone;
+                        cam.camera.color_mapping = color;
+                    }
+                }
             }
         }
 
-        if let Some(post_settings) = settings.post_settings.clone() {
-            self.ensure_post_process_targets();
-
-            // Create raw pointer for split borrowing before any other borrows
-            let self_ptr = self as *const Self;
-
-            // Render to HDR target in a scope so it drops before we access hdr_color_texture again
-            {
-                let render_target = {
-                    let color_target = self
-                        .hdr_color_texture
-                        .as_mut()
-                        .expect("HDR color texture not initialized")
-                        .as_color_target(None);
-                    let depth_target = self
-                        .hdr_depth_texture
-                        .as_mut()
-                        .expect("HDR depth texture not initialized")
-                        .as_depth_target();
-                    RenderTarget::new(color_target, depth_target)
-                };
-
-                if let Some(clear_state) = settings.clear_state {
-                    render_target.clear(clear_state);
-                }
-
-                if settings.render_skybox {
-                    self.skybox_renderer.render(&render_target, &self.camera);
-                }
-
-                // Use raw pointer to split borrows safely
-                // Safety: We're borrowing different fields - lights (immutable) vs hdr textures (mutable via render_target)
-                // These fields don't overlap, so this is safe
-                let lights;
-                unsafe {
-                    lights = (*self_ptr).collect_lights();
-                }
-                render_target.render(&self.camera, &self.meshes, &lights);
-            } // render_target dropped here
-
-            let color_texture =
-                three_d::ColorTexture::Single(self.hdr_color_texture.as_ref().unwrap());
-            let effect = ColorGradingEffect::from(post_settings);
+        // Render debug overlay if debug mode is enabled
+        if debug_mode {
             let screen =
                 RenderTarget::screen(&self.context, self.window_size.0, self.window_size.1);
-            apply_post_processing(&screen, effect, &self.camera, color_texture);
-        } else {
-            let screen =
-                RenderTarget::screen(&self.context, self.window_size.0, self.window_size.1);
-
-            if let Some(clear_state) = settings.clear_state {
-                screen.clear(clear_state);
-            }
-
-            if settings.render_skybox {
-                self.skybox_renderer.render(&screen, &self.camera);
-            }
-
-            // Collect lights just before rendering to avoid borrow checker issues
-            let lights = self.collect_lights();
-            screen.render(&self.camera, &self.meshes, &lights);
+            self.render_debug_overlay(&screen, physics_world)?;
         }
 
-        if let Some((tone, color)) = tone_restore {
-            self.camera.tone_mapping = tone;
-            self.camera.color_mapping = color;
-        }
-
-        // Swap buffers to display the rendered frame
         self._windowed_context
             .swap_buffers()
             .with_context(|| "Failed to swap buffers")?;
@@ -488,6 +594,13 @@ impl ThreeDRenderer {
         Ok(())
     }
 
+    /// Update camera position and target
+    pub fn update_camera(&mut self, position: glam::Vec3, target: glam::Vec3) {
+        let pos = vec3(position.x, position.y, position.z);
+        let tgt = vec3(target.x, target.y, target.z);
+        self.camera.set_view(pos, tgt, vec3(0.0, 1.0, 0.0));
+    }
+
     /// Handle window resize
     pub fn resize(&mut self, width: u32, height: u32) {
         log::info!("Resizing renderer to {}x{}", width, height);
@@ -495,16 +608,162 @@ impl ThreeDRenderer {
         self.hdr_color_texture = None;
         self.hdr_depth_texture = None;
 
-        // Update camera viewport
-        self.camera
-            .set_viewport(Viewport::new_at_origo(width, height));
+        if let Some(ref config) = self.camera_config {
+            let viewport = Self::viewport_from_config(config, self.window_size);
+            self.camera.set_viewport(viewport);
+        } else {
+            self.camera
+                .set_viewport(Viewport::new_at_origo(width, height));
+        }
+
+        for cam in &mut self.additional_cameras {
+            let viewport = Self::viewport_from_config(&cam.config, self.window_size);
+            cam.camera.set_viewport(viewport);
+        }
     }
 
-    /// Update camera position and target
-    pub fn update_camera(&mut self, position: glam::Vec3, target: glam::Vec3) {
-        let pos = vec3(position.x, position.y, position.z);
-        let tgt = vec3(target.x, target.y, target.z);
-        self.camera.set_view(pos, tgt, vec3(0.0, 1.0, 0.0));
+    fn viewport_from_config(config: &CameraConfig, window_size: (u32, u32)) -> Viewport {
+        if let Some(ref rect) = config.viewport_rect {
+            let x = (rect.x * window_size.0 as f32) as u32;
+            let y = (rect.y * window_size.1 as f32) as u32;
+            let width = (rect.width * window_size.0 as f32) as u32;
+            let height = (rect.height * window_size.1 as f32) as u32;
+
+            Viewport {
+                x: x as i32,
+                y: y as i32,
+                width: width.max(1),
+                height: height.max(1),
+            }
+        } else {
+            Viewport::new_at_origo(window_size.0, window_size.1)
+        }
+    }
+
+    fn prepare_render_settings_for(config: &CameraConfig, skybox_loaded: bool) -> RenderSettings {
+        const NEUTRAL_GRAY: (f32, f32, f32, f32) = (64.0 / 255.0, 64.0 / 255.0, 64.0 / 255.0, 1.0);
+
+        let solid_color = config
+            .background_color
+            .unwrap_or((0.0_f32, 0.0_f32, 0.0_f32, 1.0));
+
+        let solid_clear = ClearState::color_and_depth(
+            solid_color.0,
+            solid_color.1,
+            solid_color.2,
+            solid_color.3,
+            1.0,
+        );
+        let gray_clear = ClearState::color_and_depth(
+            NEUTRAL_GRAY.0,
+            NEUTRAL_GRAY.1,
+            NEUTRAL_GRAY.2,
+            NEUTRAL_GRAY.3,
+            1.0,
+        );
+
+        let mut render_skybox = false;
+
+        let clear_state = match config
+            .clear_flags
+            .as_deref()
+            .map(|s| s.to_ascii_lowercase())
+            .unwrap_or_else(|| "solidcolor".to_string())
+            .as_str()
+        {
+            "skybox" => {
+                if skybox_loaded {
+                    render_skybox = true;
+                    Some(ClearState::depth(1.0))
+                } else {
+                    log::warn!(
+                        "Camera clearFlags set to 'skybox' but no skybox texture loaded; falling back to neutral gray."
+                    );
+                    Some(gray_clear)
+                }
+            }
+            "depthonly" => Some(ClearState::depth(1.0)),
+            "dontclear" => None,
+            "solidcolor" => Some(solid_clear),
+            other => {
+                log::warn!(
+                    "Unknown clear flag '{}', defaulting to neutral gray clear.",
+                    other
+                );
+                Some(gray_clear)
+            }
+        };
+
+        let post_settings = PostProcessSettings::from_camera(config);
+
+        RenderSettings {
+            clear_state,
+            render_skybox,
+            post_settings,
+        }
+    }
+
+    fn follow_target_if_locked(config: &CameraConfig) -> Option<u32> {
+        let target_id = config.follow_target?;
+        match config
+            .control_mode
+            .as_deref()
+            .map(|mode| mode.to_ascii_lowercase())
+        {
+            Some(ref mode) if mode == "locked" => Some(target_id),
+            Some(ref mode) if mode == "free" => None,
+            Some(ref mode) => {
+                log::warn!(
+                    "Unknown camera controlMode '{}'; defaulting to locked follow.",
+                    mode
+                );
+                Some(target_id)
+            }
+            None => Some(target_id),
+        }
+    }
+
+    fn compute_follow_target_position(
+        scene_graph: Option<&mut SceneGraph>,
+        target_id: u32,
+    ) -> Option<Vec3> {
+        let graph = scene_graph?;
+        let entity_id = EntityId::new(target_id as u64);
+        let transform = graph.get_world_transform(entity_id)?;
+        let target_pos = transform.w_axis.truncate();
+        Some(vec3(target_pos.x, target_pos.y, target_pos.z))
+    }
+
+    fn apply_follow_to_camera(
+        camera: &mut Camera,
+        config: &CameraConfig,
+        target_vec3: Vec3,
+        last_position: &mut Vec3,
+        last_target: &mut Vec3,
+        delta_time: f32,
+    ) {
+        let offset = config.follow_offset.unwrap_or(vec3(0.0, 2.0, -5.0));
+        let desired_position = target_vec3 + offset;
+
+        let new_position = if config.enable_smoothing {
+            let smoothing_factor = (config.smoothing_speed * delta_time).min(1.0);
+            *last_position * (1.0 - smoothing_factor) + desired_position * smoothing_factor
+        } else {
+            desired_position
+        };
+
+        let desired_target = target_vec3;
+        let new_target = if config.enable_smoothing {
+            let rotation_factor = (config.rotation_smoothing * delta_time).min(1.0);
+            *last_target * (1.0 - rotation_factor) + desired_target * rotation_factor
+        } else {
+            desired_target
+        };
+
+        camera.set_view(new_position, new_target, vec3(0.0, 1.0, 0.0));
+
+        *last_position = new_position;
+        *last_target = new_target;
     }
 
     /// Load a full scene from SceneData
@@ -554,6 +813,32 @@ impl ThreeDRenderer {
                 }
             }
         }
+    }
+
+    /// Render debug visualizations (grid, colliders, etc.) when debug mode is enabled
+    pub fn render_debug_overlay(
+        &mut self,
+        target: &RenderTarget,
+        physics_world: Option<&vibe_physics::PhysicsWorld>,
+    ) -> Result<()> {
+        use crate::debug::{append_collider_lines, append_ground_grid, LineBatch};
+
+        let mut line_batch = LineBatch::new();
+
+        // Add ground grid (20x20 units, 20 divisions)
+        append_ground_grid(&mut line_batch, 20.0, 20);
+
+        // Add collider outlines if physics world exists
+        if let Some(physics_world) = physics_world {
+            append_collider_lines(physics_world, &mut line_batch);
+        }
+
+        // Render the lines
+        if let Some(debug_mesh) = self.debug_line_renderer.create_line_mesh(&line_batch)? {
+            target.render(&self.camera, &[&debug_mesh], &[]);
+        }
+
+        Ok(())
     }
 
     // ===== Private Helper Methods =====
@@ -631,7 +916,7 @@ impl ThreeDRenderer {
         mesh_renderer: &MeshRenderer,
         transform: Option<&Transform>,
     ) -> Result<()> {
-        let (gm, final_scale) = load_mesh_renderer(
+        let submeshes = load_mesh_renderer(
             &self.context,
             entity,
             mesh_renderer,
@@ -640,16 +925,46 @@ impl ThreeDRenderer {
         )
         .await?;
 
-        self.meshes.push(gm);
-
-        // Store the entity ID for this mesh
         let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
-        self.mesh_entity_ids.push(entity_id);
-        self.mesh_scales.push(final_scale);
 
-        // Store shadow flags
-        self.mesh_cast_shadows.push(mesh_renderer.castShadows);
-        self.mesh_receive_shadows.push(mesh_renderer.receiveShadows);
+        // Handle all submeshes (primitives return 1, GLTF models may return multiple)
+        for (idx, (gm, final_scale)) in submeshes.into_iter().enumerate() {
+            self.meshes.push(gm);
+            self.mesh_entity_ids.push(entity_id);
+            self.mesh_scales.push(final_scale);
+            self.mesh_cast_shadows.push(mesh_renderer.castShadows);
+            self.mesh_receive_shadows.push(mesh_renderer.receiveShadows);
+
+            if let Some(transform) = transform {
+                let ts_position =
+                    vibe_ecs_bridge::position_to_vec3_opt(transform.position.as_ref());
+                let converted = threejs_to_threed_position(ts_position);
+                log::info!(
+                    "    Submesh {} transform: three.js pos [{:.2}, {:.2}, {:.2}] → three-d pos [{:.2}, {:.2}, {:.2}]",
+                    idx,
+                    ts_position.x,
+                    ts_position.y,
+                    ts_position.z,
+                    converted.x,
+                    converted.y,
+                    converted.z
+                );
+            } else {
+                log::info!(
+                    "    Submesh {} transform: no Transform component, using primitive base scale only",
+                    idx
+                );
+            }
+
+            log::info!(
+                "      Shadows → cast: {}, receive: {}, final scale [{:.2}, {:.2}, {:.2}]",
+                mesh_renderer.castShadows,
+                mesh_renderer.receiveShadows,
+                final_scale.x,
+                final_scale.y,
+                final_scale.z
+            );
+        }
 
         Ok(())
     }
@@ -676,28 +991,59 @@ impl ThreeDRenderer {
         transform: Option<&Transform>,
     ) -> Result<()> {
         if let Some(config) = load_camera(camera_component, transform)? {
-            self.camera = create_camera(&config, self.window_size);
+            let mut camera = create_camera(&config, self.window_size);
+            camera.tone_mapping = parse_tone_mapping(config.tone_mapping.as_deref());
+            camera.color_mapping = ColorMapping::ComputeToSrgb;
 
-            // Apply tone mapping configuration from the camera component
-            self.camera.tone_mapping = parse_tone_mapping(config.tone_mapping.as_deref());
-            self.camera.color_mapping = ColorMapping::ComputeToSrgb;
-
-            // Load skybox texture if available
+            let mut skybox_renderer = SkyboxRenderer::new();
             if config.skybox_texture.is_some() {
-                if let Err(err) = self
-                    .skybox_renderer
+                if let Err(err) = skybox_renderer
                     .load_from_config(&self.context, &config)
                     .await
                 {
                     log::warn!("Failed to load skybox texture: {}", err);
-                    self.skybox_renderer.clear();
+                    skybox_renderer.clear();
                 }
-            } else {
-                self.skybox_renderer.clear();
             }
 
-            // Store camera config for follow system and other features
-            self.camera_config = Some(config);
+            if config.is_main {
+                self.camera = camera;
+                self.camera_config = Some(config.clone());
+                self.skybox_renderer = skybox_renderer;
+                self.last_camera_position = config.position;
+                self.last_camera_target = config.target;
+
+                log::info!(
+                    "    Main camera loaded → position [{:.2}, {:.2}, {:.2}], target [{:.2}, {:.2}, {:.2}], clearFlags={:?}, background={:?}",
+                    config.position.x,
+                    config.position.y,
+                    config.position.z,
+                    config.target.x,
+                    config.target.y,
+                    config.target.z,
+                    config.clear_flags,
+                    config.background_color
+                );
+            } else {
+                self.additional_cameras.push(AdditionalCamera {
+                    camera,
+                    config: config.clone(),
+                    skybox_renderer,
+                    last_position: config.position,
+                    last_target: config.target,
+                });
+
+                log::info!(
+                    "    Additional camera (depth {}) loaded → position [{:.2}, {:.2}, {:.2}], target [{:.2}, {:.2}, {:.2}]",
+                    config.depth,
+                    config.position.x,
+                    config.position.y,
+                    config.position.z,
+                    config.target.x,
+                    config.target.y,
+                    config.target.z
+                );
+            }
         }
         Ok(())
     }
@@ -747,7 +1093,10 @@ impl ThreeDRenderer {
             return;
         }
 
-        log::debug!("Generating shadow maps for {} shadow-casting meshes", geometries.len());
+        log::debug!(
+            "Generating shadow maps for {} shadow-casting meshes",
+            geometries.len()
+        );
 
         // Generate shadow maps for directional lights that cast shadows
         for light in &mut self.directional_lights {
@@ -770,9 +1119,9 @@ impl ThreeDRenderer {
         let translation = iso.translation;
         let rotation = iso.rotation;
 
-        // Apply Z-flip for coordinate conversion (Three.js ↔ three-d)
-        // Physics uses Three.js convention (+Z forward), three-d uses -Z forward
-        let position = vec3(translation.x, translation.y, -translation.z);
+        // Physics runs in the same coordinate system as the renderer, so we can use
+        // the translation directly.
+        let position = vec3(translation.x, translation.y, translation.z);
 
         // Convert nalgebra quaternion to glam quaternion, then to axis-angle
         let glam_quat = glam::Quat::from_xyzw(rotation.i, rotation.j, rotation.k, rotation.w);
@@ -867,6 +1216,68 @@ fn parse_tone_mapping(mode: Option<&str>) -> ToneMapping {
             log::warn!("Unknown tone mapping mode '{}', defaulting to ACES", other);
             ToneMapping::Aces
         }
+    }
+}
+
+#[cfg(test)]
+mod follow_tests {
+    use super::*;
+    use crate::renderer::load_camera;
+    use vibe_ecs_bridge::decoders::CameraComponent;
+
+    fn config_with_control(control: Option<&str>) -> CameraConfig {
+        let component = CameraComponent {
+            fov: 60.0,
+            near: 0.1,
+            far: 100.0,
+            is_main: true,
+            projection_type: "perspective".to_string(),
+            orthographic_size: 10.0,
+            depth: 0,
+            clear_flags: None,
+            background_color: None,
+            skybox_texture: None,
+            control_mode: control.map(|mode| mode.to_string()),
+            enable_smoothing: false,
+            follow_target: Some(42),
+            follow_offset: None,
+            smoothing_speed: 5.0,
+            rotation_smoothing: 5.0,
+            viewport_rect: None,
+            hdr: false,
+            tone_mapping: None,
+            tone_mapping_exposure: 1.0,
+            enable_post_processing: false,
+            post_processing_preset: None,
+            skybox_scale: None,
+            skybox_rotation: None,
+            skybox_repeat: None,
+            skybox_offset: None,
+            skybox_intensity: 1.0,
+            skybox_blur: 0.0,
+        };
+
+        load_camera(&component, None)
+            .expect("load_camera should succeed")
+            .expect("CameraConfig expected")
+    }
+
+    #[test]
+    fn follow_enabled_when_locked() {
+        let config = config_with_control(Some("locked"));
+        assert_eq!(ThreeDRenderer::follow_target_if_locked(&config), Some(42));
+    }
+
+    #[test]
+    fn follow_disabled_when_free() {
+        let config = config_with_control(Some("free"));
+        assert_eq!(ThreeDRenderer::follow_target_if_locked(&config), None);
+    }
+
+    #[test]
+    fn follow_defaults_to_locked_when_unspecified() {
+        let config = config_with_control(None);
+        assert_eq!(ThreeDRenderer::follow_target_if_locked(&config), Some(42));
     }
 }
 

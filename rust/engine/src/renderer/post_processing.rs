@@ -1,7 +1,7 @@
 /// Post-processing utilities for camera-driven color grading and exposure
 use three_d::{
-    apply_screen_effect, ColorMapping, ColorTexture, DepthTexture, Effect, Light, Program,
-    RenderTarget, ToneMapping, Vec3,
+    ColorMapping, ColorTexture, DepthTexture, Effect, Light, Program, RenderTarget, ScissorBox,
+    ToneMapping, Vec3,
 };
 
 use super::camera_loader::CameraConfig;
@@ -257,8 +257,16 @@ pub fn apply_post_processing<'a>(
     effect: ColorGradingEffect,
     camera: &three_d::Camera,
     color_texture: ColorTexture<'a>,
+    scissor_box: ScissorBox,
 ) {
-    screen.apply_screen_effect(&effect, camera, &[], Some(color_texture), None);
+    screen.apply_screen_effect_partially(
+        scissor_box,
+        &effect,
+        camera,
+        &[],
+        Some(color_texture),
+        None,
+    );
 }
 
 #[cfg(test)]

@@ -21,11 +21,17 @@ pub struct AppThreeD {
     physics_accumulator: f32,
     timer: FrameTimer,
     scene: Option<SceneData>,
+    debug_mode: bool,
 }
 
 impl AppThreeD {
     /// Create with test scene (primitives)
-    pub fn new(width: u32, height: u32, event_loop: &EventLoop<()>) -> anyhow::Result<Self> {
+    pub fn new(
+        width: u32,
+        height: u32,
+        debug_mode: bool,
+        event_loop: &EventLoop<()>,
+    ) -> anyhow::Result<Self> {
         // Create fullscreen window
         log::info!("Creating fullscreen window for three-d POC...");
         let window = Arc::new(
@@ -50,6 +56,7 @@ impl AppThreeD {
             physics_accumulator: 0.0,
             timer: FrameTimer::new(),
             scene: None,
+            debug_mode,
         })
     }
 
@@ -58,6 +65,7 @@ impl AppThreeD {
         scene_path: PathBuf,
         width: u32,
         height: u32,
+        debug_mode: bool,
         event_loop: &EventLoop<()>,
     ) -> anyhow::Result<Self> {
         // Create fullscreen window
@@ -108,6 +116,7 @@ impl AppThreeD {
             physics_accumulator: 0.0,
             timer: FrameTimer::new(),
             scene: Some(scene),
+            debug_mode,
         })
     }
 
@@ -195,6 +204,14 @@ impl AppThreeD {
     fn update(&mut self) {
         self.timer.tick();
 
+        // Log FPS when debug mode is enabled
+        if self.debug_mode {
+            let fps = self.timer.fps();
+            if fps > 0.0 {
+                log::debug!("FPS: {:.1}", fps);
+            }
+        }
+
         // Physics simulation (if enabled)
         if let Some(ref mut physics_world) = self.physics_world {
             // Fixed timestep physics update (60 Hz)
@@ -220,6 +237,7 @@ impl AppThreeD {
 
     fn render(&mut self) -> anyhow::Result<()> {
         let delta_time = self.timer.delta_seconds();
-        self.renderer.render(delta_time)
+        self.renderer
+            .render(delta_time, self.debug_mode, self.physics_world.as_ref())
     }
 }

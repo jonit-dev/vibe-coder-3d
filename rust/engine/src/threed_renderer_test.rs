@@ -71,24 +71,16 @@ mod tests {
     }
 
     #[test]
-    fn test_coordinate_conversion_z_flip() {
-        // Test the Z-flip conversion from Three.js to three-d coordinates
-        // Three.js: +Z is forward, three-d: -Z is forward
+    fn test_coordinate_conversion_axes_match() {
+        // Positions should pass through unchanged
+        let threejs_pos = (1.0, 2.0, 3.0);
+        let threed_pos = (threejs_pos.0, threejs_pos.1, threejs_pos.2);
+        assert_eq!(threed_pos, (1.0, 2.0, 3.0));
 
-        // Position conversion
-        let threejs_pos = (1.0, 2.0, 3.0); // (x, y, z)
-        let threed_pos = (threejs_pos.0, threejs_pos.1, -threejs_pos.2);
-        assert_eq!(threed_pos, (1.0, 2.0, -3.0));
-
-        // Negative Z should become positive
+        // Negative values remain negative
         let threejs_neg = (1.0, 2.0, -5.0);
-        let threed_neg = (threejs_neg.0, threejs_neg.1, -threejs_neg.2);
-        assert_eq!(threed_neg, (1.0, 2.0, 5.0));
-
-        // Zero should remain zero
-        let origin = (0.0, 0.0, 0.0);
-        let origin_conv = (origin.0, origin.1, -origin.2);
-        assert_eq!(origin_conv, (0.0, 0.0, 0.0));
+        let threed_neg = (threejs_neg.0, threejs_neg.1, threejs_neg.2);
+        assert_eq!(threed_neg, (1.0, 2.0, -5.0));
     }
 
     #[test]

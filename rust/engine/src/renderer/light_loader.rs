@@ -79,11 +79,10 @@ fn create_directional_light(
     light: &LightComponent,
     color: Srgba,
 ) -> EnhancedDirectionalLight {
-    // Flip Z for three-d coordinate system
     let direction =
         threejs_to_threed_direction(light.directionX, light.directionY, light.directionZ);
     log::info!(
-        "    Direction:  [{:.2}, {:.2}, {:.2}] (Z flipped)",
+        "    Direction:  [{:.2}, {:.2}, {:.2}]",
         direction.x,
         direction.y,
         direction.z
@@ -118,16 +117,16 @@ fn create_point_light(
     transform: Option<&Transform>,
     color: Srgba,
 ) -> PointLight {
-    // Extract position from transform (flip Z for three-d coordinate system)
+    // Extract position from transform
     let position = if let Some(t) = transform {
         let pos = position_to_vec3_opt(t.position.as_ref());
-        vec3(pos.x, pos.y, -pos.z) // Flip Z
+        vec3(pos.x, pos.y, pos.z)
     } else {
         vec3(0.0, 0.0, 0.0)
     };
 
     log::info!(
-        "    Position:   [{:.2}, {:.2}, {:.2}] (Z flipped)",
+        "    Position:   [{:.2}, {:.2}, {:.2}]",
         position.x,
         position.y,
         position.z
@@ -150,10 +149,10 @@ fn create_spot_light(
     transform: Option<&Transform>,
     color: Srgba,
 ) -> EnhancedSpotLight {
-    // Extract position and direction from transform (flip Z for three-d coordinate system)
+    // Extract position and direction from transform
     let position = if let Some(t) = transform {
         let pos = position_to_vec3_opt(t.position.as_ref());
-        vec3(pos.x, pos.y, -pos.z) // Flip Z
+        vec3(pos.x, pos.y, pos.z)
     } else {
         vec3(0.0, 0.0, 0.0)
     };
@@ -162,13 +161,13 @@ fn create_spot_light(
         threejs_to_threed_direction(light.directionX, light.directionY, light.directionZ);
 
     log::info!(
-        "    Position:   [{:.2}, {:.2}, {:.2}] (Z flipped)",
+        "    Position:   [{:.2}, {:.2}, {:.2}]",
         position.x,
         position.y,
         position.z
     );
     log::info!(
-        "    Direction:  [{:.2}, {:.2}, {:.2}] (Z flipped)",
+        "    Direction:  [{:.2}, {:.2}, {:.2}]",
         direction.x,
         direction.y,
         direction.z

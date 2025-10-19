@@ -97,12 +97,6 @@ pub fn load_camera(
         );
     }
 
-    // Only load if this is the main camera (for now - multi-camera support later)
-    if !camera_component.is_main {
-        log::info!("    Skipping non-main camera (multi-camera support pending)");
-        return Ok(None);
-    }
-
     // Extract position and target from transform
     let (position, target) = if let Some(t) = transform {
         convert_camera_transform(t)

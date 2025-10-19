@@ -23,6 +23,23 @@ Native Rust engine that renders 3D scenes using three-d lib. Consumes JSON scene
 - Document discoveries in nested folder CLAUDE.md files
 - Run `cargo fmt` and `cargo clippy` before committing
 
+## ⚠️ CRITICAL: Pre-Commit Verification
+
+**ALWAYS run these checks before considering work complete:**
+
+```bash
+# 1. Verify compilation (must pass without errors)
+cargo build --bin vibe-engine
+
+# 2. Run all tests (must pass)
+cargo test --lib
+
+# 3. Format and lint
+cargo fmt && cargo clippy
+```
+
+**Why this matters**: Borrow checker errors, type mismatches, and logic bugs only surface at compile/test time. Catching them early prevents wasted time and broken builds. No work is complete until these checks pass.
+
 ## Code Organization (SRP, DRY, KISS, YAGNI)
 
 **Single Responsibility**: One clear responsibility per module/struct/function

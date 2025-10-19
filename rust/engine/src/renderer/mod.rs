@@ -10,6 +10,7 @@
 /// - Transform conversion utilities
 pub mod camera_loader;
 pub mod coordinate_conversion;
+pub mod debug_lines;
 pub mod enhanced_lights;
 pub mod light_loader;
 pub mod material_manager;
@@ -23,6 +24,7 @@ pub mod transform_utils;
 
 // Re-export commonly used types
 pub use camera_loader::{create_camera, load_camera, CameraConfig};
+pub use debug_lines::DebugLineRenderer;
 pub use enhanced_lights::{EnhancedDirectionalLight, EnhancedSpotLight};
 pub use light_loader::{load_light, LoadedLight};
 pub use material_manager::MaterialManager;

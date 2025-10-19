@@ -14,7 +14,7 @@ TypeScript Editor → RustSceneSerializer → JSON File → Rust Engine Loader �
 | ------------------ | ----------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------- |
 | **Transform**      | ✅ TransformComponent.ts      | ✅ transform.rs                                     | 🟢 Full Support (Euler + Quat)                                               |
 | **MeshRenderer**   | ✅ MeshRendererComponent.ts   | ✅ mesh_renderer.rs                                 | 🟢 Mostly Complete (85% coverage, textures + overrides working)              |
-| **Camera**         | ✅ CameraComponent.ts         | ✅ camera.rs                                        | 🟢 ~80% Rendered (HDR/post/skybox live; control mode + multi-camera pending) |
+| **Camera**         | ✅ CameraComponent.ts         | ✅ camera.rs                                        | 🟢 Full Support (multi-camera, control modes, HDR/post-processing, skybox)   |
 | **Light**          | ✅ LightComponent.ts          | ✅ light.rs                                         | 🟢 Full THREE.JS Parity (100% complete)                                      |
 | **RigidBody**      | ✅ RigidBodyComponent.ts      | ✅ components.rs, decoders.rs, scene_integration.rs | 🟢 Full Support (100% coverage)                                              |
 | **MeshCollider**   | ✅ MeshColliderComponent.ts   | ✅ components.rs, decoders.rs, scene_integration.rs | 🟢 Full Support (100% coverage)                                              |
@@ -157,7 +157,7 @@ pub struct CameraComponent {
 - ✅ `depth`: **FULLY PARSED** - camera render order (available in CameraConfig for future multi-camera support)
 - ✅ `clearFlags`: **FULLY PARSED** - parsed and available in CameraConfig
 - ✅ `skyboxTexture`: **RENDERED** - loads HDR/equirectangular textures for skybox pass
-- ✅ `controlMode`: **FULLY PARSED** - camera control mode stored in CameraConfig
+- ✅ `controlMode`: **RENDERED** - locked/free modes toggle runtime follow behaviour
 - ✅ `enableSmoothing`: **RENDERED** - toggles runtime smoothing in the follow system
 - ✅ `followTarget`: **RENDERED** - actively follows the specified entity via SceneGraph
 - ✅ `followOffset`: **RENDERED** - applied to camera position when following targets
@@ -171,8 +171,8 @@ pub struct CameraComponent {
 - ✅ `postProcessingPreset`: **RENDERED** - applies cinematic/realistic/stylized curves
 - ✅ `skyboxScale`: **RENDERED** - scales sampling direction for skybox quad
 - ✅ `skyboxRotation`: **RENDERED** - Euler rotation applied in cube sampling
-- ✅ `skyboxRepeat`: **PARSED** - stored for future UV transform support
-- ✅ `skyboxOffset`: **PARSED** - stored for future UV transform support
+- ✅ `skyboxRepeat`: **RENDERED** - applied via spherical UV tiling for cube map sampling
+- ✅ `skyboxOffset`: **RENDERED** - shifts equirectangular sampling direction
 - ✅ `skyboxIntensity`: **RENDERED** - multiplies cube map radiance
 - ✅ `skyboxBlur`: **RENDERED** - controls mip-level blur via LOD sampling
 
@@ -187,7 +187,7 @@ pub struct CameraComponent {
 - ✅ Camera follow system - **FULLY IMPLEMENTED** (SceneGraph-powered follow with smoothing)
 - ✅ HDR & tone mapping - **FULLY IMPLEMENTED** (tone operator selection + exposure pipeline)
 - ✅ Post-processing - **FULLY IMPLEMENTED** (presets feed color grading effect)
-- ✅ Skybox rendering - **FULLY IMPLEMENTED** (HDR skybox with intensity/blur controls; repeat/offset queued)
+- ✅ Skybox rendering - **FULLY IMPLEMENTED** (HDR skybox with intensity/blur/repeat/offset controls)
 
 ---
 
@@ -802,7 +802,7 @@ Custom shader injection (enhanced_lights.rs:171-234):
 2. ✅ Entity list parsing with dynamic component loading
 3. ✅ **Transform component** (position, rotation [Euler + Quat], scale)
 4. ✅ **MeshRenderer component** (meshId, materialId, enabled) - basic support
-5. ✅ **Camera component** (FOV, near, far, position, backgroundColor, perspective/orthographic) - basic support
+5. ✅ **Camera component** (full field coverage: multi-camera viewports, control modes, follow system, HDR/post-processing, textured skybox)
 6. ✅ **Material system** (PBR properties: color, metallic, roughness from MaterialCache)
 7. ✅ **Lighting basics** (directional, ambient, point lights instantiate; shadows/spot params pending)
 8. ✅ **Scene hierarchy** (parentPersistentId → SceneGraph → world transforms)
@@ -813,23 +813,19 @@ Custom shader injection (enhanced_lights.rs:171-234):
 
 ### Partially Working 🟡
 
-1. ✅ **Camera component** - **100% PARSED** (rendering: ~80% complete with follow system, HDR/tone mapping, post-processing, and textured skybox live; multi-camera/control-mode pending)
-2. ✅ **MeshRenderer component** - **85% complete** (textures and inline material overrides working; missing: GLTF, multi-submesh, UV transforms)
-3. 🟡 Prefabs (parsed but not instantiated)
+1. ✅ **MeshRenderer component** - **85% complete** (textures and inline material overrides working; missing: GLTF, multi-submesh, UV transforms)
+2. 🟡 Prefabs (parsed but not instantiated)
 
 ### Missing ❌
 
 1. ✅ **GLTF model loading** - IMPLEMENTED (modelPath support added)
 2. ✅ **Physics** - FULLY IMPLEMENTED (RigidBody + MeshCollider with Rapier3D, 25 tests passing)
-3. ❌ **Multi-camera rendering** (viewportRect, camera depth fields parsed, rendering pending)
-4. ❌ **Camera control mode** (locked/free behaviour not yet integrated)
-5. ❌ **Scripts execution**
-6. ❌ **Audio** (Sound component)
-7. ❌ **Terrain rendering**
-8. ❌ **Custom shapes**
-9. ❌ **Instanced rendering** (component-driven)
-10. ❌ **Prefab instantiation**
-11. ⚠️ **UV transforms** (offset, repeat) - Not supported by three-d API (requires custom shader)
+3. ❌ **Scripts execution**
+4. ❌ **Audio** (Sound component)
+5. ❌ **Terrain rendering**
+6. ❌ **Custom shapes**
+7. ❌ **Instanced rendering** (component-driven)
+8. ❌ **Prefab instantiation**
 
 ---
 
@@ -964,10 +960,13 @@ Custom shader injection (enhanced_lights.rs:171-234):
 - ✅ All 30 camera fields now parsed and available in CameraConfig
 - ✅ Orthographic projection support added
 - ✅ Viewport rect support for multi-camera rendering
+- ✅ Multi-camera rendering pipeline (depth ordering + viewport scissor clears)
 - ✅ Follow system now live (SceneGraph follow + smoothing)
 - ✅ HDR/tone mapping pipeline active (camera tone mapping + exposure grading)
 - ✅ Post-processing presets applied in runtime grading pass
 - ✅ Skybox rendering live (HDR texture with intensity/blur controls)
+- ✅ Skybox repeat/offset mapped to cube-map sampling
+- ✅ Control mode (locked/free) drives follow enablement
 
 ---
 
