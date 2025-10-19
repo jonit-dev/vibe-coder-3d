@@ -7,6 +7,7 @@ mod mesh_cache;
 mod primitives;
 mod primitives_cylinders;
 mod primitives_platonic;
+mod primitives_structural;
 mod primitives_torus;
 mod texture_cache;
 mod vertex;
@@ -16,10 +17,11 @@ pub use gltf_loader::{load_gltf, load_gltf_full, GltfData, GltfImage, GltfImageF
 pub use material::{Material, MaterialCache};
 pub use mesh_cache::{GpuMesh, MeshCache};
 pub use primitives::{create_cube, create_plane, create_sphere};
-pub use primitives_cylinders::{create_capsule, create_cone, create_cylinder};
+pub use primitives_cylinders::{create_capsule, create_cone, create_cylinder, CylindricalBuilder};
 pub use primitives_platonic::{
     create_dodecahedron, create_icosahedron, create_octahedron, create_tetrahedron,
 };
+pub use primitives_structural::{create_ramp, create_spiral_stairs, create_stairs};
 pub use primitives_torus::{create_torus, create_torus_knot};
 pub use texture_cache::{GpuTexture, TextureCache};
 pub use vertex::{Mesh, Vertex};

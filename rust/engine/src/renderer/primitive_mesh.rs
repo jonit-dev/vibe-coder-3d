@@ -22,6 +22,17 @@ pub fn primitive_base_scale(mesh_id: Option<&str>) -> GlamVec3 {
         primitive if primitive.contains("capsule") => GlamVec3::splat(0.5),
         primitive if primitive.contains("cone") => GlamVec3::splat(0.5),
         primitive if primitive.contains("torus") => GlamVec3::splat(0.5),
+        // Geometric variations
+        primitive if primitive.contains("trapezoid") => GlamVec3::splat(0.5),
+        primitive if primitive.contains("prism") => GlamVec3::splat(0.5),
+        primitive if primitive.contains("pyramid") => GlamVec3::splat(0.5),
+        // Structural shapes
+        primitive if primitive.contains("wall") => GlamVec3::new(1.0, 0.5, 0.05), // 2x1x0.1
+        primitive if primitive.contains("ramp") => GlamVec3::splat(0.5),
+        primitive if primitive.contains("stairs") => GlamVec3::splat(0.5),
+        primitive if primitive.contains("spiralstairs") || primitive.contains("spiral") => {
+            GlamVec3::splat(0.5)
+        }
         // Platonic solids already at correct size (0.5 radius default)
         primitive if primitive.contains("tetrahedron") => GlamVec3::ONE,
         primitive if primitive.contains("octahedron") => GlamVec3::ONE,
@@ -74,8 +85,75 @@ pub fn create_primitive_mesh(mesh_id: Option<&str>) -> CpuMesh {
                 let vibe_mesh = vibe_assets::create_icosahedron(0.5, 0);
                 convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
+            // Cylindrical variations - parameter-based
+            mesh if mesh.contains("cylinder") || mesh == "Cylinder" => {
+                log::info!("    Creating:    Cylinder primitive (with UVs)");
+                let vibe_mesh = vibe_assets::create_cylinder(0.5, 1.0, 32);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("cone") || mesh == "Cone" => {
+                log::info!("    Creating:    Cone primitive (with UVs)");
+                let vibe_mesh = vibe_assets::create_cone(0.5, 1.0, 32);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("capsule") || mesh == "Capsule" => {
+                log::info!("    Creating:    Capsule primitive (with UVs)");
+                let vibe_mesh = vibe_assets::create_capsule(0.3, 0.4, 4, 16);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("torus") && !mesh.contains("knot") => {
+                log::info!("    Creating:    Torus primitive (with UVs)");
+                let vibe_mesh = vibe_assets::create_torus(0.5, 0.2, 16, 100);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("torusknot") || mesh == "TorusKnot" => {
+                log::info!("    Creating:    TorusKnot primitive (with UVs)");
+                let vibe_mesh = vibe_assets::create_torus_knot(0.4, 0.1, 64, 8, 2, 3);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            // Geometric shape variations (using existing primitives with different params)
+            mesh if mesh.contains("trapezoid") || mesh == "Trapezoid" => {
+                log::info!("    Creating:    Trapezoid (truncated cylinder, 4 segments)");
+                // Trapezoid uses cylinder with 4 segments and different radii
+                let vibe_mesh = vibe_assets::CylindricalBuilder::truncated_cone(0.3, 0.7, 1.0, 4).build();
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("prism") || mesh == "Prism" => {
+                log::info!("    Creating:    Prism (cylinder with 6 segments)");
+                let vibe_mesh = vibe_assets::create_cylinder(0.5, 1.0, 6);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("pyramid") || mesh == "Pyramid" => {
+                log::info!("    Creating:    Pyramid (cone with 4 segments)");
+                let vibe_mesh = vibe_assets::create_cone(0.5, 1.0, 4);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            // Structural shapes
+            mesh if mesh.contains("wall") || mesh == "Wall" => {
+                log::info!("    Creating:    Wall (thin box 2x1x0.1)");
+                // Wall is just a scaled cube - will be handled by scale
+                use vibe_assets::create_cube;
+                let vibe_mesh = create_cube();
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("ramp") || mesh == "Ramp" => {
+                log::info!("    Creating:    Ramp (inclined plane)");
+                let vibe_mesh = vibe_assets::create_ramp(1.0, 1.0, 1.0);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("stairs") && !mesh.contains("spiral") => {
+                log::info!("    Creating:    Stairs (5 steps)");
+                let vibe_mesh = vibe_assets::create_stairs(1.0, 1.0, 1.0, 5);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
+            mesh if mesh.contains("spiralstairs") || mesh.contains("spiral") && mesh.contains("stair") => {
+                log::info!("    Creating:    Spiral Stairs (12 steps, 1 turn)");
+                let vibe_mesh = vibe_assets::create_spiral_stairs(1.0, 2.0, 12, 1.0);
+                convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
+            }
             _ => {
-                log::warn!("    Unknown mesh type: {}, using cube (with UVs)", id);
+                log::warn!("    Unknown mesh type: {}, using placeholder cube", id);
+                // TODO: Add proper placeholder system with shape name visualization
                 use vibe_assets::create_cube;
                 let vibe_mesh = create_cube();
                 convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
