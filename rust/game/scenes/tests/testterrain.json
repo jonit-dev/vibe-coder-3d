@@ -1,0 +1,129 @@
+{
+  "metadata": {
+    "name": "testterrain",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Test scene for Terrain component with procedural noise"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "camera-terrain-test"
+        },
+        "Transform": {
+          "position": [0, 12, -18],
+          "rotation": [25, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "depth": 0,
+          "isMain": true,
+          "clearFlags": "color",
+          "backgroundColor": {
+            "r": 0.5,
+            "g": 0.7,
+            "b": 0.9,
+            "a": 1
+          },
+          "controlMode": "free"
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-terrain-test"
+        },
+        "Transform": {
+          "position": [10, 15, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 0.98,
+            "b": 0.95
+          },
+          "intensity": 1.2,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.6,
+          "directionY": -1,
+          "directionZ": -0.4,
+          "shadowMapSize": 2048,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "ambient-terrain-test"
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.4,
+            "g": 0.5,
+            "b": 0.6
+          },
+          "intensity": 0.6,
+          "enabled": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Procedural Terrain",
+      "components": {
+        "PersistentId": {
+          "id": "terrain-procedural"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Terrain": {
+          "size": [20.0, 20.0],
+          "segments": [129, 129],
+          "heightScale": 2.0,
+          "noiseEnabled": true,
+          "noiseSeed": 1337,
+          "noiseFrequency": 4.0,
+          "noiseOctaves": 4,
+          "noisePersistence": 0.5,
+          "noiseLacunarity": 2.0
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "default",
+      "name": "Default",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#4a8f4a",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    }
+  ]
+}

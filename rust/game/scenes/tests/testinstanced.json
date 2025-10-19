@@ -1,0 +1,229 @@
+{
+  "metadata": {
+    "name": "testinstanced",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Test scene for Instanced component with 100 cubes in 10x10 grid"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "camera-instanced-test"
+        },
+        "Transform": {
+          "position": [0, 8, -15],
+          "rotation": [15, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "depth": 0,
+          "isMain": true,
+          "clearFlags": "color",
+          "backgroundColor": {
+            "r": 0.2,
+            "g": 0.3,
+            "b": 0.4,
+            "a": 1
+          },
+          "controlMode": "free"
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-instanced-test"
+        },
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1.0,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5,
+          "shadowMapSize": 2048,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "ambient-instanced-test"
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.3,
+            "g": 0.3,
+            "b": 0.3
+          },
+          "intensity": 0.5,
+          "enabled": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Instanced Cubes",
+      "components": {
+        "PersistentId": {
+          "id": "instanced-cubes-grid"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Instanced": {
+          "enabled": true,
+          "capacity": 100,
+          "baseMeshId": "cube",
+          "baseMaterialId": "default",
+          "castShadows": true,
+          "receiveShadows": true,
+          "frustumCulled": true,
+          "instances": [
+            {"position": [-4.5, 0, -4.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.0]},
+            {"position": [-3.5, 0, -4.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.1, 0.0]},
+            {"position": [-2.5, 0, -4.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.2, 0.0]},
+            {"position": [-1.5, 0, -4.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.3, 0.0]},
+            {"position": [-0.5, 0, -4.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.4, 0.0]},
+            {"position": [0.5, 0, -4.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.5, 0.0]},
+            {"position": [1.5, 0, -4.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.6, 0.0]},
+            {"position": [2.5, 0, -4.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.7, 0.0]},
+            {"position": [3.5, 0, -4.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.8, 0.0]},
+            {"position": [4.5, 0, -4.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.9, 0.0]},
+            {"position": [-4.5, 0, -3.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [0.9, 1.0, 0.0]},
+            {"position": [-3.5, 0, -3.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [0.8, 1.0, 0.0]},
+            {"position": [-2.5, 0, -3.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [0.7, 1.0, 0.0]},
+            {"position": [-1.5, 0, -3.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [0.6, 1.0, 0.0]},
+            {"position": [-0.5, 0, -3.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [0.5, 1.0, 0.0]},
+            {"position": [0.5, 0, -3.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [0.4, 1.0, 0.0]},
+            {"position": [1.5, 0, -3.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [0.3, 1.0, 0.0]},
+            {"position": [2.5, 0, -3.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [0.2, 1.0, 0.0]},
+            {"position": [3.5, 0, -3.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [0.1, 1.0, 0.0]},
+            {"position": [4.5, 0, -3.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.0]},
+            {"position": [-4.5, 0, -2.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.1]},
+            {"position": [-3.5, 0, -2.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.2]},
+            {"position": [-2.5, 0, -2.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.3]},
+            {"position": [-1.5, 0, -2.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.4]},
+            {"position": [-0.5, 0, -2.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.5]},
+            {"position": [0.5, 0, -2.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.6]},
+            {"position": [1.5, 0, -2.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.7]},
+            {"position": [2.5, 0, -2.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.8]},
+            {"position": [3.5, 0, -2.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.9]},
+            {"position": [4.5, 0, -2.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 1.0]},
+            {"position": [-4.5, 0, -1.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.9, 1.0]},
+            {"position": [-3.5, 0, -1.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.8, 1.0]},
+            {"position": [-2.5, 0, -1.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.7, 1.0]},
+            {"position": [-1.5, 0, -1.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.6, 1.0]},
+            {"position": [-0.5, 0, -1.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.5, 1.0]},
+            {"position": [0.5, 0, -1.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.4, 1.0]},
+            {"position": [1.5, 0, -1.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.3, 1.0]},
+            {"position": [2.5, 0, -1.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.2, 1.0]},
+            {"position": [3.5, 0, -1.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.1, 1.0]},
+            {"position": [4.5, 0, -1.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.0, 1.0]},
+            {"position": [-4.5, 0, -0.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [0.1, 0.0, 1.0]},
+            {"position": [-3.5, 0, -0.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [0.2, 0.0, 1.0]},
+            {"position": [-2.5, 0, -0.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [0.3, 0.0, 1.0]},
+            {"position": [-1.5, 0, -0.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [0.4, 0.0, 1.0]},
+            {"position": [-0.5, 0, -0.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [0.5, 0.0, 1.0]},
+            {"position": [0.5, 0, -0.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [0.6, 0.0, 1.0]},
+            {"position": [1.5, 0, -0.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [0.7, 0.0, 1.0]},
+            {"position": [2.5, 0, -0.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [0.8, 0.0, 1.0]},
+            {"position": [3.5, 0, -0.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [0.9, 0.0, 1.0]},
+            {"position": [4.5, 0, -0.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 1.0]},
+            {"position": [-4.5, 0, 0.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.9]},
+            {"position": [-3.5, 0, 0.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.8]},
+            {"position": [-2.5, 0, 0.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.7]},
+            {"position": [-1.5, 0, 0.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.6]},
+            {"position": [-0.5, 0, 0.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.5]},
+            {"position": [0.5, 0, 0.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.4]},
+            {"position": [1.5, 0, 0.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.3]},
+            {"position": [2.5, 0, 0.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.2]},
+            {"position": [3.5, 0, 0.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.1]},
+            {"position": [4.5, 0, 0.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.0]},
+            {"position": [-4.5, 0, 1.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [0.9, 0.1, 0.0]},
+            {"position": [-3.5, 0, 1.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [0.8, 0.2, 0.0]},
+            {"position": [-2.5, 0, 1.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [0.7, 0.3, 0.0]},
+            {"position": [-1.5, 0, 1.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [0.6, 0.4, 0.0]},
+            {"position": [-0.5, 0, 1.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [0.5, 0.5, 0.0]},
+            {"position": [0.5, 0, 1.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [0.4, 0.6, 0.0]},
+            {"position": [1.5, 0, 1.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [0.3, 0.7, 0.0]},
+            {"position": [2.5, 0, 1.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [0.2, 0.8, 0.0]},
+            {"position": [3.5, 0, 1.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [0.1, 0.9, 0.0]},
+            {"position": [4.5, 0, 1.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 1.0, 0.0]},
+            {"position": [-4.5, 0, 2.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.9, 0.1]},
+            {"position": [-3.5, 0, 2.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.8, 0.2]},
+            {"position": [-2.5, 0, 2.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.7, 0.3]},
+            {"position": [-1.5, 0, 2.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.6, 0.4]},
+            {"position": [-0.5, 0, 2.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.5, 0.5]},
+            {"position": [0.5, 0, 2.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.4, 0.6]},
+            {"position": [1.5, 0, 2.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.3, 0.7]},
+            {"position": [2.5, 0, 2.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.2, 0.8]},
+            {"position": [3.5, 0, 2.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.1, 0.9]},
+            {"position": [4.5, 0, 2.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [0.0, 0.0, 1.0]},
+            {"position": [-4.5, 0, 3.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [0.1, 0.0, 0.9]},
+            {"position": [-3.5, 0, 3.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [0.2, 0.0, 0.8]},
+            {"position": [-2.5, 0, 3.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [0.3, 0.0, 0.7]},
+            {"position": [-1.5, 0, 3.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [0.4, 0.0, 0.6]},
+            {"position": [-0.5, 0, 3.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [0.5, 0.0, 0.5]},
+            {"position": [0.5, 0, 3.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [0.6, 0.0, 0.4]},
+            {"position": [1.5, 0, 3.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [0.7, 0.0, 0.3]},
+            {"position": [2.5, 0, 3.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [0.8, 0.0, 0.2]},
+            {"position": [3.5, 0, 3.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [0.9, 0.0, 0.1]},
+            {"position": [4.5, 0, 3.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.0, 0.0]},
+            {"position": [-4.5, 0, 4.5], "rotation": [0, 0, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.1, 0.1]},
+            {"position": [-3.5, 0, 4.5], "rotation": [0, 15, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.2, 0.2]},
+            {"position": [-2.5, 0, 4.5], "rotation": [0, 30, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.3, 0.3]},
+            {"position": [-1.5, 0, 4.5], "rotation": [0, 45, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.4, 0.4]},
+            {"position": [-0.5, 0, 4.5], "rotation": [0, 60, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.5, 0.5]},
+            {"position": [0.5, 0, 4.5], "rotation": [0, 75, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.6, 0.6]},
+            {"position": [1.5, 0, 4.5], "rotation": [0, 90, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.7, 0.7]},
+            {"position": [2.5, 0, 4.5], "rotation": [0, 105, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.8, 0.8]},
+            {"position": [3.5, 0, 4.5], "rotation": [0, 120, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 0.9, 0.9]},
+            {"position": [4.5, 0, 4.5], "rotation": [0, 135, 0], "scale": [0.8, 0.8, 0.8], "color": [1.0, 1.0, 1.0]}
+          ]
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "default",
+      "name": "Default",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#cccccc",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    }
+  ]
+}

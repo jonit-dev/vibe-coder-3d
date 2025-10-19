@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "name": "testcube",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Single cube test"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Camera",
+      "components": {
+        "Transform": {
+          "position": [0, 2, -5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "isMain": true,
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "backgroundColor": {"r": 0.5, "g": 0.7, "b": 0.9}
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "DirectionalLight",
+      "components": {
+        "Transform": {
+          "position": [10, 15, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {"r": 1, "g": 1, "b": 1},
+          "intensity": 0.9,
+          "castShadow": false,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": 0
+        }
+      }
+    },
+    {
+      "id": 100,
+      "name": "Cube",
+      "components": {
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "Cube",
+          "materialId": "red"
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "red",
+      "name": "Red",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff0000",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}

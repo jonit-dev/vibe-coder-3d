@@ -1,0 +1,222 @@
+{
+  "metadata": {
+    "name": "testprefab",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Test scene for PrefabInstance component (metadata-only)"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "camera-prefab-test"
+        },
+        "Transform": {
+          "position": [0, 2, -8],
+          "rotation": [10, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "depth": 0,
+          "isMain": true,
+          "clearFlags": "color",
+          "backgroundColor": {
+            "r": 0.1,
+            "g": 0.1,
+            "b": 0.2,
+            "a": 1
+          },
+          "controlMode": "free"
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-prefab-test"
+        },
+        "Transform": {
+          "position": [5, 8, 3],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1.0,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.3,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "ambient-prefab-test"
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.3,
+            "g": 0.3,
+            "b": 0.4
+          },
+          "intensity": 0.5,
+          "enabled": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Test Cube 1",
+      "components": {
+        "PersistentId": {
+          "id": "cube-1"
+        },
+        "Transform": {
+          "position": [-2, 0, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "PrefabInstance": {
+          "prefabId": "test-prefab-1",
+          "version": 1,
+          "instanceUuid": "instance-cube-1",
+          "overridePatch": null
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Test Sphere",
+      "components": {
+        "PersistentId": {
+          "id": "sphere-1"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1.2, 1.2, 1.2]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "green",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "PrefabInstance": {
+          "prefabId": "test-prefab-2",
+          "version": 2,
+          "instanceUuid": "instance-sphere-1",
+          "overridePatch": {
+            "scale": [1.5, 1.5, 1.5]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Test Cube 2",
+      "components": {
+        "PersistentId": {
+          "id": "cube-2"
+        },
+        "Transform": {
+          "position": [2, 0, 0],
+          "rotation": [0, -45, 0],
+          "scale": [0.8, 0.8, 0.8]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "blue",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "PrefabInstance": {
+          "prefabId": "test-prefab-1",
+          "version": 1,
+          "instanceUuid": "instance-cube-2",
+          "overridePatch": {
+            "materialId": "blue"
+          }
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "default",
+      "name": "Default",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#cccccc",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "red",
+      "name": "Red",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff0000",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "green",
+      "name": "Green",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#00ff00",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "blue",
+      "name": "Blue",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#0000ff",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    }
+  ]
+}

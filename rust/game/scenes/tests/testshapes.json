@@ -1,0 +1,122 @@
+{
+  "metadata": {
+    "name": "testshapes",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Simple shapes test - 3 shapes for debugging"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "Transform": {
+          "position": [0, 3, -8],
+          "rotation": [10, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.1,
+            "g": 0.1,
+            "b": 0.15,
+            "a": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": { "r": 1, "g": 1, "b": 1 },
+          "intensity": 0.8,
+          "enabled": true,
+          "castShadow": false,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "Light": {
+          "lightType": "ambient",
+          "color": { "r": 0.3, "g": 0.3, "b": 0.5 },
+          "intensity": 0.3,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Cube",
+      "components": {
+        "Transform": {
+          "position": [-2, 1, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "Cube",
+          "materialId": "red",
+          "enabled": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Sphere",
+      "components": {
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "Sphere",
+          "materialId": "cyan",
+          "enabled": true
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Pyramid",
+      "components": {
+        "Transform": {
+          "position": [2, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "Pyramid",
+          "materialId": "yellow",
+          "enabled": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {"id": "red", "name": "Red", "shader": "standard", "materialType": "solid", "color": "#ff0000", "metalness": 0, "roughness": 0.7},
+    {"id": "cyan", "name": "Cyan", "shader": "standard", "materialType": "solid", "color": "#00ffff", "metalness": 0, "roughness": 0.7},
+    {"id": "yellow", "name": "Yellow", "shader": "standard", "materialType": "solid", "color": "#ffff00", "metalness": 0, "roughness": 0.7}
+  ]
+}

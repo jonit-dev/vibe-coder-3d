@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "name": "debugshapes",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Minimal debug scene - copy of testterrain config but with primitive shapes"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "Transform": {
+          "position": [0, 3, -8],
+          "rotation": [10, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "color",
+          "backgroundColor": {
+            "r": 0.5,
+            "g": 0.7,
+            "b": 0.9,
+            "a": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "Transform": {
+          "position": [10, 15, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 0.98,
+            "b": 0.95
+          },
+          "intensity": 1.2,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.6,
+          "directionY": -1,
+          "directionZ": -0.4
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.4,
+            "g": 0.5,
+            "b": 0.6
+          },
+          "intensity": 0.6,
+          "enabled": true
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Test Cube",
+      "components": {
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "testmaterial",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "testmaterial",
+      "name": "Test Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#cccccc",
+      "metalness": 0,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    }
+  ]
+}

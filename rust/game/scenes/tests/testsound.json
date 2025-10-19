@@ -1,0 +1,216 @@
+{
+  "metadata": {
+    "name": "testsound",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Test scene for Sound component with 3D spatial audio"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "camera-sound-test"
+        },
+        "Transform": {
+          "position": [0, 2, -5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "depth": 0,
+          "isMain": true,
+          "clearFlags": "color",
+          "backgroundColor": {
+            "r": 0.1,
+            "g": 0.1,
+            "b": 0.15,
+            "a": 1
+          },
+          "controlMode": "free"
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-sound-test"
+        },
+        "Transform": {
+          "position": [5, 10, -5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1,
+          "enabled": true,
+          "castShadow": false,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.3
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Background Music",
+      "components": {
+        "PersistentId": {
+          "id": "bg-music"
+        },
+        "Sound": {
+          "audioPath": "/audio/music/background.mp3",
+          "enabled": true,
+          "autoplay": true,
+          "loop": true,
+          "volume": 0.5,
+          "pitch": 1.0,
+          "playbackRate": 1.0,
+          "muted": false,
+          "is3D": false,
+          "isPlaying": false,
+          "currentTime": 0,
+          "duration": 180.5,
+          "format": "mp3"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "3D Sound Emitter",
+      "components": {
+        "PersistentId": {
+          "id": "sound-emitter-3d"
+        },
+        "Transform": {
+          "position": [3, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "sound-emitter-mat",
+          "enabled": true
+        },
+        "Sound": {
+          "audioPath": "/audio/effects/beep.wav",
+          "enabled": true,
+          "autoplay": false,
+          "loop": true,
+          "volume": 0.8,
+          "pitch": 1.0,
+          "playbackRate": 1.0,
+          "muted": false,
+          "is3D": true,
+          "minDistance": 1.0,
+          "maxDistance": 20.0,
+          "rolloffFactor": 1.0,
+          "coneInnerAngle": 360,
+          "coneOuterAngle": 360,
+          "coneOuterGain": 0,
+          "isPlaying": false,
+          "currentTime": 0,
+          "duration": 2.5,
+          "format": "wav"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Directional Sound Source",
+      "components": {
+        "PersistentId": {
+          "id": "directional-sound"
+        },
+        "Transform": {
+          "position": [-3, 1, 2],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "directional-sound-mat",
+          "enabled": true
+        },
+        "Sound": {
+          "audioPath": "/audio/effects/alarm.ogg",
+          "enabled": true,
+          "autoplay": false,
+          "loop": false,
+          "volume": 1.0,
+          "pitch": 1.2,
+          "playbackRate": 1.0,
+          "muted": false,
+          "is3D": true,
+          "minDistance": 2.0,
+          "maxDistance": 50.0,
+          "rolloffFactor": 0.5,
+          "coneInnerAngle": 45,
+          "coneOuterAngle": 90,
+          "coneOuterGain": 0.1,
+          "isPlaying": false,
+          "currentTime": 0,
+          "duration": 5.0,
+          "format": "ogg"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "UI Click Sound",
+      "components": {
+        "PersistentId": {
+          "id": "ui-click"
+        },
+        "Sound": {
+          "audioPath": "/audio/ui/click.wav",
+          "enabled": true,
+          "autoplay": false,
+          "loop": false,
+          "volume": 0.7,
+          "pitch": 1.0,
+          "playbackRate": 1.0,
+          "muted": false,
+          "is3D": false,
+          "isPlaying": false,
+          "currentTime": 0,
+          "duration": 0.2,
+          "format": "wav"
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "sound-emitter-mat",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#00ff00",
+      "metalness": 0.3,
+      "roughness": 0.7
+    },
+    {
+      "id": "directional-sound-mat",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff8800",
+      "metalness": 0.5,
+      "roughness": 0.5
+    }
+  ],
+  "prefabs": []
+}

@@ -1,0 +1,341 @@
+{
+  "metadata": {
+    "name": "testallshapes",
+    "version": 1,
+    "timestamp": "2025-10-19T00:00:00.000Z",
+    "description": "Test scene with all 31 primitive shapes in grid layout"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "Transform": {
+          "position": [0, 5, -15],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 45,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "isMain": true,
+          "clearFlags": "color",
+          "backgroundColor": {
+            "r": 0.5,
+            "g": 0.7,
+            "b": 0.9,
+            "a": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {"r": 1, "g": 1, "b": 1},
+          "intensity": 0.9,
+          "enabled": true,
+          "castShadow": false,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "Light": {
+          "lightType": "ambient",
+          "color": {"r": 0.4, "g": 0.4, "b": 0.5},
+          "intensity": 0.4,
+          "enabled": true,
+          "castShadow": false
+        }
+      }
+    },
+    {
+      "id": 100,
+      "name": "Cube",
+      "components": {
+        "Transform": {"position": [-12, 1, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Cube", "materialId": "red", "enabled": true}
+      }
+    },
+    {
+      "id": 101,
+      "name": "Sphere",
+      "components": {
+        "Transform": {"position": [-9, 1, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Sphere", "materialId": "cyan", "enabled": true}
+      }
+    },
+    {
+      "id": 102,
+      "name": "Cylinder",
+      "components": {
+        "Transform": {"position": [-6, 1, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Cylinder", "materialId": "mint", "enabled": true}
+      }
+    },
+    {
+      "id": 103,
+      "name": "Cone",
+      "components": {
+        "Transform": {"position": [-3, 1, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Cone", "materialId": "pink", "enabled": true}
+      }
+    },
+    {
+      "id": 104,
+      "name": "Plane",
+      "components": {
+        "Transform": {"position": [0, 1, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Plane", "materialId": "purple", "enabled": true}
+      }
+    },
+    {
+      "id": 105,
+      "name": "Torus",
+      "components": {
+        "Transform": {"position": [3, 1, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Torus", "materialId": "lightpink", "enabled": true}
+      }
+    },
+    {
+      "id": 106,
+      "name": "Capsule",
+      "components": {
+        "Transform": {"position": [6, 1, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Capsule", "materialId": "yellow", "enabled": true}
+      }
+    },
+    {
+      "id": 107,
+      "name": "TorusKnot",
+      "components": {
+        "Transform": {"position": [9, 1, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "TorusKnot", "materialId": "lightgreen", "enabled": true}
+      }
+    },
+    {
+      "id": 108,
+      "name": "Tetrahedron",
+      "components": {
+        "Transform": {"position": [12, 1, 6], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Tetrahedron", "materialId": "salmon", "enabled": true}
+      }
+    },
+    {
+      "id": 109,
+      "name": "Octahedron",
+      "components": {
+        "Transform": {"position": [-12, 1, 3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Octahedron", "materialId": "peach", "enabled": true}
+      }
+    },
+    {
+      "id": 110,
+      "name": "Dodecahedron",
+      "components": {
+        "Transform": {"position": [-9, 1, 3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Dodecahedron", "materialId": "orange", "enabled": true}
+      }
+    },
+    {
+      "id": 111,
+      "name": "Icosahedron",
+      "components": {
+        "Transform": {"position": [-6, 1, 3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Icosahedron", "materialId": "coral", "enabled": true}
+      }
+    },
+    {
+      "id": 112,
+      "name": "Trapezoid",
+      "components": {
+        "Transform": {"position": [-3, 1, 3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Trapezoid", "materialId": "lime", "enabled": true}
+      }
+    },
+    {
+      "id": 113,
+      "name": "Prism",
+      "components": {
+        "Transform": {"position": [0, 1, 3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Prism", "materialId": "aqua", "enabled": true}
+      }
+    },
+    {
+      "id": 114,
+      "name": "Pyramid",
+      "components": {
+        "Transform": {"position": [3, 1, 3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Pyramid", "materialId": "rose", "enabled": true}
+      }
+    },
+    {
+      "id": 115,
+      "name": "Wall",
+      "components": {
+        "Transform": {"position": [6, 1, 3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Wall", "materialId": "sage", "enabled": true}
+      }
+    },
+    {
+      "id": 116,
+      "name": "Ramp",
+      "components": {
+        "Transform": {"position": [9, 1, 3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Ramp", "materialId": "teal", "enabled": true}
+      }
+    },
+    {
+      "id": 117,
+      "name": "Stairs",
+      "components": {
+        "Transform": {"position": [12, 1, 3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Stairs", "materialId": "lavender", "enabled": true}
+      }
+    },
+    {
+      "id": 118,
+      "name": "SpiralStairs",
+      "components": {
+        "Transform": {"position": [-12, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "SpiralStairs", "materialId": "hotpink", "enabled": true}
+      }
+    },
+    {
+      "id": 119,
+      "name": "Star",
+      "components": {
+        "Transform": {"position": [-9, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Star", "materialId": "magenta", "enabled": true}
+      }
+    },
+    {
+      "id": 120,
+      "name": "Heart",
+      "components": {
+        "Transform": {"position": [-6, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Heart", "materialId": "skyblue", "enabled": true}
+      }
+    },
+    {
+      "id": 121,
+      "name": "Diamond",
+      "components": {
+        "Transform": {"position": [-3, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Diamond", "materialId": "azure", "enabled": true}
+      }
+    },
+    {
+      "id": 122,
+      "name": "Cross",
+      "components": {
+        "Transform": {"position": [0, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Cross", "materialId": "plum", "enabled": true}
+      }
+    },
+    {
+      "id": 123,
+      "name": "Tube",
+      "components": {
+        "Transform": {"position": [3, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Tube", "materialId": "orchid", "enabled": true}
+      }
+    },
+    {
+      "id": 124,
+      "name": "Helix",
+      "components": {
+        "Transform": {"position": [6, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Helix", "materialId": "blush", "enabled": true}
+      }
+    },
+    {
+      "id": 125,
+      "name": "MobiusStrip",
+      "components": {
+        "Transform": {"position": [9, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "MobiusStrip", "materialId": "violet", "enabled": true}
+      }
+    },
+    {
+      "id": 126,
+      "name": "Tree",
+      "components": {
+        "Transform": {"position": [12, 1, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Tree", "materialId": "green", "enabled": true}
+      }
+    },
+    {
+      "id": 127,
+      "name": "Rock",
+      "components": {
+        "Transform": {"position": [-12, 1, -3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Rock", "materialId": "gray", "enabled": true}
+      }
+    },
+    {
+      "id": 128,
+      "name": "Bush",
+      "components": {
+        "Transform": {"position": [-9, 1, -3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Bush", "materialId": "olive", "enabled": true}
+      }
+    },
+    {
+      "id": 129,
+      "name": "Grass",
+      "components": {
+        "Transform": {"position": [-6, 1, -3], "rotation": [0, 0, 0], "scale": [1, 1, 1]},
+        "MeshRenderer": {"meshId": "Grass", "materialId": "spring", "enabled": true}
+      }
+    }
+  ],
+  "materials": [
+    {"id": "red", "name": "Red", "shader": "standard", "materialType": "solid", "color": "#ff6b6b", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "cyan", "name": "Cyan", "shader": "standard", "materialType": "solid", "color": "#4ecdc4", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "mint", "name": "Mint", "shader": "standard", "materialType": "solid", "color": "#95e1d3", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "pink", "name": "Pink", "shader": "standard", "materialType": "solid", "color": "#f38181", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "purple", "name": "Purple", "shader": "standard", "materialType": "solid", "color": "#aa96da", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "lightpink", "name": "Light Pink", "shader": "standard", "materialType": "solid", "color": "#fcbad3", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "yellow", "name": "Yellow", "shader": "standard", "materialType": "solid", "color": "#ffffd2", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "lightgreen", "name": "Light Green", "shader": "standard", "materialType": "solid", "color": "#a8e6cf", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "salmon", "name": "Salmon", "shader": "standard", "materialType": "solid", "color": "#ff8b94", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "peach", "name": "Peach", "shader": "standard", "materialType": "solid", "color": "#ffaaa5", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "orange", "name": "Orange", "shader": "standard", "materialType": "solid", "color": "#ffd3b6", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "coral", "name": "Coral", "shader": "standard", "materialType": "solid", "color": "#ff9aa2", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "lime", "name": "Lime", "shader": "standard", "materialType": "solid", "color": "#dcedc1", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "aqua", "name": "Aqua", "shader": "standard", "materialType": "solid", "color": "#a8e6cf", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "rose", "name": "Rose", "shader": "standard", "materialType": "solid", "color": "#ffd5cd", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "sage", "name": "Sage", "shader": "standard", "materialType": "solid", "color": "#e2f0cb", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "teal", "name": "Teal", "shader": "standard", "materialType": "solid", "color": "#b5ead7", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "lavender", "name": "Lavender", "shader": "standard", "materialType": "solid", "color": "#c7ceea", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "hotpink", "name": "Hot Pink", "shader": "standard", "materialType": "solid", "color": "#ffc8dd", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "magenta", "name": "Magenta", "shader": "standard", "materialType": "solid", "color": "#ffafcc", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "skyblue", "name": "Sky Blue", "shader": "standard", "materialType": "solid", "color": "#bde0fe", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "azure", "name": "Azure", "shader": "standard", "materialType": "solid", "color": "#a2d2ff", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "plum", "name": "Plum", "shader": "standard", "materialType": "solid", "color": "#cdb4db", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "orchid", "name": "Orchid", "shader": "standard", "materialType": "solid", "color": "#ffc8dd", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "blush", "name": "Blush", "shader": "standard", "materialType": "solid", "color": "#ffcfd2", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "violet", "name": "Violet", "shader": "standard", "materialType": "solid", "color": "#f1c0e8", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "green", "name": "Green", "shader": "standard", "materialType": "solid", "color": "#90ee90", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "gray", "name": "Gray", "shader": "standard", "materialType": "solid", "color": "#808080", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "olive", "name": "Olive", "shader": "standard", "materialType": "solid", "color": "#a7c957", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1},
+    {"id": "spring", "name": "Spring", "shader": "standard", "materialType": "solid", "color": "#b7e4c7", "metalness": 0, "roughness": 0.7, "emissive": "#000000", "emissiveIntensity": 0, "normalScale": 1, "occlusionStrength": 1}
+  ]
+}
