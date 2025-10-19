@@ -12,6 +12,7 @@ use super::Mesh;
 /// Builder for cylindrical shapes (cylinder, cone, truncated cone)
 ///
 /// This follows the DRY principle - cylinder and cone share 95% of code.
+/// This builder is exported so custom shapes can be created with specific parameters.
 pub struct CylindricalBuilder {
     radius_top: f32,
     radius_bottom: f32,

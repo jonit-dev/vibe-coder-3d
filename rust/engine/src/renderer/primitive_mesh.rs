@@ -204,8 +204,14 @@ pub fn create_primitive_mesh(mesh_id: Option<&str>) -> CpuMesh {
             }
             // Environment shapes
             mesh if mesh.contains("tree") || mesh == "Tree" => {
-                log::info!("    Creating:    Tree (trunk + foliage)");
-                let vibe_mesh = vibe_assets::create_tree(0.1, 1.0, 0.5, 1.0, 8);
+                log::info!("    Creating:    Tree (trunk + foliage, improved proportions)");
+                // Improved proportions: thicker trunk, better foliage ratio, more segments
+                // trunk_radius: 0.15 (was 0.1 - thicker trunk)
+                // trunk_height: 1.2 (was 1.0 - taller trunk)
+                // foliage_radius: 0.7 (was 0.5 - larger foliage)
+                // foliage_height: 1.8 (was 1.0 - taller cone)
+                // segments: 16 (was 8 - smoother appearance)
+                let vibe_mesh = vibe_assets::create_tree(0.15, 1.2, 0.7, 1.8, 16);
                 convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
             mesh if mesh.contains("rock") || mesh == "Rock" => {
