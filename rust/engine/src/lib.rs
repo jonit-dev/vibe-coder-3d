@@ -3,6 +3,4 @@
 // This allows integration tests to access internal modules
 
 pub mod renderer;
-pub use renderer::{
-    load_light, EnhancedDirectionalLight, EnhancedSpotLight, LoadedLight,
-};
+pub use renderer::{load_light, EnhancedDirectionalLight, EnhancedSpotLight, LoadedLight};

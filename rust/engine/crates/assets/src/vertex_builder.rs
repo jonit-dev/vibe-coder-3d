@@ -35,7 +35,7 @@ pub fn vertex_pnu(position: [f32; 3], normal: [f32; 3], uv: [f32; 2]) -> Vertex 
 /// Indices for quad: [base, base+1, base+2, base+2, base+3, base]
 ///
 /// Vertex layout:
-/// ```
+/// ```text
 /// 3---2
 /// |   |
 /// 0---1

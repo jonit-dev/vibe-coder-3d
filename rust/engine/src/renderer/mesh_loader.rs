@@ -87,7 +87,9 @@ async fn get_or_create_material(
             log::info!("    Using cached material: {}", material_id);
             // Clone material to avoid borrow issues
             let material_clone = material_data.clone();
-            material_manager.create_physical_material(context, &material_clone).await
+            material_manager
+                .create_physical_material(context, &material_clone)
+                .await
         } else {
             log::warn!("    Material not found: {}, using default", material_id);
             Ok(material_manager.create_default_material(context))
@@ -113,7 +115,8 @@ fn load_gltf_mesh(model_path: &str) -> Result<CpuMesh> {
 
     // For now, take the first mesh (future: support multi-mesh GLTF)
     let asset_mesh = &meshes[0];
-    log::info!("    Loaded GLTF mesh with {} vertices, {} indices",
+    log::info!(
+        "    Loaded GLTF mesh with {} vertices, {} indices",
         asset_mesh.vertices.len(),
         asset_mesh.indices.len()
     );

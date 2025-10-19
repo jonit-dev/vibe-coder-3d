@@ -1,9 +1,8 @@
+use vibe_coder_engine::renderer::{create_camera, load_camera};
 /// Camera Component Integration Tests
 ///
 /// Comprehensive tests to prove 100% camera field parsing and rendering support
-
 use vibe_ecs_bridge::decoders::{CameraComponent, Transform, ViewportRect};
-use vibe_coder_engine::renderer::{create_camera, load_camera};
 
 #[test]
 fn test_camera_all_fields_parsed() {

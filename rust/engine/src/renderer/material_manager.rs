@@ -130,7 +130,11 @@ impl MaterialManager {
                         cpu_material.metallic_roughness_texture = Some(texture.as_ref().clone());
                         log::debug!("Roughness texture loaded successfully");
                     }
-                    Err(e) => log::warn!("Failed to load roughness texture '{}': {}", roughness_path, e),
+                    Err(e) => log::warn!(
+                        "Failed to load roughness texture '{}': {}",
+                        roughness_path,
+                        e
+                    ),
                 }
             }
         }
@@ -155,9 +159,16 @@ impl MaterialManager {
                     cpu_material.occlusion_texture = Some(texture.as_ref().clone());
                     // Apply occlusion strength (defaults to 1.0 in material)
                     // Note: three-d may not have a direct occlusion_strength field
-                    log::debug!("Occlusion texture loaded (strength: {})", material.occlusionStrength);
+                    log::debug!(
+                        "Occlusion texture loaded (strength: {})",
+                        material.occlusionStrength
+                    );
                 }
-                Err(e) => log::warn!("Failed to load occlusion texture '{}': {}", occlusion_path, e),
+                Err(e) => log::warn!(
+                    "Failed to load occlusion texture '{}': {}",
+                    occlusion_path,
+                    e
+                ),
             }
         }
 

@@ -15,8 +15,9 @@ use vibe_scene_graph::SceneGraph;
 
 // Import renderer modules
 use crate::renderer::{
-    create_camera, load_camera, load_light, load_mesh_renderer, CameraConfig,
-    EnhancedDirectionalLight, EnhancedSpotLight, LoadedLight, MaterialManager,
+    apply_post_processing, create_camera, load_camera, load_light, load_mesh_renderer,
+    CameraConfig, ColorGradingEffect, EnhancedDirectionalLight, EnhancedSpotLight, LoadedLight,
+    MaterialManager, PostProcessSettings, SkyboxRenderer,
 };
 
 /// ThreeDRenderer - Rendering backend using three-d library for PBR rendering
@@ -45,10 +46,19 @@ pub struct ThreeDRenderer {
     mesh_cache: HashMap<String, CpuMesh>,
     material_manager: MaterialManager,
     component_registry: ComponentRegistry,
+    skybox_renderer: SkyboxRenderer,
+    hdr_color_texture: Option<Texture2D>,
+    hdr_depth_texture: Option<three_d::DepthTexture2D>,
 
     // Camera follow smoothing
     last_camera_position: Vec3,
     last_camera_target: Vec3,
+}
+
+struct RenderSettings {
+    clear_state: Option<ClearState>,
+    render_skybox: bool,
+    post_settings: Option<PostProcessSettings>,
 }
 
 impl ThreeDRenderer {
@@ -111,6 +121,9 @@ impl ThreeDRenderer {
             mesh_cache: HashMap::new(),
             material_manager: MaterialManager::new(),
             component_registry,
+            skybox_renderer: SkyboxRenderer::new(),
+            hdr_color_texture: None,
+            hdr_depth_texture: None,
             last_camera_position: initial_pos,
             last_camera_target: initial_target,
         })
@@ -194,7 +207,10 @@ impl ThreeDRenderer {
         let target_matrix = if let Some(mat) = target_transform {
             mat
         } else {
-            log::warn!("Camera follow target entity {} not found in scene", target_id);
+            log::warn!(
+                "Camera follow target entity {} not found in scene",
+                target_id
+            );
             return;
         };
 
@@ -209,7 +225,8 @@ impl ThreeDRenderer {
         // Apply smoothing if enabled
         let new_position = if config.enable_smoothing {
             let smoothing_factor = (config.smoothing_speed * delta_time).min(1.0);
-            self.last_camera_position * (1.0 - smoothing_factor) + desired_position * smoothing_factor
+            self.last_camera_position * (1.0 - smoothing_factor)
+                + desired_position * smoothing_factor
         } else {
             desired_position
         };
@@ -224,11 +241,110 @@ impl ThreeDRenderer {
         };
 
         // Update camera view
-        self.camera.set_view(new_position, new_target, vec3(0.0, 1.0, 0.0));
+        self.camera
+            .set_view(new_position, new_target, vec3(0.0, 1.0, 0.0));
 
         // Store for next frame smoothing
         self.last_camera_position = new_position;
         self.last_camera_target = new_target;
+    }
+
+    fn prepare_render_settings(&self) -> RenderSettings {
+        let default_clear = ClearState::color_and_depth(0.2, 0.3, 0.4, 1.0, 1.0);
+
+        if let Some(ref config) = self.camera_config {
+            let background = config.background_color.unwrap_or((0.2, 0.3, 0.4, 1.0));
+            let solid_clear = ClearState::color_and_depth(
+                background.0,
+                background.1,
+                background.2,
+                background.3,
+                1.0,
+            );
+
+            let mut render_skybox = false;
+
+            let clear_state = match config
+                .clear_flags
+                .as_deref()
+                .map(|s| s.to_ascii_lowercase())
+                .unwrap_or_else(|| "solidcolor".to_string())
+                .as_str()
+            {
+                "skybox" => {
+                    if self.skybox_renderer.is_loaded() {
+                        render_skybox = true;
+                        Some(ClearState::depth(1.0))
+                    } else {
+                        log::warn!(
+                            "Camera clearFlags set to 'skybox' but no skybox texture loaded; falling back to solid color."
+                        );
+                        Some(solid_clear)
+                    }
+                }
+                "depthonly" => Some(ClearState::depth(1.0)),
+                "dontclear" => None,
+                "solidcolor" => Some(solid_clear),
+                other => {
+                    log::warn!(
+                        "Unknown clear flag '{}', defaulting to solid color clear.",
+                        other
+                    );
+                    Some(solid_clear)
+                }
+            };
+
+            let post_settings = PostProcessSettings::from_camera(config);
+
+            RenderSettings {
+                clear_state,
+                render_skybox,
+                post_settings,
+            }
+        } else {
+            RenderSettings {
+                clear_state: Some(default_clear),
+                render_skybox: false,
+                post_settings: None,
+            }
+        }
+    }
+
+    fn ensure_post_process_targets(&mut self) {
+        let (width, height) = self.window_size;
+
+        let recreate_color = match self.hdr_color_texture {
+            Some(ref tex) => tex.width() != width || tex.height() != height,
+            None => true,
+        };
+
+        if recreate_color {
+            self.hdr_color_texture = Some(Texture2D::new_empty::<[f32; 4]>(
+                &self.context,
+                width,
+                height,
+                Interpolation::Linear,
+                Interpolation::Linear,
+                Some(Interpolation::Linear),
+                Wrapping::ClampToEdge,
+                Wrapping::ClampToEdge,
+            ));
+        }
+
+        let recreate_depth = match self.hdr_depth_texture {
+            Some(ref tex) => tex.width() != width || tex.height() != height,
+            None => true,
+        };
+
+        if recreate_depth {
+            self.hdr_depth_texture = Some(three_d::DepthTexture2D::new::<f32>(
+                &self.context,
+                width,
+                height,
+                Wrapping::ClampToEdge,
+                Wrapping::ClampToEdge,
+            ));
+        }
     }
 
     /// Render a frame
@@ -241,14 +357,69 @@ impl ThreeDRenderer {
         // Generate shadow maps for lights that cast shadows
         self.generate_shadow_maps();
 
-        // Collect all lights
         let lights = self.collect_lights();
+        let settings = self.prepare_render_settings();
+        let mut tone_restore: Option<(ToneMapping, ColorMapping)> = None;
 
-        // Render to default framebuffer (screen)
-        // Note: MSAA antialiasing is enabled via WindowedContext creation (see new())
-        RenderTarget::screen(&self.context, self.window_size.0, self.window_size.1)
-            .clear(ClearState::color_and_depth(0.2, 0.3, 0.4, 1.0, 1.0))
-            .render(&self.camera, &self.meshes, &lights);
+        if let Some(ref post_settings) = settings.post_settings {
+            if post_settings.apply_tone_mapping {
+                tone_restore = Some((self.camera.tone_mapping, self.camera.color_mapping));
+                self.camera.disable_tone_and_color_mapping();
+            }
+        }
+
+        if let Some(post_settings) = settings.post_settings.clone() {
+            self.ensure_post_process_targets();
+
+            let render_target = {
+                let color_target = self
+                    .hdr_color_texture
+                    .as_mut()
+                    .expect("HDR color texture not initialized")
+                    .as_color_target(None);
+                let depth_target = self
+                    .hdr_depth_texture
+                    .as_mut()
+                    .expect("HDR depth texture not initialized")
+                    .as_depth_target();
+                RenderTarget::new(color_target, depth_target)
+            };
+
+            if let Some(clear_state) = settings.clear_state {
+                render_target.clear(clear_state);
+            }
+
+            if settings.render_skybox {
+                self.skybox_renderer.render(&render_target, &self.camera);
+            }
+
+            render_target.render(&self.camera, &self.meshes, &lights);
+
+            let color_texture =
+                three_d::ColorTexture::Single(self.hdr_color_texture.as_ref().unwrap());
+            let effect = ColorGradingEffect::from(post_settings);
+            let screen =
+                RenderTarget::screen(&self.context, self.window_size.0, self.window_size.1);
+            apply_post_processing(&screen, effect, &self.camera, color_texture);
+        } else {
+            let screen =
+                RenderTarget::screen(&self.context, self.window_size.0, self.window_size.1);
+
+            if let Some(clear_state) = settings.clear_state {
+                screen.clear(clear_state);
+            }
+
+            if settings.render_skybox {
+                self.skybox_renderer.render(&screen, &self.camera);
+            }
+
+            screen.render(&self.camera, &self.meshes, &lights);
+        }
+
+        if let Some((tone, color)) = tone_restore {
+            self.camera.tone_mapping = tone;
+            self.camera.color_mapping = color;
+        }
 
         // Swap buffers to display the rendered frame
         self._windowed_context
@@ -299,6 +470,8 @@ impl ThreeDRenderer {
     pub fn resize(&mut self, width: u32, height: u32) {
         log::info!("Resizing renderer to {}x{}", width, height);
         self.window_size = (width, height);
+        self.hdr_color_texture = None;
+        self.hdr_depth_texture = None;
 
         // Update camera viewport
         self.camera
@@ -323,7 +496,10 @@ impl ThreeDRenderer {
         log::info!("SCENE GRAPH");
         log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         let scene_graph = SceneGraph::build(scene)?;
-        log::info!("Scene graph built with {} entities", scene_graph.entity_count());
+        log::info!(
+            "Scene graph built with {} entities",
+            scene_graph.entity_count()
+        );
         self.scene_graph = Some(scene_graph);
 
         // Load materials
@@ -368,6 +544,7 @@ impl ThreeDRenderer {
         self.point_lights.clear();
         self.spot_lights.clear();
         self.ambient_light = None;
+        self.skybox_renderer.clear();
     }
 
     fn load_materials(&mut self, scene: &SceneData) {
@@ -395,7 +572,8 @@ impl ThreeDRenderer {
 
         // Check for MeshRenderer
         if let Some(mesh_renderer) = self.get_component::<MeshRenderer>(entity, "MeshRenderer") {
-            self.handle_mesh_renderer(entity, &mesh_renderer, transform.as_ref()).await?;
+            self.handle_mesh_renderer(entity, &mesh_renderer, transform.as_ref())
+                .await?;
         }
 
         // Check for Light
@@ -405,7 +583,7 @@ impl ThreeDRenderer {
 
         // Check for Camera
         if let Some(camera) = self.get_component::<CameraComponent>(entity, "Camera") {
-            self.handle_camera(&camera, transform.as_ref())?;
+            self.handle_camera(&camera, transform.as_ref()).await?;
         }
 
         Ok(())
@@ -435,7 +613,8 @@ impl ThreeDRenderer {
             mesh_renderer,
             transform,
             &mut self.material_manager,
-        ).await?;
+        )
+        .await?;
 
         self.meshes.push(gm);
 
@@ -463,13 +642,32 @@ impl ThreeDRenderer {
         Ok(())
     }
 
-    fn handle_camera(
+    async fn handle_camera(
         &mut self,
         camera_component: &CameraComponent,
         transform: Option<&Transform>,
     ) -> Result<()> {
         if let Some(config) = load_camera(camera_component, transform)? {
             self.camera = create_camera(&config, self.window_size);
+
+            // Apply tone mapping configuration from the camera component
+            self.camera.tone_mapping = parse_tone_mapping(config.tone_mapping.as_deref());
+            self.camera.color_mapping = ColorMapping::ComputeToSrgb;
+
+            // Load skybox texture if available
+            if config.skybox_texture.is_some() {
+                if let Err(err) = self
+                    .skybox_renderer
+                    .load_from_config(&self.context, &config)
+                    .await
+                {
+                    log::warn!("Failed to load skybox texture: {}", err);
+                    self.skybox_renderer.clear();
+                }
+            } else {
+                self.skybox_renderer.clear();
+            }
+
             // Store camera config for follow system and other features
             self.camera_config = Some(config);
         }
@@ -608,6 +806,19 @@ impl ThreeDRenderer {
         log::info!("═══════════════════════════════════════════════════════════");
         log::info!("END RUST SCENE LOAD");
         log::info!("═══════════════════════════════════════════════════════════\n");
+    }
+}
+
+fn parse_tone_mapping(mode: Option<&str>) -> ToneMapping {
+    match mode.unwrap_or("aces").to_ascii_lowercase().as_str() {
+        "none" | "linear" => ToneMapping::None,
+        "reinhard" => ToneMapping::Reinhard,
+        "cineon" | "filmic" => ToneMapping::Filmic,
+        "aces" => ToneMapping::Aces,
+        other => {
+            log::warn!("Unknown tone mapping mode '{}', defaulting to ACES", other);
+            ToneMapping::Aces
+        }
     }
 }
 

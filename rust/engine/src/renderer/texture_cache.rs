@@ -1,7 +1,6 @@
 /// Texture caching and async loading for three-d renderer
 ///
 /// Provides efficient texture loading with caching to avoid duplicate loads
-
 use anyhow::{Context as AnyhowContext, Result};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -41,8 +40,13 @@ impl TextureCache {
 
         let rc_texture = Rc::new(cpu_texture);
 
-        self.textures.insert(path.to_string(), Rc::clone(&rc_texture));
-        log::debug!("Texture cached: {} ({} total in cache)", path, self.textures.len());
+        self.textures
+            .insert(path.to_string(), Rc::clone(&rc_texture));
+        log::debug!(
+            "Texture cached: {} ({} total in cache)",
+            path,
+            self.textures.len()
+        );
 
         Ok(rc_texture)
     }

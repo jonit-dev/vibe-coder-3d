@@ -1,7 +1,6 @@
 /// Material override utilities
 ///
 /// Handles merging inline material overrides with base materials
-
 use vibe_assets::Material;
 use vibe_ecs_bridge::decoders::MeshRendererMaterialOverride;
 

@@ -8,7 +8,6 @@
 /// 2. Shadow parameters (bias, radius, map size) are correctly transferred
 /// 3. Lights with castShadow=false are properly flagged
 /// 4. Multiple shadow-casting lights can coexist
-
 use vibe_ecs_bridge::decoders::{Light as LightComponent, LightColor};
 
 /// Test that directional light shadow parameters are correctly stored
