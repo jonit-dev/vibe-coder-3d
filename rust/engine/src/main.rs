@@ -46,11 +46,11 @@ struct Args {
     screenshot_delay: u64,
 
     /// Screenshot scale factor (0.1 to 1.0) - reduces resolution to save tokens
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(long, default_value_t = 0.3)]
     screenshot_scale: f32,
 
     /// JPEG quality (1-100) - only applies if output path ends with .jpg/.jpeg
-    #[arg(long, default_value_t = 85)]
+    #[arg(long, default_value_t = 65)]
     screenshot_quality: u8,
 }
 
@@ -127,13 +127,13 @@ async fn run(args: Args) -> anyhow::Result<()> {
         let output_path = if let Some(path) = args.screenshot_path {
             path
         } else {
-            // Default screenshot path: screenshots/<scene_name>.png
+            // Default screenshot path: screenshots/<scene_name>.jpg (optimized for LLM token usage)
             let scene_name = if args.scene != "Default" {
                 args.scene.replace(".tsx", "").replace(".json", "")
             } else {
                 "Default".to_string()
             };
-            PathBuf::from(format!("screenshots/{}.png", scene_name))
+            PathBuf::from(format!("screenshots/{}.jpg", scene_name))
         };
 
         // Validate screenshot scale

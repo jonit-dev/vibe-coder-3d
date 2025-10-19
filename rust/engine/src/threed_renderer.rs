@@ -607,8 +607,20 @@ impl ThreeDRenderer {
         let render_target =
             RenderTarget::new(color_texture.as_color_target(None), depth_texture.as_depth_target());
 
-        // Clear the render target
-        render_target.clear(ClearState::color_and_depth(0.0, 0.0, 0.0, 1.0, 1.0));
+        // Clear the render target using camera's background color
+        let clear_color = self
+            .camera_config
+            .as_ref()
+            .and_then(|c| c.background_color)
+            .unwrap_or((0.0, 0.0, 0.0, 1.0));
+
+        render_target.clear(ClearState::color_and_depth(
+            clear_color.0,
+            clear_color.1,
+            clear_color.2,
+            clear_color.3,
+            1.0,
+        ));
 
         // Render skybox if enabled
         if let Some(ref config) = self.camera_config {
