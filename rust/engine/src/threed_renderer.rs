@@ -36,6 +36,8 @@ pub struct ThreeDRenderer {
     meshes: Vec<Gm<Mesh, PhysicalMaterial>>,
     mesh_entity_ids: Vec<EntityId>, // Parallel array: entity ID for each mesh
     mesh_scales: Vec<GlamVec3>,     // Parallel array: final local scale per mesh
+    mesh_cast_shadows: Vec<bool>,   // Parallel array: castShadows flag for each mesh
+    mesh_receive_shadows: Vec<bool>, // Parallel array: receiveShadows flag for each mesh
     directional_lights: Vec<EnhancedDirectionalLight>,
     point_lights: Vec<PointLight>,
     spot_lights: Vec<EnhancedSpotLight>,
@@ -113,6 +115,8 @@ impl ThreeDRenderer {
             meshes: Vec::new(),
             mesh_entity_ids: Vec::new(),
             mesh_scales: Vec::new(),
+            mesh_cast_shadows: Vec::new(),
+            mesh_receive_shadows: Vec::new(),
             directional_lights: Vec::new(),
             point_lights: Vec::new(),
             spot_lights: Vec::new(),
@@ -151,6 +155,10 @@ impl ThreeDRenderer {
         // Combine mesh and material
         let cube = Gm::new(mesh, material);
         self.meshes.push(cube);
+        self.mesh_entity_ids.push(EntityId::new(0)); // Test cube with ID 0
+        self.mesh_scales.push(GlamVec3::ONE);
+        self.mesh_cast_shadows.push(true); // Test cube casts shadows
+        self.mesh_receive_shadows.push(true); // Test cube receives shadows
 
         // Add directional light (enhanced with shadow support)
         let light = EnhancedDirectionalLight::new(
@@ -540,6 +548,8 @@ impl ThreeDRenderer {
         self.meshes.clear();
         self.mesh_entity_ids.clear();
         self.mesh_scales.clear();
+        self.mesh_cast_shadows.clear();
+        self.mesh_receive_shadows.clear();
         self.directional_lights.clear();
         self.point_lights.clear();
         self.spot_lights.clear();
@@ -623,6 +633,10 @@ impl ThreeDRenderer {
         self.mesh_entity_ids.push(entity_id);
         self.mesh_scales.push(final_scale);
 
+        // Store shadow flags
+        self.mesh_cast_shadows.push(mesh_renderer.castShadows);
+        self.mesh_receive_shadows.push(mesh_renderer.receiveShadows);
+
         Ok(())
     }
 
@@ -694,12 +708,21 @@ impl ThreeDRenderer {
     }
 
     fn generate_shadow_maps(&mut self) {
-        // Extract mesh geometries for shadow casting
+        // Extract mesh geometries for shadow casting, filtering by castShadows flag
         let geometries: Vec<&dyn Geometry> = self
             .meshes
             .iter()
-            .map(|gm| &gm.geometry as &dyn Geometry)
+            .zip(self.mesh_cast_shadows.iter())
+            .filter(|(_, &casts_shadow)| casts_shadow)
+            .map(|(gm, _)| &gm.geometry as &dyn Geometry)
             .collect();
+
+        if geometries.is_empty() {
+            log::debug!("No shadow-casting meshes in scene");
+            return;
+        }
+
+        log::debug!("Generating shadow maps for {} shadow-casting meshes", geometries.len());
 
         // Generate shadow maps for directional lights that cast shadows
         for light in &mut self.directional_lights {
