@@ -1,7 +1,6 @@
 /// Transform conversion and manipulation utilities
 ///
 /// Handles conversion between ECS transform components and three-d matrices
-
 use glam::{Quat as GlamQuat, Vec3 as GlamVec3};
 use three_d::{radians, Mat4, Vec3};
 use vibe_ecs_bridge::decoders::Transform;
@@ -86,12 +85,10 @@ pub fn convert_camera_transform(transform: &Transform) -> (Vec3, Vec3) {
     // Calculate target position from rotation
     // Three.js: right-handed, Y-up, camera looks down +Z
     // three-d: right-handed, Y-up, camera looks down -Z
-    //
-    // CRITICAL: When flipping Z-axis, we also need to negate X to prevent horizontal mirroring
     let forward_threejs = rotation * glam::Vec3::Z;
 
-    // Convert forward vector to three-d coordinate system (negate both X and Z)
-    let forward_threed = glam::Vec3::new(-forward_threejs.x, forward_threejs.y, -forward_threejs.z);
+    // Convert forward vector to three-d coordinate system (negate Z axis only)
+    let forward_threed = glam::Vec3::new(forward_threejs.x, forward_threejs.y, -forward_threejs.z);
 
     // Convert position to three-d coordinate system (negate Z)
     let pos_threed = glam::Vec3::new(pos.x, pos.y, -pos.z);
@@ -101,7 +98,12 @@ pub fn convert_camera_transform(transform: &Transform) -> (Vec3, Vec3) {
 
     log::info!("  Coordinate Conversion:");
     log::info!("    Three.js forward: {:?}", forward_threejs);
-    log::info!("    three-d forward:  [{:.2}, {:.2}, {:.2}] (X and Z negated)", forward_threed.x, forward_threed.y, forward_threed.z);
+    log::info!(
+        "    three-d forward:  [{:.2}, {:.2}, {:.2}] (Z negated)",
+        forward_threed.x,
+        forward_threed.y,
+        forward_threed.z
+    );
     log::info!(
         "    three-d position: [{:.2}, {:.2}, {:.2}] (Z negated)",
         pos_threed.x,

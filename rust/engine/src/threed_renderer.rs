@@ -14,7 +14,8 @@ use vibe_scene::{Entity, EntityId};
 
 // Import renderer modules
 use crate::renderer::{
-    create_camera, load_camera, load_light, load_mesh_renderer, LoadedLight, MaterialManager,
+    create_camera, load_camera, load_light, load_mesh_renderer, EnhancedDirectionalLight,
+    EnhancedSpotLight, LoadedLight, MaterialManager,
 };
 
 /// ThreeDRenderer - Rendering backend using three-d library for PBR rendering
@@ -31,9 +32,9 @@ pub struct ThreeDRenderer {
     meshes: Vec<Gm<Mesh, PhysicalMaterial>>,
     mesh_entity_ids: Vec<EntityId>, // Parallel array: entity ID for each mesh
     mesh_scales: Vec<GlamVec3>,     // Parallel array: final local scale per mesh
-    directional_lights: Vec<DirectionalLight>,
+    directional_lights: Vec<EnhancedDirectionalLight>,
     point_lights: Vec<PointLight>,
-    spot_lights: Vec<SpotLight>,
+    spot_lights: Vec<EnhancedSpotLight>,
     ambient_light: Option<AmbientLight>,
     window_size: (u32, u32),
 
@@ -116,12 +117,16 @@ impl ThreeDRenderer {
         let cube = Gm::new(mesh, material);
         self.meshes.push(cube);
 
-        // Add directional light
-        let light = DirectionalLight::new(
+        // Add directional light (enhanced with shadow support)
+        let light = EnhancedDirectionalLight::new(
             &self.context,
             1.5,                     // intensity
             Srgba::WHITE,            // color
             &vec3(-1.0, -1.0, -1.0), // direction
+            -0.0001,                 // shadow bias
+            1.0,                     // shadow radius (PCF)
+            2048,                    // shadow map size
+            true,                    // cast shadows
         );
         self.directional_lights.push(light);
 
@@ -142,6 +147,9 @@ impl ThreeDRenderer {
     /// Render a frame
     pub fn render(&mut self) -> Result<()> {
         self.log_first_frame();
+
+        // Generate shadow maps for lights that cast shadows
+        self.generate_shadow_maps();
 
         // Collect all lights
         let lights = self.collect_lights();
@@ -214,7 +222,8 @@ impl ThreeDRenderer {
     }
 
     /// Load a full scene from SceneData
-    pub fn load_scene(&mut self, scene: &SceneData) -> Result<()> {
+    /// Now async to support texture loading!
+    pub async fn load_scene(&mut self, scene: &SceneData) -> Result<()> {
         self.log_scene_load_start(scene);
         self.clear_scene();
 
@@ -227,7 +236,7 @@ impl ThreeDRenderer {
         log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
         for entity in &scene.entities {
-            self.load_entity(entity)?;
+            self.load_entity(entity).await?;
         }
 
         self.log_scene_load_summary();
@@ -274,7 +283,7 @@ impl ThreeDRenderer {
         }
     }
 
-    fn load_entity(&mut self, entity: &Entity) -> Result<()> {
+    async fn load_entity(&mut self, entity: &Entity) -> Result<()> {
         let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
         log::info!(
             "\n[Entity {}] \"{}\"",
@@ -287,7 +296,7 @@ impl ThreeDRenderer {
 
         // Check for MeshRenderer
         if let Some(mesh_renderer) = self.get_component::<MeshRenderer>(entity, "MeshRenderer") {
-            self.handle_mesh_renderer(entity, &mesh_renderer, transform.as_ref())?;
+            self.handle_mesh_renderer(entity, &mesh_renderer, transform.as_ref()).await?;
         }
 
         // Check for Light
@@ -315,7 +324,7 @@ impl ThreeDRenderer {
             .map(|boxed| *boxed)
     }
 
-    fn handle_mesh_renderer(
+    async fn handle_mesh_renderer(
         &mut self,
         entity: &Entity,
         mesh_renderer: &MeshRenderer,
@@ -326,8 +335,8 @@ impl ThreeDRenderer {
             entity,
             mesh_renderer,
             transform,
-            &self.material_manager,
-        )?;
+            &mut self.material_manager,
+        ).await?;
 
         self.meshes.push(gm);
 
@@ -383,6 +392,29 @@ impl ThreeDRenderer {
         }
 
         lights
+    }
+
+    fn generate_shadow_maps(&mut self) {
+        // Extract mesh geometries for shadow casting
+        let geometries: Vec<&dyn Geometry> = self
+            .meshes
+            .iter()
+            .map(|gm| &gm.geometry as &dyn Geometry)
+            .collect();
+
+        // Generate shadow maps for directional lights that cast shadows
+        for light in &mut self.directional_lights {
+            if light.cast_shadow {
+                light.generate_shadow_map(light.shadow_map_size, geometries.clone());
+            }
+        }
+
+        // Generate shadow maps for spot lights that cast shadows
+        for light in &mut self.spot_lights {
+            if light.cast_shadow {
+                light.generate_shadow_map(light.shadow_map_size, geometries.clone());
+            }
+        }
     }
 
     fn update_mesh_from_physics(&mut self, mesh_idx: usize, body: &rapier3d::dynamics::RigidBody) {

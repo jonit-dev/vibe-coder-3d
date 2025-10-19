@@ -1,7 +1,6 @@
 /// Primitive mesh creation utilities
 ///
 /// Handles creation of basic geometric primitives and their scaling
-
 use glam::Vec3 as GlamVec3;
 use three_d::CpuMesh;
 

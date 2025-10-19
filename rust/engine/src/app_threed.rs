@@ -77,9 +77,9 @@ impl AppThreeD {
         log::info!("Initializing three-d renderer...");
         let mut renderer = ThreeDRenderer::new(Arc::clone(&window))?;
 
-        // Load scene
+        // Load scene (async texture loading)
         let scene = crate::io::load_scene(&scene_path)?;
-        renderer.load_scene(&scene)?;
+        pollster::block_on(renderer.load_scene(&scene))?;
 
         // Initialize physics world
         log::info!("Initializing physics world...");

@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::renderer::material_manager::parse_hex_color;
+    use rapier3d::na::{vector, UnitQuaternion};
+    use rapier3d::prelude::*;
 
     // Note: These tests are limited because three-d requires a real windowing context
     // which is not available in headless test environments. Full integration tests
@@ -9,7 +12,7 @@ mod tests {
     #[test]
     fn test_renderer_struct_size_is_reasonable() {
         // Ensure the renderer struct isn't accidentally bloated
-        let size = std::mem::size_of::<super::ThreeDRenderer>();
+        let size = std::mem::size_of::<crate::threed_renderer::ThreeDRenderer>();
         // Should be less than 10KB (mostly vectors and a few small structs)
         assert!(
             size < 10 * 1024,
@@ -106,13 +109,13 @@ mod tests {
 
         // Extract rotation
         let rot = iso.rotation;
-        assert!(rot.w.abs() > 0.0); // Quaternion has some rotation
+        assert!(rot.w.abs() > 0.0_f32); // Quaternion has some rotation
     }
 
     #[test]
     fn test_nalgebra_to_glam_quaternion_conversion() {
         // Test conversion from nalgebra quaternion to glam quaternion
-        use rapier3d::prelude::*;
+        // Note: UnitQuaternion is already imported from rapier3d::prelude::* at module level
 
         // Create nalgebra quaternion (identity rotation)
         let na_quat = UnitQuaternion::identity();

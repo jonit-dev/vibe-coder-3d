@@ -157,7 +157,7 @@ mod tests {
 
         // Test that materials can be parsed
         if let Some(materials_value) = scene.materials {
-            let materials: Vec<crate::render::Material> =
+            let materials: Vec<vibe_assets::Material> =
                 serde_json::from_value(materials_value).unwrap();
 
             assert_eq!(materials.len(), 1);

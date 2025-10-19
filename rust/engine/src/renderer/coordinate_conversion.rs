@@ -3,11 +3,11 @@
 /// Three.js uses a right-handed coordinate system with +Z forward, +X right
 /// three-d uses a right-handed coordinate system with -Z forward, +X right
 ///
-/// CRITICAL: When converting camera forward vectors, we must negate BOTH X and Z
-/// to prevent horizontal mirroring. For object positions, we only negate Z.
+/// CRITICAL: When converting camera forward vectors, we negate the Z component
+/// to switch from Three.js' +Z forward to three-d's -Z forward orientation.
+/// For object positions, we only negate Z.
 ///
 /// This module provides utilities to convert between these systems
-
 use glam::Vec3 as GlamVec3;
 use three_d::Vec3;
 

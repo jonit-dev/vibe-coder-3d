@@ -67,6 +67,10 @@ xcap = "0.0.12"
 default = ["gltf-support"]
 gltf-support = ["gltf"]
 
+[lib]
+name = "vibe_coder_engine"
+path = "src/lib.rs"
+
 [[bin]]
 name = "vibe-engine"
 path = "src/main.rs"

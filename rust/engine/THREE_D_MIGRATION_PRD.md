@@ -3,7 +3,7 @@
 **Project:** Vibe Coder 3D Rust Engine
 **Version:** 1.0
 **Date:** 2025-10-18
-**Status:** Draft
+**Status:** In Progress
 **Owner:** Engine Team
 
 ---
@@ -34,6 +34,18 @@ Replace raw wgpu rendering layer with three-d library while preserving all domai
 | PBR material support        | Full Cook-Torrance | Basic Phong    |
 | Development time to parity  | 12-20 hours        | 60-80 hours    |
 | Shader maintenance          | 0 (library)        | High (custom)  |
+
+---
+
+## Progress Update (Nov 2025)
+
+- `ThreeDRenderer` scaffolding is in place with dedicated loaders for materials, meshes, lights, and cameras.
+- Scene import currently covers `Transform`, `MeshRenderer` (primitive meshes), `Light`, and main `Camera` components with extensive diagnostics logging.
+- Material pipeline maps color/metalness/roughness into `PhysicalMaterial`; emissive fields and all texture slots remain TODO.
+- Lighting instantiates directional, ambient, point, and spot lights via three-d; spot parameters (`angle`, `penumbra`, `range`, `decay`) and all shadow properties are still unmapped.
+- Mesh rendering relies on generated primitives (cube/sphere/plane); `mesh_cache` exists but GLTF/model loading and texture caches are not yet integrated.
+- Resize handling and physics sync stubs are implemented, but there is no render-command channel or instancing yet.
+- See `rust/engine/INTEGRATION_AUDIT.md` for a detailed list of outstanding integration items (textures, GLTF, shadows, camera extras, skybox, multi-camera).
 
 ---
 
@@ -316,6 +328,8 @@ fn create_material(
 }
 ```
 
+**Current Status (Nov 2025):** `MaterialManager` currently maps color/metalness/roughness into `PhysicalMaterial`. Emissive properties and all texture assignments are pending and tracked in the integration audit.
+
 **Color Space Tips:**
 
 - Tag base-color textures as sRGB: `Texture2D::new(context, &cpu_texture, Format::RgbaSrgb)?`.
@@ -351,6 +365,8 @@ let mut dir_light = DirectionalLight::new(
 );
 dir_light.enable_shadows(&camera_view); // Automatic shadow map generation
 ```
+
+**Current Status (Nov 2025):** Directional, ambient, point, and spot lights instantiate successfully, but spot parameters (`angle`, `penumbra`, `range`, `decay`) still use default values and no shadow APIs are wired yet (`castShadow`, `shadowBias`, etc.).
 
 #### 4. Environment Lighting & Tone Mapping
 
@@ -552,7 +568,7 @@ Disk Assets ─► Asset Worker ─► Render Commands ─► Renderer ─► th
    - ✅ Entity → three-d object conversion
    - ✅ Transform component parsing (position/rotation/scale)
    - ✅ MeshRenderer component support (primitive meshes: cube, sphere, plane)
-   - ✅ Camera component conversion (FOV, near/far planes, position/target)
+   - ✅ Camera component conversion (main camera only: FOV, near/far, position/target)
    - ✅ Material caching system (HashMap by material ID)
    - ✅ All light types (directional, point, spot, ambient)
    - ✅ Case-insensitive light type matching
@@ -560,17 +576,20 @@ Disk Assets ─► Asset Worker ─► Render Commands ─► Renderer ─► th
    - ✅ Basic PBR materials (color, metalness, roughness)
    - ⏳ Texture loading and binding
    - ⏳ Normal maps, metallic/roughness maps
+   - ⚠️ Emissive color/intensity parsed but not applied
 3. ✅ Port all light types (directional, point, spot, ambient)
+   - ⚠️ Spot cones use fixed angles/attenuation; range/decay ignored
 4. ⏳ Implement shadow mapping
 5. ⏳ Port debug HUD and collider visualization
 6. ⏳ Introduce mesh/texture caches and render-command channel
+   - ⚠️ `mesh_cache` HashMap added, but no population or command queue yet
 7. ⏳ Implement instancing for duplicated meshes
 8. ✅ Handle resize events
 
 **Success Criteria:**
 
 - ✅ All scene files load and render
-- ✅ Materials match JSON definitions
+- ✅ Materials (color/metalness/roughness) match JSON definitions
 - ⏳ Shadows work correctly
 - ⏳ Debug mode shows colliders + HUD
 - ⏳ Renderer stays under 200 draw calls on `complex.json`
@@ -587,6 +606,14 @@ Disk Assets ─► Asset Worker ─► Render Commands ─► Renderer ─► th
   - Fixed camera direction vector (was backward: (0,0,-1), now forward: (0,0,1))
   - Fixed degrees→radians rotation conversion
 - Test scenes loading successfully: POC test scene, testlighting.json, simple-test.json
+
+**Additional Notes (Nov 2025):**
+
+- `MaterialManager` caches scene materials and applies color/metalness/roughness only; emissive and texture slots are placeholders.
+- `light_loader` creates directional/ambient/point/spot lights with coordinate conversion, but spot attributes fall back to defaults and all shadow fields remain unused.
+- `mesh_loader` generates primitives based on `meshId`; `modelPath` GLTF assets are not yet consumed despite the dependency.
+- `ThreeDRenderer` includes a `mesh_cache` field and physics sync helper, though no render-command channel is wired up yet.
+- Diagnostics logging around scene load provides component dumps to aid integration audits.
 
 ### Phase 3: Visual Validation (2-3 hours)
 
