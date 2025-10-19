@@ -42,11 +42,28 @@ pub fn rotation_to_quat(rotation: &[f32]) -> Quat {
             let y_rad = rotation[1].to_radians();
             let z_rad = rotation[2].to_radians();
 
+            log::trace!(
+                "Transform conversion: Euler [{:.2}°, {:.2}°, {:.2}°] → [{:.4} rad, {:.4} rad, {:.4} rad]",
+                rotation[0], rotation[1], rotation[2],
+                x_rad, y_rad, z_rad
+            );
+
             // Use XYZ order to match Three.js default
-            Quat::from_euler(glam::EulerRot::XYZ, x_rad, y_rad, z_rad)
+            let quat = Quat::from_euler(glam::EulerRot::XYZ, x_rad, y_rad, z_rad);
+
+            log::trace!(
+                "  → Quaternion [{:.4}, {:.4}, {:.4}, {:.4}]",
+                quat.x, quat.y, quat.z, quat.w
+            );
+
+            quat
         }
         4 => {
             // Quaternion [x, y, z, w] - use directly
+            log::trace!(
+                "Transform conversion: Quaternion passthrough [{:.4}, {:.4}, {:.4}, {:.4}]",
+                rotation[0], rotation[1], rotation[2], rotation[3]
+            );
             Quat::from_xyzw(rotation[0], rotation[1], rotation[2], rotation[3])
         }
         _ => {
@@ -63,7 +80,9 @@ pub fn rotation_to_quat(rotation: &[f32]) -> Quat {
 ///
 /// Returns `Quat::IDENTITY` if rotation is None
 pub fn rotation_to_quat_opt(rotation: Option<&Vec<f32>>) -> Quat {
-    rotation.map(|r| rotation_to_quat(r)).unwrap_or(Quat::IDENTITY)
+    rotation
+        .map(|r| rotation_to_quat(r))
+        .unwrap_or(Quat::IDENTITY)
 }
 
 /// Convert TypeScript position array to Vec3
