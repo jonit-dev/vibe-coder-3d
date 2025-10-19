@@ -41,7 +41,6 @@
 /// - Shadow maps used during light calculation
 /// - Custom shaders apply bias, PCF, and penumbra
 /// - Final image includes shadows
-
 use vibe_ecs_bridge::decoders::{Light as LightComponent, LightColor};
 
 #[test]
@@ -254,17 +253,17 @@ fn test_shadow_pipeline_step6_complete_configuration() {
         }),
         intensity: 2.0,
         enabled: true,
-        castShadow: true,        // ✅ Shadows enabled
+        castShadow: true, // ✅ Shadows enabled
         directionX: 0.0,
         directionY: -1.0,
         directionZ: 0.0,
         range: 75.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 3.0,
-        penumbra: 0.15,          // ✅ Soft cone edges
-        shadowMapSize: 2048,     // ✅ High quality shadows
-        shadowBias: -0.00075,    // ✅ No shadow acne
-        shadowRadius: 1.8,       // ✅ Soft shadow edges (PCF)
+        penumbra: 0.15,       // ✅ Soft cone edges
+        shadowMapSize: 2048,  // ✅ High quality shadows
+        shadowBias: -0.00075, // ✅ No shadow acne
+        shadowRadius: 1.8,    // ✅ Soft shadow edges (PCF)
     };
 
     // Verify complete configuration
@@ -281,7 +280,10 @@ fn test_shadow_pipeline_step6_complete_configuration() {
         "  • Shadow map resolution: {}x{}",
         production_light.shadowMapSize, production_light.shadowMapSize
     );
-    println!("  • Shadow bias: {} (prevents acne)", production_light.shadowBias);
+    println!(
+        "  • Shadow bias: {} (prevents acne)",
+        production_light.shadowBias
+    );
     println!(
         "  • PCF radius: {} (soft shadows)",
         production_light.shadowRadius
