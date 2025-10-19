@@ -1,5 +1,5 @@
 /// Integration test for Rust Physics system
-/// Verifies that the PhysicsTest scene loads correctly and physics is initialized
+/// Verifies that the testphysics scene loads correctly and physics is initialized
 use std::path::PathBuf;
 use vibe_ecs_bridge::create_default_registry;
 use vibe_physics::{populate_physics_world, PhysicsWorld};
@@ -7,17 +7,17 @@ use vibe_scene::Scene;
 
 #[test]
 fn test_physics_scene_loads_correctly() {
-    // Load the PhysicsTest scene
+    // Load the testphysics scene
     let scene_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/PhysicsTest.json");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/testphysics.json");
 
-    let json = std::fs::read_to_string(&scene_path).expect("Failed to read PhysicsTest.json");
+    let json = std::fs::read_to_string(&scene_path).expect("Failed to read testphysics.json");
 
-    let scene: Scene = serde_json::from_str(&json).expect("Failed to parse PhysicsTest.json");
+    let scene: Scene = serde_json::from_str(&json).expect("Failed to parse testphysics.json");
 
     // Verify scene metadata
-    assert_eq!(scene.metadata.name, "PhysicsTest");
-    assert_eq!(scene.entities.len(), 5); // camera, light, ground, cube, sphere
+    assert_eq!(scene.metadata.name, "testphysics");
+    assert_eq!(scene.entities.len(), 6); // camera, 2 lights, plane (ground), cube, sphere
 
     // Initialize physics world
     let mut physics_world = PhysicsWorld::new();
@@ -48,23 +48,23 @@ fn test_physics_scene_loads_correctly() {
     let falling_cube_id = scene
         .entities
         .iter()
-        .find(|e| e.persistentId.as_deref() == Some("falling-cube"))
+        .find(|e| e.name.as_deref() == Some("Cube 0"))
         .and_then(|e| e.entity_id())
-        .expect("Falling cube entity not found");
+        .expect("Cube 0 entity not found");
 
     let (position_after, _) = physics_world
         .get_entity_transform(falling_cube_id)
-        .expect("Failed to get falling cube transform");
+        .expect("Failed to get cube transform");
 
     // After one timestep, the cube should have fallen slightly
-    // Initial Y was 5.0, so it should be less than 5.0 after one step
+    // Initial Y was 4.25, so it should be less than 4.25 after one step
     assert!(
-        position_after.y < 5.0,
+        position_after.y < 4.25,
         "Cube should have fallen after one physics step, but y={}",
         position_after.y
     );
 
-    println!("✓ PhysicsTest scene loaded successfully");
+    println!("✓ testphysics scene loaded successfully");
     println!(
         "✓ Physics world initialized with {} entities",
         entities_added
@@ -77,7 +77,7 @@ fn test_physics_scene_loads_correctly() {
 fn test_physics_ground_is_fixed() {
     // Load scene
     let scene_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/PhysicsTest.json");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/testphysics.json");
     let json = std::fs::read_to_string(&scene_path).unwrap();
     let scene: Scene = serde_json::from_str(&json).unwrap();
 
@@ -86,13 +86,13 @@ fn test_physics_ground_is_fixed() {
     let registry = create_default_registry();
     populate_physics_world(&mut physics_world, &scene, &registry).unwrap();
 
-    // Get ground entity
+    // Get ground entity (Plane 0)
     let ground_id = scene
         .entities
         .iter()
-        .find(|e| e.persistentId.as_deref() == Some("ground"))
+        .find(|e| e.name.as_deref() == Some("Plane 0"))
         .and_then(|e| e.entity_id())
-        .expect("Ground entity not found");
+        .expect("Plane 0 entity not found");
 
     let (position_before, _) = physics_world
         .get_entity_transform(ground_id)
@@ -122,7 +122,7 @@ fn test_physics_ground_is_fixed() {
 fn test_physics_bouncy_sphere() {
     // Load scene
     let scene_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/PhysicsTest.json");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/testphysics.json");
     let json = std::fs::read_to_string(&scene_path).unwrap();
     let scene: Scene = serde_json::from_str(&json).unwrap();
 
@@ -135,17 +135,18 @@ fn test_physics_bouncy_sphere() {
     let sphere_id = scene
         .entities
         .iter()
-        .find(|e| e.persistentId.as_deref() == Some("sphere-1"))
+        .find(|e| e.name.as_deref() == Some("sphere"))
         .and_then(|e| e.entity_id())
-        .expect("Sphere entity not found");
+        .expect("sphere entity not found");
 
     let (position_initial, _) = physics_world
         .get_entity_transform(sphere_id)
         .expect("Failed to get sphere transform");
 
     assert!(
-        (position_initial.y - 8.0).abs() < 0.1,
-        "Sphere should start at y=8"
+        (position_initial.y - 5.25).abs() < 0.1,
+        "Sphere should start at y=5.25, but got y={}",
+        position_initial.y
     );
 
     // Step physics for 2 seconds (120 steps)
