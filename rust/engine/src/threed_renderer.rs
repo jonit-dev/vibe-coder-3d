@@ -781,7 +781,7 @@ impl ThreeDRenderer {
             }
             "depthonly" => Some(ClearState::depth(1.0)),
             "dontclear" => None,
-            "solidcolor" => Some(solid_clear),
+            "solidcolor" | "color" => Some(solid_clear),
             other => {
                 log::warn!(
                     "Unknown clear flag '{}', defaulting to neutral gray clear.",
