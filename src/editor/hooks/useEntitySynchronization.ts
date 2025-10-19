@@ -32,7 +32,6 @@ export const useEntitySynchronization = ({ setEntityIds }: IUseEntitySynchroniza
     // Initial load - this is the ONLY time we scan all entities
     const entities = entityManager.getAllEntities();
     const initialIds = entities.map((entity) => entity.id);
-    logger.debug('Initial entity sync', { entityCount: entities.length, initialIds });
     setEntityIds(initialIds);
 
     // Event-driven incremental updates - no more O(n) scans
@@ -44,10 +43,6 @@ export const useEntitySynchronization = ({ setEntityIds }: IUseEntitySynchroniza
           case 'entity-created':
             // Add new entity to the end of the list
             if (event.entityId !== undefined && !prevIds.includes(event.entityId)) {
-              logger.debug('Entity created event', {
-                entityId: event.entityId,
-                prevCount: prevIds.length,
-              });
               return [...prevIds, event.entityId];
             }
             return prevIds; // No change needed

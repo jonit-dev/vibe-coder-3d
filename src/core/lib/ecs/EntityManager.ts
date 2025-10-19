@@ -252,13 +252,7 @@ export class EntityManager {
       const parent = this.entityCache.get(parentId)!;
       parent.children.push(eid);
       this.entityCache.set(parentId, parent);
-      this.logger.debug(`Updated parent ${parentId} children list: ${parent.children}`);
     }
-
-    this.logger.debug(
-      `Created entity ${eid}: "${name}" with parentId: ${parentId}, PersistentId: ${finalPersistentId}`,
-    );
-    this.logger.debug(`Entity cache size: ${this.entityCache.size}`);
 
     // Emit event for reactive updates
     this.emitEvent({
@@ -321,7 +315,6 @@ export class EntityManager {
     if (entityIds.length === 0 && this.queries) {
       // Quick probe: check if any entities actually exist (cheap check)
       if (this.hasAnyEntityCheapProbe()) {
-        this.logger.debug('Index empty but entities exist - rebuilding indices');
         this.queries.rebuildIndices();
         entityIds = this.queries.listAllEntities();
       }
@@ -401,8 +394,6 @@ export class EntityManager {
     removeEntity(this.world, id);
     this.entityCache.delete(id);
 
-    console.debug(`[EntityManager] Deleted entity ${id}: "${entity.name}"`);
-
     // Emit event for reactive updates
     this.emitEvent({
       type: 'entity-deleted',
@@ -422,7 +413,6 @@ export class EntityManager {
 
     this.entityCache.clear();
     this.existingPersistentIds.clear();
-    console.debug('[EntityManager] Cleared all entities and persistent ID cache');
 
     // Emit event for reactive updates
     this.emitEvent({
@@ -454,7 +444,6 @@ export class EntityManager {
 
     // If result is empty but entities likely exist, rebuild indices once
     if (rootEntityIds.length === 0 && this.queries && this.hasAnyEntityCheapProbe()) {
-      this.logger.debug('Root entities empty but entities exist - rebuilding indices');
       this.queries.rebuildIndices();
       const rebuiltRootIds = this.queries.getRootEntities();
       return rebuiltRootIds.map((id) => this.getEntity(id)).filter(Boolean) as IEntity[];
@@ -525,21 +514,12 @@ export class EntityManager {
     setEntityMeta(entityId, entity.name, newParentId);
     this.entityCache.set(entityId, entity);
 
-    this.logger.debug('setParent updating relationships', {
-      entityId,
-      entityName: entity.name,
-      newParentId,
-      entityChildren: entity.children,
-    });
-
     // Emit event for reactive updates
     this.emitEvent({
       type: 'entity-updated',
       entityId,
       entity,
     });
-
-    this.logger.debug('setParent emitted entity-updated event', { entityId, newParentId });
 
     return true;
   }

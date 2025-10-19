@@ -40,7 +40,6 @@ export class PrefabRegistry {
    * Upsert (insert or update) a prefab
    */
   upsert(def: IPrefabDefinition): void {
-    console.log('[PrefabRegistry] Upserting prefab:', def.id, def.name);
     // Validate schema
     try {
       PrefabDefinitionSchema.parse(def);

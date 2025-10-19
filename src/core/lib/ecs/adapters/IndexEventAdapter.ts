@@ -31,7 +31,6 @@ export class IndexEventAdapter {
    */
   attach(): void {
     if (this.isAttached) {
-      console.warn('[IndexEventAdapter] Already attached, skipping');
       return;
     }
 
@@ -43,14 +42,8 @@ export class IndexEventAdapter {
       switch (event.type) {
         case 'entity-created':
           if (event.entityId !== undefined && event.entity) {
-            console.debug(
-              `[IndexEventAdapter] Adding entity ${event.entityId} to indices, parentId: ${event.entity.parentId}`,
-            );
             this.entities.add(event.entityId);
             this.hierarchy.setParent(event.entityId, event.entity.parentId);
-            console.debug(
-              `[IndexEventAdapter] Hierarchy after adding entity ${event.entityId}: parent=${this.hierarchy.getParent(event.entityId)}, children of parent=${this.hierarchy.getChildren(event.entity.parentId || 0)}`,
-            );
           }
           break;
 
@@ -88,7 +81,6 @@ export class IndexEventAdapter {
     });
 
     this.isAttached = true;
-    console.debug('[IndexEventAdapter] Attached to EntityManager and ComponentRegistry events');
   }
 
   /**
@@ -96,7 +88,6 @@ export class IndexEventAdapter {
    */
   detach(): void {
     if (!this.isAttached) {
-      console.warn('[IndexEventAdapter] Not attached, skipping detach');
       return;
     }
 
@@ -116,7 +107,6 @@ export class IndexEventAdapter {
     }
 
     this.isAttached = false;
-    console.debug('[IndexEventAdapter] Detached from EntityManager and ComponentRegistry events');
   }
 
   /**
@@ -133,8 +123,6 @@ export class IndexEventAdapter {
    * NOTE: Uses direct BitECS scan to avoid circular dependency with EntityManager.getAllEntities()
    */
   rebuildIndices(): void {
-    console.debug('[IndexEventAdapter] Rebuilding indices from current ECS state');
-
     // Clear existing indices
     this.entities.clear();
     this.hierarchy.clear();
@@ -154,52 +142,20 @@ export class IndexEventAdapter {
       }
     }
 
-    console.debug(`[IndexEventAdapter] Found ${allEntities.length} entities in world`);
-
     allEntities.forEach((entity) => {
       this.entities.add(entity.id);
       this.hierarchy.setParent(entity.id, entity.parentId);
-      if (entity.parentId !== undefined) {
-        console.debug(
-          `[IndexEventAdapter] Setting parent: entity ${entity.id} -> parent ${entity.parentId}`,
-        );
-      }
     });
 
     // Rebuild component indices
     const componentTypes = this.componentRegistry.listComponents();
-    console.debug(`[IndexEventAdapter] Found ${componentTypes.length} component types`);
 
     componentTypes.forEach((componentType) => {
       const entitiesWithComponent = this.componentRegistry.getEntitiesWithComponent(componentType);
       entitiesWithComponent.forEach((entityId) => {
         this.components.onAdd(componentType, entityId);
       });
-      console.debug(
-        `[IndexEventAdapter] Added ${entitiesWithComponent.length} entities for component ${componentType}`,
-      );
     });
-
-    console.debug('[IndexEventAdapter] Index rebuild complete');
-    console.debug(
-      `[IndexEventAdapter] Final: Entities: ${this.entities.size()}, Component types: ${this.components.getComponentTypes().length}`,
-    );
-
-    // Log hierarchy state
-    const entityIds = this.entities.list();
-    const hierarchyInfo = entityIds
-      .map((id) => ({
-        id,
-        parent: this.hierarchy.getParent(id),
-        children: this.hierarchy.getChildren(id),
-      }))
-      .filter((info) => info.parent !== undefined || info.children.length > 0);
-
-    if (hierarchyInfo.length > 0) {
-      console.debug('[IndexEventAdapter] Hierarchy relationships:', hierarchyInfo);
-    } else {
-      console.debug('[IndexEventAdapter] No hierarchy relationships found');
-    }
   }
 
   /**

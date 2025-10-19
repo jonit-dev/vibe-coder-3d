@@ -43,7 +43,6 @@ export const useInputAssetSync = () => {
       currentAsset.actionMaps.forEach((map) => {
         if (map.enabled) {
           inputManager.enableActionMap(map.name);
-          logger.debug('Enabled action map', { mapName: map.name });
         }
       });
 
@@ -57,12 +56,4 @@ export const useInputAssetSync = () => {
       });
     }
   }, [currentAssetName]); // Only depend on the name, not the whole object
-
-  // Log when assets change (for debugging)
-  useEffect(() => {
-    logger.debug('Input assets updated', {
-      assetsCount: assets.length,
-      assets: assets.map((a) => a.name),
-    });
-  }, [assets]);
 };

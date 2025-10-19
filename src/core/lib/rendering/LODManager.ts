@@ -32,9 +32,7 @@ class LODManagerClass {
     },
   };
 
-  private constructor() {
-    logger.info('LOD Manager initialized', { config: this.config });
-  }
+  private constructor() {}
 
   static getInstance(): LODManagerClass {
     if (!LODManagerClass.instance) {
@@ -48,29 +46,13 @@ class LODManagerClass {
    * NOTE: When manually setting quality, auto-switch is disabled to ensure the manual setting takes precedence
    */
   setQuality(quality: LODQuality): void {
-    logger.info('🎨 === SETTING LOD QUALITY ===', {
-      from: this.config.quality,
-      to: quality,
-      currentAutoSwitch: this.config.autoSwitch,
-      willDisableAutoSwitch: this.config.autoSwitch,
-      timestamp: Date.now(),
-    });
-
     this.config.quality = quality;
 
     // Disable auto-switch when manually setting quality
     // This ensures manual quality selection overrides distance-based switching
     if (this.config.autoSwitch) {
       this.config.autoSwitch = false;
-      logger.info('🔒 Auto-switch DISABLED due to manual quality setting', {
-        reason: 'Manual quality should override distance-based switching',
-      });
     }
-
-    logger.info('✅ Quality set complete', {
-      newQuality: this.config.quality,
-      newAutoSwitch: this.config.autoSwitch,
-    });
   }
 
   /**
@@ -84,16 +66,7 @@ class LODManagerClass {
    * Enable/disable automatic LOD switching based on distance
    */
   setAutoSwitch(enabled: boolean): void {
-    logger.info('🔄 === SETTING AUTO-SWITCH ===', {
-      from: this.config.autoSwitch,
-      to: enabled,
-      currentQuality: this.config.quality,
-      timestamp: Date.now(),
-    });
     this.config.autoSwitch = enabled;
-    logger.info('✅ Auto-switch set complete', {
-      newAutoSwitch: this.config.autoSwitch,
-    });
   }
 
   /**
@@ -214,14 +187,6 @@ class LODManagerClass {
     const ext = path.substring(path.lastIndexOf('.'));
     const withoutExt = path.substring(0, path.lastIndexOf('.'));
     const result = `${withoutExt}.${quality}${ext}`;
-
-    logger.info('✅ LOD path resolved', {
-      basePath,
-      quality,
-      pattern,
-      result,
-      transform: `${basePath} -> ${result}`,
-    });
 
     return result;
   }

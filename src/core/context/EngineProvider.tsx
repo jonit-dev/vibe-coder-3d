@@ -43,11 +43,8 @@ export const EngineProvider: React.FC<IEngineProviderProps> = React.memo(
     const context = useMemo(() => {
       // Use existing global instance if available
       if (globalEngineInstance) {
-        logger.debug('Reusing existing engine instance');
         return globalEngineInstance;
       }
-
-      logger.info('Creating new engine instance');
 
       // Create engine instance with all services
       const engineInstance = createEngineInstance(parentContainer);

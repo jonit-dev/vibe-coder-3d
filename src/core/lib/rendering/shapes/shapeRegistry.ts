@@ -97,11 +97,6 @@ class ShapeRegistry implements IShapeRegistry {
     }
 
     this.shapes.set(id, descriptor);
-    logger.info('Shape registered', {
-      id,
-      name: descriptor.meta.name,
-      category: descriptor.meta.category,
-    });
   }
 
   resolve(id: string): ICustomShapeDescriptor<any> | undefined {

@@ -11,11 +11,6 @@ export class HierarchyIndex {
    * Updates both parent->children and child->parent mappings
    */
   setParent(childId: number, parentId?: number): void {
-    console.debug(`[HierarchyIndex] setParent(${childId}, ${parentId})`);
-    console.debug(
-      `[HierarchyIndex] Before: childToParent has ${childId}? ${this.childToParent.has(childId)}, parentToChildren has ${parentId}? ${parentId !== undefined ? this.parentToChildren.has(parentId) : 'N/A'}`,
-    );
-
     // Remove from current parent's children list
     const currentParent = this.childToParent.get(childId);
     if (currentParent !== undefined) {
@@ -42,13 +37,6 @@ export class HierarchyIndex {
       // Remove parent relationship
       this.childToParent.delete(childId);
     }
-
-    console.debug(
-      `[HierarchyIndex] After: parentToChildren size: ${this.parentToChildren.size}, childToParent size: ${this.childToParent.size}`,
-    );
-    console.debug(
-      `[HierarchyIndex] Parent ${parentId} has children: ${parentId !== undefined ? Array.from(this.parentToChildren.get(parentId) || []) : 'N/A'}`,
-    );
   }
 
   /**

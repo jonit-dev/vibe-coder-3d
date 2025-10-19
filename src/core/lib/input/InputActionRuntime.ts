@@ -85,7 +85,6 @@ export class InputActionRuntime {
     }
 
     this.activeActionMaps.add(mapName);
-    logger.debug('Action map enabled', { mapName });
   }
 
   /**
@@ -93,7 +92,6 @@ export class InputActionRuntime {
    */
   public disableActionMap(mapName: string): void {
     this.activeActionMaps.delete(mapName);
-    logger.debug('Action map disabled', { mapName });
   }
 
   /**

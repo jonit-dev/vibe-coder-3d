@@ -283,9 +283,6 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
 
     // Management methods
     initialize: () => {
-      const state = get();
-      console.debug('[EntityQueries] Starting initialization...');
-
       // Create real adapter with singleton managers (async import)
       Promise.all([getEntityManager(), getComponentRegistry()]).then(
         ([entityManager, componentRegistry]) => {
@@ -301,26 +298,13 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
           set({ adapter: realAdapter });
 
           realAdapter.attach();
-          console.debug('[EntityQueries] Adapter attached');
-          console.debug('[EntityQueries] Rebuilding indices...');
 
           // Try immediate rebuild, with fallback handling in adapters
           try {
             realAdapter.rebuildIndices();
-            console.debug('[EntityQueries] Index rebuild complete');
-          } catch (error) {
-            console.debug(
-              '[EntityQueries] Index rebuild failed, will rebuild on first query:',
-              error,
-            );
+          } catch {
+            // Silently fail - will rebuild on first query
           }
-
-          // Log final state
-          const entities = state.listAllEntities();
-          const roots = state.getRootEntities();
-          console.debug(
-            `[EntityQueries] Post-init: ${entities.length} entities, ${roots.length} roots`,
-          );
         },
       );
     },
@@ -331,13 +315,11 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
       state.entityIndex.clear();
       state.hierarchyIndex.clear();
       state.componentIndex.clear();
-      console.debug('[EntityQueries] Destroyed and detached from ECS events');
     },
 
     rebuildIndices: () => {
       const state = get();
       state.adapter.rebuildIndices();
-      console.debug('[EntityQueries] Rebuilt indices from current ECS state');
     },
 
     validateIndices: () => {
@@ -369,9 +351,8 @@ export const useEntityQueries = create<IEntityQueriesState>((set, get) => {
           ...newConfig,
         });
         set({ config: updatedConfig });
-        console.debug('[EntityQueries] Updated configuration:', updatedConfig);
-      } catch (error) {
-        console.error('[EntityQueries] Invalid configuration:', error);
+      } catch {
+        // Invalid configuration - silently ignore
       }
     },
 
@@ -455,7 +436,6 @@ export class EntityQueries {
       return this.componentIndex.list(componentType);
     }
     if (!this.queryStore) {
-      console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
     return this.queryStore.listEntitiesWithComponent(componentType);
@@ -466,7 +446,6 @@ export class EntityQueries {
       return this.componentIndex.listWithAllComponents(componentTypes);
     }
     if (!this.queryStore) {
-      console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
     return this.queryStore.listEntitiesWithComponents(componentTypes);
@@ -477,7 +456,6 @@ export class EntityQueries {
       return this.componentIndex.listWithAnyComponent(componentTypes);
     }
     if (!this.queryStore) {
-      console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
     return this.queryStore.listEntitiesWithAnyComponent(componentTypes);
@@ -489,7 +467,6 @@ export class EntityQueries {
       return this.hierarchyIndex.getRootEntities(allEntities);
     }
     if (!this.queryStore) {
-      console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
     return this.queryStore.getRootEntities();
@@ -500,7 +477,6 @@ export class EntityQueries {
       return this.hierarchyIndex.getDescendants(entityId);
     }
     if (!this.queryStore) {
-      console.warn('[EntityQueries] Instance not initialized, returning empty array');
       return [];
     }
     return this.queryStore.getDescendants(entityId);

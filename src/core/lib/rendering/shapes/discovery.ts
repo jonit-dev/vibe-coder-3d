@@ -37,8 +37,6 @@ export function discoverShapes(): number {
       eager: true,
     });
 
-    logger.info('Discovering shapes', { moduleCount: Object.keys(modules).length });
-
     // Process each module
     for (const [path, module] of Object.entries(modules)) {
       try {
@@ -104,12 +102,6 @@ export function discoverShapes(): number {
         errorCount++;
       }
     }
-
-    logger.info('Shape discovery complete', {
-      registered: registeredCount,
-      errors: errorCount,
-      total: Object.keys(modules).length,
-    });
   } catch (error) {
     logger.error('Shape discovery failed', { error });
   }
@@ -123,8 +115,6 @@ export function discoverShapes(): number {
  * Can be called multiple times (useful for HMR)
  */
 export function initializeShapeDiscovery(): void {
-  logger.info('Initializing shape discovery');
-
   // In development mode, clear existing shapes to support HMR
   if (import.meta.env.DEV) {
     shapeRegistry.clear();
@@ -132,9 +122,7 @@ export function initializeShapeDiscovery(): void {
 
   const count = discoverShapes();
 
-  if (count === 0) {
-    logger.info('No custom shapes found in /src/game/shapes');
-  } else {
+  if (count > 0) {
     logger.info('Shape discovery initialized', { shapesRegistered: count });
   }
 }
