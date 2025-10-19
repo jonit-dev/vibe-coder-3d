@@ -1,4 +1,5 @@
 use anyhow::{Context as AnyhowContext, Result};
+use glam::Vec3 as GlamVec3;
 use std::collections::HashMap;
 use std::sync::Arc;
 use three_d::*;
@@ -36,6 +37,7 @@ pub struct ThreeDRenderer {
     camera: Camera,
     meshes: Vec<Gm<Mesh, PhysicalMaterial>>,
     mesh_entity_ids: Vec<EntityId>, // Parallel array: entity ID for each mesh
+    mesh_scales: Vec<GlamVec3>,     // Parallel array: final local scale per mesh
     directional_lights: Vec<DirectionalLight>,
     point_lights: Vec<PointLight>,
     spot_lights: Vec<SpotLight>,
@@ -86,6 +88,7 @@ impl ThreeDRenderer {
             camera,
             meshes: Vec::new(),
             mesh_entity_ids: Vec::new(),
+            mesh_scales: Vec::new(),
             directional_lights: Vec::new(),
             point_lights: Vec::new(),
             spot_lights: Vec::new(),
@@ -261,6 +264,7 @@ impl ThreeDRenderer {
         // Clear existing scene
         self.meshes.clear();
         self.mesh_entity_ids.clear();
+        self.mesh_scales.clear();
         self.directional_lights.clear();
         self.point_lights.clear();
         self.spot_lights.clear();
@@ -440,11 +444,18 @@ impl ThreeDRenderer {
         let mut mesh = Mesh::new(&self.context, &cpu_mesh);
 
         // Apply transform if present
+        let mut final_scale = GlamVec3::ONE;
+
         if let Some(transform) = transform {
             let base_scale = Self::primitive_base_scale(mesh_id_lower.as_deref());
             let position = position_to_vec3_opt(transform.position.as_ref());
             let rotation = rotation_to_quat_opt(transform.rotation.as_ref());
             let scale = scale_to_vec3_opt(transform.scale.as_ref());
+            final_scale = GlamVec3::new(
+                scale.x * base_scale.x,
+                scale.y * base_scale.y,
+                scale.z * base_scale.z,
+            );
 
             log::info!("  Transform:");
             log::info!("    RAW from JSON:");
@@ -488,11 +499,7 @@ impl ThreeDRenderer {
             let pos = vec3(position.x, position.y, -position.z);
             let (axis, angle) = rotation.to_axis_angle();
             let axis_3d = vec3(axis.x, axis.y, axis.z);
-            let scale_3d = vec3(
-                scale.x * base_scale.x,
-                scale.y * base_scale.y,
-                scale.z * base_scale.z,
-            );
+            let scale_3d = vec3(final_scale.x, final_scale.y, final_scale.z);
 
             log::info!("");
             log::info!("    three-d COORDINATE SYSTEM CONVERSION:");
@@ -532,6 +539,14 @@ impl ThreeDRenderer {
                 * Mat4::from_nonuniform_scale(scale_3d.x, scale_3d.y, scale_3d.z);
 
             mesh.set_transformation(transform_mat);
+        } else {
+            // Even without an explicit Transform component, apply primitive base scale
+            let base_scale = Self::primitive_base_scale(mesh_id_lower.as_deref());
+            final_scale = base_scale;
+            let scale_3d = vec3(base_scale.x, base_scale.y, base_scale.z);
+            mesh.set_transformation(Mat4::from_nonuniform_scale(
+                scale_3d.x, scale_3d.y, scale_3d.z,
+            ));
         }
 
         let gm = Gm::new(mesh, material);
@@ -540,27 +555,28 @@ impl ThreeDRenderer {
         // Store the entity ID for this mesh
         let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
         self.mesh_entity_ids.push(entity_id);
+        self.mesh_scales.push(final_scale);
 
         Ok(())
     }
 
     /// three-d primitives are built at [-1, 1] extents; normalize to Unity/Three.js unit sizing
-    fn primitive_base_scale(mesh_id: Option<&str>) -> Vec3 {
-        let default_scale = vec3(1.0, 1.0, 1.0);
+    fn primitive_base_scale(mesh_id: Option<&str>) -> GlamVec3 {
+        let default_scale = GlamVec3::ONE;
         let Some(id) = mesh_id else {
             return default_scale;
         };
 
         match id {
             primitive if primitive.contains("cube") || primitive.contains("box") => {
-                vec3(0.5, 0.5, 0.5)
+                GlamVec3::splat(0.5)
             }
-            primitive if primitive.contains("sphere") => vec3(0.5, 0.5, 0.5),
-            primitive if primitive.contains("plane") => vec3(0.5, 0.5, 0.5),
-            primitive if primitive.contains("cylinder") => vec3(0.5, 0.5, 0.5),
-            primitive if primitive.contains("capsule") => vec3(0.5, 0.5, 0.5),
-            primitive if primitive.contains("cone") => vec3(0.5, 0.5, 0.5),
-            primitive if primitive.contains("torus") => vec3(0.5, 0.5, 0.5),
+            primitive if primitive.contains("sphere") => GlamVec3::splat(0.5),
+            primitive if primitive.contains("plane") => GlamVec3::splat(0.5),
+            primitive if primitive.contains("cylinder") => GlamVec3::splat(0.5),
+            primitive if primitive.contains("capsule") => GlamVec3::splat(0.5),
+            primitive if primitive.contains("cone") => GlamVec3::splat(0.5),
+            primitive if primitive.contains("torus") => GlamVec3::splat(0.5),
             _ => default_scale,
         }
     }
@@ -821,10 +837,17 @@ impl ThreeDRenderer {
                         glam::Quat::from_xyzw(rotation.i, rotation.j, rotation.k, rotation.w);
                     let (axis, angle) = glam_quat.to_axis_angle();
                     let axis_3d = vec3(axis.x, axis.y, axis.z);
+                    let scale = self
+                        .mesh_scales
+                        .get(mesh_idx)
+                        .copied()
+                        .unwrap_or(GlamVec3::ONE);
+                    let scale_vec = vec3(scale.x, scale.y, scale.z);
 
                     // Build transformation matrix
                     let transform_mat = Mat4::from_translation(position)
-                        * Mat4::from_axis_angle(axis_3d, radians(angle));
+                        * Mat4::from_axis_angle(axis_3d, radians(angle))
+                        * Mat4::from_nonuniform_scale(scale_vec.x, scale_vec.y, scale_vec.z);
 
                     // Update mesh transformation
                     self.meshes[mesh_idx].set_transformation(transform_mat);
