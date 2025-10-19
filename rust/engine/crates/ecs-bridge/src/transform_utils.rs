@@ -53,7 +53,10 @@ pub fn rotation_to_quat(rotation: &[f32]) -> Quat {
 
             log::trace!(
                 "  → Quaternion [{:.4}, {:.4}, {:.4}, {:.4}]",
-                quat.x, quat.y, quat.z, quat.w
+                quat.x,
+                quat.y,
+                quat.z,
+                quat.w
             );
 
             quat
@@ -62,7 +65,10 @@ pub fn rotation_to_quat(rotation: &[f32]) -> Quat {
             // Quaternion [x, y, z, w] - use directly
             log::trace!(
                 "Transform conversion: Quaternion passthrough [{:.4}, {:.4}, {:.4}, {:.4}]",
-                rotation[0], rotation[1], rotation[2], rotation[3]
+                rotation[0],
+                rotation[1],
+                rotation[2],
+                rotation[3]
             );
             Quat::from_xyzw(rotation[0], rotation[1], rotation[2], rotation[3])
         }

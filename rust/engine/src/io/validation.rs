@@ -1,6 +1,6 @@
-use crate::ecs::SceneData;
 use std::collections::HashSet;
 use vibe_ecs_bridge::decoders::create_default_registry;
+use vibe_scene::Scene as SceneData;
 
 /// Extract unknown field name from serde error message
 /// Example: "unknown field `foo`, expected one of ..." -> "foo"

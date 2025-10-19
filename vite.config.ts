@@ -44,6 +44,7 @@ export default defineConfig({
         '**/assets/**/*.prefab.tsx',
         '**/assets/**/*.input.tsx',
         '**/assets/**/*.script.tsx',
+        '**/rust/**',
       ],
     },
     fs: {

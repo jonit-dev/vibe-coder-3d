@@ -28,6 +28,12 @@ impl EntityId {
     }
 }
 
+impl std::fmt::Display for EntityId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// Component kind identifier
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ComponentKindId(String);

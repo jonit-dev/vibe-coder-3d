@@ -1,17 +1,10 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-// NOTE: Old wgpu renderer has compatibility issues with winit 0.28
-// Conditionally compile it only when not using three-d
-#[cfg(not(feature = "threed-only"))]
-mod app;
 mod app_threed;
-#[cfg(not(feature = "threed-only"))]
 mod debug;
 mod ecs;
 mod io;
-#[cfg(not(feature = "threed-only"))]
-mod render;
 mod threed_renderer;
 mod util;
 
@@ -31,17 +24,17 @@ struct Args {
     #[arg(long, default_value_t = 720)]
     height: u32,
 
-    /// Enable debug mode (overrides DEBUG_MODE env var)
-    #[arg(long, default_value_t = false)]
-    debug: bool,
-
-    /// Enable verbose logging (shows wgpu/debug logs)
+    /// Enable verbose logging
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
 
-    /// Use three-d renderer (POC mode)
-    #[arg(long, default_value_t = false)]
-    threed: bool,
+    /// Take a screenshot and exit (saves to screenshots/<scene_name>.png)
+    #[arg(long)]
+    screenshot: bool,
+
+    /// Custom screenshot output path (requires --screenshot)
+    #[arg(long)]
+    screenshot_path: Option<PathBuf>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -51,56 +44,13 @@ fn main() -> anyhow::Result<()> {
     // Parse CLI arguments
     let args = Args::parse();
 
-    // Create debug config (merges CLI and env)
-    #[cfg(not(feature = "threed-only"))]
-    let debug_config = debug::DebugConfig::from_env_and_cli(args.debug);
-    #[cfg(feature = "threed-only")]
-    let _debug_enabled = args.debug;  // For future use
+    // Initialize logger
+    let filter = if args.verbose { "debug" } else { "info" };
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(filter)).init();
 
-    // Initialize logger with smart filtering
-    #[cfg(not(feature = "threed-only"))]
-    let filter = if args.verbose {
-        if debug_config.is_enabled() {
-            "debug,wgpu_core=debug,wgpu_hal=debug"
-        } else {
-            "info,wgpu_core=debug,wgpu_hal=debug"
-        }
-    } else {
-        if debug_config.is_enabled() {
-            "info,wgpu_core=warn,wgpu_hal=warn,naga=warn,cosmic_text=warn,vibe_engine::render::scene_renderer=warn"
-        } else {
-            "info,wgpu_core=warn,wgpu_hal=warn,naga=warn,cosmic_text=warn"
-        }
-    };
-
-    #[cfg(feature = "threed-only")]
-    let filter = if args.verbose {
-        "debug"
-    } else {
-        "info"
-    };
-
-    env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or(filter)
-    ).init();
-
-    // Run the application with appropriate renderer
-    if args.threed {
-        log::info!("Using three-d renderer");
-        pollster::block_on(run_threed(args))
-    } else {
-        #[cfg(not(feature = "threed-only"))]
-        {
-            // Resolve scene path
-            let scene_path = resolve_scene_path(&args.scene)?;
-            log::info!("Loading scene from: {}", scene_path.display());
-            pollster::block_on(run(scene_path, args.width, args.height, debug_config))
-        }
-        #[cfg(feature = "threed-only")]
-        {
-            anyhow::bail!("Old wgpu renderer is disabled. Use --threed flag.")
-        }
-    }
+    // Run the application
+    log::info!("Initializing three-d renderer...");
+    pollster::block_on(run(args))
 }
 
 fn resolve_scene_path(scene: &str) -> anyhow::Result<PathBuf> {
@@ -133,25 +83,7 @@ fn resolve_scene_path(scene: &str) -> anyhow::Result<PathBuf> {
     }
 }
 
-#[cfg(not(feature = "threed-only"))]
-async fn run(scene_path: PathBuf, width: u32, height: u32, debug_config: debug::DebugConfig) -> anyhow::Result<()> {
-    log::info!("Initializing Vibe Coder Engine...");
-
-    // Create event loop
-    let event_loop = winit::event_loop::EventLoop::new();
-
-    // Create the app
-    let app = app::App::new(scene_path, width, height, debug_config, &event_loop).await?;
-
-    log::info!("Entering render loop...");
-    app.run(event_loop);
-
-    Ok(())
-}
-
-async fn run_threed(args: Args) -> anyhow::Result<()> {
-    log::info!("Initializing three-d renderer...");
-
+async fn run(args: Args) -> anyhow::Result<()> {
     // Create event loop
     let event_loop = winit::event_loop::EventLoop::new();
 
@@ -166,6 +98,23 @@ async fn run_threed(args: Args) -> anyhow::Result<()> {
         log::info!("Using test scene (POC mode)");
         app_threed::AppThreeD::new(args.width, args.height, &event_loop)?
     };
+
+    // Handle screenshot mode
+    if args.screenshot {
+        let output_path = if let Some(path) = args.screenshot_path {
+            path
+        } else {
+            // Default screenshot path: screenshots/<scene_name>.png
+            let scene_name = if args.scene != "Default" {
+                args.scene.replace(".tsx", "").replace(".json", "")
+            } else {
+                "Default".to_string()
+            };
+            PathBuf::from(format!("screenshots/{}.png", scene_name))
+        };
+
+        return app.screenshot(output_path);
+    }
 
     log::info!("Entering render loop...");
     app.run(event_loop);

@@ -30,16 +30,16 @@
     "prepare": "husky",
     "rust:export-schemas": "node scripts/export-schemas.js",
     "rust:sync-assets": "node scripts/sync-assets-to-rust.js",
-    "rust:engine": "node scripts/sync-assets-to-rust.js && cargo run --manifest-path rust/engine/Cargo.toml --",
-    "rust:engine:nosync": "cargo run --manifest-path rust/engine/Cargo.toml --",
+    "rust:engine": "cd rust/engine && cargo run -- --scene",
+    "rust:engine:test": "cd rust/engine && cargo run",
+    "rust:engine:verbose": "cd rust/engine && cargo run -- --verbose --scene",
+    "rust:screenshot": "cd rust/engine && cargo run -- --scene testphysics --screenshot",
     "rust:test": "cargo test --manifest-path rust/engine/Cargo.toml",
     "rust:test:watch": "cargo watch -x 'test --manifest-path rust/engine/Cargo.toml'",
     "rust:build": "cargo build --manifest-path rust/engine/Cargo.toml",
     "rust:build:release": "cargo build --release --manifest-path rust/engine/Cargo.toml",
-    "rust:build:full": "cd rust/engine && cargo clean && cargo build",
     "rust:check": "cargo check --manifest-path rust/engine/Cargo.toml",
-    "rust:clean": "cargo clean --manifest-path rust/engine/Cargo.toml",
-    "rust:run:release": "cargo run --release --manifest-path rust/engine/Cargo.toml --"
+    "rust:clean": "cargo clean --manifest-path rust/engine/Cargo.toml"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

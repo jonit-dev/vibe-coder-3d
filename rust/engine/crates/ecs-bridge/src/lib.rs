@@ -15,8 +15,8 @@ pub use decoders::{
 
 // Re-export transform utilities for standardized conversions
 pub use transform_utils::{
-    position_to_vec3, position_to_vec3_opt, rotation_to_quat, rotation_to_quat_opt,
-    scale_to_vec3, scale_to_vec3_opt,
+    position_to_vec3, position_to_vec3_opt, rotation_to_quat, rotation_to_quat_opt, scale_to_vec3,
+    scale_to_vec3_opt,
 };
 
 /// Component capabilities - describes what a component affects

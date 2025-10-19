@@ -134,7 +134,8 @@ fn draw_capsule(batch: &mut LineBatch, position: Vec3, rotation: Quat, capsule: 
 
     for i in 0..8 {
         let angle = (i as f32 / 8.0) * std::f32::consts::TAU;
-        let offset = (perpendicular * angle.cos() + axis.cross(perpendicular) * angle.sin()) * radius;
+        let offset =
+            (perpendicular * angle.cos() + axis.cross(perpendicular) * angle.sin()) * radius;
         batch.add_line(top + offset, bottom + offset, COLLIDER_COLOR);
     }
 

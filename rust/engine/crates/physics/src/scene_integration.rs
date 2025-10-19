@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use glam::Vec3;
 use vibe_ecs_bridge::{
-    position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt, ComponentRegistry,
-    MeshCollider, RigidBody,
+    position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt, ComponentRegistry, MeshCollider,
+    RigidBody,
 };
 use vibe_scene::{Entity, Scene};
 
@@ -96,10 +96,7 @@ fn get_component<T: 'static>(
 ///
 /// Uses standardized transform utilities to convert TypeScript/JSON conventions
 /// to Rust math types (e.g., degrees → radians)
-fn get_transform(
-    entity: &Entity,
-    registry: &ComponentRegistry,
-) -> (Vec3, glam::Quat, Vec3) {
+fn get_transform(entity: &Entity, registry: &ComponentRegistry) -> (Vec3, glam::Quat, Vec3) {
     use vibe_ecs_bridge::Transform;
 
     if let Some(transform) = get_component::<Transform>(entity, "Transform", registry) {

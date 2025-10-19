@@ -1,6 +1,9 @@
-use vibe_scene::Scene as SceneData;
 use anyhow::Context;
 use std::path::Path;
+use vibe_ecs_bridge::decoders::{
+    CameraComponent, Light as LightComponent, MeshRenderer, Transform,
+};
+use vibe_scene::Scene as SceneData;
 
 /// Load a scene from a JSON file
 pub fn load_scene<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneData> {
@@ -35,7 +38,11 @@ fn dump_scene_diagnostics(scene: &SceneData) {
     log::info!("========================================");
     log::info!("SCENE DIAGNOSTIC DUMP - Visual Parity");
     log::info!("========================================");
-    log::info!("Scene: {} (v{})", scene.metadata.name, scene.metadata.version);
+    log::info!(
+        "Scene: {} (v{})",
+        scene.metadata.name,
+        scene.metadata.version
+    );
     log::info!("Entities: {}", scene.entities.len());
     log::info!(
         "Materials: {}",
@@ -67,15 +74,23 @@ fn dump_scene_diagnostics(scene: &SceneData) {
 
         // Dump Transform component with raw and converted values
         if let Some(transform_json) = entity.components.get("Transform") {
-            log::info!("  Transform (raw JSON): {}", serde_json::to_string(transform_json).unwrap_or_else(|_| "error".to_string()));
+            log::info!(
+                "  Transform (raw JSON): {}",
+                serde_json::to_string(transform_json).unwrap_or_else(|_| "error".to_string())
+            );
 
-            if let Ok(transform) = serde_json::from_value::<crate::ecs::Transform>(transform_json.clone()) {
+            if let Ok(transform) = serde_json::from_value::<Transform>(transform_json.clone()) {
                 log::info!("    Position (raw): {:?}", transform.position);
-                log::info!("    Rotation (raw): {:?} <- THREE.JS DEGREES", transform.rotation);
+                log::info!(
+                    "    Rotation (raw): {:?} <- THREE.JS DEGREES",
+                    transform.rotation
+                );
                 log::info!("    Scale (raw): {:?}", transform.scale);
 
                 // Show converted values
-                use vibe_ecs_bridge::{rotation_to_quat_opt, position_to_vec3_opt, scale_to_vec3_opt};
+                use vibe_ecs_bridge::{
+                    position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt,
+                };
                 let pos = position_to_vec3_opt(transform.position.as_ref());
                 let rot = rotation_to_quat_opt(transform.rotation.as_ref());
                 let scale = scale_to_vec3_opt(transform.scale.as_ref());
@@ -86,7 +101,8 @@ fn dump_scene_diagnostics(scene: &SceneData) {
                 // Show rotation as Euler in radians for comparison
                 if let Some(rot_array) = &transform.rotation {
                     if rot_array.len() == 3 {
-                        log::info!("    Rotation (Euler radians): [{:.4}, {:.4}, {:.4}]",
+                        log::info!(
+                            "    Rotation (Euler radians): [{:.4}, {:.4}, {:.4}]",
                             rot_array[0].to_radians(),
                             rot_array[1].to_radians(),
                             rot_array[2].to_radians()
@@ -100,46 +116,57 @@ fn dump_scene_diagnostics(scene: &SceneData) {
 
         // Dump Camera component
         if let Some(camera_json) = entity.components.get("Camera") {
-            log::info!("  Camera (raw JSON): {}", serde_json::to_string(camera_json).unwrap_or_else(|_| "error".to_string()));
+            log::info!(
+                "  Camera (raw JSON): {}",
+                serde_json::to_string(camera_json).unwrap_or_else(|_| "error".to_string())
+            );
 
-            if let Ok(camera) = serde_json::from_value::<crate::ecs::CameraComponent>(camera_json.clone()) {
+            if let Ok(camera) = serde_json::from_value::<CameraComponent>(camera_json.clone()) {
                 log::info!("    FOV: {}° (field of view in degrees)", camera.fov);
                 log::info!("    Near: {}, Far: {}", camera.near, camera.far);
                 log::info!("    Is Main: {}", camera.is_main);
-                log::info!("    Projection: {:?}", camera.projection_type.as_ref().unwrap_or(&"perspective".to_string()));
+                log::info!("    Projection: {:?}", camera.projection_type);
 
-                if let Some(bg) = &camera.background {
-                    log::info!("    Background: {}", serde_json::to_string(bg).unwrap_or_else(|_| "error".to_string()));
+                if let Some(bg_color) = &camera.background_color {
+                    log::info!("    Background Color: {:?}", bg_color);
+                }
+                if let Some(skybox) = &camera.skybox_texture {
+                    log::info!("    Skybox Texture: {}", skybox);
                 }
             }
         }
 
         // Dump MeshRenderer component
         if let Some(mesh_renderer_json) = entity.components.get("MeshRenderer") {
-            if let Ok(mesh_renderer) = serde_json::from_value::<crate::ecs::MeshRenderer>(mesh_renderer_json.clone()) {
+            if let Ok(mesh_renderer) =
+                serde_json::from_value::<MeshRenderer>(mesh_renderer_json.clone())
+            {
                 log::info!("  MeshRenderer:");
-                log::info!("    Mesh ID: {:?}", mesh_renderer.mesh_id);
-                log::info!("    Material ID: {:?}", mesh_renderer.material_id);
-                log::info!("    Model Path: {:?}", mesh_renderer.model_path);
-                log::info!("    Cast Shadow: {}, Receive Shadow: {}",
-                    mesh_renderer.cast_shadow.unwrap_or(true),
-                    mesh_renderer.receive_shadow.unwrap_or(true)
+                log::info!("    Mesh ID: {:?}", mesh_renderer.meshId);
+                log::info!("    Material ID: {:?}", mesh_renderer.materialId);
+                log::info!("    Model Path: {:?}", mesh_renderer.modelPath);
+                log::info!(
+                    "    Cast Shadows: {}, Receive Shadows: {}",
+                    mesh_renderer.castShadows,
+                    mesh_renderer.receiveShadows
                 );
             }
         }
 
         // Dump Light component
         if let Some(light_json) = entity.components.get("Light") {
-            if let Ok(light) = serde_json::from_value::<crate::ecs::LightComponent>(light_json.clone()) {
+            if let Ok(light) = serde_json::from_value::<LightComponent>(light_json.clone()) {
                 log::info!("  Light:");
-                log::info!("    Type: {:?}", light.light_type);
+                log::info!("    Type: {:?}", light.lightType);
                 log::info!("    Color: {:?}", light.color);
                 log::info!("    Intensity: {}", light.intensity);
-                log::info!("    Cast Shadow: {}", light.cast_shadow.unwrap_or(false));
-
-                if let Some(dir) = &light.direction {
-                    log::info!("    Direction: {:?}", dir);
-                }
+                log::info!("    Cast Shadow: {}", light.castShadow);
+                log::info!(
+                    "    Direction: [{}, {}, {}]",
+                    light.directionX,
+                    light.directionY,
+                    light.directionZ
+                );
             }
         }
 

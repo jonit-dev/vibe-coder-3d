@@ -17,12 +17,7 @@ use super::Mesh;
 ///
 /// # Three.js Match
 /// `new THREE.TorusGeometry(0.5, 0.2, 16, 100)` → `create_torus(0.5, 0.2, 16, 100)`
-pub fn create_torus(
-    radius: f32,
-    tube: f32,
-    radial_segments: u32,
-    tubular_segments: u32,
-) -> Mesh {
+pub fn create_torus(radius: f32, tube: f32, radial_segments: u32, tubular_segments: u32) -> Mesh {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
 
@@ -56,7 +51,8 @@ pub fn create_torus(
             let normal_x = x - center_x;
             let normal_y = y - center_y;
             let normal_z = z - center_z;
-            let normal_len = (normal_x * normal_x + normal_y * normal_y + normal_z * normal_z).sqrt();
+            let normal_len =
+                (normal_x * normal_x + normal_y * normal_y + normal_z * normal_z).sqrt();
 
             let normal = [
                 normal_x / normal_len,
@@ -140,7 +136,8 @@ pub fn create_torus_knot(
         let tangent_x = p2[0] - p1[0];
         let tangent_y = p2[1] - p1[1];
         let tangent_z = p2[2] - p1[2];
-        let tangent_len = (tangent_x * tangent_x + tangent_y * tangent_y + tangent_z * tangent_z).sqrt();
+        let tangent_len =
+            (tangent_x * tangent_x + tangent_y * tangent_y + tangent_z * tangent_z).sqrt();
         let tangent = [
             tangent_x / tangent_len,
             tangent_y / tangent_len,
@@ -158,7 +155,8 @@ pub fn create_torus_knot(
         let binormal_x = tangent[1] * normal[2] - tangent[2] * normal[1];
         let binormal_y = tangent[2] * normal[0] - tangent[0] * normal[2];
         let binormal_z = tangent[0] * normal[1] - tangent[1] * normal[0];
-        let binormal_len = (binormal_x * binormal_x + binormal_y * binormal_y + binormal_z * binormal_z).sqrt();
+        let binormal_len =
+            (binormal_x * binormal_x + binormal_y * binormal_y + binormal_z * binormal_z).sqrt();
         let binormal = [
             binormal_x / binormal_len,
             binormal_y / binormal_len,
@@ -274,7 +272,8 @@ mod tests {
         let mut found_major_radius = false;
         for vertex in &mesh.vertices {
             let radius_xy = (vertex.position[0] * vertex.position[0]
-                           + vertex.position[1] * vertex.position[1]).sqrt();
+                + vertex.position[1] * vertex.position[1])
+                .sqrt();
 
             // Tube center should be at major radius ± tube radius
             if (radius_xy - 1.0).abs() < 0.15 {

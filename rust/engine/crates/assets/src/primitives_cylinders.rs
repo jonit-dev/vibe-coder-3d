@@ -98,7 +98,8 @@ impl CylindricalBuilder {
                 let normal_x = theta.cos();
                 let normal_y = slope;
                 let normal_z = theta.sin();
-                let normal_len = (normal_x * normal_x + normal_y * normal_y + normal_z * normal_z).sqrt();
+                let normal_len =
+                    (normal_x * normal_x + normal_y * normal_y + normal_z * normal_z).sqrt();
                 let normal = [
                     normal_x / normal_len,
                     normal_y / normal_len,
@@ -160,7 +161,8 @@ impl CylindricalBuilder {
                 }
 
                 // Bottom cap indices (CCW from bottom)
-                let bottom_indices = cap_indices(center_idx, cap_start, self.radial_segments, false);
+                let bottom_indices =
+                    cap_indices(center_idx, cap_start, self.radial_segments, false);
                 indices.extend(bottom_indices);
             }
 
@@ -240,12 +242,7 @@ pub fn create_cone(radius: f32, height: f32, radial_segments: u32) -> Mesh {
 ///
 /// # Three.js Match
 /// `new THREE.CapsuleGeometry(0.3, 0.4, 4, 16)` → `create_capsule(0.3, 0.4, 4, 16)`
-pub fn create_capsule(
-    radius: f32,
-    length: f32,
-    cap_segments: u32,
-    radial_segments: u32,
-) -> Mesh {
+pub fn create_capsule(radius: f32, length: f32, cap_segments: u32, radial_segments: u32) -> Mesh {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
 
@@ -253,7 +250,11 @@ pub fn create_capsule(
 
     // Generate cylindrical body (without caps)
     for y_idx in 0..=1 {
-        let y = if y_idx == 0 { -half_length } else { half_length };
+        let y = if y_idx == 0 {
+            -half_length
+        } else {
+            half_length
+        };
 
         for segment in 0..=radial_segments {
             let u = segment as f32 / radial_segments as f32;
@@ -424,8 +425,9 @@ mod tests {
         for vertex in &mesh.vertices {
             if (vertex.position[1] + 1.0).abs() < 0.01 {
                 // Near bottom (y = -1.0)
-                let radius =
-                    (vertex.position[0] * vertex.position[0] + vertex.position[2] * vertex.position[2]).sqrt();
+                let radius = (vertex.position[0] * vertex.position[0]
+                    + vertex.position[2] * vertex.position[2])
+                    .sqrt();
                 if (radius - 1.0).abs() < 0.01 {
                     found_bottom = true;
                     break;

@@ -79,8 +79,12 @@ impl Transform {
 
         log::trace!(
             "Transform matrix: pos=[{:.2}, {:.2}, {:.2}], scale=[{:.2}, {:.2}, {:.2}]",
-            pos.x, pos.y, pos.z,
-            scale.x, scale.y, scale.z
+            pos.x,
+            pos.y,
+            pos.z,
+            scale.x,
+            scale.y,
+            scale.z
         );
 
         Mat4::from_scale_rotation_translation(scale, rot, pos)
@@ -188,7 +192,10 @@ mod tests {
 
         // Quaternions have double coverage: q and -q represent the same rotation
         // So we need to check if they're equal OR negated
-        let dot = quat_360.x * quat_0.x + quat_360.y * quat_0.y + quat_360.z * quat_0.z + quat_360.w * quat_0.w;
+        let dot = quat_360.x * quat_0.x
+            + quat_360.y * quat_0.y
+            + quat_360.z * quat_0.z
+            + quat_360.w * quat_0.w;
         // If dot product is close to 1 or -1, they represent the same rotation
         assert!(dot.abs() > 0.999, "360° rotation should be equivalent to 0°, but quaternions differ: quat_360={:?}, quat_0={:?}, dot={}", quat_360, quat_0, dot);
     }

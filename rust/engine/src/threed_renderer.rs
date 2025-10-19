@@ -4,11 +4,12 @@ use std::sync::Arc;
 use three_d::*;
 use winit::window::Window as WinitWindow;
 
-use crate::ecs::{ComponentRegistry, SceneData};
 use vibe_ecs_bridge::decoders::{
     CameraComponent, Light as LightComponent, MeshRenderer, Transform,
 };
+use vibe_ecs_bridge::ComponentRegistry;
 use vibe_ecs_bridge::{position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt};
+use vibe_scene::Scene as SceneData;
 use vibe_scene::{Entity, EntityId};
 
 /// Material data loaded from scene JSON
@@ -388,10 +389,16 @@ impl ThreeDRenderer {
         log::info!("    Mesh ID:     {:?}", mesh_renderer.meshId);
         log::info!("    Material ID: {:?}", mesh_renderer.materialId);
 
+        // Normalize mesh identifier for comparisons
+        let mesh_id_lower = mesh_renderer
+            .meshId
+            .as_ref()
+            .map(|id| id.to_ascii_lowercase());
+
         // For now, create primitive meshes based on meshId hints
         // In Phase 2.2 we'll add proper GLTF loading
-        let cpu_mesh = if let Some(mesh_id) = &mesh_renderer.meshId {
-            match mesh_id.to_lowercase().as_str() {
+        let cpu_mesh = if let Some(mesh_id) = mesh_id_lower.as_deref() {
+            match mesh_id {
                 id if id.contains("cube") || id.contains("box") => {
                     log::info!("    Creating:    Cube primitive");
                     CpuMesh::cube()
@@ -434,6 +441,7 @@ impl ThreeDRenderer {
 
         // Apply transform if present
         if let Some(transform) = transform {
+            let base_scale = Self::primitive_base_scale(mesh_id_lower.as_deref());
             let position = position_to_vec3_opt(transform.position.as_ref());
             let rotation = rotation_to_quat_opt(transform.rotation.as_ref());
             let scale = scale_to_vec3_opt(transform.scale.as_ref());
@@ -441,14 +449,38 @@ impl ThreeDRenderer {
             log::info!("  Transform:");
             log::info!("    RAW from JSON:");
             log::info!("      Position: {:?}", transform.position);
-            log::info!("      Rotation: {:?} (THREE.JS DEGREES)", transform.rotation);
+            log::info!(
+                "      Rotation: {:?} (THREE.JS DEGREES)",
+                transform.rotation
+            );
             log::info!("      Scale:    {:?}", transform.scale);
             log::info!("");
             log::info!("    CONVERTED (glam):");
-            log::info!("      Position: [{:.4}, {:.4}, {:.4}]", position.x, position.y, position.z);
-            log::info!("      Rotation: [{:.4}, {:.4}, {:.4}, {:.4}] (quat, RADIANS)",
-                rotation.x, rotation.y, rotation.z, rotation.w);
-            log::info!("      Scale:    [{:.4}, {:.4}, {:.4}]", scale.x, scale.y, scale.z);
+            log::info!(
+                "      Position: [{:.4}, {:.4}, {:.4}]",
+                position.x,
+                position.y,
+                position.z
+            );
+            log::info!(
+                "      Rotation: [{:.4}, {:.4}, {:.4}, {:.4}] (quat, RADIANS)",
+                rotation.x,
+                rotation.y,
+                rotation.z,
+                rotation.w
+            );
+            log::info!(
+                "      Scale:    [{:.4}, {:.4}, {:.4}]",
+                scale.x,
+                scale.y,
+                scale.z
+            );
+            log::info!(
+                "      Primitive base scale: [{:.4}, {:.4}, {:.4}]",
+                base_scale.x,
+                base_scale.y,
+                base_scale.z
+            );
 
             // Convert Three.js coordinates to three-d coordinates (flip Z)
             // CRITICAL DIFFERENCE: Three.js uses +Z forward, three-d uses -Z forward
@@ -456,7 +488,11 @@ impl ThreeDRenderer {
             let pos = vec3(position.x, position.y, -position.z);
             let (axis, angle) = rotation.to_axis_angle();
             let axis_3d = vec3(axis.x, axis.y, axis.z);
-            let scale_3d = vec3(scale.x, scale.y, scale.z);
+            let scale_3d = vec3(
+                scale.x * base_scale.x,
+                scale.y * base_scale.y,
+                scale.z * base_scale.z,
+            );
 
             log::info!("");
             log::info!("    three-d COORDINATE SYSTEM CONVERSION:");
@@ -465,11 +501,30 @@ impl ThreeDRenderer {
             log::info!("      │ Three.js:  +Z is forward                            │");
             log::info!("      │ three-d:   -Z is forward                            │");
             log::info!("      └─────────────────────────────────────────────────────┘");
-            log::info!("      Position (three-d): [{:.4}, {:.4}, {:.4}] ← Z FLIPPED from {:.4}",
-                pos.x, pos.y, pos.z, position.z);
-            log::info!("      Rotation axis: [{:.4}, {:.4}, {:.4}]", axis_3d.x, axis_3d.y, axis_3d.z);
-            log::info!("      Rotation angle: {:.4} rad ({:.2}°)", angle, angle.to_degrees());
-            log::info!("      Scale (three-d): [{:.4}, {:.4}, {:.4}]", scale_3d.x, scale_3d.y, scale_3d.z);
+            log::info!(
+                "      Position (three-d): [{:.4}, {:.4}, {:.4}] ← Z FLIPPED from {:.4}",
+                pos.x,
+                pos.y,
+                pos.z,
+                position.z
+            );
+            log::info!(
+                "      Rotation axis: [{:.4}, {:.4}, {:.4}]",
+                axis_3d.x,
+                axis_3d.y,
+                axis_3d.z
+            );
+            log::info!(
+                "      Rotation angle: {:.4} rad ({:.2}°)",
+                angle,
+                angle.to_degrees()
+            );
+            log::info!(
+                "      Scale (three-d): [{:.4}, {:.4}, {:.4}] (scene scale × primitive base)",
+                scale_3d.x,
+                scale_3d.y,
+                scale_3d.z
+            );
 
             // Build transformation matrix
             let transform_mat = Mat4::from_translation(pos)
@@ -487,6 +542,27 @@ impl ThreeDRenderer {
         self.mesh_entity_ids.push(entity_id);
 
         Ok(())
+    }
+
+    /// three-d primitives are built at [-1, 1] extents; normalize to Unity/Three.js unit sizing
+    fn primitive_base_scale(mesh_id: Option<&str>) -> Vec3 {
+        let default_scale = vec3(1.0, 1.0, 1.0);
+        let Some(id) = mesh_id else {
+            return default_scale;
+        };
+
+        match id {
+            primitive if primitive.contains("cube") || primitive.contains("box") => {
+                vec3(0.5, 0.5, 0.5)
+            }
+            primitive if primitive.contains("sphere") => vec3(0.5, 0.5, 0.5),
+            primitive if primitive.contains("plane") => vec3(0.5, 0.5, 0.5),
+            primitive if primitive.contains("cylinder") => vec3(0.5, 0.5, 0.5),
+            primitive if primitive.contains("capsule") => vec3(0.5, 0.5, 0.5),
+            primitive if primitive.contains("cone") => vec3(0.5, 0.5, 0.5),
+            primitive if primitive.contains("torus") => vec3(0.5, 0.5, 0.5),
+            _ => default_scale,
+        }
     }
 
     /// Load a light component
@@ -619,7 +695,10 @@ impl ThreeDRenderer {
     ) -> Result<()> {
         log::info!("  Camera:");
         log::info!("    Is Main:    {}", camera_component.is_main);
-        log::info!("    FOV:        {}° (DEGREES, no conversion needed)", camera_component.fov);
+        log::info!(
+            "    FOV:        {}° (DEGREES, no conversion needed)",
+            camera_component.fov
+        );
         log::info!("    Near Plane: {}", camera_component.near);
         log::info!("    Far Plane:  {}", camera_component.far);
         log::info!("    Projection: {:?}", camera_component.projection_type);
