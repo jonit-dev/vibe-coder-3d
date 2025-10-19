@@ -10,7 +10,7 @@ use vibe_scene::ComponentKindId;
 pub use decoders::{
     create_default_registry, CameraComponent, InstanceData, Instanced, Light, LightColor, Material,
     MeshCollider, MeshColliderSize, MeshRenderer, MeshRendererMaterialOverride,
-    PhysicsMaterialData, PrefabInstance, RigidBody, RigidBodyMaterial, Terrain, Transform,
+    PhysicsMaterialData, PrefabInstance, RigidBody, RigidBodyMaterial, Sound, Terrain, Transform,
 };
 
 // Re-export transform utilities for standardized conversions

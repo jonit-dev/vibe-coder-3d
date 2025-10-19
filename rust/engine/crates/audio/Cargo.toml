@@ -1,0 +1,27 @@
+[package]
+name = "vibe-audio"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Audio engine
+rodio = "0.17"
+
+# Math
+glam = { version = "0.27", features = ["serde"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+log = "0.4"
+
+# Collections
+rustc-hash = "1.1"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+env_logger = "0.11"

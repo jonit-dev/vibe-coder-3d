@@ -8,6 +8,7 @@
 /// - Mesh rendering and loading
 /// - Primitive mesh creation
 /// - Transform conversion utilities
+pub mod audio_loader;
 pub mod camera_loader;
 pub mod coordinate_conversion;
 pub mod debug_lines;
