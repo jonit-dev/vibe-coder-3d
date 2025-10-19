@@ -503,10 +503,10 @@ mod tests {
     }
 
     #[test]
-    fn test_load_fml_scene() {
-        // Load the actual fml.json scene file
+    fn test_load_testphysics_scene() {
+        // Load the actual testphysics.json scene file
         // CARGO_MANIFEST_DIR = /path/to/rust/engine/crates/scene-graph
-        // We want: /path/to/rust/game/scenes/fml.json
+        // We want: /path/to/rust/game/scenes/testphysics.json
         let scene_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent() // -> crates
             .unwrap()
@@ -514,13 +514,13 @@ mod tests {
             .unwrap()
             .parent() // -> rust
             .unwrap()
-            .join("game/scenes/fml.json");
+            .join("game/scenes/testphysics.json");
 
-        let json = std::fs::read_to_string(&scene_path).expect("Failed to read fml.json");
-        let scene: Scene = serde_json::from_str(&json).expect("Failed to parse fml.json");
+        let json = std::fs::read_to_string(&scene_path).expect("Failed to read testphysics.json");
+        let scene: Scene = serde_json::from_str(&json).expect("Failed to parse testphysics.json");
 
         // Verify scene has entities
-        assert_eq!(scene.entities.len(), 5, "Scene should have 5 entities");
+        assert_eq!(scene.entities.len(), 6, "Scene should have 6 entities");
 
         // Debug print entity info
         for (idx, entity) in scene.entities.iter().enumerate() {
@@ -540,16 +540,16 @@ mod tests {
         let mut graph = result.unwrap();
 
         // Verify graph has entities
-        assert_eq!(graph.entity_ids().len(), 5, "Graph should have 5 entities");
+        assert_eq!(graph.entity_ids().len(), 6, "Graph should have 6 entities");
 
         // Extract renderables
         let instances = graph.extract_renderables(&scene);
 
-        // Should find 2 renderable entities (Cube 0 and Cube 0 Copy)
+        // Should find 3 renderable entities (Cube 0, Plane 0, sphere)
         assert_eq!(
             instances.len(),
-            2,
-            "Should find 2 renderable entities (2 cubes)"
+            3,
+            "Should find 3 renderable entities (cube, plane, sphere)"
         );
     }
 }
