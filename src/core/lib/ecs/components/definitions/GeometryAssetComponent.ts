@@ -111,7 +111,14 @@ export const geometryAssetComponent = ComponentFactory.create({
     comp.receiveShadows[eid] = (geomData.receiveShadows ?? true) ? 1 : 0;
 
     // Deserialize options with defaults
-    const options = geomData.options || {};
+    const options = (geomData.options || {}) as Partial<{
+      recomputeNormals: boolean;
+      recomputeTangents: boolean;
+      recenter: boolean;
+      computeBounds: boolean;
+      flipNormals: boolean;
+      scale: number;
+    }>;
     comp.recomputeNormals[eid] = (options.recomputeNormals ?? false) ? 1 : 0;
     comp.recomputeTangents[eid] = (options.recomputeTangents ?? false) ? 1 : 0;
     comp.recenter[eid] = (options.recenter ?? false) ? 1 : 0;

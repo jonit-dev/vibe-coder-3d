@@ -218,6 +218,26 @@ export interface IPersistentIdComponent {
 }
 
 /**
+ * GeometryAsset Component - Renders geometry from .shape.json files
+ */
+export interface IGeometryAssetComponent {
+  path: string;
+  geometryId?: string;
+  materialId?: string;
+  enabled?: boolean;
+  castShadows?: boolean;
+  receiveShadows?: boolean;
+  options?: {
+    recomputeNormals?: boolean;
+    recomputeTangents?: boolean;
+    recenter?: boolean;
+    computeBounds?: boolean;
+    flipNormals?: boolean;
+    scale?: number;
+  };
+}
+
+/**
  * Component map - Maps component names to their types
  * This provides autocomplete and type checking for component data
  *
@@ -233,6 +253,7 @@ export interface IComponentMap {
   MeshCollider: IMeshColliderComponent;
   PrefabInstance: IPrefabInstanceComponent;
   Script: IScriptComponent;
+  GeometryAsset: IGeometryAssetComponent;
 }
 
 /**

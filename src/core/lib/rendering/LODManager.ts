@@ -165,19 +165,15 @@ class LODManagerClass {
     // 2. /models/Model/Model.glb -> /models/Model/lod/Model.high_fidelity.glb
 
     let path: string;
-    let pattern: string;
 
     if (basePath.includes('/glb/')) {
       // Pattern 1: Has /glb/ subdirectory
-      pattern = 'glb-subdirectory';
       path = basePath.replace('/glb/', '/lod/');
     } else if (hasOriginalInLod) {
       // Pattern 3: Already in /lod/ directory but no quality suffix (original quality)
-      pattern = 'lod-original';
       path = basePath;
     } else {
       // Pattern 2: No /glb/ subdirectory - insert /lod/ before filename
-      pattern = 'direct-filename';
       const lastSlash = basePath.lastIndexOf('/');
       const dir = basePath.substring(0, lastSlash);
       const filename = basePath.substring(lastSlash + 1);

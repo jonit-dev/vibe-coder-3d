@@ -1,4 +1,8 @@
-import { sceneRegistry, SceneLoader, EntityManager, componentRegistry } from '@core';
+/* eslint-disable import/no-restricted-paths */
+import { sceneRegistry } from '@core/lib/scene/SceneRegistry';
+import { SceneLoader } from '@core/lib/serialization/SceneLoader';
+import { EntityManager } from '@core/lib/ecs/EntityManager';
+import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import TestPhysicsScene from './testphysics';
 import ExampleMultiFileScene from './examplemultifile';
 import FmlScene from './fml';

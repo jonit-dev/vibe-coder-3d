@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { type IGeometryMeta, type IAccessor, type AttributeType } from './IGeometryMeta';
+import { type IGeometryMeta, type IAccessor } from './IGeometryMeta';
 import { Logger } from '@core/lib/logger';
 
 const logger = Logger.create('parseMetaToBufferGeometry');
@@ -52,7 +52,11 @@ export function parseMetaToBufferGeometry(meta: IGeometryMeta): THREE.BufferGeom
   const positionArray = createTypedArray(meta.attributes.position);
   geometry.setAttribute(
     'position',
-    new THREE.BufferAttribute(positionArray, meta.attributes.position.itemSize, meta.attributes.position.normalized),
+    new THREE.BufferAttribute(
+      positionArray,
+      meta.attributes.position.itemSize,
+      meta.attributes.position.normalized,
+    ),
   );
 
   // Add optional attributes
@@ -60,7 +64,11 @@ export function parseMetaToBufferGeometry(meta: IGeometryMeta): THREE.BufferGeom
     const normalArray = createTypedArray(meta.attributes.normal);
     geometry.setAttribute(
       'normal',
-      new THREE.BufferAttribute(normalArray, meta.attributes.normal.itemSize, meta.attributes.normal.normalized),
+      new THREE.BufferAttribute(
+        normalArray,
+        meta.attributes.normal.itemSize,
+        meta.attributes.normal.normalized,
+      ),
     );
   }
 
@@ -68,7 +76,11 @@ export function parseMetaToBufferGeometry(meta: IGeometryMeta): THREE.BufferGeom
     const uvArray = createTypedArray(meta.attributes.uv);
     geometry.setAttribute(
       'uv',
-      new THREE.BufferAttribute(uvArray, meta.attributes.uv.itemSize, meta.attributes.uv.normalized),
+      new THREE.BufferAttribute(
+        uvArray,
+        meta.attributes.uv.itemSize,
+        meta.attributes.uv.normalized,
+      ),
     );
   }
 
@@ -76,7 +88,11 @@ export function parseMetaToBufferGeometry(meta: IGeometryMeta): THREE.BufferGeom
     const colorArray = createTypedArray(meta.attributes.color);
     geometry.setAttribute(
       'color',
-      new THREE.BufferAttribute(colorArray, meta.attributes.color.itemSize, meta.attributes.color.normalized),
+      new THREE.BufferAttribute(
+        colorArray,
+        meta.attributes.color.itemSize,
+        meta.attributes.color.normalized,
+      ),
     );
   }
 
@@ -84,7 +100,11 @@ export function parseMetaToBufferGeometry(meta: IGeometryMeta): THREE.BufferGeom
     const tangentArray = createTypedArray(meta.attributes.tangent);
     geometry.setAttribute(
       'tangent',
-      new THREE.BufferAttribute(tangentArray, meta.attributes.tangent.itemSize, meta.attributes.tangent.normalized),
+      new THREE.BufferAttribute(
+        tangentArray,
+        meta.attributes.tangent.itemSize,
+        meta.attributes.tangent.normalized,
+      ),
     );
   }
 
@@ -117,7 +137,10 @@ export function parseMetaToBufferGeometry(meta: IGeometryMeta): THREE.BufferGeom
     }
     if (meta.bounds.sphere) {
       const { center, radius } = meta.bounds.sphere;
-      geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(center[0], center[1], center[2]), radius);
+      geometry.boundingSphere = new THREE.Sphere(
+        new THREE.Vector3(center[0], center[1], center[2]),
+        radius,
+      );
     }
   }
 

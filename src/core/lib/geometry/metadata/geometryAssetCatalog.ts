@@ -20,7 +20,7 @@ const geometryAssetModules = import.meta.glob('/src/game/geometry/**/*.shape.jso
   eager: true,
 });
 
-export interface GeometryAssetSummary {
+export interface IGeometryAssetSummary {
   path: string;
   name: string;
   tags: string[];
@@ -32,8 +32,8 @@ export interface GeometryAssetSummary {
   hasTangents: boolean;
 }
 
-const geometryAssetSummaries: GeometryAssetSummary[] = [];
-const geometryAssetMap = new Map<string, GeometryAssetSummary>();
+const geometryAssetSummaries: IGeometryAssetSummary[] = [];
+const geometryAssetMap = new Map<string, IGeometryAssetSummary>();
 
 Object.entries(geometryAssetModules).forEach(([rawPath, module]) => {
   try {
@@ -43,12 +43,14 @@ Object.entries(geometryAssetModules).forEach(([rawPath, module]) => {
     const meta = GeometryMetaSchema.parse(metaCandidate);
 
     const vertexCount =
-      (meta.attributes.position?.array?.length ?? 0) /
-      (meta.attributes.position?.itemSize ?? 1);
+      (meta.attributes.position?.array?.length ?? 0) / (meta.attributes.position?.itemSize ?? 1);
 
-    const summary: GeometryAssetSummary = {
+    const summary: IGeometryAssetSummary = {
       path: normalizedPath,
-      name: meta.meta.name ?? normalizedPath.split('/').pop()?.replace('.shape.json', '') ?? 'Geometry Asset',
+      name:
+        meta.meta.name ??
+        normalizedPath.split('/').pop()?.replace('.shape.json', '') ??
+        'Geometry Asset',
       tags: meta.meta.tags ?? [],
       category: meta.meta.category,
       meta,
@@ -73,11 +75,13 @@ Object.entries(geometryAssetModules).forEach(([rawPath, module]) => {
 
 geometryAssetSummaries.sort((a, b) => a.name.localeCompare(b.name));
 
-export function listGeometryAssets(): GeometryAssetSummary[] {
+export function listGeometryAssets(): IGeometryAssetSummary[] {
   return geometryAssetSummaries;
 }
 
-export function getGeometryAssetByPath(path: string | undefined | null): GeometryAssetSummary | undefined {
+export function getGeometryAssetByPath(
+  path: string | undefined | null,
+): IGeometryAssetSummary | undefined {
   if (!path) return undefined;
   return geometryAssetMap.get(normalizeGeometryAssetPath(path)) ?? geometryAssetMap.get(path);
 }

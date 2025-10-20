@@ -4,7 +4,7 @@ import { useEditorStore } from '@editor/store/editorStore';
 import { ShapeType } from '@editor/types/shapes';
 import { TerrainWizard } from '@editor/components/terrain/TerrainWizard';
 import { useEntityCreation } from '@editor/hooks/useEntityCreation';
-import { useGeometryAssets, type GeometryAssetOption } from '@editor/hooks/useGeometryAssets';
+import { useGeometryAssets, type IGeometryAssetOption } from '@editor/hooks/useGeometryAssets';
 import { GAME_OBJECT_CATEGORIES } from '@editor/config/gameObjectMenuData';
 import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
 import { GeometryBrowserModal } from '@editor/components/shared/GeometryBrowserModal';
@@ -17,9 +17,7 @@ export interface IEnhancedAddObjectMenuProps {
 }
 
 // Convert shared data to NestedDropdownMenu format
-function buildObjectCategories(
-  geometryAssets: GeometryAssetOption[],
-): IMenuCategory[] {
+function buildObjectCategories(geometryAssets: IGeometryAssetOption[]): IMenuCategory[] {
   const baseCategories: IMenuCategory[] = GAME_OBJECT_CATEGORIES.map((category) => ({
     label: category.label,
     icon: category.icon,
@@ -68,10 +66,7 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
   const geometryAssets = useGeometryAssets();
 
   // Build categories dynamically
-  const objectCategories = useMemo(
-    () => buildObjectCategories(geometryAssets),
-    [geometryAssets],
-  );
+  const objectCategories = useMemo(() => buildObjectCategories(geometryAssets), [geometryAssets]);
 
   const handleItemSelect = (item: IMenuItemOption) => {
     // Handle custom shapes

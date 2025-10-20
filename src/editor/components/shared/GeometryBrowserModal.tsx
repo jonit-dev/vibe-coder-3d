@@ -3,12 +3,12 @@ import { FiSearch, FiChevronLeft, FiChevronRight, FiFolder } from 'react-icons/f
 
 import { Modal } from './Modal';
 import { GeometryPreview } from './GeometryPreview';
-import { useGeometryAssets, type GeometryAssetOption } from '@/editor/hooks/useGeometryAssets';
+import { useGeometryAssets, type IGeometryAssetOption } from '@/editor/hooks/useGeometryAssets';
 
 interface IGeometryBrowserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (asset: GeometryAssetOption) => void;
+  onSelect: (asset: IGeometryAssetOption) => void;
 }
 
 const ITEMS_PER_PAGE = 12;
@@ -49,7 +49,7 @@ export const GeometryBrowserModal: React.FC<IGeometryBrowserModalProps> = ({
         const haystack = [
           asset.name?.toLowerCase() ?? '',
           asset.path.toLowerCase(),
-          ...(asset.tags?.map((tag) => tag.toLowerCase()) ?? []),
+          ...(asset.tags?.map((tag: string) => tag.toLowerCase()) ?? []),
           asset.category?.toLowerCase() ?? '',
         ];
         return haystack.some((value) => value.includes(lower));
@@ -70,7 +70,7 @@ export const GeometryBrowserModal: React.FC<IGeometryBrowserModalProps> = ({
     return filteredAssets.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredAssets, currentPage]);
 
-  const handleSelect = (asset: GeometryAssetOption) => {
+  const handleSelect = (asset: IGeometryAssetOption) => {
     onSelect(asset);
     onClose();
   };
@@ -216,7 +216,7 @@ export const GeometryBrowserModal: React.FC<IGeometryBrowserModalProps> = ({
                   {/* Tags */}
                   {asset.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {asset.tags.slice(0, 2).map((tag) => (
+                      {asset.tags.slice(0, 2).map((tag: string) => (
                         <span
                           key={tag}
                           className="text-[10px] uppercase tracking-wide bg-gray-800 border border-gray-700 rounded px-1.5 py-0.5 text-gray-400"

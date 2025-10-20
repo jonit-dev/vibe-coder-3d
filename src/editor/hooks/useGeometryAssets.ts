@@ -4,10 +4,10 @@ import {
   getGeometryAssetByPath,
   hasGeometryAssets,
   listGeometryAssets,
-  type GeometryAssetSummary,
+  type IGeometryAssetSummary,
 } from '@/core/lib/geometry/metadata/geometryAssetCatalog';
 
-export interface GeometryAssetOption extends GeometryAssetSummary {
+export interface IGeometryAssetOption extends IGeometryAssetSummary {
   /**
    * Public URL that can be used with fetch/import for runtime loading.
    * For editor previews we rely on the in-memory meta instead.
@@ -23,7 +23,7 @@ function toPublicUrl(path: string): string {
   return path;
 }
 
-export function useGeometryAssets(): GeometryAssetOption[] {
+export function useGeometryAssets(): IGeometryAssetOption[] {
   return useMemo(() => {
     return listGeometryAssets().map((asset) => ({
       ...asset,
@@ -32,7 +32,9 @@ export function useGeometryAssets(): GeometryAssetOption[] {
   }, []);
 }
 
-export function useGeometryAsset(path: string | undefined | null): GeometryAssetOption | undefined {
+export function useGeometryAsset(
+  path: string | undefined | null,
+): IGeometryAssetOption | undefined {
   return useMemo(() => {
     console.log('[useGeometryAsset] Looking up geometry asset for path:', path);
     const found = getGeometryAssetByPath(path);
@@ -40,7 +42,12 @@ export function useGeometryAsset(path: string | undefined | null): GeometryAsset
     if (!found) {
       console.warn('[useGeometryAsset] Geometry asset NOT FOUND for path:', path);
     } else {
-      console.log('[useGeometryAsset] Found geometry asset:', found.name, 'vertices:', found.vertexCount);
+      console.log(
+        '[useGeometryAsset] Found geometry asset:',
+        found.name,
+        'vertices:',
+        found.vertexCount,
+      );
     }
 
     return found

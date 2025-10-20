@@ -2,7 +2,6 @@ import React from 'react';
 import { FiFolder, FiSun, FiZap } from 'react-icons/fi';
 import {
   TbBox,
-  TbBoxMultiple,
   TbBuildingBridge,
   TbCircle,
   TbCone,
@@ -11,7 +10,6 @@ import {
   TbDiamond,
   TbHexagon,
   TbLamp,
-  TbMath,
   TbMountain,
   TbOctagon,
   TbPyramid,
@@ -19,11 +17,9 @@ import {
   TbShape,
   TbSphere,
   TbSquare,
-  TbStar,
   TbTriangle,
 } from 'react-icons/tb';
 import { ShapeType } from '@editor/types/shapes';
-import type { ICustomShapeDescriptor } from '@/core/lib/rendering/shapes/IShapeDescriptor';
 
 export interface IGameObjectMenuItem {
   type: ShapeType | string;

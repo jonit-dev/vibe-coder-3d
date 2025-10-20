@@ -1,9 +1,6 @@
 import { useEffect } from 'react';
 
-import { Logger } from '@/core/lib/logger';
 import { useEntityManager } from './useEntityManager';
-
-const logger = Logger.create('useEntitySynchronization');
 
 interface IUseEntitySynchronizationProps {
   entityIds: number[];

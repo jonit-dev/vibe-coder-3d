@@ -20,6 +20,7 @@ export default [
       'scripts/**',
       'test-script-api.mjs',
       'test-integration.ts',
+      'rust/**',
     ],
   },
   js.configs.recommended,

@@ -50,6 +50,7 @@ export type {
   IMeshColliderComponent,
   IPrefabInstanceComponent,
   IScriptComponent,
+  IGeometryAssetComponent,
   IMaterialData,
 } from './types/components';
 

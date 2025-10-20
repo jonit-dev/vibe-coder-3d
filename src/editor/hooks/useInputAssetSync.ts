@@ -14,7 +14,6 @@ export const useInputAssetSync = () => {
   const currentAsset = useInputStore((state) =>
     state.currentAsset ? state.assets.find((a) => a.name === state.currentAsset) : undefined,
   );
-  const assets = useInputStore((state) => state.assets);
 
   // Load current asset into InputManager
   useEffect(() => {

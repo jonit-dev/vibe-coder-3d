@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { addComponent, addEntity, hasComponent, removeEntity } from 'bitecs';
 
-import { Logger } from '../logger';
 import { EntityMeta } from './BitECSComponents';
 import { componentRegistry, ComponentRegistry } from './ComponentRegistry';
 import {
@@ -31,7 +30,6 @@ export class EntityManager {
   private queries: EntityQueries | null = null;
   private world: any; // BitECS world - using any for compatibility with bitecs
   private componentRegistry: ComponentRegistry;
-  private logger = Logger.create('EntityManager');
   private isInstanceMode = false;
 
   constructor(world?: any, componentManager?: ComponentRegistry) {
@@ -239,7 +237,7 @@ export class EntityManager {
     setEntityMeta(eid, name, parentId);
 
     // Validate and set PersistentId
-    const finalPersistentId = this.validateAndSetPersistentId(eid, persistentId);
+    this.validateAndSetPersistentId(eid, persistentId);
 
     // Note: Transform component is now handled by the new ComponentRegistry system
     // The useEntityCreation hook will add it via componentManager.addComponent()

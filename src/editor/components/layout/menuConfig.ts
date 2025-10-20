@@ -43,7 +43,6 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
     onBrowsePrefabs,
     currentSceneName,
     isPlaying = false,
-    customShapes = [],
   } = config;
 
   return [
@@ -104,7 +103,7 @@ export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {
         },
         { divider: true },
         // Convert shared categories to menu items (including custom shapes)
-        ...buildGameObjectCategories(customShapes)
+        ...buildGameObjectCategories()
           .filter((cat) => cat.label !== 'Assets')
           .map((category) => ({
             label: category.label,

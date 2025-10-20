@@ -67,5 +67,5 @@ export const GeometryMetaSchema = z.object({
 });
 
 export type IGeometryMeta = z.infer<typeof GeometryMetaSchema>;
-export type IGeometryGroup = z.infer<typeof GeometryMetaSchema>['groups'][number];
+export type IGeometryGroup = NonNullable<z.infer<typeof GeometryMetaSchema>['groups']>[number];
 export type IGeometryBounds = z.infer<typeof GeometryMetaSchema>['bounds'];

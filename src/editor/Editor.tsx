@@ -33,13 +33,9 @@ import { useEntitySynchronization } from './hooks/useEntitySynchronization';
 import { useStreamingSceneActions } from './hooks/useStreamingSceneActions';
 import { useSceneInitialization } from './hooks/useSceneInitialization';
 import { useInputAssetSync } from './hooks/useInputAssetSync';
-import { Logger } from '@core/lib/logger';
 
 // Import types from centralized types file
 export type { ISceneObject, ITransform, ShapeType } from './types/shapes';
-
-// Create logger for editor timing
-const editorLogger = Logger.create('Editor:Main');
 
 const Editor: React.FC = () => {
   // Track editor initialization

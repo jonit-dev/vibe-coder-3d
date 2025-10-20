@@ -1,8 +1,5 @@
 import type { ISceneStore } from '../../../core/lib/serialization/common/ISceneStore';
-import {
-  sanitizeComponentName,
-  sanitizePascalCase,
-} from '../../../core/lib/serialization/common/NameUtils';
+import { sanitizeComponentName } from '../../../core/lib/serialization/common/NameUtils';
 import type { IMaterialDefinition } from '../../../core/materials/Material.types';
 import type { IPrefabDefinition } from '../../../core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '../../../core/lib/input/inputTypes';
