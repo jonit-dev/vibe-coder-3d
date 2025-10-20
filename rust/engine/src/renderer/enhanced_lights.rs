@@ -169,68 +169,78 @@ impl Light for EnhancedSpotLight {
 }
 
 /// Inject shadow bias and PCF (radius) into shadow shader code
-fn inject_shadow_enhancements(shader: &str, _i: u32, bias: f32, radius: f32) -> String {
-    // Replace simple shadow lookup with PCF-enhanced version
-    // This implements percentage-closer filtering for soft shadows
+fn inject_shadow_enhancements(shader: &str, i: u32, bias: f32, radius: f32) -> String {
+    let mut result = shader.to_string();
 
-    let shadow_code = if radius > 0.0 {
-        // PCF sampling with configurable radius
-        format!(
-            r#"
-    // Enhanced shadow mapping with bias and PCF
-    float calculate_shadow_pcf(vec4 shadow_coord, sampler2D shadow_map) {{
+    // Step 1: Inject global helper functions if not already present
+    if !result.contains("float calculate_shadow_pcf_helper") {
+        let helper_functions = r#"
+    // Global PCF shadow helper (injected once for all lights)
+    float calculate_shadow_pcf_helper(vec4 shadow_coord, sampler2D shadow_map, float pcf_radius, float bias_value) {
         vec3 proj_coords = shadow_coord.xyz / shadow_coord.w;
         vec2 shadow_uv = proj_coords.xy * 0.5 + 0.5;
         float current_depth = proj_coords.z;
 
         float shadow = 0.0;
         vec2 texel_size = 1.0 / vec2(textureSize(shadow_map, 0));
-        float pcf_radius = {};
-        float bias_value = {};
 
         // PCF kernel
-        for(float x = -pcf_radius; x <= pcf_radius; x += 1.0) {{
-            for(float y = -pcf_radius; y <= pcf_radius; y += 1.0) {{
+        for(float x = -pcf_radius; x <= pcf_radius; x += 1.0) {
+            for(float y = -pcf_radius; y <= pcf_radius; y += 1.0) {
                 vec2 offset = vec2(x, y) * texel_size;
                 float shadow_depth = texture(shadow_map, shadow_uv + offset).r;
                 shadow += (current_depth - bias_value > shadow_depth) ? 1.0 : 0.0;
-            }}
-        }}
+            }
+        }
 
         float kernel_size = (pcf_radius * 2.0 + 1.0) * (pcf_radius * 2.0 + 1.0);
         shadow /= kernel_size;
 
         return 1.0 - shadow;
-    }}
-            "#,
-            radius, bias
-        )
-    } else {
-        // Simple shadow with bias
-        format!(
-            r#"
-    // Shadow mapping with bias
-    float calculate_shadow_bias(vec4 shadow_coord, sampler2D shadow_map) {{
+    }
+
+    float calculate_shadow_simple_helper(vec4 shadow_coord, sampler2D shadow_map, float bias_value) {
         vec3 proj_coords = shadow_coord.xyz / shadow_coord.w;
         vec2 shadow_uv = proj_coords.xy * 0.5 + 0.5;
         float current_depth = proj_coords.z;
-        float bias_value = {};
 
         float shadow_depth = texture(shadow_map, shadow_uv).r;
         float shadow = (current_depth - bias_value > shadow_depth) ? 1.0 : 0.0;
 
         return 1.0 - shadow;
-    }}
-            "#,
-            bias
+    }
+"#;
+
+        // Inject before the first calculate_lighting function
+        result = result.replace(
+            "vec3 calculate_lighting",
+            &format!("{}\n    vec3 calculate_lighting", helper_functions),
+        );
+    }
+
+    // Step 2: Replace the calculate_shadow call for this specific light
+    let old_shadow_call = format!(
+        "calculate_shadow(lightDirection, normal, shadowMap{}, shadowMVP{}, position)",
+        i, i
+    );
+
+    let new_shadow_call = if radius > 0.0 {
+        // Use PCF with the configured radius
+        format!(
+            "calculate_shadow_pcf_helper(shadowMVP{} * vec4(position, 1.0), shadowMap{}, {}, {})",
+            i, i, radius, bias
+        )
+    } else {
+        // Use simple shadow with bias
+        format!(
+            "calculate_shadow_simple_helper(shadowMVP{} * vec4(position, 1.0), shadowMap{}, {})",
+            i, i, bias
         )
     };
 
-    // Insert shadow helper function before the calculate_lighting function
-    shader.replace(
-        "vec3 calculate_lighting",
-        &format!("{}\n    vec3 calculate_lighting", shadow_code),
-    )
+    result = result.replace(&old_shadow_call, &new_shadow_call);
+
+    result
 }
 
 /// Inject penumbra (soft edge) into spot light shader
