@@ -84,19 +84,8 @@ impl SkyboxRenderer {
         log::info!("  Repeat: {:?}", config.skybox_repeat);
         log::info!("  Offset: {:?}", config.skybox_offset);
 
-        // Resolve path: /assets/... -> ../game/assets/... (same as texture loading)
-        let resolved_path = if texture_path.starts_with("/assets/") {
-            format!("../game{}", texture_path)
-        } else if texture_path.starts_with("assets/") {
-            format!("../game/{}", texture_path)
-        } else {
-            texture_path.to_string()
-        };
-
-        log::debug!("Resolved skybox path: {} -> {}", texture_path, resolved_path);
-
         // Load texture via three-d asset loader
-        let mut loaded = match three_d_asset::io::load_async(&[&resolved_path]).await {
+        let mut loaded = match three_d_asset::io::load_async(&[texture_path]).await {
             Ok(assets) => assets,
             Err(err) => {
                 log::warn!(

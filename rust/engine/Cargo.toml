@@ -32,7 +32,7 @@ parry3d = "0.13"
 # Core rendering (three-d)
 winit = "0.28"
 three-d = "0.17"
-three-d-asset = { version = "0.7", features = ["png", "jpeg"] }
+three-d-asset = "0.7"
 
 # Math
 glam = { version = "0.27", features = ["serde"] }

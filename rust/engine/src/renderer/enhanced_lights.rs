@@ -125,12 +125,12 @@ impl Light for EnhancedDirectionalLight {
         // Get base shader from inner light
         let base = self.inner.shader_source(i);
 
-        // NOTE: Shadow enhancements (bias/PCF) are currently not injected because:
-        // 1. three-d's shader uses calculate_shadow(), not our custom calculate_shadow_pcf()
-        // 2. Multiple lights cause function redefinition errors
-        // 3. This feature needs deeper integration with three-d's shadow system
-        // TODO: Implement proper shadow customization via three-d's API or custom material shader
-        base
+        // If shadows are enabled, inject custom bias and PCF
+        if base.contains("shadowMap") {
+            inject_shadow_enhancements(&base, i, self.shadow_bias, self.shadow_radius)
+        } else {
+            base
+        }
     }
 
     fn use_uniforms(&self, program: &Program, i: u32) {
@@ -151,8 +151,12 @@ impl Light for EnhancedSpotLight {
         // Inject penumbra soft edge
         let with_penumbra = inject_penumbra(&base, i, self.penumbra);
 
-        // NOTE: Shadow enhancements disabled (same reason as EnhancedDirectionalLight)
-        with_penumbra
+        // If shadows are enabled, inject custom bias and PCF
+        if with_penumbra.contains("shadowMap") {
+            inject_shadow_enhancements(&with_penumbra, i, self.shadow_bias, self.shadow_radius)
+        } else {
+            with_penumbra
+        }
     }
 
     fn use_uniforms(&self, program: &Program, i: u32) {
@@ -165,17 +169,16 @@ impl Light for EnhancedSpotLight {
 }
 
 /// Inject shadow bias and PCF (radius) into shadow shader code
-fn inject_shadow_enhancements(shader: &str, i: u32, bias: f32, radius: f32) -> String {
+fn inject_shadow_enhancements(shader: &str, _i: u32, bias: f32, radius: f32) -> String {
     // Replace simple shadow lookup with PCF-enhanced version
     // This implements percentage-closer filtering for soft shadows
-    // Function name includes light index to prevent redefinition errors when multiple lights cast shadows
 
     let shadow_code = if radius > 0.0 {
         // PCF sampling with configurable radius
         format!(
             r#"
-    // Enhanced shadow mapping with bias and PCF (light {})
-    float calculate_shadow_pcf_{}(vec4 shadow_coord, sampler2D shadow_map) {{
+    // Enhanced shadow mapping with bias and PCF
+    float calculate_shadow_pcf(vec4 shadow_coord, sampler2D shadow_map) {{
         vec3 proj_coords = shadow_coord.xyz / shadow_coord.w;
         vec2 shadow_uv = proj_coords.xy * 0.5 + 0.5;
         float current_depth = proj_coords.z;
@@ -200,7 +203,7 @@ fn inject_shadow_enhancements(shader: &str, i: u32, bias: f32, radius: f32) -> S
         return 1.0 - shadow;
     }}
             "#,
-            i, i, radius, bias
+            radius, bias
         )
     } else {
         // Simple shadow with bias
