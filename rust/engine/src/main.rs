@@ -46,11 +46,11 @@ struct Args {
     screenshot_delay: u64,
 
     /// Screenshot scale factor (0.1 to 1.0) - reduces resolution to save tokens
-    #[arg(long, default_value_t = 0.3)]
+    #[arg(long, default_value_t = 0.8)]
     screenshot_scale: f32,
 
     /// JPEG quality (1-100) - only applies if output path ends with .jpg/.jpeg
-    #[arg(long, default_value_t = 65)]
+    #[arg(long, default_value_t = 85)]
     screenshot_quality: u8,
 }
 
@@ -127,13 +127,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
         let output_path = if let Some(path) = args.screenshot_path {
             path
         } else {
-            // Default screenshot path: screenshots/<scene_name>.jpg (optimized for LLM token usage)
-            let scene_name = if args.scene != "Default" {
-                args.scene.replace(".tsx", "").replace(".json", "")
-            } else {
-                "Default".to_string()
-            };
-            PathBuf::from(format!("screenshots/{}.jpg", scene_name))
+            default_screenshot_path(&args.scene)
         };
 
         // Validate screenshot scale
@@ -163,4 +157,48 @@ async fn run(args: Args) -> anyhow::Result<()> {
     app.run(event_loop);
 
     Ok(())
+}
+
+fn default_screenshot_path(scene: &str) -> PathBuf {
+    let scene_name = if scene != "Default" {
+        scene.replace(".tsx", "").replace(".json", "")
+    } else {
+        "Default".to_string()
+    };
+
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("screenshots")
+        .join(format!("{}.jpg", scene_name))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_path_for_scene_json() {
+        let path = default_screenshot_path("TestScene.json");
+        let expected = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("screenshots")
+            .join("TestScene.jpg");
+        assert_eq!(path, expected);
+    }
+
+    #[test]
+    fn default_path_for_scene_tsx() {
+        let path = default_screenshot_path("Showcase.tsx");
+        let expected = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("screenshots")
+            .join("Showcase.jpg");
+        assert_eq!(path, expected);
+    }
+
+    #[test]
+    fn default_path_for_default_scene() {
+        let path = default_screenshot_path("Default");
+        let expected = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("screenshots")
+            .join("Default.jpg");
+        assert_eq!(path, expected);
+    }
 }

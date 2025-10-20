@@ -76,16 +76,39 @@ pub async fn load_instanced(
         let instance_scale = scale_to_vec3_opt(instance_data.scale.as_ref());
 
         // Create instance transform matrix
-        let instance_matrix =
-            glam::Mat4::from_scale_rotation_translation(instance_scale, instance_rotation, instance_position);
+        let instance_matrix = glam::Mat4::from_scale_rotation_translation(
+            instance_scale,
+            instance_rotation,
+            instance_position,
+        );
 
         // Combine entity transform with instance transform
         // Convert three_d::Mat4 (cgmath) to glam::Mat4 for multiplication
         let entity_array = [
-            [entity_transform.matrix.x.x, entity_transform.matrix.x.y, entity_transform.matrix.x.z, entity_transform.matrix.x.w],
-            [entity_transform.matrix.y.x, entity_transform.matrix.y.y, entity_transform.matrix.y.z, entity_transform.matrix.y.w],
-            [entity_transform.matrix.z.x, entity_transform.matrix.z.y, entity_transform.matrix.z.z, entity_transform.matrix.z.w],
-            [entity_transform.matrix.w.x, entity_transform.matrix.w.y, entity_transform.matrix.w.z, entity_transform.matrix.w.w],
+            [
+                entity_transform.matrix.x.x,
+                entity_transform.matrix.x.y,
+                entity_transform.matrix.x.z,
+                entity_transform.matrix.x.w,
+            ],
+            [
+                entity_transform.matrix.y.x,
+                entity_transform.matrix.y.y,
+                entity_transform.matrix.y.z,
+                entity_transform.matrix.y.w,
+            ],
+            [
+                entity_transform.matrix.z.x,
+                entity_transform.matrix.z.y,
+                entity_transform.matrix.z.z,
+                entity_transform.matrix.z.w,
+            ],
+            [
+                entity_transform.matrix.w.x,
+                entity_transform.matrix.w.y,
+                entity_transform.matrix.w.z,
+                entity_transform.matrix.w.w,
+            ],
         ];
         let entity_matrix_glam = glam::Mat4::from_cols_array_2d(&entity_array);
         let final_matrix_glam = entity_matrix_glam * instance_matrix;
@@ -135,7 +158,10 @@ pub async fn load_instanced(
     }
 
     if instanced.instances.len() > 5 {
-        log::info!("    ... and {} more instances", instanced.instances.len() - 5);
+        log::info!(
+            "    ... and {} more instances",
+            instanced.instances.len() - 5
+        );
     }
 
     Ok(result)
@@ -213,12 +239,7 @@ mod tests {
 
         // Verify rotation (degrees → radians conversion)
         let rotation = rotation_to_quat_array_opt(instance.rotation.as_ref());
-        let expected = glam::Quat::from_euler(
-            glam::EulerRot::XYZ,
-            90.0_f32.to_radians(),
-            0.0,
-            0.0,
-        );
+        let expected = glam::Quat::from_euler(glam::EulerRot::XYZ, 90.0_f32.to_radians(), 0.0, 0.0);
         assert!((rotation.x - expected.x).abs() < 0.001);
         assert!((rotation.y - expected.y).abs() < 0.001);
         assert!((rotation.z - expected.z).abs() < 0.001);

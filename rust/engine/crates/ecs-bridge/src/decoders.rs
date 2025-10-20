@@ -924,9 +924,9 @@ pub struct Sound {
     #[serde(default = "default_false")]
     pub autoplay: bool,
     #[serde(default = "default_false")]
-    pub loop_: bool,  // 'loop' is a Rust keyword, use loop_
+    pub loop_: bool, // 'loop' is a Rust keyword, use loop_
     #[serde(rename = "loop", default = "default_false")]
-    _loop_serde: bool,  // For correct serde deserialization
+    _loop_serde: bool, // For correct serde deserialization
     #[serde(default = "default_volume")]
     pub volume: f32,
     #[serde(default = "default_pitch")]

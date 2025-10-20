@@ -264,9 +264,9 @@ mod tests {
             sound_pos,
             sound_direction,
             listener_pos,
-            45.0,  // inner angle
-            90.0,  // outer angle
-            0.1,   // outer gain
+            45.0, // inner angle
+            90.0, // outer angle
+            0.1,  // outer gain
         );
 
         // Should be full volume (1.0) inside inner cone

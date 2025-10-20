@@ -16,12 +16,7 @@ use super::Mesh;
 /// * `radius_inner` - Inner radius between points (default: 0.25)
 /// * `num_points` - Number of star points (default: 5)
 /// * `depth` - Extrusion depth (default: 0.2)
-pub fn create_star(
-    radius_outer: f32,
-    radius_inner: f32,
-    num_points: u32,
-    depth: f32,
-) -> Mesh {
+pub fn create_star(radius_outer: f32, radius_inner: f32, num_points: u32, depth: f32) -> Mesh {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
 
@@ -50,7 +45,11 @@ pub fn create_star(
     for point in &profile_points {
         let u = (point[0] / radius_outer + 1.0) / 2.0;
         let v = (point[1] / radius_outer + 1.0) / 2.0;
-        vertices.push(vertex_pnu([point[0], point[1], half_depth], front_normal, [u, v]));
+        vertices.push(vertex_pnu(
+            [point[0], point[1], half_depth],
+            front_normal,
+            [u, v],
+        ));
     }
 
     // Front face triangles (fan from center)
@@ -72,7 +71,11 @@ pub fn create_star(
     for point in &profile_points {
         let u = (point[0] / radius_outer + 1.0) / 2.0;
         let v = (point[1] / radius_outer + 1.0) / 2.0;
-        vertices.push(vertex_pnu([point[0], point[1], -half_depth], back_normal, [u, v]));
+        vertices.push(vertex_pnu(
+            [point[0], point[1], -half_depth],
+            back_normal,
+            [u, v],
+        ));
     }
 
     // Back face triangles (fan from center, reversed winding)
@@ -156,7 +159,11 @@ pub fn create_heart(size: f32, depth: f32, segments: u32) -> Mesh {
     for point in &profile_points {
         let u = (point[0] / size + 1.0) / 2.0;
         let v = (point[1] / size + 1.0) / 2.0;
-        vertices.push(vertex_pnu([point[0], point[1], half_depth], front_normal, [u, v]));
+        vertices.push(vertex_pnu(
+            [point[0], point[1], half_depth],
+            front_normal,
+            [u, v],
+        ));
     }
 
     for i in 0..segments {
@@ -176,15 +183,15 @@ pub fn create_heart(size: f32, depth: f32, segments: u32) -> Mesh {
     for point in &profile_points {
         let u = (point[0] / size + 1.0) / 2.0;
         let v = (point[1] / size + 1.0) / 2.0;
-        vertices.push(vertex_pnu([point[0], point[1], -half_depth], back_normal, [u, v]));
+        vertices.push(vertex_pnu(
+            [point[0], point[1], -half_depth],
+            back_normal,
+            [u, v],
+        ));
     }
 
     for i in 0..segments {
-        indices.extend_from_slice(&[
-            back_base_idx,
-            back_base_idx + i + 2,
-            back_base_idx + i + 1,
-        ]);
+        indices.extend_from_slice(&[back_base_idx, back_base_idx + i + 2, back_base_idx + i + 1]);
     }
 
     // Side faces
@@ -262,11 +269,7 @@ pub fn create_diamond(radius: f32, height: f32, table_ratio: f32, segments: u32)
     // Table triangles
     for i in 0..segments {
         let next = (i + 1) % segments;
-        indices.extend_from_slice(&[
-            table_center_idx,
-            table_base_idx + i,
-            table_base_idx + next,
-        ]);
+        indices.extend_from_slice(&[table_center_idx, table_base_idx + i, table_base_idx + next]);
     }
 
     // Girdle (widest point)
@@ -278,8 +281,13 @@ pub fn create_diamond(radius: f32, height: f32, table_ratio: f32, segments: u32)
 
         // Normal points outward and slightly up
         let normal = [x / radius, 0.3, z / radius];
-        let normal_len = (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
-        let normal = [normal[0] / normal_len, normal[1] / normal_len, normal[2] / normal_len];
+        let normal_len =
+            (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
+        let normal = [
+            normal[0] / normal_len,
+            normal[1] / normal_len,
+            normal[2] / normal_len,
+        ];
 
         let u = i as f32 / segments as f32;
         vertices.push(vertex_pnu([x, girdle_y, z], normal, [u, 0.5]));
@@ -318,8 +326,13 @@ pub fn create_diamond(radius: f32, height: f32, table_ratio: f32, segments: u32)
             v1[2] * v2[0] - v1[0] * v2[2],
             v1[0] * v2[1] - v1[1] * v2[0],
         ];
-        let normal_len = (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
-        let normal = [normal[0] / normal_len, normal[1] / normal_len, normal[2] / normal_len];
+        let normal_len =
+            (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
+        let normal = [
+            normal[0] / normal_len,
+            normal[1] / normal_len,
+            normal[2] / normal_len,
+        ];
 
         let crown_base = vertices.len() as u32;
         vertices.push(vertex_pnu(p1, normal, [0.0, 0.0]));
@@ -339,7 +352,11 @@ pub fn create_diamond(radius: f32, height: f32, table_ratio: f32, segments: u32)
 
     // Bottom point (culet)
     let culet_idx = vertices.len() as u32;
-    vertices.push(vertex_pnu([0.0, culet_y, 0.0], [0.0, -1.0, 0.0], [0.5, 0.5]));
+    vertices.push(vertex_pnu(
+        [0.0, culet_y, 0.0],
+        [0.0, -1.0, 0.0],
+        [0.5, 0.5],
+    ));
 
     // Pavilion facets (girdle to culet)
     for i in 0..segments {
@@ -359,8 +376,13 @@ pub fn create_diamond(radius: f32, height: f32, table_ratio: f32, segments: u32)
             v1[2] * v2[0] - v1[0] * v2[2],
             v1[0] * v2[1] - v1[1] * v2[0],
         ];
-        let normal_len = (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
-        let normal = [normal[0] / normal_len, normal[1] / normal_len, normal[2] / normal_len];
+        let normal_len =
+            (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]).sqrt();
+        let normal = [
+            normal[0] / normal_len,
+            normal[1] / normal_len,
+            normal[2] / normal_len,
+        ];
 
         let pavilion_base = vertices.len() as u32;
         vertices.push(vertex_pnu(p1, normal, [0.0, 0.0]));

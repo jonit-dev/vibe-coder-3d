@@ -2,7 +2,6 @@
 ///
 /// This module provides audio loading capabilities when the `audio-support` feature is enabled.
 /// When disabled, it provides stub implementations that log warnings.
-
 use anyhow::Result;
 use log::{debug, warn};
 use vibe_ecs_bridge::Sound;
@@ -84,7 +83,10 @@ impl AudioLoader {
                     Ok(())
                 }
                 Err(e) => {
-                    warn!("Failed to load sound '{}' for entity {}: {}", sound.audioPath, entity_id, e);
+                    warn!(
+                        "Failed to load sound '{}' for entity {}: {}",
+                        sound.audioPath, entity_id, e
+                    );
                     // Don't fail the whole scene load just because one sound failed
                     Ok(())
                 }
@@ -93,7 +95,10 @@ impl AudioLoader {
 
         #[cfg(not(feature = "audio-support"))]
         {
-            debug!("Audio support disabled - would load sound: {}", sound.audioPath);
+            debug!(
+                "Audio support disabled - would load sound: {}",
+                sound.audioPath
+            );
             Ok(())
         }
     }
@@ -134,7 +139,13 @@ impl AudioLoader {
         listener_forward: Vec3,
     ) {
         for (entity_id, sound, sound_pos) in sounds {
-            self.update_spatial_sound(*entity_id, sound, *sound_pos, listener_pos, listener_forward);
+            self.update_spatial_sound(
+                *entity_id,
+                sound,
+                *sound_pos,
+                listener_pos,
+                listener_forward,
+            );
         }
     }
 

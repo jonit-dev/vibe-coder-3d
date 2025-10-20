@@ -93,7 +93,11 @@ pub fn create_tree(
         let angle = i as f32 * angle_step;
         let x = trunk_radius * angle.cos();
         let z = trunk_radius * angle.sin();
-        vertices.push(vertex_pnu([x, trunk_height, z], [0.0, 1.0, 0.0], [0.0, 0.0]));
+        vertices.push(vertex_pnu(
+            [x, trunk_height, z],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0],
+        ));
     }
 
     for i in 0..segments {
@@ -122,7 +126,11 @@ pub fn create_tree(
         let angle = i as f32 * angle_step;
         let x = foliage_radius * angle.cos();
         let z = foliage_radius * angle.sin();
-        vertices.push(vertex_pnu([x, foliage_base_y, z], [0.0, -1.0, 0.0], [0.0, 0.0]));
+        vertices.push(vertex_pnu(
+            [x, foliage_base_y, z],
+            [0.0, -1.0, 0.0],
+            [0.0, 0.0],
+        ));
     }
 
     for i in 0..segments {
@@ -267,7 +275,11 @@ pub fn create_rock(radius: f32, irregularity: f32, segments: u32) -> Mesh {
     let last_ring_start = 1 + (rings - 2) * sectors;
     for sector in 0..sectors {
         let next_sector = (sector + 1) % sectors;
-        indices.extend_from_slice(&[bottom_idx, last_ring_start + next_sector, last_ring_start + sector]);
+        indices.extend_from_slice(&[
+            bottom_idx,
+            last_ring_start + next_sector,
+            last_ring_start + sector,
+        ]);
     }
 
     Mesh::new(vertices, indices)
@@ -354,8 +366,16 @@ pub fn create_grass(blade_width: f32, blade_height: f32, num_blades: u32) -> Mes
 
         vertices.push(vertex_pnu([bx1, 0.0, bz1], back_normal, [0.0, 0.0]));
         vertices.push(vertex_pnu([bx2, 0.0, bz2], back_normal, [1.0, 0.0]));
-        vertices.push(vertex_pnu([tx2, blade_height, tz2], back_normal, [1.0, 1.0]));
-        vertices.push(vertex_pnu([tx1, blade_height, tz1], back_normal, [0.0, 1.0]));
+        vertices.push(vertex_pnu(
+            [tx2, blade_height, tz2],
+            back_normal,
+            [1.0, 1.0],
+        ));
+        vertices.push(vertex_pnu(
+            [tx1, blade_height, tz1],
+            back_normal,
+            [0.0, 1.0],
+        ));
 
         indices.extend_from_slice(&[
             back_base,

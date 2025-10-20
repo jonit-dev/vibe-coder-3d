@@ -172,8 +172,16 @@ impl Light for EnhancedSpotLight {
 fn inject_shadow_enhancements(shader: &str, i: u32, bias: f32, radius: f32) -> String {
     let mut result = shader.to_string();
 
-    // Step 1: Inject global helper functions if not already present
-    if !result.contains("float calculate_shadow_pcf_helper") {
+    // Step 1: Replace the calculate_shadow call for this specific light
+    let old_shadow_call = format!(
+        "calculate_shadow(lightDirection, normal, shadowMap{}, shadowMVP{}, position)",
+        i, i
+    );
+
+    // Check if this is the FIRST light (i == 0) to inject global helpers
+    let inject_helpers = i == 0 && !result.contains("float calculate_shadow_pcf_helper");
+
+    if inject_helpers {
         let helper_functions = r#"
     // Global PCF shadow helper (injected once for all lights)
     float calculate_shadow_pcf_helper(vec4 shadow_coord, sampler2D shadow_map, float pcf_radius, float bias_value) {
@@ -213,17 +221,12 @@ fn inject_shadow_enhancements(shader: &str, i: u32, bias: f32, radius: f32) -> S
 
         // Inject before the first calculate_lighting function
         result = result.replace(
-            "vec3 calculate_lighting",
-            &format!("{}\n    vec3 calculate_lighting", helper_functions),
+            &format!("vec3 calculate_lighting{}", i),
+            &format!("{}\n    vec3 calculate_lighting{}", helper_functions, i),
         );
     }
 
-    // Step 2: Replace the calculate_shadow call for this specific light
-    let old_shadow_call = format!(
-        "calculate_shadow(lightDirection, normal, shadowMap{}, shadowMVP{}, position)",
-        i, i
-    );
-
+    // Step 2: Now replace the shadow call with the enhanced version
     let new_shadow_call = if radius > 0.0 {
         // Use PCF with the configured radius
         format!(

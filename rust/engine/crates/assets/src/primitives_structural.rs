@@ -289,7 +289,10 @@ mod tests {
     #[test]
     fn test_spiral_stairs_vertex_count() {
         let mesh = create_spiral_stairs(1.0, 2.0, 12, 1.0);
-        assert!(mesh.vertices.len() > 0, "Spiral stairs should have vertices");
+        assert!(
+            mesh.vertices.len() > 0,
+            "Spiral stairs should have vertices"
+        );
         assert!(mesh.indices.len() > 0, "Spiral stairs should have indices");
     }
 }

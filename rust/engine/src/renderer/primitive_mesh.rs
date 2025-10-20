@@ -123,7 +123,8 @@ pub fn create_primitive_mesh(mesh_id: Option<&str>) -> CpuMesh {
             mesh if mesh.contains("trapezoid") || mesh == "Trapezoid" => {
                 log::info!("    Creating:    Trapezoid (truncated cylinder, 4 segments)");
                 // Trapezoid uses cylinder with 4 segments and different radii
-                let vibe_mesh = vibe_assets::CylindricalBuilder::truncated_cone(0.3, 0.7, 1.0, 4).build();
+                let vibe_mesh =
+                    vibe_assets::CylindricalBuilder::truncated_cone(0.3, 0.7, 1.0, 4).build();
                 convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
             mesh if mesh.contains("prism") || mesh == "Prism" => {
@@ -154,7 +155,9 @@ pub fn create_primitive_mesh(mesh_id: Option<&str>) -> CpuMesh {
                 let vibe_mesh = vibe_assets::create_stairs(1.0, 1.0, 1.0, 5);
                 convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }
-            mesh if mesh.contains("spiralstairs") || mesh.contains("spiral") && mesh.contains("stair") => {
+            mesh if mesh.contains("spiralstairs")
+                || mesh.contains("spiral") && mesh.contains("stair") =>
+            {
                 log::info!("    Creating:    Spiral Stairs (12 steps, 1 turn)");
                 let vibe_mesh = vibe_assets::create_spiral_stairs(1.0, 2.0, 12, 1.0);
                 convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)

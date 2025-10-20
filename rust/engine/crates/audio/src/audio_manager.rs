@@ -50,8 +50,8 @@ pub struct AudioManager {
 impl AudioManager {
     /// Create a new audio manager
     pub fn new() -> Result<Self> {
-        let (stream, stream_handle) = OutputStream::try_default()
-            .context("Failed to create audio output stream")?;
+        let (stream, stream_handle) =
+            OutputStream::try_default().context("Failed to create audio output stream")?;
 
         debug!("AudioManager initialized successfully");
 
@@ -68,12 +68,11 @@ impl AudioManager {
         debug!("Loading sound: {}", path);
 
         // Create a sink for this sound
-        let sink = Sink::try_new(&self.stream_handle)
-            .context("Failed to create audio sink")?;
+        let sink = Sink::try_new(&self.stream_handle).context("Failed to create audio sink")?;
 
         // Load the audio file
-        let file = File::open(path)
-            .with_context(|| format!("Failed to open audio file: {}", path))?;
+        let file =
+            File::open(path).with_context(|| format!("Failed to open audio file: {}", path))?;
 
         let source = Decoder::new(BufReader::new(file))
             .with_context(|| format!("Failed to decode audio file: {}", path))?;
@@ -99,7 +98,11 @@ impl AudioManager {
             },
         );
 
-        debug!("Sound loaded successfully: {} (handle: {})", path, handle.id());
+        debug!(
+            "Sound loaded successfully: {} (handle: {})",
+            path,
+            handle.id()
+        );
 
         Ok(handle)
     }
@@ -153,7 +156,10 @@ impl AudioManager {
     pub fn set_looping(&mut self, handle: SoundHandle, looping: bool) {
         // Note: rodio doesn't support changing looping after appending
         // This would need to be set when loading the sound
-        warn!("set_looping not fully supported - requires reload. Handle: {}", handle.id());
+        warn!(
+            "set_looping not fully supported - requires reload. Handle: {}",
+            handle.id()
+        );
     }
 
     /// Set stereo pan (-1.0 = left, 0.0 = center, 1.0 = right)
@@ -165,7 +171,11 @@ impl AudioManager {
         if let Some(_data) = self.sounds.get(&handle) {
             // Rodio doesn't have built-in panning, would need custom implementation
             // For now, this is a placeholder
-            debug!("Pan requested for handle {}: {} (not fully implemented)", handle.id(), pan);
+            debug!(
+                "Pan requested for handle {}: {} (not fully implemented)",
+                handle.id(),
+                pan
+            );
         }
     }
 

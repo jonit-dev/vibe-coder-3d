@@ -49,11 +49,19 @@ impl AppThreeD {
         // CRITICAL: Force resize to actual monitor size for fullscreen windows
         // Fullscreen borderless windows report wrong size initially
         let actual_size = window.inner_size();
-        log::info!("Window inner_size reports: {}x{}", actual_size.width, actual_size.height);
+        log::info!(
+            "Window inner_size reports: {}x{}",
+            actual_size.width,
+            actual_size.height
+        );
 
         if let Some(monitor) = window.current_monitor() {
             let monitor_size = monitor.size();
-            log::info!("Actual monitor size: {}x{}", monitor_size.width, monitor_size.height);
+            log::info!(
+                "Actual monitor size: {}x{}",
+                monitor_size.width,
+                monitor_size.height
+            );
             renderer.resize(monitor_size.width, monitor_size.height);
         } else {
             log::warn!("Could not detect monitor, using window-reported size");
@@ -102,11 +110,19 @@ impl AppThreeD {
         // CRITICAL: Force resize to actual monitor size for fullscreen windows
         // Fullscreen borderless windows report wrong size initially
         let actual_size = window.inner_size();
-        log::info!("Window inner_size reports: {}x{}", actual_size.width, actual_size.height);
+        log::info!(
+            "Window inner_size reports: {}x{}",
+            actual_size.width,
+            actual_size.height
+        );
 
         if let Some(monitor) = window.current_monitor() {
             let monitor_size = monitor.size();
-            log::info!("Actual monitor size: {}x{}", monitor_size.width, monitor_size.height);
+            log::info!(
+                "Actual monitor size: {}x{}",
+                monitor_size.width,
+                monitor_size.height
+            );
             renderer.resize(monitor_size.width, monitor_size.height);
         } else {
             log::warn!("Could not detect monitor, using window-reported size");
@@ -216,9 +232,9 @@ impl AppThreeD {
 
         // Render multiple frames to ensure everything is initialized and loaded
         let num_warmup_frames = if delay_ms > 0 {
-            (delay_ms / 16).max(1) as u32  // ~60fps, minimum 1 frame
+            (delay_ms / 16).max(1) as u32 // ~60fps, minimum 1 frame
         } else {
-            5  // Default: render 5 frames
+            5 // Default: render 5 frames
         };
 
         log::info!("Rendering {} warmup frames...", num_warmup_frames);

@@ -67,7 +67,9 @@ impl AudioSystem {
             rolloff_factor,
         );
 
-        let pan = self.spatial.calculate_pan(sound_pos, listener_pos, listener_forward);
+        let pan = self
+            .spatial
+            .calculate_pan(sound_pos, listener_pos, listener_forward);
 
         self.manager.set_volume(handle, volume);
         self.manager.set_pan(handle, pan);
@@ -122,9 +124,9 @@ mod tests {
         let volume = system.spatial.calculate_volume(
             sound_pos,
             listener_pos,
-            1.0,  // min_distance
+            1.0,   // min_distance
             100.0, // max_distance
-            1.0,  // rolloff_factor
+            1.0,   // rolloff_factor
         );
 
         // Volume should be less than 1.0 at distance 10
@@ -141,7 +143,9 @@ mod tests {
         let listener_pos = Vec3::ZERO;
         let listener_forward = Vec3::Z;
 
-        let pan = system.spatial.calculate_pan(sound_pos, listener_pos, listener_forward);
+        let pan = system
+            .spatial
+            .calculate_pan(sound_pos, listener_pos, listener_forward);
 
         // Pan should be positive (to the right)
         assert!(pan > 0.0);

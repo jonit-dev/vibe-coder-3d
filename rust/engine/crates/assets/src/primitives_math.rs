@@ -47,7 +47,8 @@ pub fn create_helix(
         let tangent_x = -radius * angle.sin();
         let tangent_y = height_step * total_segments as f32 / (2.0 * PI * coils);
         let tangent_z = radius * angle.cos();
-        let tangent_len = (tangent_x * tangent_x + tangent_y * tangent_y + tangent_z * tangent_z).sqrt();
+        let tangent_len =
+            (tangent_x * tangent_x + tangent_y * tangent_y + tangent_z * tangent_z).sqrt();
         let tangent = [
             tangent_x / tangent_len,
             tangent_y / tangent_len,
@@ -191,10 +192,7 @@ mod tests {
     #[test]
     fn test_mobius_strip_has_vertices() {
         let mesh = create_mobius_strip(0.5, 0.3, 64);
-        assert!(
-            mesh.vertices.len() > 0,
-            "Mobius strip should have vertices"
-        );
+        assert!(mesh.vertices.len() > 0, "Mobius strip should have vertices");
         assert!(mesh.indices.len() > 0, "Mobius strip should have indices");
     }
 
