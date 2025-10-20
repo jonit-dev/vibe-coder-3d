@@ -39,7 +39,8 @@
     "rust:build": "cargo build --manifest-path rust/engine/Cargo.toml",
     "rust:build:release": "cargo build --release --manifest-path rust/engine/Cargo.toml",
     "rust:check": "cargo check --manifest-path rust/engine/Cargo.toml",
-    "rust:clean": "cargo clean --manifest-path rust/engine/Cargo.toml"
+    "rust:clean": "cargo clean --manifest-path rust/engine/Cargo.toml",
+    "render:geometry": "node scripts/render-geometry.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -109,6 +110,7 @@
     "lint-staged": "^15.5.1",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
+    "puppeteer": "^24.25.0",
     "tailwindcss": "^4.1.4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.0",

@@ -20,3 +20,6 @@ glam = "0.27"
 
 # Internal dependencies
 vibe-scene = { path = "../scene" }
+
+[dev-dependencies]
+vibe-assets = { path = "../assets" }

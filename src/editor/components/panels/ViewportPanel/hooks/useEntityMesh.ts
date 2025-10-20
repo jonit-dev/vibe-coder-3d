@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMaterialById } from '@/editor/store/materialsStore';
 import type { MeshRendererData } from '@/core/lib/ecs/components/definitions/MeshRendererComponent';
+import type { GeometryAssetData } from '@/core/lib/ecs/components/definitions';
 import { Logger } from '@/core/lib/logger';
 
 import {
@@ -75,13 +76,29 @@ export const useEntityMesh = ({
     return combineRenderingContributions(entityComponents) as unknown as IRenderingContributions;
   }, [entityComponents]);
 
+  const meshRenderer = useMemo(
+    () =>
+      entityComponents.find((c) => c.type === 'MeshRenderer')?.data as
+        | MeshRendererData
+        | undefined,
+    [entityComponents],
+  );
+
+  const geometryAsset = useMemo(
+    () =>
+      entityComponents.find((c) => c.type === 'GeometryAsset')?.data as
+        | GeometryAssetData
+        | undefined,
+    [entityComponents],
+  );
+
   // Extract materialId first to use in atomic selector
   const materialId = useMemo(() => {
-    const meshRenderer = entityComponents.find((c) => c.type === 'MeshRenderer')?.data as
-      | MeshRendererData
-      | undefined;
+    if (geometryAsset?.materialId?.length) {
+      return geometryAsset.materialId;
+    }
     return meshRenderer?.materialId || 'default';
-  }, [entityComponents]);
+  }, [geometryAsset, meshRenderer]);
 
   // PERFORMANCE: Use atomic selector - only subscribes to THIS material, not all materials
   // This prevents re-renders when other materials change
@@ -90,10 +107,6 @@ export const useEntityMesh = ({
   // Merge base material asset (by materialId) with inline overrides for rendering
   const renderingContributions = useMemo<IRenderingContributions>(() => {
     // Read MeshRenderer data directly for overrides
-    const meshRenderer = entityComponents.find((c) => c.type === 'MeshRenderer')?.data as
-      | MeshRendererData
-      | undefined;
-
     if (!baseDef && materialId !== 'default') {
       logger.warn(`Material not found in registry: ${materialId}`);
     }
@@ -139,7 +152,7 @@ export const useEntityMesh = ({
         ...filteredOverrides,
       },
     };
-  }, [entityComponents, baseContributions, baseDef]);
+  }, [meshRenderer, baseContributions, baseDef]);
 
   const physicsContributions = useMemo<IPhysicsContributions>(() => {
     return combinePhysicsContributions(entityComponents) as unknown as IPhysicsContributions;

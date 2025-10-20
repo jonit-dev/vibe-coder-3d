@@ -9,18 +9,15 @@ import {
   TbCube,
   TbCylinder,
   TbDiamond,
-  TbHeart,
   TbHexagon,
   TbLamp,
   TbMath,
   TbMountain,
   TbOctagon,
-  TbPlus,
   TbPyramid,
   TbRectangle,
   TbShape,
   TbSphere,
-  TbSpiral,
   TbSquare,
   TbStar,
   TbTriangle,
@@ -132,27 +129,6 @@ export const GAME_OBJECT_CATEGORIES: IGameObjectCategory[] = [
     ],
   },
   {
-    label: 'Mathematical Shapes',
-    icon: <TbMath size={18} />,
-    items: [
-      {
-        type: ShapeType.TorusKnot,
-        label: 'Torus Knot',
-        icon: <TbMath size={18} />,
-      },
-      {
-        type: ShapeType.Helix,
-        label: 'Helix',
-        icon: <TbSpiral size={18} />,
-      },
-      {
-        type: ShapeType.MobiusStrip,
-        label: 'Möbius Strip',
-        icon: <TbMath size={18} />,
-      },
-    ],
-  },
-  {
     label: 'Structural',
     icon: <TbBuildingBridge size={18} />,
     items: [
@@ -160,21 +136,6 @@ export const GAME_OBJECT_CATEGORIES: IGameObjectCategory[] = [
         type: ShapeType.Wall,
         label: 'Wall',
         icon: <TbRectangle size={18} />,
-      },
-      {
-        type: ShapeType.Ramp,
-        label: 'Ramp',
-        icon: <TbTriangle size={18} />,
-      },
-      {
-        type: ShapeType.Stairs,
-        label: 'Stairs',
-        icon: <TbBox size={18} />,
-      },
-      {
-        type: ShapeType.SpiralStairs,
-        label: 'Spiral Stairs',
-        icon: <TbSpiral size={18} />,
       },
     ],
   },
@@ -186,57 +147,6 @@ export const GAME_OBJECT_CATEGORIES: IGameObjectCategory[] = [
         type: ShapeType.Terrain,
         label: 'Terrain',
         icon: <TbMountain size={18} />,
-      },
-      {
-        type: ShapeType.Tree,
-        label: 'Tree',
-        icon: <TbTriangle size={18} />,
-      },
-      {
-        type: ShapeType.Rock,
-        label: 'Rock',
-        icon: <TbBox size={18} />,
-      },
-      {
-        type: ShapeType.Bush,
-        label: 'Bush',
-        icon: <TbSphere size={18} />,
-      },
-      {
-        type: ShapeType.Grass,
-        label: 'Grass',
-        icon: <TbTriangle size={18} />,
-      },
-    ],
-  },
-  {
-    label: 'Decorative',
-    icon: <TbDiamond size={18} />,
-    items: [
-      {
-        type: ShapeType.Star,
-        label: 'Star',
-        icon: <TbStar size={18} />,
-      },
-      {
-        type: ShapeType.Heart,
-        label: 'Heart',
-        icon: <TbHeart size={18} />,
-      },
-      {
-        type: ShapeType.Diamond,
-        label: 'Diamond',
-        icon: <TbDiamond size={18} />,
-      },
-      {
-        type: ShapeType.Cross,
-        label: 'Cross',
-        icon: <TbPlus size={18} />,
-      },
-      {
-        type: ShapeType.Tube,
-        label: 'Tube',
-        icon: <TbCylinder size={18} />,
       },
     ],
   },
@@ -280,47 +190,10 @@ export const GAME_OBJECT_CATEGORIES: IGameObjectCategory[] = [
 ];
 
 /**
- * Builds a Custom Shapes category from registered shapes
- * Used to dynamically generate menu items for custom shapes
+ * Builds complete game object categories
+ * NOTE: Custom shapes are now JSON-based and rendered in Rust
+ * No dynamic shape registration needed in TypeScript
  */
-export function buildCustomShapesCategory(
-  customShapes: Array<ICustomShapeDescriptor<any>>,
-): IGameObjectCategory | null {
-  if (customShapes.length === 0) {
-    return null;
-  }
-
-  return {
-    label: 'Custom Shapes',
-    icon: <TbBoxMultiple size={18} />,
-    items: customShapes.map((shape) => ({
-      type: `customShape:${shape.meta.id}`,
-      label: shape.meta.name,
-      icon: <TbBoxMultiple size={18} />,
-    })),
-  };
-}
-
-/**
- * Builds complete game object categories including custom shapes
- * @param customShapes - Array of registered custom shape descriptors
- * @returns All game object categories with custom shapes appended
- */
-export function buildGameObjectCategories(
-  customShapes: Array<ICustomShapeDescriptor<any>>,
-): IGameObjectCategory[] {
-  const categories = [...GAME_OBJECT_CATEGORIES];
-
-  const customShapesCategory = buildCustomShapesCategory(customShapes);
-  if (customShapesCategory) {
-    // Insert custom shapes before Assets category
-    const assetsIndex = categories.findIndex((cat) => cat.label === 'Assets');
-    if (assetsIndex !== -1) {
-      categories.splice(assetsIndex, 0, customShapesCategory);
-    } else {
-      categories.push(customShapesCategory);
-    }
-  }
-
-  return categories;
+export function buildGameObjectCategories(): IGameObjectCategory[] {
+  return [...GAME_OBJECT_CATEGORIES];
 }

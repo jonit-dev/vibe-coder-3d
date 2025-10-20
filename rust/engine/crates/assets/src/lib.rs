@@ -1,4 +1,5 @@
 mod geometry_math;
+mod geometry_meta;
 mod gltf_loader;
 mod material;
 #[cfg(test)]
@@ -12,10 +13,14 @@ mod primitives_math;
 mod primitives_platonic;
 mod primitives_structural;
 mod primitives_torus;
+mod procedural_shape_registry;
 mod texture_cache;
 mod vertex;
 mod vertex_builder;
 
+pub use geometry_meta::{
+    Accessor, Attributes, AttributeType, Bounds, BoundsSphere, DrawRange, GeometryMeta, Group, Meta,
+};
 pub use gltf_loader::{load_gltf, load_gltf_full, GltfData, GltfImage, GltfImageFormat};
 pub use material::{Material, MaterialCache};
 pub use mesh_cache::{GpuMesh, MeshCache};
@@ -31,5 +36,6 @@ pub use primitives_platonic::{
 };
 pub use primitives_structural::{create_ramp, create_spiral_stairs, create_stairs};
 pub use primitives_torus::{create_torus, create_torus_knot};
+pub use procedural_shape_registry::{ProceduralShapeRegistry, ShapeParams};
 pub use texture_cache::{GpuTexture, TextureCache};
 pub use vertex::{Mesh, Vertex};

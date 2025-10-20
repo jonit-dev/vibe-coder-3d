@@ -187,7 +187,8 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     }
 
     // Generate KISS scene file with entities + path references
-    const sceneName = sanitizePascalCase(cleanName);
+    // IMPORTANT: Keep filename lowercase to match scene registry expectations
+    const sceneName = sanitizeComponentName(cleanName); // lowercase, not PascalCase
     const sceneContent = this.generateSceneWithPaths(
       compressedEntities as never[],
       metadata,

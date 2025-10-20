@@ -5,6 +5,7 @@
 
 export { cameraComponent, type CameraData } from './CameraComponent';
 export { customShapeComponent, type CustomShapeData } from './CustomShapeComponent';
+export { geometryAssetComponent, type GeometryAssetData } from './GeometryAssetComponent';
 export {
   instancedComponent,
   type InstancedComponentData,

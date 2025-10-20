@@ -17,17 +17,19 @@ export interface IShapeMenuItem {
 
 /**
  * Get all registered custom shapes
+ * Note: Returns fresh list each render to pick up newly registered shapes
  */
 export function useCustomShapes(): ICustomShapeDescriptor<any>[] {
-  return useMemo(() => {
-    return shapeRegistry.list();
-  }, []);
+  // Don't use useMemo here - we want to always get the latest shapes from registry
+  // This is cheap since shapeRegistry.list() just returns an array reference
+  return shapeRegistry.list();
 }
 
 /**
  * Get shapes filtered by category
  */
 export function useCustomShapesByCategory(category: string): ICustomShapeDescriptor<any>[] {
+  // Memoize by category since filtering is slightly more expensive
   return useMemo(() => {
     return shapeRegistry.listByCategory(category);
   }, [category]);
@@ -47,16 +49,15 @@ export function useCustomShapesSearch(query: string): ICustomShapeDescriptor<any
  * Get all unique categories from registered shapes
  */
 export function useShapeCategories(): string[] {
-  return useMemo(() => {
-    const shapes = shapeRegistry.list();
-    const categories = new Set<string>();
-    shapes.forEach((shape) => {
-      if (shape.meta.category) {
-        categories.add(shape.meta.category);
-      }
-    });
-    return Array.from(categories).sort();
-  }, []);
+  // Don't memoize - need fresh categories from registry
+  const shapes = shapeRegistry.list();
+  const categories = new Set<string>();
+  shapes.forEach((shape) => {
+    if (shape.meta.category) {
+      categories.add(shape.meta.category);
+    }
+  });
+  return Array.from(categories).sort();
 }
 
 /**
@@ -64,31 +65,30 @@ export function useShapeCategories(): string[] {
  * Groups shapes by category
  */
 export function useCustomShapeMenuItems(): Record<string, IShapeMenuItem[]> {
-  return useMemo(() => {
-    const shapes = shapeRegistry.list();
-    const grouped: Record<string, IShapeMenuItem[]> = {};
+  // Don't memoize - need fresh shapes from registry
+  const shapes = shapeRegistry.list();
+  const grouped: Record<string, IShapeMenuItem[]> = {};
 
-    shapes.forEach((shape) => {
-      const category = shape.meta.category || 'Uncategorized';
+  shapes.forEach((shape) => {
+    const category = shape.meta.category || 'Uncategorized';
 
-      if (!grouped[category]) {
-        grouped[category] = [];
-      }
+    if (!grouped[category]) {
+      grouped[category] = [];
+    }
 
-      grouped[category].push({
-        shapeId: shape.meta.id,
-        label: shape.meta.name,
-        category: shape.meta.category,
-        tags: shape.meta.tags,
-        icon: shape.meta.icon,
-      });
+    grouped[category].push({
+      shapeId: shape.meta.id,
+      label: shape.meta.name,
+      category: shape.meta.category,
+      tags: shape.meta.tags,
+      icon: shape.meta.icon,
     });
+  });
 
-    // Sort items within each category by name
-    Object.values(grouped).forEach((items) => {
-      items.sort((a, b) => a.label.localeCompare(b.label));
-    });
+  // Sort items within each category by name
+  Object.values(grouped).forEach((items) => {
+    items.sort((a, b) => a.label.localeCompare(b.label));
+  });
 
-    return grouped;
-  }, []);
+  return grouped;
 }

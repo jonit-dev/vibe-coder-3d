@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { ICameraData } from '@/core/lib/ecs/components/CameraComponent';
 import { LightData } from '@/core/lib/ecs/components/definitions/LightComponent';
 import { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
+import type { GeometryAssetData } from '@/core/lib/ecs/components/definitions';
 import type { CustomShapeData } from '@/core/lib/ecs/components/definitions/CustomShapeComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
@@ -10,6 +11,7 @@ import { useEditorStore } from '@/editor/store/editorStore';
 import { shapeRegistry } from '@/core/lib/rendering/shapes/shapeRegistry';
 
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
+import { getGeometryAssetByPath } from '@/core/lib/geometry/metadata/geometryAssetCatalog';
 import { useEntityData } from './useEntityData';
 import { useEntityManager } from './useEntityManager';
 
@@ -158,6 +160,59 @@ export const useEntityCreation = () => {
       return entity;
     },
     [createEntity, addMeshRenderer, updateComponent, getNextNumber],
+  );
+
+  const createGeometryAssetEntity = useCallback(
+    (
+      path: string,
+      config?: {
+        name?: string;
+        parentId?: number;
+        geometryId?: string;
+        materialId?: string;
+        enabled?: boolean;
+        castShadows?: boolean;
+        receiveShadows?: boolean;
+        options?: GeometryAssetData['options'];
+        transform?: Partial<ITransformData>;
+      },
+    ) => {
+      const normalizedPath = path.startsWith('/') ? path : `/${path.replace(/^\.?\/*/, '')}`;
+      const summary = getGeometryAssetByPath(normalizedPath);
+
+      const inferredName =
+        config?.name ??
+        summary?.name ??
+        normalizedPath.split('/').pop()?.replace('.shape.json', '') ??
+        'Geometry Asset';
+
+      const actualName = `${inferredName} ${getNextNumber(inferredName)}`;
+      const entity = createEntity(actualName, config?.parentId);
+
+      const geometryAssetData: GeometryAssetData = {
+        path: normalizedPath,
+        geometryId: config?.geometryId,
+        materialId: config?.materialId,
+        enabled: config?.enabled ?? true,
+        castShadows: config?.castShadows ?? true,
+        receiveShadows: config?.receiveShadows ?? true,
+        options: config?.options,
+      };
+
+      addComponent(entity.id, KnownComponentTypes.GEOMETRY_ASSET, geometryAssetData);
+
+      if (config?.transform) {
+        const transformData: ITransformData = {
+          position: config.transform.position ?? [0, 0, 0],
+          rotation: config.transform.rotation ?? [0, 0, 0],
+          scale: config.transform.scale ?? [1, 1, 1],
+        };
+        updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+      }
+
+      return entity;
+    },
+    [addComponent, createEntity, getNextNumber, updateComponent],
   );
 
   const createTerrain = useCallback(
@@ -769,6 +824,7 @@ export const useEntityCreation = () => {
     createGrass,
     createCustomModel,
     createCustomShape,
+    createGeometryAssetEntity,
     deleteEntity,
   };
 };

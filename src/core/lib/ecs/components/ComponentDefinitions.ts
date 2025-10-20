@@ -12,6 +12,7 @@ import { ComponentCategory, ComponentFactory, componentRegistry } from '../Compo
 import {
   cameraComponent,
   customShapeComponent,
+  geometryAssetComponent,
   instancedComponent,
   lightComponent,
   meshColliderComponent,
@@ -43,6 +44,7 @@ export function registerCoreComponents(registry = componentRegistry): void {
   registry.register(persistentIdComponent.get());
   registry.register(transformComponent);
   registry.register(meshRendererComponent);
+  registry.register(geometryAssetComponent);
   registry.register(instancedComponent);
   registry.register(customShapeComponent);
   registry.register(terrainComponent);

@@ -5,6 +5,7 @@ import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import type { ISerializedEntity } from '../SceneSerializer';
 import type { IEntityManagerAdapter, IComponentManagerAdapter } from '../EntitySerializer';
 import { validate as uuidValidate } from 'uuid';
+import { geometryAssetComponent } from '@core/lib/ecs/components/definitions/GeometryAssetComponent';
 
 describe('EntitySerializer', () => {
   let serializer: EntitySerializer;
@@ -18,6 +19,11 @@ describe('EntitySerializer', () => {
 
     // Clear managers
     entityManager.clearEntities();
+
+    // Ensure GeometryAsset component is registered for tests
+    if (!componentRegistry.get('GeometryAsset')) {
+      componentRegistry.register(geometryAssetComponent);
+    }
   });
 
   describe('serialize', () => {
@@ -121,6 +127,57 @@ describe('EntitySerializer', () => {
 
       expect(result).toHaveLength(3);
       expect(result.map((e) => e.name)).toEqual(['Entity 1', 'Entity 2', 'Entity 3']);
+    });
+  });
+
+  describe('serializeWithCompression', () => {
+    it('serializes GeometryAsset components as references and restores defaults on deserialize', () => {
+      const entity = entityManager.createEntity('Geometry Asset Entity');
+
+      componentRegistry.addComponent(entity.id, 'Transform', {
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      });
+
+      const geometryPath = '/src/game/geometry/example_box.shape.json';
+      componentRegistry.addComponent(entity.id, 'GeometryAsset', {
+        path: geometryPath,
+        enabled: true,
+        castShadows: true,
+        receiveShadows: true,
+      });
+
+      const { entities: serialized } = serializer.serializeWithCompression(
+        entityManager,
+        componentRegistry,
+      );
+
+      expect(serialized).toHaveLength(1);
+      const serializedGeometry = serialized[0].components.GeometryAsset as Record<string, unknown>;
+      expect(serializedGeometry).toEqual({ path: geometryPath });
+
+      entityManager.clearEntities();
+
+      serializer.deserialize(serialized, entityManager, componentRegistry);
+
+      const recreated = entityManager.getAllEntities().find((e) => e.name === 'Geometry Asset Entity');
+      expect(recreated).toBeDefined();
+
+      const geometryAssetData = componentRegistry.getComponentData<
+        Record<string, unknown>
+      >(recreated!.id, 'GeometryAsset');
+
+      expect(geometryAssetData).toBeDefined();
+      expect(geometryAssetData).toMatchObject({
+        path: geometryPath,
+        geometryId: '',
+        materialId: '',
+        enabled: true,
+        castShadows: true,
+        receiveShadows: true,
+      });
+      expect(geometryAssetData?.options).toBeUndefined();
     });
   });
 

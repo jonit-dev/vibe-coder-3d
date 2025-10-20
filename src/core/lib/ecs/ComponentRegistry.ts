@@ -770,6 +770,14 @@ export function combineRenderingContributions(
       combined.receiveShadow = (meshData.receiveShadows as boolean) ?? true;
     }
 
+    if (type === 'GeometryAsset' && data) {
+      const geometryAssetData = data as Record<string, unknown>;
+      combined.meshType = 'GeometryAsset';
+      combined.visible = (geometryAssetData.enabled as boolean) ?? true;
+      combined.castShadow = (geometryAssetData.castShadows as boolean) ?? true;
+      combined.receiveShadow = (geometryAssetData.receiveShadows as boolean) ?? true;
+    }
+
     // Special handling for Camera components
     if (type === 'Camera') {
       combined.meshType = 'Camera';

@@ -129,6 +129,7 @@ export function initializeShapeDiscovery(): void {
 
 // Auto-initialize in development and production
 // This ensures shapes are available as soon as the module is imported
-if (import.meta.env.VITE_AUTO_DISCOVER_SHAPES !== 'false') {
-  initializeShapeDiscovery();
-}
+// DEPRECATED: Disabled in favor of explicit shape registration in src/game/shapes/index.ts
+// if (import.meta.env.VITE_AUTO_DISCOVER_SHAPES !== 'false') {
+//   initializeShapeDiscovery();
+// }

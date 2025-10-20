@@ -350,3 +350,194 @@ fn convert_asset_mesh_to_cpu_mesh(asset_mesh: &vibe_assets::Mesh) -> Result<CpuM
 
     Ok(cpu_mesh)
 }
+
+/// Convert GeometryMeta to three_d::CpuMesh
+pub fn convert_geometry_meta_to_cpu_mesh(meta: &vibe_assets::GeometryMeta) -> Result<CpuMesh> {
+    use three_d::{Srgba, Vector2, Vector3, Vector4};
+
+    // Extract positions (required)
+    let position_array = meta
+        .attributes
+        .position
+        .array
+        .as_ref()
+        .context("Position attribute must have inline array data")?;
+
+    let position_item_size = meta.attributes.position.item_size as usize;
+    if position_item_size != 3 {
+        anyhow::bail!(
+            "Position attribute must have itemSize 3, got {}",
+            position_item_size
+        );
+    }
+
+    let positions: Vec<Vector3<f32>> = position_array
+        .chunks(position_item_size)
+        .map(|chunk| Vector3::new(chunk[0], chunk[1], chunk[2]))
+        .collect();
+
+    // Extract normals (optional)
+    let normals = if let Some(normal_accessor) = &meta.attributes.normal {
+        if let Some(normal_array) = &normal_accessor.array {
+            let normal_item_size = normal_accessor.item_size as usize;
+            if normal_item_size != 3 {
+                log::warn!(
+                    "Normal attribute should have itemSize 3, got {}",
+                    normal_item_size
+                );
+                None
+            } else {
+                Some(
+                    normal_array
+                        .chunks(normal_item_size)
+                        .map(|chunk| Vector3::new(chunk[0], chunk[1], chunk[2]))
+                        .collect(),
+                )
+            }
+        } else {
+            log::warn!("Normal accessor has no array data");
+            None
+        }
+    } else {
+        None
+    };
+
+    // Extract UVs (optional)
+    let uvs = if let Some(uv_accessor) = &meta.attributes.uv {
+        if let Some(uv_array) = &uv_accessor.array {
+            let uv_item_size = uv_accessor.item_size as usize;
+            if uv_item_size != 2 {
+                log::warn!("UV attribute should have itemSize 2, got {}", uv_item_size);
+                None
+            } else {
+                Some(
+                    uv_array
+                        .chunks(uv_item_size)
+                        .map(|chunk| Vector2::new(chunk[0], chunk[1]))
+                        .collect(),
+                )
+            }
+        } else {
+            log::warn!("UV accessor has no array data");
+            None
+        }
+    } else {
+        None
+    };
+
+    // Extract colors (optional) - convert to Srgba
+    let colors = if let Some(color_accessor) = &meta.attributes.color {
+        if let Some(color_array) = &color_accessor.array {
+            let color_item_size = color_accessor.item_size as usize;
+            if color_item_size == 3 {
+                Some(
+                    color_array
+                        .chunks(color_item_size)
+                        .map(|chunk| {
+                            Srgba::new(
+                                (chunk[0] * 255.0) as u8,
+                                (chunk[1] * 255.0) as u8,
+                                (chunk[2] * 255.0) as u8,
+                                255,
+                            )
+                        })
+                        .collect::<Vec<Srgba>>(),
+                )
+            } else if color_item_size == 4 {
+                // RGBA
+                Some(
+                    color_array
+                        .chunks(color_item_size)
+                        .map(|chunk| {
+                            Srgba::new(
+                                (chunk[0] * 255.0) as u8,
+                                (chunk[1] * 255.0) as u8,
+                                (chunk[2] * 255.0) as u8,
+                                (chunk[3] * 255.0) as u8,
+                            )
+                        })
+                        .collect::<Vec<Srgba>>(),
+                )
+            } else {
+                log::warn!(
+                    "Color attribute should have itemSize 3 or 4, got {}",
+                    color_item_size
+                );
+                None
+            }
+        } else {
+            log::warn!("Color accessor has no array data");
+            None
+        }
+    } else {
+        None
+    };
+
+    // Extract tangents (optional)
+    let tangents = if let Some(tangent_accessor) = &meta.attributes.tangent {
+        if let Some(tangent_array) = &tangent_accessor.array {
+            let tangent_item_size = tangent_accessor.item_size as usize;
+            if tangent_item_size != 4 {
+                log::warn!(
+                    "Tangent attribute should have itemSize 4, got {}",
+                    tangent_item_size
+                );
+                None
+            } else {
+                Some(
+                    tangent_array
+                        .chunks(tangent_item_size)
+                        .map(|chunk| Vector4::new(chunk[0], chunk[1], chunk[2], chunk[3]))
+                        .collect::<Vec<Vector4<f32>>>(),
+                )
+            }
+        } else {
+            log::warn!("Tangent accessor has no array data");
+            None
+        }
+    } else {
+        None
+    };
+
+    // Extract indices (optional)
+    let indices = if let Some(index_accessor) = &meta.index {
+        if let Some(index_array) = &index_accessor.array {
+            // Convert f32 to u32 for indices
+            Indices::U32(index_array.iter().map(|&f| f as u32).collect())
+        } else {
+            log::warn!("Index accessor has no array data, using non-indexed mesh");
+            Indices::U32(vec![])
+        }
+    } else {
+        Indices::U32(vec![])
+    };
+
+    // Create CpuMesh
+    let mut cpu_mesh = CpuMesh {
+        positions: Positions::F32(positions),
+        normals,
+        uvs,
+        indices,
+        ..Default::default()
+    };
+
+    // Set colors if present
+    if let Some(color_data) = colors {
+        cpu_mesh.colors = Some(color_data);
+    }
+
+    // Set tangents if present
+    if let Some(tangent_data) = tangents {
+        cpu_mesh.tangents = Some(tangent_data);
+    }
+
+    log::info!(
+        "Loaded geometry meta: {} vertices, has_normals={}, has_uvs={}, has_indices={}",
+        cpu_mesh.positions.len(),
+        cpu_mesh.normals.is_some(),
+        cpu_mesh.uvs.is_some(),
+        !matches!(cpu_mesh.indices, Indices::U32(ref v) if v.is_empty())
+    );
+
+    Ok(cpu_mesh)
+}

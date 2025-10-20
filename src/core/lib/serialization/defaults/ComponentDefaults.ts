@@ -215,6 +215,27 @@ export const CUSTOM_SHAPE_DEFAULTS = {
 } as const;
 
 /**
+ * GeometryAsset Component Defaults
+ * Based on GeometryAssetComponent.ts deserialize defaults
+ */
+export const GEOMETRY_ASSET_DEFAULTS = {
+  path: '',
+  geometryId: '',
+  materialId: '',
+  enabled: true,
+  castShadows: true,
+  receiveShadows: true,
+  options: {
+    recomputeNormals: false,
+    recomputeTangents: false,
+    recenter: false,
+    computeBounds: true,
+    flipNormals: false,
+    scale: 1,
+  },
+} as const;
+
+/**
  * PrefabInstance Component Defaults
  */
 export const PREFAB_INSTANCE_DEFAULTS = {
@@ -237,6 +258,7 @@ export const COMPONENT_DEFAULTS = {
   Script: SCRIPT_DEFAULTS,
   Sound: SOUND_DEFAULTS,
   CustomShape: CUSTOM_SHAPE_DEFAULTS,
+  GeometryAsset: GEOMETRY_ASSET_DEFAULTS,
   PrefabInstance: PREFAB_INSTANCE_DEFAULTS,
 } as const;
 

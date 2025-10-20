@@ -531,6 +531,56 @@ impl Default for PhysicsMaterialData {
 }
 
 // ============================================================================
+// GeometryAsset Component
+// ============================================================================
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct GeometryAssetOptions {
+    #[serde(default)]
+    pub recomputeNormals: bool,
+    #[serde(default)]
+    pub recomputeTangents: bool,
+    #[serde(default)]
+    pub recenter: bool,
+    #[serde(default = "default_enabled")]
+    pub computeBounds: bool,
+    #[serde(default)]
+    pub flipNormals: bool,
+    #[serde(default = "default_one")]
+    pub scale: f32,
+}
+
+impl Default for GeometryAssetOptions {
+    fn default() -> Self {
+        Self {
+            recomputeNormals: false,
+            recomputeTangents: false,
+            recenter: false,
+            computeBounds: true,
+            flipNormals: false,
+            scale: 1.0,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct GeometryAsset {
+    pub path: String,
+    #[serde(default)]
+    pub geometryId: Option<String>,
+    #[serde(default)]
+    pub materialId: Option<String>,
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
+    #[serde(default = "default_enabled")]
+    pub castShadows: bool,
+    #[serde(default = "default_enabled")]
+    pub receiveShadows: bool,
+    #[serde(default)]
+    pub options: Option<GeometryAssetOptions>,
+}
+
+// ============================================================================
 // Decoders
 // ============================================================================
 
@@ -659,6 +709,49 @@ impl IComponentDecoder for MaterialDecoder {
     }
 }
 
+// ============================================================================
+// CustomShape Component
+// ============================================================================
+
+/// CustomShape component stores shape ID and dynamic parameters
+/// for procedurally generated custom shapes
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct CustomShape {
+    /// Shape identifier (e.g., "helix", "star", "tree")
+    #[serde(default, rename = "shapeId")]
+    pub shape_id: String,
+
+    /// Shape-specific parameters (validated by shape's Zod schema in TypeScript)
+    /// In Rust, this is a dynamic map that will be parsed by each shape generator
+    #[serde(default)]
+    pub params: Value,
+}
+
+pub struct CustomShapeDecoder;
+
+impl IComponentDecoder for CustomShapeDecoder {
+    fn can_decode(&self, kind: &str) -> bool {
+        kind == "CustomShape"
+    }
+
+    fn decode(&self, value: &Value) -> Result<Box<dyn Any>> {
+        let component: CustomShape = serde_json::from_value(value.clone())?;
+        Ok(Box::new(component))
+    }
+
+    fn capabilities(&self) -> ComponentCapabilities {
+        ComponentCapabilities {
+            affects_rendering: true,
+            requires_pass: Some("geometry"),
+            stable: true,
+        }
+    }
+
+    fn component_kinds(&self) -> Vec<ComponentKindId> {
+        vec![ComponentKindId::new("CustomShape")]
+    }
+}
+
 pub struct RigidBodyDecoder;
 
 impl IComponentDecoder for RigidBodyDecoder {
@@ -706,6 +799,31 @@ impl IComponentDecoder for MeshColliderDecoder {
 
     fn component_kinds(&self) -> Vec<ComponentKindId> {
         vec![ComponentKindId::new("MeshCollider")]
+    }
+}
+
+pub struct GeometryAssetDecoder;
+
+impl IComponentDecoder for GeometryAssetDecoder {
+    fn can_decode(&self, kind: &str) -> bool {
+        kind == "GeometryAsset"
+    }
+
+    fn decode(&self, value: &Value) -> Result<Box<dyn Any>> {
+        let component: GeometryAsset = serde_json::from_value(value.clone())?;
+        Ok(Box::new(component))
+    }
+
+    fn capabilities(&self) -> ComponentCapabilities {
+        ComponentCapabilities {
+            affects_rendering: true,
+            requires_pass: Some("geometry"),
+            stable: true,
+        }
+    }
+
+    fn component_kinds(&self) -> Vec<ComponentKindId> {
+        vec![ComponentKindId::new("GeometryAsset")]
     }
 }
 
@@ -1075,8 +1193,10 @@ pub fn create_default_registry() -> ComponentRegistry {
     registry.register(LightDecoder);
     registry.register(MeshRendererDecoder);
     registry.register(MaterialDecoder);
+    registry.register(CustomShapeDecoder);
     registry.register(RigidBodyDecoder);
     registry.register(MeshColliderDecoder);
+    registry.register(GeometryAssetDecoder);
     registry.register(PrefabInstanceDecoder);
     registry.register(InstancedDecoder);
     registry.register(TerrainDecoder);

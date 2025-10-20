@@ -11,6 +11,7 @@ export const KnownComponentTypes = {
   SOUND: 'Sound',
   TERRAIN: 'Terrain',
   PERSISTENT_ID: 'PersistentId',
+  GEOMETRY_ASSET: 'GeometryAsset',
 } as const;
 
 export type KnownComponentType = (typeof KnownComponentTypes)[keyof typeof KnownComponentTypes];

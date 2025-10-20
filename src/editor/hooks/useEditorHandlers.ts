@@ -124,18 +124,6 @@ export const useEditorHandlers = ({
           case ShapeType.Terrain:
             entity = createTerrain();
             break;
-          case ShapeType.Tree:
-            entity = createTree();
-            break;
-          case ShapeType.Rock:
-            entity = createRock();
-            break;
-          case ShapeType.Bush:
-            entity = createBush();
-            break;
-          case ShapeType.Grass:
-            entity = createGrass();
-            break;
           case ShapeType.Wall:
             entity = createWall();
             break;
@@ -154,12 +142,6 @@ export const useEditorHandlers = ({
           case ShapeType.Capsule:
             entity = createCapsule();
             break;
-          case ShapeType.Helix:
-            entity = createHelix();
-            break;
-          case ShapeType.MobiusStrip:
-            entity = createMobiusStrip();
-            break;
           case ShapeType.Dodecahedron:
             entity = createDodecahedron();
             break;
@@ -168,33 +150,6 @@ export const useEditorHandlers = ({
             break;
           case ShapeType.Tetrahedron:
             entity = createTetrahedron();
-            break;
-          case ShapeType.TorusKnot:
-            entity = createTorusKnot();
-            break;
-          case ShapeType.Ramp:
-            entity = createRamp();
-            break;
-          case ShapeType.Stairs:
-            entity = createStairs();
-            break;
-          case ShapeType.SpiralStairs:
-            entity = createSpiralStairs();
-            break;
-          case ShapeType.Star:
-            entity = createStar();
-            break;
-          case ShapeType.Heart:
-            entity = createHeart();
-            break;
-          case ShapeType.Diamond:
-            entity = createDiamond();
-            break;
-          case ShapeType.Tube:
-            entity = createTube();
-            break;
-          case ShapeType.Cross:
-            entity = createCross();
             break;
           case ShapeType.Camera:
             entity = createCamera();

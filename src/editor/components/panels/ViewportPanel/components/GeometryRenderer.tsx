@@ -1,44 +1,122 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import type { BufferGeometry } from 'three';
 
 import { shapeRegistry } from '@/core/lib/rendering/shapes/shapeRegistry';
 import type { CustomShapeData } from '@/core/lib/ecs/components/definitions';
+import type { GeometryAssetData } from '@/core/lib/ecs/components/definitions';
+import { parseMetaToBufferGeometry } from '@/core/lib/geometry/metadata/parseMetaToBufferGeometry';
+import { Logger } from '@/core/lib/logger';
+import { useGeometryAsset } from '@/editor/hooks/useGeometryAssets';
 
-import {
-  BushGeometry,
-  CrossGeometry,
-  DiamondGeometry,
-  GrassGeometry,
-  HeartGeometry,
-  HelixGeometry,
-  MobiusStripGeometry,
-  RampGeometry,
-  RockGeometry,
-  SpiralStairsGeometry,
-  StairsGeometry,
-  StarGeometry,
-  TorusKnotGeometry,
-  TreeGeometry,
-  TubeGeometry,
-} from './CustomGeometries';
 import { TerrainGeometry } from './TerrainGeometry';
+
+const logger = Logger.create('GeometryRenderer');
 
 interface IGeometryRendererProps {
   meshType: string;
   entityComponents: any[];
 }
 
+function applyGeometryAssetOptions(
+  geometry: BufferGeometry,
+  options?: GeometryAssetData['options'],
+): BufferGeometry {
+  if (!options) {
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    return geometry;
+  }
+
+  if (options.scale !== undefined && options.scale !== 1) {
+    geometry.scale(options.scale, options.scale, options.scale);
+  }
+
+  if (options.recenter) {
+    geometry.center();
+  }
+
+  if (options.recomputeNormals) {
+    geometry.computeVertexNormals();
+  }
+
+  if (options.recomputeTangents) {
+    try {
+      geometry.computeTangents();
+    } catch (error) {
+      logger.warn('Failed to compute tangents for geometry asset', { error });
+    }
+  }
+
+  if (options.flipNormals) {
+    const normalAttribute = geometry.getAttribute('normal');
+    if (normalAttribute) {
+      const normals = normalAttribute.array as Float32Array | number[];
+      for (let index = 0; index < normals.length; index++) {
+        normals[index] = -normals[index];
+      }
+      normalAttribute.needsUpdate = true;
+    } else {
+      logger.warn('flipNormals requested but geometry has no normal attribute');
+    }
+  }
+
+  if (options.computeBounds === false) {
+    geometry.boundingBox = null;
+    geometry.boundingSphere = null;
+  } else {
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+  }
+
+  return geometry;
+}
+
 export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
   ({ meshType, entityComponents }) => {
-    // Memoized geometry/content selection based on mesh type
     const terrainData = useMemo(() => {
-      const terrain = entityComponents.find((c) => c.type === 'Terrain');
+      const terrain = entityComponents.find((component) => component.type === 'Terrain');
       return (terrain?.data as any) || null;
     }, [entityComponents]);
 
     const customShapeData = useMemo(() => {
-      const customShape = entityComponents.find((c) => c.type === 'CustomShape');
+      const customShape = entityComponents.find((component) => component.type === 'CustomShape');
       return (customShape?.data as CustomShapeData) || null;
     }, [entityComponents]);
+
+    const geometryAssetData = useMemo(() => {
+      const geometryAsset = entityComponents.find((component) => component.type === 'GeometryAsset');
+      return (geometryAsset?.data as GeometryAssetData) || null;
+    }, [entityComponents]);
+
+    const geometryAssetOptionsKey = useMemo(
+      () => (geometryAssetData?.options ? JSON.stringify(geometryAssetData.options) : 'null'),
+      [geometryAssetData?.options],
+    );
+
+    const geometryAssetSummary = useGeometryAsset(geometryAssetData?.path);
+
+    const geometryAssetGeometry = useMemo(() => {
+      if (!geometryAssetData || !geometryAssetSummary) {
+        return null;
+      }
+
+      try {
+        const geometry = parseMetaToBufferGeometry(geometryAssetSummary.meta);
+        return applyGeometryAssetOptions(geometry, geometryAssetData.options);
+      } catch (error) {
+        logger.error('Failed to parse geometry asset metadata', {
+          path: geometryAssetData.path,
+          error,
+        });
+        return null;
+      }
+    }, [geometryAssetData, geometryAssetSummary, geometryAssetOptionsKey]);
+
+    useEffect(() => {
+      return () => {
+        geometryAssetGeometry?.dispose();
+      };
+    }, [geometryAssetGeometry]);
 
     const geometryContent = useMemo(() => {
       switch (meshType) {
@@ -85,48 +163,21 @@ export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
           return <coneGeometry args={[0.5, 1, 4]} />;
         case 'Capsule':
           return <capsuleGeometry args={[0.3, 0.4, 4, 16]} />;
-        case 'Helix':
-          return <HelixGeometry />;
-        case 'MobiusStrip':
-          return <MobiusStripGeometry />;
         case 'Dodecahedron':
           return <dodecahedronGeometry args={[0.5, 0]} />;
         case 'Icosahedron':
           return <icosahedronGeometry args={[0.5, 0]} />;
         case 'Tetrahedron':
           return <tetrahedronGeometry args={[0.5, 0]} />;
-        case 'TorusKnot':
-          return <TorusKnotGeometry />;
-        case 'Ramp':
-          return <RampGeometry />;
-        case 'Stairs':
-          return <StairsGeometry />;
-        case 'SpiralStairs':
-          return <SpiralStairsGeometry />;
-        case 'Star':
-          return <StarGeometry />;
-        case 'Heart':
-          return <HeartGeometry />;
-        case 'Diamond':
-          return <DiamondGeometry />;
-        case 'Tube':
-          return <TubeGeometry />;
-        case 'Cross':
-          return <CrossGeometry />;
-        case 'Tree':
-          return <TreeGeometry />;
-        case 'Rock':
-          return <RockGeometry />;
-        case 'Bush':
-          return <BushGeometry />;
-        case 'Grass':
-          return <GrassGeometry />;
         case 'Camera':
-          return null;
         case 'Light':
-          return null;
         case 'custom':
           return null;
+        case 'GeometryAsset':
+          if (!geometryAssetGeometry) {
+            return null;
+          }
+          return <primitive object={geometryAssetGeometry} attach="geometry" />;
         case 'CustomShape': {
           if (!customShapeData) {
             return null;
@@ -135,7 +186,7 @@ export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
           const descriptor = shapeRegistry.resolve(customShapeData.shapeId);
 
           if (!descriptor) {
-            console.warn(`Custom shape not found in registry: ${customShapeData.shapeId}`);
+            logger.warn('Custom shape not found in registry', { shapeId: customShapeData.shapeId });
             return null;
           }
 
@@ -146,10 +197,10 @@ export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
           const normalizedParams = normalizedParamsResult.success
             ? normalizedParamsResult.data
             : (() => {
-                console.error(
-                  `Invalid params for custom shape ${customShapeData.shapeId}`,
-                  normalizedParamsResult.error,
-                );
+                logger.error('Invalid params for custom shape', {
+                  shapeId: customShapeData.shapeId,
+                  error: normalizedParamsResult.error,
+                });
                 return descriptor.getDefaultParams();
               })();
 
@@ -162,7 +213,7 @@ export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
         default:
           return <boxGeometry args={[1, 1, 1]} />;
       }
-    }, [meshType, terrainData, customShapeData]);
+    }, [meshType, terrainData, customShapeData, geometryAssetGeometry]);
 
     return <>{geometryContent}</>;
   },

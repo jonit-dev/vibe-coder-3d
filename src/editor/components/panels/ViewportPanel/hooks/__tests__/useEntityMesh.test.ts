@@ -3,6 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 
 import type { IMaterialDefinition } from '@core/materials/Material.types';
 import type { MeshRendererData } from '@core/lib/ecs/components/definitions/MeshRendererComponent';
+import type { GeometryAssetData } from '@core/lib/ecs/components/definitions';
 import { useEntityMesh } from '../useEntityMesh';
 import {
   combineRenderingContributions,
@@ -201,6 +202,34 @@ describe('useEntityMesh', () => {
 
       expect(result.current.renderingContributions.material?.color).toBe('#ff6600');
       expect(result.current.entityColor).toBe('#ff6600');
+    });
+
+    it('should prioritise materialId from GeometryAsset component', () => {
+      const geometryAssetComponent = {
+        type: 'GeometryAsset',
+        data: {
+          path: '/src/game/geometry/example_box.shape.json',
+          materialId: 'textured-material',
+        } as GeometryAssetData,
+      };
+
+      vi.mocked(combineRenderingContributions).mockReturnValueOnce({
+        castShadow: true,
+        receiveShadow: true,
+        visible: true,
+        meshType: 'GeometryAsset',
+        material: {},
+      });
+
+      const { result } = renderHook(() =>
+        useEntityMesh({
+          entityComponents: [geometryAssetComponent],
+          isPlaying: false,
+        }),
+      );
+
+      expect(result.current.renderingContributions.meshType).toBe('GeometryAsset');
+      expect(result.current.renderingContributions.material?.color).toBe('#ffffff');
     });
 
     it('should handle material overrides from MeshRenderer', () => {

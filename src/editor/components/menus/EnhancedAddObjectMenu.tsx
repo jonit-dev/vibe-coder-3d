@@ -4,9 +4,10 @@ import { useEditorStore } from '@editor/store/editorStore';
 import { ShapeType } from '@editor/types/shapes';
 import { TerrainWizard } from '@editor/components/terrain/TerrainWizard';
 import { useEntityCreation } from '@editor/hooks/useEntityCreation';
-import { useCustomShapes } from '@editor/hooks/useDynamicShapes';
+import { useGeometryAssets, type GeometryAssetOption } from '@editor/hooks/useGeometryAssets';
 import { GAME_OBJECT_CATEGORIES } from '@editor/config/gameObjectMenuData';
 import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
+import { GeometryBrowserModal } from '@editor/components/shared/GeometryBrowserModal';
 import { IMenuCategory, IMenuItemOption, NestedDropdownMenu } from './NestedDropdownMenu';
 
 export interface IEnhancedAddObjectMenuProps {
@@ -16,7 +17,9 @@ export interface IEnhancedAddObjectMenuProps {
 }
 
 // Convert shared data to NestedDropdownMenu format
-function buildObjectCategories(customShapes: any[]): IMenuCategory[] {
+function buildObjectCategories(
+  geometryAssets: GeometryAssetOption[],
+): IMenuCategory[] {
   const baseCategories: IMenuCategory[] = GAME_OBJECT_CATEGORIES.map((category) => ({
     label: category.label,
     icon: category.icon,
@@ -27,18 +30,25 @@ function buildObjectCategories(customShapes: any[]): IMenuCategory[] {
     })),
   }));
 
-  // Add Custom Shapes category if there are any registered shapes
-  if (customShapes.length > 0) {
-    const customShapesCategory: IMenuCategory = {
-      label: 'Custom Shapes',
+  if (geometryAssets.length > 0) {
+    const quickItems = geometryAssets.slice(0, 6);
+    const geometryAssetsCategory: IMenuCategory = {
+      label: 'Geometry Assets',
       icon: <TbBoxMultiple size={18} />,
-      items: customShapes.map((shape) => ({
-        type: `customShape:${shape.meta.id}`,
-        label: shape.meta.name,
-        icon: <TbBoxMultiple size={18} />,
-      })),
+      items: [
+        {
+          type: 'geometryAsset:browse',
+          label: 'Browse Geometry Assets…',
+          icon: <TbBoxMultiple size={18} />,
+        },
+        ...quickItems.map((asset) => ({
+          type: `geometryAsset:${encodeURIComponent(asset.path)}`,
+          label: asset.name,
+          icon: <TbBoxMultiple size={18} />,
+        })),
+      ],
     };
-    baseCategories.push(customShapesCategory);
+    baseCategories.push(geometryAssetsCategory);
   }
 
   return baseCategories;
@@ -52,18 +62,37 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
   const open = useEditorStore((s) => s.showAddMenu);
   const setShowAddMenu = useEditorStore((s) => s.setShowAddMenu);
   const [showTerrainWizard, setShowTerrainWizard] = useState(false);
+  const [showGeometryBrowser, setShowGeometryBrowser] = useState(false);
 
-  const { createTerrain, createCustomShape } = useEntityCreation();
-  const customShapes = useCustomShapes();
+  const { createTerrain, createCustomShape, createGeometryAssetEntity } = useEntityCreation();
+  const geometryAssets = useGeometryAssets();
 
-  // Build categories dynamically including custom shapes
-  const objectCategories = useMemo(() => buildObjectCategories(customShapes), [customShapes]);
+  // Build categories dynamically
+  const objectCategories = useMemo(
+    () => buildObjectCategories(geometryAssets),
+    [geometryAssets],
+  );
 
   const handleItemSelect = (item: IMenuItemOption) => {
     // Handle custom shapes
     if (item.type.startsWith('customShape:')) {
       const shapeId = item.type.replace('customShape:', '');
       createCustomShape(shapeId);
+      setShowAddMenu(false);
+      return;
+    }
+
+    // Handle geometry assets
+    if (item.type.startsWith('geometryAsset:')) {
+      const token = item.type.replace('geometryAsset:', '');
+      if (token === 'browse') {
+        setShowGeometryBrowser(true);
+        setShowAddMenu(false);
+        return;
+      }
+
+      const decodedPath = decodeURIComponent(token);
+      createGeometryAssetEntity(decodedPath);
       setShowAddMenu(false);
       return;
     }
@@ -96,30 +125,15 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
       ShapeType.Torus,
       ShapeType.Plane,
       ShapeType.Terrain,
-      ShapeType.Tree,
-      ShapeType.Rock,
-      ShapeType.Bush,
-      ShapeType.Grass,
       ShapeType.Wall,
       ShapeType.Trapezoid,
       ShapeType.Octahedron,
       ShapeType.Prism,
       ShapeType.Pyramid,
       ShapeType.Capsule,
-      ShapeType.Helix,
-      ShapeType.MobiusStrip,
       ShapeType.Dodecahedron,
       ShapeType.Icosahedron,
       ShapeType.Tetrahedron,
-      ShapeType.TorusKnot,
-      ShapeType.Ramp,
-      ShapeType.Stairs,
-      ShapeType.SpiralStairs,
-      ShapeType.Star,
-      ShapeType.Heart,
-      ShapeType.Diamond,
-      ShapeType.Tube,
-      ShapeType.Cross,
     ];
     if (validTypes.includes(item.type as ShapeType)) {
       onAdd(item.type as ShapeType);
@@ -151,12 +165,21 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
   }
 
   return (
-    <NestedDropdownMenu
-      anchorRef={anchorRef}
-      open={open}
-      onClose={() => setShowAddMenu(false)}
-      onItemSelect={handleItemSelect}
-      categories={objectCategories}
-    />
+    <>
+      <NestedDropdownMenu
+        anchorRef={anchorRef}
+        open={open}
+        onClose={() => setShowAddMenu(false)}
+        onItemSelect={handleItemSelect}
+        categories={objectCategories}
+      />
+      <GeometryBrowserModal
+        isOpen={showGeometryBrowser}
+        onClose={() => setShowGeometryBrowser(false)}
+        onSelect={(asset) => {
+          createGeometryAssetEntity(asset.path, { name: asset.name });
+        }}
+      />
+    </>
   );
 };

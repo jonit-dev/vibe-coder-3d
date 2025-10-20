@@ -1,6 +1,9 @@
 pub mod decoders;
 pub mod transform_utils;
 
+#[cfg(test)]
+mod custom_shape_integration_test;
+
 use anyhow::Result;
 use serde_json::Value;
 use std::any::Any;
@@ -8,9 +11,10 @@ use vibe_scene::ComponentKindId;
 
 // Re-export commonly used types
 pub use decoders::{
-    create_default_registry, CameraComponent, InstanceData, Instanced, Light, LightColor, Material,
-    MeshCollider, MeshColliderSize, MeshRenderer, MeshRendererMaterialOverride,
-    PhysicsMaterialData, PrefabInstance, RigidBody, RigidBodyMaterial, Sound, Terrain, Transform,
+    create_default_registry, CameraComponent, CustomShape, GeometryAsset, GeometryAssetOptions,
+    InstanceData, Instanced, Light, LightColor, Material, MeshCollider, MeshColliderSize,
+    MeshRenderer, MeshRendererMaterialOverride, PhysicsMaterialData, PrefabInstance, RigidBody,
+    RigidBodyMaterial, Sound, Terrain, Transform,
 };
 
 // Re-export transform utilities for standardized conversions

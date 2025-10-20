@@ -19,34 +19,18 @@ export enum ShapeType {
   Icosahedron = 'Icosahedron',
   Tetrahedron = 'Tetrahedron',
 
-  // Mathematical Shapes
-  TorusKnot = 'TorusKnot',
-  Helix = 'Helix',
-  MobiusStrip = 'MobiusStrip',
-
   // Structural
   Wall = 'Wall',
-  Ramp = 'Ramp',
-  Stairs = 'Stairs',
-  SpiralStairs = 'SpiralStairs',
-
-  // Decorative
-  Star = 'Star',
-  Heart = 'Heart',
-  Diamond = 'Diamond',
-  Cross = 'Cross',
-  Tube = 'Tube',
 
   // Environment
   Terrain = 'Terrain',
-  Tree = 'Tree',
-  Rock = 'Rock',
-  Bush = 'Bush',
-  Grass = 'Grass',
 
   // Special
   Camera = 'Camera',
   CustomModel = 'CustomModel',
+
+  // Note: Custom shapes (Helix, Star, Tree, Ramp, etc.) are now registered
+  // dynamically via the shape registry system. See src/game/shapes/
 }
 
 // For backward compatibility, also export as type

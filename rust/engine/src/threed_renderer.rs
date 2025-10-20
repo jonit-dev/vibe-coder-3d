@@ -7,7 +7,8 @@ use winit::dpi::PhysicalSize;
 use winit::window::Window as WinitWindow;
 
 use vibe_ecs_bridge::decoders::{
-    CameraComponent, Instanced, Light as LightComponent, MeshRenderer, Terrain, Transform,
+    CameraComponent, GeometryAsset, Instanced, Light as LightComponent, MeshRenderer, Terrain,
+    Transform,
 };
 use vibe_ecs_bridge::ComponentRegistry;
 use vibe_scene::Scene as SceneData;
@@ -1037,6 +1038,12 @@ impl ThreeDRenderer {
                 .await?;
         }
 
+        // Check for GeometryAsset
+        if let Some(geometry_asset) = self.get_component::<GeometryAsset>(entity, "GeometryAsset") {
+            self.handle_geometry_asset(entity, &geometry_asset, transform.as_ref())
+                .await?;
+        }
+
         // Check for Instanced
         if let Some(instanced) = self.get_component::<Instanced>(entity, "Instanced") {
             self.handle_instanced(entity, &instanced, transform.as_ref())
@@ -1129,6 +1136,101 @@ impl ThreeDRenderer {
                 final_scale.z
             );
         }
+
+        Ok(())
+    }
+
+    async fn handle_geometry_asset(
+        &mut self,
+        entity: &Entity,
+        geometry_asset: &GeometryAsset,
+        transform: Option<&Transform>,
+    ) -> Result<()> {
+        use crate::renderer::mesh_loader::convert_geometry_meta_to_cpu_mesh;
+
+        log::info!("  GeometryAsset:");
+        log::info!("    Path:        {:?}", geometry_asset.path);
+        log::info!("    Geometry ID: {:?}", geometry_asset.geometryId);
+        log::info!("    Material ID: {:?}", geometry_asset.materialId);
+        log::info!("    Enabled:     {}", geometry_asset.enabled);
+
+        if !geometry_asset.enabled {
+            log::info!("    Skipping disabled geometry asset");
+            return Ok(());
+        }
+
+        // 1. Load the geometry metadata from path
+        let geometry_meta = vibe_assets::GeometryMeta::from_file(std::path::Path::new(&geometry_asset.path))
+            .with_context(|| format!("Failed to load geometry metadata: {}", geometry_asset.path))?;
+
+        log::info!(
+            "    Loaded metadata: {} vertices, {} indices",
+            geometry_meta.vertex_count().unwrap_or(0),
+            geometry_meta.index_count().unwrap_or(0)
+        );
+
+        // 2. Convert to CpuMesh
+        let cpu_mesh = convert_geometry_meta_to_cpu_mesh(&geometry_meta)?;
+
+        // 3. Create GPU mesh
+        let mut mesh = Mesh::new(&self.context, &cpu_mesh);
+
+        // 4. Get or create material
+        let material = if let Some(material_id) = &geometry_asset.materialId {
+            if let Some(material_data) = self.material_manager.get_material(material_id) {
+                log::info!("    Using material: {}", material_id);
+                let material_clone = material_data.clone();
+                self.material_manager
+                    .create_physical_material(&self.context, &material_clone)
+                    .await?
+            } else {
+                log::warn!("    Material '{}' not found, using default", material_id);
+                self.material_manager.create_default_material(&self.context)
+            }
+        } else {
+            log::info!("    Using default material");
+            self.material_manager.create_default_material(&self.context)
+        };
+
+        // 5. Apply transform
+        let final_scale = if let Some(transform) = transform {
+            let converted = crate::renderer::transform_utils::convert_transform_to_matrix(transform, None);
+            mesh.set_transformation(converted.matrix);
+
+            let ts_position = vibe_ecs_bridge::position_to_vec3_opt(transform.position.as_ref());
+            let converted_pos = threejs_to_threed_position(ts_position);
+            log::info!(
+                "    Transform: three.js pos [{:.2}, {:.2}, {:.2}] → three-d pos [{:.2}, {:.2}, {:.2}]",
+                ts_position.x,
+                ts_position.y,
+                ts_position.z,
+                converted_pos.x,
+                converted_pos.y,
+                converted_pos.z
+            );
+
+            converted.final_scale
+        } else {
+            log::info!("    No Transform component, using identity transform");
+            GlamVec3::ONE
+        };
+
+        // 6. Store in parallel arrays
+        let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
+        self.meshes.push(Gm::new(mesh, material));
+        self.mesh_entity_ids.push(entity_id);
+        self.mesh_scales.push(final_scale);
+        self.mesh_cast_shadows.push(geometry_asset.castShadows);
+        self.mesh_receive_shadows.push(geometry_asset.receiveShadows);
+
+        log::info!(
+            "    GeometryAsset loaded → cast shadows: {}, receive shadows: {}, final scale [{:.2}, {:.2}, {:.2}]",
+            geometry_asset.castShadows,
+            geometry_asset.receiveShadows,
+            final_scale.x,
+            final_scale.y,
+            final_scale.z
+        );
 
         Ok(())
     }

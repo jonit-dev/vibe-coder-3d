@@ -1,5 +1,5 @@
 import type { ThreeEvent } from '@react-three/fiber';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { GeometryRenderer } from './GeometryRenderer';
 
@@ -36,6 +36,11 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
 
     const isStandardShader = materialDef.shader === 'standard';
 
+    // Check if this geometry uses vertex colors (GeometryAsset)
+    const hasVertexColors = useMemo(() => {
+      return meshType === 'GeometryAsset';
+    }, [meshType]);
+
     if (isStandardShader) {
       // Standard PBR material - use single key to prevent recreation when switching between textured/solid
       return (
@@ -51,7 +56,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
         >
           <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
           <meshStandardMaterial
-            key={`${entityId}-standard-${!!textures.albedoTexture}`}
+            key={`${entityId}-standard-${!!textures.albedoTexture}-${hasVertexColors}`}
             color={textures.albedoTexture ? '#ffffff' : (materialDef.color ?? entityColor)}
             map={textures.albedoTexture}
             metalness={materialDef.metalness ?? 0}
@@ -69,6 +74,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
             emissiveMap={textures.emissiveTexture as any}
             aoMap={textures.occlusionTexture as any}
             aoMapIntensity={materialDef.occlusionStrength ?? 1}
+            vertexColors={hasVertexColors}
           />
         </mesh>
       );
@@ -87,9 +93,10 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
         >
           <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
           <meshBasicMaterial
-            key={`${entityId}-unlit`}
+            key={`${entityId}-unlit-${hasVertexColors}`}
             color={materialDef.color ?? entityColor}
             map={materialDef.albedoTexture ? (textures.albedoTexture as any) : undefined}
+            vertexColors={hasVertexColors}
           />
         </mesh>
       );
