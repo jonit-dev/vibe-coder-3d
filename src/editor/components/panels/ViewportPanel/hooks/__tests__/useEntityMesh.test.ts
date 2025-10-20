@@ -73,7 +73,7 @@ vi.mock('@editor/store/materialsStore', () => ({
     return { materials: mockMaterials };
   },
   useMaterialById: (id: string) => {
-    return mockMaterials.find(m => m.id === id);
+    return mockMaterials.find((m) => m.id === id);
   },
 }));
 
@@ -213,7 +213,7 @@ describe('useEntityMesh', () => {
         } as GeometryAssetData,
       };
 
-      vi.mocked(combineRenderingContributions).mockReturnValueOnce({
+      vi.mocked(combineRenderingContributions).mockReturnValue({
         castShadow: true,
         receiveShadow: true,
         visible: true,

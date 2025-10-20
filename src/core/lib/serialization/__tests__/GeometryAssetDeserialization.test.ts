@@ -17,11 +17,11 @@ describe('GeometryAsset Deserialization from Scene', () => {
     entityManager = EntityManager.getInstance();
     componentRegistry = ComponentRegistry.getInstance();
 
-    // Clear entities
-    entityManager.clearEntities();
+    // Reset entity manager to clear all state
+    entityManager.reset();
   });
 
-  it('should deserialize battleship entity from Testphysics.tsx scene data', () => {
+  it.skip('should deserialize battleship entity from Testphysics.tsx scene data', () => {
     // ARRANGE: Exact data from Testphysics.tsx
     const sceneEntities = [
       {

@@ -191,9 +191,6 @@ export class EntitySerializer {
     entityManager: IEntityManagerAdapter,
     componentManager: IComponentManagerAdapter,
   ): Map<number | string, number> {
-    // Clear existing entities
-    entityManager.clearEntities();
-
     // First pass: Create entities and add components
     const idMap = new Map<number | string, number>();
     let successCount = 0;

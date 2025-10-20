@@ -9,7 +9,7 @@ import type { ISceneStore } from '@core/lib/serialization/common/ISceneStore';
  * Comprehensive TsxFormatHandler test suite
  *
  * Tests the single-file scene format with external asset references:
- * - Scenes saved as SceneName.tsx (not SceneName/SceneName.index.tsx)
+ * - Scenes saved as sceneName.tsx (camelCase, not SceneName/SceneName.index.tsx)
  * - Assets saved to src/game/assets/{materials,inputs,prefabs}/
  * - Scene files contain entity data + assetReferences paths
  */
@@ -391,10 +391,13 @@ export default defineScene({
           payload,
         });
 
-        expect(result.filename).toBe('MyTestScene.tsx');
+        expect(result.filename).toBe('myTestScene.tsx');
 
-        const scenePath = path.join(testScenesDir, 'MyTestScene.tsx');
-        const exists = await fs.access(scenePath).then(() => true).catch(() => false);
+        const scenePath = path.join(testScenesDir, 'myTestScene.tsx');
+        const exists = await fs
+          .access(scenePath)
+          .then(() => true)
+          .catch(() => false);
         expect(exists).toBe(true);
       });
 
@@ -432,7 +435,10 @@ export default defineScene({
         });
 
         const materialPath = path.join(testAssetsDir, 'materials/red.material.tsx');
-        const exists = await fs.access(materialPath).then(() => true).catch(() => false);
+        const exists = await fs
+          .access(materialPath)
+          .then(() => true)
+          .catch(() => false);
         expect(exists).toBe(true);
 
         const materialContent = await fs.readFile(materialPath, 'utf-8');
@@ -472,7 +478,7 @@ export default defineScene({
           payload: sceneData,
         });
 
-        const scenePath = path.join(testScenesDir, 'TestScene.tsx');
+        const scenePath = path.join(testScenesDir, 'testScene.tsx');
         const sceneContent = await fs.readFile(scenePath, 'utf-8');
 
         expect(sceneContent).toContain('assetReferences');
@@ -520,7 +526,7 @@ export default defineScene({
         expect(materialFiles.length).toBe(1);
         expect(materialFiles[0]).toBe('red.material.tsx');
 
-        const scenePath = path.join(testScenesDir, 'TestScene.tsx');
+        const scenePath = path.join(testScenesDir, 'testScene.tsx');
         const sceneContent = await fs.readFile(scenePath, 'utf-8');
         const matches = sceneContent.match(/@\/materials\/red/g);
         expect(matches?.length).toBe(1); // Should appear once in assetReferences
@@ -554,7 +560,7 @@ export default defineScene({
           payload: sceneData,
         });
 
-        const scenePath = path.join(testScenesDir, 'SimpleScene.tsx');
+        const scenePath = path.join(testScenesDir, 'simpleScene.tsx');
         const sceneContent = await fs.readFile(scenePath, 'utf-8');
 
         const lines = sceneContent.split('\n').length;
@@ -599,7 +605,10 @@ export default defineScene({
         });
 
         const materialPath = path.join(testAssetsDir, 'materials/test123.material.tsx');
-        const exists = await fs.access(materialPath).then(() => true).catch(() => false);
+        const exists = await fs
+          .access(materialPath)
+          .then(() => true)
+          .catch(() => false);
         expect(exists).toBe(true);
 
         const materialContent = await fs.readFile(materialPath, 'utf-8');
@@ -610,14 +619,16 @@ export default defineScene({
     describe('Load Operations', () => {
       it('should load TSX scene', async () => {
         const payload = {
-          entities: [{ id: 1, name: 'TestEntity', components: { Transform: { position: [0, 0, 0] } } }],
+          entities: [
+            { id: 1, name: 'TestEntity', components: { Transform: { position: [0, 0, 0] } } },
+          ],
           materials: [],
         };
 
         await handler.save({ name: 'test-scene', payload });
-        const result = await handler.load({ name: 'Testscene' });
+        const result = await handler.load({ name: 'testscene' });
 
-        expect(result.filename).toBe('Testscene.tsx');
+        expect(result.filename).toBe('testscene.tsx');
         expect(result.data).toHaveProperty('entities');
         expect(result.data).toHaveProperty('materials');
       });
@@ -631,10 +642,10 @@ export default defineScene({
         await handler.save({ name: 'Testscene', payload });
 
         const result1 = await handler.load({ name: 'Testscene.tsx' });
-        expect(result1.filename).toBe('Testscene.tsx');
+        expect(result1.filename).toBe('testscene.tsx');
 
         const result2 = await handler.load({ name: 'Testscene' });
-        expect(result2.filename).toBe('Testscene.tsx');
+        expect(result2.filename).toBe('testscene.tsx');
       });
 
       it('should throw if file does not exist', async () => {
@@ -669,7 +680,7 @@ export default defineScene({
         };
 
         await handler.save({ name: 'complex', payload: complexPayload });
-        const result = await handler.load({ name: 'Complex' });
+        const result = await handler.load({ name: 'complex' });
 
         const data = result.data as any;
 
@@ -713,7 +724,7 @@ export default defineScene({
           payload: originalSceneData,
         });
 
-        expect(saveResult.filename).toBe('RoundTripTest.tsx');
+        expect(saveResult.filename).toBe('roundTripTest.tsx');
 
         const loadResult = await handler.load({
           name: 'RoundTripTest',
@@ -788,8 +799,8 @@ export default defineScene({
 
         expect(result).toHaveLength(2);
         const filenames = result.map((s) => s.filename);
-        expect(filenames).toContain('Scene1.tsx');
-        expect(filenames).toContain('Scene2.tsx');
+        expect(filenames).toContain('scene1.tsx');
+        expect(filenames).toContain('scene2.tsx');
       });
 
       it('should include metadata for each scene', async () => {
@@ -815,8 +826,8 @@ export default defineScene({
 
         const result = await handler.list();
 
-        expect(result[0].filename).toBe('New.tsx');
-        expect(result[1].filename).toBe('Old.tsx');
+        expect(result[0].filename).toBe('new.tsx');
+        expect(result[1].filename).toBe('old.tsx');
       });
     });
   });
