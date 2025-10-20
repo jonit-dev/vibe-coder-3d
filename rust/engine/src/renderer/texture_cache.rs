@@ -51,6 +51,60 @@ impl TextureCache {
         Ok(rc_texture)
     }
 
+    /// Load a GLTF embedded image directly from raw RGBA data
+    /// Used for textures embedded in GLB files
+    pub fn load_gltf_image(
+        &mut self,
+        texture_id: &str,
+        rgba_data: &[u8],
+        width: u32,
+        height: u32,
+    ) -> Result<Rc<CpuTexture>> {
+        // Check cache first
+        if let Some(cached) = self.textures.get(texture_id) {
+            log::debug!("GLTF texture cache hit: {}", texture_id);
+            return Ok(Rc::clone(cached));
+        }
+
+        log::info!("Loading GLTF embedded texture: {} ({}x{})", texture_id, width, height);
+
+        // Create CpuTexture from raw RGBA data using three_d's constructor
+        // Convert flat RGBA bytes to array of [u8; 4]
+        use three_d::TextureData;
+
+        if rgba_data.len() != (width * height * 4) as usize {
+            anyhow::bail!(
+                "GLTF texture data size mismatch: expected {} bytes, got {}",
+                width * height * 4,
+                rgba_data.len()
+            );
+        }
+
+        let rgba_pixels: Vec<[u8; 4]> = rgba_data
+            .chunks_exact(4)
+            .map(|chunk| [chunk[0], chunk[1], chunk[2], chunk[3]])
+            .collect();
+
+        let cpu_texture = CpuTexture {
+            data: TextureData::RgbaU8(rgba_pixels),
+            width,
+            height,
+            ..Default::default()
+        };
+
+        let rc_texture = Rc::new(cpu_texture);
+
+        self.textures
+            .insert(texture_id.to_string(), Rc::clone(&rc_texture));
+        log::debug!(
+            "GLTF texture cached: {} ({} total in cache)",
+            texture_id,
+            self.textures.len()
+        );
+
+        Ok(rc_texture)
+    }
+
     /// Get a cached texture by path (does not load if missing)
     pub fn get(&self, path: &str) -> Option<Rc<CpuTexture>> {
         self.textures.get(path).map(Rc::clone)

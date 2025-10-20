@@ -28,16 +28,34 @@ pub async fn load_mesh_renderer(
     log::info!("    Materials:   {:?}", mesh_renderer.materials);
 
     // Check if we should load a GLTF model (filter out empty strings)
-    let cpu_meshes = if let Some(model_path) = &mesh_renderer.modelPath {
+    #[cfg(feature = "gltf-support")]
+    let (cpu_meshes, gltf_textures, _gltf_images) = if let Some(model_path) = &mesh_renderer.modelPath {
         if !model_path.is_empty() {
-            load_gltf_meshes(model_path)?
+            let gltf_result = load_gltf_meshes_with_textures(model_path)?;
+
+            // Load GLTF embedded images into texture cache
+            for (idx, gltf_image) in gltf_result.images.iter().enumerate() {
+                if let Some(ref texture_id) = gltf_image.name {
+                    log::info!("      Loading embedded texture '{}' into cache", texture_id);
+                    material_manager.texture_cache_mut().load_gltf_image(
+                        texture_id,
+                        &gltf_image.data,
+                        gltf_image.width,
+                        gltf_image.height,
+                    )?;
+                } else {
+                    log::warn!("      Skipping unnamed GLTF image {}", idx);
+                }
+            }
+
+            (gltf_result.cpu_meshes, Some(gltf_result.texture_ids), Some(gltf_result.images))
         } else {
             // Empty string - treat as no model path, use primitive
             let mesh_id_lower = mesh_renderer
                 .meshId
                 .as_ref()
                 .map(|id| id.to_ascii_lowercase());
-            vec![create_primitive_mesh(mesh_id_lower.as_deref())]
+            (vec![create_primitive_mesh(mesh_id_lower.as_deref())], None, None)
         }
     } else {
         // Normalize mesh identifier for comparisons
@@ -47,15 +65,80 @@ pub async fn load_mesh_renderer(
             .map(|id| id.to_ascii_lowercase());
 
         // Create primitive mesh based on meshId hints
-        vec![create_primitive_mesh(mesh_id_lower.as_deref())]
+        (vec![create_primitive_mesh(mesh_id_lower.as_deref())], None, None)
+    };
+
+    #[cfg(not(feature = "gltf-support"))]
+    let (cpu_meshes, gltf_textures, gltf_images): (Vec<CpuMesh>, Option<Vec<Option<String>>>, Option<Vec<vibe_assets::GltfImage>>) = {
+        let mesh_id_lower = mesh_renderer
+            .meshId
+            .as_ref()
+            .map(|id| id.to_ascii_lowercase());
+        (vec![create_primitive_mesh(mesh_id_lower.as_deref())], None, None)
     };
 
     // Build result vector for all submeshes
     let mut result = Vec::new();
 
+    // Determine if we should use GLTF embedded materials or scene overrides
+    let use_gltf_materials = gltf_textures.is_some()
+        && mesh_renderer.materialId.as_ref().map(|id| id.as_str()) == Some("default")
+        && mesh_renderer.materials.is_none();
+
+    log::info!(
+        "    Material strategy: use_gltf_materials={}, has_gltf_textures={}, materialId={:?}, has_materials_array={}",
+        use_gltf_materials,
+        gltf_textures.is_some(),
+        mesh_renderer.materialId,
+        mesh_renderer.materials.is_some()
+    );
+
     for (submesh_idx, cpu_mesh) in cpu_meshes.iter().enumerate() {
         // Get material for this submesh
-        let material = if let Some(materials) = &mesh_renderer.materials {
+        let material = if use_gltf_materials {
+            // Use GLTF embedded textures
+            if let Some(ref texture_ids) = gltf_textures {
+                if let Some(Some(ref texture_id)) = texture_ids.get(submesh_idx) {
+                    log::info!(
+                        "    Submesh {}: using GLTF embedded texture '{}'",
+                        submesh_idx,
+                        texture_id
+                    );
+                    create_material_from_gltf_texture(context, texture_id, material_manager).await?
+                } else {
+                    // Fallback: if GLTF has embedded images but no texture assignment, try using first image
+                    #[cfg(feature = "gltf-support")]
+                    if let Some(ref images) = _gltf_images {
+                        if !images.is_empty() {
+                            if let Some(ref first_texture_id) = images[0].name {
+                                log::info!(
+                                    "    Submesh {}: no texture assignment, using first GLTF image '{}'",
+                                    submesh_idx,
+                                    first_texture_id
+                                );
+                                create_material_from_gltf_texture(context, first_texture_id, material_manager).await?
+                            } else {
+                                log::info!("    Submesh {}: no embedded texture, using default", submesh_idx);
+                                material_manager.create_default_material(context)
+                            }
+                        } else {
+                            log::info!("    Submesh {}: no embedded images, using default", submesh_idx);
+                            material_manager.create_default_material(context)
+                        }
+                    } else {
+                        log::info!("    Submesh {}: no embedded texture, using default", submesh_idx);
+                        material_manager.create_default_material(context)
+                    }
+                    #[cfg(not(feature = "gltf-support"))]
+                    {
+                        log::info!("    Submesh {}: no embedded texture, using default", submesh_idx);
+                        material_manager.create_default_material(context)
+                    }
+                }
+            } else {
+                material_manager.create_default_material(context)
+            }
+        } else if let Some(materials) = &mesh_renderer.materials {
             // Use materials array if available
             if submesh_idx < materials.len() {
                 let material_id = &materials[submesh_idx];
@@ -136,35 +219,89 @@ async fn get_or_create_material(
     }
 }
 
-/// Load a GLTF model and convert all meshes to three-d's CpuMesh format
+/// Create a PhysicalMaterial from a GLTF embedded texture
+async fn create_material_from_gltf_texture(
+    context: &Context,
+    texture_id: &str,
+    material_manager: &mut MaterialManager,
+) -> Result<PhysicalMaterial> {
+    use three_d::{CpuMaterial, Srgba};
+
+    // Create a material with the GLTF texture as albedo
+    let mut cpu_material = CpuMaterial {
+        albedo: Srgba::WHITE,
+        roughness: 0.7,
+        metallic: 0.0,
+        ..Default::default()
+    };
+
+    // Load the texture from cache
+    match material_manager.texture_cache_mut().load_texture(texture_id).await {
+        Ok(texture) => {
+            cpu_material.albedo_texture = Some(texture.as_ref().clone());
+            log::debug!("Applied GLTF texture '{}' to material", texture_id);
+        }
+        Err(e) => {
+            log::warn!("Failed to apply GLTF texture '{}': {}", texture_id, e);
+        }
+    }
+
+    Ok(PhysicalMaterial::new(context, &cpu_material))
+}
+
+/// GLTF loading result with meshes and texture information
 #[cfg(feature = "gltf-support")]
-fn load_gltf_meshes(model_path: &str) -> Result<Vec<CpuMesh>> {
+struct GltfLoadResult {
+    cpu_meshes: Vec<CpuMesh>,
+    texture_ids: Vec<Option<String>>,
+    images: Vec<vibe_assets::GltfImage>,
+}
+
+/// Load a GLTF model with full texture support
+#[cfg(feature = "gltf-support")]
+fn load_gltf_meshes_with_textures(model_path: &str) -> Result<GltfLoadResult> {
     log::info!("    Loading GLTF model from: {}", model_path);
 
-    // Load GLTF using vibe-assets loader
-    let meshes = vibe_assets::load_gltf(model_path)
+    // Load GLTF using vibe-assets loader (full version with textures)
+    let gltf_data = vibe_assets::load_gltf_full(model_path)
         .with_context(|| format!("Failed to load GLTF model: {}", model_path))?;
 
-    if meshes.is_empty() {
+    if gltf_data.meshes.is_empty() {
         anyhow::bail!("GLTF model contains no meshes: {}", model_path);
     }
 
-    log::info!("    GLTF model contains {} submesh(es)", meshes.len());
+    log::info!(
+        "    GLTF model contains {} submesh(es) and {} texture(s)",
+        gltf_data.meshes.len(),
+        gltf_data.images.len()
+    );
 
     // Convert all meshes to CpuMesh format
     let mut cpu_meshes = Vec::new();
-    for (idx, asset_mesh) in meshes.iter().enumerate() {
+    for (idx, asset_mesh) in gltf_data.meshes.iter().enumerate() {
         log::info!(
-            "      Submesh {}: {} vertices, {} indices",
+            "      Submesh {}: {} vertices, {} indices, texture: {:?}",
             idx,
             asset_mesh.vertices.len(),
-            asset_mesh.indices.len()
+            asset_mesh.indices.len(),
+            gltf_data.mesh_textures.get(idx).and_then(|t| t.as_ref())
         );
         let cpu_mesh = convert_asset_mesh_to_cpu_mesh(asset_mesh)?;
         cpu_meshes.push(cpu_mesh);
     }
 
-    Ok(cpu_meshes)
+    Ok(GltfLoadResult {
+        cpu_meshes,
+        texture_ids: gltf_data.mesh_textures,
+        images: gltf_data.images,
+    })
+}
+
+/// Load a GLTF model and convert all meshes to three-d's CpuMesh format (legacy)
+#[cfg(feature = "gltf-support")]
+fn load_gltf_meshes(model_path: &str) -> Result<Vec<CpuMesh>> {
+    let result = load_gltf_meshes_with_textures(model_path)?;
+    Ok(result.cpu_meshes)
 }
 
 /// Fallback for when GLTF support is not enabled

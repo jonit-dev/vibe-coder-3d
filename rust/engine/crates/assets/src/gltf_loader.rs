@@ -141,13 +141,23 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
 
             let mut base_color_texture_id: Option<String> = None;
             let material = primitive.material();
+            let material_name = material.name().unwrap_or("Unnamed");
             let pbr = material.pbr_metallic_roughness();
+
+            log::debug!("  Material: {} (index: {:?})", material_name, material.index());
+
             if let Some(base_texture) = pbr.base_color_texture() {
                 let texture = base_texture.texture();
                 let source_index = texture.source().index();
+                log::debug!("    Base color texture source index: {}", source_index);
                 if let Some(id) = image_id_map.get(source_index) {
                     base_color_texture_id = Some(id.clone());
+                    log::debug!("    Mapped to texture ID: {}", id);
+                } else {
+                    log::warn!("    Texture source index {} not found in image map (map has {} entries)", source_index, image_id_map.len());
                 }
+            } else {
+                log::debug!("    No base_color_texture in material");
             }
 
             log::debug!(
