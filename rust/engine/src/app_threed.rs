@@ -46,6 +46,20 @@ impl AppThreeD {
         log::info!("Initializing three-d renderer...");
         let mut renderer = ThreeDRenderer::new(Arc::clone(&window))?;
 
+        // CRITICAL: Force resize to actual monitor size for fullscreen windows
+        // Fullscreen borderless windows report wrong size initially
+        let actual_size = window.inner_size();
+        log::info!("Window inner_size reports: {}x{}", actual_size.width, actual_size.height);
+
+        if let Some(monitor) = window.current_monitor() {
+            let monitor_size = monitor.size();
+            log::info!("Actual monitor size: {}x{}", monitor_size.width, monitor_size.height);
+            renderer.resize(monitor_size.width, monitor_size.height);
+        } else {
+            log::warn!("Could not detect monitor, using window-reported size");
+            renderer.resize(actual_size.width, actual_size.height);
+        }
+
         // Create test scene with primitives
         renderer.create_test_scene()?;
 
@@ -84,6 +98,20 @@ impl AppThreeD {
         // Initialize three-d renderer
         log::info!("Initializing three-d renderer...");
         let mut renderer = ThreeDRenderer::new(Arc::clone(&window))?;
+
+        // CRITICAL: Force resize to actual monitor size for fullscreen windows
+        // Fullscreen borderless windows report wrong size initially
+        let actual_size = window.inner_size();
+        log::info!("Window inner_size reports: {}x{}", actual_size.width, actual_size.height);
+
+        if let Some(monitor) = window.current_monitor() {
+            let monitor_size = monitor.size();
+            log::info!("Actual monitor size: {}x{}", monitor_size.width, monitor_size.height);
+            renderer.resize(monitor_size.width, monitor_size.height);
+        } else {
+            log::warn!("Could not detect monitor, using window-reported size");
+            renderer.resize(actual_size.width, actual_size.height);
+        }
 
         // Load scene (async texture loading)
         let scene = crate::io::load_scene(&scene_path)?;

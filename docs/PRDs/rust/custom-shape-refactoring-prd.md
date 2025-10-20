@@ -6,10 +6,11 @@
 
 ### Context & Goals
 
-- **Unify Shape Systems**: Consolidate the 15 hard-coded shapes in `CustomGeometries.tsx` with the registry-based dynamic shape system for consistency and maintainability.
+- **Unify and Generalize Shape Authoring**: Provide an open-ended shape system that allows creating any shape (not limited to a predefined catalog) via a Geometry IR and node-graph workflow, while still supporting code-defined shapes.
 - **Enable Rust Rendering**: Implement procedural shape generators in Rust to achieve feature parity with Three.js, enabling custom shapes to render identically in both the editor and native Rust engine.
 - **Optimize Serialization**: Replace naive mesh data serialization with a multi-tier approach that prioritizes parametric procedural generation with optional fallback to raw mesh export.
 - **Preserve Parametric Control**: Maintain user ability to adjust shape parameters after creation rather than baking immutable geometry.
+- **No Catalog Constraints**: Users can author brand-new shapes without adding TypeScript code by composing operations in a node-graph that compiles to a cross-engine Geometry IR.
 
 ### Current Pain Points
 
@@ -17,25 +18,39 @@
 - **No Rust Support**: Custom shapes (Helix, Tree, Rock, etc.) exist only in Three.js; Rust engine cannot render them, breaking Play mode parity.
 - **Inefficient Serialization**: No established pattern for Three.js → Rust shape data transfer; raw mesh export would create 50KB+ JSON payloads vs 50-byte parameter objects.
 - **String-Based Matching**: Rust uses brittle string matching (`mesh.contains("helix")`) rather than structured shape definitions.
+- **Predefined Catalog Limitation**: Authoring new shapes requires code changes; there is no graph/IR path to create arbitrary shapes without expanding the predefined list.
 
 ## 2. Proposed Solution
 
 ### High-level Summary
 
+- **Introduce Geometry IR + LLM Authoring (data-only)**: Add a cross‑engine Geometry Intermediate Representation (IR) and author shapes purely via data/JSON (no visual editor). LLMs or scripts produce IR that both TS and Rust interpret deterministically.
 - **Migrate Hard-Coded Shapes to Registry**: Convert all 15 shapes in `CustomGeometries.tsx` to the registry pattern with Zod schemas and metadata, removing the switch statement in `GeometryRenderer.tsx`.
-- **Create Rust Procedural Library**: Implement Rust equivalents of each procedural shape generator in `rust/engine/crates/assets/src/procedural/`, mirroring Three.js algorithms for pixel-perfect parity.
-- **Multi-Tier Serialization**: Serialize shape parameters (Tier 1), fallback to raw mesh data for organic shapes (Tier 2), and support hybrid deterministic generation (Tier 3).
-- **Shape Descriptor Extensions**: Add `rustGenerator` field to `ICustomShapeDescriptor` to map TypeScript shapes to Rust generation functions.
-- **Component Data Model**: Extend `CustomShape` component to store `shapeId`, validated `params`, and optional pre-baked mesh data for performance optimization.
+- **Create Rust Procedural Library (three-d)**: Implement Rust equivalents of each procedural shape generator in `rust/engine/crates/assets/src/procedural/`, mirroring Three.js algorithms, producing `three_d::core::CpuMesh` for native rendering with the `three-d` crate.
+- **Multi-Tier Serialization**: Add Tier 0 (Geometry IR), Tier 1 (params), Tier 2 (raw mesh), Tier 3 (binary). Prefer Tier 0/1 to preserve editability and determinism.
+- **Shape Descriptor Extensions**: Add `rustGenerator` and optional `toGeometryIR` to `ICustomShapeDescriptor` to map shapes to Rust generators or IR.
+- **Component Data Model**: Extend `CustomShape` to store `shapeId`, validated `params`, optional `ir`, and optional pre-baked mesh data.
+
+#### Non‑negotiable Flexibility Guarantees
+
+- Shapes are authored as data (IR) and are not limited to a predefined catalog.
+- IR supports construction of any polygonal mesh via primitives, sweeps, extrusions, CSG, deformations, and direct raw triangle injection.
+- Extensibility via `custom_op` nodes allows new operations without changing core binaries; both TS and Rust interpretors support plugin ops.
+- If an operation is not natively supported, fallback exists through `raw_mesh` nodes or generator plug-ins to ensure anything can be built.
 
 ### Architecture & Directory Structure
 
-```
+```text
 TypeScript (Editor)
 ├── src/core/lib/rendering/shapes/
-│   ├── IShapeDescriptor.ts              # Add rustGenerator field
+│   ├── IShapeDescriptor.ts              # Add rustGenerator field, optional toGeometryIR
 │   ├── shapeRegistry.ts                 # Existing registry (no changes)
-│   └── discovery.ts                     # Existing auto-discovery (no changes)
+│   ├── discovery.ts                     # Existing auto-discovery (no changes)
+│   └── ir/                              # NEW - Geometry IR and interpreter for Three.js
+│       ├── index.ts                     # Types, validators (Zod), interpreter entry
+│       ├── nodes.ts                     # IR node definitions
+│       ├── validators.ts                # Zod schemas for IR validation
+│       └── interpreter.ts               # IR → BufferGeometry
 ├── src/editor/components/panels/ViewportPanel/components/
 │   ├── CustomGeometries.tsx             # DEPRECATED - migrate shapes out
 │   └── GeometryRenderer.tsx             # Simplify switch to use registry only
@@ -48,7 +63,7 @@ TypeScript (Editor)
 
 Rust (Engine)
 ├── rust/engine/crates/assets/src/
-│   ├── procedural/                      # NEW - procedural generators
+│   ├── procedural/                      # NEW - procedural generators (return three_d::core::CpuMesh)
 │   │   ├── mod.rs                       # Export all generators
 │   │   ├── helix.rs                     # create_helix() matching Three.js
 │   │   ├── star.rs                      # create_star() matching Three.js
@@ -57,10 +72,16 @@ Rust (Engine)
 │   │   └── ... (15 total)
 │   └── primitives/                      # EXISTING - extend with new shapes
 │       └── ...existing files...
+├── rust/engine/crates/geometry-ir/      # NEW - shared Geometry IR (Rust)
+│   ├── Cargo.toml
+│   ├── src/lib.rs                       # Public IR types + serde
+│   ├── src/nodes.rs                     # Node types (snake_case)
+│   ├── src/interpreter.rs               # IR → Mesh (CPU)
+│   └── src/validators.rs                # Runtime validation/clamping
 └── rust/engine/crates/ecs-bridge/src/
     ├── components/
-    │   └── custom_shape.rs              # NEW - CustomShape component decoder
-    └── shape_registry.rs                # NEW - Rust-side shape ID → generator map
+    │   └── custom_shape.rs              # NEW - decoder (params + optional IR)
+    └── shape_registry.rs                # NEW - Rust-side shape ID → generator map (CpuMesh)
 
 Serialization Contract
 ├── docs/schemas/
@@ -69,6 +90,25 @@ Serialization Contract
 
 ## 3. Implementation Plan
 
+### Phase 0: Geometry IR & Graph Pipeline (1.5 days)
+
+1. **Define Geometry IR (TS + Rust)** (0.5 day)
+
+   - Add IR node types: primitives, polygon/extrude, revolve, sweep, loft, CSG (union, intersect, subtract), transforms, instancing, attribute ops, UV generation
+   - Create Zod schemas (TS) and `serde` types (Rust, snake_case) for IR validation
+   - Implement minimal interpreter in TS to generate `BufferGeometry`
+
+2. **LLM/Data-Only Authoring Flow** (0.75 day)
+
+   - Define prompt → IR specification and validation pipeline (no UI)
+   - Add `shape:createFromIR(ir)` helper in editor/runtime to attach IR to `CustomShape`
+   - Provide canned prompts/examples and unit tests to validate IR generation
+
+3. **Scene Serialization Wiring** (0.25 day)
+
+   - Extend `CustomShape` component to include optional `ir` field
+   - Update serializer to write/read `ir` when present
+
 ### Phase 1: TypeScript Migration & Registry Consolidation (1.5 days)
 
 1. **Create Registry-Based Shape Files** (1 day)
@@ -76,7 +116,8 @@ Serialization Contract
    - Migrate 15 shapes from `CustomGeometries.tsx` to individual files in `src/game/shapes/`
    - Each shape exports a `shape` descriptor with `ICustomShapeDescriptor<TParams>` interface
    - Define Zod parameter schemas for all shapes (e.g., `helix: { radius, height, turns, segments, tubeRadius }`)
-   - Add `rustGenerator` field to each descriptor (e.g., `rustGenerator: 'helix_generator'`)
+   - Add `rustGenerator` field to each descriptor when applicable (e.g., `rustGenerator: 'helix_generator'`)
+   - Optionally add `toGeometryIR(params)` for shapes expressible via IR (preferred)
    - Verify auto-discovery detects all new shapes
 
 2. **Update GeometryRenderer** (0.25 day)
@@ -127,16 +168,27 @@ Serialization Contract
 1. **Define JSON Schema** (0.25 day)
 
    - Document `CustomShape` component structure:
+
      ```json
      {
        "type": "CustomShape",
        "data": {
          "shapeId": "helix",
          "params": { "radius": 0.3, "height": 2.0, ... },
-         "meshData": null  // Optional pre-baked mesh
+         "ir": {
+           "version": "1",
+           "root": {
+             "type": "sweep",
+             "path": { "type": "helix_curve", "turns": 3, "radius": 0.3, "height": 2.0 },
+             "profile": { "type": "circle", "radius": 0.05 },
+             "segments": 100
+           }
+         },
+         "meshData": null
        }
      }
      ```
+
    - Add schema version field for future-proofing
    - Define fallback raw mesh format (Tier 2)
 
@@ -144,12 +196,12 @@ Serialization Contract
 
    - Create `custom_shape.rs` in `vibe-ecs-bridge/src/components/`
    - Implement `IComponentDecoder` for `CustomShape`
-   - Deserialize params and validate against shape expectations
+   - Deserialize params and validate against shape expectations; if `ir` is present, validate IR via `geometry-ir` crate
    - Handle missing/invalid params with default values
 
 3. **Create Rust Shape Registry** (0.25 day)
    - Map `shapeId` strings to Rust generator functions
-   - Use `HashMap<&'static str, GeneratorFn>` for O(1) lookup
+   - Use `HashMap<&'static str, GeneratorFn>` for O(1) lookup; if no generator exists, fall back to IR interpreter when `ir` is provided
    - Log warnings for unrecognized shape IDs
 
 ### Phase 4: Integration & Rendering Pipeline (1 day)
@@ -158,7 +210,7 @@ Serialization Contract
 
    - Extend `create_primitive_mesh()` in `primitive_mesh.rs`
    - Check for `CustomShape` component presence
-   - Invoke procedural generator with deserialized params
+   - When `ir` is provided: invoke Geometry IR interpreter; otherwise invoke procedural generator with deserialized params
    - Cache generated meshes to avoid re-generation
 
 2. **Update Material Pipeline** (0.25 day)
@@ -304,7 +356,7 @@ mod tests {
 use vibe_assets::procedural::*;
 use std::collections::HashMap;
 
-type GeneratorFn = fn(&serde_json::Value) -> vibe_assets::Mesh;
+type GeneratorFn = fn(&serde_json::Value) -> three_d::core::CpuMesh;
 
 pub struct ShapeRegistry {
     generators: HashMap<&'static str, GeneratorFn>,
@@ -332,7 +384,11 @@ impl ShapeRegistry {
         registry
     }
 
-    pub fn generate(&self, shape_id: &str, params: &serde_json::Value) -> Option<vibe_assets::Mesh> {
+    pub fn generate(&self, shape_id: &str, params: &serde_json::Value, ir: Option<&geometry_ir::GeometryIr>) -> Option<three_d::core::CpuMesh> {
+        if let Some(ir) = ir {
+            // Prefer IR when present for arbitrary shapes
+            return Some(geometry_ir::interpreter::evaluate(ir));
+        }
         self.generators.get(shape_id).map(|gen| gen(params))
     }
 }
@@ -355,6 +411,9 @@ pub struct CustomShapeData {
 
     #[serde(default, rename = "meshData")]
     pub mesh_data: Option<RawMeshData>, // Tier 2 fallback
+
+    #[serde(default)]
+    pub ir: Option<geometry_ir::GeometryIr>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -436,13 +495,13 @@ pub struct MeshCache {
 }
 
 impl MeshCache {
-    pub fn get_or_generate(&self, shape_id: &str, params: &serde_json::Value) -> Arc<CpuMesh> {
+    pub fn get_or_generate(&self, shape_id: &str, params: &serde_json::Value) -> Arc<three_d::core::CpuMesh> {
         let cache_key = format!("{}:{}", shape_id, params.to_string());
 
         self.cache.entry(cache_key.clone()).or_insert_with(|| {
-            let mesh = SHAPE_REGISTRY.generate(shape_id, params)
+            let mesh = SHAPE_REGISTRY.generate(shape_id, params, None)
                 .expect("Unknown shape ID");
-            Arc::new(convert_to_cpu_mesh(&mesh))
+            Arc::new(mesh)
         }).clone()
     }
 }
@@ -459,8 +518,9 @@ export interface ICustomShapeDescriptor<TParams extends z.ZodTypeAny> {
   renderGeometry(params: z.infer<TParams>): ReactNode;
 
   // NEW: Rust integration fields
-  rustGenerator?: string; // Name of Rust generator function
+  rustGenerator?: string; // Name of Rust generator function (optional when using IR)
   serializationTier?: 1 | 2 | 3; // Default: 1 (procedural params)
+  toGeometryIR?: (params: z.infer<TParams>) => GeometryIr; // Prefer IR for arbitrary shapes
   exportMeshData?: (params: z.infer<TParams>) => RawMeshData; // Tier 2 export
 }
 ```
@@ -480,6 +540,16 @@ addComponent(entity.id, 'CustomShape', {
     turns: 3,
     segments: 100,
     tubeRadius: 0.05,
+  },
+  // IR enables arbitrary shapes without predefined catalog constraints
+  ir: {
+    version: '1',
+    root: {
+      type: 'sweep',
+      path: { type: 'helix_curve', turns: 3, radius: 0.3, height: 2.0 },
+      profile: { type: 'circle', radius: 0.05 },
+      segments: 100,
+    },
   },
 });
 addComponent(entity.id, 'MeshRenderer', {
@@ -530,16 +600,17 @@ addComponent(entity.id, 'MeshRenderer', {
 // Scene loader detects CustomShape component
 let custom_shape_data: CustomShapeData = /* deserialize from JSON */;
 
-// Generate mesh using registry
-let mesh = shape_registry.generate(&custom_shape_data.shape_id, &custom_shape_data.params)
+// Generate mesh using registry (IR takes precedence when provided)
+let mesh = shape_registry
+    .generate(&custom_shape_data.shape_id, &custom_shape_data.params, custom_shape_data.ir.as_ref())
     .unwrap_or_else(|| {
         log::warn!("Unknown shape: {}, using fallback cube", custom_shape_data.shape_id);
         create_cube()
     });
 
-// Convert to GPU mesh and render
-let cpu_mesh = convert_vibe_mesh_to_cpu_mesh(&mesh);
-let gpu_mesh = upload_to_gpu(&cpu_mesh);
+// Convert CpuMesh to GpuMesh and render with three-d
+let context = window.gl();
+let gpu_mesh = three_d::renderer::Geometry::new(&context, &mesh);
 ```
 
 ## 7. Testing Strategy
@@ -597,14 +668,15 @@ yarn test:compare-shape-screenshots
 
 | Edge Case                                    | Remediation                                                                                                                 |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **Unknown `shapeId` in Rust**                | Log warning and render fallback cube; editor should prevent invalid IDs via registry validation                             |
+| **Unknown `shapeId` in Rust**                | If `ir` provided, evaluate IR; otherwise log warning and render fallback cube                                               |
 | **Invalid parameters (out of range)**        | Clamp to schema min/max; log warning; use default value if clamping fails                                                   |
-| **Missing `rustGenerator` field**            | Shape only renders in Three.js; editor shows warning badge; Rust falls back to Tier 2 raw mesh export if available          |
+| **Missing `rustGenerator` field**            | If `toGeometryIR` exists, prefer IR path; otherwise, editor shows warning badge; Rust falls back to IR or Tier 2 export     |
 | **Organic shape seed mismatch**              | Both sides use identical seeded random algorithm; integration tests verify determinism                                      |
 | **Three.js uses degrees, Rust uses radians** | Use `transform_utils` for rotation; shape params use explicit units (degrees or radians) with conversions                   |
 | **Mesh generation fails (OOM, timeout)**     | Catch errors, log stack trace, render error cube with red material; prevent editor from creating excessively complex shapes |
 | **WebGL context loss during generation**     | Defer shape generation to background worker or batch generation during loading screen                                       |
 | **HMR re-registration conflicts**            | Registry allows re-registration in dev mode; clear cache on HMR updates                                                     |
+| **Invalid or unsafe IR graph**               | Zod/serde validation with structural limits; descriptive errors; disable only obviously unsafe operations                   |
 
 ## 9. Sequence Diagram
 
@@ -619,9 +691,13 @@ sequenceDiagram
     participant GPU
 
     User->>Editor: Click "Add → Custom Shapes → Helix"
-    Editor->>Registry: resolve("helix")
-    Registry-->>Editor: ICustomShapeDescriptor
-    Editor->>Editor: getDefaultParams()
+    Editor->>Editor: Build Shape Graph (nodes)
+    Editor->>Editor: Compile to Geometry IR
+    alt Registry-backed shape
+      Editor->>Registry: resolve("helix")
+      Registry-->>Editor: ICustomShapeDescriptor
+      Editor->>Editor: getDefaultParams()
+    end
     Editor->>Scene: createEntity("Helix")
     Editor->>Scene: addComponent("CustomShape", {shapeId, params})
     Editor->>Scene: addComponent("MeshRenderer", {meshId: "CustomShape"})
@@ -633,9 +709,13 @@ sequenceDiagram
 
     User->>Rust: Click "Play"
     Rust->>JSON: Load scene.json
-    JSON-->>Rust: CustomShape component data
-    Rust->>Rust: ShapeRegistry.generate("helix_generator", params)
-    Rust->>Rust: create_helix(radius, height, turns, ...)
+    JSON-->>Rust: CustomShape component data (params + optional IR)
+    alt IR present
+      Rust->>Rust: geometry_ir::interpreter::evaluate(IR)
+    else Generator available
+      Rust->>Rust: ShapeRegistry.generate("helix_generator", params)
+      Rust->>Rust: create_helix(radius, height, turns, ...)
+    end
     Rust->>Rust: convert_to_cpu_mesh()
     Rust->>GPU: Upload mesh buffers
     GPU-->>Rust: GPU mesh handle
@@ -660,9 +740,10 @@ sequenceDiagram
 
 | Phase                             | Duration | Dependencies             |
 | --------------------------------- | -------- | ------------------------ |
-| **Phase 1: TypeScript Migration** | 1.5 days | None                     |
+| **Phase 0: Geometry IR & Graph**  | 1.5 days | None                     |
+| **Phase 1: TypeScript Migration** | 1.5 days | Phase 0 (IR types)       |
 | **Phase 2: Rust Generators**      | 2 days   | Phase 1 (shapes defined) |
-| **Phase 3: Serialization**        | 1 day    | Phase 1 (schema defined) |
+| **Phase 3: Serialization**        | 1 day    | Phase 0, 1               |
 | **Phase 4: Integration**          | 1 day    | Phase 2, 3               |
 | **Phase 5: Testing**              | 1.5 days | Phase 4                  |
 | **Phase 6: Documentation**        | 0.5 day  | Phase 5                  |
@@ -680,18 +761,19 @@ sequenceDiagram
 
 ## 12. Acceptance Criteria
 
-- ✅ **All 15 hard-coded shapes migrated to registry pattern** with Zod schemas and metadata
+- ✅ **Graph-authored arbitrary shapes supported**: Create brand‑new shapes with the node graph (no TS code) and render in TS & Rust
+- ✅ **All 15 hard‑coded shapes migrated to registry pattern** with Zod schemas and metadata (as examples/templates)
 - ✅ **`CustomGeometries.tsx` deprecated** and removed from active code paths
-- ✅ **15 Rust procedural generators implemented** matching Three.js algorithms
-- ✅ **Visual parity achieved**: Screenshot diff <1% for procedural shapes, <5% for organic shapes
+- ✅ **15 Rust procedural generators implemented** matching Three.js algorithms OR equivalent IR coverage
+- ✅ **Visual parity achieved**: Screenshot diff <1% for procedural shapes, <5% for seeded organic shapes
 - ✅ **Vertex count parity**: Rust meshes have ±5% vertex count vs Three.js
-- ✅ **Serialization working**: Scenes with custom shapes save/load correctly in JSON
-- ✅ **Rust shape registry functional**: Maps `shapeId` to generator functions with parameter deserialization
-- ✅ **End-to-end test passes**: Create shape in editor → save → load in Rust → renders identically
-- ✅ **Performance targets met**: Mesh generation <10ms per shape, caching prevents redundant generation
-- ✅ **Error handling robust**: Invalid shapes render fallback cube with logged warnings
-- ✅ **Documentation complete**: Shape authoring guide updated, Rust generator template provided
-- ✅ **All tests green**: Unit tests, integration tests, visual regression tests passing in CI
+- ✅ **Serialization working**: Scenes with custom shapes save/load correctly in JSON (params and optional IR)
+- ✅ **Rust shape registry functional**: Maps `shapeId` to generator functions with parameter deserialization; IR interpreter fallback works
+- ✅ **End‑to‑end test passes**: Create shape via graph → save → load in Rust → renders identically
+- ✅ **Performance targets met**: Mesh generation <10ms typical; caching prevents redundant generation
+- ✅ **Error handling robust**: Invalid params/IR produce clear errors and safe fallbacks
+- ✅ **Documentation complete**: Authoring guide updated (graph + IR), Rust interpreter template provided
+- ✅ **All tests green**: Unit, integration, visual regression tests passing in CI
 
 ## 13. Conclusion
 
@@ -738,6 +820,7 @@ This work is foundational for future features like:
   - `zod@3.x` - Schema validation
   - `serde_json@1.x` - Rust JSON deserialization
   - `glam@0.24` - Rust vector math
+  - `three-d@0.16+` - Rust rendering engine (CpuMesh/GpuMesh, renderer)
 
 - **Internal Systems:**
 
@@ -761,5 +844,5 @@ This work is foundational for future features like:
 
 - **Development:** Node.js 20+, Rust 1.75+, sufficient RAM for parallel compilation
 - **Browser Support:** WebGL 2.0 required for Three.js rendering
-- **Rust Compilation:** Target wasm32 for WebAssembly build
+- **Rust Rendering:** Native rendering via `three-d` crate (no wasm required)
 - **Performance Budget:** Mesh generation must complete within frame budget (<16ms for 60fps)

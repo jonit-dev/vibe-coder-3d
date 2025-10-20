@@ -3,6 +3,7 @@ use glam::Vec3 as GlamVec3;
 use std::collections::HashMap;
 use std::sync::Arc;
 use three_d::*;
+use winit::dpi::PhysicalSize;
 use winit::window::Window as WinitWindow;
 
 use vibe_ecs_bridge::decoders::{
@@ -30,7 +31,7 @@ use crate::renderer::{
 /// - Managing scene objects (meshes, lights, camera)
 /// - Synchronizing with physics
 pub struct ThreeDRenderer {
-    _windowed_context: WindowedContext,
+    windowed_context: WindowedContext,
     context: Context,
     camera: Camera,
     camera_config: Option<CameraConfig>,
@@ -131,7 +132,7 @@ impl ThreeDRenderer {
         let debug_line_renderer = DebugLineRenderer::new(&context);
 
         Ok(Self {
-            _windowed_context: windowed_context,
+            windowed_context,
             context,
             camera,
             camera_config: None,
@@ -551,7 +552,7 @@ impl ThreeDRenderer {
             self.render_debug_overlay(&screen, physics_world)?;
         }
 
-        self._windowed_context
+        self.windowed_context
             .swap_buffers()
             .with_context(|| "Failed to swap buffers")?;
 
@@ -701,6 +702,11 @@ impl ThreeDRenderer {
     /// Handle window resize
     pub fn resize(&mut self, width: u32, height: u32) {
         log::info!("Resizing renderer to {}x{}", width, height);
+
+        // CRITICAL: Resize the three-d context to match the new window size
+        // Without this, the framebuffer size won't match the window and rendering will be clipped
+        self.windowed_context.resize(PhysicalSize::new(width, height));
+
         self.window_size = (width, height);
         self.hdr_color_texture = None;
         self.hdr_depth_texture = None;
