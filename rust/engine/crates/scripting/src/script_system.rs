@@ -30,6 +30,10 @@ pub struct ScriptSystem {
     scripts_base_path: PathBuf,
     /// Component registry for decoding Script components
     registry: vibe_ecs_bridge::ComponentRegistry,
+    /// Total elapsed time since start (seconds)
+    total_time: f64,
+    /// Total frames rendered
+    frame_count: u64,
 }
 
 impl ScriptSystem {
@@ -43,6 +47,8 @@ impl ScriptSystem {
             scripts: HashMap::new(),
             scripts_base_path,
             registry: vibe_ecs_bridge::create_default_registry(),
+            total_time: 0.0,
+            frame_count: 0,
         }
     }
 
@@ -244,6 +250,26 @@ impl ScriptSystem {
             )
         })?;
 
+        // Register math API
+        crate::apis::register_math_api(runtime.lua()).with_context(|| {
+            format!(
+                "Failed to register math API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
+        // Register time API (will be updated per frame)
+        crate::apis::register_time_api(
+            runtime.lua(),
+            crate::apis::TimeInfo::default(),
+        )
+        .with_context(|| {
+            format!(
+                "Failed to register time API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
         // Register script parameters as a global Lua table
         let params_lua = Self::json_to_lua(runtime.lua(), &script_comp.parameters)
             .map_err(|e| anyhow::anyhow!("Failed to convert parameters to Lua: {}", e))?;
@@ -252,12 +278,6 @@ impl ScriptSystem {
             .globals()
             .set("parameters", params_lua)
             .map_err(|e| anyhow::anyhow!("Failed to set parameters global: {}", e))?;
-
-        // Future APIs will be registered here:
-        // register_input_api(runtime.lua())?;
-        // register_math_api(runtime.lua())?;
-        // register_timer_api(runtime.lua())?;
-        // etc.
 
         // Load the .lua file
         let full_path = self.scripts_base_path.join(script_path);
@@ -292,7 +312,7 @@ impl ScriptSystem {
 
     /// Update all scripts
     ///
-    /// Calls onUpdate(deltaTime) for all active scripts
+    /// Calls onUpdate(deltaTime) for all active scripts and updates time API
     ///
     /// # Arguments
     ///
@@ -304,12 +324,36 @@ impl ScriptSystem {
     /// Rust flow: FrameTimer gives seconds → pass directly → scripts get seconds
     /// Both approaches result in scripts receiving deltaTime in seconds
     pub fn update(&mut self, delta_time: f32) -> Result<()> {
+        // Update time tracking
+        self.total_time += delta_time as f64;
+        self.frame_count += 1;
+
         log::debug!(
-            "ScriptSystem::update called with {} scripts, delta_time={:.4}s",
+            "ScriptSystem::update called with {} scripts, delta_time={:.4}s, total_time={:.2}s, frame={}",
             self.scripts.len(),
-            delta_time
+            delta_time,
+            self.total_time,
+            self.frame_count
         );
+
+        // Create time info for this frame
+        let time_info = crate::apis::TimeInfo {
+            time: self.total_time,
+            delta_time: delta_time as f64,
+            frame_count: self.frame_count,
+        };
+
         for (entity_id, entity_script) in &self.scripts {
+            // Update time API for this entity's Lua VM
+            if let Err(e) = crate::apis::update_time_api(entity_script.runtime.lua(), time_info) {
+                log::error!(
+                    "Failed to update time API for entity {}: {}",
+                    entity_id,
+                    e
+                );
+                continue;
+            }
+
             log::trace!("Calling onUpdate() for entity {} (delta: {:.4}s)", entity_id, delta_time);
             if let Err(e) = entity_script
                 .script

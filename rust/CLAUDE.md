@@ -217,10 +217,27 @@ Validates rotation format, camera fields, component structure, material referenc
 - Use descriptive names: `test_camera_fov_affects_projection` not `test1`
 - Test edge cases and error paths
 
+**File Organization:**
+
+- Tests in separate files: `module_name_test.rs` (NOT inline with `#[cfg(test)]` in the same file)
+- Test files use `#[cfg(test)] mod tests { use super::super::module_name::*; }`
+- Place test files alongside their implementation files
+
+Example structure:
+
+```
+src/apis/
+├── math_api.rs         # Implementation only
+└── math_api_test.rs    # Tests only
+```
+
+**Test File Template:**
+
 ```rust
+// math_api_test.rs
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::super::math_api::*;  // Import from parent's sibling module
 
     #[test]
     fn test_transform_degrees_to_radians() {
