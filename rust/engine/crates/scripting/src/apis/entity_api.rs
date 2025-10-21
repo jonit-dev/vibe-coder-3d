@@ -148,7 +148,11 @@ pub fn register_entity_api(
             let s = state
                 .lock()
                 .map_err(|e| mlua::Error::RuntimeError(format!("Lock error: {}", e)))?;
-            Ok((s.rotation.x, s.rotation.y, s.rotation.z))
+            Ok((
+                s.rotation.x.to_radians(),
+                s.rotation.y.to_radians(),
+                s.rotation.z.to_radians(),
+            ))
         })?;
         transform_table.set("rotation", getter)?;
     }
@@ -181,7 +185,7 @@ pub fn register_entity_api(
         )?;
     }
 
-    // Setter: entity.transform:setRotation(x, y, z) - expects degrees
+    // Setter: entity.transform:setRotation(x, y, z) - expects radians
     {
         let state = transform_state.clone();
         transform_table.set(
@@ -191,7 +195,7 @@ pub fn register_entity_api(
                 let mut s = state
                     .lock()
                     .map_err(|e| mlua::Error::RuntimeError(format!("Lock error: {}", e)))?;
-                s.rotation = Vec3::new(x, y, z); // Store as degrees
+                s.rotation = Vec3::new(x.to_degrees(), y.to_degrees(), z.to_degrees()); // Store as degrees
                 Ok(())
             })?,
         )?;
@@ -231,7 +235,7 @@ pub fn register_entity_api(
         )?;
     }
 
-    // Delta: entity.transform:rotate(dx, dy, dz) - expects degrees
+    // Delta: entity.transform:rotate(dx, dy, dz) - expects radians
     {
         let state = transform_state.clone();
         transform_table.set(
@@ -248,7 +252,11 @@ pub fn register_entity_api(
                         .lock()
                         .map_err(|e| mlua::Error::RuntimeError(format!("Lock error: {}", e)))?;
                     let old_rotation = s.rotation;
-                    s.rotation += Vec3::new(dx, dy, dz); // Add to degrees
+                    s.rotation += Vec3::new(
+                        dx.to_degrees(),
+                        dy.to_degrees(),
+                        dz.to_degrees(),
+                    ); // Add radians converted to degrees
                     log::debug!(
                         "Rotation updated from {:?} to {:?}",
                         old_rotation,
@@ -271,6 +279,7 @@ pub fn register_entity_api(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
     #[test]
     fn test_register_entity_api() {
@@ -311,7 +320,9 @@ mod tests {
             .load("return entity.transform.rotation()")
             .eval()
             .unwrap();
-        assert_eq!((rx, ry, rz), (90.0, 45.0, 0.0));
+        assert!((rx - FRAC_PI_2).abs() < 1e-4);
+        assert!((ry - FRAC_PI_4).abs() < 1e-4);
+        assert!(rz.abs() < 1e-4);
 
         // Test scale getter
         let (sx, sy, sz): (f32, f32, f32) =
@@ -334,7 +345,7 @@ mod tests {
         drop(state);
 
         // Test setRotation
-        lua.load("entity.transform:setRotation(90, 0, 45)")
+        lua.load("entity.transform:setRotation(math.rad(90), 0, math.rad(45))")
             .exec()
             .unwrap();
         let state = transform_state.lock().unwrap();
@@ -368,7 +379,7 @@ mod tests {
         drop(state);
 
         // Test rotate
-        lua.load("entity.transform:rotate(90, 45, 0)")
+        lua.load("entity.transform:rotate(math.rad(90), math.rad(45), 0)")
             .exec()
             .unwrap();
         let state = transform_state.lock().unwrap();

@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import type * as Monaco from 'monaco-editor';
+import React, { useEffect, useRef } from 'react';
 
 // Import the type definitions content
 const SCRIPT_API_TYPES = `/**
@@ -607,11 +607,12 @@ export {};
 `;
 
 export interface IScriptEditorProps {
-  code: string;
+  code: string; // initial code only; editor is uncontrolled
   onChange: (code: string) => void;
   hasErrors?: boolean;
   errorMessage?: string;
   height?: number | string;
+  externalCode?: string; // optional external sync source
 }
 
 export const ScriptEditor: React.FC<IScriptEditorProps> = ({
@@ -620,6 +621,7 @@ export const ScriptEditor: React.FC<IScriptEditorProps> = ({
   hasErrors = false,
   errorMessage,
   height = '300px',
+  externalCode,
 }) => {
   const editorRef = useRef<any>(null);
 
@@ -663,35 +665,20 @@ export const ScriptEditor: React.FC<IScriptEditorProps> = ({
     onChange(newValue || '');
   };
 
-  // Default "Hello World" script template demonstrating editor context
-  const defaultValue = `// Hello World TypeScript Script
-// This demonstrates basic editor context access
+  // When externalCode is provided (e.g., disk sync), push into the existing model
+  useEffect(() => {
+    if (typeof externalCode !== 'string') return;
+    const editor = editorRef.current;
+    if (!editor) return;
+    const model = editor.getModel?.();
+    if (!model) return;
+    if (model.getValue() !== externalCode) {
+      model.setValue(externalCode);
+    }
+  }, [externalCode]);
 
-function onStart(): void {
-  // Hello World with entity information
-
-  // Demonstrate entity manipulation
-
-  if (three.mesh) {
-    three.material.setColor("#00ff00"); // Green color
-  }
-
-  // Show available context objects
-
-}
-
-function onUpdate(deltaTime: number): void {
-  // Gentle rotation to show the script is running
-  entity.transform.rotate(0, deltaTime * 0.5, 0);
-
-  // Periodic status update (every 2 seconds)
-  if (Math.floor(time.time) % 2 === 0 && Math.floor(time.time * 10) % 10 === 0) {
-
-  }
-}`;
-
-  // Use the provided code or fall back to default template
-  const editorValue = code || defaultValue;
+  // Use provided code without causing re-renders on keystrokes
+  const editorValue = code;
 
   return (
     <div className="flex flex-col h-full border border-gray-600 rounded overflow-hidden">
@@ -702,7 +689,7 @@ function onUpdate(deltaTime: number): void {
           language="typescript"
           path="script.ts"
           theme="vs-dark"
-          value={editorValue}
+          defaultValue={editorValue}
           onChange={handleEditorChange}
           onMount={handleEditorDidMount}
           options={{

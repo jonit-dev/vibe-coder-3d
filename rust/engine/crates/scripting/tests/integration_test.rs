@@ -62,7 +62,7 @@ fn test_end_to_end_rotating_cube_script() {
                     "Script".to_string(),
                     json!({
                         "scriptPath": "rotating-cube.lua",
-                        "parameters": { "speed": 90.0 }, // 90 degrees per second
+                        "parameters": { "speed": (std::f32::consts::FRAC_PI_2 as f64) }, // 90°/s expressed in radians
                         "enabled": true
                     }),
                 ),
@@ -99,7 +99,7 @@ fn test_end_to_end_rotating_cube_script() {
             .expect("Failed to update scripts");
     }
 
-    // After 1 second at 90 degrees/second, rotation.y should be ~90 degrees
+    // After 1 second at 90 degrees/second (π/2 rad/s), rotation.y should be ~90 degrees
     let transform = script_system
         .get_transform(100)
         .expect("Should have transform for entity 100");

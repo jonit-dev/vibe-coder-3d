@@ -33,7 +33,7 @@ export class KeyboardInput {
     }
 
     // Prevent default for game keys
-    if (this.shouldPreventDefault(key)) {
+    if (this.shouldPreventDefault(key) && !this.isEventFromEditableTarget(event)) {
       event.preventDefault();
     }
   };
@@ -74,6 +74,51 @@ export class KeyboardInput {
 
   private shouldPreventDefault(key: string): boolean {
     return this.preventDefaultKeys.has(key);
+  }
+
+  /**
+   * Determine whether the keyboard event originated from an editable target
+   * (inputs, textareas, contenteditable, or Monaco editor areas).
+   * If so, we should NOT preventDefault so typing works normally.
+   */
+  private isEventFromEditableTarget(event: KeyboardEvent): boolean {
+    const target = event.target as EventTarget | null;
+    if (!target || typeof (target as any).closest !== 'function') {
+      // Best effort check for standard inputs/textareas
+      const el = target as HTMLElement | null;
+      return (
+        !!el &&
+        ((el as HTMLInputElement).type !== undefined ||
+          el.tagName === 'TEXTAREA' ||
+          el.getAttribute?.('contenteditable') === 'true')
+      );
+    }
+
+    const element = target as Element;
+
+    // Standard form controls
+    if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+      return true;
+    }
+
+    // ContentEditable regions
+    if (element.closest('[contenteditable="true"]')) {
+      return true;
+    }
+
+    // Monaco editor (catch both container and inner nodes)
+    // Monaco uses a complex DOM; checking for a parent with class 'monaco-editor'
+    if (element.closest('.monaco-editor')) {
+      return true;
+    }
+
+    // Generic ARIA textbox (some editors use this)
+    const role = (element.getAttribute && element.getAttribute('role')) || '';
+    if (role.toLowerCase() === 'textbox' || role.toLowerCase() === 'code') {
+      return true;
+    }
+
+    return false;
   }
 
   public clearFrameState(): void {

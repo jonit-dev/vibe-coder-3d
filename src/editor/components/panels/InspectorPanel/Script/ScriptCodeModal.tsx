@@ -597,6 +597,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
           <div className="flex-1 min-h-0">
             <ScriptEditor
               code={scriptData.code}
+              externalCode={lastCodeRef.current}
               onChange={handleCodeChange}
               hasErrors={scriptData.hasErrors}
               errorMessage={scriptData.lastErrorMessage}
