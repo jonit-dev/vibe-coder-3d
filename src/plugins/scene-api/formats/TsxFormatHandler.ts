@@ -255,8 +255,12 @@ export default defineScene({
   async load(args: ILoadArgs): Promise<ILoadResult> {
     const { name } = args;
 
-    // Try single-file format first: SceneName.tsx
-    const singleFilename = name.endsWith('.tsx') ? name : `${name}.tsx`;
+    // Sanitize name to match how save sanitizes it (camelCase)
+    const cleanName = name.replace(/\.tsx$/i, '');
+    const sanitizedName = sanitizeComponentName(cleanName);
+
+    // Try single-file format first: sceneName.tsx (camelCase)
+    const singleFilename = `${sanitizedName}.tsx`;
 
     if (await this.store.exists(singleFilename)) {
       // Single-file scene
@@ -285,8 +289,8 @@ export default defineScene({
       };
     }
 
-    // Fall back to multi-file format: SceneName/SceneName.index.tsx
-    const folderName = name.replace(/\.tsx$/, '');
+    // Fall back to multi-file format: sceneName/sceneName.index.tsx
+    const folderName = sanitizedName;
     const indexFilename = `${folderName}/${folderName}.index.tsx`;
 
     if (!(await this.store.exists(indexFilename))) {
