@@ -17,15 +17,38 @@ import { createHash } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, '..');
-const sourceDir = join(projectRoot, 'public/assets');
-const destDir = join(projectRoot, 'rust/game/assets');
-const cacheFile = join(destDir, '.sync-cache.json');
+
+// Sync configurations for different directories
+const syncConfigs = [
+  {
+    name: 'assets',
+    sourceDir: join(projectRoot, 'public/assets'),
+    destDir: join(projectRoot, 'rust/game/assets'),
+    excludePaths: [],
+  },
+  {
+    name: 'geometry',
+    sourceDir: join(projectRoot, 'src/game/geometry'),
+    destDir: join(projectRoot, 'rust/game/geometry'),
+    excludePaths: [],
+  },
+  {
+    name: 'scenes',
+    sourceDir: join(projectRoot, 'src/game/scenes'),
+    destDir: join(projectRoot, 'rust/game/scenes'),
+    // Exclude test scenes - these are maintained manually for visual engine tests
+    excludePaths: ['tests'],
+  },
+];
+
+const cacheFile = join(projectRoot, 'rust/game', '.sync-cache.json');
 
 // Parse CLI args
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const isForce = args.includes('--force');
 const isVerbose = args.includes('--verbose') || args.includes('-v');
+const isSilent = args.includes('--silent') || args.includes('-s');
 
 // Asset extensions to sync
 const ASSET_EXTENSIONS = new Set([
@@ -37,6 +60,7 @@ const ASSET_EXTENSIONS = new Set([
   '.webp',
   '.hdr',
   '.exr',
+  '.json', // Include JSON for geometry files
 ]);
 
 // Load sync cache
@@ -77,7 +101,7 @@ async function getFileInfo(filePath) {
 }
 
 // Recursively find all asset files
-async function findAssetFiles(dir, baseDir = dir) {
+async function findAssetFiles(dir, baseDir = dir, excludePaths = []) {
   let files = [];
 
   try {
@@ -85,14 +109,20 @@ async function findAssetFiles(dir, baseDir = dir) {
 
     for (const entry of entries) {
       const fullPath = join(dir, entry.name);
+      const relativePath = relative(baseDir, fullPath);
+
+      // Skip excluded paths
+      if (excludePaths.some((excludePath) => relativePath.startsWith(excludePath))) {
+        continue;
+      }
 
       if (entry.isDirectory()) {
-        files = files.concat(await findAssetFiles(fullPath, baseDir));
+        files = files.concat(await findAssetFiles(fullPath, baseDir, excludePaths));
       } else if (entry.isFile()) {
         // Only sync assets with recognized extensions
         const ext = extname(entry.name).toLowerCase();
         if (ASSET_EXTENSIONS.has(ext)) {
-          files.push(relative(baseDir, fullPath));
+          files.push(relativePath);
         }
       }
     }
@@ -121,17 +151,45 @@ function formatBytes(bytes) {
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
-// Sync assets
-async function syncAssets() {
-  console.log('🔄 Syncing assets from public/assets to rust/game/assets...\n');
+// Find files to delete (exist in dest but not in source)
+async function findOrphanedFiles(sourceDir, destDir, excludePaths = []) {
+  const orphaned = [];
 
-  const cache = await loadCache();
-  const sourceFiles = await findAssetFiles(sourceDir);
+  if (!existsSync(destDir)) {
+    return orphaned;
+  }
+
+  const sourceFiles = new Set(await findAssetFiles(sourceDir, sourceDir, excludePaths));
+  const destFiles = await findAssetFiles(destDir, destDir, excludePaths);
+
+  for (const destFile of destFiles) {
+    if (!sourceFiles.has(destFile)) {
+      orphaned.push(join(destDir, destFile));
+    }
+  }
+
+  return orphaned;
+}
+
+// Sync a single directory
+async function syncDirectory(config, cache) {
+  const { name, sourceDir, destDir, excludePaths = [] } = config;
+  if (!isSilent) {
+    console.log(
+      `🔄 Syncing ${name} from ${relative(projectRoot, sourceDir)} to ${relative(projectRoot, destDir)}...\n`,
+    );
+    if (excludePaths.length > 0) {
+      console.log(`   Excluding: ${excludePaths.join(', ')}\n`);
+    }
+  }
+
+  const sourceFiles = await findAssetFiles(sourceDir, sourceDir, excludePaths);
 
   const stats = {
     copied: 0,
     skipped: 0,
     unchanged: 0,
+    deleted: 0,
     errors: 0,
     totalSize: 0,
   };
@@ -218,10 +276,82 @@ async function syncAssets() {
     }
   }
 
-  // Clean up cache entries for files that no longer exist
-  const validKeys = new Set(sourceFiles);
+  // Delete orphaned files (files in dest that no longer exist in source)
+  const orphanedFiles = await findOrphanedFiles(sourceDir, destDir, excludePaths);
+  for (const orphanedPath of orphanedFiles) {
+    const relativePath = relative(destDir, orphanedPath);
+    if (isVerbose || isDryRun) {
+      console.log(`  🗑️  ${relativePath} (deleted from source)`);
+    }
+
+    if (!isDryRun) {
+      try {
+        const { unlink } = await import('fs/promises');
+        await unlink(orphanedPath);
+        stats.deleted++;
+      } catch (e) {
+        console.error(`  ❌ Failed to delete ${relativePath}: ${e.message}`);
+        stats.errors++;
+      }
+    } else {
+      stats.deleted++;
+    }
+  }
+
+  // Print summary
+  if (!isSilent) {
+    console.log('\n📊 Summary:');
+    if (isDryRun) {
+      console.log('  Mode: DRY RUN (no files were actually copied or deleted)');
+    }
+    console.log(`  ✅ Copied: ${stats.copied} files (${formatBytes(stats.totalSize)})`);
+    console.log(`  ⏭️  Unchanged: ${stats.unchanged} files`);
+    if (stats.deleted > 0) {
+      console.log(`  🗑️  Deleted: ${stats.deleted} files`);
+    }
+    if (stats.errors > 0) {
+      console.log(`  ❌ Errors: ${stats.errors}`);
+    }
+    console.log('');
+  }
+
+  return stats;
+}
+
+// Main sync function
+async function syncAssets() {
+  const cache = await loadCache();
+
+  const allStats = {
+    copied: 0,
+    unchanged: 0,
+    deleted: 0,
+    errors: 0,
+    totalSize: 0,
+  };
+
+  for (const config of syncConfigs) {
+    const stats = await syncDirectory(config, cache);
+    allStats.copied += stats.copied;
+    allStats.unchanged += stats.unchanged;
+    allStats.deleted += stats.deleted;
+    allStats.errors += stats.errors;
+    allStats.totalSize += stats.totalSize;
+  }
+
+  // Clean up cache entries for files that no longer exist in any config
+  const allValidKeys = new Set();
+  for (const config of syncConfigs) {
+    const sourceFiles = await findAssetFiles(
+      config.sourceDir,
+      config.sourceDir,
+      config.excludePaths || [],
+    );
+    sourceFiles.forEach((file) => allValidKeys.add(file));
+  }
+
   for (const key of Object.keys(cache.files)) {
-    if (!validKeys.has(key)) {
+    if (!allValidKeys.has(key)) {
       if (isVerbose) {
         console.log(`  🗑️  Removing cache entry for deleted file: ${key}`);
       }
@@ -231,19 +361,21 @@ async function syncAssets() {
 
   await saveCache(cache);
 
-  // Print summary
-  console.log('\n📊 Sync Summary:');
-  if (isDryRun) {
-    console.log('  Mode: DRY RUN (no files were actually copied)');
+  if (!isSilent) {
+    console.log('🎉 All syncs complete!\n');
+    console.log('📊 Total Summary:');
+    console.log(`  ✅ Copied: ${allStats.copied} files (${formatBytes(allStats.totalSize)})`);
+    console.log(`  ⏭️  Unchanged: ${allStats.unchanged} files`);
+    if (allStats.deleted > 0) {
+      console.log(`  🗑️  Deleted: ${allStats.deleted} files`);
+    }
+    if (allStats.errors > 0) {
+      console.log(`  ❌ Errors: ${allStats.errors}`);
+    }
+    console.log('');
   }
-  console.log(`  ✅ Copied: ${stats.copied} files (${formatBytes(stats.totalSize)})`);
-  console.log(`  ⏭️  Unchanged: ${stats.unchanged} files`);
-  if (stats.errors > 0) {
-    console.log(`  ❌ Errors: ${stats.errors}`);
-  }
-  console.log('');
 
-  return stats.errors === 0 ? 0 : 1;
+  return allStats.errors === 0 ? 0 : 1;
 }
 
 // Run sync

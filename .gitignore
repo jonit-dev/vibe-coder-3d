@@ -47,3 +47,8 @@ Thumbs.db
 
 # Rust engine screenshots (temporary test outputs)
 rust/engine/screenshots/
+
+# Rust game synced files (generated from src/game and public/assets)
+rust/game/assets/
+rust/game/geometry/
+rust/game/.sync-cache.json

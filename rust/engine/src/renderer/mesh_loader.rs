@@ -503,7 +503,26 @@ pub fn convert_geometry_meta_to_cpu_mesh(meta: &vibe_assets::GeometryMeta) -> Re
     let indices = if let Some(index_accessor) = &meta.index {
         if let Some(index_array) = &index_accessor.array {
             // Convert f32 to u32 for indices
-            Indices::U32(index_array.iter().map(|&f| f as u32).collect())
+            let vertex_count = positions.len() as u32;
+            let indices_vec: Vec<u32> = index_array
+                .iter()
+                .map(|&f| {
+                    let idx = f as u32;
+                    // Clamp indices to valid range (Three.js compatibility)
+                    if idx >= vertex_count {
+                        log::warn!(
+                            "Index {} out of range (vertex count: {}), clamping to {}",
+                            idx,
+                            vertex_count,
+                            vertex_count - 1
+                        );
+                        vertex_count - 1
+                    } else {
+                        idx
+                    }
+                })
+                .collect();
+            Indices::U32(indices_vec)
         } else {
             log::warn!("Index accessor has no array data, using non-indexed mesh");
             Indices::U32(vec![])

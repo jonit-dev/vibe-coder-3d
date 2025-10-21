@@ -1,6 +1,7 @@
 use anyhow::{Context as AnyhowContext, Result};
 use glam::Vec3 as GlamVec3;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 use three_d::*;
 use winit::dpi::PhysicalSize;
@@ -1160,7 +1161,26 @@ impl ThreeDRenderer {
         }
 
         // 1. Load the geometry metadata from path
-        let geometry_meta = vibe_assets::GeometryMeta::from_file(std::path::Path::new(&geometry_asset.path))
+        // Resolve path: TypeScript stores paths like "/src/game/geometry/file.shape.json"
+        // Geometry files are synced from src/game/geometry/ to rust/game/geometry/ via yarn rust:sync-assets
+        // Since we run from rust/engine/, we load from ../game/geometry/
+        let resolved_path = if geometry_asset.path.starts_with("/src/game/geometry/") {
+            // Extract just the filename from the TypeScript path
+            let filename = geometry_asset.path
+                .strip_prefix("/src/game/geometry/")
+                .unwrap_or(&geometry_asset.path);
+            PathBuf::from("../game/geometry").join(filename)
+        } else if geometry_asset.path.starts_with('/') {
+            // Legacy fallback: strip leading slash and use relative path
+            let relative_path = geometry_asset.path.strip_prefix('/').unwrap_or(&geometry_asset.path);
+            PathBuf::from("../..").join(relative_path)
+        } else {
+            PathBuf::from(&geometry_asset.path)
+        };
+
+        log::info!("    Resolved path: {}", resolved_path.display());
+
+        let geometry_meta = vibe_assets::GeometryMeta::from_file(&resolved_path)
             .with_context(|| format!("Failed to load geometry metadata: {}", geometry_asset.path))?;
 
         log::info!(
