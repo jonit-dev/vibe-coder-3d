@@ -94,8 +94,8 @@ flowchart LR
     B -->|No| D[Return T directly]
 
     C --> E{Error Message<br/>Dynamic?}
-    E -->|Yes| F[.with_context\|\| format!\(...\)]
-    E -->|No| G[.context\(...\)]
+    E -->|Yes| F[".with_context(|| format!(...)"]
+    E -->|No| G[".context(...)"]
 
     F --> H[Propagate with ?]
     G --> H
@@ -370,7 +370,6 @@ After creating new code, verify:
 ## Resources
 
 - [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/)
-- [wgpu Examples](https://github.com/gfx-rs/wgpu/tree/master/examples)
 - Check `README.md` for quickstart
 - Check `INTEGRATION_AUDIT.md` for TS ↔ Rust integration status
 - Check `ECS_PARITY_GUIDELINES.md` for component parity standards
