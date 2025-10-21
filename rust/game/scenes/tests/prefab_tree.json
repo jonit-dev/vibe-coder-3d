@@ -1,0 +1,385 @@
+{
+  "metadata": {
+    "name": "prefab_tree",
+    "version": 1,
+    "timestamp": "2025-10-21T00:00:00.000Z",
+    "description": "Test scene for prefab instantiation with tree hierarchy"
+  },
+  "prefabs": [
+    {
+      "id": "tree-prefab",
+      "name": "Tree Prefab",
+      "version": 1,
+      "root": {
+        "name": "Trunk",
+        "components": {
+          "Transform": {
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0],
+            "scale": [0.5, 2, 0.5]
+          },
+          "MeshRenderer": {
+            "meshId": "cube",
+            "materialId": "brown",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": true
+          }
+        },
+        "children": [
+          {
+            "name": "Leaves",
+            "components": {
+              "Transform": {
+                "position": [0, 2.5, 0],
+                "rotation": [0, 0, 0],
+                "scale": [2, 2, 2]
+              },
+              "MeshRenderer": {
+                "meshId": "sphere",
+                "materialId": "green",
+                "enabled": true,
+                "castShadows": true,
+                "receiveShadows": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "metadata": {},
+      "dependencies": [],
+      "tags": ["nature", "vegetation"],
+      "description": "A simple tree with trunk and leaves"
+    },
+    {
+      "id": "colored-cube",
+      "name": "Colored Cube",
+      "version": 1,
+      "root": {
+        "name": "Cube",
+        "components": {
+          "Transform": {
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0],
+            "scale": [1, 1, 1]
+          },
+          "MeshRenderer": {
+            "meshId": "cube",
+            "materialId": "default",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": true
+          }
+        },
+        "children": []
+      },
+      "metadata": {},
+      "dependencies": [],
+      "tags": ["primitive"],
+      "description": "A simple cube that can be colored via overrides"
+    }
+  ],
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "camera-prefab-tree"
+        },
+        "Transform": {
+          "position": [0, 3, -10],
+          "rotation": [15, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "depth": 0,
+          "isMain": true,
+          "clearFlags": "skybox",
+          "backgroundColor": {
+            "r": 0.1,
+            "g": 0.1,
+            "b": 0.2,
+            "a": 1
+          },
+          "controlMode": "free"
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-main"
+        },
+        "Transform": {
+          "position": [5, 10, 3],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1.0,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.3,
+          "shadowMapSize": 2048,
+          "shadowBias": -0.0001,
+          "shadowRadius": 2
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "light-ambient"
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.3,
+            "g": 0.3,
+            "b": 0.4
+          },
+          "intensity": 0.5,
+          "enabled": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Tree Instance 1",
+      "components": {
+        "PersistentId": {
+          "id": "tree-1"
+        },
+        "Transform": {
+          "position": [-3, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "PrefabInstance": {
+          "prefabId": "tree-prefab",
+          "version": 1,
+          "instanceUuid": "tree-instance-1",
+          "overridePatch": null
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Tree Instance 2 (Scaled)",
+      "components": {
+        "PersistentId": {
+          "id": "tree-2"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1.5, 1.5, 1.5]
+        },
+        "PrefabInstance": {
+          "prefabId": "tree-prefab",
+          "version": 1,
+          "instanceUuid": "tree-instance-2",
+          "overridePatch": {
+            "MeshRenderer": {
+              "materialId": "emerald"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Tree Instance 3 (Different Color)",
+      "components": {
+        "PersistentId": {
+          "id": "tree-3"
+        },
+        "Transform": {
+          "position": [3, 0, 0],
+          "rotation": [0, -30, 0],
+          "scale": [0.8, 1.2, 0.8]
+        },
+        "PrefabInstance": {
+          "prefabId": "tree-prefab",
+          "version": 1,
+          "instanceUuid": "tree-instance-3",
+          "overridePatch": {
+            "MeshRenderer": {
+              "materialId": "red"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Red Cube Instance",
+      "components": {
+        "PersistentId": {
+          "id": "cube-red"
+        },
+        "Transform": {
+          "position": [-6, 1, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "PrefabInstance": {
+          "prefabId": "colored-cube",
+          "version": 1,
+          "instanceUuid": "cube-red-instance",
+          "overridePatch": {
+            "Transform": {
+              "scale": [2, 2, 2]
+            },
+            "MeshRenderer": {
+              "materialId": "red"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "Blue Cube Instance",
+      "components": {
+        "PersistentId": {
+          "id": "cube-blue"
+        },
+        "Transform": {
+          "position": [6, 1, 0],
+          "rotation": [0, -45, 0],
+          "scale": [1, 1, 1]
+        },
+        "PrefabInstance": {
+          "prefabId": "colored-cube",
+          "version": 1,
+          "instanceUuid": "cube-blue-instance",
+          "overridePatch": {
+            "MeshRenderer": {
+              "materialId": "blue"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "ground"
+        },
+        "Transform": {
+          "position": [0, -0.1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [20, 1, 20]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "ground",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "default",
+      "name": "Default",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#cccccc",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "brown",
+      "name": "Brown (Trunk)",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#8B4513",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "green",
+      "name": "Green (Leaves)",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#228B22",
+      "metalness": 0,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "emerald",
+      "name": "Emerald Green",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#50C878",
+      "metalness": 0.2,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "red",
+      "name": "Red",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff0000",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "blue",
+      "name": "Blue",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#0000ff",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "ground",
+      "name": "Ground",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#666666",
+      "metalness": 0,
+      "roughness": 0.95,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    }
+  ]
+}

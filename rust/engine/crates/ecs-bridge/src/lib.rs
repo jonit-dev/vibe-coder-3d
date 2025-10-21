@@ -1,4 +1,6 @@
 pub mod decoders;
+pub mod prefab_registry;
+pub mod prefab_instantiator;
 pub mod transform_utils;
 
 #[cfg(test)]
@@ -13,9 +15,13 @@ use vibe_scene::ComponentKindId;
 pub use decoders::{
     create_default_registry, CameraComponent, CustomShape, GeometryAsset, GeometryAssetOptions,
     InstanceData, Instanced, Light, LightColor, Material, MeshCollider, MeshColliderSize,
-    MeshRenderer, MeshRendererMaterialOverride, PhysicsMaterialData, PrefabInstance, RigidBody,
-    RigidBodyMaterial, Sound, Terrain, Transform,
+    MeshRenderer, MeshRendererMaterialOverride, PhysicsMaterialData, PrefabDefinition,
+    PrefabEntity, PrefabInstance, RigidBody, RigidBodyMaterial, Sound, Terrain, Transform,
 };
+
+// Re-export prefab system
+pub use prefab_instantiator::{apply_override_patch, instantiate_prefab};
+pub use prefab_registry::{parse_prefabs, PrefabRegistry};
 
 // Re-export transform utilities for standardized conversions
 pub use transform_utils::{

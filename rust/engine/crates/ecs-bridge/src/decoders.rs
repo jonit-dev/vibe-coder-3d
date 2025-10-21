@@ -828,6 +828,37 @@ impl IComponentDecoder for GeometryAssetDecoder {
 }
 
 // ============================================================================
+// Prefab System
+// ============================================================================
+
+/// Recursive entity structure for prefabs
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PrefabEntity {
+    pub name: String,
+    pub components: std::collections::HashMap<String, Value>,
+    #[serde(default)]
+    pub children: Vec<PrefabEntity>,
+}
+
+/// Complete prefab definition
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PrefabDefinition {
+    pub id: String,
+    pub name: String,
+    #[serde(default = "default_version")]
+    pub version: u32,
+    pub root: PrefabEntity,
+    #[serde(default)]
+    pub metadata: std::collections::HashMap<String, Value>,
+    #[serde(default)]
+    pub dependencies: Vec<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+// ============================================================================
 // PrefabInstance Component
 // ============================================================================
 

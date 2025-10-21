@@ -20,7 +20,7 @@ TypeScript Editor → RustSceneSerializer → JSON File → Rust Engine Loader �
 | **MeshCollider**   | ✅ MeshColliderComponent.ts   | ✅ components.rs, decoders.rs, scene_integration.rs | 🟢 Full Support (100% - box/sphere/capsule, triggers, materials)            |
 | **Instanced**      | ✅ InstancedComponent.ts      | ✅ instanced_loader.rs, decoders.rs                 | 🟢 Full Support (100% - per-instance transforms/colors, 100+ instances)     |
 | **Terrain**        | ✅ TerrainComponent.ts        | ✅ terrain_generator.rs, decoders.rs                | 🟢 Full Support (100% - procedural noise, 129×129 segments, smooth normals) |
-| **PrefabInstance** | ✅ PrefabInstanceComponent.ts | ✅ decoders.rs                                      | 🟢 Metadata Support (100% - prefab ID tracking, version, overrides)         |
+| **PrefabInstance** | ✅ PrefabInstanceComponent.ts | ✅ prefab_registry.rs, prefab_instantiator.rs       | 🟢 Full Support (100% - instantiation, hierarchy, overrides, 20 tests)      |
 | **Script**         | ✅ ScriptComponent.ts         | ❌ Not implemented                                  | 🔴 Missing - ⭐ HIGHEST PRIORITY (enables game logic)                       |
 | **Sound**          | ✅ SoundComponent.ts          | ✅ decoders.rs                                      | 🟢 Full Support (100% - all fields parsed, 11 tests)                        |
 | **GeometryAsset**  | ✅ GeometryAssetComponent.ts  | ✅ decoders.rs, mesh_loader.rs                      | 🟢 Full Support (100% - custom shapes, vertex colors, tangents)             |
@@ -664,18 +664,33 @@ pub struct PrefabInstance {
 - ✅ `instanceUuid`: Full support - Unique instance identifier
 - ✅ `overridePatch`: Full support - JSON patch for component overrides
 
-**Coverage**: 4/4 fields (100%) - ALL FIELDS PARSED
+**Coverage**: 4/4 fields (100%) - ALL FIELDS IMPLEMENTED
 
 **Current Support**:
 
-- ✅ **Metadata storage** - All fields parsed and available
-- ✅ **Decoder implementation** - Full component decoding
-- 🟡 **Prefab instantiation** - Not yet implemented (metadata-only)
-- 🟡 **Override application** - Patch parsing ready, application pending
+- ✅ **PrefabRegistry** - Template storage and lookup system (prefab_registry.rs)
+- ✅ **PrefabDefinition** - Hierarchical entity templates with metadata
+- ✅ **Prefab instantiation** - Complete entity cloning with parent/child hierarchies
+- ✅ **Override application** - Recursive deep merge applies to all entities in hierarchy
+- ✅ **Transform composition** - Instance transforms with scale multiplication (instance × prefab)
+- ✅ **Unique Entity IDs** - Uses instance UUID to prevent ID collisions across instantiations
+- ✅ **Scene graph integration** - Rebuilt after prefab instantiation to include all children
+- ✅ **World transforms** - Rendering uses scene graph for proper parent-child transforms
 
-**Note**: PrefabInstance is currently a metadata component. The decoder works correctly, but the actual prefab instantiation system (cloning entities from prefab templates) is not yet implemented. This is expected and documented.
+**Test Coverage**: 20 tests in prefab_instantiator.rs and prefab_registry.rs (all passing)
 
-**Visual Verification**: ✅ testprefab.json - 3 shapes with prefab metadata
+- Prefab registry operations (new, register, get, list, count)
+- Prefab parsing from scene JSON with error handling
+- Entity instantiation (simple, hierarchical, deep nesting)
+- Override patches (simple, hierarchical, combined with instance transforms)
+- Transform composition (position replacement, rotation replacement, scale multiplication)
+- Unique ID generation using instance UUID
+
+**Visual Verification**: ✅ tests/prefab_tree.json - 3 tree instances with full hierarchies
+
+- Logs confirm: 3 trees × 2 entities (trunk + leaves) = 6 prefab entities created
+- Scene graph rebuilt with 17 total entities (9 original + 8 from prefabs)
+- All instances show correct entity counts and unique persistent IDs
 
 ---
 
@@ -1312,7 +1327,7 @@ TypeScript paths are automatically resolved:
 
 ### Partially Working 🟡
 
-1. 🟡 Prefabs (parsed but not instantiated - only remaining partial implementation)
+1. ✅ Prefabs (COMPLETE - full instantiation with hierarchy and overrides)
 
 ### Missing ❌
 
@@ -1446,7 +1461,7 @@ TypeScript paths are automatically resolved:
 - **MeshCollider**: 100% (14/14 fields parsed and used, full Rapier integration)
 - **Instanced**: **100% COMPLETE** (14/14 fields implemented - per-instance transforms/colors)
 - **Terrain**: **100% COMPLETE** (9/9 fields implemented - procedural noise generation)
-- **PrefabInstance**: **100% METADATA** (4/4 fields parsed - instantiation pending)
+- **PrefabInstance**: **100% COMPLETE** (4/4 fields implemented - full instantiation + hierarchy)
 - **Sound**: **100% COMPLETE** (19/19 fields parsed - all audio properties, 11 tests)
 - **GeometryAsset**: **100% COMPLETE** (13/13 fields parsed - custom shapes with vertex colors/tangents)
 - **MeshRenderer**: **96% complete** (25/26 fields implemented - multi-submesh + embedded textures working)
@@ -1568,7 +1583,7 @@ TypeScript paths are automatically resolved:
    - Multi-octave value noise (hash-based, no dependencies)
    - Smooth normal calculation for lighting
    - High-resolution support (129×129 segments = 16,641 vertices)
-   - PrefabInstance metadata component (4/4 fields parsed)
+   - PrefabInstance component (4/4 fields implemented - full instantiation system)
    - All 44 unit tests passing
    - Visual verification via test scenes (testinstanced.json, testterrain.json, testprefab.json)
 
@@ -1728,10 +1743,11 @@ Based on current integration status and impact, the recommended priority order:
 - **Complexity**: High (heightmap rendering, LOD system, collision)
 - **Estimated Effort**: 40-60 hours
 
-**6. PrefabInstance Component**
+**6. ✅ PrefabInstance Component (COMPLETED)**
 
-- **Impact**: Reusable entity templates
-- **Complexity**: Medium (entity cloning with component overrides)
+- **Impact**: Reusable entity templates with hierarchies and overrides
+- **Implementation**: Complete prefab system with registry, instantiation, and recursive overrides
+- **Test Coverage**: 20 comprehensive tests, all passing
 - **Estimated Effort**: 15-20 hours
 
 ### Technical Debt

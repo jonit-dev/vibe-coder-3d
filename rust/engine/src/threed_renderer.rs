@@ -940,12 +940,96 @@ impl ThreeDRenderer {
         // Load materials
         self.load_materials(scene);
 
+        // Load and register prefabs
+        let mut prefab_registry = vibe_ecs_bridge::PrefabRegistry::new();
+        let mut prefab_instances: Vec<Entity> = Vec::new();
+
+        if let Some(prefabs_value) = &scene.prefabs {
+            log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            log::info!("PREFABS");
+            log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+            match vibe_ecs_bridge::parse_prefabs(prefabs_value) {
+                Ok(prefabs) => {
+                    log::info!("Found {} prefab definition(s)", prefabs.len());
+                    for prefab in prefabs {
+                        log::info!("  • {} (v{}): {}", prefab.id, prefab.version, prefab.name);
+                        prefab_registry.register(prefab);
+                    }
+                }
+                Err(e) => {
+                    log::warn!("Failed to parse prefabs: {}", e);
+                }
+            }
+        }
+
+        // Process PrefabInstance components and instantiate prefabs
+        log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        log::info!("PREFAB INSTANCES");
+        log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+        for entity in &scene.entities {
+            if let Some(prefab_instance) = self.get_component::<vibe_ecs_bridge::PrefabInstance>(entity, "PrefabInstance") {
+                log::info!("  Instantiating prefab: {}", prefab_instance.prefabId);
+
+                // Extract instance Transform to position the prefab
+                let instance_transform = entity.components.get("Transform");
+
+                match prefab_registry.get(&prefab_instance.prefabId) {
+                    Some(prefab) => {
+                        match vibe_ecs_bridge::instantiate_prefab(
+                            prefab,
+                            entity.persistentId.clone(),
+                            prefab_instance.overridePatch.as_ref(),
+                            instance_transform,
+                            &prefab_instance.instanceUuid,
+                            &self.component_registry,
+                        ) {
+                            Ok(instances) => {
+                                log::info!("    → Created {} entity/entities", instances.len());
+                                prefab_instances.extend(instances);
+                            }
+                            Err(e) => {
+                                log::warn!("    Failed to instantiate prefab {}: {}", prefab_instance.prefabId, e);
+                            }
+                        }
+                    }
+                    None => {
+                        log::warn!("    Prefab not found: {}", prefab_instance.prefabId);
+                    }
+                }
+            }
+        }
+
+        // Rebuild scene graph with prefab instances included
+        if !prefab_instances.is_empty() {
+            log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            log::info!("REBUILDING SCENE GRAPH WITH PREFAB INSTANCES");
+            log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            log::info!("  Original entities: {}", scene.entities.len());
+            log::info!("  Prefab instances: {}", prefab_instances.len());
+
+            // Create merged scene with both original entities and prefab instances
+            let mut full_scene = scene.clone();
+            full_scene.entities.extend(prefab_instances.clone());
+
+            // Rebuild scene graph to include prefab hierarchies
+            self.scene_graph = Some(SceneGraph::build(&full_scene)?);
+            log::info!("  Scene graph rebuilt with {} total entities", full_scene.entities.len());
+        }
+
         // Process entities
         log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         log::info!("ENTITIES");
         log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
+        // Process original scene entities
         for entity in &scene.entities {
+            self.load_entity(entity).await?;
+        }
+
+        // Process instantiated prefab entities
+        for entity in &prefab_instances {
             self.load_entity(entity).await?;
         }
 
@@ -1088,16 +1172,37 @@ impl ThreeDRenderer {
         mesh_renderer: &MeshRenderer,
         transform: Option<&Transform>,
     ) -> Result<()> {
+        let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
+
+        // Try to get world transform from scene graph (for parent-child hierarchies)
+        let effective_transform = if let Some(scene_graph) = &mut self.scene_graph {
+            if let Some(world_matrix) = scene_graph.get_world_transform(entity_id) {
+                // Decompose world matrix into TRS components
+                let (scale, rotation, translation) = world_matrix.to_scale_rotation_translation();
+
+                // Create a Transform with world values
+                Some(Transform {
+                    position: Some([translation.x, translation.y, translation.z]),
+                    rotation: Some(vec![rotation.x, rotation.y, rotation.z, rotation.w]), // Quaternion XYZW
+                    scale: Some([scale.x, scale.y, scale.z]),
+                })
+            } else {
+                // Entity not in scene graph, use local transform
+                transform.cloned()
+            }
+        } else {
+            // No scene graph, use local transform
+            transform.cloned()
+        };
+
         let submeshes = load_mesh_renderer(
             &self.context,
             entity,
             mesh_renderer,
-            transform,
+            effective_transform.as_ref(),
             &mut self.material_manager,
         )
         .await?;
-
-        let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
 
         // Handle all submeshes (primitives return 1, GLTF models may return multiple)
         for (idx, (gm, final_scale)) in submeshes.into_iter().enumerate() {
