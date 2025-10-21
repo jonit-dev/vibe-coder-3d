@@ -1,11 +1,11 @@
-import React, { useCallback, useState, useEffect, useRef } from 'react';
-import { FiSave, FiX, FiAlertTriangle, FiCode, FiRefreshCw, FiExternalLink } from 'react-icons/fi';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { FiAlertTriangle, FiCode, FiExternalLink, FiRefreshCw, FiSave, FiX } from 'react-icons/fi';
 
 import { ScriptData } from '@/core/lib/ecs/components/definitions/ScriptComponent';
+import { Logger } from '@/core/lib/logger';
+import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
 import { Modal } from '@/editor/components/shared/Modal';
 import { SingleAxisField } from '@/editor/components/shared/SingleAxisField';
-import { CollapsibleSection } from '@/editor/components/shared/CollapsibleSection';
-import { Logger } from '@/core/lib/logger';
 
 import { ScriptEditor } from './ScriptEditor';
 import { ScriptParameters } from './ScriptParameters';
@@ -88,7 +88,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
             // Show conflict resolution dialog
             const resolution = window.confirm(
               'The external file was modified by another source.\n\n' +
-                'Click OK to overwrite with your local changes, or Cancel to reload from file.',
+              'Click OK to overwrite with your local changes, or Cancel to reload from file.',
             );
 
             if (resolution) {
@@ -108,13 +108,16 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
                 throw new Error(retryResult.error || 'Failed to force save script');
               }
 
-              // Update scriptRef with new hash
+              // Update scriptRef with new hash and scriptPath for Lua runtime
+              const luaScriptPath = `${scriptData.scriptRef.scriptId}.lua`;
+
               onUpdate({
                 scriptRef: {
                   ...scriptData.scriptRef,
                   codeHash: hash,
                   lastModified: Date.now(),
                 },
+                scriptPath: luaScriptPath,
               });
 
               setLastSyncTime(Date.now());
@@ -131,13 +134,17 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
           throw new Error(result.error || 'Failed to save script');
         }
 
-        // Update scriptRef with new hash
+        // Update scriptRef with new hash and scriptPath for Lua runtime
+        // The Lua file will be in rust/game/scripts/<scriptId>.lua after transpilation
+        const luaScriptPath = `${scriptData.scriptRef.scriptId}.lua`;
+
         onUpdate({
           scriptRef: {
             ...scriptData.scriptRef,
             codeHash: hash,
             lastModified: Date.now(),
           },
+          scriptPath: luaScriptPath,
         });
 
         setLastSyncTime(Date.now());
@@ -208,7 +215,9 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
         throw new Error(result.error || 'Failed to recreate script');
       }
 
-      // Update scriptRef
+      // Update scriptRef and scriptPath for Lua runtime
+      const luaScriptPath = `${scriptData.scriptRef.scriptId}.lua`;
+
       onUpdate({
         scriptRef: {
           ...scriptData.scriptRef,
@@ -216,6 +225,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
           lastModified: Date.now(),
           path: result.path,
         },
+        scriptPath: luaScriptPath,
       });
 
       setMissingFile(false);
@@ -392,6 +402,47 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
   );
 
   const handleSave = useCallback(async () => {
+    // Ensure external script exists; if not, create it now so scenes never inline-dump
+    if (!scriptData.scriptRef || scriptData.scriptRef.source !== 'external') {
+      try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(scriptData.code || '');
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const codeHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+
+        const fallbackName = (scriptData.scriptName || 'Script')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+
+        // Use a generic id if entity id is not in scope from modal
+        const scriptId = `${fallbackName || 'script'}-${Date.now()}`;
+
+        const response = await fetch('/api/script/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: scriptId, code: scriptData.code || '', description: `Script ${scriptData.scriptName || ''}`.trim() }),
+        });
+
+        const result = await response.json();
+        if (result?.success) {
+          onUpdate({
+            scriptRef: {
+              scriptId,
+              source: 'external',
+              path: result.path,
+              codeHash,
+              lastModified: Date.now(),
+            },
+          });
+        }
+      } catch (e) {
+        logger.warn('Failed to create external script on save; continuing inline save flow', e);
+      }
+    }
+
     // If external script, save to file
     if (scriptData.scriptRef?.source === 'external') {
       await saveToExternal(scriptData.code);

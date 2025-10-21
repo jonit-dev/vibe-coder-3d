@@ -19,7 +19,7 @@ mod vertex;
 mod vertex_builder;
 
 pub use geometry_meta::{
-    Accessor, Attributes, AttributeType, Bounds, BoundsSphere, DrawRange, GeometryMeta, Group, Meta,
+    Accessor, AttributeType, Attributes, Bounds, BoundsSphere, DrawRange, GeometryMeta, Group, Meta,
 };
 pub use gltf_loader::{load_gltf, load_gltf_full, GltfData, GltfImage, GltfImageFormat};
 pub use material::{Material, MaterialCache};

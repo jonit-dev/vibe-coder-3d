@@ -3,6 +3,8 @@ import { MaterialDefinitionSchema } from '../../../materials/Material.types';
 import { PrefabDefinitionSchema } from '../../../prefabs/Prefab.types';
 import { InputActionsAssetSchema } from '../../input/inputTypes';
 
+const AssetReferenceValueSchema = z.union([z.string(), z.array(z.string())]);
+
 /**
  * Validation result interface
  */
@@ -28,6 +30,14 @@ export const SceneDataSchema = z.object({
   prefabs: z.array(PrefabDefinitionSchema),
   inputAssets: z.array(InputActionsAssetSchema).optional(),
   lockedEntityIds: z.array(z.number()).optional().default([]),
+  assetReferences: z
+    .object({
+      materials: AssetReferenceValueSchema.optional(),
+      prefabs: AssetReferenceValueSchema.optional(),
+      inputs: AssetReferenceValueSchema.optional(),
+      scripts: AssetReferenceValueSchema.optional(),
+    })
+    .optional(),
 });
 
 /**

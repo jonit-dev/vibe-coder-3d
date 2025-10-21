@@ -48,6 +48,8 @@ describe('MultiFileSceneLoader', () => {
     };
 
     vi.clearAllMocks();
+    vi.mocked(fs.readFile).mockReset();
+    vi.mocked(fs.stat).mockReset();
   });
 
   describe('loadMultiFile', () => {
@@ -242,14 +244,81 @@ export default defineMaterials([
         ],
       };
 
+    const result = await loader.loadMultiFile(
+      sceneDataWithDuplicates,
+      'src/game/scenes/TestScene',
+    );
+
+    // Should only have one material despite two entities using it
+    expect(result.materials).toHaveLength(1);
+    expect(result.materials[0].id).toBe('TreeGreen');
+  });
+
+    it('should hydrate external script components using asset references', async () => {
+      const scriptSceneData: IMultiFileSceneData = {
+        metadata: {
+          name: 'ScriptScene',
+          version: 1,
+          timestamp: '2025-10-11T00:00:00.000Z',
+        },
+        entities: [
+          {
+            id: 10,
+            name: 'Scripted Entity',
+            components: {
+              Script: {
+                enabled: true,
+                scriptName: 'Test Script',
+                scriptRef: {
+                  scriptId: 'game.testScript',
+                  source: 'external',
+                  path: './src/game/scripts/game.testScript.ts',
+                },
+              },
+            },
+          },
+        ],
+        assetReferences: {
+          scripts: ['@/scripts/game.testScript'],
+        },
+      };
+
+      vi.mocked(fs.readFile).mockImplementation(async (filePath: any) => {
+        if (typeof filePath === 'string') {
+          if (filePath.endsWith('.script.tsx')) {
+            return `import { defineScript } from '@core/lib/serialization/assets/defineScripts';
+
+export default defineScript({
+  id: 'game.testScript',
+  name: 'Test Script',
+  source: './src/game/scripts/game.testScript.ts'
+});`;
+          }
+
+          if (filePath.endsWith('game.testScript.ts')) {
+            return 'export function onStart() { console.log("hello"); }';
+          }
+        }
+
+        throw new Error(`Unexpected readFile call for ${filePath}`);
+      });
+
+      vi.mocked(fs.stat).mockResolvedValue({
+        mtimeMs: 456,
+        mtime: new Date(456),
+      } as unknown as fs.Stats);
+
       const result = await loader.loadMultiFile(
-        sceneDataWithDuplicates,
-        'src/game/scenes/TestScene',
+        scriptSceneData,
+        'src/game/scenes/ScriptScene',
       );
 
-      // Should only have one material despite two entities using it
-      expect(result.materials).toHaveLength(1);
-      expect(result.materials[0].id).toBe('TreeGreen');
+      expect(result.entities).toHaveLength(1);
+      const scriptComponent = result.entities[0].components.Script as Record<string, unknown>;
+      expect(scriptComponent.code).toContain('console.log("hello")');
+      const scriptRef = scriptComponent.scriptRef as Record<string, unknown>;
+      expect(scriptRef.codeHash).toBeDefined();
+      expect(scriptRef.path).toContain('game.testScript.ts');
     });
   });
 

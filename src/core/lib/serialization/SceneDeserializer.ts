@@ -3,12 +3,15 @@ import { z } from 'zod';
 import { MaterialSerializer } from './MaterialSerializer';
 import { PrefabSerializer } from './PrefabSerializer';
 import { EntitySerializer } from './EntitySerializer';
-import type { IEntityManagerAdapter, IComponentManagerAdapter } from './EntitySerializer';
+import type { IEntityManagerAdapter, IComponentManagerAdapter, ISerializedEntity } from './EntitySerializer';
 import type { ISceneData } from './SceneSerializer';
 import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
 import { MaterialDefinitionSchema } from '@core/materials/Material.types';
 import { PrefabDefinitionSchema } from '@core/prefabs/Prefab.types';
 import { InputActionsAssetSchema } from '@core/lib/input/inputTypes';
+import { applyResolvedScriptData } from './utils/ScriptSerializationUtils';
+
+const AssetReferenceValueSchema = z.union([z.string(), z.array(z.string())]);
 
 const logger = Logger.create('SceneDeserializer');
 
@@ -25,6 +28,14 @@ const SceneDataSchema = z.object({
   prefabs: z.array(PrefabDefinitionSchema),
   inputAssets: z.array(InputActionsAssetSchema).optional(),
   lockedEntityIds: z.array(z.number()).optional().default([]),
+  assetReferences: z
+    .object({
+      materials: AssetReferenceValueSchema.optional(),
+      prefabs: AssetReferenceValueSchema.optional(),
+      inputs: AssetReferenceValueSchema.optional(),
+      scripts: AssetReferenceValueSchema.optional(),
+    })
+    .optional(),
 });
 
 /**
@@ -76,8 +87,10 @@ export class SceneDeserializer {
     await this.prefabSerializer.deserialize(validated.prefabs);
 
     logger.debug('Deserializing entities');
+    const entitiesWithScripts = await this.hydrateScriptComponents(validated.entities);
+
     const entityIdMap = this.entitySerializer.deserialize(
-      validated.entities,
+      entitiesWithScripts,
       entityManager,
       componentManager,
     );
@@ -128,5 +141,41 @@ export class SceneDeserializer {
       }
       return { isValid: false, error: 'Unknown validation error' };
     }
+  }
+
+  private async hydrateScriptComponents(
+    entities: ISceneData['entities'],
+  ): Promise<ISerializedEntity[]> {
+    let readScriptFromFs:
+      | typeof import('./utils/ScriptFileResolver').readScriptFromFilesystem
+      | null = null;
+
+    return Promise.all(
+      entities.map(async (entity) => {
+        const scriptComponent = entity.components?.Script as Record<string, unknown> | undefined;
+        if (!scriptComponent) return entity;
+
+        const scriptRef = scriptComponent.scriptRef as Record<string, unknown> | undefined;
+        if (scriptRef?.source !== 'external' || typeof scriptRef.path !== 'string') {
+          return entity;
+        }
+
+        if (!readScriptFromFs) {
+          const module = await import('./utils/ScriptFileResolver');
+          readScriptFromFs = module.readScriptFromFilesystem;
+        }
+
+        const resolved = await readScriptFromFs(scriptRef.path);
+        if (!resolved) return entity;
+
+        return {
+          ...entity,
+          components: {
+            ...entity.components,
+            Script: applyResolvedScriptData(scriptComponent, resolved),
+          },
+        };
+      }),
+    );
   }
 }

@@ -7,7 +7,7 @@ import { Types } from 'bitecs';
 import { z } from 'zod';
 
 import { Logger } from '@/core/lib/logger';
-import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
+import { ComponentCategory, ComponentFactory, componentRegistry } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
 
@@ -33,6 +33,9 @@ const ScriptSchema = z.object({
 
   // External script reference
   scriptRef: ScriptRefSchema.optional().describe('Reference to external script file'),
+
+  // Lua script path (for Rust runtime execution)
+  scriptPath: z.string().optional().describe('Path to compiled .lua file for runtime execution'),
 
   // Execution control (simplified - scripts auto-run onStart/onUpdate during play mode)
   executeInUpdate: z.boolean().default(true).describe('[Internal] Execute script in update loop'),
@@ -95,6 +98,7 @@ export const scriptComponent = ComponentFactory.create({
     parametersHash: Types.ui32,
     compiledCodeHash: Types.ui32,
     scriptRefHash: Types.ui32, // JSON serialized scriptRef
+    scriptPathHash: Types.ui32, // Path to compiled .lua file
 
     // Timestamps
     lastModified: Types.f64,
@@ -118,6 +122,8 @@ export const scriptComponent = ComponentFactory.create({
         return undefined;
       }
     })(),
+
+    scriptPath: getStringFromHash(component.scriptPathHash[eid]) || undefined,
 
     executeInUpdate: Boolean(component.executeInUpdate[eid]),
     executeOnStart: Boolean(component.executeOnStart[eid]),
@@ -188,6 +194,9 @@ function onUpdate(deltaTime: number): void {
       component.scriptRefHash[eid] = 0;
     }
 
+    // Script path (compiled .lua file for Rust runtime)
+    component.scriptPathHash[eid] = storeString(data.scriptPath || '');
+
     // Parameters
     try {
       component.parametersHash[eid] = storeString(JSON.stringify(data.parameters || {}));
@@ -218,6 +227,94 @@ function onUpdate(deltaTime: number): void {
     logger.info(
       `Script component "${data.scriptName}" added to entity ${eid} with default Hello World code`,
     );
+
+    // In development, auto-create an external script file when the component is first added
+    // to ensure scripts are not dumped inline on scene save. Skip if already external.
+    try {
+      // Only run in browser/dev environments where the script API is available
+      // Guards protect tests and SSR contexts
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      const isBrowser = typeof window !== 'undefined' && typeof fetch !== 'undefined';
+      const isDev = Boolean((import.meta as any)?.env?.DEV);
+
+      if (!isBrowser || !isDev) {
+        return;
+      }
+
+      // If caller provided an external reference already, do nothing
+      if (data?.scriptRef && data.scriptRef.source === 'external') {
+        return;
+      }
+
+      // Async fire-and-forget to avoid blocking ECS pipeline
+      (async () => {
+        try {
+          const code = typeof data?.code === 'string' ? data.code : '';
+
+          // Build a stable script ID: entity-<eid>.<sanitized-script-name>
+          const scriptName =
+            typeof data?.scriptName === 'string' && data.scriptName.trim() !== ''
+              ? data.scriptName
+              : 'Script';
+          const sanitized = scriptName
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+          const scriptId = `entity-${eid}.${sanitized || 'script'}`;
+
+          // Save file via Script API
+          const resp = await fetch('/api/script/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: scriptId,
+              code,
+              description: `Auto-generated script for ${scriptName}`,
+            }),
+          });
+
+          const result = await resp.json();
+          if (!result?.success) {
+            logger.warn(
+              'Failed to auto-create external script on add:',
+              result?.error || 'unknown error',
+            );
+            return;
+          }
+
+          // Update component with external scriptRef so serializers strip inline code
+          const ref = {
+            scriptId,
+            source: 'external' as const,
+            path: result.path as string | undefined,
+            codeHash: result.hash as string | undefined,
+            lastModified: Date.now(),
+          };
+
+          // Persist to ECS storage
+          try {
+            (scriptComponent as any).fields; // access ensures bundlers keep component reference
+          } catch {
+            // no-op
+          }
+
+          try {
+            componentRegistry.updateComponent(eid, 'Script', {
+              scriptRef: ref as unknown as IScriptRef,
+              lastModified: Date.now(),
+            } as unknown as ScriptData);
+          } catch (err) {
+            logger.warn('Failed to persist external scriptRef to ECS:', err);
+          }
+        } catch (err) {
+          logger.warn('Auto-create external script failed:', err);
+        }
+      })();
+    } catch (err) {
+      logger.warn('Skipped auto-create external script due to environment:', err);
+    }
   },
   onRemove: (eid: EntityId) => {
     logger.info(`Script component removed from entity ${eid}`);

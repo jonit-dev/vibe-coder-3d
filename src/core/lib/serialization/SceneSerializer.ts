@@ -14,6 +14,7 @@ import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
 import { MaterialDefinitionSchema } from '@core/materials/Material.types';
 import { PrefabDefinitionSchema } from '@core/prefabs/Prefab.types';
 import { InputActionsAssetSchema } from '@core/lib/input/inputTypes';
+import { collectExternalScriptReferencesFromEntities } from './utils/ScriptSerializationUtils';
 
 const logger = Logger.create('SceneSerializer');
 
@@ -39,11 +40,14 @@ export interface ISceneData {
   inputAssets?: IInputActionsAsset[];
   lockedEntityIds?: number[];
   assetReferences?: {
-    materials?: string;
-    prefabs?: string;
-    inputs?: string;
+    materials?: string | string[];
+    prefabs?: string | string[];
+    inputs?: string | string[];
+    scripts?: string | string[];
   };
 }
+
+const AssetReferenceValueSchema = z.union([z.string(), z.array(z.string())]);
 
 const SceneDataSchema = z.object({
   metadata: z.object({
@@ -58,6 +62,14 @@ const SceneDataSchema = z.object({
   prefabs: z.array(PrefabDefinitionSchema),
   inputAssets: z.array(InputActionsAssetSchema).optional(),
   lockedEntityIds: z.array(z.number()).optional().default([]),
+  assetReferences: z
+    .object({
+      materials: AssetReferenceValueSchema.optional(),
+      prefabs: AssetReferenceValueSchema.optional(),
+      inputs: AssetReferenceValueSchema.optional(),
+      scripts: AssetReferenceValueSchema.optional(),
+    })
+    .optional(),
 });
 
 /**
@@ -140,6 +152,8 @@ export class SceneSerializer {
 
     const prefabs = await this.prefabSerializer.serialize();
 
+    const scriptReferences = collectExternalScriptReferencesFromEntities(entities);
+
     const sceneData: ISceneData = {
       metadata: {
         name: metadata.name || 'Untitled Scene',
@@ -154,6 +168,13 @@ export class SceneSerializer {
       inputAssets,
       lockedEntityIds,
     };
+
+    if (scriptReferences.length > 0) {
+      sceneData.assetReferences = {
+        ...(sceneData.assetReferences ?? {}),
+        scripts: scriptReferences,
+      };
+    }
 
     // Validate before returning
     const validation = SceneDataSchema.safeParse(sceneData);

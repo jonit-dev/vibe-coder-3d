@@ -144,7 +144,11 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
             let material_name = material.name().unwrap_or("Unnamed");
             let pbr = material.pbr_metallic_roughness();
 
-            log::debug!("  Material: {} (index: {:?})", material_name, material.index());
+            log::debug!(
+                "  Material: {} (index: {:?})",
+                material_name,
+                material.index()
+            );
 
             if let Some(base_texture) = pbr.base_color_texture() {
                 let texture = base_texture.texture();
@@ -154,7 +158,11 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
                     base_color_texture_id = Some(id.clone());
                     log::debug!("    Mapped to texture ID: {}", id);
                 } else {
-                    log::warn!("    Texture source index {} not found in image map (map has {} entries)", source_index, image_id_map.len());
+                    log::warn!(
+                        "    Texture source index {} not found in image map (map has {} entries)",
+                        source_index,
+                        image_id_map.len()
+                    );
                 }
             } else {
                 log::debug!("    No base_color_texture in material");

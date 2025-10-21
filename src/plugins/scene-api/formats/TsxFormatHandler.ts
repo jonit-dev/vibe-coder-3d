@@ -1,23 +1,25 @@
+import type { IInputActionsAsset } from '../../../core/lib/input/inputTypes';
 import type { ISceneStore } from '../../../core/lib/serialization/common/ISceneStore';
 import { sanitizeComponentName } from '../../../core/lib/serialization/common/NameUtils';
-import type { IMaterialDefinition } from '../../../core/materials/Material.types';
-import type { IPrefabDefinition } from '../../../core/prefabs/Prefab.types';
-import type { IInputActionsAsset } from '../../../core/lib/input/inputTypes';
 import { getComponentDefaults } from '../../../core/lib/serialization/defaults/index';
+import { MultiFileSceneLoader } from '../../../core/lib/serialization/multi-file/MultiFileSceneLoader';
+import { RustSceneExporter } from '../../../core/lib/serialization/RustSceneExporter';
 import { omitDefaults } from '../../../core/lib/serialization/utils/DefaultOmitter';
 import {
   MaterialDeduplicator,
   extractMaterialFromMeshRenderer,
   replaceMaterialWithReference,
 } from '../../../core/lib/serialization/utils/MaterialHasher';
-import { MultiFileSceneLoader } from '../../../core/lib/serialization/multi-file/MultiFileSceneLoader';
-import { RustSceneExporter } from '../../../core/lib/serialization/RustSceneExporter';
+import { sanitizeScriptComponentData } from '../../../core/lib/serialization/utils/ScriptSerializationUtils';
+import type { IMaterialDefinition } from '../../../core/materials/Material.types';
+import type { IPrefabDefinition } from '../../../core/prefabs/Prefab.types';
+import { triggerLuaTranspile } from '../../utils/triggerLuaTranspile';
 import type {
-  ISceneFormatHandler,
-  ISaveArgs,
   ILoadArgs,
-  ISaveResult,
   ILoadResult,
+  ISaveArgs,
+  ISaveResult,
+  ISceneFormatHandler,
   ISceneListItem,
 } from '../ISceneFormatHandler';
 
@@ -80,6 +82,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
 
     // Apply compression to entities
     const materialDeduplicator = new MaterialDeduplicator();
+
     const compressedEntities = (
       sceneData.entities as Array<{ components?: Record<string, unknown> }>
     ).map((entity) => {
@@ -94,6 +97,16 @@ export class TsxFormatHandler implements ISceneFormatHandler {
         }
 
         let processedData = componentData as Record<string, unknown>;
+
+        if (componentType === 'Script') {
+          const rawScript = componentData as Record<string, unknown>;
+          const scriptRef = rawScript.scriptRef as Record<string, unknown> | undefined;
+
+          if (scriptRef?.source === 'external') {
+            // Sanitize script data: strip code and compiledCode for external scripts
+            processedData = sanitizeScriptComponentData(rawScript);
+          }
+        }
 
         // Extract and deduplicate materials from MeshRenderer
         if (componentType === 'MeshRenderer') {
@@ -183,6 +196,9 @@ export class TsxFormatHandler implements ISceneFormatHandler {
       }
     }
 
+    // Do not generate script asset files; rely on scriptRef.path to point to src/game/scripts/*.ts
+    // This avoids duplication between src/game/assets/scripts/*.script.tsx and src/game/scripts/*.ts
+
     // Generate KISS scene file with entities + path references
     // IMPORTANT: Keep filename lowercase to match scene registry expectations
     const sceneName = sanitizeComponentName(cleanName); // lowercase, not PascalCase
@@ -192,11 +208,14 @@ export class TsxFormatHandler implements ISceneFormatHandler {
       Array.from(materialRefsSet),
       Array.from(inputRefsSet),
       Array.from(prefabRefsSet),
+      [],
       sceneData.lockedEntityIds || [],
     );
 
     const filename = `${sceneName}.tsx`;
     const result = await this.store.write(filename, sceneContent);
+
+    await triggerLuaTranspile('scene-api/tsx');
 
     return {
       filename,
@@ -221,12 +240,14 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     materialRefs: string[],
     inputRefs: string[],
     prefabRefs: string[],
+    scriptRefs: string[],
     lockedEntityIds: number[],
   ): string {
     const refs: string[] = [];
     if (materialRefs.length > 0) refs.push(`    materials: ${JSON.stringify(materialRefs)}`);
     if (inputRefs.length > 0) refs.push(`    inputs: ${JSON.stringify(inputRefs)}`);
     if (prefabRefs.length > 0) refs.push(`    prefabs: ${JSON.stringify(prefabRefs)}`);
+    if (scriptRefs.length > 0) refs.push(`    scripts: ${JSON.stringify(scriptRefs)}`);
 
     const assetRefsBlock =
       refs.length > 0 ? `,\n  assetReferences: {\n${refs.join(',\n')}\n  }` : '';
@@ -421,11 +442,10 @@ export default defineScene({
       // Parse the defineScene argument as JSON
       let sceneDataString = defineSceneMatch[1];
 
-      // Strip comments (both // and /* */) BEFORE processing
-      // Remove single-line comments
-      sceneDataString = sceneDataString.replace(/\/\/.*$/gm, '');
-      // Remove multi-line comments
-      sceneDataString = sceneDataString.replace(/\/\*[\s\S]*?\*\//g, '');
+      // NOTE: Do NOT strip comments naively - they might be inside string literals!
+      // The comment stripping was causing issues where // inside "code": "//..." strings
+      // would remove the rest of the string content, leaving invalid JSON.
+      // Since JSON.stringify doesn't produce comments, we can skip this step.
 
       // Replace enum references with their string values BEFORE JSON parsing
       // DeviceType enums

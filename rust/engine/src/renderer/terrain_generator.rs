@@ -18,7 +18,7 @@ pub async fn generate_terrain(
     terrain: &Terrain,
     transform: Option<&Transform>,
     material_manager: &mut MaterialManager,
-) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3)>> {
+) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3, GlamVec3)>> {
     log::info!("  Terrain:");
     log::info!("    Size:         {:?}", terrain.size);
     log::info!("    Segments:     {:?}", terrain.segments);
@@ -41,17 +41,17 @@ pub async fn generate_terrain(
     // Create mesh and apply transform
     let mut mesh = Mesh::new(context, &cpu_mesh);
 
-    let final_scale = if let Some(transform) = transform {
+    let (final_scale, base_scale) = if let Some(transform) = transform {
         let converted = convert_transform_to_matrix(transform, None);
         mesh.set_transformation(converted.matrix);
-        converted.final_scale
+        (converted.final_scale, converted.base_scale)
     } else {
         let converted = create_base_scale_matrix(None);
         mesh.set_transformation(converted.matrix);
-        converted.final_scale
+        (converted.final_scale, converted.base_scale)
     };
 
-    Ok(vec![(Gm::new(mesh, material), final_scale)])
+    Ok(vec![(Gm::new(mesh, material), final_scale, base_scale)])
 }
 
 /// Create terrain mesh with optional noise

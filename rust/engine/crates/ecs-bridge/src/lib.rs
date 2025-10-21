@@ -1,6 +1,6 @@
 pub mod decoders;
-pub mod prefab_registry;
 pub mod prefab_instantiator;
+pub mod prefab_registry;
 pub mod transform_utils;
 
 #[cfg(test)]
@@ -16,7 +16,8 @@ pub use decoders::{
     create_default_registry, CameraComponent, CustomShape, GeometryAsset, GeometryAssetOptions,
     InstanceData, Instanced, Light, LightColor, Material, MeshCollider, MeshColliderSize,
     MeshRenderer, MeshRendererMaterialOverride, PhysicsMaterialData, PrefabDefinition,
-    PrefabEntity, PrefabInstance, RigidBody, RigidBodyMaterial, Sound, Terrain, Transform,
+    PrefabEntity, PrefabInstance, RigidBody, RigidBodyMaterial, ScriptComponent, Sound, Terrain,
+    Transform,
 };
 
 // Re-export prefab system

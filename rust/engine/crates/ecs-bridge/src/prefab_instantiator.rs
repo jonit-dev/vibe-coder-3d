@@ -79,15 +79,15 @@ fn compose_transforms(prefab_transform: &mut Value, instance_transform: &Value) 
                 let composed_scale = vec![
                     Value::from(
                         instance_scale[0].as_f64().unwrap_or(1.0)
-                        * prefab_scale[0].as_f64().unwrap_or(1.0)
+                            * prefab_scale[0].as_f64().unwrap_or(1.0),
                     ),
                     Value::from(
                         instance_scale[1].as_f64().unwrap_or(1.0)
-                        * prefab_scale[1].as_f64().unwrap_or(1.0)
+                            * prefab_scale[1].as_f64().unwrap_or(1.0),
                     ),
                     Value::from(
                         instance_scale[2].as_f64().unwrap_or(1.0)
-                        * prefab_scale[2].as_f64().unwrap_or(1.0)
+                            * prefab_scale[2].as_f64().unwrap_or(1.0),
                     ),
                 ];
                 prefab_obj.insert("scale".to_string(), Value::Array(composed_scale));
@@ -123,7 +123,9 @@ pub fn instantiate_prefab(
             compose_transforms(root_transform, instance_transform);
         } else {
             // No Transform on root, add the instance transform directly
-            root_entity.components.insert("Transform".to_string(), instance_transform.clone());
+            root_entity
+                .components
+                .insert("Transform".to_string(), instance_transform.clone());
         }
     }
 
@@ -202,7 +204,10 @@ mod tests {
                     "Transform".to_string(),
                     json!({ "position": [0, 0, 0], "scale": [1, 1, 1] }),
                 );
-                map.insert("MeshRenderer".to_string(), json!({ "materialId": "default" }));
+                map.insert(
+                    "MeshRenderer".to_string(),
+                    json!({ "materialId": "default" }),
+                );
                 map
             },
             children: Vec::new(),
@@ -244,7 +249,10 @@ mod tests {
 
         // Check new component added
         assert!(entity.components.contains_key("Light"));
-        assert_eq!(entity.components["Light"]["lightType"], json!("directional"));
+        assert_eq!(
+            entity.components["Light"]["lightType"],
+            json!("directional")
+        );
     }
 
     #[test]
@@ -303,7 +311,8 @@ mod tests {
         };
 
         let registry = ComponentRegistry::new();
-        let entities = instantiate_prefab(&prefab, None, None, None, "test-instance-1", &registry).unwrap();
+        let entities =
+            instantiate_prefab(&prefab, None, None, None, "test-instance-1", &registry).unwrap();
 
         assert_eq!(entities.len(), 1);
         assert_eq!(entities[0].name, Some("Cube".to_string()));
@@ -343,8 +352,15 @@ mod tests {
         });
 
         let registry = ComponentRegistry::new();
-        let entities =
-            instantiate_prefab(&prefab, None, Some(&patch), None, "test-instance-2", &registry).unwrap();
+        let entities = instantiate_prefab(
+            &prefab,
+            None,
+            Some(&patch),
+            None,
+            "test-instance-2",
+            &registry,
+        )
+        .unwrap();
 
         assert_eq!(entities.len(), 1);
 
@@ -400,7 +416,15 @@ mod tests {
         };
 
         let registry = ComponentRegistry::new();
-        let entities = instantiate_prefab(&prefab, Some("parent-1".to_string()), None, None, "test-instance-3", &registry).unwrap();
+        let entities = instantiate_prefab(
+            &prefab,
+            Some("parent-1".to_string()),
+            None,
+            None,
+            "test-instance-3",
+            &registry,
+        )
+        .unwrap();
 
         // Should create 2 entities: trunk and leaves
         assert_eq!(entities.len(), 2);
@@ -440,7 +464,8 @@ mod tests {
         };
 
         let registry = ComponentRegistry::new();
-        let entities = instantiate_prefab(&prefab, None, None, None, "test-instance-4", &registry).unwrap();
+        let entities =
+            instantiate_prefab(&prefab, None, None, None, "test-instance-4", &registry).unwrap();
 
         // Should create 3 entities
         assert_eq!(entities.len(), 3);
@@ -637,10 +662,7 @@ mod tests {
                     name: "Leaves".to_string(),
                     components: {
                         let mut map = HashMap::new();
-                        map.insert(
-                            "Transform".to_string(),
-                            json!({ "position": [0, 2.5, 0] }),
-                        );
+                        map.insert("Transform".to_string(), json!({ "position": [0, 2.5, 0] }));
                         map.insert(
                             "MeshRenderer".to_string(),
                             json!({ "meshId": "sphere", "materialId": "green" }),

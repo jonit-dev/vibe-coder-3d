@@ -332,6 +332,37 @@ export default defineScene({
         );
       });
     });
+
+    it('should replace external script code with script references', async () => {
+      const payload = {
+        entities: [
+          {
+            name: 'Scripted Entity',
+            components: {
+              Script: {
+                code: 'function onStart() { console.log("hello"); }',
+                scriptRef: {
+                  scriptId: 'game.exampleScript',
+                  source: 'external' as const,
+                  path: '/src/game/scripts/game.exampleScript.ts',
+                  codeHash: '1234',
+                  lastModified: Date.now(),
+                },
+                scriptName: 'Example Script',
+                enabled: true,
+              },
+            },
+          },
+        ],
+        materials: [],
+      };
+
+      await handler.save({ name: 'ScriptScene', payload });
+
+      expect(writtenContent).toContain('scriptRef');
+      expect(writtenContent).not.toContain('console.log("hello");');
+      expect(writtenContent).toContain('scripts: ["@/scripts/game.exampleScript"]');
+    });
   });
 
   describe('Integration Tests (with real filesystem)', () => {

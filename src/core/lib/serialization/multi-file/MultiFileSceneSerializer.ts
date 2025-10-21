@@ -4,6 +4,7 @@ import type { IMaterialDefinition } from '@core/materials/Material.types';
 import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
 import { AssetLibraryCatalog } from '../assets/AssetLibraryCatalog';
+import { collectExternalScriptReferencesFromEntities } from '../utils/ScriptSerializationUtils';
 
 export interface IMultiFileSceneData {
   index: string; // Forest.index.tsx content
@@ -77,12 +78,19 @@ export class MultiFileSceneSerializer {
     }
 
     // Generate file contents
+    const scriptReferences = collectExternalScriptReferencesFromEntities(entitiesWithMaterialRefs);
+
     const result: IMultiFileSceneData = {
-      index: this.generateIndexFile(entitiesWithMaterialRefs, metadata, {
-        hasMaterials: sceneMaterials.length > 0,
-        hasPrefabs: scenePrefabs.length > 0,
-        hasInputs: sceneInputs.length > 0,
-      }),
+      index: this.generateIndexFile(
+        entitiesWithMaterialRefs,
+        metadata,
+        {
+          hasMaterials: sceneMaterials.length > 0,
+          hasPrefabs: scenePrefabs.length > 0,
+          hasInputs: sceneInputs.length > 0,
+        },
+        scriptReferences,
+      ),
     };
 
     if (sceneMaterials.length > 0) {
@@ -168,8 +176,9 @@ export class MultiFileSceneSerializer {
     entities: ISerializedEntity[],
     metadata: ISceneMetadata,
     refs: { hasMaterials: boolean; hasPrefabs: boolean; hasInputs: boolean },
+    scriptRefs: string[],
   ): string {
-    const assetReferences: Record<string, string> = {};
+    const assetReferences: Record<string, string | string[]> = {};
 
     if (refs.hasMaterials) {
       assetReferences.materials = `./${metadata.name}.materials.tsx`;
@@ -179,6 +188,9 @@ export class MultiFileSceneSerializer {
     }
     if (refs.hasInputs) {
       assetReferences.inputs = `./${metadata.name}.inputs.tsx`;
+    }
+    if (scriptRefs.length > 0) {
+      assetReferences.scripts = scriptRefs;
     }
 
     const hasAssetRefs = Object.keys(assetReferences).length > 0;

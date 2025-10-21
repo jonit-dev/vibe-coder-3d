@@ -314,6 +314,37 @@ describe('SceneSerializer', () => {
     });
   });
 
+  it('should omit external script code and record script references', async () => {
+    const entity = entityManager.createEntity('Scripted Entity');
+    const scriptRef = {
+      scriptId: 'game.playerController',
+      source: 'external' as const,
+      path: '/src/game/scripts/game.playerController.ts',
+      codeHash: 'abc123',
+      lastModified: Date.now(),
+    };
+
+    componentRegistry.addComponent(entity.id, 'Script', {
+      code: 'function onStart() { console.log("hello"); }',
+      enabled: true,
+      scriptName: 'Player Controller',
+      scriptRef,
+      parameters: { speed: 5 },
+    });
+
+    const result = await serializer.serialize(entityManager, componentRegistry, {
+      name: 'Script Scene',
+      version: 1,
+    });
+
+    expect(result.entities).toHaveLength(1);
+    const scriptComponent = result.entities[0].components.Script as Record<string, unknown>;
+    expect(scriptComponent).toBeDefined();
+    expect(scriptComponent.code).toBeUndefined();
+    expect(scriptComponent.scriptRef).toEqual(scriptRef);
+    expect(result.assetReferences?.scripts).toEqual(['@/scripts/game.playerController']);
+  });
+
   describe('metadata handling', () => {
     it('should include provided metadata', async () => {
       const metadata = {

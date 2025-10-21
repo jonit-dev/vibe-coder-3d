@@ -13,6 +13,7 @@ use super::primitive_mesh::primitive_base_scale;
 pub struct ConvertedTransform {
     pub matrix: Mat4,
     pub final_scale: GlamVec3,
+    pub base_scale: GlamVec3,
 }
 
 /// Convert an ECS Transform component to a three-d transformation matrix
@@ -27,19 +28,14 @@ pub fn convert_transform_to_matrix(
     mesh_id: Option<&str>,
 ) -> ConvertedTransform {
     let base_scale = primitive_base_scale(mesh_id);
+    let (matrix, final_scale) = compose_transform_with_base_scale(transform, base_scale);
+
     let position = position_to_vec3_opt(transform.position.as_ref());
     let rotation = rotation_to_quat_opt(transform.rotation.as_ref());
     let scale = scale_to_vec3_opt(transform.scale.as_ref());
 
-    let final_scale = GlamVec3::new(
-        scale.x * base_scale.x,
-        scale.y * base_scale.y,
-        scale.z * base_scale.z,
-    );
-
     log_transform_conversion(transform, &position, &rotation, &scale, &base_scale);
 
-    // Convert Three.js coordinates to three-d coordinates (axes already match)
     let pos = threejs_to_threed_position(position);
     let (axis, angle) = rotation.to_axis_angle();
     let axis_3d = glam_axis_to_threed(axis);
@@ -47,14 +43,10 @@ pub fn convert_transform_to_matrix(
 
     log_coordinate_conversion(&pos, position.z, &axis_3d, angle, &scale_3d);
 
-    // Build transformation matrix
-    let matrix = Mat4::from_translation(pos)
-        * Mat4::from_axis_angle(axis_3d, radians(angle))
-        * Mat4::from_nonuniform_scale(scale_3d.x, scale_3d.y, scale_3d.z);
-
     ConvertedTransform {
         matrix,
         final_scale,
+        base_scale,
     }
 }
 
@@ -67,7 +59,35 @@ pub fn create_base_scale_matrix(mesh_id: Option<&str>) -> ConvertedTransform {
     ConvertedTransform {
         matrix,
         final_scale: base_scale,
+        base_scale,
     }
+}
+
+/// Compose a three-d transformation matrix from an ECS transform using a precomputed base scale.
+pub fn compose_transform_with_base_scale(
+    transform: &Transform,
+    base_scale: GlamVec3,
+) -> (Mat4, GlamVec3) {
+    let position = position_to_vec3_opt(transform.position.as_ref());
+    let rotation = rotation_to_quat_opt(transform.rotation.as_ref());
+    let scale = scale_to_vec3_opt(transform.scale.as_ref());
+
+    let final_scale = GlamVec3::new(
+        scale.x * base_scale.x,
+        scale.y * base_scale.y,
+        scale.z * base_scale.z,
+    );
+
+    let pos = threejs_to_threed_position(position);
+    let (axis, angle) = rotation.to_axis_angle();
+    let axis_3d = glam_axis_to_threed(axis);
+    let scale_3d = Vec3::new(final_scale.x, final_scale.y, final_scale.z);
+
+    let matrix = Mat4::from_translation(pos)
+        * Mat4::from_axis_angle(axis_3d, radians(angle))
+        * Mat4::from_nonuniform_scale(scale_3d.x, scale_3d.y, scale_3d.z);
+
+    (matrix, final_scale)
 }
 
 /// Convert camera transform to position and target vectors

@@ -134,12 +134,20 @@ impl GeometryMeta {
 
     /// Get vertex count from position attribute
     pub fn vertex_count(&self) -> Option<usize> {
-        self.attributes.position.array.as_ref().map(|arr| arr.len() / self.attributes.position.item_size as usize)
+        self.attributes
+            .position
+            .array
+            .as_ref()
+            .map(|arr| arr.len() / self.attributes.position.item_size as usize)
     }
 
     /// Get index count if indexed
     pub fn index_count(&self) -> Option<usize> {
-        self.index.as_ref().and_then(|idx| idx.array.as_ref().map(|arr| arr.len() / idx.item_size as usize))
+        self.index.as_ref().and_then(|idx| {
+            idx.array
+                .as_ref()
+                .map(|arr| arr.len() / idx.item_size as usize)
+        })
     }
 
     /// Check if geometry has normals
@@ -264,6 +272,9 @@ mod tests {
 
         let meta = GeometryMeta::from_json(json).expect("Failed to parse");
         assert_eq!(meta.attributes.position.attr_type, AttributeType::Float32);
-        assert_eq!(meta.index.as_ref().unwrap().attr_type, AttributeType::Uint16);
+        assert_eq!(
+            meta.index.as_ref().unwrap().attr_type,
+            AttributeType::Uint16
+        );
     }
 }

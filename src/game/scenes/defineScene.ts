@@ -23,9 +23,10 @@ export interface ITypedSceneData {
   inputAssets?: IInputActionsAsset[];
   lockedEntityIds?: number[];
   assetReferences?: {
-    materials?: string[];
-    prefabs?: string[];
-    inputs?: string[];
+    materials?: string | string[];
+    prefabs?: string | string[];
+    inputs?: string | string[];
+    scripts?: string | string[];
   };
 }
 

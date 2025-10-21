@@ -59,27 +59,57 @@ mod tests {
 
         let test_cases = vec![
             // Math shapes
-            ("helix", json!({"radius": 0.5, "height": 2.0, "tubeRadius": 0.1, "coils": 3.0, "segments": 32, "tubeSegments": 8})),
-            ("mobiusstrip", json!({"radius": 0.5, "width": 0.3, "segments": 64})),
-            ("torusknot", json!({"radius": 0.5, "tube": 0.15, "tubularSegments": 64, "radialSegments": 8, "p": 2, "q": 3})),
-
+            (
+                "helix",
+                json!({"radius": 0.5, "height": 2.0, "tubeRadius": 0.1, "coils": 3.0, "segments": 32, "tubeSegments": 8}),
+            ),
+            (
+                "mobiusstrip",
+                json!({"radius": 0.5, "width": 0.3, "segments": 64}),
+            ),
+            (
+                "torusknot",
+                json!({"radius": 0.5, "tube": 0.15, "tubularSegments": 64, "radialSegments": 8, "p": 2, "q": 3}),
+            ),
             // Decorative shapes
-            ("star", json!({"outerRadius": 0.5, "innerRadius": 0.25, "points": 5, "thickness": 0.2})),
+            (
+                "star",
+                json!({"outerRadius": 0.5, "innerRadius": 0.25, "points": 5, "thickness": 0.2}),
+            ),
             ("heart", json!({"size": 0.5, "depth": 0.2, "segments": 32})),
-            ("diamond", json!({"radius": 0.4, "height": 0.8, "tableRatio": 0.6, "facets": 8})),
+            (
+                "diamond",
+                json!({"radius": 0.4, "height": 0.8, "tableRatio": 0.6, "facets": 8}),
+            ),
             ("cross", json!({"armLength": 0.8, "armWidth": 0.2})),
-            ("tube", json!({"radius": 1.0, "tubeRadius": 0.2, "radialSegments": 32, "tubularSegments": 64})),
-
+            (
+                "tube",
+                json!({"radius": 1.0, "tubeRadius": 0.2, "radialSegments": 32, "tubularSegments": 64}),
+            ),
             // Structural shapes
             ("ramp", json!({"width": 1.0, "height": 1.0, "depth": 1.0})),
-            ("stairs", json!({"width": 1.0, "height": 1.0, "depth": 1.0, "numSteps": 5})),
-            ("spiralstairs", json!({"radius": 0.8, "height": 2.0, "numSteps": 10, "turns": 1.0})),
-
+            (
+                "stairs",
+                json!({"width": 1.0, "height": 1.0, "depth": 1.0, "numSteps": 5}),
+            ),
+            (
+                "spiralstairs",
+                json!({"radius": 0.8, "height": 2.0, "numSteps": 10, "turns": 1.0}),
+            ),
             // Environment shapes
-            ("tree", json!({"trunkRadius": 0.1, "trunkHeight": 1.0, "foliageRadius": 0.5, "foliageHeight": 1.0, "segments": 8})),
-            ("rock", json!({"radius": 0.5, "irregularity": 0.3, "segments": 16})),
+            (
+                "tree",
+                json!({"trunkRadius": 0.1, "trunkHeight": 1.0, "foliageRadius": 0.5, "foliageHeight": 1.0, "segments": 8}),
+            ),
+            (
+                "rock",
+                json!({"radius": 0.5, "irregularity": 0.3, "segments": 16}),
+            ),
             ("bush", json!({"radius": 0.5, "segments": 8})),
-            ("grass", json!({"bladeWidth": 0.02, "bladeHeight": 0.3, "numBlades": 10})),
+            (
+                "grass",
+                json!({"bladeWidth": 0.02, "bladeHeight": 0.3, "numBlades": 10}),
+            ),
         ];
 
         for (shape_id, params) in test_cases {
@@ -122,7 +152,9 @@ mod tests {
             }
         });
 
-        let decoded = component_registry.decode("CustomShape", &json_value).unwrap();
+        let decoded = component_registry
+            .decode("CustomShape", &json_value)
+            .unwrap();
         let custom_shape = decoded.downcast_ref::<CustomShape>().unwrap();
 
         // 2. Generate mesh using shape registry
@@ -147,21 +179,54 @@ mod tests {
         let shape_registry = ProceduralShapeRegistry::new();
 
         let test_cases = vec![
-            ("helix", json!({"radius": 0.5, "height": 2.0, "tubeRadius": 0.1, "coils": 3.0, "segments": 32, "tubeSegments": 8})),
-            ("mobiusstrip", json!({"radius": 0.5, "width": 0.3, "segments": 64})),
-            ("torusknot", json!({"radius": 0.5, "tube": 0.15, "tubularSegments": 64, "radialSegments": 8, "p": 2, "q": 3})),
-            ("star", json!({"outerRadius": 0.5, "innerRadius": 0.25, "points": 5, "thickness": 0.2})),
+            (
+                "helix",
+                json!({"radius": 0.5, "height": 2.0, "tubeRadius": 0.1, "coils": 3.0, "segments": 32, "tubeSegments": 8}),
+            ),
+            (
+                "mobiusstrip",
+                json!({"radius": 0.5, "width": 0.3, "segments": 64}),
+            ),
+            (
+                "torusknot",
+                json!({"radius": 0.5, "tube": 0.15, "tubularSegments": 64, "radialSegments": 8, "p": 2, "q": 3}),
+            ),
+            (
+                "star",
+                json!({"outerRadius": 0.5, "innerRadius": 0.25, "points": 5, "thickness": 0.2}),
+            ),
             ("heart", json!({"size": 0.5, "depth": 0.2, "segments": 32})),
-            ("diamond", json!({"radius": 0.4, "height": 0.8, "tableRatio": 0.6, "facets": 8})),
+            (
+                "diamond",
+                json!({"radius": 0.4, "height": 0.8, "tableRatio": 0.6, "facets": 8}),
+            ),
             ("cross", json!({"armLength": 0.8, "armWidth": 0.2})),
-            ("tube", json!({"radius": 1.0, "tubeRadius": 0.2, "radialSegments": 32, "tubularSegments": 64})),
+            (
+                "tube",
+                json!({"radius": 1.0, "tubeRadius": 0.2, "radialSegments": 32, "tubularSegments": 64}),
+            ),
             ("ramp", json!({"width": 1.0, "height": 1.0, "depth": 1.0})),
-            ("stairs", json!({"width": 1.0, "height": 1.0, "depth": 1.0, "numSteps": 5})),
-            ("spiralstairs", json!({"radius": 0.8, "height": 2.0, "numSteps": 10, "turns": 1.0})),
-            ("tree", json!({"trunkRadius": 0.1, "trunkHeight": 1.0, "foliageRadius": 0.5, "foliageHeight": 1.0, "segments": 8})),
-            ("rock", json!({"radius": 0.5, "irregularity": 0.3, "segments": 16})),
+            (
+                "stairs",
+                json!({"width": 1.0, "height": 1.0, "depth": 1.0, "numSteps": 5}),
+            ),
+            (
+                "spiralstairs",
+                json!({"radius": 0.8, "height": 2.0, "numSteps": 10, "turns": 1.0}),
+            ),
+            (
+                "tree",
+                json!({"trunkRadius": 0.1, "trunkHeight": 1.0, "foliageRadius": 0.5, "foliageHeight": 1.0, "segments": 8}),
+            ),
+            (
+                "rock",
+                json!({"radius": 0.5, "irregularity": 0.3, "segments": 16}),
+            ),
             ("bush", json!({"radius": 0.5, "segments": 8})),
-            ("grass", json!({"bladeWidth": 0.02, "bladeHeight": 0.3, "numBlades": 10})),
+            (
+                "grass",
+                json!({"bladeWidth": 0.02, "bladeHeight": 0.3, "numBlades": 10}),
+            ),
         ];
 
         for (shape_id, params) in test_cases {
@@ -185,16 +250,8 @@ mod tests {
                 .unwrap_or_else(|e| panic!("Failed to generate mesh for {}: {}", shape_id, e));
 
             // Verify mesh is valid
-            assert!(
-                mesh.vertices.len() > 0,
-                "{} should have vertices",
-                shape_id
-            );
-            assert!(
-                mesh.indices.len() > 0,
-                "{} should have indices",
-                shape_id
-            );
+            assert!(mesh.vertices.len() > 0, "{} should have vertices", shape_id);
+            assert!(mesh.indices.len() > 0, "{} should have indices", shape_id);
             assert!(
                 mesh.indices.len() % 3 == 0,
                 "{} indices should be multiple of 3 (triangles)",
@@ -232,8 +289,14 @@ mod tests {
 
         let mesh = shape_registry.generate("helix", &json_params).unwrap();
 
-        assert!(mesh.vertices.len() > 0, "Should generate mesh with default params");
-        assert!(mesh.indices.len() > 0, "Should generate valid indices with defaults");
+        assert!(
+            mesh.vertices.len() > 0,
+            "Should generate mesh with default params"
+        );
+        assert!(
+            mesh.indices.len() > 0,
+            "Should generate valid indices with defaults"
+        );
     }
 
     #[test]
@@ -246,7 +309,9 @@ mod tests {
         });
 
         // Should decode component successfully
-        let decoded = component_registry.decode("CustomShape", &json_value).unwrap();
+        let decoded = component_registry
+            .decode("CustomShape", &json_value)
+            .unwrap();
         let custom_shape = decoded.downcast_ref::<CustomShape>().unwrap();
 
         // But shape generation should fail
@@ -257,7 +322,8 @@ mod tests {
         if let Err(e) = result {
             let error_msg = e.to_string();
             assert!(
-                error_msg.contains("Unknown shape ID") || error_msg.contains("Failed to parse parameters"),
+                error_msg.contains("Unknown shape ID")
+                    || error_msg.contains("Failed to parse parameters"),
                 "Error should mention unknown shape or parse failure, got: {}",
                 e
             );
@@ -277,16 +343,25 @@ mod tests {
         let mesh = shape_registry.generate("ramp", &json_params).unwrap();
 
         // Ramp is a wedge shape with 6 unique positions but may have more vertices for proper normals
-        assert!(mesh.vertices.len() >= 6, "Ramp should have at least 6 vertices");
-        assert!(mesh.indices.len() >= 12, "Ramp should have at least 12 indices (4 triangles minimum)");
-        assert_eq!(mesh.indices.len() % 3, 0, "Indices should form complete triangles");
+        assert!(
+            mesh.vertices.len() >= 6,
+            "Ramp should have at least 6 vertices"
+        );
+        assert!(
+            mesh.indices.len() >= 12,
+            "Ramp should have at least 12 indices (4 triangles minimum)"
+        );
+        assert_eq!(
+            mesh.indices.len() % 3,
+            0,
+            "Indices should form complete triangles"
+        );
 
         // All vertices should have unit normals
         for vertex in &mesh.vertices {
-            let normal_length = (vertex.normal[0].powi(2)
-                + vertex.normal[1].powi(2)
-                + vertex.normal[2].powi(2))
-            .sqrt();
+            let normal_length =
+                (vertex.normal[0].powi(2) + vertex.normal[1].powi(2) + vertex.normal[2].powi(2))
+                    .sqrt();
             assert!(
                 (normal_length - 1.0).abs() < 0.01,
                 "Normals should be unit length, got length: {}",
@@ -326,7 +401,11 @@ mod tests {
 
         let caps = IComponentDecoder::capabilities(&decoder);
         assert!(caps.affects_rendering, "CustomShape affects rendering");
-        assert_eq!(caps.requires_pass, Some("geometry"), "Requires geometry pass");
+        assert_eq!(
+            caps.requires_pass,
+            Some("geometry"),
+            "Requires geometry pass"
+        );
         assert!(caps.stable, "API should be stable");
     }
 

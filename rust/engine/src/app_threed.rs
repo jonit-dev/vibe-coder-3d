@@ -6,6 +6,7 @@ use std::sync::Arc;
 use vibe_ecs_bridge::create_default_registry;
 use vibe_physics::{populate_physics_world, PhysicsWorld};
 use vibe_scene::Scene as SceneData;
+use vibe_scripting::ScriptSystem;
 use winit::{
     dpi::PhysicalSize,
     event::*,
@@ -18,6 +19,7 @@ pub struct AppThreeD {
     window: Arc<Window>,
     renderer: ThreeDRenderer,
     physics_world: Option<PhysicsWorld>,
+    script_system: Option<ScriptSystem>,
     physics_accumulator: f32,
     timer: FrameTimer,
     scene: Option<SceneData>,
@@ -75,6 +77,7 @@ impl AppThreeD {
             window,
             renderer,
             physics_world: None,
+            script_system: None,
             physics_accumulator: 0.0,
             timer: FrameTimer::new(),
             scene: None,
@@ -153,10 +156,28 @@ impl AppThreeD {
             }
         }
 
+        // Initialize script system
+        log::info!("Initializing script system...");
+        let scripts_base_path = PathBuf::from("../game/scripts");
+        let mut script_system = ScriptSystem::new(scripts_base_path);
+
+        match script_system.initialize(&scene) {
+            Ok(_) => {
+                log::info!(
+                    "Script system initialized with {} scripts",
+                    script_system.script_count()
+                );
+            }
+            Err(e) => {
+                log::warn!("Failed to initialize script system: {}", e);
+            }
+        }
+
         Ok(Self {
             window,
             renderer,
             physics_world: Some(physics_world),
+            script_system: Some(script_system),
             physics_accumulator: 0.0,
             timer: FrameTimer::new(),
             scene: Some(scene),
@@ -239,11 +260,8 @@ impl AppThreeD {
 
         log::info!("Rendering {} warmup frames...", num_warmup_frames);
         for i in 0..num_warmup_frames {
-            // Update physics for each frame
-            if let Some(ref mut physics_world) = self.physics_world {
-                physics_world.step(1.0 / 60.0);
-                self.renderer.sync_physics_transforms(physics_world);
-            }
+            // Update all systems (scripts, physics, timing)
+            self.update();
 
             // Render to screen
             self.render()?;
@@ -271,6 +289,7 @@ impl AppThreeD {
 
     fn update(&mut self) {
         self.timer.tick();
+        let delta_time = self.timer.delta_seconds();
 
         // Log FPS when debug mode is enabled
         if self.debug_mode {
@@ -280,11 +299,21 @@ impl AppThreeD {
             }
         }
 
+        // Script system update
+        if let Some(ref mut script_system) = self.script_system {
+            if let Err(e) = script_system.update(delta_time) {
+                log::error!("Script system update error: {}", e);
+            }
+
+            // Sync script transforms back to renderer
+            self.renderer.sync_script_transforms(script_system);
+        }
+
         // Physics simulation (if enabled)
         if let Some(ref mut physics_world) = self.physics_world {
             // Fixed timestep physics update (60 Hz)
             const PHYSICS_TIMESTEP: f32 = 1.0 / 60.0;
-            self.physics_accumulator += self.timer.delta_seconds();
+            self.physics_accumulator += delta_time;
 
             // Run physics steps (with max iterations to prevent spiral of death)
             let mut steps = 0;

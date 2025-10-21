@@ -25,6 +25,11 @@ import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '@/core/lib/input/inputTypes';
 import { getComponentDefaults } from './defaults';
 import { restoreDefaults } from './utils/DefaultOmitter';
+import {
+  applyResolvedScriptData,
+  collectExternalScriptReferencesFromEntities,
+  sanitizeScriptComponentData,
+} from './utils/ScriptSerializationUtils';
 
 // Core interfaces
 export interface IStreamingEntity {
@@ -44,6 +49,12 @@ export interface IStreamingScene {
   prefabs?: IPrefabDefinition[];
   inputAssets?: IInputActionsAsset[];
   lockedEntityIds?: number[];
+  assetReferences?: {
+    materials?: string | string[];
+    prefabs?: string | string[];
+    inputs?: string | string[];
+    scripts?: string | string[];
+  };
 }
 
 export interface IStreamingProgress {
@@ -76,6 +87,8 @@ const StreamingEntitySchema = z.object({
   components: z.record(z.unknown()),
 });
 
+const AssetReferenceValueSchema = z.union([z.string(), z.array(z.string())]);
+
 const StreamingSceneSchema = z
   .object({
     version: z.number(),
@@ -87,6 +100,14 @@ const StreamingSceneSchema = z
     prefabs: z.array(PrefabDefinitionSchema).optional().default([]), // Optional prefabs array
     inputAssets: z.array(InputActionsAssetSchema).optional().default([]), // Optional input assets array
     lockedEntityIds: z.array(z.number()).optional().default([]), // Optional locked entity IDs
+    assetReferences: z
+      .object({
+        materials: AssetReferenceValueSchema.optional(),
+        prefabs: AssetReferenceValueSchema.optional(),
+        inputs: AssetReferenceValueSchema.optional(),
+        scripts: AssetReferenceValueSchema.optional(),
+      })
+      .optional(),
   })
   .transform((data) => ({
     ...data,
@@ -96,6 +117,7 @@ const StreamingSceneSchema = z
     prefabs: data.prefabs || [],
     inputAssets: data.inputAssets || [],
     lockedEntityIds: data.lockedEntityIds || [],
+    assetReferences: data.assetReferences,
   }));
 
 /**
@@ -187,7 +209,14 @@ export class StreamingSceneSerializer {
             const componentData: Record<string, unknown> = {};
 
             components.forEach(({ type, data }) => {
-              if (data) componentData[type] = data;
+              if (!data) return;
+
+              let componentValue = data;
+              if (type === 'Script' && typeof data === 'object') {
+                componentValue = sanitizeScriptComponentData(data as Record<string, unknown>);
+              }
+
+              componentData[type] = componentValue;
             });
 
             const streamingEntity: IStreamingEntity = {
@@ -248,6 +277,8 @@ export class StreamingSceneSerializer {
       // Get locked entity IDs if provider function is available
       const lockedEntityIds = getLockedEntityIds ? getLockedEntityIds() : [];
 
+      const scriptReferences = collectExternalScriptReferencesFromEntities(streamingEntities);
+
       const scene: IStreamingScene = {
         version: metadata.version || 7, // Bumped version for prefabs support
         name: metadata.name,
@@ -258,6 +289,13 @@ export class StreamingSceneSerializer {
         prefabs,
         lockedEntityIds,
       };
+
+      if (scriptReferences.length > 0) {
+        scene.assetReferences = {
+          ...(scene.assetReferences ?? {}),
+          scripts: scriptReferences,
+        };
+      }
 
       // Validate the serialized scene
       const validation = StreamingSceneSchema.safeParse(scene);
@@ -325,6 +363,10 @@ export class StreamingSceneSerializer {
     const startTime = performance.now();
     this.abortController = new AbortController();
 
+    let readScriptFromFs:
+      | typeof import('./utils/ScriptFileResolver').readScriptFromFilesystem
+      | null = null;
+
     try {
       // Validate scene structure
       const validatedScene = StreamingSceneSchema.parse(scene);
@@ -388,19 +430,40 @@ export class StreamingSceneSerializer {
 
             // Add components (except PersistentId)
             const componentEntries = Object.entries(entityData.components || {});
-            for (const [componentType, componentData] of componentEntries) {
-              if (componentType === 'PersistentId' || !componentData) continue;
+        for (const [componentType, componentData] of componentEntries) {
+          if (componentType === 'PersistentId' || !componentData) continue;
 
-              // Restore defaults for compressed components
-              const defaults = getComponentDefaults(componentType);
-              const restoredData = defaults
-                ? restoreDefaults(componentData as Record<string, unknown>, defaults)
-                : componentData;
+          // Restore defaults for compressed components
+          const defaults = getComponentDefaults(componentType);
+          let restoredData = defaults
+            ? restoreDefaults(componentData as Record<string, unknown>, defaults)
+            : componentData;
 
-              componentManager.addComponent(created.id, componentType, restoredData);
+          if (
+            componentType === 'Script' &&
+            typeof restoredData === 'object' &&
+            restoredData !== null
+          ) {
+            const scriptData = restoredData as Record<string, unknown>;
+            const scriptRef = scriptData.scriptRef as Record<string, unknown> | undefined;
+
+            if (scriptRef?.source === 'external' && typeof scriptRef.path === 'string') {
+              if (!readScriptFromFs) {
+                const module = await import('./utils/ScriptFileResolver');
+                readScriptFromFs = module.readScriptFromFilesystem;
+              }
+
+              const resolved = await readScriptFromFs(scriptRef.path);
+              if (resolved) {
+                restoredData = applyResolvedScriptData(scriptData, resolved);
+              }
             }
+          }
 
-            processed++;
+          componentManager.addComponent(created.id, componentType, restoredData);
+        }
+
+        processed++;
 
             // Progress update
             if (processed % STREAM_CONFIG.PROGRESS_UPDATE_INTERVAL === 0) {

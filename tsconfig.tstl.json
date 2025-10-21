@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "module": "commonjs",
+    "lib": ["ES2015"],
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "rootDir": "./src/game/scripts",
+    "outDir": "./rust/game/scripts",
+    "types": ["./src/game/scripts/lua-runtime.d.ts"]
+  },
+  "tstl": {
+    "luaTarget": "5.4",
+    "luaLibImport": "inline",
+    "noImplicitSelf": true,
+    "sourceMapTraceback": true
+  },
+  "include": [
+    "src/game/scripts/**/*.ts"
+  ],
+  "exclude": [
+    "src/game/scripts/**/*.test.ts",
+    "src/game/scripts/**/*.spec.ts",
+    "src/game/scripts/**/examples/**",
+    "src/game/scripts/**/old/**",
+    "src/game/scripts/index.ts",
+    "src/game/scripts/PlayerController.ts"
+  ]
+}

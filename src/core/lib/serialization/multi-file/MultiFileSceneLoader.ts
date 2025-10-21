@@ -2,6 +2,11 @@ import { AssetReferenceResolver } from '../assets/AssetReferenceResolver';
 import type { IAssetRefResolutionContext } from '../assets/AssetReferenceResolver';
 import type { ISerializedEntity } from '../EntitySerializer';
 import type { IMaterialDefinition } from '@core/materials/Material.types';
+import type { IScriptDefinition } from '../assets/defineScripts';
+import { extractAssetIdFromRef } from '../assets/AssetTypes';
+
+import { applyResolvedScriptData } from '../utils/ScriptSerializationUtils';
+import { readScriptFromFilesystem } from '../utils/ScriptFileResolver';
 
 export interface IMultiFileSceneData {
   metadata: {
@@ -13,9 +18,10 @@ export interface IMultiFileSceneData {
   };
   entities: ISerializedEntity[];
   assetReferences?: {
-    materials?: string;
-    prefabs?: string;
-    inputs?: string;
+    materials?: string | string[];
+    prefabs?: string | string[];
+    inputs?: string | string[];
+    scripts?: string | string[];
   };
 }
 
@@ -51,11 +57,17 @@ export class MultiFileSceneLoader {
       context,
     );
 
+    const entitiesWithScripts = await this.resolveScriptReferences(
+      entitiesWithResolvedRefs,
+      sceneData.assetReferences,
+      context,
+    );
+
     // Extract inline materials from resolved entities
-    const materials = this.extractInlineMaterials(entitiesWithResolvedRefs);
+    const materials = this.extractInlineMaterials(entitiesWithScripts);
 
     return {
-      entities: entitiesWithResolvedRefs,
+      entities: entitiesWithScripts,
       materials,
       metadata: sceneData.metadata,
     };
@@ -111,6 +123,92 @@ export class MultiFileSceneLoader {
         // if (entity.components?.InputHandler) { ... }
 
         return updatedEntity;
+      }),
+    );
+  }
+
+  private async resolveScriptReferences(
+    entities: ISerializedEntity[],
+    assetReferences: IMultiFileSceneData['assetReferences'],
+    context: IAssetRefResolutionContext,
+  ): Promise<ISerializedEntity[]> {
+    const scriptsRefValue = assetReferences?.scripts;
+    const scriptRefs = !scriptsRefValue
+      ? []
+      : Array.isArray(scriptsRefValue)
+        ? scriptsRefValue
+        : [scriptsRefValue];
+
+    const scriptAssetCache = new Map<string, IScriptDefinition>();
+    const resolvedScriptCache = new Map<string, Awaited<ReturnType<typeof readScriptFromFilesystem>> | null>();
+
+    const resolveDefinition = async (scriptId: string): Promise<IScriptDefinition | null> => {
+      if (scriptAssetCache.has(scriptId)) {
+        return scriptAssetCache.get(scriptId)!;
+      }
+
+      const refEntry = scriptRefs.find((ref) => extractAssetIdFromRef(ref) === scriptId);
+      if (!refEntry) return null;
+
+      try {
+        const definition = await this.assetResolver.resolve<IScriptDefinition>(refEntry, context, 'script');
+        scriptAssetCache.set(scriptId, definition);
+        return definition;
+      } catch (error) {
+        console.warn(
+          `Failed to resolve script asset "${scriptId}" from reference ${refEntry}:`,
+          error instanceof Error ? error.message : error,
+        );
+        return null;
+      }
+    };
+
+    return Promise.all(
+      entities.map(async (entity) => {
+        const scriptComponent = entity.components?.Script as Record<string, unknown> | undefined;
+        if (!scriptComponent) return entity;
+
+        const scriptRef = scriptComponent.scriptRef as Record<string, unknown> | undefined;
+        const scriptId = typeof scriptRef?.scriptId === 'string' ? scriptRef.scriptId : undefined;
+        const isExternal = scriptRef?.source === 'external' || scriptRef?.source === 'EXTERNAL';
+
+        if (!scriptId || !isExternal) {
+          return entity;
+        }
+
+        const primaryPath = typeof scriptRef?.path === 'string' ? scriptRef.path : undefined;
+        let scriptPath = primaryPath;
+
+        if (!scriptPath) {
+          const definition = await resolveDefinition(scriptId);
+          if (definition && typeof definition.source === 'string') {
+            scriptPath = definition.source;
+          }
+        }
+
+        if (!scriptPath) {
+          console.warn(
+            `[MultiFileSceneLoader] Missing script path for scriptId "${scriptId}" – unable to hydrate code`,
+          );
+          return entity;
+        }
+
+        if (!resolvedScriptCache.has(scriptId)) {
+          resolvedScriptCache.set(scriptId, await readScriptFromFilesystem(scriptPath));
+        }
+
+        const resolved = resolvedScriptCache.get(scriptId);
+        if (!resolved) {
+          return entity;
+        }
+
+        return {
+          ...entity,
+          components: {
+            ...entity.components,
+            Script: applyResolvedScriptData(scriptComponent, resolved),
+          },
+        };
       }),
     );
   }

@@ -1,11 +1,11 @@
-import React, { useCallback, useState, useEffect, useRef } from 'react';
-import { FiCode, FiEdit3, FiAlertTriangle, FiExternalLink } from 'react-icons/fi';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { FiAlertTriangle, FiCode, FiEdit3, FiExternalLink } from 'react-icons/fi';
 
 import { ScriptData } from '@/core/lib/ecs/components/definitions/ScriptComponent';
-import { CheckboxField } from '@/editor/components/shared/CheckboxField';
-import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { Logger } from '@/core/lib/logger';
+import { CheckboxField } from '@/editor/components/shared/CheckboxField';
+import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
 import { useEditorStore } from '@/editor/store/editorStore';
 
 import { ScriptCodeModal } from './ScriptCodeModal';
@@ -42,6 +42,7 @@ export const ScriptSection: React.FC<IScriptSectionProps> = ({
 
   /**
    * Auto-create external script file when component is first added
+   * This complements onAdd() so when user adds Script via inspector, we persist immediately.
    */
   useEffect(() => {
     // Only run once on mount, and only if not already external
@@ -83,7 +84,9 @@ export const ScriptSection: React.FC<IScriptSectionProps> = ({
           throw new Error(result.error || 'Failed to create external script');
         }
 
-        // Update component with scriptRef
+        // Update component with scriptRef and scriptPath for Lua runtime
+        const luaScriptPath = `${scriptId}.lua`;
+
         onUpdate({
           scriptRef: {
             scriptId,
@@ -92,6 +95,7 @@ export const ScriptSection: React.FC<IScriptSectionProps> = ({
             codeHash,
             lastModified: Date.now(),
           },
+          scriptPath: luaScriptPath,
         });
 
         logger.info(`External script created successfully: ${scriptId} at ${result.path}`);

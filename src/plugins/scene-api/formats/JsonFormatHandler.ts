@@ -8,6 +8,7 @@ import type {
   ILoadResult,
   ISceneListItem,
 } from '../ISceneFormatHandler';
+import { triggerLuaTranspile } from '../../utils/triggerLuaTranspile';
 
 /**
  * JSON format handler for scene persistence
@@ -39,6 +40,8 @@ export class JsonFormatHandler implements ISceneFormatHandler {
 
     // Write to store
     const { modified, size } = await this.store.write(filename, content);
+
+    await triggerLuaTranspile('scene-api/json');
 
     return {
       filename,

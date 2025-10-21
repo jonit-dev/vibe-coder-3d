@@ -66,7 +66,12 @@ impl TextureCache {
             return Ok(Rc::clone(cached));
         }
 
-        log::info!("Loading GLTF embedded texture: {} ({}x{})", texture_id, width, height);
+        log::info!(
+            "Loading GLTF embedded texture: {} ({}x{})",
+            texture_id,
+            width,
+            height
+        );
 
         // Create CpuTexture from raw RGBA data using three_d's constructor
         // Convert flat RGBA bytes to array of [u8; 4]

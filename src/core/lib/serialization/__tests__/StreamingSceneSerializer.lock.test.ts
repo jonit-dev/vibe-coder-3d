@@ -1,6 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { streamingSerializer } from '../StreamingSceneSerializer';
 import type { IStreamingScene } from '../StreamingSceneSerializer';
+import * as fs from 'fs/promises';
+
+vi.mock('fs/promises');
 
 describe('StreamingSceneSerializer - Locked Entity IDs', () => {
   const mockEntities = [
@@ -75,6 +78,38 @@ describe('StreamingSceneSerializer - Locked Entity IDs', () => {
 
       expect(scene.lockedEntityIds).toEqual([1, 2, 3]);
     });
+
+    it('should strip external script code and add script references', async () => {
+      const scriptRef = {
+        scriptId: 'editor.autoScript',
+        source: 'external' as const,
+        path: '/src/game/scripts/editor.autoScript.ts',
+        codeHash: 'deadbeef',
+        lastModified: Date.now(),
+      };
+
+      const scene = await streamingSerializer.exportScene(
+        [{ id: 10, name: 'Scripted Entity', parentId: null }],
+        () => [
+          {
+            type: 'Script',
+            data: {
+              code: 'function onStart() { console.log("hi"); }',
+              scriptRef,
+              scriptName: 'Auto Script',
+              enabled: true,
+            },
+          },
+        ],
+        { version: 1, name: 'Script Test Scene' },
+      );
+
+      expect(scene.entities).toHaveLength(1);
+      const scriptComponent = scene.entities[0].components.Script as Record<string, unknown>;
+      expect(scriptComponent.code).toBeUndefined();
+      expect(scriptComponent.scriptRef).toEqual(scriptRef);
+      expect(scene.assetReferences?.scripts).toEqual(['@/scripts/editor.autoScript']);
+    });
   });
 
   describe('importScene', () => {
@@ -87,6 +122,8 @@ describe('StreamingSceneSerializer - Locked Entity IDs', () => {
       createdEntityIdMap.set('1', 10);
       createdEntityIdMap.set('2', 20);
       createdEntityIdMap.set('3', 30);
+      vi.mocked(fs.readFile).mockReset();
+      vi.mocked(fs.stat).mockReset();
     });
 
     const mockEntityManager = {
@@ -254,18 +291,78 @@ describe('StreamingSceneSerializer - Locked Entity IDs', () => {
         importedLockedIds = ids;
       };
 
+    await streamingSerializer.importScene(
+      scene,
+      mockEntityManager,
+      mockComponentManager,
+      {},
+      undefined,
+      undefined,
+      setLockedEntityIds,
+    );
+
+    // Only valid mapped IDs should be returned
+    expect(importedLockedIds).toEqual([10, 20]);
+  });
+
+    it('should hydrate script code for external script references during import', async () => {
+      const scriptScene: IStreamingScene = {
+        version: 1,
+        name: 'Script Scene',
+        timestamp: new Date().toISOString(),
+        totalEntities: 1,
+        entities: [
+          {
+            id: 1,
+            name: 'Scripted Entity',
+            components: {
+              Script: {
+                enabled: true,
+                scriptName: 'Test Script',
+                scriptRef: {
+                  scriptId: 'game.testScript',
+                  source: 'external',
+                  path: './src/game/scripts/game.testScript.ts',
+                },
+              },
+            },
+          },
+        ],
+        materials: [],
+        prefabs: [],
+        assetReferences: {
+          scripts: ['@/scripts/game.testScript'],
+        },
+      };
+
+      vi.mocked(fs.readFile).mockResolvedValue('export function onStart() { console.log("hello"); }');
+      vi.mocked(fs.stat).mockResolvedValue({
+        mtimeMs: 789,
+        mtime: new Date(789),
+      } as unknown as fs.Stats);
+
+      const addedComponents: Array<{ type: string; data: unknown }> = [];
+      const trackingComponentManager = {
+        addComponent: (_entityId: number, type: string, data: unknown) => {
+          addedComponents.push({ type, data });
+        },
+      };
+
       await streamingSerializer.importScene(
-        scene,
+        scriptScene,
         mockEntityManager,
-        mockComponentManager,
-        {},
-        undefined,
-        undefined,
-        setLockedEntityIds,
+        trackingComponentManager,
       );
 
-      // Only valid mapped IDs should be returned
-      expect(importedLockedIds).toEqual([10, 20]);
+      const scriptComponent = addedComponents.find((c) => c.type === 'Script')?.data as
+        | Record<string, unknown>
+        | undefined;
+
+      expect(scriptComponent).toBeDefined();
+      expect(scriptComponent?.code).toContain('console.log("hello")');
+      const scriptRef = scriptComponent?.scriptRef as Record<string, unknown> | undefined;
+      expect(scriptRef?.codeHash).toBeDefined();
+      expect(scriptRef?.path).toContain('game.testScript.ts');
     });
   });
 });

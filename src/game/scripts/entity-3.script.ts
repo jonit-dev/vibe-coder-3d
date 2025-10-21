@@ -1,11 +1,10 @@
-// Hello World JavaScript Script
-function onStart() {
-  if (three.mesh) {
-    three.material.setColor("#fffff");
-    console.log("hello world!");
-  }
+/// <reference path="./script-api.d.ts" />
+
+// Hello World TypeScript Script
+function onStart(): void {
+ console.log("H")
 }
 
-function onUpdate(deltaTime) {
+function onUpdate(deltaTime: number): void {
   entity.transform.rotate(0, deltaTime * 0.5, 0);
 }

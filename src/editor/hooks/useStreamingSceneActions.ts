@@ -12,20 +12,20 @@
 import { useCallback, useRef, useState } from 'react';
 
 import {
-  streamingSerializer,
   downloadSceneStream,
   readSceneStream,
-  type IStreamingScene,
-  type IStreamingProgress,
+  streamingSerializer,
   type IStreamingCallbacks,
+  type IStreamingProgress,
+  type IStreamingScene,
 } from '@/core/lib/serialization/StreamingSceneSerializer';
-import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
+import { MaterialRegistry } from '@/core/materials/MaterialRegistry';
 import type { IPrefabDefinition } from '@/core/prefabs/Prefab.types';
 import { useProjectToasts, useToastStore } from '@/core/stores/toastStore';
-import { useMaterialsStore } from '@/editor/store/materialsStore';
-import { useInputStore } from '@/editor/store/inputStore';
 import { useEditorStore } from '@/editor/store/editorStore';
+import { useInputStore } from '@/editor/store/inputStore';
+import { useMaterialsStore } from '@/editor/store/materialsStore';
 import { useComponentManager } from './useComponentManager';
 import { useEntityManager } from './useEntityManager';
 import { useScenePersistence } from './useScenePersistence';
@@ -333,6 +333,43 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
             components,
           };
         });
+
+        // Before saving, ensure all Script components with external refs are flushed to disk
+        // so scenes never dump inline code. This is best-effort: continue save even if flush fails.
+        try {
+          const scriptFlushPromises: Promise<void>[] = [];
+          for (const ent of transformedEntities) {
+            const script = (ent.components as Record<string, any>)?.Script as
+              | {
+                  code?: string;
+                  scriptRef?: { source?: string; scriptId?: string; codeHash?: string };
+                }
+              | undefined;
+            if (script && script.scriptRef?.source === 'external' && script.scriptRef.scriptId) {
+              const code = typeof script.code === 'string' ? script.code : '';
+              const scriptId = script.scriptRef.scriptId;
+              const knownHash = script.scriptRef.codeHash;
+              scriptFlushPromises.push(
+                (async () => {
+                  try {
+                    await fetch('/api/script/save', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: scriptId, code, knownHash }),
+                    });
+                  } catch {
+                    // Ignore flush failure, proceed with save
+                  }
+                })(),
+              );
+            }
+          }
+          if (scriptFlushPromises.length > 0) {
+            await Promise.allSettled(scriptFlushPromises);
+          }
+        } catch {
+          // Ignore and proceed
+        }
 
         // Get materials for TSX scene
         const materialRegistry = MaterialRegistry.getInstance();

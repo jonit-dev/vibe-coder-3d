@@ -20,7 +20,7 @@ pub async fn load_mesh_renderer(
     mesh_renderer: &MeshRenderer,
     transform: Option<&Transform>,
     material_manager: &mut MaterialManager,
-) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3)>> {
+) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3, GlamVec3)>> {
     log::info!("  MeshRenderer:");
     log::info!("    Mesh ID:     {:?}", mesh_renderer.meshId);
     log::info!("    Model Path:  {:?}", mesh_renderer.modelPath);
@@ -29,52 +29,73 @@ pub async fn load_mesh_renderer(
 
     // Check if we should load a GLTF model (filter out empty strings)
     #[cfg(feature = "gltf-support")]
-    let (cpu_meshes, gltf_textures, _gltf_images) = if let Some(model_path) = &mesh_renderer.modelPath {
-        if !model_path.is_empty() {
-            let gltf_result = load_gltf_meshes_with_textures(model_path)?;
+    let (cpu_meshes, gltf_textures, _gltf_images) =
+        if let Some(model_path) = &mesh_renderer.modelPath {
+            if !model_path.is_empty() {
+                let gltf_result = load_gltf_meshes_with_textures(model_path)?;
 
-            // Load GLTF embedded images into texture cache
-            for (idx, gltf_image) in gltf_result.images.iter().enumerate() {
-                if let Some(ref texture_id) = gltf_image.name {
-                    log::info!("      Loading embedded texture '{}' into cache", texture_id);
-                    material_manager.texture_cache_mut().load_gltf_image(
-                        texture_id,
-                        &gltf_image.data,
-                        gltf_image.width,
-                        gltf_image.height,
-                    )?;
-                } else {
-                    log::warn!("      Skipping unnamed GLTF image {}", idx);
+                // Load GLTF embedded images into texture cache
+                for (idx, gltf_image) in gltf_result.images.iter().enumerate() {
+                    if let Some(ref texture_id) = gltf_image.name {
+                        log::info!("      Loading embedded texture '{}' into cache", texture_id);
+                        material_manager.texture_cache_mut().load_gltf_image(
+                            texture_id,
+                            &gltf_image.data,
+                            gltf_image.width,
+                            gltf_image.height,
+                        )?;
+                    } else {
+                        log::warn!("      Skipping unnamed GLTF image {}", idx);
+                    }
                 }
-            }
 
-            (gltf_result.cpu_meshes, Some(gltf_result.texture_ids), Some(gltf_result.images))
+                (
+                    gltf_result.cpu_meshes,
+                    Some(gltf_result.texture_ids),
+                    Some(gltf_result.images),
+                )
+            } else {
+                // Empty string - treat as no model path, use primitive
+                let mesh_id_lower = mesh_renderer
+                    .meshId
+                    .as_ref()
+                    .map(|id| id.to_ascii_lowercase());
+                (
+                    vec![create_primitive_mesh(mesh_id_lower.as_deref())],
+                    None,
+                    None,
+                )
+            }
         } else {
-            // Empty string - treat as no model path, use primitive
+            // Normalize mesh identifier for comparisons
             let mesh_id_lower = mesh_renderer
                 .meshId
                 .as_ref()
                 .map(|id| id.to_ascii_lowercase());
-            (vec![create_primitive_mesh(mesh_id_lower.as_deref())], None, None)
-        }
-    } else {
-        // Normalize mesh identifier for comparisons
-        let mesh_id_lower = mesh_renderer
-            .meshId
-            .as_ref()
-            .map(|id| id.to_ascii_lowercase());
 
-        // Create primitive mesh based on meshId hints
-        (vec![create_primitive_mesh(mesh_id_lower.as_deref())], None, None)
-    };
+            // Create primitive mesh based on meshId hints
+            (
+                vec![create_primitive_mesh(mesh_id_lower.as_deref())],
+                None,
+                None,
+            )
+        };
 
     #[cfg(not(feature = "gltf-support"))]
-    let (cpu_meshes, gltf_textures, gltf_images): (Vec<CpuMesh>, Option<Vec<Option<String>>>, Option<Vec<vibe_assets::GltfImage>>) = {
+    let (cpu_meshes, gltf_textures, gltf_images): (
+        Vec<CpuMesh>,
+        Option<Vec<Option<String>>>,
+        Option<Vec<vibe_assets::GltfImage>>,
+    ) = {
         let mesh_id_lower = mesh_renderer
             .meshId
             .as_ref()
             .map(|id| id.to_ascii_lowercase());
-        (vec![create_primitive_mesh(mesh_id_lower.as_deref())], None, None)
+        (
+            vec![create_primitive_mesh(mesh_id_lower.as_deref())],
+            None,
+            None,
+        )
     };
 
     // Build result vector for all submeshes
@@ -116,22 +137,39 @@ pub async fn load_mesh_renderer(
                                     submesh_idx,
                                     first_texture_id
                                 );
-                                create_material_from_gltf_texture(context, first_texture_id, material_manager).await?
+                                create_material_from_gltf_texture(
+                                    context,
+                                    first_texture_id,
+                                    material_manager,
+                                )
+                                .await?
                             } else {
-                                log::info!("    Submesh {}: no embedded texture, using default", submesh_idx);
+                                log::info!(
+                                    "    Submesh {}: no embedded texture, using default",
+                                    submesh_idx
+                                );
                                 material_manager.create_default_material(context)
                             }
                         } else {
-                            log::info!("    Submesh {}: no embedded images, using default", submesh_idx);
+                            log::info!(
+                                "    Submesh {}: no embedded images, using default",
+                                submesh_idx
+                            );
                             material_manager.create_default_material(context)
                         }
                     } else {
-                        log::info!("    Submesh {}: no embedded texture, using default", submesh_idx);
+                        log::info!(
+                            "    Submesh {}: no embedded texture, using default",
+                            submesh_idx
+                        );
                         material_manager.create_default_material(context)
                     }
                     #[cfg(not(feature = "gltf-support"))]
                     {
-                        log::info!("    Submesh {}: no embedded texture, using default", submesh_idx);
+                        log::info!(
+                            "    Submesh {}: no embedded texture, using default",
+                            submesh_idx
+                        );
                         material_manager.create_default_material(context)
                     }
                 }
@@ -163,7 +201,7 @@ pub async fn load_mesh_renderer(
         // Create mesh and apply transform
         let mut mesh = Mesh::new(context, cpu_mesh);
 
-        let final_scale = if let Some(transform) = transform {
+        let (final_scale, base_scale) = if let Some(transform) = transform {
             // Use meshId for primitive scaling logic (GLTF models don't need base scale adjustments)
             let mesh_id_lower = mesh_renderer
                 .meshId
@@ -171,7 +209,7 @@ pub async fn load_mesh_renderer(
                 .map(|id| id.to_ascii_lowercase());
             let converted = convert_transform_to_matrix(transform, mesh_id_lower.as_deref());
             mesh.set_transformation(converted.matrix);
-            converted.final_scale
+            (converted.final_scale, converted.base_scale)
         } else {
             // Even without an explicit Transform component, apply primitive base scale
             let mesh_id_lower = mesh_renderer
@@ -180,10 +218,10 @@ pub async fn load_mesh_renderer(
                 .map(|id| id.to_ascii_lowercase());
             let converted = create_base_scale_matrix(mesh_id_lower.as_deref());
             mesh.set_transformation(converted.matrix);
-            converted.final_scale
+            (converted.final_scale, converted.base_scale)
         };
 
-        result.push((Gm::new(mesh, material), final_scale));
+        result.push((Gm::new(mesh, material), final_scale, base_scale));
     }
 
     Ok(result)
@@ -236,7 +274,11 @@ async fn create_material_from_gltf_texture(
     };
 
     // Load the texture from cache
-    match material_manager.texture_cache_mut().load_texture(texture_id).await {
+    match material_manager
+        .texture_cache_mut()
+        .load_texture(texture_id)
+        .await
+    {
         Ok(texture) => {
             cpu_material.albedo_texture = Some(texture.as_ref().clone());
             log::debug!("Applied GLTF texture '{}' to material", texture_id);

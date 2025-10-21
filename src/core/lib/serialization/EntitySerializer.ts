@@ -9,6 +9,7 @@ import {
   extractMaterialFromMeshRenderer,
   replaceMaterialWithReference,
 } from './utils/MaterialHasher';
+import { sanitizeScriptComponentData } from './utils/ScriptSerializationUtils';
 
 const logger = Logger.create('EntitySerializer');
 
@@ -81,7 +82,10 @@ export class EntitySerializer {
 
       for (const component of components) {
         if (component.data) {
-          componentData[component.type] = component.data;
+          const data = component.type === 'Script'
+            ? sanitizeScriptComponentData(component.data as Record<string, unknown>)
+            : component.data;
+          componentData[component.type] = data;
         }
       }
 
@@ -134,6 +138,10 @@ export class EntitySerializer {
               materialId,
             });
           }
+        }
+
+        if (component.type === 'Script') {
+          processedData = sanitizeScriptComponentData(processedData);
         }
 
         // Omit default values

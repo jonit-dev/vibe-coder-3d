@@ -1,10 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SceneDeserializer } from '../SceneDeserializer';
 import type { ISceneData } from '../SceneSerializer';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { MaterialRegistry } from '@core/materials/MaterialRegistry';
 import { PrefabRegistry } from '@core/prefabs/PrefabRegistry';
+import * as fs from 'fs/promises';
+
+vi.mock('fs/promises');
 
 describe('SceneDeserializer', () => {
   let deserializer: SceneDeserializer;
@@ -24,6 +27,9 @@ describe('SceneDeserializer', () => {
     entityManager.clearEntities();
     materialRegistry.clearMaterials();
     await prefabRegistry.clear();
+    vi.clearAllMocks();
+    vi.mocked(fs.readFile).mockReset();
+    vi.mocked(fs.stat).mockReset();
   });
 
   describe('deserialize', () => {
@@ -511,12 +517,64 @@ describe('SceneDeserializer', () => {
         ],
       };
 
+    await deserializer.deserialize(sceneData, entityManager, componentRegistry);
+
+    // All should be loaded
+    expect(entityManager.getAllEntities()).toHaveLength(1);
+    expect(materialRegistry.get('mat1')).toBeDefined();
+    expect(prefabRegistry.get('prefab1')).toBeDefined();
+  });
+
+    it('should hydrate external script components using file references', async () => {
+      const sceneData: ISceneData = {
+        metadata: {
+          name: 'Script Scene',
+          version: 1,
+          timestamp: '2025-01-01T00:00:00.000Z',
+        },
+        entities: [
+          {
+            id: 42,
+            name: 'Scripted Entity',
+            components: {
+              Script: {
+                enabled: true,
+                scriptName: 'Test Script',
+                scriptRef: {
+                  scriptId: 'game.testScript',
+                  source: 'external',
+                  path: './src/game/scripts/game.testScript.ts',
+                },
+              },
+            },
+          },
+        ],
+        materials: [],
+        prefabs: [],
+        assetReferences: {
+          scripts: ['@/scripts/game.testScript'],
+        },
+      };
+
+      vi.mocked(fs.readFile).mockResolvedValue('export function onStart() { console.log("hello"); }');
+      vi.mocked(fs.stat).mockResolvedValue({
+        mtimeMs: 999,
+        mtime: new Date(999),
+      } as unknown as fs.Stats);
+
       await deserializer.deserialize(sceneData, entityManager, componentRegistry);
 
-      // All should be loaded
-      expect(entityManager.getAllEntities()).toHaveLength(1);
-      expect(materialRegistry.get('mat1')).toBeDefined();
-      expect(prefabRegistry.get('prefab1')).toBeDefined();
+      const entities = entityManager.getAllEntitiesForAdapter();
+      expect(entities).toHaveLength(1);
+      const components = componentRegistry.getComponentsForEntityForAdapter(entities[0].id);
+      const scriptComponent = components.find((c) => c.type === 'Script')?.data as
+        | Record<string, unknown>
+        | undefined;
+
+      expect(scriptComponent).toBeDefined();
+      expect(scriptComponent?.code).toContain('console.log("hello")');
+      const scriptRef = scriptComponent?.scriptRef as Record<string, unknown> | undefined;
+      expect(scriptRef?.codeHash).toBeDefined();
     });
   });
 });

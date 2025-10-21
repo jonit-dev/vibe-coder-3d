@@ -41,6 +41,7 @@ pub struct ThreeDRenderer {
     meshes: Vec<Gm<Mesh, PhysicalMaterial>>,
     mesh_entity_ids: Vec<EntityId>, // Parallel array: entity ID for each mesh
     mesh_scales: Vec<GlamVec3>,     // Parallel array: final local scale per mesh
+    mesh_base_scales: Vec<GlamVec3>, // Parallel array: primitive/base scale per mesh
     mesh_cast_shadows: Vec<bool>,   // Parallel array: castShadows flag for each mesh
     mesh_receive_shadows: Vec<bool>, // Parallel array: receiveShadows flag for each mesh
     directional_lights: Vec<EnhancedDirectionalLight>,
@@ -142,6 +143,7 @@ impl ThreeDRenderer {
             meshes: Vec::new(),
             mesh_entity_ids: Vec::new(),
             mesh_scales: Vec::new(),
+            mesh_base_scales: Vec::new(),
             mesh_cast_shadows: Vec::new(),
             mesh_receive_shadows: Vec::new(),
             directional_lights: Vec::new(),
@@ -186,6 +188,7 @@ impl ThreeDRenderer {
         self.meshes.push(cube);
         self.mesh_entity_ids.push(EntityId::new(0)); // Test cube with ID 0
         self.mesh_scales.push(GlamVec3::ONE);
+        self.mesh_base_scales.push(GlamVec3::ONE);
         self.mesh_cast_shadows.push(true); // Test cube casts shadows
         self.mesh_receive_shadows.push(true); // Test cube receives shadows
 
@@ -969,7 +972,9 @@ impl ThreeDRenderer {
         log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
         for entity in &scene.entities {
-            if let Some(prefab_instance) = self.get_component::<vibe_ecs_bridge::PrefabInstance>(entity, "PrefabInstance") {
+            if let Some(prefab_instance) =
+                self.get_component::<vibe_ecs_bridge::PrefabInstance>(entity, "PrefabInstance")
+            {
                 log::info!("  Instantiating prefab: {}", prefab_instance.prefabId);
 
                 // Extract instance Transform to position the prefab
@@ -990,7 +995,11 @@ impl ThreeDRenderer {
                                 prefab_instances.extend(instances);
                             }
                             Err(e) => {
-                                log::warn!("    Failed to instantiate prefab {}: {}", prefab_instance.prefabId, e);
+                                log::warn!(
+                                    "    Failed to instantiate prefab {}: {}",
+                                    prefab_instance.prefabId,
+                                    e
+                                );
                             }
                         }
                     }
@@ -1015,7 +1024,10 @@ impl ThreeDRenderer {
 
             // Rebuild scene graph to include prefab hierarchies
             self.scene_graph = Some(SceneGraph::build(&full_scene)?);
-            log::info!("  Scene graph rebuilt with {} total entities", full_scene.entities.len());
+            log::info!(
+                "  Scene graph rebuilt with {} total entities",
+                full_scene.entities.len()
+            );
         }
 
         // Process entities
@@ -1053,6 +1065,85 @@ impl ThreeDRenderer {
         }
     }
 
+    /// Sync script transforms back to renderer meshes
+    pub fn sync_script_transforms(&mut self, script_system: &vibe_scripting::ScriptSystem) {
+        use vibe_scene::EntityId;
+
+        let entity_ids = script_system.entity_ids();
+        log::debug!(
+            "sync_script_transforms: {} entities with scripts",
+            entity_ids.len()
+        );
+        log::debug!(
+            "  Renderer has {} meshes with IDs: {:?}",
+            self.mesh_entity_ids.len(),
+            self.mesh_entity_ids
+        );
+
+        // Get all entity IDs that have scripts
+        for entity_id in entity_ids {
+            // Get the transform from the script system
+            if let Some(transform) = script_system.get_transform(entity_id) {
+                log::debug!(
+                    "  Script entity {}: rotation={:?}",
+                    entity_id,
+                    transform.rotation
+                );
+
+                // The entity_id from script system is now u64 (PersistentId hash)
+                let entity_id_obj = EntityId::new(entity_id);
+                log::debug!(
+                    "    Looking for EntityId({}) in renderer mesh list",
+                    entity_id
+                );
+
+                // Collect all mesh indices for this entity (GLTF models may have multiple submeshes)
+                let matching_indices: Vec<usize> = self
+                    .mesh_entity_ids
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, id)| {
+                        let matches = *id == entity_id_obj;
+                        log::debug!(
+                            "      Comparing {:?} == {:?}: {}",
+                            id,
+                            entity_id_obj,
+                            matches
+                        );
+                        matches.then_some(idx)
+                    })
+                    .collect();
+
+                if matching_indices.is_empty() {
+                    log::warn!(
+                        "  Entity {} has script but no mesh found in renderer",
+                        entity_id
+                    );
+                    continue;
+                }
+
+                for mesh_idx in matching_indices {
+                    log::debug!("    Updating mesh at index {}", mesh_idx);
+                    let base_scale = self
+                        .mesh_base_scales
+                        .get(mesh_idx)
+                        .copied()
+                        .unwrap_or(GlamVec3::ONE);
+                    let (transform_mat, final_scale) =
+                        crate::renderer::transform_utils::compose_transform_with_base_scale(
+                            &transform, base_scale,
+                        );
+
+                    if let Some(mesh) = self.meshes.get_mut(mesh_idx) {
+                        mesh.set_transformation(transform_mat);
+                        self.mesh_scales[mesh_idx] = final_scale;
+                        log::debug!("    Transform applied successfully");
+                    }
+                }
+            }
+        }
+    }
+
     /// Render debug visualizations (grid, colliders, etc.) when debug mode is enabled
     pub fn render_debug_overlay(
         &mut self,
@@ -1085,6 +1176,7 @@ impl ThreeDRenderer {
         self.meshes.clear();
         self.mesh_entity_ids.clear();
         self.mesh_scales.clear();
+        self.mesh_base_scales.clear();
         self.mesh_cast_shadows.clear();
         self.mesh_receive_shadows.clear();
         self.directional_lights.clear();
@@ -1205,10 +1297,11 @@ impl ThreeDRenderer {
         .await?;
 
         // Handle all submeshes (primitives return 1, GLTF models may return multiple)
-        for (idx, (gm, final_scale)) in submeshes.into_iter().enumerate() {
+        for (idx, (gm, final_scale, base_scale)) in submeshes.into_iter().enumerate() {
             self.meshes.push(gm);
             self.mesh_entity_ids.push(entity_id);
             self.mesh_scales.push(final_scale);
+            self.mesh_base_scales.push(base_scale);
             self.mesh_cast_shadows.push(mesh_renderer.castShadows);
             self.mesh_receive_shadows.push(mesh_renderer.receiveShadows);
 
@@ -1271,13 +1364,17 @@ impl ThreeDRenderer {
         // Since we run from rust/engine/, we load from ../game/geometry/
         let resolved_path = if geometry_asset.path.starts_with("/src/game/geometry/") {
             // Extract just the filename from the TypeScript path
-            let filename = geometry_asset.path
+            let filename = geometry_asset
+                .path
                 .strip_prefix("/src/game/geometry/")
                 .unwrap_or(&geometry_asset.path);
             PathBuf::from("../game/geometry").join(filename)
         } else if geometry_asset.path.starts_with('/') {
             // Legacy fallback: strip leading slash and use relative path
-            let relative_path = geometry_asset.path.strip_prefix('/').unwrap_or(&geometry_asset.path);
+            let relative_path = geometry_asset
+                .path
+                .strip_prefix('/')
+                .unwrap_or(&geometry_asset.path);
             PathBuf::from("../..").join(relative_path)
         } else {
             PathBuf::from(&geometry_asset.path)
@@ -1285,8 +1382,10 @@ impl ThreeDRenderer {
 
         log::info!("    Resolved path: {}", resolved_path.display());
 
-        let geometry_meta = vibe_assets::GeometryMeta::from_file(&resolved_path)
-            .with_context(|| format!("Failed to load geometry metadata: {}", geometry_asset.path))?;
+        let geometry_meta =
+            vibe_assets::GeometryMeta::from_file(&resolved_path).with_context(|| {
+                format!("Failed to load geometry metadata: {}", geometry_asset.path)
+            })?;
 
         log::info!(
             "    Loaded metadata: {} vertices, {} indices",
@@ -1318,8 +1417,9 @@ impl ThreeDRenderer {
         };
 
         // 5. Apply transform
-        let final_scale = if let Some(transform) = transform {
-            let converted = crate::renderer::transform_utils::convert_transform_to_matrix(transform, None);
+        let (final_scale, base_scale) = if let Some(transform) = transform {
+            let converted =
+                crate::renderer::transform_utils::convert_transform_to_matrix(transform, None);
             mesh.set_transformation(converted.matrix);
 
             let ts_position = vibe_ecs_bridge::position_to_vec3_opt(transform.position.as_ref());
@@ -1334,10 +1434,10 @@ impl ThreeDRenderer {
                 converted_pos.z
             );
 
-            converted.final_scale
+            (converted.final_scale, converted.base_scale)
         } else {
             log::info!("    No Transform component, using identity transform");
-            GlamVec3::ONE
+            (GlamVec3::ONE, GlamVec3::ONE)
         };
 
         // 6. Store in parallel arrays
@@ -1345,8 +1445,10 @@ impl ThreeDRenderer {
         self.meshes.push(Gm::new(mesh, material));
         self.mesh_entity_ids.push(entity_id);
         self.mesh_scales.push(final_scale);
+        self.mesh_base_scales.push(base_scale);
         self.mesh_cast_shadows.push(geometry_asset.castShadows);
-        self.mesh_receive_shadows.push(geometry_asset.receiveShadows);
+        self.mesh_receive_shadows
+            .push(geometry_asset.receiveShadows);
 
         log::info!(
             "    GeometryAsset loaded → cast shadows: {}, receive shadows: {}, final scale [{:.2}, {:.2}, {:.2}]",
@@ -1379,10 +1481,11 @@ impl ThreeDRenderer {
         let instance_count = instances.len();
 
         // Each instance becomes a separate mesh (three-d doesn't have native GPU instancing)
-        for (idx, (gm, final_scale)) in instances.into_iter().enumerate() {
+        for (idx, (gm, final_scale, base_scale)) in instances.into_iter().enumerate() {
             self.meshes.push(gm);
             self.mesh_entity_ids.push(entity_id);
             self.mesh_scales.push(final_scale);
+            self.mesh_base_scales.push(base_scale);
             self.mesh_cast_shadows.push(instanced.castShadows);
             self.mesh_receive_shadows.push(instanced.receiveShadows);
 
@@ -1423,10 +1526,11 @@ impl ThreeDRenderer {
 
         let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
 
-        for (gm, final_scale) in meshes.into_iter() {
+        for (gm, final_scale, base_scale) in meshes.into_iter() {
             self.meshes.push(gm);
             self.mesh_entity_ids.push(entity_id);
             self.mesh_scales.push(final_scale);
+            self.mesh_base_scales.push(base_scale);
             self.mesh_cast_shadows.push(true); // Terrains cast shadows by default
             self.mesh_receive_shadows.push(true); // Terrains receive shadows by default
 

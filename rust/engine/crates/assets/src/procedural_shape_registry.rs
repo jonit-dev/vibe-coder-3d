@@ -501,7 +501,14 @@ impl ShapeParams {
                 coils,
                 segments,
                 tube_segments,
-            } => create_helix(*radius, *height, *tube_radius, *coils, *segments, *tube_segments),
+            } => create_helix(
+                *radius,
+                *height,
+                *tube_radius,
+                *coils,
+                *segments,
+                *tube_segments,
+            ),
 
             Self::MobiusStrip {
                 radius,
@@ -526,7 +533,11 @@ impl ShapeParams {
                 thickness,
             } => create_star(*outer_radius, *inner_radius, *points, *thickness),
 
-            Self::Heart { size, depth, segments } => create_heart(*size, *depth, *segments),
+            Self::Heart {
+                size,
+                depth,
+                segments,
+            } => create_heart(*size, *depth, *segments),
 
             Self::Diamond {
                 radius,
@@ -575,7 +586,13 @@ impl ShapeParams {
                 foliage_radius,
                 foliage_height,
                 segments,
-            } => create_tree(*trunk_radius, *trunk_height, *foliage_radius, *foliage_height, *segments),
+            } => create_tree(
+                *trunk_radius,
+                *trunk_height,
+                *foliage_radius,
+                *foliage_height,
+                *segments,
+            ),
 
             Self::Rock {
                 radius,
@@ -583,10 +600,7 @@ impl ShapeParams {
                 segments,
             } => create_rock(*radius, *irregularity, *segments),
 
-            Self::Bush {
-                radius,
-                segments,
-            } => create_bush(*radius, *segments),
+            Self::Bush { radius, segments } => create_bush(*radius, *segments),
 
             Self::Grass {
                 blade_width,

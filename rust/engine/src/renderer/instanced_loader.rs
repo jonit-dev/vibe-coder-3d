@@ -21,7 +21,7 @@ pub async fn load_instanced(
     instanced: &Instanced,
     transform: Option<&Transform>,
     material_manager: &mut MaterialManager,
-) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3)>> {
+) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3, GlamVec3)>> {
     log::info!("  Instanced:");
     log::info!("    Enabled:      {}", instanced.enabled);
     log::info!("    Capacity:     {}", instanced.capacity);
@@ -144,7 +144,13 @@ pub async fn load_instanced(
             entity_transform.final_scale.z * instance_scale.z,
         );
 
-        result.push((Gm::new(mesh, instance_material), final_scale));
+        let base_scale = GlamVec3::new(
+            entity_transform.base_scale.x * instance_scale.x,
+            entity_transform.base_scale.y * instance_scale.y,
+            entity_transform.base_scale.z * instance_scale.z,
+        );
+
+        result.push((Gm::new(mesh, instance_material), final_scale, base_scale));
 
         if idx < 5 {
             log::info!(

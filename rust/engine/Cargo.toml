@@ -8,6 +8,7 @@ members = [
     "crates/wasm-bridge",
     "crates/physics",
     "crates/audio",
+    "crates/scripting",
 ]
 
 [package]
@@ -24,6 +25,7 @@ vibe-assets = { path = "crates/assets" }
 vibe-wasm-bridge = { path = "crates/wasm-bridge" }
 vibe-physics = { path = "crates/physics" }
 vibe-audio = { path = "crates/audio", optional = true }
+vibe-scripting = { path = "crates/scripting", optional = true }
 
 # Physics (for debug collider visualization)
 rapier3d = { version = "0.17", features = ["dim3"] }
@@ -66,9 +68,11 @@ image = "0.25"
 xcap = "0.0.12"
 
 [features]
-default = ["gltf-support"]
+default = ["gltf-support", "scripting-support"]
 gltf-support = ["gltf"]
 audio-support = ["vibe-audio"]
+scripting-support = ["vibe-scripting"]
+scripting-hot-reload = ["scripting-support", "vibe-scripting/hot-reload"]
 
 [lib]
 name = "vibe_coder_engine"

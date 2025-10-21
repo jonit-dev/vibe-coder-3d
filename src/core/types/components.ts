@@ -196,6 +196,7 @@ export interface IScriptComponent {
     codeHash?: string;
     lastModified?: number;
   };
+  scriptPath?: string; // Path to compiled .lua file for Rust runtime
   executeInUpdate: boolean;
   executeOnStart: boolean;
   executeOnEnable: boolean;

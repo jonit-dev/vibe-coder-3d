@@ -8,6 +8,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { Plugin } from 'vite';
 import { z } from 'zod';
+import { triggerLuaTranspile } from './utils/triggerLuaTranspile';
 
 // ============================================================================
 // Schemas
@@ -149,6 +150,8 @@ async function handleSave(body: unknown): Promise<any> {
 
   // Write the file
   await fs.writeFile(scriptPath, data.code, 'utf-8');
+
+  await triggerLuaTranspile('vite-plugin-script-api');
 
   const hash = computeHash(data.code);
   const stats = await fs.stat(scriptPath);
