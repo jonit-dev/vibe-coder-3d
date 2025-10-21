@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiActivity, FiHardDrive, FiWifi, FiZap } from 'react-icons/fi';
+import { FiActivity, FiHardDrive, FiWifi, FiZap, FiCode } from 'react-icons/fi';
 import { TbBoxMultiple } from 'react-icons/tb';
 
 import { useFPS } from '@/editor/hooks/useFPS';
@@ -20,6 +20,11 @@ export interface IStatusBarProps {
   stats?: {
     memory?: string;
     entities?: number;
+    scripts?: {
+      avgCompileMs: number;
+      avgExecuteMs: number;
+      pendingCompilations: number;
+    };
   };
   streamingProgress?: {
     isActive: boolean;
@@ -182,6 +187,21 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
                     label="Entities"
                     color="green"
                   />
+                )}
+
+                {stats?.scripts && stats.scripts.avgExecuteMs > 0 && (
+                  <div className="flex items-center space-x-1 text-xs">
+                    <FiCode className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="text-gray-500">Scripts:</span>
+                    <span className="text-blue-400 font-mono">
+                      {stats.scripts.avgExecuteMs.toFixed(2)}ms
+                    </span>
+                    {stats.scripts.pendingCompilations > 0 && (
+                      <span className="text-yellow-400 text-[10px]">
+                        ({stats.scripts.pendingCompilations} pending)
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </>

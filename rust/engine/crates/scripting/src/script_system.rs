@@ -207,7 +207,12 @@ impl ScriptSystem {
 
         // Register console API for logging
         crate::apis::register_console_api(runtime.lua())
-            .context("Failed to register console API")?;
+            .with_context(|| {
+                format!(
+                    "Failed to register console API for entity '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            })?;
 
         // Register entity API with transform state
         register_entity_api(
@@ -216,7 +221,28 @@ impl ScriptSystem {
             entity_name.clone(),
             transform_state.clone(),
         )
-        .context("Failed to register entity API")?;
+        .with_context(|| {
+            format!(
+                "Failed to register entity API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
+        // Register input API (stubs)
+        crate::apis::register_input_api(runtime.lua()).with_context(|| {
+            format!(
+                "Failed to register input API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
+        // Register timer API (placeholder)
+        crate::apis::register_timer_api(runtime.lua()).with_context(|| {
+            format!(
+                "Failed to register timer API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
 
         // Register script parameters as a global Lua table
         let params_lua = Self::json_to_lua(runtime.lua(), &script_comp.parameters)
@@ -240,9 +266,15 @@ impl ScriptSystem {
             .with_context(|| format!("Failed to load script: {}", script_path))?;
 
         // Call onStart()
+        log::debug!("Calling onStart() for entity '{}' (ID {})", entity_name, entity_id);
         script
             .call_on_start(runtime.lua())
-            .context("Error in script onStart()")?;
+            .with_context(|| {
+                format!(
+                    "Error in onStart() for entity '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            })?;
 
         // Store for later updates
         self.scripts.insert(
@@ -278,12 +310,16 @@ impl ScriptSystem {
             delta_time
         );
         for (entity_id, entity_script) in &self.scripts {
-            log::debug!("Calling onUpdate for entity {}", entity_id);
+            log::trace!("Calling onUpdate() for entity {} (delta: {:.4}s)", entity_id, delta_time);
             if let Err(e) = entity_script
                 .script
                 .call_on_update(entity_script.runtime.lua(), delta_time)
             {
-                log::error!("Script error for entity {}: {}", entity_id, e);
+                log::error!(
+                    "Error in onUpdate() for entity {}: {}",
+                    entity_id,
+                    e
+                );
                 // Continue processing other scripts even if one fails
             }
         }
@@ -316,11 +352,14 @@ impl ScriptSystem {
     /// * `entity_id` - The entity ID
     pub fn destroy_script(&mut self, entity_id: u64) -> Result<()> {
         if let Some(entity_script) = self.scripts.remove(&entity_id) {
+            log::debug!("Calling onDestroy() for entity {}", entity_id);
             entity_script
                 .script
                 .call_on_destroy(entity_script.runtime.lua())
-                .context("Error in script onDestroy()")?;
-            log::debug!("Destroyed script for entity {}", entity_id);
+                .with_context(|| {
+                    format!("Error in onDestroy() for entity {}", entity_id)
+                })?;
+            log::debug!("Successfully destroyed script for entity {}", entity_id);
         }
         Ok(())
     }

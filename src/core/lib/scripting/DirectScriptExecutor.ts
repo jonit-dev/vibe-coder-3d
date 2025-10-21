@@ -27,6 +27,7 @@ import { cleanupAudioAPI } from './apis/AudioAPI';
 import { ScriptContextFactory } from './ScriptContextFactory';
 import { Logger } from '@/core/lib/logger';
 import { ComponentMutationBuffer } from '../ecs/mutations/ComponentMutationBuffer';
+import { perfMark, perfMeasure } from './instrumentation/perf';
 
 const logger = Logger.create('DirectScriptExecutor');
 
@@ -97,6 +98,12 @@ export class DirectScriptExecutor {
   private debugMode: boolean;
   private mutationBuffer: ComponentMutationBuffer;
 
+  // Performance tracking
+  private totalCompileTime = 0;
+  private compileCount = 0;
+  private totalExecuteTime = 0;
+  private executeCount = 0;
+
   private constructor(debugMode = false) {
     this.debugMode = debugMode;
     this.contextFactory = new ScriptContextFactory();
@@ -126,6 +133,11 @@ export class DirectScriptExecutor {
    * APIs are passed as parameters to ensure they're the only things accessible.
    */
   public compileScript(code: string, scriptId: string): IScriptExecutionResult {
+    const markStart = `compile-start-${scriptId}`;
+    const markEnd = `compile-end-${scriptId}`;
+    const measureName = `compile-${scriptId}`;
+
+    perfMark(markStart);
     const startTime = performance.now();
 
     if (this.debugMode) {
@@ -189,7 +201,12 @@ export class DirectScriptExecutor {
       // Cache the compiled function
       this.compiledScripts.set(scriptId, scriptFunction as unknown as ICompiledScriptLifecycle);
 
-      const executionTime = performance.now() - startTime;
+      perfMark(markEnd);
+      const executionTime = perfMeasure(measureName, markStart, markEnd);
+
+      // Track compile metrics
+      this.totalCompileTime += executionTime;
+      this.compileCount++;
 
       if (this.debugMode) {
         logger.debug(`Script compiled successfully: ${scriptId} (${executionTime.toFixed(2)}ms)`);
@@ -200,7 +217,12 @@ export class DirectScriptExecutor {
         executionTime,
       };
     } catch (error) {
-      const executionTime = performance.now() - startTime;
+      perfMark(markEnd);
+      const executionTime = perfMeasure(measureName, markStart, markEnd);
+
+      // Track compile metrics even on failure
+      this.totalCompileTime += executionTime;
+      this.compileCount++;
 
       logger.error(`Compilation error for ${scriptId}:`, error);
       return {
@@ -219,7 +241,11 @@ export class DirectScriptExecutor {
     options: IScriptExecutionOptions,
     lifecycleMethod: 'onStart' | 'onUpdate' | 'onDestroy' | 'onEnable' | 'onDisable' = 'onUpdate',
   ): IScriptExecutionResult {
-    const startTime = performance.now();
+    const markStart = `execute-start-${scriptId}-${lifecycleMethod}`;
+    const markEnd = `execute-end-${scriptId}-${lifecycleMethod}`;
+    const measureName = `execute-${scriptId}-${lifecycleMethod}`;
+
+    perfMark(markStart);
     const maxTime = options.maxExecutionTime || 16; // Default 16ms max execution
 
     try {
@@ -298,7 +324,13 @@ export class DirectScriptExecutor {
       const lifecycleFunction = lifecycle[lifecycleMethod];
       if (!lifecycleFunction) {
         // No lifecycle method defined, that's ok
-        const executionTime = performance.now() - startTime;
+        perfMark(markEnd);
+        const executionTime = perfMeasure(measureName, markStart, markEnd);
+
+        // Track execute metrics
+        this.totalExecuteTime += executionTime;
+        this.executeCount++;
+
         return {
           success: true,
           executionTime,
@@ -323,14 +355,24 @@ export class DirectScriptExecutor {
         );
       }
 
-      const totalTime = performance.now() - startTime;
+      perfMark(markEnd);
+      const totalTime = perfMeasure(measureName, markStart, markEnd);
+
+      // Track execute metrics
+      this.totalExecuteTime += totalTime;
+      this.executeCount++;
 
       return {
         success: true,
         executionTime: totalTime,
       };
     } catch (error) {
-      const executionTime = performance.now() - startTime;
+      perfMark(markEnd);
+      const executionTime = perfMeasure(measureName, markStart, markEnd);
+
+      // Track execute metrics even on failure
+      this.totalExecuteTime += executionTime;
+      this.executeCount++;
 
       logger.error(`Execution error for ${scriptId}:`, error);
       return {
@@ -410,5 +452,36 @@ export class DirectScriptExecutor {
    */
   public getMutationBuffer(): ComponentMutationBuffer {
     return this.mutationBuffer;
+  }
+
+  /**
+   * Get compilation and execution statistics
+   */
+  public getPerformanceStats(): {
+    totalCompileTime: number;
+    compileCount: number;
+    avgCompileTime: number;
+    totalExecuteTime: number;
+    executeCount: number;
+    avgExecuteTime: number;
+  } {
+    return {
+      totalCompileTime: this.totalCompileTime,
+      compileCount: this.compileCount,
+      avgCompileTime: this.compileCount > 0 ? this.totalCompileTime / this.compileCount : 0,
+      totalExecuteTime: this.totalExecuteTime,
+      executeCount: this.executeCount,
+      avgExecuteTime: this.executeCount > 0 ? this.totalExecuteTime / this.executeCount : 0,
+    };
+  }
+
+  /**
+   * Reset performance statistics
+   */
+  public resetPerformanceStats(): void {
+    this.totalCompileTime = 0;
+    this.compileCount = 0;
+    this.totalExecuteTime = 0;
+    this.executeCount = 0;
   }
 }

@@ -521,13 +521,35 @@ export function getScriptSystemStats(): {
   executionCount: number;
   averageExecutionTime: number;
   pendingCompilations: number;
+  compileStats: {
+    totalCompileTime: number;
+    compileCount: number;
+    avgCompileTime: number;
+  };
+  executeStats: {
+    totalExecuteTime: number;
+    executeCount: number;
+    avgExecuteTime: number;
+  };
 } {
+  const perfStats = scriptExecutor.getPerformanceStats();
+
   return {
     totalExecutionTime: totalScriptExecutionTime,
     executionCount: scriptExecutionCount,
     averageExecutionTime:
       scriptExecutionCount > 0 ? totalScriptExecutionTime / scriptExecutionCount : 0,
     pendingCompilations: entitiesToCompile.size,
+    compileStats: {
+      totalCompileTime: perfStats.totalCompileTime,
+      compileCount: perfStats.compileCount,
+      avgCompileTime: perfStats.avgCompileTime,
+    },
+    executeStats: {
+      totalExecuteTime: perfStats.totalExecuteTime,
+      executeCount: perfStats.executeCount,
+      avgExecuteTime: perfStats.avgExecuteTime,
+    },
   };
 }
 

@@ -2,7 +2,7 @@
 
 // Hello World TypeScript Script
 function onStart(): void {
- console.log("H")
+  console.log('HELLO WORLD');
 }
 
 function onUpdate(deltaTime: number): void {
