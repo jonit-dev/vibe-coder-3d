@@ -69,7 +69,7 @@ local function __TS__SourceMapTraceBack(fileName, sourceMap)
     end
 end
 -- End of Lua Library inline imports
-__TS__SourceMapTraceBack(debug.getinfo(1).short_src, {["73"] = 4,["74"] = 6,["75"] = 4,["76"] = 9,["77"] = 10,["78"] = 9});
+__TS__SourceMapTraceBack(debug.getinfo(1).short_src, {["73"] = 4,["74"] = 5,["75"] = 4,["76"] = 8,["77"] = 9,["78"] = 8});
 function onStart()
     console:log("HELLO WORLD")
 end

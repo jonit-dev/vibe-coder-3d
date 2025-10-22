@@ -13,6 +13,7 @@ use vibe_ecs_bridge::{ScriptComponent, Transform};
 use vibe_scene::{Entity, Scene};
 
 use crate::apis::entity_api::{register_entity_api, EntityTransformState};
+use crate::apis::EntityMutationBuffer;
 use crate::lua_runtime::{LuaScript, LuaScriptRuntime};
 
 /// Per-entity script instance
@@ -20,6 +21,7 @@ struct EntityScript {
     runtime: LuaScriptRuntime,
     script: LuaScript,
     transform_state: Arc<Mutex<EntityTransformState>>,
+    mutation_buffer: EntityMutationBuffer,
 }
 
 /// Script System - manages all entity scripts
@@ -34,6 +36,8 @@ pub struct ScriptSystem {
     total_time: f64,
     /// Total frames rendered
     frame_count: u64,
+    /// Reference to the scene for entity/component queries
+    scene: Option<Arc<Scene>>,
 }
 
 impl ScriptSystem {
@@ -49,6 +53,7 @@ impl ScriptSystem {
             registry: vibe_ecs_bridge::create_default_registry(),
             total_time: 0.0,
             frame_count: 0,
+            scene: None,
         }
     }
 
@@ -61,6 +66,9 @@ impl ScriptSystem {
     /// * `scene` - The scene to load scripts from
     pub fn initialize(&mut self, scene: &Scene) -> Result<()> {
         log::info!("Initializing script system...");
+
+        // Store scene reference for entity/component queries
+        self.scene = Some(Arc::new(scene.clone()));
 
         for entity in &scene.entities {
             // Check if entity has a Script component
@@ -220,12 +228,22 @@ impl ScriptSystem {
                 )
             })?;
 
-        // Register entity API with transform state
+        // Create mutation buffer for this entity
+        let mutation_buffer = EntityMutationBuffer::new();
+
+        // Register entity API with transform state, scene reference, and mutation buffer
+        let scene_ref = self
+            .scene
+            .clone()
+            .context("Scene not initialized in ScriptSystem")?;
+
         register_entity_api(
             runtime.lua(),
             entity_id,
             entity_name.clone(),
             transform_state.clone(),
+            scene_ref,
+            mutation_buffer.clone(),
         )
         .with_context(|| {
             format!(
@@ -303,6 +321,7 @@ impl ScriptSystem {
                 runtime,
                 script,
                 transform_state,
+                mutation_buffer,
             },
         );
 
