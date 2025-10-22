@@ -6,9 +6,9 @@ mod tests {
     fn test_default_mesh_renderer() {
         let renderer = MeshRenderer::default();
 
-        assert_eq!(renderer.meshId, None);
-        assert_eq!(renderer.materialId, None);
-        assert_eq!(renderer.modelPath, None);
+        assert_eq!(renderer.mesh_id, None);
+        assert_eq!(renderer.material_id, None);
+        assert_eq!(renderer.model_path, None);
         assert!(renderer.enabled);
     }
 
@@ -32,9 +32,9 @@ mod tests {
 
         let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
 
-        assert_eq!(renderer.meshId, Some("cube".to_string()));
-        assert_eq!(renderer.materialId, Some("metal".to_string()));
-        assert_eq!(renderer.modelPath, Some("/models/test.glb".to_string()));
+        assert_eq!(renderer.mesh_id, Some("cube".to_string()));
+        assert_eq!(renderer.material_id, Some("metal".to_string()));
+        assert_eq!(renderer.model_path, Some("/models/test.glb".to_string()));
         assert!(renderer.enabled);
     }
 
@@ -46,9 +46,9 @@ mod tests {
 
         let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
 
-        assert_eq!(renderer.meshId, Some("sphere".to_string()));
-        assert_eq!(renderer.materialId, None);
-        assert_eq!(renderer.modelPath, None);
+        assert_eq!(renderer.mesh_id, Some("sphere".to_string()));
+        assert_eq!(renderer.material_id, None);
+        assert_eq!(renderer.model_path, None);
         assert!(renderer.enabled); // Should default to true
     }
 
@@ -61,42 +61,42 @@ mod tests {
 
         let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
 
-        assert_eq!(renderer.meshId, Some("plane".to_string()));
+        assert_eq!(renderer.mesh_id, Some("plane".to_string()));
         assert!(!renderer.enabled);
     }
 
     #[test]
     fn test_clone() {
         let renderer = MeshRenderer {
-            meshId: Some("cube".to_string()),
-            materialId: Some("wood".to_string()),
-            modelPath: Some("/path/to/model.glb".to_string()),
+            mesh_id: Some("cube".to_string()),
+            material_id: Some("wood".to_string()),
+            model_path: Some("/path/to/model.glb".to_string()),
             enabled: true,
-            castShadows: true,
-            receiveShadows: true,
+            cast_shadows: true,
+            receive_shadows: true,
         };
 
         let cloned = renderer.clone();
 
-        assert_eq!(cloned.meshId, renderer.meshId);
-        assert_eq!(cloned.materialId, renderer.materialId);
-        assert_eq!(cloned.modelPath, renderer.modelPath);
+        assert_eq!(cloned.mesh_id, renderer.mesh_id);
+        assert_eq!(cloned.material_id, renderer.material_id);
+        assert_eq!(cloned.model_path, renderer.model_path);
         assert_eq!(cloned.enabled, renderer.enabled);
     }
 
     #[test]
     fn test_all_fields_none() {
         let json = r#"{
-            "meshId": null,
-            "materialId": null,
-            "modelPath": null
+            "mesh_id": null,
+            "material_id": null,
+            "model_path": null
         }"#;
 
         let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
 
-        assert_eq!(renderer.meshId, None);
-        assert_eq!(renderer.materialId, None);
-        assert_eq!(renderer.modelPath, None);
+        assert_eq!(renderer.mesh_id, None);
+        assert_eq!(renderer.material_id, None);
+        assert_eq!(renderer.model_path, None);
         assert!(renderer.enabled);
     }
 
@@ -109,8 +109,8 @@ mod tests {
 
         let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
 
-        assert!(renderer.castShadows);
-        assert!(renderer.receiveShadows);
+        assert!(renderer.cast_shadows);
+        assert!(renderer.receive_shadows);
     }
 
     #[test]
@@ -125,10 +125,10 @@ mod tests {
 
         let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
 
-        assert_eq!(renderer.meshId, Some("cube".to_string()));
-        assert_eq!(renderer.materialId, Some("mat1".to_string()));
-        assert!(!renderer.castShadows);
-        assert!(renderer.receiveShadows);
+        assert_eq!(renderer.mesh_id, Some("cube".to_string()));
+        assert_eq!(renderer.material_id, Some("mat1".to_string()));
+        assert!(!renderer.cast_shadows);
+        assert!(renderer.receive_shadows);
     }
 
     #[test]
@@ -145,11 +145,11 @@ mod tests {
 
         let renderer: MeshRenderer = serde_json::from_str(json).unwrap();
 
-        assert_eq!(renderer.meshId, Some("sphere".to_string()));
-        assert_eq!(renderer.materialId, Some("pbr-material".to_string()));
-        assert_eq!(renderer.modelPath, Some("/models/sphere.glb".to_string()));
+        assert_eq!(renderer.mesh_id, Some("sphere".to_string()));
+        assert_eq!(renderer.material_id, Some("pbr-material".to_string()));
+        assert_eq!(renderer.model_path, Some("/models/sphere.glb".to_string()));
         assert!(renderer.enabled);
-        assert!(renderer.castShadows);
-        assert!(!renderer.receiveShadows);
+        assert!(renderer.cast_shadows);
+        assert!(!renderer.receive_shadows);
     }
 }

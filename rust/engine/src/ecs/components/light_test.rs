@@ -6,14 +6,14 @@ mod tests {
     fn test_light_defaults() {
         let light = Light::default();
 
-        assert_eq!(light.lightType, "directional");
+        assert_eq!(light.light_type, "directional");
         assert!(light.color.is_some());
         assert_eq!(light.intensity, 1.0);
         assert!(light.enabled);
-        assert!(light.castShadow);
-        assert_eq!(light.directionX, 0.0);
-        assert_eq!(light.directionY, -1.0);
-        assert_eq!(light.directionZ, 0.0);
+        assert!(light.cast_shadow);
+        assert_eq!(light.direction_x, 0.0);
+        assert_eq!(light.direction_y, -1.0);
+        assert_eq!(light.direction_z, 0.0);
     }
 
     #[test]
@@ -45,7 +45,7 @@ mod tests {
 
         let light: Light = serde_json::from_str(json).unwrap();
 
-        assert_eq!(light.lightType, "directional");
+        assert_eq!(light.light_type, "directional");
         assert!(light.color.is_some());
         let color = light.color.unwrap();
         assert_eq!(color.r, 1.0);
@@ -53,10 +53,10 @@ mod tests {
         assert_eq!(color.b, 0.8);
         assert_eq!(light.intensity, 1.5);
         assert!(light.enabled);
-        assert!(light.castShadow);
-        assert_eq!(light.directionX, 0.0);
-        assert_eq!(light.directionY, -1.0);
-        assert_eq!(light.directionZ, 0.0);
+        assert!(light.cast_shadow);
+        assert_eq!(light.direction_x, 0.0);
+        assert_eq!(light.direction_y, -1.0);
+        assert_eq!(light.direction_z, 0.0);
     }
 
     #[test]
@@ -78,10 +78,10 @@ mod tests {
 
         let light: Light = serde_json::from_str(json).unwrap();
 
-        assert_eq!(light.lightType, "point");
+        assert_eq!(light.light_type, "point");
         assert_eq!(light.intensity, 2.0);
         assert!(light.enabled);
-        assert!(!light.castShadow);
+        assert!(!light.cast_shadow);
         assert_eq!(light.range, 20.0);
         assert_eq!(light.decay, 2.0);
     }
@@ -106,7 +106,7 @@ mod tests {
 
         let light: Light = serde_json::from_str(json).unwrap();
 
-        assert_eq!(light.lightType, "spot");
+        assert_eq!(light.light_type, "spot");
         assert_eq!(light.intensity, 3.0);
         assert!((light.angle - 0.785).abs() < 0.001);
         assert!((light.penumbra - 0.2).abs() < 0.001);
@@ -130,13 +130,13 @@ mod tests {
 
         let light: Light = serde_json::from_str(json).unwrap();
 
-        assert_eq!(light.lightType, "ambient");
+        assert_eq!(light.light_type, "ambient");
         let color = light.color.unwrap();
         assert!((color.r - 0.3).abs() < 0.001);
         assert!((color.g - 0.3).abs() < 0.001);
         assert!((color.b - 0.4).abs() < 0.001);
         assert_eq!(light.intensity, 0.5);
-        assert!(!light.castShadow);
+        assert!(!light.cast_shadow);
     }
 
     #[test]
@@ -159,9 +159,9 @@ mod tests {
 
         let light: Light = serde_json::from_str(json).unwrap();
 
-        assert_eq!(light.shadowMapSize, 2048);
-        assert!((light.shadowBias - (-0.0002)).abs() < 0.00001);
-        assert_eq!(light.shadowRadius, 2.0);
+        assert_eq!(light.shadow_map_size, 2048);
+        assert!((light.shadow_bias - (-0.0002)).abs() < 0.00001);
+        assert_eq!(light.shadow_radius, 2.0);
     }
 
     #[test]
@@ -182,12 +182,12 @@ mod tests {
         let light: Light = serde_json::from_str(json).unwrap();
 
         // Verify defaults are applied
-        assert_eq!(light.directionY, -1.0); // Default direction
+        assert_eq!(light.direction_y, -1.0); // Default direction
         assert_eq!(light.range, 10.0); // Default range
         assert_eq!(light.decay, 1.0); // Default decay
         assert!((light.angle - std::f32::consts::PI / 6.0).abs() < 0.001); // Default angle
         assert!((light.penumbra - 0.1).abs() < 0.001); // Default penumbra
-        assert_eq!(light.shadowMapSize, 1024); // Default shadow map size
+        assert_eq!(light.shadow_map_size, 1024); // Default shadow map size
     }
 
     #[test]
@@ -208,13 +208,13 @@ mod tests {
         let light: Light = serde_json::from_str(json).unwrap();
 
         assert!(!light.enabled);
-        assert!(!light.castShadow);
+        assert!(!light.cast_shadow);
     }
 
     #[test]
     fn test_light_clone() {
         let light = Light {
-            lightType: "spot".to_string(),
+            light_type: "spot".to_string(),
             color: Some(LightColor {
                 r: 0.8,
                 g: 0.7,
@@ -222,22 +222,22 @@ mod tests {
             }),
             intensity: 2.5,
             enabled: true,
-            castShadow: true,
-            directionX: 1.0,
-            directionY: -1.0,
-            directionZ: 0.0,
+            cast_shadow: true,
+            direction_x: 1.0,
+            direction_y: -1.0,
+            direction_z: 0.0,
             range: 25.0,
             decay: 1.5,
             angle: 0.5,
             penumbra: 0.3,
-            shadowMapSize: 2048,
-            shadowBias: -0.0003,
-            shadowRadius: 1.5,
+            shadow_map_size: 2048,
+            shadow_bias: -0.0003,
+            shadow_radius: 1.5,
         };
 
         let cloned = light.clone();
 
-        assert_eq!(cloned.lightType, light.lightType);
+        assert_eq!(cloned.light_type, light.light_type);
         assert_eq!(cloned.intensity, light.intensity);
         assert_eq!(cloned.range, light.range);
         assert_eq!(cloned.angle, light.angle);
@@ -271,7 +271,7 @@ mod tests {
         let light: Light = serde_json::from_str(json).unwrap();
 
         // Verify all fields are properly parsed
-        assert_eq!(light.lightType, "directional");
+        assert_eq!(light.light_type, "directional");
 
         let color = light.color.unwrap();
         assert_eq!(color.r, 1.0);
@@ -280,19 +280,19 @@ mod tests {
 
         assert!((light.intensity - 1.2).abs() < 0.001);
         assert!(light.enabled);
-        assert!(light.castShadow);
+        assert!(light.cast_shadow);
 
-        assert!((light.directionX - 0.5).abs() < 0.001);
-        assert!((light.directionY - (-1.0)).abs() < 0.001);
-        assert!((light.directionZ - 0.3).abs() < 0.001);
+        assert!((light.direction_x - 0.5).abs() < 0.001);
+        assert!((light.direction_y - (-1.0)).abs() < 0.001);
+        assert!((light.direction_z - 0.3).abs() < 0.001);
 
         assert_eq!(light.range, 100.0);
         assert_eq!(light.decay, 1.0);
         assert!((light.angle - 0.523599).abs() < 0.001);
         assert!((light.penumbra - 0.1).abs() < 0.001);
 
-        assert_eq!(light.shadowMapSize, 4096);
-        assert!((light.shadowBias - (-0.0001)).abs() < 0.00001);
-        assert_eq!(light.shadowRadius, 1.0);
+        assert_eq!(light.shadow_map_size, 4096);
+        assert!((light.shadow_bias - (-0.0001)).abs() < 0.00001);
+        assert_eq!(light.shadow_radius, 1.0);
     }
 }
