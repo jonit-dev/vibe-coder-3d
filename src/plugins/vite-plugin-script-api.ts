@@ -10,6 +10,13 @@ import { Plugin } from 'vite';
 import { z } from 'zod';
 import { triggerLuaTranspile } from './utils/triggerLuaTranspile';
 
+/**
+ * Compute SHA-256 hash of content (Node.js crypto for build-time)
+ */
+function computeHash(content: string): string {
+  return createHash('sha256').update(content, 'utf8').digest('hex');
+}
+
 // ============================================================================
 // Schemas
 // ============================================================================
@@ -18,7 +25,10 @@ export const ScriptIdSchema = z
   .string()
   .min(3)
   .max(128)
-  .regex(/^[a-z0-9._-]+$/i, 'Script ID must contain only alphanumeric characters, dots, dashes, and underscores');
+  .regex(
+    /^[a-z0-9._-]+$/i,
+    'Script ID must contain only alphanumeric characters, dots, dashes, and underscores',
+  );
 
 export const SaveScriptRequestSchema = z.object({
   id: ScriptIdSchema,
@@ -75,13 +85,6 @@ function sanitizeFilename(id: string): string {
 function getScriptPath(id: string): string {
   const filename = `${sanitizeFilename(id)}.ts`;
   return path.join(SCRIPTS_DIR, filename);
-}
-
-/**
- * Compute SHA-256 hash of content
- */
-function computeHash(content: string): string {
-  return createHash('sha256').update(content, 'utf8').digest('hex');
 }
 
 /**

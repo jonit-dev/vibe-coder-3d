@@ -6,9 +6,9 @@
 import { Types } from 'bitecs';
 import { z } from 'zod';
 
+import { getSkyboxPaths } from '@/utils/skyboxLoader';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
-import { getSkyboxPaths } from '@/utils/skyboxLoader';
 
 // Dynamically loaded skybox paths (lazy-loaded for performance)
 let SKYBOX_TEXTURES: string[] | null = null;
@@ -44,10 +44,10 @@ const CameraSchema = z.object({
   skyboxTexture: z.string().optional(), // Path to skybox texture
   backgroundColor: z
     .object({
-      r: z.number().min(0).max(1),
-      g: z.number().min(0).max(1),
-      b: z.number().min(0).max(1),
-      a: z.number().min(0).max(1),
+      r: z.number().min(0).max(1).optional(),
+      g: z.number().min(0).max(1).optional(),
+      b: z.number().min(0).max(1).optional(),
+      a: z.number().min(0).max(1).optional(),
     })
     .optional(),
   // Camera Control Mode - Unity-style camera controls
@@ -184,10 +184,10 @@ export const cameraComponent = ComponentFactory.create({
         'skybox') as 'skybox' | 'solidColor' | 'depthOnly' | 'dontClear',
       skyboxTexture: getSkyboxPath(component.skyboxTexture[eid] ?? 0),
       backgroundColor: {
-        r: component.backgroundR[eid] ?? 0.0,
-        g: component.backgroundG[eid] ?? 0.0,
-        b: component.backgroundB[eid] ?? 0.0,
-        a: component.backgroundA[eid] ?? 1.0,
+        r: component.backgroundR[eid],
+        g: component.backgroundG[eid],
+        b: component.backgroundB[eid],
+        a: component.backgroundA[eid],
       },
       // Camera Control Mode
       controlMode: (['locked', 'free'][component.controlMode[eid]] || 'free') as 'locked' | 'free',

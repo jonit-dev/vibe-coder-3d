@@ -550,3 +550,5 @@ yarn vitest run src/core/hooks/__tests__/useLODModel.test.tsx
 - Automatic quality recommendation based on FPS
 - Per-material LOD support
 - Texture LOD integration
+
+**See Also**: [LOD System Architecture](../../../docs/architecture/2-26-lod-system.md)

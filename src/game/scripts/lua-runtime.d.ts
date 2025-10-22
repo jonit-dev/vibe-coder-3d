@@ -6,7 +6,7 @@
  */
 
 /** Entity Transform API */
-interface EntityTransform {
+interface IEntityTransform {
   /** Get current position as [x, y, z] */
   position(): [number, number, number];
 
@@ -30,7 +30,7 @@ interface EntityTransform {
 }
 
 /** Entity API - available as global 'entity' in scripts */
-interface Entity {
+interface IEntity {
   /** Entity ID */
   readonly id: number;
 
@@ -38,14 +38,14 @@ interface Entity {
   readonly name: string;
 
   /** Transform component API */
-  readonly transform: EntityTransform;
+  readonly transform: IEntityTransform;
 }
 
 /** Script parameters - available as global 'parameters' */
 declare const parameters: Record<string, any>;
 
 /** Global entity reference */
-declare const entity: Entity;
+declare const entity: IEntity;
 
 /** Console API for logging */
 declare const console: {

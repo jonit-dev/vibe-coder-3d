@@ -2,9 +2,14 @@ import type { IInputActionsAsset } from '../../../core/lib/input/inputTypes';
 import type { ISceneStore } from '../../../core/lib/serialization/common/ISceneStore';
 import { sanitizeComponentName } from '../../../core/lib/serialization/common/NameUtils';
 import { getComponentDefaults } from '../../../core/lib/serialization/defaults/index';
+import type { ISerializedEntity } from '../../../core/lib/serialization/EntitySerializer';
+import type { IMultiFileSceneData } from '../../../core/lib/serialization/multi-file/MultiFileSceneLoader';
 import { MultiFileSceneLoader } from '../../../core/lib/serialization/multi-file/MultiFileSceneLoader';
 import { RustSceneExporter } from '../../../core/lib/serialization/RustSceneExporter';
-import { omitDefaults } from '../../../core/lib/serialization/utils/DefaultOmitter';
+import {
+  omitDefaults,
+  restoreDefaults,
+} from '../../../core/lib/serialization/utils/DefaultOmitter';
 import {
   MaterialDeduplicator,
   extractMaterialFromMeshRenderer,
@@ -22,6 +27,18 @@ import type {
   ISceneFormatHandler,
   ISceneListItem,
 } from '../ISceneFormatHandler';
+
+/**
+ * Scene data structure for normalization
+ */
+interface INormalizableSceneData {
+  entities?: ISerializedEntity[];
+  materials?: IMaterialDefinition[];
+  metadata?: IMultiFileSceneData['metadata'];
+  assetReferences?: IMultiFileSceneData['assetReferences'];
+  lockedEntityIds?: number[];
+  [key: string]: unknown;
+}
 
 /**
  * TSX format handler for scene persistence
@@ -199,11 +216,33 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     // Do not generate script asset files; rely on scriptRef.path to point to src/game/scripts/*.ts
     // This avoids duplication between src/game/assets/scripts/*.script.tsx and src/game/scripts/*.ts
 
+    // Restore defaults for TSX generation (compressed data needs defaults restored for complete objects)
+    const entitiesWithDefaults = compressedEntities.map((entity) => {
+      const restoredComponents: Record<string, unknown> = {};
+
+      for (const [componentType, componentData] of Object.entries(entity.components || {})) {
+        const defaults = getComponentDefaults(componentType);
+        if (defaults && typeof componentData === 'object' && componentData !== null) {
+          restoredComponents[componentType] = restoreDefaults(
+            componentData as Record<string, unknown>,
+            defaults,
+          );
+        } else {
+          restoredComponents[componentType] = componentData;
+        }
+      }
+
+      return {
+        ...entity,
+        components: restoredComponents,
+      };
+    });
+
     // Generate KISS scene file with entities + path references
     // IMPORTANT: Keep filename lowercase to match scene registry expectations
     const sceneName = sanitizeComponentName(cleanName); // lowercase, not PascalCase
     const sceneContent = this.generateSceneWithPaths(
-      compressedEntities as never[],
+      entitiesWithDefaults as never[],
       metadata,
       Array.from(materialRefsSet),
       Array.from(inputRefsSet),
@@ -293,7 +332,7 @@ export default defineScene({
 
       // Use MultiFileSceneLoader to resolve asset references (@/materials/..., @/inputs/...)
       const resolvedData = await this.multiFileLoader.loadMultiFile(
-        data as any,
+        data as IMultiFileSceneData,
         this.baseDir, // Scene folder (not used for single-file)
         'src/game/assets', // Asset library root
       );
@@ -327,7 +366,7 @@ export default defineScene({
     // Use MultiFileSceneLoader to resolve material references
     const sceneFolderPath = `${this.baseDir}/${folderName}`;
     const resolvedData = await this.multiFileLoader.loadMultiFile(
-      data as any,
+      data as IMultiFileSceneData,
       sceneFolderPath,
       'src/game/assets', // Asset library root, not scenes root
     );
@@ -348,11 +387,11 @@ export default defineScene({
    * Normalize scene data on load
    * Converts inline materials to materialId references for backward compatibility
    */
-  private normalizeSceneData(sceneData: any): any {
+  private normalizeSceneData(sceneData: INormalizableSceneData): INormalizableSceneData {
     const materialDeduplicator = new MaterialDeduplicator();
 
     // Process entities to extract inline materials
-    const normalizedEntities = (sceneData.entities || []).map((entity: any) => {
+    const normalizedEntities = (sceneData.entities || []).map((entity: ISerializedEntity) => {
       if (!entity.components) return entity;
 
       const normalizedComponents: Record<string, unknown> = {};
@@ -487,7 +526,7 @@ export default defineScene({
       if (hasAssetReferences) {
         // New format: assetReferences with IDs
         // Convert IDs to materialRef paths for MultiFileSceneLoader
-        const entities = (sceneObj.entities || []).map((entity: any) => {
+        const entities = (sceneObj.entities || []).map((entity: ISerializedEntity) => {
           if (entity.components?.MeshRenderer && entity.components.MeshRenderer.materialId) {
             const materialId = entity.components.MeshRenderer.materialId;
             return {

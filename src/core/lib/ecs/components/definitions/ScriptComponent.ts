@@ -295,7 +295,7 @@ function onUpdate(deltaTime: number): void {
 
           // Persist to ECS storage
           try {
-            (scriptComponent as any).fields; // access ensures bundlers keep component reference
+            void (scriptComponent as any).fields; // access ensures bundlers keep component reference
           } catch {
             // no-op
           }

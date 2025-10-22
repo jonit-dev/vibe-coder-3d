@@ -27,12 +27,12 @@ export interface ICameraComponent {
   isMain: boolean;
   clearFlags?: 'skybox' | 'solidColor' | 'depthOnly' | 'dontClear';
   skyboxTexture?: string;
-  backgroundColor?: {
+  backgroundColor?: Partial<{
     r: number;
     g: number;
     b: number;
     a: number;
-  };
+  }>;
   controlMode?: 'free' | 'orbit' | 'follow' | 'fixed';
   viewportRect?: {
     x: number;

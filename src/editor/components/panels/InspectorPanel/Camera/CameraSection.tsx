@@ -20,15 +20,15 @@ export interface ICameraSectionProps {
   entityId: number;
 }
 
-const rgbaToHex = (rgba?: { r: number; g: number; b: number; a?: number }): string => {
+const rgbaToHex = (rgba?: { r?: number; g?: number; b?: number; a?: number }): string => {
   if (!rgba) return '#000000';
-  const r = Math.round(rgba.r * 255)
+  const r = Math.round((rgba.r ?? 0) * 255)
     .toString(16)
     .padStart(2, '0');
-  const g = Math.round(rgba.g * 255)
+  const g = Math.round((rgba.g ?? 0) * 255)
     .toString(16)
     .padStart(2, '0');
-  const b = Math.round(rgba.b * 255)
+  const b = Math.round((rgba.b ?? 0) * 255)
     .toString(16)
     .padStart(2, '0');
   return `#${r}${g}${b}`;

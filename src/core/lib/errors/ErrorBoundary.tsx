@@ -82,7 +82,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
 export function useErrorHandler(context: string = 'Component') {
   return React.useCallback(
     (error: unknown, severity: IErrorInfo['severity'] = 'medium') => {
-      return errorHandler.handle(error, context, severity);
+      errorHandler.handle(error, context, severity);
     },
     [context],
   );

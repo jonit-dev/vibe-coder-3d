@@ -1,21 +1,88 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ASSET_EXTENSIONS, ASSET_DEFINE_FUNCTIONS, type AssetType } from '../../core/lib/serialization/assets/AssetTypes';
+import {
+  ActionType,
+  CompositeType,
+  ControlType,
+  DeviceType,
+  InputActionsAssetSchema,
+} from '../../core/lib/input/inputTypes';
+import {
+  ASSET_DEFINE_FUNCTIONS,
+  ASSET_EXTENSIONS,
+  type AssetType,
+} from '../../core/lib/serialization/assets/AssetTypes';
+import { ScriptDefinitionSchema } from '../../core/lib/serialization/assets/defineScripts';
 import { omitDefaults } from '../../core/lib/serialization/utils/DefaultOmitter';
+import { toCamelCase } from '../../core/lib/utils/idGenerator';
 import { MaterialDefinitionSchema } from '../../core/materials/Material.types';
 import { PrefabDefinitionSchema } from '../../core/prefabs/Prefab.types';
-import { InputActionsAssetSchema } from '../../core/lib/input/inputTypes';
-import { ScriptDefinitionSchema } from '../../core/lib/serialization/assets/defineScripts';
-import { toCamelCase } from '../../core/lib/utils/idGenerator';
 import type {
-  IAssetStore,
   IAssetFileMeta,
-  ISaveAssetRequest,
-  ISaveAssetResult,
+  IAssetStore,
+  IListAssetsRequest,
   ILoadAssetRequest,
   ILoadAssetResult,
-  IListAssetsRequest,
+  ISaveAssetRequest,
+  ISaveAssetResult,
 } from './IAssetStore';
+
+/**
+ * Serialize input assets with enum values instead of strings
+ * This ensures the generated .input.tsx files use TypeScript enum references
+ */
+const serializeInputAssets = (inputAssets: unknown): string => {
+  // Handle both single assets and arrays
+  const assetsToSerialize = Array.isArray(inputAssets) ? inputAssets : [inputAssets];
+  let json = JSON.stringify(assetsToSerialize, null, 2);
+
+  // Replace string values with enum references for TypeScript compilation
+  json = json.replace(/"deviceType":\s*"keyboard"/g, `"deviceType": "${DeviceType.Keyboard}"`);
+  json = json.replace(/"deviceType":\s*"mouse"/g, `"deviceType": "${DeviceType.Mouse}"`);
+  json = json.replace(/"deviceType":\s*"gamepad"/g, `"deviceType": "${DeviceType.Gamepad}"`);
+  json = json.replace(/"deviceType":\s*"touch"/g, `"deviceType": "${DeviceType.Touch}"`);
+
+  json = json.replace(/"actionType":\s*"button"/g, `"actionType": "${ActionType.Button}"`);
+  json = json.replace(/"actionType":\s*"value"/g, `"actionType": "${ActionType.Value}"`);
+  json = json.replace(
+    /"actionType":\s*"passthrough"/g,
+    `"actionType": "${ActionType.PassThrough}"`,
+  );
+
+  json = json.replace(/"controlType":\s*"button"/g, `"controlType": "${ControlType.Button}"`);
+  json = json.replace(/"controlType":\s*"axis"/g, `"controlType": "${ControlType.Axis}"`);
+  json = json.replace(/"controlType":\s*"vector2"/g, `"controlType": "${ControlType.Vector2}"`);
+  json = json.replace(/"controlType":\s*"vector3"/g, `"controlType": "${ControlType.Vector3}"`);
+
+  json = json.replace(
+    /"compositeType":\s*"1DAxis"/g,
+    `"compositeType": "${CompositeType.OneModifier}"`,
+  );
+  json = json.replace(
+    /"compositeType":\s*"2DVector"/g,
+    `"compositeType": "${CompositeType.TwoDVector}"`,
+  );
+  json = json.replace(
+    /"compositeType":\s*"3DVector"/g,
+    `"compositeType": "${CompositeType.ThreeDVector}"`,
+  );
+
+  json = json.replace(/"type":\s*"keyboard"/g, `"type": "${DeviceType.Keyboard}"`);
+  json = json.replace(/"type":\s*"mouse"/g, `"type": "${DeviceType.Mouse}"`);
+  json = json.replace(/"type":\s*"gamepad"/g, `"type": "${DeviceType.Gamepad}"`);
+  json = json.replace(/"type":\s*"touch"/g, `"type": "${DeviceType.Touch}"`);
+
+  return json;
+};
+
+/**
+ * Extract single asset from serialized array format
+ */
+const extractSingleAsset = (serializedArray: string): string => {
+  // Remove array brackets and extract the first element
+  const match = serializedArray.match(/^\s*\[\s*({[\s\S]*})\s*\]\s*$/);
+  return match ? match[1] : serializedArray;
+};
 
 /**
  * Filesystem-based asset store implementation
@@ -208,9 +275,10 @@ export class FsAssetStore implements IAssetStore {
     const importFn = isSingle ? single : plural;
 
     // Add required imports for input assets
-    const additionalImports = type === 'input'
-      ? `\nimport { ActionType, ControlType, DeviceType, CompositeType } from '@core';`
-      : '';
+    const additionalImports =
+      type === 'input'
+        ? `\nimport { ActionType, ControlType, DeviceType, CompositeType } from '@core';`
+        : '';
 
     // Omit default values to reduce file size
     // Extract defaults from Zod schemas (single source of truth)
@@ -228,17 +296,29 @@ export class FsAssetStore implements IAssetStore {
     if (schema) {
       const defaults = this.extractSchemaDefaults(schema, type);
       if (isSingle) {
-        processedPayload = this.cleanOptionalFields(omitDefaults(payload as Record<string, unknown>, defaults), type);
+        processedPayload = this.cleanOptionalFields(
+          omitDefaults(payload as Record<string, unknown>, defaults),
+          type,
+        );
       } else if (Array.isArray(payload)) {
-        processedPayload = payload.map(item =>
-          this.cleanOptionalFields(omitDefaults(item as Record<string, unknown>, defaults), type)
+        processedPayload = payload.map((item) =>
+          this.cleanOptionalFields(omitDefaults(item as Record<string, unknown>, defaults), type),
         );
       }
     }
 
+    // Use enum references for input assets instead of string literals
+    let payloadString: string;
+    if (type === 'input') {
+      const serialized = serializeInputAssets(processedPayload);
+      payloadString = isSingle ? extractSingleAsset(serialized) : serialized;
+    } else {
+      payloadString = JSON.stringify(processedPayload, null, 2);
+    }
+
     return `import { ${importFn} } from '${importPath}';${additionalImports}
 
-export default ${defineFn}(${JSON.stringify(processedPayload, null, 2)});
+export default ${defineFn}(${payloadString});
 `;
   }
 
@@ -287,12 +367,22 @@ export default ${defineFn}(${JSON.stringify(processedPayload, null, 2)});
    * Clean optional fields by removing empty values
    * This ensures optional fields are truly optional and not just empty strings/arrays
    */
-  private cleanOptionalFields(asset: Partial<Record<string, unknown>>, type: AssetType): Partial<Record<string, unknown>> {
+  private cleanOptionalFields(
+    asset: Partial<Record<string, unknown>>,
+    type: AssetType,
+  ): Partial<Record<string, unknown>> {
     const cleaned = { ...asset };
 
     if (type === 'material') {
       // Remove empty texture strings
-      const textureFields = ['albedoTexture', 'normalTexture', 'metallicTexture', 'roughnessTexture', 'emissiveTexture', 'occlusionTexture'];
+      const textureFields = [
+        'albedoTexture',
+        'normalTexture',
+        'metallicTexture',
+        'roughnessTexture',
+        'emissiveTexture',
+        'occlusionTexture',
+      ];
       for (const field of textureFields) {
         if (field in cleaned && cleaned[field] === '') {
           delete cleaned[field];
@@ -303,13 +393,21 @@ export default ${defineFn}(${JSON.stringify(processedPayload, null, 2)});
       if ('description' in cleaned && !cleaned.description) {
         delete cleaned.description;
       }
-      if ('dependencies' in cleaned && Array.isArray(cleaned.dependencies) && cleaned.dependencies.length === 0) {
+      if (
+        'dependencies' in cleaned &&
+        Array.isArray(cleaned.dependencies) &&
+        cleaned.dependencies.length === 0
+      ) {
         delete cleaned.dependencies;
       }
       if ('tags' in cleaned && Array.isArray(cleaned.tags) && cleaned.tags.length === 0) {
         delete cleaned.tags;
       }
-      if ('metadata' in cleaned && typeof cleaned.metadata === 'object' && Object.keys(cleaned.metadata as object).length === 0) {
+      if (
+        'metadata' in cleaned &&
+        typeof cleaned.metadata === 'object' &&
+        Object.keys(cleaned.metadata as object).length === 0
+      ) {
         delete cleaned.metadata;
       }
     }

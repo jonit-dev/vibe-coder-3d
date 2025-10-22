@@ -64,7 +64,14 @@ export const CameraBackgroundManager: React.FC = () => {
 
         if (cameraData) {
           const newClearFlags = cameraData.clearFlags || 'skybox';
-          const newBackgroundColor = cameraData.backgroundColor;
+          const newBackgroundColor = cameraData.backgroundColor
+            ? {
+                r: cameraData.backgroundColor.r ?? 0.0,
+                g: cameraData.backgroundColor.g ?? 0.0,
+                b: cameraData.backgroundColor.b ?? 0.0,
+                a: cameraData.backgroundColor.a ?? 1.0,
+              }
+            : undefined;
           const newSkyboxTexture = cameraData.skyboxTexture || '';
           const newSkyboxTransform: ISkyboxTransform = {
             scale: cameraData.skyboxScale,
