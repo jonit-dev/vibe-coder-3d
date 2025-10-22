@@ -1,6 +1,6 @@
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import { useMaterialsStore } from '@/editor/store/materialsStore';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export interface IUseMaterialsOptions {
   selectedMaterialId?: string;
@@ -12,13 +12,20 @@ export interface IUseMaterialsOptions {
 
 export const useMaterials = (options: IUseMaterialsOptions = {}) => {
   const store = useMaterialsStore();
+  const isInitializedRef = useRef(false);
 
   // Initialize with the provided selectedMaterialId if different from store
+  // Only run once on mount to avoid triggering updates on every render
   useEffect(() => {
-    if (options.selectedMaterialId && options.selectedMaterialId !== store.selectedMaterialId) {
+    if (
+      !isInitializedRef.current &&
+      options.selectedMaterialId &&
+      options.selectedMaterialId !== store.selectedMaterialId
+    ) {
       store.setSelectedMaterial(options.selectedMaterialId);
+      isInitializedRef.current = true;
     }
-  }, [options.selectedMaterialId, store.selectedMaterialId]);
+  }, [options.selectedMaterialId, store.selectedMaterialId, store]);
 
   const selectMaterial = useCallback(
     (materialId: string) => {

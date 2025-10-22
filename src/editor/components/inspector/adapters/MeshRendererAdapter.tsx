@@ -11,48 +11,54 @@ export interface IMeshRendererAdapterProps {
   isPlaying: boolean;
 }
 
-export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = ({
-  meshRendererComponent,
-  updateComponent,
-  removeComponent,
-  isPlaying,
-}) => {
-  const data = meshRendererComponent?.data;
+export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = React.memo(
+  ({ meshRendererComponent, updateComponent, removeComponent, isPlaying }) => {
+    const data = meshRendererComponent?.data;
 
-  if (!data) return null;
+    // Memoize the converted data to prevent unnecessary re-renders
+    const meshRendererData = React.useMemo(() => {
+      if (!data) return null;
 
-  // Convert ECS data to the format expected by MeshRendererSection
-  const meshRendererData = {
-    meshId: data.meshId || 'cube',
-    materialId: data.materialId || 'default',
-    enabled: data.enabled ?? true,
-    castShadows: data.castShadows ?? true,
-    receiveShadows: data.receiveShadows ?? true,
-    // Only include material overrides if they exist
-    material: data.material ? {
-      color: data.material.color,
-      metalness: data.material.metalness,
-      roughness: data.material.roughness,
-    } : undefined,
-  };
+      return {
+        meshId: data.meshId || 'cube',
+        materialId: data.materialId || 'default',
+        enabled: data.enabled ?? true,
+        castShadows: data.castShadows ?? true,
+        receiveShadows: data.receiveShadows ?? true,
+        // Only include material overrides if they exist
+        material: data.material
+          ? {
+              color: data.material.color,
+              metalness: data.material.metalness,
+              roughness: data.material.roughness,
+            }
+          : undefined,
+      };
+    }, [data]);
 
-  const handleUpdate = (newData: MeshRendererData | null) => {
-    if (newData === null) {
-      // Remove component
-      if (removeComponent) {
-        removeComponent(KnownComponentTypes.MESH_RENDERER);
-      }
-    } else {
-      // Update component
-      updateComponent(KnownComponentTypes.MESH_RENDERER, newData);
-    }
-  };
+    const handleUpdate = React.useCallback(
+      (newData: MeshRendererData | null) => {
+        if (newData === null) {
+          // Remove component
+          if (removeComponent) {
+            removeComponent(KnownComponentTypes.MESH_RENDERER);
+          }
+        } else {
+          // Update component
+          updateComponent(KnownComponentTypes.MESH_RENDERER, newData);
+        }
+      },
+      [removeComponent, updateComponent],
+    );
 
-  return (
-    <MeshRendererSection
-      meshRenderer={meshRendererData}
-      setMeshRenderer={handleUpdate as (data: any) => void}
-      isPlaying={isPlaying}
-    />
-  );
-};
+    if (!meshRendererData) return null;
+
+    return (
+      <MeshRendererSection
+        meshRenderer={meshRendererData}
+        setMeshRenderer={handleUpdate as (data: any) => void}
+        isPlaying={isPlaying}
+      />
+    );
+  },
+);

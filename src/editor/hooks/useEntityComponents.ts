@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
 import { useEvent } from '@/core/hooks/useEvent';
@@ -47,23 +47,45 @@ export const useEntityComponents = (entityId: EntityId | null) => {
   }, [updateComponents]);
 
   // Listen for component events to update reactively
+  // Debounce updates to prevent cascading re-renders during rapid typing
+  const debouncedUpdateRef = useRef<NodeJS.Timeout | null>(null);
+
+  const scheduleUpdate = useCallback(() => {
+    if (debouncedUpdateRef.current) {
+      clearTimeout(debouncedUpdateRef.current);
+    }
+    debouncedUpdateRef.current = setTimeout(() => {
+      updateComponents();
+      debouncedUpdateRef.current = null;
+    }, 16); // ~1 frame at 60fps
+  }, [updateComponents]);
+
   useEvent('component:added', (event) => {
     if (event.entityId === entityId) {
-      updateComponents();
+      scheduleUpdate();
     }
   });
 
   useEvent('component:removed', (event) => {
     if (event.entityId === entityId) {
-      updateComponents();
+      scheduleUpdate();
     }
   });
 
   useEvent('component:updated', (event) => {
     if (event.entityId === entityId) {
-      updateComponents();
+      scheduleUpdate();
     }
   });
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debouncedUpdateRef.current) {
+        clearTimeout(debouncedUpdateRef.current);
+      }
+    };
+  }, []);
 
   const addComponentWrapper = useCallback(
     <TData>(type: ComponentType, data: TData): IComponent<TData> | null => {
