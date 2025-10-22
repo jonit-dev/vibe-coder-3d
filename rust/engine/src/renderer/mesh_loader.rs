@@ -22,15 +22,15 @@ pub async fn load_mesh_renderer(
     material_manager: &mut MaterialManager,
 ) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3, GlamVec3)>> {
     log::info!("  MeshRenderer:");
-    log::info!("    Mesh ID:     {:?}", mesh_renderer.meshId);
-    log::info!("    Model Path:  {:?}", mesh_renderer.modelPath);
-    log::info!("    Material ID: {:?}", mesh_renderer.materialId);
+    log::info!("    Mesh ID:     {:?}", mesh_renderer.mesh_id);
+    log::info!("    Model Path:  {:?}", mesh_renderer.model_path);
+    log::info!("    Material ID: {:?}", mesh_renderer.material_id);
     log::info!("    Materials:   {:?}", mesh_renderer.materials);
 
     // Check if we should load a GLTF model (filter out empty strings)
     #[cfg(feature = "gltf-support")]
     let (cpu_meshes, gltf_textures, _gltf_images) =
-        if let Some(model_path) = &mesh_renderer.modelPath {
+        if let Some(model_path) = &mesh_renderer.model_path {
             if !model_path.is_empty() {
                 let gltf_result = load_gltf_meshes_with_textures(model_path)?;
 
@@ -57,7 +57,7 @@ pub async fn load_mesh_renderer(
             } else {
                 // Empty string - treat as no model path, use primitive
                 let mesh_id_lower = mesh_renderer
-                    .meshId
+                    .mesh_id
                     .as_ref()
                     .map(|id| id.to_ascii_lowercase());
                 (
@@ -69,11 +69,11 @@ pub async fn load_mesh_renderer(
         } else {
             // Normalize mesh identifier for comparisons
             let mesh_id_lower = mesh_renderer
-                .meshId
+                .mesh_id
                 .as_ref()
                 .map(|id| id.to_ascii_lowercase());
 
-            // Create primitive mesh based on meshId hints
+            // Create primitive mesh based on mesh_id hints
             (
                 vec![create_primitive_mesh(mesh_id_lower.as_deref())],
                 None,
@@ -88,7 +88,7 @@ pub async fn load_mesh_renderer(
         Option<Vec<vibe_assets::GltfImage>>,
     ) = {
         let mesh_id_lower = mesh_renderer
-            .meshId
+            .mesh_id
             .as_ref()
             .map(|id| id.to_ascii_lowercase());
         (
@@ -103,14 +103,14 @@ pub async fn load_mesh_renderer(
 
     // Determine if we should use GLTF embedded materials or scene overrides
     let use_gltf_materials = gltf_textures.is_some()
-        && mesh_renderer.materialId.as_ref().map(|id| id.as_str()) == Some("default")
+        && mesh_renderer.material_id.as_ref().map(|id| id.as_str()) == Some("default")
         && mesh_renderer.materials.is_none();
 
     log::info!(
-        "    Material strategy: use_gltf_materials={}, has_gltf_textures={}, materialId={:?}, has_materials_array={}",
+        "    Material strategy: use_gltf_materials={}, has_gltf_textures={}, material_id={:?}, has_materials_array={}",
         use_gltf_materials,
         gltf_textures.is_some(),
-        mesh_renderer.materialId,
+        mesh_renderer.material_id,
         mesh_renderer.materials.is_some()
     );
 
@@ -194,7 +194,7 @@ pub async fn load_mesh_renderer(
                 material_manager.create_default_material(context)
             }
         } else {
-            // Fall back to single materialId for all submeshes
+            // Fall back to single material_id for all submeshes
             get_or_create_material(context, mesh_renderer, material_manager).await?
         };
 
@@ -202,9 +202,9 @@ pub async fn load_mesh_renderer(
         let mut mesh = Mesh::new(context, cpu_mesh);
 
         let (final_scale, base_scale) = if let Some(transform) = transform {
-            // Use meshId for primitive scaling logic (GLTF models don't need base scale adjustments)
+            // Use mesh_id for primitive scaling logic (GLTF models don't need base scale adjustments)
             let mesh_id_lower = mesh_renderer
-                .meshId
+                .mesh_id
                 .as_ref()
                 .map(|id| id.to_ascii_lowercase());
             let converted = convert_transform_to_matrix(transform, mesh_id_lower.as_deref());
@@ -213,7 +213,7 @@ pub async fn load_mesh_renderer(
         } else {
             // Even without an explicit Transform component, apply primitive base scale
             let mesh_id_lower = mesh_renderer
-                .meshId
+                .mesh_id
                 .as_ref()
                 .map(|id| id.to_ascii_lowercase());
             let converted = create_base_scale_matrix(mesh_id_lower.as_deref());
@@ -249,7 +249,7 @@ async fn get_or_create_material(
     mesh_renderer: &MeshRenderer,
     material_manager: &mut MaterialManager,
 ) -> Result<PhysicalMaterial> {
-    if let Some(material_id) = &mesh_renderer.materialId {
+    if let Some(material_id) = &mesh_renderer.material_id {
         get_material_by_id(context, material_id, material_manager).await
     } else {
         log::info!("    Using default material");

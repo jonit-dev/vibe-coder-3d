@@ -4,7 +4,7 @@ use vibe_ecs_bridge::decoders::{Light as LightComponent, LightColor, Transform};
 #[test]
 fn test_disabled_light_returns_none() {
     let light = LightComponent {
-        lightType: "directional".to_string(),
+        light_type: "directional".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 1.0,
@@ -12,17 +12,17 @@ fn test_disabled_light_returns_none() {
         }),
         intensity: 1.0,
         enabled: false, // Disabled
-        castShadow: false,
-        directionX: 0.0,
-        directionY: -1.0,
-        directionZ: 0.0,
+        cast_shadow: false,
+        direction_x: 0.0,
+        direction_y: -1.0,
+        direction_z: 0.0,
         range: 10.0,
         decay: 1.0,
         angle: std::f32::consts::PI / 6.0,
         penumbra: 0.1,
-        shadowMapSize: 1024,
-        shadowBias: -0.0001,
-        shadowRadius: 1.0,
+        shadow_map_size: 1024,
+        shadow_bias: -0.0001,
+        shadow_radius: 1.0,
     };
 
     // Create a headless context for testing (will panic in CI without GPU)
@@ -60,7 +60,7 @@ fn test_attenuation_quadratic_decay() {
 #[test]
 fn test_parse_light_color() {
     let light = LightComponent {
-        lightType: "directional".to_string(),
+        light_type: "directional".to_string(),
         color: Some(LightColor {
             r: 0.5,
             g: 0.25,
@@ -68,17 +68,17 @@ fn test_parse_light_color() {
         }),
         intensity: 1.0,
         enabled: true,
-        castShadow: false,
-        directionX: 0.0,
-        directionY: -1.0,
-        directionZ: 0.0,
+        cast_shadow: false,
+        direction_x: 0.0,
+        direction_y: -1.0,
+        direction_z: 0.0,
         range: 10.0,
         decay: 1.0,
         angle: std::f32::consts::PI / 6.0,
         penumbra: 0.1,
-        shadowMapSize: 1024,
-        shadowBias: -0.0001,
-        shadowRadius: 1.0,
+        shadow_map_size: 1024,
+        shadow_bias: -0.0001,
+        shadow_radius: 1.0,
     };
 
     let color = parse_light_color(&light);
@@ -91,21 +91,21 @@ fn test_parse_light_color() {
 #[test]
 fn test_parse_light_color_white_default() {
     let light = LightComponent {
-        lightType: "directional".to_string(),
+        light_type: "directional".to_string(),
         color: None, // No color specified
         intensity: 1.0,
         enabled: true,
-        castShadow: false,
-        directionX: 0.0,
-        directionY: -1.0,
-        directionZ: 0.0,
+        cast_shadow: false,
+        direction_x: 0.0,
+        direction_y: -1.0,
+        direction_z: 0.0,
         range: 10.0,
         decay: 1.0,
         angle: std::f32::consts::PI / 6.0,
         penumbra: 0.1,
-        shadowMapSize: 1024,
-        shadowBias: -0.0001,
-        shadowRadius: 1.0,
+        shadow_map_size: 1024,
+        shadow_bias: -0.0001,
+        shadow_radius: 1.0,
     };
 
     let color = parse_light_color(&light);

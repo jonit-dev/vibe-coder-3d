@@ -8,11 +8,11 @@
 /// ## 1. Light Component Configuration (TypeScript/JSON)
 /// ```json
 /// {
-///   "lightType": "DirectionalLight",
-///   "castShadow": true,
-///   "shadowMapSize": 2048,
-///   "shadowBias": -0.0001,
-///   "shadowRadius": 1.5
+///   "light_type": "DirectionalLight",
+///   "cast_shadow": true,
+///   "shadow_map_size": 2048,
+///   "shadow_bias": -0.0001,
+///   "shadow_radius": 1.5
 /// }
 /// ```
 ///
@@ -47,7 +47,7 @@ use vibe_ecs_bridge::decoders::{Light as LightComponent, LightColor};
 fn test_shadow_pipeline_step1_component_configuration() {
     // STEP 1: Create a Light component with shadow casting enabled
     let light = LightComponent {
-        lightType: "DirectionalLight".to_string(),
+        light_type: "DirectionalLight".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 1.0,
@@ -55,23 +55,23 @@ fn test_shadow_pipeline_step1_component_configuration() {
         }),
         intensity: 1.5,
         enabled: true,
-        castShadow: true, // ✅ CRITICAL: Enables shadow casting
-        directionX: -1.0,
-        directionY: -1.0,
-        directionZ: -1.0,
+        cast_shadow: true, // ✅ CRITICAL: Enables shadow casting
+        direction_x: -1.0,
+        direction_y: -1.0,
+        direction_z: -1.0,
         range: 100.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 6.0,
         penumbra: 0.0,
-        shadowMapSize: 2048, // ✅ Shadow texture resolution
-        shadowBias: -0.0001, // ✅ Prevents shadow acne
-        shadowRadius: 1.5,   // ✅ PCF filtering radius
+        shadow_map_size: 2048, // ✅ Shadow texture resolution
+        shadow_bias: -0.0001, // ✅ Prevents shadow acne
+        shadow_radius: 1.5,   // ✅ PCF filtering radius
     };
 
     // Verify shadow configuration
-    assert_eq!(light.castShadow, true, "Shadow casting must be enabled");
+    assert_eq!(light.cast_shadow, true, "Shadow casting must be enabled");
     assert_eq!(
-        light.shadowMapSize, 2048,
+        light.shadow_map_size, 2048,
         "Shadow map size determines texture resolution"
     );
 
@@ -84,7 +84,7 @@ fn test_shadow_pipeline_step2_shadow_bias_prevents_acne() {
     // Without bias, surfaces incorrectly shadow themselves ("shadow acne")
 
     let light_no_bias = LightComponent {
-        lightType: "DirectionalLight".to_string(),
+        light_type: "DirectionalLight".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 1.0,
@@ -92,26 +92,26 @@ fn test_shadow_pipeline_step2_shadow_bias_prevents_acne() {
         }),
         intensity: 1.0,
         enabled: true,
-        castShadow: true,
-        directionX: -1.0,
-        directionY: -1.0,
-        directionZ: -1.0,
+        cast_shadow: true,
+        direction_x: -1.0,
+        direction_y: -1.0,
+        direction_z: -1.0,
         range: 100.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 6.0,
         penumbra: 0.0,
-        shadowMapSize: 1024,
-        shadowBias: 0.0, // ❌ No bias = shadow acne artifacts
-        shadowRadius: 0.0,
+        shadow_map_size: 1024,
+        shadow_bias: 0.0, // ❌ No bias = shadow acne artifacts
+        shadow_radius: 0.0,
     };
 
     let light_with_bias = LightComponent {
-        shadowBias: -0.0001, // ✅ Small negative bias prevents acne
+        shadow_bias: -0.0001, // ✅ Small negative bias prevents acne
         ..light_no_bias
     };
 
-    assert_eq!(light_no_bias.shadowBias, 0.0);
-    assert_eq!(light_with_bias.shadowBias, -0.0001);
+    assert_eq!(light_no_bias.shadow_bias, 0.0);
+    assert_eq!(light_with_bias.shadow_bias, -0.0001);
 
     println!("✅ STEP 2: Shadow bias configured to prevent shadow acne");
 }
@@ -119,10 +119,10 @@ fn test_shadow_pipeline_step2_shadow_bias_prevents_acne() {
 #[test]
 fn test_shadow_pipeline_step3_pcf_filtering() {
     // PCF (Percentage-Closer Filtering) creates soft shadow edges
-    // shadowRadius controls the sampling kernel size
+    // shadow_radius controls the sampling kernel size
 
     let hard_shadows = LightComponent {
-        lightType: "DirectionalLight".to_string(),
+        light_type: "DirectionalLight".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 1.0,
@@ -130,26 +130,26 @@ fn test_shadow_pipeline_step3_pcf_filtering() {
         }),
         intensity: 1.0,
         enabled: true,
-        castShadow: true,
-        directionX: -1.0,
-        directionY: -1.0,
-        directionZ: -1.0,
+        cast_shadow: true,
+        direction_x: -1.0,
+        direction_y: -1.0,
+        direction_z: -1.0,
         range: 100.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 6.0,
         penumbra: 0.0,
-        shadowMapSize: 1024,
-        shadowBias: -0.0001,
-        shadowRadius: 0.0, // ❌ No PCF = hard shadow edges
+        shadow_map_size: 1024,
+        shadow_bias: -0.0001,
+        shadow_radius: 0.0, // ❌ No PCF = hard shadow edges
     };
 
     let soft_shadows = LightComponent {
-        shadowRadius: 2.0, // ✅ PCF radius 2.0 = 5x5 kernel = soft edges
+        shadow_radius: 2.0, // ✅ PCF radius 2.0 = 5x5 kernel = soft edges
         ..hard_shadows
     };
 
-    assert_eq!(hard_shadows.shadowRadius, 0.0);
-    assert_eq!(soft_shadows.shadowRadius, 2.0);
+    assert_eq!(hard_shadows.shadow_radius, 0.0);
+    assert_eq!(soft_shadows.shadow_radius, 2.0);
 
     // PCF kernel size calculation:
     // kernel_size = (radius * 2 + 1)²
@@ -166,7 +166,7 @@ fn test_shadow_pipeline_step4_spot_light_penumbra() {
     // 0.0 = hard cutoff, 1.0 = completely soft
 
     let hard_edge = LightComponent {
-        lightType: "SpotLight".to_string(),
+        light_type: "SpotLight".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 1.0,
@@ -174,17 +174,17 @@ fn test_shadow_pipeline_step4_spot_light_penumbra() {
         }),
         intensity: 1.0,
         enabled: true,
-        castShadow: true,
-        directionX: 0.0,
-        directionY: -1.0,
-        directionZ: 0.0,
+        cast_shadow: true,
+        direction_x: 0.0,
+        direction_y: -1.0,
+        direction_z: 0.0,
         range: 50.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 4.0,
         penumbra: 0.0, // ❌ No penumbra = hard cone edge
-        shadowMapSize: 1024,
-        shadowBias: -0.0001,
-        shadowRadius: 1.0,
+        shadow_map_size: 1024,
+        shadow_bias: -0.0001,
+        shadow_radius: 1.0,
     };
 
     let soft_edge = LightComponent {
@@ -213,7 +213,7 @@ fn test_shadow_pipeline_step5_quality_settings() {
 
     for (size, description) in quality_settings {
         let light = LightComponent {
-            lightType: "DirectionalLight".to_string(),
+            light_type: "DirectionalLight".to_string(),
             color: Some(LightColor {
                 r: 1.0,
                 g: 1.0,
@@ -221,20 +221,20 @@ fn test_shadow_pipeline_step5_quality_settings() {
             }),
             intensity: 1.0,
             enabled: true,
-            castShadow: true,
-            directionX: -1.0,
-            directionY: -1.0,
-            directionZ: -1.0,
+            cast_shadow: true,
+            direction_x: -1.0,
+            direction_y: -1.0,
+            direction_z: -1.0,
             range: 100.0,
             decay: 2.0,
             angle: std::f32::consts::PI / 6.0,
             penumbra: 0.0,
-            shadowMapSize: size,
-            shadowBias: -0.0001,
-            shadowRadius: 1.0,
+            shadow_map_size: size,
+            shadow_bias: -0.0001,
+            shadow_radius: 1.0,
         };
 
-        assert_eq!(light.shadowMapSize, size);
+        assert_eq!(light.shadow_map_size, size);
         println!("  {}x{} - {}", size, size, description);
     }
 
@@ -245,7 +245,7 @@ fn test_shadow_pipeline_step5_quality_settings() {
 fn test_shadow_pipeline_step6_complete_configuration() {
     // Final verification: All shadow features working together
     let production_light = LightComponent {
-        lightType: "SpotLight".to_string(),
+        light_type: "SpotLight".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 0.95,
@@ -253,40 +253,40 @@ fn test_shadow_pipeline_step6_complete_configuration() {
         }),
         intensity: 2.0,
         enabled: true,
-        castShadow: true, // ✅ Shadows enabled
-        directionX: 0.0,
-        directionY: -1.0,
-        directionZ: 0.0,
+        cast_shadow: true, // ✅ Shadows enabled
+        direction_x: 0.0,
+        direction_y: -1.0,
+        direction_z: 0.0,
         range: 75.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 3.0,
         penumbra: 0.15,       // ✅ Soft cone edges
-        shadowMapSize: 2048,  // ✅ High quality shadows
-        shadowBias: -0.00075, // ✅ No shadow acne
-        shadowRadius: 1.8,    // ✅ Soft shadow edges (PCF)
+        shadow_map_size: 2048,  // ✅ High quality shadows
+        shadow_bias: -0.00075, // ✅ No shadow acne
+        shadow_radius: 1.8,    // ✅ Soft shadow edges (PCF)
     };
 
     // Verify complete configuration
-    assert!(production_light.castShadow);
-    assert!(production_light.shadowMapSize >= 1024);
-    assert!(production_light.shadowBias < 0.0);
-    assert!(production_light.shadowRadius > 0.0);
+    assert!(production_light.cast_shadow);
+    assert!(production_light.shadow_map_size >= 1024);
+    assert!(production_light.shadow_bias < 0.0);
+    assert!(production_light.shadow_radius > 0.0);
     assert!(production_light.penumbra > 0.0);
 
     println!("✅ STEP 6: Complete shadow pipeline configuration verified");
     println!("\n🎯 SHADOW SYSTEM FULLY FUNCTIONAL:");
-    println!("  • Shadow casting: {}", production_light.castShadow);
+    println!("  • Shadow casting: {}", production_light.cast_shadow);
     println!(
         "  • Shadow map resolution: {}x{}",
-        production_light.shadowMapSize, production_light.shadowMapSize
+        production_light.shadow_map_size, production_light.shadow_map_size
     );
     println!(
         "  • Shadow bias: {} (prevents acne)",
-        production_light.shadowBias
+        production_light.shadow_bias
     );
     println!(
         "  • PCF radius: {} (soft shadows)",
-        production_light.shadowRadius
+        production_light.shadow_radius
     );
     println!(
         "  • Penumbra: {} (soft cone edges)",

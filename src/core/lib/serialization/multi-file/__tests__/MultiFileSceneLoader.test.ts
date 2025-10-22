@@ -1,11 +1,20 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { MultiFileSceneLoader } from '../MultiFileSceneLoader';
-import type { IMultiFileSceneData } from '../MultiFileSceneLoader';
-import type { ISerializedEntity } from '../../common/types';
 import * as fs from 'fs/promises';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { IMultiFileSceneData } from '../MultiFileSceneLoader';
+import { MultiFileSceneLoader } from '../MultiFileSceneLoader';
 
-// Mock fs only
+// Mock fs modules for asset loading
 vi.mock('fs/promises');
+
+// Mock the ScriptFileResolver module
+vi.mock('../../utils/ScriptFileResolver', () => ({
+  readScriptFromFilesystem: vi.fn().mockResolvedValue({
+    code: 'export function onStart() { console.log("hello"); }',
+    path: 'src/game/scripts/game.testScript.ts',
+    codeHash: 'mocked-hash',
+    lastModified: 456,
+  }),
+}));
 
 describe('MultiFileSceneLoader', () => {
   let loader: MultiFileSceneLoader;
@@ -66,12 +75,22 @@ export default defineMaterials([
   }
 ]);`;
 
-      vi.mocked(fs.readFile).mockResolvedValue(mockMaterialContent);
+      // Mock the asset file reading since we're not mocking fs globally anymore
+      const mockAssetContent = `import { defineMaterials } from '@core/lib/serialization/assets/defineMaterials';
 
-      const result = await loader.loadMultiFile(
-        sceneData,
-        'src/game/scenes/TestScene',
-      );
+export default defineMaterials([
+  {
+    "id": "TreeGreen",
+    "name": "Tree Green",
+    "color": "#2d5016",
+    "roughness": 0.9
+  }
+]);`;
+
+      // We need to mock fs for this specific test since the loader reads asset files
+      vi.mocked(fs.readFile).mockResolvedValue(mockAssetContent);
+
+      const result = await loader.loadMultiFile(sceneData, 'src/game/scenes/TestScene');
 
       expect(result.entities).toHaveLength(2);
       expect(result.metadata.name).toBe('TestScene');
@@ -116,10 +135,7 @@ export default defineMaterials([
         ],
       };
 
-      const result = await loader.loadMultiFile(
-        sceneDataWithInline,
-        'src/game/scenes/TestScene',
-      );
+      const result = await loader.loadMultiFile(sceneDataWithInline, 'src/game/scenes/TestScene');
 
       expect(result.materials).toHaveLength(1);
       expect(result.materials[0].id).toBe('TreeGreen');
@@ -144,20 +160,14 @@ export default defineMaterials([
         ],
       };
 
-      const result = await loader.loadMultiFile(
-        simpleSceneData,
-        'src/game/scenes/SimpleScene',
-      );
+      const result = await loader.loadMultiFile(simpleSceneData, 'src/game/scenes/SimpleScene');
 
       expect(result.entities).toHaveLength(1);
       expect(result.materials).toHaveLength(0);
     });
 
     it('should preserve metadata', async () => {
-      const result = await loader.loadMultiFile(
-        sceneData,
-        'src/game/scenes/TestScene',
-      );
+      const result = await loader.loadMultiFile(sceneData, 'src/game/scenes/TestScene');
 
       expect(result.metadata.name).toBe('TestScene');
       expect(result.metadata.version).toBe(2);
@@ -167,12 +177,10 @@ export default defineMaterials([
     it('should handle missing material references gracefully', async () => {
       // Mock file read to throw error
       vi.mocked(fs.readFile).mockRejectedValue(new Error('File not found'));
+      vi.mocked(fs.stat).mockRejectedValue(new Error('File not found'));
 
       // Should not throw, just log warning
-      const result = await loader.loadMultiFile(
-        sceneData,
-        'src/game/scenes/TestScene',
-      );
+      const result = await loader.loadMultiFile(sceneData, 'src/game/scenes/TestScene');
 
       expect(result.entities).toHaveLength(2);
       // Entity should still be present even though material failed to resolve
@@ -244,15 +252,15 @@ export default defineMaterials([
         ],
       };
 
-    const result = await loader.loadMultiFile(
-      sceneDataWithDuplicates,
-      'src/game/scenes/TestScene',
-    );
+      const result = await loader.loadMultiFile(
+        sceneDataWithDuplicates,
+        'src/game/scenes/TestScene',
+      );
 
-    // Should only have one material despite two entities using it
-    expect(result.materials).toHaveLength(1);
-    expect(result.materials[0].id).toBe('TreeGreen');
-  });
+      // Should only have one material despite two entities using it
+      expect(result.materials).toHaveLength(1);
+      expect(result.materials[0].id).toBe('TreeGreen');
+    });
 
     it('should hydrate external script components using asset references', async () => {
       const scriptSceneData: IMultiFileSceneData = {
@@ -283,35 +291,7 @@ export default defineMaterials([
         },
       };
 
-      vi.mocked(fs.readFile).mockImplementation(async (filePath: any) => {
-        if (typeof filePath === 'string') {
-          if (filePath.endsWith('.script.tsx')) {
-            return `import { defineScript } from '@core/lib/serialization/assets/defineScripts';
-
-export default defineScript({
-  id: 'game.testScript',
-  name: 'Test Script',
-  source: './src/game/scripts/game.testScript.ts'
-});`;
-          }
-
-          if (filePath.endsWith('game.testScript.ts')) {
-            return 'export function onStart() { console.log("hello"); }';
-          }
-        }
-
-        throw new Error(`Unexpected readFile call for ${filePath}`);
-      });
-
-      vi.mocked(fs.stat).mockResolvedValue({
-        mtimeMs: 456,
-        mtime: new Date(456),
-      } as unknown as fs.Stats);
-
-      const result = await loader.loadMultiFile(
-        scriptSceneData,
-        'src/game/scenes/ScriptScene',
-      );
+      const result = await loader.loadMultiFile(scriptSceneData, 'src/game/scenes/ScriptScene');
 
       expect(result.entities).toHaveLength(1);
       const scriptComponent = result.entities[0].components.Script as Record<string, unknown>;

@@ -112,10 +112,10 @@ export interface IMaterialData {
 export interface IMeshRendererComponent {
   meshId: string;
   materialId: string;
-  enabled: boolean;
-  castShadows: boolean;
-  receiveShadows: boolean;
-  modelPath: string;
+  materials?: string[];
+  enabled?: boolean;
+  castShadows?: boolean;
+  receiveShadows?: boolean;
   material?: IMaterialData;
 }
 

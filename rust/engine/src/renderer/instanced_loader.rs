@@ -25,11 +25,11 @@ pub async fn load_instanced(
     log::info!("  Instanced:");
     log::info!("    Enabled:      {}", instanced.enabled);
     log::info!("    Capacity:     {}", instanced.capacity);
-    log::info!("    Base Mesh:    {:?}", instanced.baseMeshId);
-    log::info!("    Base Mat:     {:?}", instanced.baseMaterialId);
+    log::info!("    Base Mesh:    {:?}", instanced.base_mesh_id);
+    log::info!("    Base Mat:     {:?}", instanced.base_material_id);
     log::info!("    Instances:    {}", instanced.instances.len());
-    log::info!("    Cast Shadows: {}", instanced.castShadows);
-    log::info!("    Recv Shadows: {}", instanced.receiveShadows);
+    log::info!("    Cast Shadows: {}", instanced.cast_shadows);
+    log::info!("    Recv Shadows: {}", instanced.receive_shadows);
 
     if !instanced.enabled {
         log::info!("    Instanced component disabled, skipping");
@@ -42,19 +42,19 @@ pub async fn load_instanced(
     }
 
     // Create base mesh
-    let mesh_id_lower = if instanced.baseMeshId.is_empty() {
+    let mesh_id_lower = if instanced.base_mesh_id.is_empty() {
         None
     } else {
-        Some(instanced.baseMeshId.to_ascii_lowercase())
+        Some(instanced.base_mesh_id.to_ascii_lowercase())
     };
     let cpu_mesh = create_primitive_mesh(mesh_id_lower.as_deref());
 
     // Get base material
-    let base_material = if instanced.baseMaterialId.is_empty() {
+    let base_material = if instanced.base_material_id.is_empty() {
         log::info!("    Using default material for instances");
         material_manager.create_default_material(context)
     } else {
-        get_material_by_id(context, &instanced.baseMaterialId, material_manager).await?
+        get_material_by_id(context, &instanced.base_material_id, material_manager).await?
     };
 
     // Get entity-level transform (if any)
@@ -200,12 +200,12 @@ mod tests {
         let instanced = Instanced {
             enabled: false,
             capacity: 100,
-            baseMeshId: "cube".to_string(),
-            baseMaterialId: "default".to_string(),
+            base_mesh_id: "cube".to_string(),
+            base_material_id: "default".to_string(),
             instances: vec![],
-            castShadows: true,
-            receiveShadows: true,
-            frustumCulled: true,
+            cast_shadows: true,
+            receive_shadows: true,
+            frustum_culled: true,
         };
 
         // Should skip disabled components
@@ -217,12 +217,12 @@ mod tests {
         let instanced = Instanced {
             enabled: true,
             capacity: 100,
-            baseMeshId: "cube".to_string(),
-            baseMaterialId: "default".to_string(),
+            base_mesh_id: "cube".to_string(),
+            base_material_id: "default".to_string(),
             instances: vec![],
-            castShadows: true,
-            receiveShadows: true,
-            frustumCulled: true,
+            cast_shadows: true,
+            receive_shadows: true,
+            frustum_culled: true,
         };
 
         // Should skip empty instance arrays

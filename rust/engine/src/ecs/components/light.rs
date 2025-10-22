@@ -26,8 +26,8 @@ impl Default for LightColor {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Light {
-    #[serde(default = "default_light_type")]
-    pub lightType: String,
+    #[serde(default = "default_light_type", rename = "lightType")]
+    pub light_type: String,
 
     #[serde(default)]
     pub color: Option<LightColor>,
@@ -38,17 +38,17 @@ pub struct Light {
     #[serde(default = "default_enabled")]
     pub enabled: bool,
 
-    #[serde(default = "default_enabled")]
-    pub castShadow: bool,
+    #[serde(default = "default_enabled", rename = "castShadow")]
+    pub cast_shadow: bool,
 
-    #[serde(default)]
-    pub directionX: f32,
+    #[serde(default, rename = "directionX")]
+    pub direction_x: f32,
 
-    #[serde(default = "default_neg_one")]
-    pub directionY: f32,
+    #[serde(default = "default_neg_one", rename = "directionY")]
+    pub direction_y: f32,
 
-    #[serde(default)]
-    pub directionZ: f32,
+    #[serde(default, rename = "directionZ")]
+    pub direction_z: f32,
 
     #[serde(default = "default_range")]
     pub range: f32,
@@ -62,14 +62,14 @@ pub struct Light {
     #[serde(default = "default_penumbra")]
     pub penumbra: f32,
 
-    #[serde(default = "default_shadow_map_size")]
-    pub shadowMapSize: u32,
+    #[serde(default = "default_shadow_map_size", rename = "shadowMapSize")]
+    pub shadow_map_size: u32,
 
-    #[serde(default = "default_shadow_bias")]
-    pub shadowBias: f32,
+    #[serde(default = "default_shadow_bias", rename = "shadowBias")]
+    pub shadow_bias: f32,
 
-    #[serde(default = "default_one")]
-    pub shadowRadius: f32,
+    #[serde(default = "default_one", rename = "shadowRadius")]
+    pub shadow_radius: f32,
 }
 
 fn default_light_type() -> String {
@@ -111,21 +111,21 @@ fn default_shadow_bias() -> f32 {
 impl Default for Light {
     fn default() -> Self {
         Self {
-            lightType: default_light_type(),
+            light_type: default_light_type(),
             color: Some(LightColor::default()),
             intensity: default_intensity(),
             enabled: true,
-            castShadow: true,
-            directionX: 0.0,
-            directionY: default_neg_one(),
-            directionZ: 0.0,
+            cast_shadow: true,
+            direction_x: 0.0,
+            direction_y: default_neg_one(),
+            direction_z: 0.0,
             range: default_range(),
             decay: 1.0,
             angle: default_angle(),
             penumbra: default_penumbra(),
-            shadowMapSize: default_shadow_map_size(),
-            shadowBias: default_shadow_bias(),
-            shadowRadius: 1.0,
+            shadow_map_size: default_shadow_map_size(),
+            shadow_bias: default_shadow_bias(),
+            shadow_radius: 1.0,
         }
     }
 }

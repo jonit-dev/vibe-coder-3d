@@ -5,6 +5,7 @@
 
 import { DEFAULT_MATERIAL_COLOR } from '@/core/materials/constants';
 import React, { useEffect } from 'react';
+import { Logger } from '@/core/lib/logger';
 
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import type { MeshRendererData } from '@/core/lib/ecs/components/definitions/MeshRendererComponent';
@@ -59,26 +60,48 @@ export const MeshRenderer: React.FC<IMeshRendererProps> = ({
   material,
 }) => {
   const { entityId } = useEntityContext();
+  const logger = React.useMemo(() => Logger.create('MeshRenderer'), []);
+  // Stabilize material overrides so effect dependencies don't thrash on referential changes
+  const materialSignature = React.useMemo(
+    () => (material ? JSON.stringify(material) : 'material:none'),
+    [material],
+  );
+  const stabilizedMaterial = React.useMemo<IMaterialProps | undefined>(() => {
+    return materialSignature === 'material:none'
+      ? undefined
+      : (JSON.parse(materialSignature) as IMaterialProps);
+  }, [materialSignature]);
 
   useEffect(() => {
+    const t0 = performance.now();
+    logger.debug('useEffect triggered', {
+      entityId,
+      meshId,
+      materialId,
+      enabled,
+      castShadows,
+      receiveShadows,
+      modelPath,
+      hasMaterialOverrides: !!stabilizedMaterial,
+    });
     // Build complete material object with defaults
-    const completeMaterial = material
+    const completeMaterial = stabilizedMaterial
       ? {
-        shader: 'standard' as const,
-        materialType: 'solid' as const,
-        color: DEFAULT_MATERIAL_COLOR,
-        normalScale: 1,
-        metalness: 0,
-        roughness: 0.7,
-        emissive: '#000000',
-        emissiveIntensity: 0,
-        occlusionStrength: 1,
-        textureOffsetX: 0,
-        textureOffsetY: 0,
-        textureRepeatX: 1,
-        textureRepeatY: 1,
-        ...material, // Override with provided material props
-      }
+          shader: 'standard' as const,
+          materialType: 'solid' as const,
+          color: DEFAULT_MATERIAL_COLOR,
+          normalScale: 1,
+          metalness: 0,
+          roughness: 0.7,
+          emissive: '#000000',
+          emissiveIntensity: 0,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
+          ...stabilizedMaterial, // Override with provided material props
+        }
       : undefined;
 
     const meshRendererData: MeshRendererData = {
@@ -91,14 +114,36 @@ export const MeshRenderer: React.FC<IMeshRendererProps> = ({
       material: completeMaterial,
     };
 
-    if (componentRegistry.hasComponent(entityId, 'MeshRenderer')) {
+    const has = componentRegistry.hasComponent(entityId, 'MeshRenderer');
+    logger.debug('Applying MeshRenderer data', {
+      entityId,
+      operation: has ? 'update' : 'add',
+      meshId,
+      materialId,
+      hasOverrides: !!completeMaterial,
+    });
+
+    if (has) {
       // Update existing mesh renderer
       componentRegistry.updateComponent(entityId, 'MeshRenderer', meshRendererData);
     } else {
       // Add new mesh renderer component
       componentRegistry.addComponent(entityId, 'MeshRenderer', meshRendererData);
     }
-  }, [entityId, meshId, materialId, enabled, castShadows, receiveShadows, modelPath, material]);
+
+    const dt = performance.now() - t0;
+    logger.debug('MeshRenderer effect completed', { entityId, durationMs: dt.toFixed(2) });
+  }, [
+    entityId,
+    meshId,
+    materialId,
+    enabled,
+    castShadows,
+    receiveShadows,
+    modelPath,
+    materialSignature,
+    logger,
+  ]);
 
   // This component doesn't render anything - it just manages ECS data
   return null;

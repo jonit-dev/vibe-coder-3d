@@ -142,13 +142,13 @@ fn dump_scene_diagnostics(scene: &SceneData) {
                 serde_json::from_value::<MeshRenderer>(mesh_renderer_json.clone())
             {
                 log::info!("  MeshRenderer:");
-                log::info!("    Mesh ID: {:?}", mesh_renderer.meshId);
-                log::info!("    Material ID: {:?}", mesh_renderer.materialId);
-                log::info!("    Model Path: {:?}", mesh_renderer.modelPath);
+                log::info!("    Mesh ID: {:?}", mesh_renderer.mesh_id);
+                log::info!("    Material ID: {:?}", mesh_renderer.material_id);
+                log::info!("    Model Path: {:?}", mesh_renderer.model_path);
                 log::info!(
                     "    Cast Shadows: {}, Receive Shadows: {}",
-                    mesh_renderer.castShadows,
-                    mesh_renderer.receiveShadows
+                    mesh_renderer.cast_shadows,
+                    mesh_renderer.receive_shadows
                 );
             }
         }
@@ -157,15 +157,15 @@ fn dump_scene_diagnostics(scene: &SceneData) {
         if let Some(light_json) = entity.components.get("Light") {
             if let Ok(light) = serde_json::from_value::<LightComponent>(light_json.clone()) {
                 log::info!("  Light:");
-                log::info!("    Type: {:?}", light.lightType);
+                log::info!("    Type: {:?}", light.light_type);
                 log::info!("    Color: {:?}", light.color);
                 log::info!("    Intensity: {}", light.intensity);
-                log::info!("    Cast Shadow: {}", light.castShadow);
+                log::info!("    Cast Shadow: {}", light.cast_shadow);
                 log::info!(
                     "    Direction: [{}, {}, {}]",
-                    light.directionX,
-                    light.directionY,
-                    light.directionZ
+                    light.direction_x,
+                    light.direction_y,
+                    light.direction_z
                 );
             }
         }

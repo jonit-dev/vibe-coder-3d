@@ -4,9 +4,9 @@
 /// and that the enhanced light structures store all shadow parameters properly.
 ///
 /// These tests prove:
-/// 1. Light components with castShadow=true create enhanced lights with shadow support
+/// 1. Light components with cast_shadow=true create enhanced lights with shadow support
 /// 2. Shadow parameters (bias, radius, map size) are correctly transferred
-/// 3. Lights with castShadow=false are properly flagged
+/// 3. Lights with cast_shadow=false are properly flagged
 /// 4. Multiple shadow-casting lights can coexist
 use vibe_ecs_bridge::decoders::{Light as LightComponent, LightColor};
 
@@ -14,7 +14,7 @@ use vibe_ecs_bridge::decoders::{Light as LightComponent, LightColor};
 #[test]
 fn test_directional_light_shadow_parameters() {
     let light_component = LightComponent {
-        lightType: "DirectionalLight".to_string(),
+        light_type: "DirectionalLight".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 1.0,
@@ -22,35 +22,35 @@ fn test_directional_light_shadow_parameters() {
         }),
         intensity: 1.5,
         enabled: true,
-        castShadow: true,
-        directionX: -1.0,
-        directionY: -1.0,
-        directionZ: -1.0,
+        cast_shadow: true,
+        direction_x: -1.0,
+        direction_y: -1.0,
+        direction_z: -1.0,
         range: 100.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 6.0,
         penumbra: 0.0,
-        shadowMapSize: 2048,
-        shadowBias: -0.0001,
-        shadowRadius: 1.5,
+        shadow_map_size: 2048,
+        shadow_bias: -0.0001,
+        shadow_radius: 1.5,
     };
 
     // Verify all shadow-related fields are present and correct
     assert_eq!(
-        light_component.castShadow, true,
-        "castShadow should be true"
+        light_component.cast_shadow, true,
+        "cast_shadow should be true"
     );
     assert_eq!(
-        light_component.shadowMapSize, 2048,
-        "shadowMapSize should be 2048"
+        light_component.shadow_map_size, 2048,
+        "shadow_map_size should be 2048"
     );
     assert!(
-        (light_component.shadowBias - (-0.0001)).abs() < 0.000001,
-        "shadowBias should be -0.0001"
+        (light_component.shadow_bias - (-0.0001)).abs() < 0.000001,
+        "shadow_bias should be -0.0001"
     );
     assert!(
-        (light_component.shadowRadius - 1.5).abs() < 0.000001,
-        "shadowRadius should be 1.5"
+        (light_component.shadow_radius - 1.5).abs() < 0.000001,
+        "shadow_radius should be 1.5"
     );
 }
 
@@ -58,7 +58,7 @@ fn test_directional_light_shadow_parameters() {
 #[test]
 fn test_spot_light_shadow_and_penumbra() {
     let light_component = LightComponent {
-        lightType: "SpotLight".to_string(),
+        light_type: "SpotLight".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 0.9,
@@ -66,23 +66,23 @@ fn test_spot_light_shadow_and_penumbra() {
         }),
         intensity: 2.0,
         enabled: true,
-        castShadow: true,
-        directionX: 0.0,
-        directionY: -1.0,
-        directionZ: 0.0,
+        cast_shadow: true,
+        direction_x: 0.0,
+        direction_y: -1.0,
+        direction_z: 0.0,
         range: 50.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 4.0,
         penumbra: 0.2,
-        shadowMapSize: 1024,
-        shadowBias: -0.0005,
-        shadowRadius: 2.0,
+        shadow_map_size: 1024,
+        shadow_bias: -0.0005,
+        shadow_radius: 2.0,
     };
 
-    assert_eq!(light_component.castShadow, true);
-    assert_eq!(light_component.shadowMapSize, 1024);
-    assert!((light_component.shadowBias - (-0.0005)).abs() < 0.000001);
-    assert!((light_component.shadowRadius - 2.0).abs() < 0.000001);
+    assert_eq!(light_component.cast_shadow, true);
+    assert_eq!(light_component.shadow_map_size, 1024);
+    assert!((light_component.shadow_bias - (-0.0005)).abs() < 0.000001);
+    assert!((light_component.shadow_radius - 2.0).abs() < 0.000001);
     assert!((light_component.penumbra - 0.2).abs() < 0.000001);
 }
 
@@ -90,7 +90,7 @@ fn test_spot_light_shadow_and_penumbra() {
 #[test]
 fn test_shadow_casting_disabled() {
     let light_component = LightComponent {
-        lightType: "DirectionalLight".to_string(),
+        light_type: "DirectionalLight".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 1.0,
@@ -98,22 +98,22 @@ fn test_shadow_casting_disabled() {
         }),
         intensity: 1.0,
         enabled: true,
-        castShadow: false, // Shadows explicitly disabled
-        directionX: -1.0,
-        directionY: -1.0,
-        directionZ: -1.0,
+        cast_shadow: false, // Shadows explicitly disabled
+        direction_x: -1.0,
+        direction_y: -1.0,
+        direction_z: -1.0,
         range: 100.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 6.0,
         penumbra: 0.0,
-        shadowMapSize: 1024,
-        shadowBias: -0.0001,
-        shadowRadius: 1.0,
+        shadow_map_size: 1024,
+        shadow_bias: -0.0001,
+        shadow_radius: 1.0,
     };
 
     assert_eq!(
-        light_component.castShadow, false,
-        "castShadow should be false when disabled"
+        light_component.cast_shadow, false,
+        "cast_shadow should be false when disabled"
     );
 }
 
@@ -124,7 +124,7 @@ fn test_shadow_map_size_range() {
 
     for size in test_sizes {
         let light_component = LightComponent {
-            lightType: "DirectionalLight".to_string(),
+            light_type: "DirectionalLight".to_string(),
             color: Some(LightColor {
                 r: 1.0,
                 g: 1.0,
@@ -132,21 +132,21 @@ fn test_shadow_map_size_range() {
             }),
             intensity: 1.0,
             enabled: true,
-            castShadow: true,
-            directionX: -1.0,
-            directionY: -1.0,
-            directionZ: -1.0,
+            cast_shadow: true,
+            direction_x: -1.0,
+            direction_y: -1.0,
+            direction_z: -1.0,
             range: 100.0,
             decay: 2.0,
             angle: std::f32::consts::PI / 6.0,
             penumbra: 0.0,
-            shadowMapSize: size,
-            shadowBias: -0.0001,
-            shadowRadius: 1.0,
+            shadow_map_size: size,
+            shadow_bias: -0.0001,
+            shadow_radius: 1.0,
         };
 
         assert_eq!(
-            light_component.shadowMapSize, size,
+            light_component.shadow_map_size, size,
             "Shadow map size {} should be supported",
             size
         );
@@ -160,7 +160,7 @@ fn test_shadow_bias_range() {
 
     for bias in test_biases {
         let light_component = LightComponent {
-            lightType: "DirectionalLight".to_string(),
+            light_type: "DirectionalLight".to_string(),
             color: Some(LightColor {
                 r: 1.0,
                 g: 1.0,
@@ -168,21 +168,21 @@ fn test_shadow_bias_range() {
             }),
             intensity: 1.0,
             enabled: true,
-            castShadow: true,
-            directionX: -1.0,
-            directionY: -1.0,
-            directionZ: -1.0,
+            cast_shadow: true,
+            direction_x: -1.0,
+            direction_y: -1.0,
+            direction_z: -1.0,
             range: 100.0,
             decay: 2.0,
             angle: std::f32::consts::PI / 6.0,
             penumbra: 0.0,
-            shadowMapSize: 1024,
-            shadowBias: bias,
-            shadowRadius: 1.0,
+            shadow_map_size: 1024,
+            shadow_bias: bias,
+            shadow_radius: 1.0,
         };
 
         assert!(
-            (light_component.shadowBias - bias).abs() < 0.000001,
+            (light_component.shadow_bias - bias).abs() < 0.000001,
             "Shadow bias {} should be stored correctly",
             bias
         );
@@ -196,7 +196,7 @@ fn test_shadow_radius_pcf_range() {
 
     for radius in test_radii {
         let light_component = LightComponent {
-            lightType: "DirectionalLight".to_string(),
+            light_type: "DirectionalLight".to_string(),
             color: Some(LightColor {
                 r: 1.0,
                 g: 1.0,
@@ -204,21 +204,21 @@ fn test_shadow_radius_pcf_range() {
             }),
             intensity: 1.0,
             enabled: true,
-            castShadow: true,
-            directionX: -1.0,
-            directionY: -1.0,
-            directionZ: -1.0,
+            cast_shadow: true,
+            direction_x: -1.0,
+            direction_y: -1.0,
+            direction_z: -1.0,
             range: 100.0,
             decay: 2.0,
             angle: std::f32::consts::PI / 6.0,
             penumbra: 0.0,
-            shadowMapSize: 1024,
-            shadowBias: -0.0001,
-            shadowRadius: radius,
+            shadow_map_size: 1024,
+            shadow_bias: -0.0001,
+            shadow_radius: radius,
         };
 
         assert!(
-            (light_component.shadowRadius - radius).abs() < 0.000001,
+            (light_component.shadow_radius - radius).abs() < 0.000001,
             "Shadow radius (PCF) {} should be stored correctly",
             radius
         );
@@ -232,7 +232,7 @@ fn test_spot_light_penumbra_range() {
 
     for penumbra in test_penumbras {
         let light_component = LightComponent {
-            lightType: "SpotLight".to_string(),
+            light_type: "SpotLight".to_string(),
             color: Some(LightColor {
                 r: 1.0,
                 g: 1.0,
@@ -240,17 +240,17 @@ fn test_spot_light_penumbra_range() {
             }),
             intensity: 1.0,
             enabled: true,
-            castShadow: true,
-            directionX: 0.0,
-            directionY: -1.0,
-            directionZ: 0.0,
+            cast_shadow: true,
+            direction_x: 0.0,
+            direction_y: -1.0,
+            direction_z: 0.0,
             range: 50.0,
             decay: 2.0,
             angle: std::f32::consts::PI / 4.0,
             penumbra,
-            shadowMapSize: 1024,
-            shadowBias: -0.0001,
-            shadowRadius: 1.0,
+            shadow_map_size: 1024,
+            shadow_bias: -0.0001,
+            shadow_radius: 1.0,
         };
 
         assert!(
@@ -265,7 +265,7 @@ fn test_spot_light_penumbra_range() {
 #[test]
 fn test_all_shadow_parameters_combined() {
     let light_component = LightComponent {
-        lightType: "SpotLight".to_string(),
+        light_type: "SpotLight".to_string(),
         color: Some(LightColor {
             r: 1.0,
             g: 0.95,
@@ -273,24 +273,24 @@ fn test_all_shadow_parameters_combined() {
         }),
         intensity: 1.8,
         enabled: true,
-        castShadow: true,
-        directionX: 0.0,
-        directionY: -1.0,
-        directionZ: 0.0,
+        cast_shadow: true,
+        direction_x: 0.0,
+        direction_y: -1.0,
+        direction_z: 0.0,
         range: 75.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 3.0,
         penumbra: 0.15,
-        shadowMapSize: 2048,
-        shadowBias: -0.00075,
-        shadowRadius: 1.8,
+        shadow_map_size: 2048,
+        shadow_bias: -0.00075,
+        shadow_radius: 1.8,
     };
 
     // Verify all parameters are set correctly
-    assert_eq!(light_component.castShadow, true);
-    assert_eq!(light_component.shadowMapSize, 2048);
-    assert!((light_component.shadowBias - (-0.00075)).abs() < 0.000001);
-    assert!((light_component.shadowRadius - 1.8).abs() < 0.000001);
+    assert_eq!(light_component.cast_shadow, true);
+    assert_eq!(light_component.shadow_map_size, 2048);
+    assert!((light_component.shadow_bias - (-0.00075)).abs() < 0.000001);
+    assert!((light_component.shadow_radius - 1.8).abs() < 0.000001);
     assert!((light_component.penumbra - 0.15).abs() < 0.000001);
     assert!((light_component.intensity - 1.8).abs() < 0.000001);
     assert!((light_component.range - 75.0).abs() < 0.000001);

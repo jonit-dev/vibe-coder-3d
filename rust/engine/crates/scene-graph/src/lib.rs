@@ -267,13 +267,13 @@ impl SceneGraph {
                     instances.push(RenderableInstance {
                         entity_id,
                         world_transform,
-                        mesh_id: renderer.meshId.clone(),
-                        material_id: renderer.materialId.clone(),
+                        mesh_id: renderer.mesh_id.clone(),
+                        material_id: renderer.material_id.clone(),
                         materials: renderer.materials.clone(),
                         material_override: renderer.material.clone(),
-                        model_path: renderer.modelPath.clone(),
-                        cast_shadows: renderer.castShadows,
-                        receive_shadows: renderer.receiveShadows,
+                        model_path: renderer.model_path.clone(),
+                        cast_shadows: renderer.cast_shadows,
+                        receive_shadows: renderer.receive_shadows,
                     });
                 }
             }

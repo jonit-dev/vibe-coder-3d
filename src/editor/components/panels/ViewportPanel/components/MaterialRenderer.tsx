@@ -54,7 +54,11 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
           onDoubleClick={onMeshDoubleClick}
           frustumCulled={true}
         >
-          <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
+          <GeometryRenderer
+            key={`geom-${entityId}-${meshType}`}
+            meshType={meshType}
+            entityComponents={entityComponents}
+          />
           <meshStandardMaterial
             key={`${entityId}-standard-${!!textures.albedoTexture}-${hasVertexColors}`}
             color={textures.albedoTexture ? '#ffffff' : (materialDef.color ?? entityColor)}
@@ -91,7 +95,11 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
           onDoubleClick={onMeshDoubleClick}
           frustumCulled={true}
         >
-          <GeometryRenderer meshType={meshType} entityComponents={entityComponents} />
+          <GeometryRenderer
+            key={`geom-${entityId}-${meshType}`}
+            meshType={meshType}
+            entityComponents={entityComponents}
+          />
           <meshBasicMaterial
             key={`${entityId}-unlit-${hasVertexColors}`}
             color={materialDef.color ?? entityColor}

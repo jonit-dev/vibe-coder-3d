@@ -3,8 +3,8 @@
  * Provides CRUD endpoints for external script management during development
  */
 
-import { createHash } from 'crypto';
 import fs from 'fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'path';
 import { Plugin } from 'vite';
 import { z } from 'zod';
@@ -12,8 +12,10 @@ import { triggerLuaTranspile } from './utils/triggerLuaTranspile';
 
 /**
  * Compute SHA-256 hash of content (Node.js crypto for build-time)
+ * This runs only during Vite build/dev server, so Node.js crypto is safe
  */
 function computeHash(content: string): string {
+  // Use Node.js crypto ESM import (works in Vite plugin context)
   return createHash('sha256').update(content, 'utf8').digest('hex');
 }
 
@@ -69,7 +71,7 @@ interface IScriptInfo {
 // Utilities
 // ============================================================================
 
-const SCRIPTS_DIR = './src/game/scripts';
+const SCRIPTS_DIR = path.resolve(process.cwd(), 'src/game/scripts');
 const MAX_FILE_SIZE = 262_144; // 256KB
 
 /**
@@ -85,6 +87,14 @@ function sanitizeFilename(id: string): string {
 function getScriptPath(id: string): string {
   const filename = `${sanitizeFilename(id)}.ts`;
   return path.join(SCRIPTS_DIR, filename);
+}
+
+/**
+ * Get candidate paths for a script ID with common extensions
+ */
+function getScriptPathCandidates(id: string): string[] {
+  const base = sanitizeFilename(id);
+  return ['.ts', '.tsx', '.js'].map((ext) => path.join(SCRIPTS_DIR, `${base}${ext}`));
 }
 
 /**
@@ -172,10 +182,13 @@ async function handleSave(body: unknown): Promise<any> {
  * Handle /api/script/load
  */
 async function handleLoad(id: string): Promise<any> {
-  const scriptPath = getScriptPath(id);
+  const primaryPath = getScriptPath(id);
+
+  // Ensure directory exists to avoid unexpected FS errors
+  await ensureScriptsDir();
 
   // Security check
-  if (!isPathSafe(scriptPath)) {
+  if (!isPathSafe(primaryPath)) {
     return {
       success: false,
       error: 'Invalid script path',
@@ -183,9 +196,35 @@ async function handleLoad(id: string): Promise<any> {
   }
 
   try {
-    const code = await fs.readFile(scriptPath, 'utf-8');
+    // Try primary .ts first, then fall back to .tsx or .js if present
+    const candidates = [
+      primaryPath,
+      ...getScriptPathCandidates(id).filter((p) => p !== primaryPath),
+    ];
+    let scriptPath = candidates[0];
+    let code: string | null = null;
+    let stats: any = null;
+
+    for (const candidate of candidates) {
+      try {
+        code = await fs.readFile(candidate, 'utf-8');
+        stats = await fs.stat(candidate);
+        scriptPath = candidate;
+        break;
+      } catch (err: any) {
+        if (err?.code !== 'ENOENT') throw err;
+      }
+    }
+
+    if (code === null) {
+      return {
+        success: false,
+        error: 'not_found',
+        path: primaryPath,
+      };
+    }
+
     const hash = computeHash(code);
-    const stats = await fs.stat(scriptPath);
 
     return {
       success: true,
@@ -200,6 +239,7 @@ async function handleLoad(id: string): Promise<any> {
       return {
         success: false,
         error: 'not_found',
+        path: primaryPath,
       };
     }
     throw error;
@@ -503,7 +543,8 @@ export function vitePluginScriptAPI(): Plugin {
             const body = await getBody();
             result = await handleSave(body);
           } else if (url.startsWith('/api/script/load') && req.method === 'GET') {
-            const urlObj = new URL(url, `http://${req.headers.host}`);
+            const base = req.headers.host ? `http://${req.headers.host}` : 'http://localhost';
+            const urlObj = new URL(url, base);
             const id = urlObj.searchParams.get('id');
             if (!id) {
               result = { success: false, error: 'Missing id parameter' };
@@ -522,7 +563,8 @@ export function vitePluginScriptAPI(): Plugin {
             const body = await getBody();
             result = await handleValidate(body);
           } else if (url.startsWith('/api/script/diff') && req.method === 'GET') {
-            const urlObj = new URL(url, `http://${req.headers.host}`);
+            const base = req.headers.host ? `http://${req.headers.host}` : 'http://localhost';
+            const urlObj = new URL(url, base);
             const id = urlObj.searchParams.get('id');
             const hash = urlObj.searchParams.get('hash');
             if (!id || !hash) {
@@ -536,7 +578,31 @@ export function vitePluginScriptAPI(): Plugin {
 
           // Send response
           res.setHeader('Content-Type', 'application/json');
-          res.statusCode = result.success === false && result.error === 'hash_mismatch' ? 409 : 200;
+          // Map common errors to appropriate HTTP status codes
+          if (result && result.success === false) {
+            switch (result.error) {
+              case 'not_found':
+                res.statusCode = 404;
+                break;
+              case 'hash_mismatch':
+                res.statusCode = 409;
+                break;
+              case 'validation_error':
+              case 'Invalid script path':
+              case 'Missing id parameter':
+              case 'Missing id or hash parameter':
+                res.statusCode = 400;
+                break;
+              case 'exists':
+                res.statusCode = 409;
+                break;
+              default:
+                res.statusCode = 400;
+                break;
+            }
+          } else {
+            res.statusCode = 200;
+          }
           res.end(JSON.stringify(result));
         } catch (error: any) {
           console.error('[vite-plugin-script-api] Error:', error);

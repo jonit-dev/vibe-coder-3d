@@ -24,7 +24,7 @@ pub fn load_light(
     transform: Option<&Transform>,
 ) -> Result<Option<LoadedLight>> {
     log::info!("  Light:");
-    log::info!("    Type:       {}", light.lightType);
+    log::info!("    Type:       {}", light.light_type);
     log::info!("    Intensity:  {}", light.intensity);
     log::info!("    Enabled:    {}", light.enabled);
 
@@ -36,7 +36,7 @@ pub fn load_light(
 
     let color = parse_light_color(light);
 
-    match light.lightType.to_lowercase().as_str() {
+    match light.light_type.to_lowercase().as_str() {
         "directionallight" | "directional" => {
             let light_obj = create_directional_light(context, light, color);
             Ok(Some(LoadedLight::Directional(light_obj)))
@@ -50,12 +50,12 @@ pub fn load_light(
             Ok(Some(LoadedLight::Spot(light_obj)))
         }
         "ambientlight" | "ambient" => {
-            log::info!("    Cast Shadow: {}", light.castShadow);
+            log::info!("    Cast Shadow: {}", light.cast_shadow);
             let ambient = AmbientLight::new(context, light.intensity, color);
             Ok(Some(LoadedLight::Ambient(ambient)))
         }
         _ => {
-            log::warn!("    Unknown light type: {}", light.lightType);
+            log::warn!("    Unknown light type: {}", light.light_type);
             Ok(None)
         }
     }
@@ -80,21 +80,21 @@ fn create_directional_light(
     color: Srgba,
 ) -> EnhancedDirectionalLight {
     let direction =
-        threejs_to_threed_direction(light.directionX, light.directionY, light.directionZ);
+        threejs_to_threed_direction(light.direction_x, light.direction_y, light.direction_z);
     log::info!(
         "    Direction:  [{:.2}, {:.2}, {:.2}]",
         direction.x,
         direction.y,
         direction.z
     );
-    log::info!("    Cast Shadow: {}", light.castShadow);
+    log::info!("    Cast Shadow: {}", light.cast_shadow);
 
-    if light.castShadow {
-        log::info!("    Shadow Map Size: {}", light.shadowMapSize);
-        log::info!("    Shadow Bias: {} ✅ IMPLEMENTED", light.shadowBias);
+    if light.cast_shadow {
+        log::info!("    Shadow Map Size: {}", light.shadow_map_size);
+        log::info!("    Shadow Bias: {} ✅ IMPLEMENTED", light.shadow_bias);
         log::info!(
             "    Shadow Radius: {} ✅ IMPLEMENTED (PCF)",
-            light.shadowRadius
+            light.shadow_radius
         );
     }
 
@@ -104,10 +104,10 @@ fn create_directional_light(
         light.intensity,
         color,
         &direction,
-        light.shadowBias,
-        light.shadowRadius,
-        light.shadowMapSize,
-        light.castShadow,
+        light.shadow_bias,
+        light.shadow_radius,
+        light.shadow_map_size,
+        light.cast_shadow,
     )
 }
 
@@ -158,7 +158,7 @@ fn create_spot_light(
     };
 
     let direction =
-        threejs_to_threed_direction(light.directionX, light.directionY, light.directionZ);
+        threejs_to_threed_direction(light.direction_x, light.direction_y, light.direction_z);
 
     log::info!(
         "    Position:   [{:.2}, {:.2}, {:.2}]",
@@ -183,14 +183,14 @@ fn create_spot_light(
     );
     log::info!("    Range:      {}", light.range);
     log::info!("    Decay:      {}", light.decay);
-    log::info!("    Cast Shadow: {}", light.castShadow);
+    log::info!("    Cast Shadow: {}", light.cast_shadow);
 
-    if light.castShadow {
-        log::info!("    Shadow Map Size: {}", light.shadowMapSize);
-        log::info!("    Shadow Bias: {} ✅ IMPLEMENTED", light.shadowBias);
+    if light.cast_shadow {
+        log::info!("    Shadow Map Size: {}", light.shadow_map_size);
+        log::info!("    Shadow Bias: {} ✅ IMPLEMENTED", light.shadow_bias);
         log::info!(
             "    Shadow Radius: {} ✅ IMPLEMENTED (PCF)",
-            light.shadowRadius
+            light.shadow_radius
         );
     }
 
@@ -210,11 +210,11 @@ fn create_spot_light(
         &direction,
         cutoff,
         attenuation,
-        light.penumbra,      // Soft edge implementation
-        light.shadowBias,    // Shadow acne prevention
-        light.shadowRadius,  // PCF soft shadows
-        light.shadowMapSize, // Shadow map texture size
-        light.castShadow,    // Whether this light casts shadows
+        light.penumbra,        // Soft edge implementation
+        light.shadow_bias,     // Shadow acne prevention
+        light.shadow_radius,   // PCF soft shadows
+        light.shadow_map_size, // Shadow map texture size
+        light.cast_shadow,     // Whether this light casts shadows
     )
 }
 

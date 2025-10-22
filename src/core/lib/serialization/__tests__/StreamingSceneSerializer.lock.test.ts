@@ -1,9 +1,16 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { streamingSerializer } from '../StreamingSceneSerializer';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IStreamingScene } from '../StreamingSceneSerializer';
-import * as fs from 'fs/promises';
+import { streamingSerializer } from '../StreamingSceneSerializer';
 
-vi.mock('fs/promises');
+// Mock the ScriptFileResolver module
+vi.mock('../utils/ScriptFileResolver', () => ({
+  readScriptFromFilesystem: vi.fn().mockResolvedValue({
+    code: 'export function onStart() { console.log("hello"); }',
+    path: 'src/game/scripts/game.testScript.ts',
+    codeHash: 'mocked-hash',
+    lastModified: 789,
+  }),
+}));
 
 describe('StreamingSceneSerializer - Locked Entity IDs', () => {
   const mockEntities = [
@@ -122,8 +129,6 @@ describe('StreamingSceneSerializer - Locked Entity IDs', () => {
       createdEntityIdMap.set('1', 10);
       createdEntityIdMap.set('2', 20);
       createdEntityIdMap.set('3', 30);
-      vi.mocked(fs.readFile).mockReset();
-      vi.mocked(fs.stat).mockReset();
     });
 
     const mockEntityManager = {
@@ -291,19 +296,19 @@ describe('StreamingSceneSerializer - Locked Entity IDs', () => {
         importedLockedIds = ids;
       };
 
-    await streamingSerializer.importScene(
-      scene,
-      mockEntityManager,
-      mockComponentManager,
-      {},
-      undefined,
-      undefined,
-      setLockedEntityIds,
-    );
+      await streamingSerializer.importScene(
+        scene,
+        mockEntityManager,
+        mockComponentManager,
+        {},
+        undefined,
+        undefined,
+        setLockedEntityIds,
+      );
 
-    // Only valid mapped IDs should be returned
-    expect(importedLockedIds).toEqual([10, 20]);
-  });
+      // Only valid mapped IDs should be returned
+      expect(importedLockedIds).toEqual([10, 20]);
+    });
 
     it('should hydrate script code for external script references during import', async () => {
       const scriptScene: IStreamingScene = {
@@ -334,12 +339,6 @@ describe('StreamingSceneSerializer - Locked Entity IDs', () => {
           scripts: ['@/scripts/game.testScript'],
         },
       };
-
-      vi.mocked(fs.readFile).mockResolvedValue('export function onStart() { console.log("hello"); }');
-      vi.mocked(fs.stat).mockResolvedValue({
-        mtimeMs: 789,
-        mtime: new Date(789),
-      } as unknown as fs.Stats);
 
       const addedComponents: Array<{ type: string; data: unknown }> = [];
       const trackingComponentManager = {

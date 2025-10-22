@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo } from 'react';
 import type { BufferGeometry } from 'three';
 
-import { shapeRegistry } from '@/core/lib/rendering/shapes/shapeRegistry';
-import type { CustomShapeData } from '@/core/lib/ecs/components/definitions';
-import type { GeometryAssetData } from '@/core/lib/ecs/components/definitions';
+import type { CustomShapeData, GeometryAssetData } from '@/core/lib/ecs/components/definitions';
 import { parseMetaToBufferGeometry } from '@/core/lib/geometry/metadata/parseMetaToBufferGeometry';
 import { Logger } from '@/core/lib/logger';
+import { shapeRegistry } from '@/core/lib/rendering/shapes/shapeRegistry';
 import { useGeometryAsset } from '@/editor/hooks/useGeometryAssets';
 
 import { TerrainGeometry } from './TerrainGeometry';
@@ -84,7 +83,9 @@ export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
     }, [entityComponents]);
 
     const geometryAssetData = useMemo(() => {
-      const geometryAsset = entityComponents.find((component) => component.type === 'GeometryAsset');
+      const geometryAsset = entityComponents.find(
+        (component) => component.type === 'GeometryAsset',
+      );
       return (geometryAsset?.data as GeometryAssetData) || null;
     }, [entityComponents]);
 
@@ -94,6 +95,21 @@ export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
     );
 
     const geometryAssetSummary = useGeometryAsset(geometryAssetData?.path);
+
+    // Surface actionable warning only when GeometryAsset is the selected meshType
+    useEffect(() => {
+      if (meshType === 'GeometryAsset') {
+        if (!geometryAssetData) {
+          logger.warn(
+            'GeometryAsset mesh selected but no GeometryAsset component is present on the entity. Add a GeometryAsset component with a valid path.',
+          );
+        } else if (!geometryAssetData.path) {
+          logger.warn(
+            'GeometryAsset component is missing "path". Set GeometryAsset.path to a valid asset metadata path (e.g. /assets/geometry/yourMesh.meta.json).',
+          );
+        }
+      }
+    }, [meshType, geometryAssetData]);
 
     const geometryAssetGeometry = useMemo(() => {
       if (!geometryAssetData || !geometryAssetSummary) {

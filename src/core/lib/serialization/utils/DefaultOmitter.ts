@@ -119,9 +119,10 @@ export function omitDefaults<T extends Record<string, unknown>>(
       typeof defaultValue === 'object' &&
       !Array.isArray(defaultValue)
     ) {
+      const processedDefaultValue = processNumbers ? processValue(defaultValue) : defaultValue;
       const nestedResult = omitDefaults(
         processedValue as Record<string, unknown>,
-        defaultValue as Record<string, unknown>,
+        processedDefaultValue as Record<string, unknown>,
         processNumbers,
       );
 
@@ -132,8 +133,9 @@ export function omitDefaults<T extends Record<string, unknown>>(
       continue;
     }
 
-    // Compare processed value against default
-    if (!deepEqual(processedValue, defaultValue)) {
+    // Compare processed value against processed default
+    const processedDefault = processNumbers ? processValue(defaultValue) : defaultValue;
+    if (!deepEqual(processedValue, processedDefault)) {
       result[key as keyof T] = processedValue as T[keyof T];
     }
   }

@@ -2,24 +2,30 @@
  * EntitiesAPI Tests
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEntitiesAPI } from '../EntitiesAPI';
 
 // Mock ComponentRegistry
 vi.mock('@/core/lib/ecs/ComponentRegistry', () => {
   const entities = new Set([1, 2, 3, 10, 20]);
 
+  const mockRegistry = {
+    hasComponent: vi.fn((id: number, type: string) => {
+      // All valid entities have Transform component
+      return type === 'Transform' && entities.has(id);
+    }),
+    getComponentData: vi.fn(),
+    updateComponent: vi.fn(() => true),
+    addComponent: vi.fn(() => ({})),
+    removeComponent: vi.fn(() => true),
+    getComponentsForEntityForAdapter: vi.fn(() => []),
+  };
+
   return {
-    componentRegistry: {
-      hasComponent: vi.fn((id: number, type: string) => {
-        // All valid entities have Transform component
-        return type === 'Transform' && entities.has(id);
-      }),
-      getComponentData: vi.fn(),
-      updateComponent: vi.fn(() => true),
-      addComponent: vi.fn(() => ({})),
-      removeComponent: vi.fn(() => true),
+    ComponentRegistry: {
+      getInstance: vi.fn(() => mockRegistry),
     },
+    componentRegistry: mockRegistry,
   };
 });
 

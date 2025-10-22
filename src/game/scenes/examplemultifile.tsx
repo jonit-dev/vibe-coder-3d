@@ -74,7 +74,6 @@ export default defineScene({
         MeshRenderer: {
           meshId: 'custom',
           materialId: 'default',
-          modelPath: '/assets/models/FarmHouse/farm_house_basic_shaded.glb',
         },
       },
     },

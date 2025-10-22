@@ -240,22 +240,22 @@ fn default_one() -> f32 {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Light {
-    #[serde(default = "default_light_type")]
-    pub lightType: String,
+    #[serde(default = "default_light_type", rename = "lightType")]
+    pub light_type: String,
     #[serde(default)]
     pub color: Option<LightColor>,
     #[serde(default = "default_intensity")]
     pub intensity: f32,
     #[serde(default = "default_enabled")]
     pub enabled: bool,
-    #[serde(default = "default_enabled")]
-    pub castShadow: bool,
-    #[serde(default)]
-    pub directionX: f32,
-    #[serde(default = "default_neg_one")]
-    pub directionY: f32,
-    #[serde(default)]
-    pub directionZ: f32,
+    #[serde(default = "default_enabled", rename = "castShadow")]
+    pub cast_shadow: bool,
+    #[serde(default, rename = "directionX")]
+    pub direction_x: f32,
+    #[serde(default = "default_neg_one", rename = "directionY")]
+    pub direction_y: f32,
+    #[serde(default, rename = "directionZ")]
+    pub direction_z: f32,
     #[serde(default = "default_range")]
     pub range: f32,
     #[serde(default = "default_one")]
@@ -264,12 +264,12 @@ pub struct Light {
     pub angle: f32,
     #[serde(default = "default_penumbra")]
     pub penumbra: f32,
-    #[serde(default = "default_shadow_map_size")]
-    pub shadowMapSize: u32,
-    #[serde(default = "default_shadow_bias")]
-    pub shadowBias: f32,
-    #[serde(default = "default_shadow_radius")]
-    pub shadowRadius: f32,
+    #[serde(default = "default_shadow_map_size", rename = "shadowMapSize")]
+    pub shadow_map_size: u32,
+    #[serde(default = "default_shadow_bias", rename = "shadowBias")]
+    pub shadow_bias: f32,
+    #[serde(default = "default_shadow_radius", rename = "shadowRadius")]
+    pub shadow_radius: f32,
 }
 
 fn default_light_type() -> String {
@@ -305,22 +305,22 @@ fn default_shadow_radius() -> f32 {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct MeshRenderer {
-    #[serde(default)]
-    pub meshId: Option<String>,
-    #[serde(default)]
-    pub materialId: Option<String>,
+    #[serde(default, rename = "meshId")]
+    pub mesh_id: Option<String>,
+    #[serde(default, rename = "materialId")]
+    pub material_id: Option<String>,
     #[serde(default)]
     pub materials: Option<Vec<String>>,
     #[serde(default)]
     pub material: Option<MeshRendererMaterialOverride>,
-    #[serde(default)]
-    pub modelPath: Option<String>,
+    #[serde(default, rename = "modelPath")]
+    pub model_path: Option<String>,
     #[serde(default = "default_enabled")]
     pub enabled: bool,
-    #[serde(default = "default_enabled")]
-    pub castShadows: bool,
-    #[serde(default = "default_enabled")]
-    pub receiveShadows: bool,
+    #[serde(default = "default_enabled", rename = "cast_shadows")]
+    pub cast_shadows: bool,
+    #[serde(default = "default_enabled", rename = "receive_shadows")]
+    pub receive_shadows: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -566,16 +566,16 @@ impl Default for GeometryAssetOptions {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct GeometryAsset {
     pub path: String,
-    #[serde(default)]
-    pub geometryId: Option<String>,
-    #[serde(default)]
-    pub materialId: Option<String>,
+    #[serde(default, rename = "geometryId")]
+    pub geometry_id: Option<String>,
+    #[serde(default, rename = "materialId")]
+    pub material_id: Option<String>,
     #[serde(default = "default_enabled")]
     pub enabled: bool,
-    #[serde(default = "default_enabled")]
-    pub castShadows: bool,
-    #[serde(default = "default_enabled")]
-    pub receiveShadows: bool,
+    #[serde(default = "default_enabled", rename = "castShadows")]
+    pub cast_shadows: bool,
+    #[serde(default = "default_enabled", rename = "receiveShadows")]
+    pub receive_shadows: bool,
     #[serde(default)]
     pub options: Option<GeometryAssetOptions>,
 }
@@ -926,18 +926,18 @@ pub struct Instanced {
     pub enabled: bool,
     #[serde(default = "default_capacity")]
     pub capacity: u32,
-    #[serde(default)]
-    pub baseMeshId: String,
-    #[serde(default)]
-    pub baseMaterialId: String,
+    #[serde(default, rename = "baseMeshId")]
+    pub base_mesh_id: String,
+    #[serde(default, rename = "baseMaterialId")]
+    pub base_material_id: String,
     #[serde(default)]
     pub instances: Vec<InstanceData>,
-    #[serde(default = "default_true")]
-    pub castShadows: bool,
-    #[serde(default = "default_true")]
-    pub receiveShadows: bool,
-    #[serde(default = "default_true")]
-    pub frustumCulled: bool,
+    #[serde(default = "default_true", rename = "castShadows")]
+    pub cast_shadows: bool,
+    #[serde(default = "default_true", rename = "receiveShadows")]
+    pub receive_shadows: bool,
+    #[serde(default = "default_true", rename = "frustum_culled")]
+    pub frustum_culled: bool,
 }
 
 fn default_true() -> bool {
@@ -1411,7 +1411,7 @@ mod tests {
 
         let decoded = decoder.decode(&json).unwrap();
         let renderer = decoded.downcast_ref::<MeshRenderer>().unwrap();
-        assert_eq!(renderer.meshId.as_deref(), Some("cube"));
+        assert_eq!(renderer.mesh_id.as_deref(), Some("cube"));
     }
 
     #[test]
@@ -1685,9 +1685,9 @@ mod tests {
                     "position": [4.0, 5.0, 6.0]
                 }
             ],
-            "castShadows": true,
-            "receiveShadows": false,
-            "frustumCulled": true
+            "cast_shadows": true,
+            "receive_shadows": false,
+            "frustum_culled": true
         });
 
         let decoded = decoder.decode(&json).unwrap();
@@ -1703,9 +1703,9 @@ mod tests {
         assert_eq!(component.instances[0].color, Some([1.0, 0.0, 0.0]));
         assert_eq!(component.instances[1].position, [4.0, 5.0, 6.0]);
         assert_eq!(component.instances[1].rotation, None);
-        assert_eq!(component.castShadows, true);
-        assert_eq!(component.receiveShadows, false);
-        assert_eq!(component.frustumCulled, true);
+        assert_eq!(component.cast_shadows, true);
+        assert_eq!(component.receive_shadows, false);
+        assert_eq!(component.frustum_culled, true);
     }
 
     #[test]
@@ -1720,9 +1720,9 @@ mod tests {
         assert_eq!(component.baseMeshId, "");
         assert_eq!(component.baseMaterialId, "");
         assert_eq!(component.instances.len(), 0);
-        assert_eq!(component.castShadows, true);
-        assert_eq!(component.receiveShadows, true);
-        assert_eq!(component.frustumCulled, true);
+        assert_eq!(component.cast_shadows, true);
+        assert_eq!(component.receive_shadows, true);
+        assert_eq!(component.frustum_culled, true);
     }
 
     #[test]

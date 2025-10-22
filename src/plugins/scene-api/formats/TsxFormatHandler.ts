@@ -15,7 +15,10 @@ import {
   extractMaterialFromMeshRenderer,
   replaceMaterialWithReference,
 } from '../../../core/lib/serialization/utils/MaterialHasher';
-import { sanitizeScriptComponentData } from '../../../core/lib/serialization/utils/ScriptSerializationUtils';
+import {
+  collectExternalScriptReferencesFromEntities,
+  sanitizeScriptComponentData,
+} from '../../../core/lib/serialization/utils/ScriptSerializationUtils';
 import type { IMaterialDefinition } from '../../../core/materials/Material.types';
 import type { IPrefabDefinition } from '../../../core/prefabs/Prefab.types';
 import { triggerLuaTranspile } from '../../utils/triggerLuaTranspile';
@@ -179,6 +182,9 @@ export class TsxFormatHandler implements ISceneFormatHandler {
       materialRefsSet.add(assetPath);
     }
 
+    // Collect script references from entities
+    const scriptRefs = collectExternalScriptReferencesFromEntities(compressedEntities);
+
     const inputRefsSet = new Set<string>();
     if (sceneData.inputAssets) {
       for (const input of sceneData.inputAssets) {
@@ -247,7 +253,7 @@ export class TsxFormatHandler implements ISceneFormatHandler {
       Array.from(materialRefsSet),
       Array.from(inputRefsSet),
       Array.from(prefabRefsSet),
-      [],
+      scriptRefs,
       sceneData.lockedEntityIds || [],
     );
 
@@ -527,14 +533,15 @@ export default defineScene({
         // New format: assetReferences with IDs
         // Convert IDs to materialRef paths for MultiFileSceneLoader
         const entities = (sceneObj.entities || []).map((entity: ISerializedEntity) => {
-          if (entity.components?.MeshRenderer && entity.components.MeshRenderer.materialId) {
-            const materialId = entity.components.MeshRenderer.materialId;
+          const meshRenderer = entity.components?.MeshRenderer as any;
+          if (meshRenderer && meshRenderer.materialId) {
+            const materialId = meshRenderer.materialId;
             return {
               ...entity,
               components: {
                 ...entity.components,
                 MeshRenderer: {
-                  ...entity.components.MeshRenderer,
+                  ...meshRenderer,
                   materialRef: `@/materials/${materialId}`,
                   materialId: undefined, // Remove inline ID, use ref
                 },
@@ -543,7 +550,6 @@ export default defineScene({
           }
           return entity;
         });
-
         return {
           version: sceneObj.metadata?.version || 4,
           name: sceneObj.metadata?.name || 'Untitled',

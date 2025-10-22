@@ -10,6 +10,10 @@ let activeTranspile: Promise<void> | null = null;
  * Subsequent calls while a transpile is running will await the same process.
  */
 export async function triggerLuaTranspile(trigger: string): Promise<void> {
+  // Skip transpile during unit tests to avoid spawning processes
+  if (process.env.VITEST || process.env.NODE_ENV === 'test') {
+    return;
+  }
   if (!activeTranspile) {
     activeTranspile = (async () => {
       try {

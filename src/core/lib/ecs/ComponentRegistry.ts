@@ -381,6 +381,11 @@ export class ComponentRegistry {
     }
 
     try {
+      const t0 = performance.now();
+      const isMeshRenderer = componentId === 'MeshRenderer';
+      if (isMeshRenderer) {
+        this.logger.debug('[MeshRenderer] updateComponent START', { entityId });
+      }
       // Get current data
       const currentData = descriptor.serialize(entityId);
 
@@ -429,6 +434,16 @@ export class ComponentRegistry {
         componentId,
         data: updatedData,
       });
+
+      if (isMeshRenderer) {
+        const dt = performance.now() - t0;
+        this.logger.debug('[MeshRenderer] updateComponent END', {
+          entityId,
+          durationMs: dt.toFixed(2),
+          meshId: (updatedData as any)?.meshId,
+          materialId: (updatedData as any)?.materialId,
+        });
+      }
 
       return true;
     } catch (error) {

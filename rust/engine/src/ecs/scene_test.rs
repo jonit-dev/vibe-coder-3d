@@ -91,8 +91,8 @@ mod tests {
         let mesh_renderer: components::mesh_renderer::MeshRenderer =
             entity.get_component("MeshRenderer").unwrap();
 
-        assert_eq!(mesh_renderer.meshId, Some("cube".to_string()));
-        assert_eq!(mesh_renderer.materialId, Some("mat-red".to_string()));
+        assert_eq!(mesh_renderer.mesh_id, Some("cube".to_string()));
+        assert_eq!(mesh_renderer.material_id, Some("mat-red".to_string()));
         assert_eq!(mesh_renderer.enabled, true);
     }
 

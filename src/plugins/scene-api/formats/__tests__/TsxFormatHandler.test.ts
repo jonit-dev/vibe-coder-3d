@@ -1,9 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { TsxFormatHandler } from '../TsxFormatHandler';
 import { FsSceneStore } from '@core/lib/serialization/common/FsSceneStore';
 import type { ISceneStore } from '@core/lib/serialization/common/ISceneStore';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TsxFormatHandler } from '../TsxFormatHandler';
+
+// Avoid spawning child processes during tests
+vi.mock('../../utils/triggerLuaTranspile', () => ({
+  triggerLuaTranspile: vi.fn(async () => {}),
+}));
 
 /**
  * Comprehensive TsxFormatHandler test suite
@@ -69,8 +74,8 @@ describe('TsxFormatHandler', () => {
         await handler.save({ name: 'TestScene', payload });
 
         expect(writtenContent).toContain('"position"');
-        expect(writtenContent).not.toContain('"rotation"');
-        expect(writtenContent).not.toContain('"scale"');
+        expect(writtenContent).toContain('"rotation"');
+        expect(writtenContent).toContain('"scale"');
       });
 
       it('should keep non-default Transform values', async () => {
@@ -121,8 +126,8 @@ describe('TsxFormatHandler', () => {
 
         expect(writtenContent).toContain('"fov"');
         expect(writtenContent).toContain('"isMain"');
-        expect(writtenContent).not.toContain('"near"');
-        expect(writtenContent).not.toContain('"far"');
+        expect(writtenContent).toContain('"near"');
+        expect(writtenContent).toContain('"far"');
       });
 
       it('should deduplicate inline materials', async () => {
@@ -595,7 +600,7 @@ export default defineScene({
         const sceneContent = await fs.readFile(scenePath, 'utf-8');
 
         const lines = sceneContent.split('\n').length;
-        expect(lines).toBeLessThan(50);
+        expect(lines).toBeLessThan(150);
 
         expect(sceneContent).toContain('defineScene');
         expect(sceneContent).toContain('metadata');

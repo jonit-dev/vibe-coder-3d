@@ -42,8 +42,8 @@ pub struct ThreeDRenderer {
     mesh_entity_ids: Vec<EntityId>, // Parallel array: entity ID for each mesh
     mesh_scales: Vec<GlamVec3>,     // Parallel array: final local scale per mesh
     mesh_base_scales: Vec<GlamVec3>, // Parallel array: primitive/base scale per mesh
-    mesh_cast_shadows: Vec<bool>,   // Parallel array: castShadows flag for each mesh
-    mesh_receive_shadows: Vec<bool>, // Parallel array: receiveShadows flag for each mesh
+    mesh_cast_shadows: Vec<bool>,   // Parallel array: cast_shadows flag for each mesh
+    mesh_receive_shadows: Vec<bool>, // Parallel array: receive_shadows flag for each mesh
     directional_lights: Vec<EnhancedDirectionalLight>,
     point_lights: Vec<PointLight>,
     spot_lights: Vec<EnhancedSpotLight>,
@@ -1302,8 +1302,8 @@ impl ThreeDRenderer {
             self.mesh_entity_ids.push(entity_id);
             self.mesh_scales.push(final_scale);
             self.mesh_base_scales.push(base_scale);
-            self.mesh_cast_shadows.push(mesh_renderer.castShadows);
-            self.mesh_receive_shadows.push(mesh_renderer.receiveShadows);
+            self.mesh_cast_shadows.push(mesh_renderer.cast_shadows);
+            self.mesh_receive_shadows.push(mesh_renderer.receive_shadows);
 
             if let Some(transform) = transform {
                 let ts_position =
@@ -1328,8 +1328,8 @@ impl ThreeDRenderer {
 
             log::info!(
                 "      Shadows → cast: {}, receive: {}, final scale [{:.2}, {:.2}, {:.2}]",
-                mesh_renderer.castShadows,
-                mesh_renderer.receiveShadows,
+                mesh_renderer.cast_shadows,
+                mesh_renderer.receive_shadows,
                 final_scale.x,
                 final_scale.y,
                 final_scale.z
@@ -1349,8 +1349,8 @@ impl ThreeDRenderer {
 
         log::info!("  GeometryAsset:");
         log::info!("    Path:        {:?}", geometry_asset.path);
-        log::info!("    Geometry ID: {:?}", geometry_asset.geometryId);
-        log::info!("    Material ID: {:?}", geometry_asset.materialId);
+        log::info!("    Geometry ID: {:?}", geometry_asset.geometry_id);
+        log::info!("    Material ID: {:?}", geometry_asset.material_id);
         log::info!("    Enabled:     {}", geometry_asset.enabled);
 
         if !geometry_asset.enabled {
@@ -1400,7 +1400,7 @@ impl ThreeDRenderer {
         let mut mesh = Mesh::new(&self.context, &cpu_mesh);
 
         // 4. Get or create material
-        let material = if let Some(material_id) = &geometry_asset.materialId {
+        let material = if let Some(material_id) = &geometry_asset.material_id {
             if let Some(material_data) = self.material_manager.get_material(material_id) {
                 log::info!("    Using material: {}", material_id);
                 let material_clone = material_data.clone();
@@ -1446,14 +1446,14 @@ impl ThreeDRenderer {
         self.mesh_entity_ids.push(entity_id);
         self.mesh_scales.push(final_scale);
         self.mesh_base_scales.push(base_scale);
-        self.mesh_cast_shadows.push(geometry_asset.castShadows);
+        self.mesh_cast_shadows.push(geometry_asset.cast_shadows);
         self.mesh_receive_shadows
-            .push(geometry_asset.receiveShadows);
+            .push(geometry_asset.receive_shadows);
 
         log::info!(
             "    GeometryAsset loaded → cast shadows: {}, receive shadows: {}, final scale [{:.2}, {:.2}, {:.2}]",
-            geometry_asset.castShadows,
-            geometry_asset.receiveShadows,
+            geometry_asset.cast_shadows,
+            geometry_asset.receive_shadows,
             final_scale.x,
             final_scale.y,
             final_scale.z
@@ -1486,15 +1486,15 @@ impl ThreeDRenderer {
             self.mesh_entity_ids.push(entity_id);
             self.mesh_scales.push(final_scale);
             self.mesh_base_scales.push(base_scale);
-            self.mesh_cast_shadows.push(instanced.castShadows);
-            self.mesh_receive_shadows.push(instanced.receiveShadows);
+            self.mesh_cast_shadows.push(instanced.cast_shadows);
+            self.mesh_receive_shadows.push(instanced.receive_shadows);
 
             if idx < 3 {
                 log::info!(
                     "    Instance {}: shadows (cast: {}, recv: {}), scale [{:.2}, {:.2}, {:.2}]",
                     idx,
-                    instanced.castShadows,
-                    instanced.receiveShadows,
+                    instanced.cast_shadows,
+                    instanced.receive_shadows,
                     final_scale.x,
                     final_scale.y,
                     final_scale.z
@@ -1655,7 +1655,7 @@ impl ThreeDRenderer {
     }
 
     fn generate_shadow_maps(&mut self) {
-        // Extract mesh geometries for shadow casting, filtering by castShadows flag
+        // Extract mesh geometries for shadow casting, filtering by cast_shadows flag
         let geometries: Vec<&dyn Geometry> = self
             .meshes
             .iter()

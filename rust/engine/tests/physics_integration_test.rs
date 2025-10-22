@@ -9,7 +9,7 @@ use vibe_scene::Scene;
 fn test_physics_scene_loads_correctly() {
     // Load the testphysics scene
     let scene_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/testphysics.json");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/tests/testphysics.json");
 
     let json = std::fs::read_to_string(&scene_path).expect("Failed to read testphysics.json");
 
@@ -77,7 +77,7 @@ fn test_physics_scene_loads_correctly() {
 fn test_physics_ground_is_fixed() {
     // Load scene
     let scene_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/testphysics.json");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/tests/testphysics.json");
     let json = std::fs::read_to_string(&scene_path).unwrap();
     let scene: Scene = serde_json::from_str(&json).unwrap();
 
@@ -122,7 +122,7 @@ fn test_physics_ground_is_fixed() {
 fn test_physics_bouncy_sphere() {
     // Load scene
     let scene_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/testphysics.json");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../game/scenes/tests/testphysics.json");
     let json = std::fs::read_to_string(&scene_path).unwrap();
     let scene: Scene = serde_json::from_str(&json).unwrap();
 

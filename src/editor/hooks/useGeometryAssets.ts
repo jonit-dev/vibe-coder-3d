@@ -36,6 +36,11 @@ export function useGeometryAsset(
   path: string | undefined | null,
 ): IGeometryAssetOption | undefined {
   return useMemo(() => {
+    // Skip lookups when no path provided to avoid noisy logs during generic renders
+    if (!path) {
+      return undefined;
+    }
+
     console.log('[useGeometryAsset] Looking up geometry asset for path:', path);
     const found = getGeometryAssetByPath(path);
 

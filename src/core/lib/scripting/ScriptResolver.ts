@@ -32,11 +32,17 @@ export interface IScriptData {
 const externalScriptCache = new Map<string, { code: string; hash: string; timestamp: number }>();
 
 /**
+ * Track last failed fetch attempts to avoid spamming server with repeated failures
+ */
+const externalScriptFailCache = new Map<string, number>();
+
+/**
  * Cache TTL in milliseconds
  * In development: 2 seconds for fast hot-reload
  * In production: 5 minutes for performance
  */
 const CACHE_TTL = import.meta.env.DEV ? 2000 : 5 * 60 * 1000;
+const FAIL_BACKOFF_MS = import.meta.env.DEV ? 1500 : 10 * 1000;
 
 /**
  * Resolve script code from external file or inline source
@@ -73,6 +79,23 @@ export async function resolveScript(
         logger.debug(`Cache expired for ${data.scriptRef.scriptId}, refetching from disk`);
       }
 
+      // If we recently failed, avoid hammering the dev server; fall back quickly
+      const lastFail = externalScriptFailCache.get(data.scriptRef.scriptId) || 0;
+      if (now - lastFail < FAIL_BACKOFF_MS) {
+        if (data.code) {
+          logger.warn(
+            `Recent fetch failure for ${data.scriptRef.scriptId} (${now - lastFail}ms ago); using inline fallback`,
+          );
+          return {
+            code: data.code,
+            origin: 'inline',
+          };
+        }
+        throw new Error(
+          `Backoff active for ${data.scriptRef.scriptId}; last failure ${now - lastFail}ms ago`,
+        );
+      }
+
       // Fetch from API in dev mode
       const code = await fetchExternalScript(data.scriptRef.scriptId);
 
@@ -92,6 +115,13 @@ export async function resolveScript(
         hash: data.scriptRef.codeHash,
       };
     } catch (error) {
+      // Record failure time for backoff
+      try {
+        const id = data.scriptRef?.scriptId;
+        if (id) externalScriptFailCache.set(id, Date.now());
+      } catch {
+        // ignore
+      }
       logger.error(`Failed to load external script for entity ${entityId}:`, error);
 
       // If we have fallback inline code, use it
@@ -127,16 +157,27 @@ async function fetchExternalScript(scriptId: string): Promise<string> {
       const response = await fetch(`/api/script/load?id=${encodeURIComponent(scriptId)}`);
 
       if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error(`Script "${scriptId}" not found`);
+        // Try to parse error body for richer context
+        try {
+          const errBody = await response.json();
+          const err = errBody?.error || response.statusText;
+          if (response.status === 404 || err === 'not_found') {
+            throw new Error(`Script "${scriptId}" not found`);
+          }
+          throw new Error(`HTTP ${response.status}: ${err}`);
+        } catch {
+          if (response.status === 404) {
+            throw new Error(`Script "${scriptId}" not found`);
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
 
-      if (!result.success || !result.code) {
-        throw new Error('Invalid API response');
+      if (!result.success || typeof result.code !== 'string') {
+        const reason = result?.error || 'Invalid API response';
+        throw new Error(reason);
       }
 
       return result.code;
@@ -156,6 +197,7 @@ async function fetchExternalScript(scriptId: string): Promise<string> {
  */
 export function clearScriptCache(): void {
   externalScriptCache.clear();
+  externalScriptFailCache.clear();
   logger.debug('Script cache cleared');
 }
 
@@ -164,6 +206,7 @@ export function clearScriptCache(): void {
  */
 export function invalidateScriptCache(scriptId: string): void {
   externalScriptCache.delete(scriptId);
+  externalScriptFailCache.delete(scriptId);
   logger.debug(`Script cache invalidated for "${scriptId}"`);
 }
 
