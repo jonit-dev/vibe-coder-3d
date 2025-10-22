@@ -356,7 +356,11 @@ export interface IGameObjectAPI {
         scale?: [number, number, number] | number;
       };
       material?: { color?: string; metalness?: number; roughness?: number };
-      physics?: { body?: 'dynamic' | 'kinematic' | 'static'; collider?: 'mesh' | 'box'; mass?: number };
+      physics?: {
+        body?: 'dynamic' | 'kinematic' | 'static';
+        collider?: 'mesh' | 'box';
+        mass?: number;
+      };
     },
   ) => number;
   clone: (
@@ -783,9 +787,15 @@ export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
   // Use ComponentRegistry as single source of truth
   const registry = componentRegistry;
 
+  const entityManager = EntityManager.getInstance();
+
+  const getEntityData = () => entityManager.getEntity(entityId);
+
   return {
     id: entityId,
-    name: 'Entity', // Would need entity manager to get actual name
+    get name(): string {
+      return getEntityData()?.name ?? 'Entity';
+    },
 
     getComponent: <T = unknown>(componentType: string): T | null => {
       try {
@@ -864,10 +874,27 @@ export const createEntityAPI = (entityId: EntityId): IEntityScriptAPI => {
       up: () => [0, 1, 0] as [number, number, number],
     },
 
-    // Simplified hierarchy methods - would need full entity manager
-    getParent: () => null,
-    getChildren: () => [],
-    findChild: () => null,
+    // Hierarchy traversal methods
+    getParent: (): IEntityScriptAPI | null => {
+      const parent = entityManager.getParent(entityId);
+      return parent ? createEntityAPI(parent.id) : null;
+    },
+
+    getChildren: (): IEntityScriptAPI[] => {
+      const children = entityManager.getChildren(entityId);
+      return children.map((child) => createEntityAPI(child.id));
+    },
+
+    findChild: (name: string): IEntityScriptAPI | null => {
+      if (!name) {
+        return null;
+      }
+
+      const child = entityManager
+        .getChildren(entityId)
+        .find((candidate) => candidate.name === name);
+      return child ? createEntityAPI(child.id) : null;
+    },
 
     destroy: () => {
       const entityManager = EntityManager.getInstance();

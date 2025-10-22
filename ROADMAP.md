@@ -1488,7 +1488,7 @@ entity.rigidBody.mass = 5.0; // ❌ Not supported
 - Setters would queue mutations like method calls
 - Requires updating accessor type definitions
 
-**2. Hierarchy Traversal** - ❌ Stubbed out
+**2. Hierarchy Traversal** - ✅ Complete
 
 ```typescript
 // Needed:
@@ -1498,13 +1498,13 @@ entity.findChild(name: string) -> Entity | null
 entity.findDescendant(name: string) -> Entity | null
 ```
 
-**Current Status:** Methods exist but not implemented (src/core/lib/scripting/ScriptAPI.ts:854)
+**Current Status:** Script API exposes working hierarchy helpers (src/core/lib/scripting/ScriptAPI.ts:854)
 
-**Implementation:**
+**Implementation Notes:**
 
-- Integrate with EntityManager for parent/child relationships
-- Expose hierarchy data to scripts
-- Add filtering/searching capabilities
+- Integrates with EntityManager for parent/child relationships
+- Returns script-wrapped entities for parent and children traversal
+- Supports filtering/search by name via `findChild`
 
 **3. Generic Component Accessors** - ⚠️ Limited
 
@@ -2089,7 +2089,7 @@ The following 7 APIs significantly enhance gameplay capabilities:
 - ✅ **TypeScript:** 5 specialized component accessors (Transform, MeshRenderer, Camera, RigidBody, MeshCollider)
 - ✅ **Pattern:** `entity.transform.setPosition()`, `entity.meshRenderer.material.setColor()`
 - ❌ **Missing:** Direct property assignment (`entity.transform.position = [1,2,3]`)
-- ❌ **Missing:** Hierarchy traversal (`getParent()`, `getChildren()`)
+- ✅ **Implemented:** Hierarchy traversal (`getParent()`, `getChildren()`)
 - ❌ **Missing:** 7 additional specialized accessors (lights, audio, particles, etc.)
 - ❌ **Rust:** No component accessors yet - needs full port
 
@@ -2107,7 +2107,7 @@ The following 7 APIs significantly enhance gameplay capabilities:
 | **Time API (Rust)**                | 🔴 Critical  | 2-3 days  | 🟢 Quick Win | ✅ **COMPLETE** | `rust/engine/crates/scripting/src/apis/time_api.rs` (6 tests)    |
 | **Console API (Rust)**             | 🔴 Critical  | 2-3 days  | 🟢 Quick Win | ✅ **COMPLETE** | `rust/engine/crates/scripting/src/apis/console_api.rs` (4 tests) |
 | **Math API (Rust)**                | 🔴 Critical  | 1 week    | 🟢 Quick Win | ✅ **COMPLETE** | `rust/engine/crates/scripting/src/apis/math_api.rs` (9 tests)    |
-| **Hierarchy Traversal (TS)**       | 🟡 Important | 3-5 days  | 🟢 Quick Win | ❌ Stubbed      | Complete `src/core/lib/scripting/ScriptAPI.ts:854`               |
+| **Hierarchy Traversal (TS)**       | 🟡 Important | 3-5 days  | 🟢 Quick Win | ✅ Complete     | `src/core/lib/scripting/ScriptAPI.ts:854` + traversal tests      |
 
 **Total Quick Wins:** 7 features | **Combined Effort:** 4-6 weeks | **Impact:** Immediate performance + API parity
 
@@ -2182,7 +2182,7 @@ The following 7 APIs significantly enhance gameplay capabilities:
 4. **Console API (Rust)** (2-3 days) - Debugging support
 5. **Material Deduplication (Rust)** (3-5 days) - Memory optimization
 6. **Mesh Optimization (Rust)** (1 week) - 60-80% file reduction
-7. **Hierarchy Traversal (TS)** (3-5 days) - Complete stubbed methods
+7. **Hierarchy Traversal (TS)** (3-5 days) - ✅ Completed (script API traversal + tests)
 
 **Expected Outcome:** Performance parity, foundational APIs, reduced memory footprint
 

@@ -245,8 +245,8 @@ export class EntityManager {
     const entity = this.buildEntityFromEid(eid)!;
     this.entityCache.set(eid, entity);
 
-    // Update parent's children list if needed
-    if (parentId && this.entityCache.has(parentId)) {
+    // Update parent's children list if needed (support parentId === 0)
+    if (parentId !== undefined && parentId !== null && this.entityCache.has(parentId)) {
       const parent = this.entityCache.get(parentId)!;
       parent.children.push(eid);
       this.entityCache.set(parentId, parent);
@@ -374,7 +374,7 @@ export class EntityManager {
     }
 
     // Remove from parent's children list
-    if (entity.parentId) {
+    if (entity.parentId !== undefined && entity.parentId !== null) {
       const parent = this.getEntity(entity.parentId);
       if (parent) {
         parent.children = parent.children.filter((childId) => childId !== id);
@@ -427,7 +427,7 @@ export class EntityManager {
 
   getParent(id: EntityId): IEntity | undefined {
     const entity = this.getEntity(id);
-    if (!entity?.parentId) return undefined;
+    if (entity?.parentId === undefined || entity?.parentId === null) return undefined;
 
     return this.getEntity(entity.parentId);
   }
@@ -483,21 +483,27 @@ export class EntityManager {
     if (!entity) return false;
 
     // Prevent circular parent-child relationships
-    if (newParentId && this.wouldCreateCircularDependency(entityId, newParentId)) {
+    if (
+      newParentId !== undefined &&
+      newParentId !== null &&
+      this.wouldCreateCircularDependency(entityId, newParentId)
+    ) {
       return false;
     }
 
     // Remove from current parent
-    if (entity.parentId) {
-      const currentParent = this.getEntity(entity.parentId);
+    const hasCurrentParent = entity.parentId !== undefined && entity.parentId !== null;
+
+    if (hasCurrentParent) {
+      const currentParent = this.getEntity(entity.parentId as EntityId);
       if (currentParent) {
         currentParent.children = currentParent.children.filter((id) => id !== entityId);
-        this.entityCache.set(entity.parentId, currentParent);
+        this.entityCache.set(entity.parentId as EntityId, currentParent);
       }
     }
 
     // Add to new parent
-    if (newParentId) {
+    if (newParentId !== undefined && newParentId !== null) {
       const newParent = this.getEntity(newParentId);
       if (newParent) {
         newParent.children.push(entityId);
