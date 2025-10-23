@@ -168,7 +168,6 @@ export class DirectScriptExecutor {
       // APIs are passed as parameters, making them the only accessible scope
       const scriptFunction = new Function(
         'entity',
-        'three',
         'math',
         'input',
         'time',
@@ -291,7 +290,6 @@ export class DirectScriptExecutor {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
         lifecycle = (compiledFunction as unknown as Function)(
           context.entity,
-          context.three,
           context.math,
           context.input,
           context.time,

@@ -233,97 +233,6 @@ declare global {
   }
 
   // ============================================================================
-  // Three.js API
-  // ============================================================================
-
-  /**
-   * Three.js material API
-   */
-  interface IThreeJSMaterialAPI {
-    /** Get raw Three.js material */
-    get(): any; // THREE.Material | THREE.Material[] | null
-    /** Set material */
-    set(material: any): void; // THREE.Material
-    /** Set material property */
-    setProperty(property: string, value: unknown): void;
-    /** Set material color (hex string like "#ff0000" or number) */
-    setColor(color: string | number): void;
-    /** Set opacity (0-1) */
-    setOpacity(opacity: number): void;
-    /** Set metalness (0-1) */
-    setMetalness(metalness: number): void;
-    /** Set roughness (0-1) */
-    setRoughness(roughness: number): void;
-  }
-
-  /**
-   * Three.js geometry API
-   */
-  interface IThreeJSGeometryAPI {
-    /** Get raw Three.js geometry */
-    get(): any; // THREE.BufferGeometry | null
-    /** Set geometry property */
-    setProperty(property: string, value: unknown): void;
-    /** Scale geometry */
-    scale(x: number, y: number, z: number): void;
-    /** Rotate geometry on X axis */
-    rotateX(angle: number): void;
-    /** Rotate geometry on Y axis */
-    rotateY(angle: number): void;
-    /** Rotate geometry on Z axis */
-    rotateZ(angle: number): void;
-  }
-
-  /**
-   * Three.js animation API
-   */
-  interface IThreeJSAnimateAPI {
-    /** Animate position */
-    position(target: [number, number, number], duration: number): Promise<void>;
-    /** Animate rotation */
-    rotation(target: [number, number, number], duration: number): Promise<void>;
-    /** Animate scale */
-    scale(target: [number, number, number], duration: number): Promise<void>;
-  }
-
-  /**
-   * Three.js API - access to Three.js objects
-   */
-  interface IThreeJSAPI {
-    /** Three.js Object3D */
-    readonly object3D: any; // THREE.Object3D | null
-    /** Three.js Mesh */
-    readonly mesh: any | null; // THREE.Mesh | null
-    /** Three.js Group */
-    readonly group: any | null; // THREE.Group | null
-    /** Material operations */
-    material: IThreeJSMaterialAPI;
-    /** Geometry operations */
-    geometry: IThreeJSGeometryAPI;
-    /** Three.js scene reference */
-    readonly scene: any; // THREE.Scene | null
-    /** Parent object */
-    readonly parent: any; // THREE.Object3D | null
-    /** Child objects */
-    readonly children: any[]; // THREE.Object3D[]
-    /** Animation helpers */
-    animate: IThreeJSAnimateAPI;
-
-    /** Raycast from origin in direction */
-    raycast(origin: [number, number, number], direction: [number, number, number]): any[]; // THREE.Intersection[]
-    /** Look at target position */
-    lookAt(target: [number, number, number]): void;
-    /** Get world position */
-    worldPosition(): [number, number, number];
-    /** Get world rotation */
-    worldRotation(): [number, number, number];
-    /** Set visibility */
-    setVisible(visible: boolean): void;
-    /** Check visibility */
-    isVisible(): boolean;
-  }
-
-  // ============================================================================
   // Math API
   // ============================================================================
 
@@ -773,7 +682,11 @@ declare global {
           scale?: [number, number, number] | number;
         };
         material?: { color?: string; metalness?: number; roughness?: number };
-        physics?: { body?: 'dynamic' | 'kinematic' | 'static'; collider?: 'mesh' | 'box'; mass?: number };
+        physics?: {
+          body?: 'dynamic' | 'kinematic' | 'static';
+          collider?: 'mesh' | 'box';
+          mass?: number;
+        };
       },
     ): number;
 
@@ -846,9 +759,6 @@ declare global {
 
   /** Current entity API */
   const entity: IEntityScriptAPI;
-
-  /** Three.js API for current entity */
-  const three: IThreeJSAPI;
 
   /** Math utilities */
   const math: IMathAPI;

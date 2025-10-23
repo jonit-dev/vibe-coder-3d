@@ -169,8 +169,8 @@ describe('ScriptSystem', () => {
       expect(true).toBe(true);
     });
 
-    it('should provide three.js API', async () => {
-      // Test that scripts can access three.mesh, three.material, etc.
+    it('should provide component accessor API', async () => {
+      // Test that scripts can access entity.meshRenderer, entity.camera, etc.
       expect(true).toBe(true);
     });
 

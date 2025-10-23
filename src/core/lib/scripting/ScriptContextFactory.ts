@@ -13,7 +13,6 @@ import {
   createConsoleAPI,
   createEntityAPI,
   createMathAPI,
-  createThreeJSAPI,
 } from './ScriptAPI';
 import { threeJSEntityRegistry } from './ThreeJSEntityRegistry';
 import { createAudioAPI } from './apis/AudioAPI';
@@ -179,7 +178,6 @@ export class ScriptContextFactory {
       input: inputInfo,
       math: createMathAPI(),
       console: createConsoleAPI(entityId),
-      three: createThreeJSAPI(entityId, getMeshRef, getSceneRef),
       events: createEventAPI(entityId),
       audio: createAudioAPI(entityId, getMeshRef),
       timer: createTimerAPI(entityId),

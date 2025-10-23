@@ -201,7 +201,9 @@ describe('DirectScriptExecutor Integration', () => {
           console.log("Updating");
           entity.transform.setRotation(0, deltaTime, 0);
           entity.transform.setPosition(0, Math.sin(time.time) * 2, 0);
-          three.material.setColor("#00ff00");
+          if (entity.meshRenderer) {
+            entity.meshRenderer.material.setColor("#00ff00");
+          }
         }
       `;
 
