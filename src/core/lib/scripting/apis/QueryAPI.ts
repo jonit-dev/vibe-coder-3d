@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 
 import { TagManager } from '@/core/lib/ecs/tags/TagManager';
+import { EntityMetadataManager } from '@/core/lib/ecs/metadata/EntityMetadataManager';
 import { Logger } from '@/core/lib/logger';
 
 import type { IQueryAPI } from '../ScriptAPI';
@@ -20,11 +21,17 @@ export const createQueryAPI = (
   getScene: () => THREE.Scene | null,
 ): IQueryAPI => {
   const tagManager = TagManager.getInstance();
+  const metadataManager = EntityMetadataManager.getInstance();
 
   return {
     findByTag: (tag: string): number[] => {
       logger.debug(`Finding entities by tag: ${tag}`);
       return tagManager.findByTag(tag);
+    },
+
+    findByName: (name: string): number[] => {
+      logger.debug(`Finding entities by name: ${name}`);
+      return metadataManager.findByName(name);
     },
 
     raycastFirst: (

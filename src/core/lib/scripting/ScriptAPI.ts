@@ -288,6 +288,7 @@ export interface ITimerAPI {
  */
 export interface IQueryAPI {
   findByTag(tag: string): number[]; // entity IDs
+  findByName(name: string): number[]; // entity IDs
   raycastFirst(origin: [number, number, number], dir: [number, number, number]): unknown | null;
   raycastAll(origin: [number, number, number], dir: [number, number, number]): unknown[];
 }
@@ -390,7 +391,6 @@ export interface IScriptContext {
   input: IInputAPI;
   math: IMathAPI;
   console: IConsoleAPI;
-  three: IThreeJSAPI;
   events: IEventAPI;
   audio: IAudioAPI;
   timer: ITimerAPI;

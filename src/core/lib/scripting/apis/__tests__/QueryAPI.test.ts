@@ -2,16 +2,41 @@
  * QueryAPI Tests
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createQueryAPI } from '../QueryAPI';
 import * as THREE from 'three';
+import { EntityMetadataManager } from '@/core/lib/ecs/metadata/EntityMetadataManager';
+import { TagManager } from '@/core/lib/ecs/tags/TagManager';
 
 describe('QueryAPI', () => {
   const entityId = 1;
   let queryAPI: ReturnType<typeof createQueryAPI>;
   let scene: THREE.Scene;
+  let metadataManager: EntityMetadataManager;
+  let tagManager: TagManager;
 
   beforeEach(() => {
+    // Get singleton instances
+    metadataManager = EntityMetadataManager.getInstance();
+    tagManager = TagManager.getInstance();
+
+    // Clear any existing data
+    metadataManager.clear();
+    tagManager.clear();
+
+    // Create test entities with metadata
+    metadataManager.createEntity(100, 'Player');
+    metadataManager.createEntity(101, 'Enemy');
+    metadataManager.createEntity(102, 'Player'); // Duplicate name
+    metadataManager.createEntity(103, 'Coin');
+
+    // Add tags to entities
+    tagManager.addTag(100, 'player');
+    tagManager.addTag(101, 'enemy');
+    tagManager.addTag(102, 'player');
+    tagManager.addTag(103, 'collectible');
+    tagManager.addTag(103, 'item');
+
     // Create a simple scene with some objects
     scene = new THREE.Scene();
 
@@ -26,6 +51,12 @@ describe('QueryAPI', () => {
     scene.add(mesh2);
 
     queryAPI = createQueryAPI(entityId, () => scene);
+  });
+
+  afterEach(() => {
+    // Clean up after tests
+    metadataManager.clear();
+    tagManager.clear();
   });
 
   it('should create a query API instance', () => {
@@ -90,11 +121,68 @@ describe('QueryAPI', () => {
     expect(hits.length).toBe(0);
   });
 
-  it('should find by tag (stub - returns empty for now)', () => {
-    const entities = queryAPI.findByTag('player');
+  it('should find entities by tag', () => {
+    const playerEntities = queryAPI.findByTag('player');
+
+    expect(Array.isArray(playerEntities)).toBe(true);
+    expect(playerEntities.length).toBe(2);
+    expect(playerEntities).toContain(100);
+    expect(playerEntities).toContain(102);
+  });
+
+  it('should find single entity by tag', () => {
+    const enemyEntities = queryAPI.findByTag('enemy');
+
+    expect(Array.isArray(enemyEntities)).toBe(true);
+    expect(enemyEntities.length).toBe(1);
+    expect(enemyEntities).toContain(101);
+  });
+
+  it('should return empty array for non-existent tag', () => {
+    const entities = queryAPI.findByTag('nonexistent');
 
     expect(Array.isArray(entities)).toBe(true);
-    expect(entities.length).toBe(0); // Stub implementation
+    expect(entities.length).toBe(0);
+  });
+
+  it('should find entities by name', () => {
+    const playerEntities = queryAPI.findByName('Player');
+
+    expect(Array.isArray(playerEntities)).toBe(true);
+    expect(playerEntities.length).toBe(2);
+    expect(playerEntities).toContain(100);
+    expect(playerEntities).toContain(102);
+  });
+
+  it('should find single entity by name', () => {
+    const enemyEntities = queryAPI.findByName('Enemy');
+
+    expect(Array.isArray(enemyEntities)).toBe(true);
+    expect(enemyEntities.length).toBe(1);
+    expect(enemyEntities).toContain(101);
+  });
+
+  it('should return empty array for non-existent name', () => {
+    const entities = queryAPI.findByName('NonExistent');
+
+    expect(Array.isArray(entities)).toBe(true);
+    expect(entities.length).toBe(0);
+  });
+
+  it('should handle case-sensitive name search', () => {
+    const exactMatch = queryAPI.findByName('Player');
+    const wrongCase = queryAPI.findByName('player');
+
+    expect(exactMatch.length).toBe(2);
+    expect(wrongCase.length).toBe(0);
+  });
+
+  it('should find entity with multiple tags', () => {
+    const collectibles = queryAPI.findByTag('collectible');
+    const items = queryAPI.findByTag('item');
+
+    expect(collectibles).toContain(103);
+    expect(items).toContain(103);
   });
 
   it('should normalize raycast direction', () => {
