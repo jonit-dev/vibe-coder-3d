@@ -145,11 +145,25 @@ impl SceneManager {
             components: HashMap::new(),
         };
 
-        // Add components
+        // Add components (merge Transform fields if multiple Transform components exist)
         for (component_type, data) in components {
-            entity
-                .components
-                .insert(component_type.as_str().to_string(), data);
+            let key = component_type.as_str().to_string();
+
+            // Special handling for Transform component - merge fields instead of overwriting
+            if key == "Transform" {
+                if let Some(existing) = entity.components.get_mut(&key) {
+                    // Merge the new Transform fields into the existing one
+                    if let (Some(existing_obj), Some(new_obj)) = (existing.as_object_mut(), data.as_object()) {
+                        for (field_name, field_value) in new_obj {
+                            existing_obj.insert(field_name.clone(), field_value.clone());
+                        }
+                    }
+                } else {
+                    entity.components.insert(key, data);
+                }
+            } else {
+                entity.components.insert(key, data);
+            }
         }
 
         // Add to scene

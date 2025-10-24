@@ -11,6 +11,7 @@ use super::texture_cache::TextureCache;
 pub struct MaterialManager {
     cache: HashMap<String, Material>,
     texture_cache: TextureCache,
+    cached_default_material: Option<PhysicalMaterial>,
 }
 
 impl MaterialManager {
@@ -18,6 +19,7 @@ impl MaterialManager {
         Self {
             cache: HashMap::new(),
             texture_cache: TextureCache::new(),
+            cached_default_material: None,
         }
     }
 
@@ -193,8 +195,15 @@ impl MaterialManager {
         Ok(PhysicalMaterial::new(context, &cpu_material))
     }
 
-    /// Create a default material
-    pub fn create_default_material(&self, context: &Context) -> PhysicalMaterial {
+    /// Create a default material (cached to avoid shader sampler limits)
+    pub fn create_default_material(&mut self, context: &Context) -> PhysicalMaterial {
+        // Return cached material if exists
+        if let Some(ref material) = self.cached_default_material {
+            log::debug!("Reusing cached default material");
+            return material.clone();
+        }
+
+        // Create new default material
         let cpu_material = CpuMaterial {
             albedo: Srgba::new(200, 200, 200, 255),
             metallic: 0.0,
@@ -202,7 +211,13 @@ impl MaterialManager {
             ..Default::default()
         };
 
-        PhysicalMaterial::new(context, &cpu_material)
+        let material = PhysicalMaterial::new(context, &cpu_material);
+
+        // Cache for future use
+        self.cached_default_material = Some(material.clone());
+        log::info!("Created and cached default material");
+
+        material
     }
 
     /// Load materials from scene JSON value

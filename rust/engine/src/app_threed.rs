@@ -370,6 +370,15 @@ impl AppThreeD {
                 if let Err(e) = mgr.apply_pending_commands() {
                     log::error!("Failed to apply entity commands: {}", e);
                 }
+
+                // Sync newly created entities to renderer (async operation)
+                let scene_state = mgr.scene_state();
+                let sync_result = scene_state.with_scene(|scene| {
+                    pollster::block_on(self.renderer.sync_new_entities(scene))
+                });
+                if let Err(e) = sync_result {
+                    log::error!("Failed to sync new entities to renderer: {}", e);
+                }
             }
         }
 

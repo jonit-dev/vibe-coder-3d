@@ -15,6 +15,7 @@ pub type SceneManagerRef = Weak<Mutex<SceneManager>>;
 /// - GameObject.createPrimitive(kind, options?) -> entityId
 /// - GameObject.destroy(entityRef?) -> void
 pub fn register_gameobject_api(lua: &Lua, scene_manager: Option<SceneManagerRef>) -> LuaResult<()> {
+    log::info!("Registering GameObject API (scene_manager present: {})", scene_manager.is_some());
     let gameobject = lua.create_table()?;
 
     // GameObject.create(name?, parent?)
@@ -79,14 +80,20 @@ pub fn register_gameobject_api(lua: &Lua, scene_manager: Option<SceneManagerRef>
 
                     // Extract transform
                     if let Ok(transform) = opts.get::<LuaTable>("transform") {
-                        if let Ok(pos) = transform.get::<Vec<f32>>("position") {
-                            if pos.len() == 3 {
-                                builder = builder.with_position([pos[0], pos[1], pos[2]]);
+                        // Handle position as Lua table
+                        if let Ok(pos_table) = transform.get::<LuaTable>("position") {
+                            if let Ok(pos_vec) = pos_table.sequence_values::<f32>().collect::<LuaResult<Vec<_>>>() {
+                                if pos_vec.len() == 3 {
+                                    builder = builder.with_position([pos_vec[0], pos_vec[1], pos_vec[2]]);
+                                }
                             }
                         }
-                        if let Ok(rot) = transform.get::<Vec<f32>>("rotation") {
-                            if rot.len() == 3 {
-                                builder = builder.with_rotation([rot[0], rot[1], rot[2]]);
+                        // Handle rotation as Lua table
+                        if let Ok(rot_table) = transform.get::<LuaTable>("rotation") {
+                            if let Ok(rot_vec) = rot_table.sequence_values::<f32>().collect::<LuaResult<Vec<_>>>() {
+                                if rot_vec.len() == 3 {
+                                    builder = builder.with_rotation([rot_vec[0], rot_vec[1], rot_vec[2]]);
+                                }
                             }
                         }
                         if let Ok(scale_val) = transform.get::<LuaValue>("scale") {
@@ -182,6 +189,7 @@ pub fn register_gameobject_api(lua: &Lua, scene_manager: Option<SceneManagerRef>
     }
 
     lua.globals().set("GameObject", gameobject)?;
+    log::info!("GameObject API registered successfully in Lua globals");
 
     Ok(())
 }

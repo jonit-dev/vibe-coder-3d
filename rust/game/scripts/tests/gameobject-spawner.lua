@@ -21,7 +21,7 @@ function onUpdate(dt)
         local z = math.sin(rad) * radius
         local y = 3 + spawnCount * 0.5  -- Stack them slightly higher each time
 
-        console.log("Spawning object " .. spawnCount .. " at position: " .. x .. ", " .. y .. ", " .. z)
+        console:log("Spawning object " .. spawnCount .. " at position: " .. x .. ", " .. y .. ", " .. z)
 
         -- Create a primitive with full options
         local entityId = GameObject.createPrimitive("Sphere", {
@@ -45,10 +45,10 @@ function onUpdate(dt)
             }
         })
 
-        console.log("Created entity with ID: " .. entityId)
+        console:log("Created entity with ID: " .. entityId)
 
         if spawnCount == maxSpawns then
-            console.log("Reached maximum spawn count. Spawning complete!")
+            console:log("Reached maximum spawn count. Spawning complete!")
         end
     end
 end

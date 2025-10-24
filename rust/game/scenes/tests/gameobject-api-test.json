@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "name": "GameObject API Test",
+  "entities": [
+    {
+      "id": 1,
+      "persistentId": "camera-main",
+      "name": "Main Camera",
+      "components": {
+        "Transform": {
+          "position": [0, 3, -10],
+          "rotation": [15, 0, 0]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "isMain": true,
+          "projectionType": "perspective",
+          "clearFlags": "solidColor",
+          "backgroundColor": {
+            "r": 0.1,
+            "g": 0.12,
+            "b": 0.15,
+            "a": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "persistentId": "light-directional",
+      "name": "Directional Light",
+      "components": {
+        "Transform": {
+          "position": [10, 10, 10],
+          "rotation": [-45, -30, 0]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1.0,
+          "enabled": true,
+          "castShadow": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "persistentId": "ground-plane",
+      "name": "Ground Plane",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [15, 15, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground-material",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 4,
+      "persistentId": "spawner-controller",
+      "name": "Spawner Controller",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0]
+        },
+        "Script": {
+          "scriptPath": "tests/gameobject-spawner.lua"
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "ground-material",
+      "name": "Ground Material",
+      "color": "#2E8B57",
+      "metalness": 0.0,
+      "roughness": 0.8
+    }
+  ]
+}

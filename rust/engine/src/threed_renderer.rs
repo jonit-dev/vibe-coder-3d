@@ -1,6 +1,6 @@
 use anyhow::{Context as AnyhowContext, Result};
 use glam::Vec3 as GlamVec3;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 use three_d::*;
@@ -59,6 +59,7 @@ pub struct ThreeDRenderer {
     hdr_color_texture: Option<Texture2D>,
     hdr_depth_texture: Option<three_d::DepthTexture2D>,
     additional_cameras: Vec<AdditionalCamera>,
+    loaded_entity_ids: HashSet<EntityId>, // Track all loaded entities to prevent duplicates
 
     // Camera follow smoothing
     last_camera_position: Vec3,
@@ -159,6 +160,7 @@ impl ThreeDRenderer {
             hdr_color_texture: None,
             hdr_depth_texture: None,
             additional_cameras: Vec::new(),
+            loaded_entity_ids: HashSet::new(),
             last_camera_position: initial_pos,
             last_camera_target: initial_target,
         })
@@ -1034,6 +1036,39 @@ impl ThreeDRenderer {
         Ok(())
     }
 
+    /// Sync newly created entities to renderer
+    /// This is called after SceneManager applies entity commands to add runtime-created entities to the renderer
+    pub async fn sync_new_entities(&mut self, scene: &SceneData) -> Result<()> {
+        log::debug!(
+            "sync_new_entities: checking {} scene entities against {} loaded entities",
+            scene.entities.len(),
+            self.loaded_entity_ids.len()
+        );
+
+        for entity in &scene.entities {
+            let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
+
+            // Check if this entity has already been loaded (prevents duplicate cameras/lights/meshes)
+            if !self.loaded_entity_ids.contains(&entity_id) {
+                log::info!(
+                    "Syncing new entity {} ({})",
+                    entity_id,
+                    entity.name.as_deref().unwrap_or("unnamed")
+                );
+
+                // Load the new entity (handles all component types)
+                // Note: load_entity() automatically adds entity_id to loaded_entity_ids
+                self.load_entity(entity).await?;
+            }
+        }
+
+        log::debug!(
+            "sync_new_entities: complete, loaded {} total entities",
+            self.loaded_entity_ids.len()
+        );
+        Ok(())
+    }
+
     /// Sync physics transforms back to renderer meshes
     pub fn sync_physics_transforms(&mut self, physics_world: &vibe_physics::PhysicsWorld) {
         // Iterate through all entities with physics bodies
@@ -1168,6 +1203,7 @@ impl ThreeDRenderer {
         self.spot_lights.clear();
         self.ambient_light = None;
         self.skybox_renderer.clear();
+        self.loaded_entity_ids.clear();
     }
 
     fn load_materials(&mut self, scene: &SceneData) {
@@ -1227,6 +1263,9 @@ impl ThreeDRenderer {
         if let Some(camera) = self.get_component::<CameraComponent>(entity, "Camera") {
             self.handle_camera(&camera, transform.as_ref()).await?;
         }
+
+        // Mark entity as loaded to prevent duplicate loading
+        self.loaded_entity_ids.insert(entity_id);
 
         Ok(())
     }
