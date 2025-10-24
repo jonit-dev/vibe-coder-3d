@@ -443,9 +443,12 @@
 **Rust Engine Limitations:**
 
 - ⚠️ **Read-Only Scene**: Rust engine loads scenes from JSON files - no runtime entity creation/destruction
+  - **PRD**: `docs/PRDs/rust/5-01-mutable-ecs-architecture-prd.md` (9 days) - Introduces SceneManager with mutable ECS
 - ⚠️ **GameObject CRUD API**: Cannot implement createEntity/destroy - would require full ECS write access
+  - **PRD**: `docs/PRDs/rust/5-01-mutable-ecs-architecture-prd.md` (9 days) - Implements GameObject CRUD via command buffer
 - ✅ **Tag System**: COMPLETE - Full implementation in scene format, QueryAPI, and EntitiesAPI (case-insensitive matching)
 - 🚧 **Raycasting**: Partial - PhysicsWorld has raycast_first/raycast_all, but QueryAPI can't access it (architectural limitation)
+  - **PRD**: `docs/PRDs/rust/5-02-scripting-runtime-integration-prd.md` (8 days) - EngineContext enables QueryAPI raycasting
 - ⚠️ **Large u64 IDs**: Entity IDs suffer from Lua f64 precision loss - use guid or name instead for reliable lookups
 
 ---
@@ -2421,6 +2424,8 @@ The following 7 APIs significantly enhance gameplay capabilities:
 | Feature                               | Impact       | Effort     | Priority   | Status       | Dependencies                                                                    |
 | ------------------------------------- | ------------ | ---------- | ---------- | ------------ | ------------------------------------------------------------------------------- |
 | **BVH Culling in Rust**               | 🔴 Critical  | 3-4 weeks  | 🟡 Phase 1 | ❌ Missing   | 10-100x raycasting speedup                                                      |
+| **Mutable ECS Architecture (Rust)**   | 🔴 Critical  | 9 days     | 🟡 Phase 1 | 📋 Planned   | PRD: 5-01 - Enables GameObject CRUD, dynamic entities                           |
+| **Scripting Runtime Integration**     | 🔴 Critical  | 8 days     | 🟡 Phase 1 | 📋 Planned   | PRD: 5-02 - Enables raycasting, input, camera APIs                              |
 | **Rust Scripting APIs (Critical 10)** | 🔴 Critical  | 6-8 weeks  | 🟡 Phase 1 | 🚧 5/10 done | Entity, Transform, Event, Query, Prefab, GameObject (Console✅, Time✅, Math✅) |
 | **Particle/VFX System**               | 🔴 Critical  | 2-4 weeks  | 🟡 Phase 2 | ❌ Missing   | None                                                                            |
 | **Skinned Mesh Animation**            | 🟡 Important | 4-6 weeks  | 🟡 Phase 3 | ❌ Missing   | None                                                                            |
