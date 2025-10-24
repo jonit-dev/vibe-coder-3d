@@ -6,9 +6,11 @@ edition = "2021"
 [dependencies]
 vibe-scene = { path = "../scene" }
 vibe-physics = { path = "../physics" }
+vibe-ecs-bridge = { path = "../ecs-bridge" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"
 log = "0.4"
+glam = { version = "0.27", features = ["serde"] }
 
 [dev-dependencies]

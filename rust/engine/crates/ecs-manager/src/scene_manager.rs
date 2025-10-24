@@ -5,6 +5,7 @@
 
 use anyhow::{Context, Result};
 use std::sync::Arc;
+use vibe_ecs_bridge::ComponentRegistry;
 use vibe_physics::PhysicsWorld;
 use vibe_scene::{EntityCommand, EntityCommandBuffer, EntityId, Scene, SceneState};
 
@@ -15,6 +16,7 @@ pub struct SceneManager {
     state: Arc<SceneState>,
     physics_world: PhysicsWorld,
     command_buffer: EntityCommandBuffer,
+    registry: ComponentRegistry,
 }
 
 impl SceneManager {
@@ -22,11 +24,13 @@ impl SceneManager {
     pub fn new(scene: Scene) -> Self {
         let state = Arc::new(SceneState::new(scene));
         let physics_world = PhysicsWorld::new();
+        let registry = vibe_ecs_bridge::create_default_registry();
 
         Self {
             state,
             physics_world,
             command_buffer: EntityCommandBuffer::new(),
+            registry,
         }
     }
 
@@ -280,10 +284,141 @@ impl SceneManager {
                 "Entity {} has physics components, syncing to physics world",
                 entity_id
             );
-            // TODO: Implement physics sync in Phase 5
+            // Sync entity to physics world
+            if let Err(e) = self.sync_entity_to_physics(entity_id) {
+                log::warn!("Failed to sync entity {} to physics: {}", entity_id, e);
+            }
         }
 
         Ok(())
+    }
+
+    /// Sync a single entity to the physics world
+    /// Called when an entity with physics components is created
+    fn sync_entity_to_physics(&mut self, entity_id: EntityId) -> Result<()> {
+        use vibe_ecs_bridge::{position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt,  MeshCollider, RigidBody, Transform};
+        use vibe_physics::{
+            builder::{ColliderBuilder, ColliderSize, RigidBodyBuilder as PhysicsRigidBodyBuilder},
+            components::{ColliderType, PhysicsMaterial, RigidBodyType},
+        };
+
+        // Get entity from scene
+        let entity = self.state.with_scene(|scene| {
+            scene.find_entity(entity_id).cloned()
+        }).context("Entity not found in scene")?;
+
+        // Get components
+        let rigid_body_opt = self.get_component::<RigidBody>(&entity, "RigidBody");
+        let mesh_collider_opt = self.get_component::<MeshCollider>(&entity, "MeshCollider");
+
+        // Skip if no physics components
+        if rigid_body_opt.is_none() && mesh_collider_opt.is_none() {
+            return Ok(());
+        }
+
+        // Get transform
+        let transform_opt = self.get_component::<Transform>(&entity, "Transform");
+        let (position, rotation, scale) = if let Some(transform) = transform_opt {
+            (
+                position_to_vec3_opt(transform.position.as_ref()),
+                rotation_to_quat_opt(transform.rotation.as_ref()),
+                scale_to_vec3_opt(transform.scale.as_ref()),
+            )
+        } else {
+            (glam::Vec3::ZERO, glam::Quat::IDENTITY, glam::Vec3::ONE)
+        };
+
+        // Build rigid body
+        let rapier_body = if let Some(rb_component) = rigid_body_opt {
+            if !rb_component.enabled {
+                return Ok(()); // Skip disabled bodies
+            }
+
+            let body_type = RigidBodyType::from_str(rb_component.get_body_type());
+            let mut builder = PhysicsRigidBodyBuilder::new(body_type)
+                .position(position)
+                .rotation(rotation)
+                .mass(rb_component.mass)
+                .gravity_scale(rb_component.gravityScale)
+                .can_sleep(rb_component.canSleep);
+
+            // Apply material if present
+            if let Some(ref material) = rb_component.material {
+                builder = builder.material(PhysicsMaterial {
+                    friction: material.friction,
+                    restitution: material.restitution,
+                    density: material.density,
+                });
+            }
+
+            builder.build()
+        } else {
+            // Collider-only entity needs a fixed body
+            PhysicsRigidBodyBuilder::new(RigidBodyType::Fixed)
+                .position(position)
+                .rotation(rotation)
+                .build()
+        };
+
+        // Build colliders
+        let mut colliders = Vec::new();
+        if let Some(mc_component) = mesh_collider_opt {
+            if mc_component.enabled {
+                let collider_type = ColliderType::from_str(&mc_component.colliderType);
+                let center = glam::Vec3::new(
+                    mc_component.center[0],
+                    mc_component.center[1],
+                    mc_component.center[2],
+                );
+
+                let size = ColliderSize {
+                    width: mc_component.size.width,
+                    height: mc_component.size.height,
+                    depth: mc_component.size.depth,
+                    radius: mc_component.size.radius,
+                    capsule_radius: mc_component.size.capsuleRadius,
+                    capsule_height: mc_component.size.capsuleHeight,
+                };
+
+                let material = PhysicsMaterial {
+                    friction: mc_component.physicsMaterial.friction,
+                    restitution: mc_component.physicsMaterial.restitution,
+                    density: mc_component.physicsMaterial.density,
+                };
+
+                if let Ok(collider) = ColliderBuilder::new(collider_type)
+                    .center(center)
+                    .size(size)
+                    .material(material)
+                    .sensor(mc_component.isTrigger)
+                    .scale(scale)
+                    .build()
+                {
+                    colliders.push(collider);
+                }
+            }
+        }
+
+        // Add to physics world
+        self.physics_world.add_entity(entity_id, rapier_body, colliders)?;
+
+        log::info!(
+            "Synced entity {} ({:?}) to physics world",
+            entity_id,
+            entity.name
+        );
+
+        Ok(())
+    }
+
+    /// Helper to get a component from an entity
+    fn get_component<T: 'static>(&self, entity: &vibe_scene::Entity, component_name: &str) -> Option<T> {
+        entity
+            .components
+            .get(component_name)
+            .and_then(|value| self.registry.decode(component_name, value).ok())
+            .and_then(|boxed| boxed.downcast::<T>().ok())
+            .map(|boxed| *boxed)
     }
 
     fn on_entity_destroyed(&mut self, _entity_id: EntityId) -> Result<()> {
