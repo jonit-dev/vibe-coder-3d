@@ -97,6 +97,40 @@ declare global {
   }
 
   /**
+   * Light accessor API
+   */
+  interface ILightAccessor {
+    /** Get current component data */
+    get(): any | null;
+    /** Set component data via partial patch */
+    set(patch: Partial<any>): void;
+    /** Enable/disable light */
+    enable(value: boolean): void;
+    /** Set light type */
+    setType(type: 'directional' | 'point' | 'spot'): void;
+    /** Set light color (RGB 0-1) */
+    setColor(r: number, g: number, b: number): void;
+    /** Set light intensity */
+    setIntensity(intensity: number): void;
+    /** Enable/disable shadow casting */
+    setCastShadow(castShadow: boolean): void;
+    /** Set light direction (for directional/spot lights) */
+    setDirection(x: number, y: number, z: number): void;
+    /** Set light range (for point/spot lights) */
+    setRange(range: number): void;
+    /** Set light decay (for point/spot lights, typically 1 or 2) */
+    setDecay(decay: number): void;
+    /** Set spot light angle (in degrees) */
+    setAngle(angle: number): void;
+    /** Set spot light penumbra (soft edge, 0-1) */
+    setPenumbra(penumbra: number): void;
+    /** Set shadow map size (power of 2, e.g., 512, 1024, 2048) */
+    setShadowMapSize(size: number): void;
+    /** Set shadow bias (to reduce shadow acne) */
+    setShadowBias(bias: number): void;
+  }
+
+  /**
    * RigidBody accessor API
    */
   interface IRigidBodyAccessor {
@@ -208,6 +242,8 @@ declare global {
     meshRenderer?: IMeshRendererAccessor;
     /** Direct Camera component access */
     camera?: ICameraAccessor;
+    /** Direct Light component access */
+    light?: ILightAccessor;
     /** Direct RigidBody component access */
     rigidBody?: IRigidBodyAccessor;
     /** Direct MeshCollider component access */

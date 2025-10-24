@@ -431,8 +431,8 @@
 14. ✅ **Physics API** (RigidBody, MeshCollider, PhysicsEvents, CharacterController)
 15. ✅ **Camera API** (setFov, setClipping, setProjection, setAsMain)
 16. ✅ **Material API** (MeshRenderer + material sub-API: setColor, setMetalness, setRoughness, setEmissive, setTexture)
-17. ❌ Mesh API
-18. ❌ Light API
+17. ✅ **Light API** (setType, setColor, setIntensity, setCastShadow, setDirection, setRange, setDecay, setAngle, setPenumbra, setShadowMapSize, setShadowBias)
+18. ❌ Mesh API
 19. ❌ Collision API
 20. ❌ UI API
 21. ❌ Scene API

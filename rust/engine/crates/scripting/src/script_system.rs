@@ -372,6 +372,24 @@ impl ScriptSystem {
             )
         })?;
 
+        // Register light API
+        let scene_ref_for_light = self
+            .scene
+            .clone()
+            .context("Scene not initialized for LightAPI")?;
+        crate::apis::register_light_api(
+            runtime.lua(),
+            entity_id,
+            scene_ref_for_light,
+            mutation_buffer.clone(),
+        )
+        .with_context(|| {
+            format!(
+                "Failed to register light API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
         // Register script parameters as a global Lua table
         let params_lua = Self::json_to_lua(runtime.lua(), &script_comp.parameters)
             .map_err(|e| anyhow::anyhow!("Failed to convert parameters to Lua: {}", e))?;
