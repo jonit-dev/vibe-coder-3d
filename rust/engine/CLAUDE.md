@@ -86,6 +86,65 @@ src/
     └── (extract screenshot.rs here)
 ```
 
+## Mutable ECS Architecture
+
+### SceneManager & Runtime Entity Mutations
+
+The engine supports runtime entity creation, modification, and destruction through the **command buffer pattern** implemented in `vibe-ecs-manager`.
+
+**Key Components:**
+
+- `SceneManager`: Central coordinator for scene mutations
+- `EntityCommandBuffer`: Queues deferred mutations (create, destroy, set component)
+- `EntityBuilder`: Fluent API for entity creation
+- `SceneState`: Thread-safe scene wrapper (`Arc<Mutex<RwLock<Scene>>>`)
+
+**Pattern:**
+
+```rust
+// Queue commands (non-blocking)
+let entity_id = manager.create_entity()
+    .with_name("Enemy")
+    .with_position([0.0, 5.0, 0.0])
+    .with_component("RigidBody", json!({ ... }))
+    .build();  // Returns EntityId immediately
+
+// Apply at frame end (atomic)
+manager.apply_pending_commands()?;
+```
+
+**Physics Synchronization:**
+
+- Lifecycle hooks (`on_entity_created`, `on_entity_destroyed`)
+- Automatic physics world sync for entities with RigidBody/MeshCollider
+- Uses ComponentRegistry for type-safe component decoding
+
+**Documentation:**
+
+- See `/rust/engine/crates/ecs-manager/CLAUDE.md` for full implementation details
+- See `/rust/PRDs/mutable-ecs-architecture.md` for original PRD
+- **35 tests** covering unit, integration, and stress scenarios
+
+### GameObject Lua API
+
+Runtime entity creation from scripts:
+
+```lua
+-- Create entity
+local id = GameObject.create("Enemy")
+GameObject.setPosition(id, {0, 5, 0})
+GameObject.setRotation(id, {0, 45, 0})
+
+-- Create primitive (Box, Sphere, Cylinder, Plane)
+local cubeId = GameObject.createPrimitive("Cube", "MyCube")
+
+-- Destroy entity
+GameObject.destroy(id)
+```
+
+**Implementation**: `/rust/engine/src/apis/gameobject_api.rs`
+**Thread Safety**: Uses `Arc<Mutex<SceneManager>>` for shared mutable access
+
 ## Integration Status
 
 See `/rust/engine/INTEGRATION_AUDIT.md` for full TypeScript ↔ Rust parity status.
