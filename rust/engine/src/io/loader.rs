@@ -19,8 +19,8 @@ pub fn load_scene<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneData> {
 
     log::info!(
         "Scene loaded: {} (version {}), {} entities",
-        scene.metadata.name,
-        scene.metadata.version,
+        scene.name,
+        scene.version,
         scene.entities.len()
     );
 
@@ -40,18 +40,13 @@ fn dump_scene_diagnostics(scene: &SceneData) {
     log::info!("========================================");
     log::info!(
         "Scene: {} (v{})",
-        scene.metadata.name,
-        scene.metadata.version
+        scene.name,
+        scene.version
     );
     log::info!("Entities: {}", scene.entities.len());
     log::info!(
         "Materials: {}",
-        scene
-            .materials
-            .as_ref()
-            .and_then(|m| m.as_object())
-            .map(|m| m.len())
-            .unwrap_or(0)
+        scene.materials.len()
     );
     log::info!("");
 

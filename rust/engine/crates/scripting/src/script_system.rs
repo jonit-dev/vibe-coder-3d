@@ -40,6 +40,8 @@ pub struct ScriptSystem {
     scene: Option<Arc<Scene>>,
     /// Optional input manager for input API
     input_manager: Option<InputManagerRef>,
+    /// Weak reference to SceneManager for GameObject API (optional, for mutable ECS)
+    scene_manager: Option<std::sync::Weak<std::sync::Mutex<vibe_ecs_manager::SceneManager>>>,
 }
 
 impl ScriptSystem {
@@ -57,12 +59,26 @@ impl ScriptSystem {
             frame_count: 0,
             scene: None,
             input_manager: None,
+            scene_manager: None,
         }
     }
 
     /// Set the input manager for input API integration
     pub fn set_input_manager(&mut self, input_manager: InputManagerRef) {
         self.input_manager = Some(input_manager);
+    }
+
+    /// Set the scene manager for GameObject API integration (optional, for mutable ECS)
+    pub fn set_scene_manager(
+        &mut self,
+        scene_manager: std::sync::Weak<std::sync::Mutex<vibe_ecs_manager::SceneManager>>,
+    ) {
+        self.scene_manager = Some(scene_manager);
+    }
+
+    /// Get the scene manager reference for API registration
+    pub fn scene_manager_ref(&self) -> Option<std::sync::Weak<std::sync::Mutex<vibe_ecs_manager::SceneManager>>> {
+        self.scene_manager.clone()
     }
 
     /// Initialize the script system from a scene
@@ -399,6 +415,15 @@ impl ScriptSystem {
                 entity_name, entity_id
             )
         })?;
+
+        // Register GameObject API (for runtime entity creation/destruction)
+        crate::apis::register_gameobject_api(runtime.lua(), self.scene_manager.clone())
+            .with_context(|| {
+                format!(
+                    "Failed to register GameObject API for entity '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            })?;
 
         // Register script parameters as a global Lua table
         let params_lua = Self::json_to_lua(runtime.lua(), &script_comp.parameters)

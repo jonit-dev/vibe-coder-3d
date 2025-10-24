@@ -22,10 +22,12 @@ impl LiveBridge {
     pub fn new(registry: ComponentRegistry) -> Self {
         Self {
             scene: Scene {
-                metadata: Default::default(),
+                version: 1,
+                name: String::new(),
                 entities: Vec::new(),
-                materials: None,
-                prefabs: None,
+                materials: Vec::new(),
+                meshes: None,
+                metadata: None,
                 inputAssets: None,
                 lockedEntityIds: None,
             },

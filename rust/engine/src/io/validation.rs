@@ -22,7 +22,7 @@ pub fn validate_scene(scene: &SceneData) {
 
     log::info!(
         "Validating scene '{}' with {} entities...",
-        scene.metadata.name,
+        scene.name,
         scene.entities.len()
     );
 

@@ -3,8 +3,9 @@ use crate::threed_renderer::ThreeDRenderer;
 use crate::util::FrameTimer;
 use anyhow::Context;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use vibe_ecs_bridge::create_default_registry;
+use vibe_ecs_manager::SceneManager;
 use vibe_physics::{populate_physics_world, PhysicsWorld};
 use vibe_scene::Scene as SceneData;
 use vibe_scripting::ScriptSystem;
@@ -25,6 +26,7 @@ pub struct AppThreeD {
     physics_accumulator: f32,
     timer: FrameTimer,
     scene: Option<SceneData>,
+    scene_manager: Option<Arc<Mutex<SceneManager>>>,
     debug_mode: bool,
 }
 
@@ -87,6 +89,7 @@ impl AppThreeD {
             physics_accumulator: 0.0,
             timer: FrameTimer::new(),
             scene: None,
+            scene_manager: None,
             debug_mode,
         })
     }
@@ -165,6 +168,10 @@ impl AppThreeD {
         // Initialize input manager
         let input_manager = InputManager::new();
 
+        // Initialize SceneManager for mutable ECS
+        log::info!("Initializing scene manager for mutable ECS...");
+        let scene_manager = Arc::new(Mutex::new(SceneManager::new(scene.clone())));
+
         // Initialize script system
         log::info!("Initializing script system...");
         let scripts_base_path = PathBuf::from("../game/scripts");
@@ -172,6 +179,9 @@ impl AppThreeD {
 
         // Set input manager for scripts
         script_system.set_input_manager(Arc::new(input_manager.clone()));
+
+        // Set scene manager for GameObject API
+        script_system.set_scene_manager(Arc::downgrade(&scene_manager));
 
         match script_system.initialize(&scene) {
             Ok(_) => {
@@ -194,6 +204,7 @@ impl AppThreeD {
             physics_accumulator: 0.0,
             timer: FrameTimer::new(),
             scene: Some(scene),
+            scene_manager: Some(scene_manager),
             debug_mode,
         })
     }
@@ -350,6 +361,15 @@ impl AppThreeD {
             // Sync physics transforms back to renderer
             if steps > 0 {
                 self.renderer.sync_physics_transforms(physics_world);
+            }
+        }
+
+        // Apply pending entity commands from scripts (mutable ECS)
+        if let Some(ref scene_manager) = self.scene_manager {
+            if let Ok(mut mgr) = scene_manager.lock() {
+                if let Err(e) = mgr.apply_pending_commands() {
+                    log::error!("Failed to apply entity commands: {}", e);
+                }
             }
         }
 

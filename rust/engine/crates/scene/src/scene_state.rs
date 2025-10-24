@@ -1,15 +1,15 @@
 /// Mutable scene wrapper with interior mutability
 ///
 /// Provides controlled mutation APIs for runtime entity operations
-/// while maintaining thread-safety through RefCell.
+/// while maintaining thread-safety through Mutex.
 
 use super::{Entity, EntityId, Scene};
-use std::cell::RefCell;
+use std::sync::Mutex;
 
 /// Wrapper around Scene providing mutable access via interior mutability
 pub struct SceneState {
-    scene: RefCell<Scene>,
-    next_entity_id: RefCell<u32>,
+    scene: Mutex<Scene>,
+    next_entity_id: Mutex<u32>,
 }
 
 impl SceneState {
@@ -24,14 +24,14 @@ impl SceneState {
             .unwrap_or(0);
 
         Self {
-            scene: RefCell::new(scene),
-            next_entity_id: RefCell::new(max_id + 1),
+            scene: Mutex::new(scene),
+            next_entity_id: Mutex::new(max_id + 1),
         }
     }
 
     /// Generate a new unique entity ID
     pub fn generate_entity_id(&self) -> EntityId {
-        let mut next_id = self.next_entity_id.borrow_mut();
+        let mut next_id = self.next_entity_id.lock().unwrap();
         let id = *next_id;
         *next_id += 1;
         EntityId::new(id as u64)
@@ -42,7 +42,7 @@ impl SceneState {
     where
         F: FnOnce(&Scene) -> R,
     {
-        f(&self.scene.borrow())
+        f(&self.scene.lock().unwrap())
     }
 
     /// Access scene mutably
@@ -50,20 +50,20 @@ impl SceneState {
     where
         F: FnOnce(&mut Scene) -> R,
     {
-        f(&mut self.scene.borrow_mut())
+        f(&mut self.scene.lock().unwrap())
     }
 
     /// Add an entity to the scene
     pub fn add_entity(&self, entity: Entity) -> EntityId {
         let entity_id = entity.entity_id().expect("Entity must have ID");
-        let mut scene = self.scene.borrow_mut();
+        let mut scene = self.scene.lock().unwrap();
         scene.entities.push(entity);
         entity_id
     }
 
     /// Remove an entity from the scene
     pub fn remove_entity(&self, entity_id: EntityId) -> Option<Entity> {
-        let mut scene = self.scene.borrow_mut();
+        let mut scene = self.scene.lock().unwrap();
         let pos = scene
             .entities
             .iter()
@@ -76,7 +76,7 @@ impl SceneState {
     where
         F: FnOnce(&mut Entity),
     {
-        let mut scene = self.scene.borrow_mut();
+        let mut scene = self.scene.lock().unwrap();
         if let Some(entity) = scene
             .entities
             .iter_mut()
@@ -91,7 +91,7 @@ impl SceneState {
 
     /// Check if an entity exists
     pub fn has_entity(&self, entity_id: EntityId) -> bool {
-        let scene = self.scene.borrow();
+        let scene = self.scene.lock().unwrap();
         scene
             .entities
             .iter()
@@ -100,13 +100,13 @@ impl SceneState {
 
     /// Get entity count
     pub fn entity_count(&self) -> usize {
-        let scene = self.scene.borrow();
+        let scene = self.scene.lock().unwrap();
         scene.entities.len()
     }
 
     /// Get all entity IDs
     pub fn entity_ids(&self) -> Vec<EntityId> {
-        let scene = self.scene.borrow();
+        let scene = self.scene.lock().unwrap();
         scene
             .entities
             .iter()

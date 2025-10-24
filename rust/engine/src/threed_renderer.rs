@@ -947,24 +947,8 @@ impl ThreeDRenderer {
         let mut prefab_registry = vibe_ecs_bridge::PrefabRegistry::new();
         let mut prefab_instances: Vec<Entity> = Vec::new();
 
-        if let Some(prefabs_value) = &scene.prefabs {
-            log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            log::info!("PREFABS");
-            log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-            match vibe_ecs_bridge::parse_prefabs(prefabs_value) {
-                Ok(prefabs) => {
-                    log::info!("Found {} prefab definition(s)", prefabs.len());
-                    for prefab in prefabs {
-                        log::info!("  • {} (v{}): {}", prefab.id, prefab.version, prefab.name);
-                        prefab_registry.register(prefab);
-                    }
-                }
-                Err(e) => {
-                    log::warn!("Failed to parse prefabs: {}", e);
-                }
-            }
-        }
+        // Note: Prefabs are no longer stored as a top-level scene field
+        // They may be loaded from a separate source in the future
 
         // Process PrefabInstance components and instantiate prefabs
         log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -1191,8 +1175,9 @@ impl ThreeDRenderer {
         log::info!("MATERIALS");
         log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-        if let Some(materials_value) = &scene.materials {
-            self.material_manager.load_from_scene(materials_value);
+        if !scene.materials.is_empty() {
+            let materials_value = serde_json::Value::Array(scene.materials.clone());
+            self.material_manager.load_from_scene(&materials_value);
         } else {
             log::warn!("No materials found in scene");
         }
@@ -1749,14 +1734,18 @@ impl ThreeDRenderer {
 
     fn log_scene_load_start(&self, scene: &SceneData) {
         log::info!("═══════════════════════════════════════════════════════════");
-        log::info!("RUST SCENE LOAD: {}", scene.metadata.name);
+        log::info!("RUST SCENE LOAD: {}", scene.name);
         log::info!("═══════════════════════════════════════════════════════════");
 
         log::info!("Scene Metadata:");
-        log::info!("  Name: {}", scene.metadata.name);
-        log::info!("  Version: {}", scene.metadata.version);
-        if let Some(desc) = &scene.metadata.description {
-            log::info!("  Description: {}", desc);
+        log::info!("  Name: {}", scene.name);
+        log::info!("  Version: {}", scene.version);
+        if let Some(metadata) = &scene.metadata {
+            if let Some(desc) = metadata.get("description") {
+                if let Some(desc_str) = desc.as_str() {
+                    log::info!("  Description: {}", desc_str);
+                }
+            }
         }
         log::info!("  Total Entities: {}", scene.entities.len());
     }
