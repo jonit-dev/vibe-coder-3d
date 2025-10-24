@@ -413,21 +413,21 @@
 
 **TypeScript APIs Missing (10/24):** 15. ❌ Camera API 16. ❌ Material API 17. ❌ Mesh API 18. ❌ Light API 19. ❌ Collision API 20. ❌ UI API 21. ❌ Scene API 22. ❌ Save/Load API 23. ❌ Particle API (blocked by Particle System) 24. ❌ Animation API (blocked by Animation System)
 
-**Rust APIs (In Progress - 6/24):**
+**Rust APIs (In Progress - 9/24):**
 
 1. ✅ Input API
 2. ✅ Timer API
-3. 🚧 Entity API (read-only methods complete)
+3. ✅ Entity API (read-only - provides entity lookups and component stubs)
 4. ✅ **Transform API** (full parity)
 5. ✅ **Math API** (complete)
 6. ✅ **Time API** (complete)
 7. ✅ **Console API** (complete)
-8. ❌ Event API
+8. ✅ **Event API** (complete - on/off/emit with payload support)
 9. 🚧 Audio API (partial)
-10. ❌ Query API
+10. ✅ **Query API** (findByName, findByTag stub, raycast stubs)
 11. ❌ Prefab API
-12. ❌ GameObject API
-13. ❌ Entities API
+12. ⚠️ GameObject API (cannot implement - scene is read-only, no dynamic entity creation)
+13. ✅ **Entities API** (fromRef, get, findByName, findByTag stub, exists)
 14. ❌ Physics API
 15. ❌ Camera API
 16. ❌ Material API
@@ -439,6 +439,14 @@
 22. ❌ Save/Load API
 23. ❌ Particle API
 24. ❌ Animation API
+
+**Rust Engine Limitations:**
+
+- ⚠️ **Read-Only Scene**: Rust engine loads scenes from JSON files - no runtime entity creation/destruction
+- ⚠️ **GameObject CRUD API**: Cannot implement createEntity/destroy - would require full ECS write access
+- ⚠️ **Tag System**: Stub implementation in QueryAPI/EntitiesAPI - needs tag persistence in scene format
+- ⚠️ **Raycasting**: Stub implementation - requires physics integration
+- ⚠️ **Large u64 IDs**: Entity IDs suffer from Lua f64 precision loss - use guid or name instead for reliable lookups
 
 ---
 
@@ -630,6 +638,7 @@
 | **Performance Optimization** | ✅ 85%    | 🚧 50%      | ⚠️ **Needs Work** |
 | **Physics & Gameplay**       | ✅ 80%    | ✅ 70%      | 🚧 **Good**       |
 | **Audio & Particles**        | 🚧 60%    | 🚧 30%      | ⚠️ **Needs Work** |
+| **Advanced Rendering**       | ❌ 0%     | ❌ 0%       | ❌ **Missing**    |
 | **Tooling & Pipeline**       | ✅ 85%    | 🚧 40%      | 🚧 **Fair**       |
 | **Editor Features**          | ✅ 80%    | 🚧 50%      | 🚧 **Good**       |
 | **Infrastructure**           | 🚧 60%    | 🚧 60%      | 🚧 **Fair**       |
@@ -1721,9 +1730,279 @@ save.clear()
 
 ---
 
+## 🎨 Advanced Rendering & Shaders
+
+### 13. ❌ **Custom Shader System** (★★★★★)
+
+**Impact:** Enables custom visual effects and advanced rendering
+**Status:** Not implemented
+**Effort:** Large (4-6 weeks)
+**Dependencies:** Material system
+
+#### What's Missing:
+
+- ❌ No custom shader authoring pipeline
+- ❌ No shader hot reload
+- ❌ No shader parameter inspector
+- ❌ No shader include system
+- ❌ No shader compilation errors UI
+- ❌ No shader library/presets
+
+#### Implementation Requirements:
+
+**TypeScript Components:**
+
+- `src/core/lib/shaders/ShaderManager.ts` - Shader loading and compilation
+- `src/core/lib/shaders/ShaderLibrary.ts` - Built-in shader repository
+- `src/core/components/materials/CustomShader.ts` - Custom shader component
+- `src/editor/components/inspectors/ShaderInspector.tsx` - Shader editing UI
+- `src/editor/components/shaders/ShaderEditor.tsx` - Code editor with GLSL syntax
+
+**Rust Components:**
+
+- `rust/engine/crates/shaders/src/shader_compiler.rs` - WGSL/GLSL compilation
+- `rust/engine/crates/shaders/src/shader_cache.rs` - Compiled shader cache
+- `rust/engine/src/renderer/custom_material.rs` - Custom material support
+
+**Core Features:**
+
+1. **Shader Authoring:**
+   - GLSL/WGSL support
+   - Shader hot reload
+   - Syntax highlighting in editor
+   - Error display with line numbers
+2. **Shader Parameters:**
+   - Uniform binding (floats, vectors, colors, textures)
+   - Material property blocks
+   - Texture slots (up to 8)
+3. **Shader Library:**
+   - Built-in shaders (toon, cel, wireframe, dissolve, hologram)
+   - Shader templates for common effects
+   - Include system for shared functions
+4. **Integration:**
+   - Material system integration
+   - PBR shader as base template
+   - Post-processing shader support
+
+**Shader API for Scripts:**
+
+```typescript
+// Shader API
+shader.setFloat(name: string, value: number)
+shader.setVector(name: string, value: Vector3)
+shader.setColor(name: string, color: Color)
+shader.setTexture(name: string, texturePath: string)
+shader.getParameter(name: string) -> any
+```
+
+---
+
+### 14. ❌ **Compute Shaders** (★★★★☆)
+
+**Impact:** GPU-accelerated physics, particles, and simulations
+**Status:** Not implemented
+**Effort:** Large (4-6 weeks)
+**Dependencies:** Custom shader system
+
+#### What's Missing:
+
+- ❌ No compute shader pipeline
+- ❌ No GPU buffer management
+- ❌ No compute dispatch system
+- ❌ No compute-to-render texture binding
+
+#### Implementation Requirements:
+
+**Rust Components (Primary):**
+
+- `rust/engine/crates/compute/src/compute_pipeline.rs` - Compute pipeline
+- `rust/engine/crates/compute/src/buffer_manager.rs` - GPU buffer management
+- `rust/engine/crates/compute/src/dispatch.rs` - Compute dispatch
+
+**Use Cases:**
+
+1. **GPU Particle System:**
+   - Particle physics on GPU
+   - 100k+ particles at 60fps
+   - Collision detection via compute
+2. **Fluid Simulation:**
+   - Navier-Stokes solver
+   - Particle-based fluids (SPH)
+   - Volumetric rendering
+3. **Cloth Simulation:**
+   - Mass-spring system
+   - Collision response
+   - Wind forces
+4. **Procedural Generation:**
+   - Terrain generation
+   - Vegetation placement
+   - Texture synthesis
+
+**Compute Shader Examples:**
+
+```wgsl
+// Particle physics compute shader
+@compute @workgroup_size(256)
+fn particle_physics(@builtin(global_invocation_id) id: vec3<u32>) {
+    let idx = id.x;
+    var particle = particles[idx];
+
+    // Apply forces
+    particle.velocity += gravity * deltaTime;
+    particle.position += particle.velocity * deltaTime;
+
+    // Collision detection
+    if (particle.position.y < 0.0) {
+        particle.position.y = 0.0;
+        particle.velocity.y *= -0.5; // bounce
+    }
+
+    particles[idx] = particle;
+}
+```
+
+---
+
+### 15. ❌ **Fluid Physics System** (★★★☆☆)
+
+**Impact:** Water, smoke, fire, and fluid simulations
+**Status:** Not implemented
+**Effort:** Very Large (6-8 weeks)
+**Dependencies:** Compute shaders, particle system
+
+#### What's Missing:
+
+- ❌ No fluid solver
+- ❌ No particle-based fluids (SPH)
+- ❌ No grid-based fluids (Navier-Stokes)
+- ❌ No fluid rendering (volumetric, surface)
+- ❌ No fluid-rigid body interaction
+
+#### Implementation Requirements:
+
+**Simulation Methods:**
+
+1. **SPH (Smoothed Particle Hydrodynamics):**
+   - Particle-based approach
+   - Best for splashes, small volumes
+   - GPU-accelerated via compute shaders
+2. **Grid-Based (Navier-Stokes):**
+   - Volumetric approach
+   - Best for large bodies of water, smoke
+   - Eulerian grid simulation
+3. **Hybrid Methods:**
+   - FLIP/PIC (Fluid Implicit Particle)
+   - Combines particle and grid benefits
+
+**Rust Components:**
+
+- `rust/engine/crates/fluids/src/sph_solver.rs` - SPH fluid solver
+- `rust/engine/crates/fluids/src/grid_solver.rs` - Grid-based solver
+- `rust/engine/crates/fluids/src/fluid_renderer.rs` - Volume/surface rendering
+- `rust/engine/crates/fluids/src/marching_cubes.rs` - Surface extraction
+
+**TypeScript Components:**
+
+- `src/core/components/physics/FluidEmitter.ts` - Fluid emitter component
+- `src/core/lib/fluids/FluidSystem.ts` - Fluid simulation system
+- `src/editor/components/inspectors/FluidInspector.tsx` - Fluid parameters UI
+
+**Core Features:**
+
+1. **Fluid Properties:**
+   - Density, viscosity, surface tension
+   - Temperature (for fire/smoke)
+   - Buoyancy forces
+2. **Rendering:**
+   - Screen-space fluid rendering
+   - Volumetric rendering for smoke/fire
+   - Refraction/transparency for water
+3. **Interaction:**
+   - Fluid-rigid body coupling
+   - Fluid forces on objects
+   - Buoyancy simulation
+4. **Performance:**
+   - GPU-accelerated simulation
+   - Spatial hashing for neighbor search
+   - Adaptive time stepping
+
+**Fluid Simulation Types:**
+
+- **Water:** SPH particles with surface rendering
+- **Smoke/Fire:** Grid-based advection with volumetric rendering
+- **Blood/Viscous:** High-viscosity SPH
+- **Gas:** Low-density grid simulation
+
+**Expected Performance:**
+
+- SPH: 10k-50k particles at 60fps (GPU)
+- Grid: 128³ resolution at 60fps
+- Hybrid: Best of both worlds
+
+---
+
+### 16. ❌ **Advanced Shader Effects Library** (★★★☆☆)
+
+**Impact:** Pre-built visual effects for rapid prototyping
+**Status:** Not implemented
+**Effort:** Medium (3-4 weeks)
+**Dependencies:** Custom shader system
+
+#### Shader Effect Categories:
+
+**1. Stylized Rendering (★★★★☆)**
+
+- ✅ Toon/Cel Shading
+- ✅ Outline/Edge Detection
+- ✅ Halftone/Cross-hatch
+- ❌ Sketch/Pencil shading
+- ❌ Watercolor effect
+
+**2. Distortion Effects (★★★★☆)**
+
+- ❌ Heat haze/distortion
+- ❌ Water ripples
+- ❌ Glass refraction
+- ❌ Displacement mapping
+- ❌ Vertex animation (wind, waves)
+
+**3. Dissolve/Transition (★★★★☆)**
+
+- ❌ Dissolve effect (fade out with noise)
+- ❌ Hologram/glitch
+- ❌ Teleport effect
+- ❌ Burn/disintegrate
+- ❌ Freeze/crystallize
+
+**4. Surface Effects (★★★☆☆)**
+
+- ❌ Wet surface shader
+- ❌ Snow accumulation
+- ❌ Rust/weathering
+- ❌ Damage/cracks
+- ❌ Iridescence/oil slick
+
+**5. Emission/Glow (★★★★☆)**
+
+- ❌ Rim lighting
+- ❌ Fresnel glow
+- ❌ Pulse/breathing glow
+- ❌ Energy shield effect
+- ❌ Force field
+
+**Implementation Files:**
+
+- `src/core/lib/shaders/effects/ToonShader.ts`
+- `src/core/lib/shaders/effects/DissolveShader.ts`
+- `src/core/lib/shaders/effects/HologramShader.ts`
+- `src/core/lib/shaders/effects/RimLightShader.ts`
+- `src/core/lib/shaders/effects/WaterShader.ts`
+
+---
+
 ## 🟢 Nice-to-Have Features (Low Priority)
 
-### 11. ❌ **Navigation/Pathfinding** (★★★★☆)
+### 17. ❌ **Navigation/Pathfinding** (★★★★☆)
 
 **Status:** Not implemented
 **Effort:** Large (4-6 weeks)
@@ -1731,7 +2010,7 @@ save.clear()
 
 ---
 
-### 12. ❌ **Decal System** (★★★☆☆)
+### 18. ❌ **Decal System** (★★★☆☆)
 
 **Status:** Not implemented
 **Effort:** Medium (2-3 weeks)
@@ -1739,7 +2018,7 @@ save.clear()
 
 ---
 
-### 13. ❌ **Localization System** (★★★☆☆)
+### 19. ❌ **Localization System** (★★★☆☆)
 
 **Status:** Not implemented
 **Effort:** Medium (2-3 weeks)
@@ -1747,7 +2026,7 @@ save.clear()
 
 ---
 
-### 14. ❌ **Networking/Multiplayer** (★★★☆☆)
+### 20. ❌ **Networking/Multiplayer** (★★★☆☆)
 
 **Status:** Architectured but not implemented
 **Effort:** Very Large (8-12 weeks)
@@ -1755,7 +2034,7 @@ save.clear()
 
 ---
 
-### 15. 🚧 **Terrain Editor Tools** (★★★☆☆)
+### 21. 🚧 **Terrain Editor Tools** (★★★☆☆)
 
 **Status:** Rust has terrain generation, no editor tools
 **Effort:** Large (4-6 weeks)
@@ -2044,15 +2323,39 @@ The following 7 APIs significantly enhance gameplay capabilities:
 
 ---
 
-### Phase 5: Commercial Features (8-12 weeks)
+### Phase 5: Advanced Rendering (8-12 weeks)
+
+**Focus:** Custom shaders and advanced visual effects
+
+16. **Custom Shader System** (4-6 weeks)
+17. **Advanced Shader Effects Library** (3-4 weeks)
+18. **Compute Shaders** (4-6 weeks)
+
+**Total Phase 5:** 11-16 weeks
+
+---
+
+### Phase 6: Simulation & Physics (6-10 weeks)
+
+**Focus:** Advanced physics simulations
+
+19. **Fluid Physics System** (6-8 weeks)
+20. **GPU Particle System** (depends on Compute Shaders)
+21. **Cloth/Soft Body Physics** (4-6 weeks)
+
+**Total Phase 6:** 10-14 weeks
+
+---
+
+### Phase 7: Commercial Features (8-12 weeks)
 
 **Focus:** Commercial-grade polish
 
-16. **Decal System** (2-3 weeks)
-17. **Localization** (2-3 weeks)
-18. **Networking** (8-12 weeks)
+22. **Decal System** (2-3 weeks)
+23. **Localization** (2-3 weeks)
+24. **Networking** (8-12 weeks)
 
-**Total Phase 5:** 12-18 weeks
+**Total Phase 7:** 12-18 weeks
 
 ---
 
@@ -2147,11 +2450,27 @@ The following 7 APIs significantly enhance gameplay capabilities:
 | Feature                    | Impact  | Effort    | Priority    | Status       | Rationale            |
 | -------------------------- | ------- | --------- | ----------- | ------------ | -------------------- |
 | **Navigation/Pathfinding** | 🟢 Nice | 4-6 weeks | 🔵 Phase 4+ | ❌ Missing   | AI-specific feature  |
-| **Decal System**           | 🟢 Nice | 2-3 weeks | 🔵 Phase 5  | ❌ Missing   | Visual polish only   |
-| **Localization**           | 🟢 Nice | 2-3 weeks | 🔵 Phase 5  | ❌ Missing   | Not critical for MVP |
+| **Decal System**           | 🟢 Nice | 2-3 weeks | 🔵 Phase 7  | ❌ Missing   | Visual polish only   |
+| **Localization**           | 🟢 Nice | 2-3 weeks | 🔵 Phase 7  | ❌ Missing   | Not critical for MVP |
 | **Terrain Editor Tools**   | 🟢 Nice | 4-6 weeks | 🔵 Phase 4+ | 🚧 Rust only | Rust terrain exists  |
 
 **Total Deferred:** 4 features | **Combined Effort:** 12-18 weeks | **Impact:** Future features
+
+---
+
+### High Effort, High Impact - Advanced (Strategic Long-term) 🎨
+
+| Feature                     | Impact       | Effort     | Priority   | Status     | Dependencies               |
+| --------------------------- | ------------ | ---------- | ---------- | ---------- | -------------------------- |
+| **Custom Shader System**    | 🟡 Important | 4-6 weeks  | 🟡 Phase 5 | ❌ Missing | Material system            |
+| **Compute Shaders**         | 🟡 Important | 4-6 weeks  | 🟡 Phase 5 | ❌ Missing | Shader system              |
+| **Fluid Physics System**    | 🟢 Nice      | 6-8 weeks  | 🔵 Phase 6 | ❌ Missing | Compute shaders, particles |
+| **Advanced Shader Library** | 🟢 Nice      | 3-4 weeks  | 🟡 Phase 5 | ❌ Missing | Shader system              |
+| **GPU Particle System**     | 🟡 Important | 2-3 weeks  | 🟡 Phase 6 | ❌ Missing | Compute shaders            |
+| **Cloth/Soft Body Physics** | 🟢 Nice      | 4-6 weeks  | 🔵 Phase 6 | ❌ Missing | Compute shaders            |
+| **Networking/Multiplayer**  | 🟢 Nice      | 8-12 weeks | 🔵 Phase 7 | ❌ Missing | Architectured              |
+
+**Total Advanced:** 7 features | **Combined Effort:** 31-45 weeks | **Impact:** Professional-grade engine features
 
 ---
 
@@ -2258,4 +2577,92 @@ The following 7 APIs significantly enhance gameplay capabilities:
 
 - **Minimum Viable Engine:** 16-22 weeks (Phases 1-2)
 - **Production Ready:** 24-35 weeks (Phases 1-3)
-- **Commercial Grade:** 38-56 weeks (All Phases)
+- **Feature Complete:** 38-56 weeks (Phases 1-4)
+- **Advanced Rendering:** 49-72 weeks (+ Phases 5-6)
+- **Commercial Grade:** 61-90 weeks (All Phases 1-7)
+
+---
+
+## 🎨 Advanced Rendering Features Summary
+
+### Custom Shader System (Phase 5)
+
+**Priority:** 🟡 Important | **Effort:** 4-6 weeks | **Dependencies:** Material system
+
+Enables custom visual effects through shader authoring:
+
+- GLSL/WGSL shader support with hot reload
+- Shader parameter inspector and editor UI
+- Shader library with built-in effects (toon, cel, wireframe, dissolve, hologram)
+- Integration with existing PBR material system
+
+**Key Benefits:**
+
+- Unlimited visual customization
+- Stylized rendering capabilities
+- Real-time shader editing workflow
+
+---
+
+### Compute Shaders (Phase 5)
+
+**Priority:** 🟡 Important | **Effort:** 4-6 weeks | **Dependencies:** Shader system
+
+GPU-accelerated computing for physics and simulations:
+
+- Compute pipeline with buffer management
+- Support for 100k+ GPU particles at 60fps
+- Procedural generation on GPU
+- Foundation for fluid/cloth simulations
+
+**Use Cases:**
+
+- High-performance particle systems
+- Fluid/cloth physics
+- Procedural terrain/vegetation
+- Custom GPU-accelerated algorithms
+
+---
+
+### Fluid Physics System (Phase 6)
+
+**Priority:** 🟢 Nice-to-Have | **Effort:** 6-8 weeks | **Dependencies:** Compute shaders, particle system
+
+Realistic fluid simulations for water, smoke, and fire:
+
+- SPH (Smoothed Particle Hydrodynamics) for splashes/water
+- Grid-based Navier-Stokes for large volumes/smoke
+- Volumetric and surface rendering
+- Fluid-rigid body interaction
+
+**Performance Targets:**
+
+- SPH: 10k-50k particles at 60fps (GPU)
+- Grid: 128³ resolution at 60fps
+
+**Fluid Types:**
+
+- Water (SPH with surface rendering)
+- Smoke/Fire (grid-based volumetric)
+- Blood/Viscous fluids (high-viscosity SPH)
+- Gas (low-density grid simulation)
+
+---
+
+### Advanced Shader Effects Library (Phase 5)
+
+**Priority:** 🟢 Nice-to-Have | **Effort:** 3-4 weeks | **Dependencies:** Shader system
+
+Pre-built shader effects for rapid prototyping:
+
+- **Stylized:** Toon, cel, outline, halftone, sketch, watercolor
+- **Distortion:** Heat haze, water ripples, glass refraction, displacement
+- **Dissolve/Transition:** Dissolve, hologram, glitch, teleport, burn, freeze
+- **Surface:** Wet surface, snow, rust, damage/cracks, iridescence
+- **Emission/Glow:** Rim lighting, Fresnel glow, pulse/breathing, energy shield
+
+**Key Benefits:**
+
+- Rapid visual prototyping
+- Professional shader effects out-of-the-box
+- Learning resource for custom shaders

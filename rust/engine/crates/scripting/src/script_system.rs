@@ -288,6 +288,40 @@ impl ScriptSystem {
             )
         })?;
 
+        // Register event API for inter-entity communication
+        crate::apis::register_event_api(runtime.lua(), entity_id as u32).with_context(|| {
+            format!(
+                "Failed to register event API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
+        // Register query API for entity/scene queries
+        let scene_ref_for_query = self
+            .scene
+            .clone()
+            .context("Scene not initialized for QueryAPI")?;
+        crate::apis::register_query_api(runtime.lua(), scene_ref_for_query).with_context(|| {
+            format!(
+                "Failed to register query API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
+        // Register entities API for entity lookups and references
+        let scene_ref_for_entities = self
+            .scene
+            .clone()
+            .context("Scene not initialized for EntitiesAPI")?;
+        crate::apis::register_entities_api(runtime.lua(), scene_ref_for_entities).with_context(
+            || {
+                format!(
+                    "Failed to register entities API for entity '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            },
+        )?;
+
         // Register script parameters as a global Lua table
         let params_lua = Self::json_to_lua(runtime.lua(), &script_comp.parameters)
             .map_err(|e| anyhow::anyhow!("Failed to convert parameters to Lua: {}", e))?;
@@ -422,6 +456,13 @@ impl ScriptSystem {
                 .with_context(|| {
                     format!("Error in onDestroy() for entity {}", entity_id)
                 })?;
+
+            // Cleanup event handlers for this entity
+            crate::apis::cleanup_event_api(entity_script.runtime.lua(), entity_id as u32)
+                .with_context(|| {
+                    format!("Error cleaning up event API for entity {}", entity_id)
+                })?;
+
             log::debug!("Successfully destroyed script for entity {}", entity_id);
         }
         Ok(())
