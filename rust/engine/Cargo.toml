@@ -3,6 +3,7 @@ members = [
     ".",
     "crates/scene",
     "crates/ecs-bridge",
+    "crates/ecs-manager",
     "crates/scene-graph",
     "crates/assets",
     "crates/wasm-bridge",

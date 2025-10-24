@@ -2,6 +2,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
+// Export new modules for mutable ECS
+pub mod entity_commands;
+pub mod scene_state;
+
+// Re-export key types
+pub use entity_commands::{EntityCommand, EntityCommandBuffer};
+pub use scene_state::SceneState;
+
 /// Stable entity identifier (wraps the persistentId from JSON)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct EntityId(u64);
@@ -163,14 +171,18 @@ impl Entity {
 }
 
 /// Complete scene data
+#[allow(non_snake_case)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Scene {
-    pub metadata: Metadata,
+    pub version: u32,
+    pub name: String,
     pub entities: Vec<Entity>,
     #[serde(default)]
-    pub materials: Option<Value>,
+    pub materials: Vec<Value>,
     #[serde(default)]
-    pub prefabs: Option<Value>,
+    pub meshes: Option<Value>,
+    #[serde(default)]
+    pub metadata: Option<Value>,
     #[serde(default)]
     pub inputAssets: Option<Value>,
     #[serde(default)]
@@ -237,6 +249,7 @@ mod tests {
             persistentId: Some("entity-1".to_string()),
             name: Some("Test".to_string()),
             parentPersistentId: Some("parent-1".to_string()),
+            tags: vec![],
             components: HashMap::new(),
         };
 
@@ -259,6 +272,7 @@ mod tests {
             persistentId: Some("entity-1".to_string()),
             name: Some("Test".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components,
         };
 
@@ -274,6 +288,7 @@ mod tests {
             persistentId: Some("entity-1".to_string()),
             name: Some("Entity1".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components: HashMap::new(),
         };
 
@@ -282,20 +297,17 @@ mod tests {
             persistentId: Some("entity-2".to_string()),
             name: Some("Entity2".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components: HashMap::new(),
         };
 
         let scene = Scene {
-            metadata: Metadata {
-                name: "Test Scene".to_string(),
-                version: 1,
-                timestamp: "2025-01-01T00:00:00Z".to_string(),
-                author: None,
-                description: None,
-            },
+            version: 1,
+            name: "Test Scene".to_string(),
             entities: vec![entity1.clone(), entity2.clone()],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
+            meshes: None,
+            metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
         };
@@ -318,6 +330,7 @@ mod tests {
             persistentId: Some("entity-1".to_string()),
             name: Some("HasTransform".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components: components.clone(),
         };
 
@@ -326,20 +339,17 @@ mod tests {
             persistentId: Some("entity-2".to_string()),
             name: Some("NoTransform".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components: HashMap::new(),
         };
 
         let scene = Scene {
-            metadata: Metadata {
-                name: "Test Scene".to_string(),
-                version: 1,
-                timestamp: "2025-01-01T00:00:00Z".to_string(),
-                author: None,
-                description: None,
-            },
+            version: 1,
+            name: "Test Scene".to_string(),
             entities: vec![entity1, entity2],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
+            meshes: None,
+            metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
         };
