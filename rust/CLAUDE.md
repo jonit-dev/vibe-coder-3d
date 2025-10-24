@@ -2,11 +2,12 @@
 
 ## Overview
 
-Native Rust engine that renders 3D scenes using three-d lib. Consumes JSON scene files exported by the TypeScript editor.
+Native Rust engine that renders 3D scenes using three-d lib. This is NOT a read-only viewer - it replicates ALL functionality from the TypeScript/Three.js editor including full CRUD operations on entities, components, physics, and scene state.
 
 ## Design Goals
 
 - **Full-Featured 3D**: Complete 3D rendering capabilities with PBR materials, lighting, shadows, and post-processing
+- **Complete Editor Parity**: All TypeScript editor functionality (create, update, delete entities/components)
 - **Approachable Yet Powerful**: Clean API for beginners, deep customization for advanced users
 - **ECS Architecture**: Data-oriented design with Entity Component System for performance and flexibility
 - **Composable Modules**: Use what you need, replace what you don't - workspace crates allow selective dependencies

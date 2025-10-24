@@ -691,6 +691,7 @@ mod tests {
             persistentId: None,
             name: Some(entity_name.to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components,
         };
 
@@ -715,6 +716,7 @@ mod tests {
             persistentId: Some("parent-1".to_string()),
             name: Some("Parent".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components: parent_components,
         };
 
@@ -727,6 +729,7 @@ mod tests {
             persistentId: Some("child-2".to_string()),
             name: Some("Child".to_string()),
             parentPersistentId: Some("parent-1".to_string()), // Points to parent's persistentId
+            tags: vec![],
             components: child_components,
         };
 
@@ -739,6 +742,7 @@ mod tests {
             persistentId: Some("child-3".to_string()),
             name: Some("ChildTwo".to_string()),
             parentPersistentId: Some("parent-1".to_string()),
+            tags: vec![],
             components: child2_components,
         };
 

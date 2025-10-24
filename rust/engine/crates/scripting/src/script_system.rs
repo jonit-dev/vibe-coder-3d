@@ -517,6 +517,7 @@ mod tests {
                 persistentId: None, // Don't set persistentId so entity_id() uses numeric id
                 name: Some("TestEntity".to_string()),
                 parentPersistentId: None,
+                tags: vec![],
                 components: [
                     (
                         "Transform".to_string(),

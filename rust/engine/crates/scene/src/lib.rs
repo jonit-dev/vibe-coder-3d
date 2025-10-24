@@ -108,6 +108,9 @@ pub struct Entity {
     pub name: Option<String>,
     #[serde(default)]
     pub parentPersistentId: Option<String>,
+    /// Tags for categorization and querying
+    #[serde(default)]
+    pub tags: Vec<String>,
     pub components: HashMap<String, Value>,
 }
 

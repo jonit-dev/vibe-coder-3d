@@ -99,6 +99,7 @@ impl LiveBridge {
                     persistentId: Some(persistent_id.clone()),
                     name: name.clone(),
                     parentPersistentId: parent_persistent_id.clone(),
+                    tags: vec![],
                     components: HashMap::new(),
                 };
 

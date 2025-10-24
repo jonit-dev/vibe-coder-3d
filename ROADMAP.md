@@ -424,10 +424,10 @@
 7. ✅ **Console API** (complete)
 8. ✅ **Event API** (complete - on/off/emit with payload support)
 9. 🚧 Audio API (partial)
-10. ✅ **Query API** (findByName, findByTag stub, raycast stubs)
+10. ✅ **Query API** (findByName, findByTag ✅, raycast stubs)
 11. ❌ Prefab API
 12. ⚠️ GameObject API (cannot implement - scene is read-only, no dynamic entity creation)
-13. ✅ **Entities API** (fromRef, get, findByName, findByTag stub, exists)
+13. ✅ **Entities API** (fromRef, get, findByName, findByTag ✅, exists)
 14. ❌ Physics API
 15. ❌ Camera API
 16. ❌ Material API
@@ -444,8 +444,8 @@
 
 - ⚠️ **Read-Only Scene**: Rust engine loads scenes from JSON files - no runtime entity creation/destruction
 - ⚠️ **GameObject CRUD API**: Cannot implement createEntity/destroy - would require full ECS write access
-- ⚠️ **Tag System**: Stub implementation in QueryAPI/EntitiesAPI - needs tag persistence in scene format
-- ⚠️ **Raycasting**: Stub implementation - requires physics integration
+- ✅ **Tag System**: COMPLETE - Full implementation in scene format, QueryAPI, and EntitiesAPI (case-insensitive matching)
+- 🚧 **Raycasting**: Partial - PhysicsWorld has raycast_first/raycast_all, but QueryAPI can't access it (architectural limitation)
 - ⚠️ **Large u64 IDs**: Entity IDs suffer from Lua f64 precision loss - use guid or name instead for reliable lookups
 
 ---

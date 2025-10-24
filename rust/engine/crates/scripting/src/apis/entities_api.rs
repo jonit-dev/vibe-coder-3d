@@ -233,17 +233,44 @@ pub fn register_entities_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
         )?;
     }
 
-    // entities.findByTag(tag) - Find all entities with given tag (stub)
+    // entities.findByTag(tag) - Find all entities with given tag
     {
+        let scene_clone = Arc::clone(&scene);
+        let create_api = create_entity_api.clone();
         entities.set(
             "findByTag",
-            lua.create_function(|lua, tag: String| {
-                log::debug!(
-                    "Entities: Finding entities by tag: {} (not implemented)",
-                    tag
-                );
-                // TODO: Implement tag system integration
-                lua.create_table()
+            lua.create_function(move |lua, tag: String| {
+                log::debug!("Entities: Finding entities by tag: {}", tag);
+
+                let result = lua.create_table()?;
+                let mut index = 1;
+
+                // Normalize tag for comparison (lowercase)
+                let normalized_tag = tag.to_lowercase();
+
+                for entity in &scene_clone.entities {
+                    // Check if entity has the tag
+                    if entity.tags.iter().any(|t| t.to_lowercase() == normalized_tag) {
+                        if let Some(entity_id) = entity.entity_id() {
+                            match create_api(lua, entity_id.as_u64()) {
+                                Ok(api) => {
+                                    result.set(index, api)?;
+                                    index += 1;
+                                }
+                                Err(e) => {
+                                    log::warn!(
+                                        "Failed to create entity API for tag '{}': {}",
+                                        tag,
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
+                log::debug!("Found {} entities with tag '{}'", index - 1, tag);
+                Ok(result)
             })?,
         )?;
     }
@@ -392,6 +419,7 @@ mod tests {
             persistentId: Some("entity-1".to_string()),
             name: Some("Player".to_string()),
             parentPersistentId: None,
+            tags: vec!["player".to_string(), "character".to_string()],
             components: HashMap::new(),
         };
 
@@ -400,6 +428,7 @@ mod tests {
             persistentId: Some("entity-2".to_string()),
             name: Some("Enemy".to_string()),
             parentPersistentId: None,
+            tags: vec!["enemy".to_string(), "character".to_string()],
             components: HashMap::new(),
         };
 
@@ -408,6 +437,7 @@ mod tests {
             persistentId: Some("entity-3".to_string()),
             name: Some("Player".to_string()), // Duplicate name
             parentPersistentId: None,
+            tags: vec!["player".to_string()],
             components: HashMap::new(),
         };
 
@@ -571,7 +601,7 @@ mod tests {
     }
 
     #[test]
-    fn test_entities_find_by_tag_stub() {
+    fn test_entities_find_by_tag_player() {
         let lua = Lua::new();
         let scene = Arc::new(create_test_scene());
         register_entities_api(&lua, scene).unwrap();
@@ -586,7 +616,53 @@ mod tests {
             .eval();
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 0); // Stub returns empty
+        assert_eq!(result.unwrap(), 2); // entity1 and entity3 have "player" tag
+    }
+
+    #[test]
+    fn test_entities_find_by_tag_character() {
+        let lua = Lua::new();
+        let scene = Arc::new(create_test_scene());
+        register_entities_api(&lua, scene).unwrap();
+
+        let result: LuaResult<usize> = lua
+            .load(
+                r#"
+                local results = entities.findByTag("character")
+
+                -- Verify they are entity API objects
+                for i, entity in ipairs(results) do
+                    if not entity.id or not entity.name then
+                        error("Entity API missing fields")
+                    end
+                end
+
+                return #results
+            "#,
+            )
+            .eval();
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2); // entity1 and entity2 have "character" tag
+    }
+
+    #[test]
+    fn test_entities_find_by_tag_case_insensitive() {
+        let lua = Lua::new();
+        let scene = Arc::new(create_test_scene());
+        register_entities_api(&lua, scene).unwrap();
+
+        let result: LuaResult<usize> = lua
+            .load(
+                r#"
+                local results = entities.findByTag("ENEMY")
+                return #results
+            "#,
+            )
+            .eval();
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1); // entity2 has "enemy" tag (case-insensitive)
     }
 
     #[test]

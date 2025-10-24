@@ -68,16 +68,38 @@ pub fn register_query_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
         )?;
     }
 
-    // findByTag - Find entities by tag (stub - requires tag system integration)
-    query.set(
-        "findByTag",
-        lua.create_function(|lua, tag: String| {
-            log::debug!("Query: Finding entities by tag: {} (not implemented)", tag);
-            // TODO: Implement tag system integration
-            // For now, return empty array
-            lua.create_table()
-        })?,
-    )?;
+    // findByTag - Find entities by tag
+    {
+        let scene_clone = Arc::clone(&scene);
+        query.set(
+            "findByTag",
+            lua.create_function(move |lua, tag: String| {
+                log::debug!("Query: Finding entities by tag: {}", tag);
+                let mut found_ids = Vec::new();
+
+                // Normalize tag for comparison (lowercase)
+                let normalized_tag = tag.to_lowercase();
+
+                for entity in &scene_clone.entities {
+                    // Check if entity has the tag
+                    if entity.tags.iter().any(|t| t.to_lowercase() == normalized_tag) {
+                        if let Some(entity_id) = entity.entity_id() {
+                            found_ids.push(entity_id.as_u64());
+                        }
+                    }
+                }
+
+                // Convert to Lua table (1-indexed)
+                let result = lua.create_table()?;
+                for (i, id) in found_ids.iter().enumerate() {
+                    result.set(i + 1, *id)?;
+                }
+
+                log::debug!("Found {} entities with tag '{}'", found_ids.len(), tag);
+                Ok(result)
+            })?,
+        )?;
+    }
 
     // raycastFirst - Raycast and find first hit (stub - requires physics integration)
     query.set(
@@ -119,6 +141,7 @@ mod tests {
             persistentId: Some("entity-1".to_string()),
             name: Some("Player".to_string()),
             parentPersistentId: None,
+            tags: vec!["player".to_string(), "character".to_string()],
             components: HashMap::new(),
         };
 
@@ -127,6 +150,7 @@ mod tests {
             persistentId: Some("entity-2".to_string()),
             name: Some("Enemy".to_string()),
             parentPersistentId: None,
+            tags: vec!["enemy".to_string(), "character".to_string()],
             components: HashMap::new(),
         };
 
@@ -135,6 +159,7 @@ mod tests {
             persistentId: Some("entity-3".to_string()),
             name: Some("Player".to_string()), // Duplicate name
             parentPersistentId: None,
+            tags: vec!["player".to_string()],
             components: HashMap::new(),
         };
 
@@ -268,12 +293,12 @@ mod tests {
     }
 
     #[test]
-    fn test_find_by_tag_stub() {
+    fn test_find_by_tag() {
         let lua = Lua::new();
         let scene = Arc::new(create_test_scene());
         register_query_api(&lua, scene).unwrap();
 
-        // findByTag should return empty array (stub)
+        // Find entities with "player" tag (case-insensitive)
         let result: LuaResult<Vec<u64>> = lua
             .load(
                 r#"
@@ -289,7 +314,57 @@ mod tests {
 
         assert!(result.is_ok());
         let ids = result.unwrap();
-        assert_eq!(ids.len(), 0); // Stub implementation returns empty
+        assert_eq!(ids.len(), 2); // entity1 and entity3 have "player" tag
+    }
+
+    #[test]
+    fn test_find_by_tag_character() {
+        let lua = Lua::new();
+        let scene = Arc::new(create_test_scene());
+        register_query_api(&lua, scene).unwrap();
+
+        // Find entities with "character" tag (both player and enemy have this)
+        let result: LuaResult<Vec<u64>> = lua
+            .load(
+                r#"
+                local ids = query.findByTag("character")
+                local result = {}
+                for i = 1, #ids do
+                    table.insert(result, ids[i])
+                end
+                return result
+            "#,
+            )
+            .eval();
+
+        assert!(result.is_ok());
+        let ids = result.unwrap();
+        assert_eq!(ids.len(), 2); // entity1 and entity2 have "character" tag
+    }
+
+    #[test]
+    fn test_find_by_tag_case_insensitive() {
+        let lua = Lua::new();
+        let scene = Arc::new(create_test_scene());
+        register_query_api(&lua, scene).unwrap();
+
+        // Find entities with "ENEMY" tag (should work case-insensitively)
+        let result: LuaResult<Vec<u64>> = lua
+            .load(
+                r#"
+                local ids = query.findByTag("ENEMY")
+                local result = {}
+                for i = 1, #ids do
+                    table.insert(result, ids[i])
+                end
+                return result
+            "#,
+            )
+            .eval();
+
+        assert!(result.is_ok());
+        let ids = result.unwrap();
+        assert_eq!(ids.len(), 1); // entity2 has "enemy" tag
     }
 
     #[test]

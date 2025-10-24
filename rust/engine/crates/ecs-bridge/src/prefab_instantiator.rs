@@ -169,6 +169,7 @@ fn instantiate_entity_recursive(
         persistentId: Some(persistent_id.clone()),
         name: Some(entity_data.name.clone()),
         parentPersistentId: parent_persistent_id,
+        tags: entity_data.tags.clone(),
         components: entity_data.components.clone(),
     };
 

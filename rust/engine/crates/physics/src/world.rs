@@ -7,6 +7,19 @@ use vibe_scene::EntityId;
 
 use crate::events::PhysicsEventQueue;
 
+/// Result of a raycast query
+#[derive(Debug, Clone)]
+pub struct RaycastHit {
+    /// Entity that was hit
+    pub entity_id: EntityId,
+    /// Point where the ray hit the collider
+    pub point: Vec3,
+    /// Surface normal at the hit point
+    pub normal: Vec3,
+    /// Distance from ray origin to hit point
+    pub distance: f32,
+}
+
 /// Main physics world managing Rapier simulation
 pub struct PhysicsWorld {
     /// Gravity vector (default: [0, -9.81, 0])
@@ -223,6 +236,141 @@ impl PhysicsWorld {
     /// Poll events (consumes the queue)
     pub fn poll_events(&mut self) -> impl Iterator<Item = crate::events::CollisionEvent> + '_ {
         self.event_queue.drain()
+    }
+
+    /// Cast a ray and find the first hit
+    ///
+    /// # Arguments
+    /// * `origin` - Ray origin point
+    /// * `direction` - Ray direction (will be normalized)
+    /// * `max_distance` - Maximum ray travel distance
+    /// * `solid` - If true, stop at first hit. If false, pass through triggers.
+    ///
+    /// # Returns
+    /// RaycastHit with entity_id, point, normal, and distance
+    pub fn raycast_first(
+        &self,
+        origin: Vec3,
+        direction: Vec3,
+        max_distance: f32,
+        solid: bool,
+    ) -> Option<RaycastHit> {
+        let ray = Ray::new(
+            point![origin.x, origin.y, origin.z],
+            vector![direction.x, direction.y, direction.z],
+        );
+
+        let filter = if solid {
+            QueryFilter::default()
+        } else {
+            QueryFilter::default().exclude_sensors()
+        };
+
+        // Create a query pipeline for raycasting
+        let query_pipeline = QueryPipeline::new();
+
+        // Cast ray and find first hit
+        if let Some((collider_handle, toi)) = query_pipeline.cast_ray(
+            &self.rigid_bodies,
+            &self.colliders,
+            &ray,
+            max_distance,
+            solid,
+            filter,
+        ) {
+            // Find entity ID from collider handle
+            let entity_id = self
+                .entity_to_colliders
+                .iter()
+                .find(|(_, handles)| handles.contains(&collider_handle))
+                .map(|(id, _)| *id)?;
+
+            // Calculate hit point
+            let hit_point = ray.point_at(toi);
+
+            // Use approximate normal (ray direction reversed)
+            // TODO: Calculate actual surface normal using shape.project_point()
+            let normal = -ray.dir.normalize();
+
+            Some(RaycastHit {
+                entity_id,
+                point: Vec3::new(hit_point.x, hit_point.y, hit_point.z),
+                normal: Vec3::new(normal.x, normal.y, normal.z),
+                distance: toi,
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Cast a ray and find all hits along the ray
+    ///
+    /// # Arguments
+    /// * `origin` - Ray origin point
+    /// * `direction` - Ray direction (will be normalized)
+    /// * `max_distance` - Maximum ray travel distance
+    /// * `solid` - If true, stop at first solid hit. If false, pass through triggers.
+    ///
+    /// # Returns
+    /// Vector of RaycastHit sorted by distance (closest first)
+    pub fn raycast_all(
+        &self,
+        origin: Vec3,
+        direction: Vec3,
+        max_distance: f32,
+        solid: bool,
+    ) -> Vec<RaycastHit> {
+        let ray = Ray::new(
+            point![origin.x, origin.y, origin.z],
+            vector![direction.x, direction.y, direction.z],
+        );
+
+        let filter = if solid {
+            QueryFilter::default()
+        } else {
+            QueryFilter::default().exclude_sensors()
+        };
+
+        let mut hits = Vec::new();
+
+        // Create a query pipeline for raycasting
+        let query_pipeline = QueryPipeline::new();
+
+        // Cast ray and collect all intersections
+        query_pipeline.intersections_with_ray(
+            &self.rigid_bodies,
+            &self.colliders,
+            &ray,
+            max_distance,
+            solid,
+            filter,
+            |collider_handle, intersection| {
+                // Find entity ID from collider handle
+                if let Some(entity_id) = self
+                    .entity_to_colliders
+                    .iter()
+                    .find(|(_, handles)| handles.contains(&collider_handle))
+                    .map(|(id, _)| *id)
+                {
+                    let hit_point = ray.point_at(intersection.toi);
+
+                    // Use ray direction reversed as approximate normal
+                    let normal = -ray.dir.normalize();
+
+                    hits.push(RaycastHit {
+                        entity_id,
+                        point: Vec3::new(hit_point.x, hit_point.y, hit_point.z),
+                        normal: Vec3::new(normal.x, normal.y, normal.z),
+                        distance: intersection.toi,
+                    });
+                }
+                true // Continue searching for more hits
+            },
+        );
+
+        // Sort by distance (closest first)
+        hits.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap_or(std::cmp::Ordering::Equal));
+        hits
     }
 }
 

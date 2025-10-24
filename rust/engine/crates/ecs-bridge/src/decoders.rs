@@ -835,6 +835,8 @@ impl IComponentDecoder for GeometryAssetDecoder {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PrefabEntity {
     pub name: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
     pub components: std::collections::HashMap<String, Value>,
     #[serde(default)]
     pub children: Vec<PrefabEntity>,

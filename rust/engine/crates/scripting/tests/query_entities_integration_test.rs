@@ -15,6 +15,7 @@ fn create_test_scene() -> Scene {
         persistentId: Some("player-1".to_string()),
         name: Some("Player".to_string()),
         parentPersistentId: None,
+        tags: vec!["player".to_string(), "character".to_string()],
         components: HashMap::new(),
     };
 
@@ -23,6 +24,7 @@ fn create_test_scene() -> Scene {
         persistentId: Some("enemy-1".to_string()),
         name: Some("Enemy".to_string()),
         parentPersistentId: None,
+        tags: vec!["enemy".to_string(), "character".to_string()],
         components: HashMap::new(),
     };
 
@@ -31,6 +33,7 @@ fn create_test_scene() -> Scene {
         persistentId: Some("enemy-2".to_string()),
         name: Some("Enemy".to_string()),
         parentPersistentId: None,
+        tags: vec!["enemy".to_string(), "character".to_string()],
         components: HashMap::new(),
     };
 
