@@ -31,12 +31,16 @@ mod tests {
         register_event_api(&lua, entity_id).unwrap();
 
         // Register a handler
-        let result: Result<u64, _> = lua.load(r#"
+        let result: Result<u64, _> = lua
+            .load(
+                r#"
             local handlerId = events:on("test:event", function(data)
                 -- Handler function
             end)
             return handlerId
-        "#).eval();
+        "#,
+            )
+            .eval();
 
         assert!(result.is_ok());
         let handler_id = result.unwrap();
@@ -52,7 +56,8 @@ mod tests {
         register_event_api(&lua, entity_id).unwrap();
 
         // Set up handler that sets a global variable
-        lua.load(r#"
+        lua.load(
+            r#"
             callCount = 0
             receivedData = nil
 
@@ -60,12 +65,19 @@ mod tests {
                 callCount = callCount + 1
                 receivedData = data
             end)
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         // Emit the event
-        lua.load(r#"
+        lua.load(
+            r#"
             events:emit("test:event", { value = 42 })
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         // Check handler was called
         let call_count: i32 = lua.globals().get("callCount").unwrap();
@@ -86,7 +98,8 @@ mod tests {
         register_event_api(&lua, entity_id).unwrap();
 
         // Register multiple handlers
-        lua.load(r#"
+        lua.load(
+            r#"
             callCount1 = 0
             callCount2 = 0
 
@@ -97,12 +110,19 @@ mod tests {
             events:on("test:event", function(data)
                 callCount2 = callCount2 + 1
             end)
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         // Emit the event
-        lua.load(r#"
+        lua.load(
+            r#"
             events:emit("test:event", { value = 100 })
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         // Both handlers should be called
         let call_count1: i32 = lua.globals().get("callCount1").unwrap();
@@ -120,31 +140,47 @@ mod tests {
         register_event_api(&lua, entity_id).unwrap();
 
         // Register handler and get its ID
-        lua.load(r#"
+        lua.load(
+            r#"
             callCount = 0
 
             handlerId = events:on("test:event", function(data)
                 callCount = callCount + 1
             end)
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         // Emit once
-        lua.load(r#"
+        lua.load(
+            r#"
             events:emit("test:event", {})
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         let call_count_1: i32 = lua.globals().get("callCount").unwrap();
         assert_eq!(call_count_1, 1);
 
         // Unregister
-        lua.load(r#"
+        lua.load(
+            r#"
             events:off("test:event", handlerId)
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         // Emit again - should not increase count
-        lua.load(r#"
+        lua.load(
+            r#"
             events:emit("test:event", {})
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         let call_count_2: i32 = lua.globals().get("callCount").unwrap();
         assert_eq!(call_count_2, 1, "Handler should not be called after off()");
@@ -204,11 +240,18 @@ mod tests {
         register_event_api(&lua, entity_id).unwrap();
 
         // Emit to event with no handlers - should not error
-        let result = lua.load(r#"
+        let result = lua
+            .load(
+                r#"
             events:emit("nonexistent:event", { data = "test" })
-        "#).exec();
+        "#,
+            )
+            .exec();
 
-        assert!(result.is_ok(), "Emitting to non-existent event should not error");
+        assert!(
+            result.is_ok(),
+            "Emitting to non-existent event should not error"
+        );
     }
 
     #[test]
@@ -220,7 +263,8 @@ mod tests {
         register_event_api(&lua, entity_id).unwrap();
 
         // Test with different payload types
-        lua.load(r#"
+        lua.load(
+            r#"
             stringPayload = nil
             numberPayload = nil
             tablePayload = nil
@@ -235,7 +279,10 @@ mod tests {
             events:emit("test:number", 42)
             events:emit("test:table", { x = 1, y = 2 })
             events:emit("test:bool", true)
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         // Verify payloads
         let string_val: String = lua.globals().get("stringPayload").unwrap();
@@ -263,10 +310,14 @@ mod tests {
         register_event_api(&lua, entity_id).unwrap();
 
         // Register handlers
-        lua.load(r#"
+        lua.load(
+            r#"
             events:on("test:event", function(data) end)
             events:on("test:event2", function(data) end)
-        "#).exec().unwrap();
+        "#,
+        )
+        .exec()
+        .unwrap();
 
         // Cleanup
         cleanup_event_api(&lua, entity_id).unwrap();

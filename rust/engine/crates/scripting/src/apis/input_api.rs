@@ -85,7 +85,10 @@ mod tests {
         register_input_api(&lua).unwrap();
 
         // Should return false for any key (stub)
-        let result: bool = lua.load(r#"return input.isKeyDown("Space")"#).eval().unwrap();
+        let result: bool = lua
+            .load(r#"return input.isKeyDown("Space")"#)
+            .eval()
+            .unwrap();
         assert!(!result);
     }
 
@@ -116,7 +119,10 @@ mod tests {
         register_input_api(&lua).unwrap();
 
         // Should return false for any button (stub)
-        let result: bool = lua.load("return input.isMouseButtonDown(0)").eval().unwrap();
+        let result: bool = lua
+            .load("return input.isMouseButtonDown(0)")
+            .eval()
+            .unwrap();
         assert!(!result);
     }
 }

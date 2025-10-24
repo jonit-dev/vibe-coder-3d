@@ -311,11 +311,7 @@ pub fn register_entity_api(
                         .lock()
                         .map_err(|e| mlua::Error::RuntimeError(format!("Lock error: {}", e)))?;
                     let old_rotation = s.rotation;
-                    s.rotation += Vec3::new(
-                        dx.to_degrees(),
-                        dy.to_degrees(),
-                        dz.to_degrees(),
-                    ); // Add radians converted to degrees
+                    s.rotation += Vec3::new(dx.to_degrees(), dy.to_degrees(), dz.to_degrees()); // Add radians converted to degrees
                     log::debug!(
                         "Rotation updated from {:?} to {:?}",
                         old_rotation,
@@ -414,24 +410,19 @@ pub fn register_entity_api(
         let buffer = mutation_buffer.clone();
         entity_table.set(
             "removeComponent",
-            lua.create_function(
-                move |_, (_self, component_type): (mlua::Value, String)| {
-                    use vibe_scene::EntityId;
-                    let eid = EntityId::new(entity_id);
+            lua.create_function(move |_, (_self, component_type): (mlua::Value, String)| {
+                use vibe_scene::EntityId;
+                let eid = EntityId::new(entity_id);
 
-                    log::trace!(
-                        "Lua: entity:removeComponent('{}') - queued",
-                        component_type
-                    );
+                log::trace!("Lua: entity:removeComponent('{}') - queued", component_type);
 
-                    buffer.push(EntityMutation::RemoveComponent {
-                        entity_id: eid,
-                        component_type,
-                    });
+                buffer.push(EntityMutation::RemoveComponent {
+                    entity_id: eid,
+                    component_type,
+                });
 
-                    Ok(())
-                },
-            )?,
+                Ok(())
+            })?,
         )?;
     }
 
@@ -1320,10 +1311,7 @@ mod tests {
 
         // Child should return some parent ID
         let parent_id: Option<u64> = lua.load("return entity:getParent()").eval().unwrap();
-        assert!(
-            parent_id.is_some(),
-            "Child entity should have a parent"
-        );
+        assert!(parent_id.is_some(), "Child entity should have a parent");
     }
 
     #[test]
@@ -1353,8 +1341,7 @@ mod tests {
         .unwrap();
 
         // Parent should return nil
-        let result_parent_id: Option<u64> =
-            lua.load("return entity:getParent()").eval().unwrap();
+        let result_parent_id: Option<u64> = lua.load("return entity:getParent()").eval().unwrap();
         assert_eq!(result_parent_id, None);
     }
 
@@ -1459,20 +1446,14 @@ mod tests {
         .unwrap();
 
         // Find child by name - should return some ID (exact value depends on hash)
-        let child_id: Option<u64> = lua
-            .load("return entity:findChild('Child')")
-            .eval()
-            .unwrap();
+        let child_id: Option<u64> = lua.load("return entity:findChild('Child')").eval().unwrap();
         assert!(child_id.is_some(), "Should find child named 'Child'");
 
         let child2_id: Option<u64> = lua
             .load("return entity:findChild('ChildTwo')")
             .eval()
             .unwrap();
-        assert!(
-            child2_id.is_some(),
-            "Should find child named 'ChildTwo'"
-        );
+        assert!(child2_id.is_some(), "Should find child named 'ChildTwo'");
 
         // Ensure they are different children
         assert_ne!(

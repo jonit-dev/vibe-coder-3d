@@ -1,10 +1,10 @@
 //! Integration test for Event API end-to-end functionality
 
-use vibe_scripting::ScriptSystem;
-use vibe_scene::{Entity, Metadata, Scene};
 use serde_json::json;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use vibe_scene::{Entity, Metadata, Scene};
+use vibe_scripting::ScriptSystem;
 
 #[test]
 fn test_event_api_integration() {
@@ -22,6 +22,7 @@ fn test_event_api_integration() {
             persistentId: None,
             name: Some("EventTestEntity".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components: [
                 (
                     "Transform".to_string(),

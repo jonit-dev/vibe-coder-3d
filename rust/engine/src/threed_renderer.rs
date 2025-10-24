@@ -1303,7 +1303,8 @@ impl ThreeDRenderer {
             self.mesh_scales.push(final_scale);
             self.mesh_base_scales.push(base_scale);
             self.mesh_cast_shadows.push(mesh_renderer.cast_shadows);
-            self.mesh_receive_shadows.push(mesh_renderer.receive_shadows);
+            self.mesh_receive_shadows
+                .push(mesh_renderer.receive_shadows);
 
             if let Some(transform) = transform {
                 let ts_position =

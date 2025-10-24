@@ -220,13 +220,12 @@ impl ScriptSystem {
         let transform_state = Arc::new(Mutex::new(transform_state));
 
         // Register console API for logging
-        crate::apis::register_console_api(runtime.lua())
-            .with_context(|| {
-                format!(
-                    "Failed to register console API for entity '{}' (ID {})",
-                    entity_name, entity_id
-                )
-            })?;
+        crate::apis::register_console_api(runtime.lua()).with_context(|| {
+            format!(
+                "Failed to register console API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
 
         // Create mutation buffer for this entity
         let mutation_buffer = EntityMutationBuffer::new();
@@ -277,16 +276,13 @@ impl ScriptSystem {
         })?;
 
         // Register time API (will be updated per frame)
-        crate::apis::register_time_api(
-            runtime.lua(),
-            crate::apis::TimeInfo::default(),
-        )
-        .with_context(|| {
-            format!(
-                "Failed to register time API for entity '{}' (ID {})",
-                entity_name, entity_id
-            )
-        })?;
+        crate::apis::register_time_api(runtime.lua(), crate::apis::TimeInfo::default())
+            .with_context(|| {
+                format!(
+                    "Failed to register time API for entity '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            })?;
 
         // Register event API for inter-entity communication
         crate::apis::register_event_api(runtime.lua(), entity_id as u32).with_context(|| {
@@ -322,6 +318,60 @@ impl ScriptSystem {
             },
         )?;
 
+        // Register physics API (RigidBody, MeshCollider, PhysicsEvents, CharacterController)
+        let scene_ref_for_physics = self
+            .scene
+            .clone()
+            .context("Scene not initialized for PhysicsAPI")?;
+        crate::apis::register_physics_api(
+            runtime.lua(),
+            entity_id,
+            scene_ref_for_physics,
+            mutation_buffer.clone(),
+        )
+        .with_context(|| {
+            format!(
+                "Failed to register physics API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
+        // Register camera API
+        let scene_ref_for_camera = self
+            .scene
+            .clone()
+            .context("Scene not initialized for CameraAPI")?;
+        crate::apis::register_camera_api(
+            runtime.lua(),
+            entity_id,
+            scene_ref_for_camera,
+            mutation_buffer.clone(),
+        )
+        .with_context(|| {
+            format!(
+                "Failed to register camera API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
+        // Register material API (MeshRenderer material manipulation)
+        let scene_ref_for_material = self
+            .scene
+            .clone()
+            .context("Scene not initialized for MaterialAPI")?;
+        crate::apis::register_material_api(
+            runtime.lua(),
+            entity_id,
+            scene_ref_for_material,
+            mutation_buffer.clone(),
+        )
+        .with_context(|| {
+            format!(
+                "Failed to register material API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
         // Register script parameters as a global Lua table
         let params_lua = Self::json_to_lua(runtime.lua(), &script_comp.parameters)
             .map_err(|e| anyhow::anyhow!("Failed to convert parameters to Lua: {}", e))?;
@@ -338,15 +388,17 @@ impl ScriptSystem {
             .with_context(|| format!("Failed to load script: {}", script_path))?;
 
         // Call onStart()
-        log::debug!("Calling onStart() for entity '{}' (ID {})", entity_name, entity_id);
-        script
-            .call_on_start(runtime.lua())
-            .with_context(|| {
-                format!(
-                    "Error in onStart() for entity '{}' (ID {})",
-                    entity_name, entity_id
-                )
-            })?;
+        log::debug!(
+            "Calling onStart() for entity '{}' (ID {})",
+            entity_name,
+            entity_id
+        );
+        script.call_on_start(runtime.lua()).with_context(|| {
+            format!(
+                "Error in onStart() for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
 
         // Store for later updates
         self.scripts.insert(
@@ -399,24 +451,20 @@ impl ScriptSystem {
         for (entity_id, entity_script) in &self.scripts {
             // Update time API for this entity's Lua VM
             if let Err(e) = crate::apis::update_time_api(entity_script.runtime.lua(), time_info) {
-                log::error!(
-                    "Failed to update time API for entity {}: {}",
-                    entity_id,
-                    e
-                );
+                log::error!("Failed to update time API for entity {}: {}", entity_id, e);
                 continue;
             }
 
-            log::trace!("Calling onUpdate() for entity {} (delta: {:.4}s)", entity_id, delta_time);
+            log::trace!(
+                "Calling onUpdate() for entity {} (delta: {:.4}s)",
+                entity_id,
+                delta_time
+            );
             if let Err(e) = entity_script
                 .script
                 .call_on_update(entity_script.runtime.lua(), delta_time)
             {
-                log::error!(
-                    "Error in onUpdate() for entity {}: {}",
-                    entity_id,
-                    e
-                );
+                log::error!("Error in onUpdate() for entity {}: {}", entity_id, e);
                 // Continue processing other scripts even if one fails
             }
         }
@@ -453,15 +501,11 @@ impl ScriptSystem {
             entity_script
                 .script
                 .call_on_destroy(entity_script.runtime.lua())
-                .with_context(|| {
-                    format!("Error in onDestroy() for entity {}", entity_id)
-                })?;
+                .with_context(|| format!("Error in onDestroy() for entity {}", entity_id))?;
 
             // Cleanup event handlers for this entity
             crate::apis::cleanup_event_api(entity_script.runtime.lua(), entity_id as u32)
-                .with_context(|| {
-                    format!("Error cleaning up event API for entity {}", entity_id)
-                })?;
+                .with_context(|| format!("Error cleaning up event API for entity {}", entity_id))?;
 
             log::debug!("Successfully destroyed script for entity {}", entity_id);
         }
@@ -501,7 +545,7 @@ mod tests {
     use super::*;
     use serde_json::json;
     use std::io::Write;
-    use tempfile::{NamedTempFile, TempDir};
+    use tempfile::TempDir;
 
     fn create_test_scene_with_script(script_path: &str) -> Scene {
         Scene {

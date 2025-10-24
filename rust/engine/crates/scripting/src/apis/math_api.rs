@@ -1,7 +1,6 @@
 ///! Math API for Lua scripts
 ///!
 ///! Provides mathematical constants, functions, and game-specific utilities.
-
 use mlua::prelude::*;
 
 /// Register math API in Lua global scope
@@ -47,9 +46,7 @@ pub fn register_math_api(lua: &Lua) -> LuaResult<()> {
     // clamp(value, min, max)
     math_table.set(
         "clamp",
-        lua.create_function(|_, (value, min, max): (f64, f64, f64)| {
-            Ok(value.max(min).min(max))
-        })?,
+        lua.create_function(|_, (value, min, max): (f64, f64, f64)| Ok(value.max(min).min(max)))?,
     )?;
 
     // lerp(a, b, t)
@@ -91,10 +88,7 @@ pub fn register_math_api(lua: &Lua) -> LuaResult<()> {
     };
 
     if !has_round {
-        math_table.set(
-            "round",
-            lua.create_function(|_, x: f64| Ok(x.round()))?,
-        )?;
+        math_table.set("round", lua.create_function(|_, x: f64| Ok(x.round()))?)?;
     }
 
     log::debug!("Math API registered with game utilities");

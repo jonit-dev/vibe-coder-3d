@@ -9,7 +9,7 @@ use serde_json::json;
 use std::io::Write;
 use tempfile::TempDir;
 use vibe_ecs_bridge::{create_default_registry, ScriptComponent};
-use vibe_scene::{Entity, Scene};
+use vibe_scene::Scene;
 use vibe_scripting::ScriptSystem;
 
 #[test]

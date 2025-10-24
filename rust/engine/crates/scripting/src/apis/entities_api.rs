@@ -64,10 +64,7 @@ pub fn register_entities_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
 
                 // Basic properties
                 entity_table.set("id", entity_id)?;
-                entity_table.set(
-                    "name",
-                    entity.name.as_deref().unwrap_or("Unnamed Entity"),
-                )?;
+                entity_table.set("name", entity.name.as_deref().unwrap_or("Unnamed Entity"))?;
 
                 // Component access methods (stubs - require full ECS integration)
                 entity_table.set(
@@ -250,7 +247,11 @@ pub fn register_entities_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
 
                 for entity in &scene_clone.entities {
                     // Check if entity has the tag
-                    if entity.tags.iter().any(|t| t.to_lowercase() == normalized_tag) {
+                    if entity
+                        .tags
+                        .iter()
+                        .any(|t| t.to_lowercase() == normalized_tag)
+                    {
                         if let Some(entity_id) = entity.entity_id() {
                             match create_api(lua, entity_id.as_u64()) {
                                 Ok(api) => {
@@ -327,7 +328,8 @@ pub fn register_entities_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
                             }
                         } else {
                             None
-                        }.or_else(|| {
+                        }
+                        .or_else(|| {
                             // Try guid field (treat as persistentId)
                             ref_table.get::<String>("guid").ok().and_then(|guid| {
                                 log::debug!("Resolving by guid field: {}", guid);
@@ -338,7 +340,8 @@ pub fn register_entities_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
                                     .and_then(|e| e.entity_id())
                                     .map(|id| id.as_u64())
                             })
-                        }).or_else(|| {
+                        })
+                        .or_else(|| {
                             // Try name field
                             ref_table.get::<String>("name").ok().and_then(|name| {
                                 log::debug!("Resolving by name field: {}", name);
@@ -349,14 +352,18 @@ pub fn register_entities_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
                                     .and_then(|e| e.entity_id())
                                     .map(|id| id.as_u64())
                             })
-                        }).or_else(|| {
+                        })
+                        .or_else(|| {
                             // Try path field (stub - requires scene graph)
                             if let Ok(path) = ref_table.get::<String>("path") {
                                 log::debug!("Resolving by path: {} (not implemented)", path);
                             }
                             None
-                        }).or_else(|| {
-                            log::warn!("Invalid entity reference table (missing entityId/guid/name/path)");
+                        })
+                        .or_else(|| {
+                            log::warn!(
+                                "Invalid entity reference table (missing entityId/guid/name/path)"
+                            );
                             None
                         })
                     }
@@ -739,9 +746,10 @@ mod tests {
         let lua_converted_id = (entity_id as f64) as u64;
 
         // Check if a matching entity exists after conversion
-        let has_matching_entity = scene.entities.iter().any(|e| {
-            e.entity_id().map(|id| id.as_u64()) == Some(lua_converted_id)
-        });
+        let has_matching_entity = scene
+            .entities
+            .iter()
+            .any(|e| e.entity_id().map(|id| id.as_u64()) == Some(lua_converted_id));
 
         if !has_matching_entity {
             // Expected - precision loss prevents ID match, test passes
@@ -787,7 +795,10 @@ mod tests {
 
         assert!(result.is_ok());
         let entity_value = result.unwrap();
-        assert!(matches!(entity_value, LuaValue::Table(_)), "fromRef with guid field should return an entity table");
+        assert!(
+            matches!(entity_value, LuaValue::Table(_)),
+            "fromRef with guid field should return an entity table"
+        );
 
         if let LuaValue::Table(entity_table) = entity_value {
             let id: u64 = entity_table.get("id").unwrap();

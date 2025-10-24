@@ -82,7 +82,11 @@ pub fn register_query_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
 
                 for entity in &scene_clone.entities {
                     // Check if entity has the tag
-                    if entity.tags.iter().any(|t| t.to_lowercase() == normalized_tag) {
+                    if entity
+                        .tags
+                        .iter()
+                        .any(|t| t.to_lowercase() == normalized_tag)
+                    {
                         if let Some(entity_id) = entity.entity_id() {
                             found_ids.push(entity_id.as_u64());
                         }
@@ -131,7 +135,7 @@ pub fn register_query_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+
     use std::collections::HashMap;
     use vibe_scene::{Entity, Metadata};
 

@@ -21,6 +21,7 @@ fn test_script_component_decoding() {
             persistentId: None,
             name: Some("TestEntity".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components: [(
                 "Script".to_string(),
                 json!({

@@ -369,7 +369,11 @@ impl PhysicsWorld {
         );
 
         // Sort by distance (closest first)
-        hits.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap_or(std::cmp::Ordering::Equal));
+        hits.sort_by(|a, b| {
+            a.distance
+                .partial_cmp(&b.distance)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         hits
     }
 }

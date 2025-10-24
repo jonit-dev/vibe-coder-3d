@@ -428,9 +428,9 @@
 11. ❌ Prefab API
 12. ⚠️ GameObject API (cannot implement - scene is read-only, no dynamic entity creation)
 13. ✅ **Entities API** (fromRef, get, findByName, findByTag ✅, exists)
-14. ❌ Physics API
-15. ❌ Camera API
-16. ❌ Material API
+14. ✅ **Physics API** (RigidBody, MeshCollider, PhysicsEvents, CharacterController)
+15. ✅ **Camera API** (setFov, setClipping, setProjection, setAsMain)
+16. ✅ **Material API** (MeshRenderer + material sub-API: setColor, setMetalness, setRoughness, setEmissive, setTexture)
 17. ❌ Mesh API
 18. ❌ Light API
 19. ❌ Collision API

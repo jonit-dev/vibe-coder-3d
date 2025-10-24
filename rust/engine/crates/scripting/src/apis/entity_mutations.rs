@@ -28,10 +28,7 @@ pub enum EntityMutation {
     /// Destroy an entity
     DestroyEntity { entity_id: EntityId },
     /// Set entity active state (not yet implemented - placeholder)
-    SetActive {
-        entity_id: EntityId,
-        active: bool,
-    },
+    SetActive { entity_id: EntityId, active: bool },
 }
 
 /// Buffer for collecting entity mutations from scripts
@@ -164,7 +161,10 @@ mod tests {
 
         // Verify mutation types
         assert!(matches!(mutations[0], EntityMutation::SetComponent { .. }));
-        assert!(matches!(mutations[1], EntityMutation::RemoveComponent { .. }));
+        assert!(matches!(
+            mutations[1],
+            EntityMutation::RemoveComponent { .. }
+        ));
         assert!(matches!(mutations[2], EntityMutation::DestroyEntity { .. }));
         assert!(matches!(mutations[3], EntityMutation::SetActive { .. }));
     }

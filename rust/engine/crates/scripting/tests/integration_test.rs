@@ -49,6 +49,7 @@ fn test_end_to_end_rotating_cube_script() {
             persistentId: None, // Use numeric ID for simplicity
             name: Some("RotatingCube".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components: [
                 (
                     "Transform".to_string(),
@@ -187,6 +188,7 @@ fn test_end_to_end_moving_sphere_script() {
             persistentId: None,
             name: Some("MovingSphere".to_string()),
             parentPersistentId: None,
+            tags: vec![],
             components: [
                 (
                     "Transform".to_string(),

@@ -1,7 +1,6 @@
 ///! Time API for Lua scripts
 ///!
 ///! Provides time and frame information for game scripts.
-
 use mlua::prelude::*;
 
 /// Time information passed to scripts each frame

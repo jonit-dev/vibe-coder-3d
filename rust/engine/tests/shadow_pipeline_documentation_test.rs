@@ -64,8 +64,8 @@ fn test_shadow_pipeline_step1_component_configuration() {
         angle: std::f32::consts::PI / 6.0,
         penumbra: 0.0,
         shadow_map_size: 2048, // ✅ Shadow texture resolution
-        shadow_bias: -0.0001, // ✅ Prevents shadow acne
-        shadow_radius: 1.5,   // ✅ PCF filtering radius
+        shadow_bias: -0.0001,  // ✅ Prevents shadow acne
+        shadow_radius: 1.5,    // ✅ PCF filtering radius
     };
 
     // Verify shadow configuration
@@ -260,8 +260,8 @@ fn test_shadow_pipeline_step6_complete_configuration() {
         range: 75.0,
         decay: 2.0,
         angle: std::f32::consts::PI / 3.0,
-        penumbra: 0.15,       // ✅ Soft cone edges
-        shadow_map_size: 2048,  // ✅ High quality shadows
+        penumbra: 0.15,        // ✅ Soft cone edges
+        shadow_map_size: 2048, // ✅ High quality shadows
         shadow_bias: -0.00075, // ✅ No shadow acne
         shadow_radius: 1.8,    // ✅ Soft shadow edges (PCF)
     };
