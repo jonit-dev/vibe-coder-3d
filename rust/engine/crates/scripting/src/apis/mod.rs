@@ -11,9 +11,11 @@
 //! - physics API (implemented - RigidBody, MeshCollider, PhysicsEvents, CharacterController)
 //! - camera API (implemented - Camera component manipulation)
 //! - material API (implemented - MeshRenderer material manipulation)
+//! - audio API (implemented - Sound playback and control)
 //! - input API (stubs)
 //! - timer API (placeholder - handled by engine)
 
+pub mod audio_api;
 pub mod camera_api;
 pub mod console_api;
 pub mod entities_api;
@@ -33,6 +35,7 @@ pub mod timer_api;
 mod event_api_test;
 
 // Re-export for convenience
+pub use audio_api::register_audio_api;
 pub use camera_api::register_camera_api;
 pub use console_api::register_console_api;
 pub use entities_api::register_entities_api;

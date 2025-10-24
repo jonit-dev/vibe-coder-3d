@@ -8,6 +8,7 @@ edition = "2021"
 vibe-scene = { path = "../scene" }
 vibe-ecs-bridge = { path = "../ecs-bridge" }
 vibe-scene-graph = { path = "../scene-graph" }
+vibe-audio = { path = "../audio" }
 
 # Lua runtime (vendored = bundle Lua source, no system dependency required)
 mlua = { version = "0.11", features = ["lua54", "send", "serialize", "vendored"] }
