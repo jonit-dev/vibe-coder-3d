@@ -42,7 +42,7 @@ pub use entities_api::register_entities_api;
 pub use entity_api::register_entity_api;
 pub use entity_mutations::{EntityMutation, EntityMutationBuffer};
 pub use event_api::{cleanup_event_api, register_event_api};
-pub use input_api::register_input_api;
+pub use input_api::{register_input_api, InputApiProvider, InputManagerRef};
 pub use light_api::register_light_api;
 pub use material_api::register_material_api;
 pub use math_api::register_math_api;

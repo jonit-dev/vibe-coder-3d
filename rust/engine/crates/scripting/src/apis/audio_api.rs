@@ -62,19 +62,19 @@ pub fn register_audio_api(lua: &Lua, audio_manager: &mut AudioManager) -> LuaRes
         "play",
         lua.create_function(|lua, (sound_id, options): (u64, Option<LuaTable>)| {
             let volume = if let Some(opts) = options.as_ref() {
-                opts.get::<_, Option<f32>>("volume")?.unwrap_or(1.0)
+                opts.get::<Option<f32>>("volume")?.unwrap_or(1.0)
             } else {
                 1.0
             };
 
             let loop_sound = if let Some(opts) = options.as_ref() {
-                opts.get::<_, Option<bool>>("loop")?.unwrap_or(false)
+                opts.get::<Option<bool>>("loop")?.unwrap_or(false)
             } else {
                 false
             };
 
             let speed = if let Some(opts) = options.as_ref() {
-                opts.get::<_, Option<f32>>("speed")?.unwrap_or(1.0)
+                opts.get::<Option<f32>>("speed")?.unwrap_or(1.0)
             } else {
                 1.0
             };
@@ -178,9 +178,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify Audio global exists
-        let result: LuaResult<bool> = lua
-            .load("return Audio ~= nil")
-            .eval();
+        let result: LuaResult<bool> = lua.load("return Audio ~= nil").eval();
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), true);
     }
@@ -208,7 +206,12 @@ mod tests {
                 .load(&format!("return type(Audio.{}) == 'function'", method))
                 .eval();
             assert!(result.is_ok(), "Method {} should exist", method);
-            assert_eq!(result.unwrap(), true, "Method {} should be a function", method);
+            assert_eq!(
+                result.unwrap(),
+                true,
+                "Method {} should be a function",
+                method
+            );
         }
     }
 

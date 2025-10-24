@@ -13,7 +13,7 @@ use vibe_ecs_bridge::{ScriptComponent, Transform};
 use vibe_scene::{Entity, Scene};
 
 use crate::apis::entity_api::{register_entity_api, EntityTransformState};
-use crate::apis::EntityMutationBuffer;
+use crate::apis::{EntityMutationBuffer, InputManagerRef};
 use crate::lua_runtime::{LuaScript, LuaScriptRuntime};
 
 /// Per-entity script instance
@@ -38,6 +38,8 @@ pub struct ScriptSystem {
     frame_count: u64,
     /// Reference to the scene for entity/component queries
     scene: Option<Arc<Scene>>,
+    /// Optional input manager for input API
+    input_manager: Option<InputManagerRef>,
 }
 
 impl ScriptSystem {
@@ -54,7 +56,13 @@ impl ScriptSystem {
             total_time: 0.0,
             frame_count: 0,
             scene: None,
+            input_manager: None,
         }
+    }
+
+    /// Set the input manager for input API integration
+    pub fn set_input_manager(&mut self, input_manager: InputManagerRef) {
+        self.input_manager = Some(input_manager);
     }
 
     /// Initialize the script system from a scene
@@ -251,13 +259,15 @@ impl ScriptSystem {
             )
         })?;
 
-        // Register input API (stubs)
-        crate::apis::register_input_api(runtime.lua()).with_context(|| {
-            format!(
-                "Failed to register input API for entity '{}' (ID {})",
-                entity_name, entity_id
-            )
-        })?;
+        // Register input API (with InputManager if available)
+        crate::apis::register_input_api(runtime.lua(), self.input_manager.clone()).with_context(
+            || {
+                format!(
+                    "Failed to register input API for entity '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            },
+        )?;
 
         // Register timer API (placeholder)
         crate::apis::register_timer_api(runtime.lua()).with_context(|| {

@@ -1,14 +1,18 @@
 ///! Console API for Lua scripts
 ///!
-///! Provides console.log, console.warn, console.error that map to Rust's log crate.
+///! Provides console.log, console.warn, console.error for user script output.
+///! All script console output is ALWAYS visible (not filtered by --verbose flag).
 use mlua::{Lua, Result as LuaResult, Variadic};
 
 /// Register console API in the Lua environment
 ///
 /// Creates a global `console` table with:
-/// - console:log(...) - Maps to log::debug!
-/// - console:warn(...) - Maps to log::warn!
-/// - console:error(...) - Maps to log::error!
+/// - console:log(...) - Maps to log::info! (always visible)
+/// - console:warn(...) - Maps to log::warn! (always visible)
+/// - console:error(...) - Maps to log::error! (always visible)
+///
+/// Note: Script output uses log::info! to ensure it's ALWAYS visible,
+/// unlike internal engine logs which may be filtered by --verbose.
 pub fn register_console_api(lua: &Lua) -> LuaResult<()> {
     let console_table = lua.create_table()?;
 
@@ -17,7 +21,7 @@ pub fn register_console_api(lua: &Lua) -> LuaResult<()> {
         "log",
         lua.create_function(|_, (_self, args): (mlua::Value, Variadic<mlua::Value>)| {
             let message = format_variadic_args(args);
-            log::debug!("[Lua Console] {}", message);
+            log::info!("[Script] {}", message);
             Ok(())
         })?,
     )?;
@@ -27,7 +31,7 @@ pub fn register_console_api(lua: &Lua) -> LuaResult<()> {
         "warn",
         lua.create_function(|_, (_self, args): (mlua::Value, Variadic<mlua::Value>)| {
             let message = format_variadic_args(args);
-            log::warn!("[Lua Console] {}", message);
+            log::warn!("[Script] {}", message);
             Ok(())
         })?,
     )?;
@@ -37,7 +41,7 @@ pub fn register_console_api(lua: &Lua) -> LuaResult<()> {
         "error",
         lua.create_function(|_, (_self, args): (mlua::Value, Variadic<mlua::Value>)| {
             let message = format_variadic_args(args);
-            log::error!("[Lua Console] {}", message);
+            log::error!("[Script] {}", message);
             Ok(())
         })?,
     )?;

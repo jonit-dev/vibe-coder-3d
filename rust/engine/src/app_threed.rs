@@ -1,3 +1,4 @@
+use crate::input::InputManager;
 use crate::threed_renderer::ThreeDRenderer;
 use crate::util::FrameTimer;
 use anyhow::Context;
@@ -20,6 +21,7 @@ pub struct AppThreeD {
     renderer: ThreeDRenderer,
     physics_world: Option<PhysicsWorld>,
     script_system: Option<ScriptSystem>,
+    input_manager: InputManager,
     physics_accumulator: f32,
     timer: FrameTimer,
     scene: Option<SceneData>,
@@ -73,11 +75,15 @@ impl AppThreeD {
         // Create test scene with primitives
         renderer.create_test_scene()?;
 
+        // Initialize input manager
+        let input_manager = InputManager::new();
+
         Ok(Self {
             window,
             renderer,
             physics_world: None,
             script_system: None,
+            input_manager,
             physics_accumulator: 0.0,
             timer: FrameTimer::new(),
             scene: None,
@@ -156,10 +162,16 @@ impl AppThreeD {
             }
         }
 
+        // Initialize input manager
+        let input_manager = InputManager::new();
+
         // Initialize script system
         log::info!("Initializing script system...");
         let scripts_base_path = PathBuf::from("../game/scripts");
         let mut script_system = ScriptSystem::new(scripts_base_path);
+
+        // Set input manager for scripts
+        script_system.set_input_manager(Arc::new(input_manager.clone()));
 
         match script_system.initialize(&scene) {
             Ok(_) => {
@@ -178,6 +190,7 @@ impl AppThreeD {
             renderer,
             physics_world: Some(physics_world),
             script_system: Some(script_system),
+            input_manager,
             physics_accumulator: 0.0,
             timer: FrameTimer::new(),
             scene: Some(scene),
@@ -193,28 +206,34 @@ impl AppThreeD {
                 Event::WindowEvent {
                     ref event,
                     window_id,
-                } if window_id == self.window.id() => match event {
-                    WindowEvent::CloseRequested => {
-                        log::info!("Exit requested");
-                        *control_flow = ControlFlow::Exit;
+                } if window_id == self.window.id() => {
+                    // Process input events
+                    self.input_manager.process_event(event);
+
+                    // Handle window events
+                    match event {
+                        WindowEvent::CloseRequested => {
+                            log::info!("Exit requested");
+                            *control_flow = ControlFlow::Exit;
+                        }
+                        WindowEvent::KeyboardInput {
+                            input:
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                                    ..
+                                },
+                            ..
+                        } => {
+                            log::info!("Exit requested (Escape key)");
+                            *control_flow = ControlFlow::Exit;
+                        }
+                        WindowEvent::Resized(physical_size) => {
+                            self.resize(*physical_size);
+                        }
+                        _ => {}
                     }
-                    WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
-                        ..
-                    } => {
-                        log::info!("Exit requested (Escape key)");
-                        *control_flow = ControlFlow::Exit;
-                    }
-                    WindowEvent::Resized(physical_size) => {
-                        self.resize(*physical_size);
-                    }
-                    _ => {}
-                },
+                }
                 Event::RedrawRequested(_) => {
                     self.update();
 
@@ -299,6 +318,9 @@ impl AppThreeD {
             }
         }
 
+        // Update input state
+        self.input_manager.update();
+
         // Script system update
         if let Some(ref mut script_system) = self.script_system {
             if let Err(e) = script_system.update(delta_time) {
@@ -330,6 +352,9 @@ impl AppThreeD {
                 self.renderer.sync_physics_transforms(physics_world);
             }
         }
+
+        // Clear frame-based input state at end of frame
+        self.input_manager.clear_frame_state();
     }
 
     fn render(&mut self) -> anyhow::Result<()> {

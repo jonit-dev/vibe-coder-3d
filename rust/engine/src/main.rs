@@ -4,6 +4,7 @@ use std::path::PathBuf;
 mod app_threed;
 mod debug;
 mod ecs;
+mod input;
 mod io;
 mod renderer;
 mod threed_renderer;

@@ -80,11 +80,28 @@ rust/
 │       ├── scene/       # Core scene model (EntityId, Scene, Entity)
 │       ├── ecs-bridge/  # Component registry & TS integration
 │       ├── scene-graph/ # Parent/child transform hierarchy
+│       ├── scripting/   # Lua scripting runtime & APIs
 │       └── assets/      # Mesh/material/texture caches & GLTF
 └── game/
     ├── scenes/          # JSON scene files
+    ├── scripts/         # Production Lua scripts (attached to entities)
+    │   └── tests/       # Test/example scripts (NOT for production scenes)
     └── schema/          # TypeScript → Rust schema exports
 ```
+
+## Script Organization
+
+**IMPORTANT**: Separate test scripts from production scripts:
+
+- **`rust/game/scripts/`** - Production scripts attached to entities in scenes
+
+  - Example: `player-controller.lua`, `enemy-ai.lua`, `door-trigger.lua`
+
+- **`rust/game/scripts/tests/`** - Test and example scripts for API validation
+  - Example: `input_test.lua`, `cube_mover.lua`, `action_system_test.lua`
+  - These demonstrate API usage but aren't meant for production scenes
+
+**Rule**: When creating test scripts to validate new APIs or features, ALWAYS place them in `scripts/tests/` to keep the production script directory clean.
 
 ## Error Handling
 

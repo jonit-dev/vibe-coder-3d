@@ -2,6 +2,9 @@ use glam::Vec3;
 use serde::Deserialize;
 use std::collections::HashMap;
 
+/// Material definition matching Three.js MaterialDefinition
+/// Uses camelCase for JSON compatibility with TypeScript
+#[allow(non_snake_case)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Material {
     pub id: String,
