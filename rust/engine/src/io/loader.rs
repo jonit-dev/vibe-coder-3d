@@ -14,8 +14,11 @@ pub fn load_scene<P: AsRef<Path>>(path: P) -> anyhow::Result<SceneData> {
     let data = std::fs::read_to_string(path)
         .with_context(|| format!("Failed to read scene file: {}", path.display()))?;
 
-    let scene: SceneData = serde_json::from_str(&data)
+    let mut scene: SceneData = serde_json::from_str(&data)
         .with_context(|| format!("Failed to parse scene JSON: {}", path.display()))?;
+
+    // Normalize scene (extract version/name from metadata if needed)
+    scene.normalize();
 
     log::info!(
         "Scene loaded: {} (version {}), {} entities",

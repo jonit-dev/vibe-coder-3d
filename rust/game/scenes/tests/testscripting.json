@@ -1,0 +1,973 @@
+{
+  "metadata": {
+    "name": "testscripting",
+    "version": 1,
+    "timestamp": "2025-10-22T22:05:56.685Z",
+    "description": "Scene with 5 entities"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "d093ac81-9909-4629-9a55-0b8ead63a459"
+        },
+        "Transform": {
+          "position": [
+            0,
+            1,
+            -10
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "Camera": {
+          "fov": 20,
+          "near": 0.10000000149011612,
+          "far": 100,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "depth": 0,
+          "isMain": true,
+          "clearFlags": "skybox",
+          "skyboxTexture": "",
+          "backgroundColor": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 0
+          },
+          "controlMode": "free",
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "hdr": false,
+          "toneMapping": "none",
+          "toneMappingExposure": 1,
+          "enablePostProcessing": false,
+          "postProcessingPreset": "none",
+          "enableSmoothing": false,
+          "followTarget": 0,
+          "followOffset": {
+            "x": 0,
+            "y": 5,
+            "z": -10
+          },
+          "smoothingSpeed": 2,
+          "rotationSmoothing": 1.5,
+          "skyboxScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "skyboxRotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "skyboxRepeat": {
+            "u": 1,
+            "v": 1
+          },
+          "skyboxOffset": {
+            "u": 0,
+            "v": 0
+          },
+          "skyboxIntensity": 1,
+          "skyboxBlur": 0
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "59155f4d-dac0-41b0-8232-50d18965aa53"
+        },
+        "Transform": {
+          "position": [
+            5,
+            10,
+            5
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 0.800000011920929,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": 0,
+          "directionY": -1,
+          "directionZ": 0,
+          "range": 10,
+          "decay": 1,
+          "angle": 0.5235987901687622,
+          "penumbra": 0.10000000149011612,
+          "shadowMapSize": 1024,
+          "shadowBias": -9.999999747378752e-05,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "d6cef29d-6413-4d6b-83ce-1cd391332bc1"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.4000000059604645,
+            "g": 0.4000000059604645,
+            "b": 0.4000000059604645
+          },
+          "intensity": 0.5,
+          "enabled": true,
+          "castShadow": false,
+          "directionX": 0,
+          "directionY": -1,
+          "directionZ": 0,
+          "range": 10,
+          "decay": 1,
+          "angle": 0.5235987901687622,
+          "penumbra": 0.10000000149011612,
+          "shadowMapSize": 1024,
+          "shadowBias": -9.999999747378752e-05,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Cube 0",
+      "components": {
+        "PersistentId": {
+          "id": "99e5bdd3-9b77-43ae-907d-d1a37d46e11a"
+        },
+        "Transform": {
+          "position": [
+            0,
+            1.25,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "MeshRenderer": {
+          "meshId": "torus",
+          "materialId": "default",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "Script": {
+          "code": "/// <reference path=\"./script-api.d.ts\" />\n\n// Hello World TypeScript Script\nfunction onStart(): void {\n  console.log('HELLO WORLD');\n}\n\nfunction onUpdate(deltaTime: number): void {\n  entity.transform.rotate(0, deltaTime * 0.5, 0);\n}\n",
+          "enabled": true,
+          "scriptName": "Script",
+          "description": "",
+          "scriptRef": {
+            "scriptId": "entity-3.script",
+            "source": "external",
+            "path": "/home/jonit/projects/vibe-coder-3d/src/game/scripts/entity-3.script.ts",
+            "codeHash": "83b953575cbd6d12f844f3f456bb4fa477c1b7fdccad76d13aaca41e8eab2f32",
+            "lastModified": 1761085959589
+          },
+          "scriptPath": "entity-3.script.lua",
+          "executeInUpdate": true,
+          "executeOnStart": true,
+          "executeOnEnable": false,
+          "maxExecutionTime": 16,
+          "hasErrors": false,
+          "lastErrorMessage": "",
+          "lastExecutionTime": 0,
+          "executionCount": 0,
+          "parameters": {},
+          "lastModified": 1761085873889,
+          "compiledCode": ""
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Plane 0",
+      "components": {
+        "PersistentId": {
+          "id": "3f7ec530-4217-4f8e-8088-39a1ccc5a303"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            -90,
+            0,
+            0
+          ],
+          "scale": [
+            10,
+            10,
+            1
+          ]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "mat1",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "RigidBody": {
+          "enabled": true,
+          "bodyType": "fixed",
+          "type": "fixed",
+          "mass": 1,
+          "gravityScale": 1,
+          "canSleep": true,
+          "material": {
+            "friction": 0.699999988079071,
+            "restitution": 0.30000001192092896,
+            "density": 1
+          }
+        },
+        "MeshCollider": {
+          "enabled": true,
+          "isTrigger": false,
+          "colliderType": "box",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "size": {
+            "width": 1,
+            "height": 1,
+            "depth": 0.009999999776482582,
+            "radius": 0.5,
+            "capsuleRadius": 0.5,
+            "capsuleHeight": 2
+          },
+          "physicsMaterial": {
+            "friction": 0.699999988079071,
+            "restitution": 0.30000001192092896,
+            "density": 1
+          }
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "default",
+      "name": "Default",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#cccccc",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "mat1",
+      "name": "Material 1",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff0000",
+      "metalness": 0,
+      "roughness": 0.5,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "dss",
+      "name": "Crate Texture",
+      "shader": "standard",
+      "materialType": "texture",
+      "color": "#cccccc",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "albedoTexture": "/assets/textures/crate-texture.png",
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "farm-grass",
+      "name": "farm-grass",
+      "shader": "standard",
+      "materialType": "texture",
+      "color": "#cccccc",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "albedoTexture": "/assets/textures/grass.png",
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 20,
+      "textureRepeatY": 20
+    },
+    {
+      "id": "grass",
+      "name": "grass",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#29871d",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "mat2",
+      "name": "Material 2",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#0000ff",
+      "metalness": 0,
+      "roughness": 0.5,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "mat_38910607",
+      "name": "Material mat_38910607",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#2d5016",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "albedoTexture": "",
+      "normalTexture": "",
+      "metallicTexture": "",
+      "roughnessTexture": "",
+      "emissiveTexture": "",
+      "occlusionTexture": "",
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "myMaterial",
+      "name": "My Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#00ff00",
+      "metalness": 0,
+      "roughness": 0.5,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "red",
+      "name": "red",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff0000",
+      "metalness": 0,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "test123",
+      "name": "Test Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff6600",
+      "metalness": 0.3,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    }
+  ],
+  "prefabs": [
+    {
+      "id": "trees",
+      "name": "trees",
+      "version": 1,
+      "root": {
+        "name": "trees",
+        "components": {
+          "PersistentId": {
+            "id": "0c2b0c04-64b3-4c0b-8026-be85637ff3d3"
+          }
+        },
+        "children": [
+          {
+            "name": "Oak Tree 1",
+            "components": {
+              "PersistentId": {
+                "id": "95f5457f-c8f0-42f0-ab8d-03ecd66cc67e"
+              },
+              "Transform": {
+                "position": [
+                  -1.25,
+                  0,
+                  0
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "MeshRenderer": {
+                "meshId": "tree",
+                "materialId": "default",
+                "enabled": true,
+                "castShadows": true,
+                "receiveShadows": true,
+                "modelPath": ""
+              }
+            },
+            "children": []
+          },
+          {
+            "name": "Oak Tree 2",
+            "components": {
+              "PersistentId": {
+                "id": "0634deb9-bbd9-4d14-9665-39a8485f2e95"
+              },
+              "Transform": {
+                "position": [
+                  2.5,
+                  0,
+                  0
+                ],
+                "rotation": [
+                  0,
+                  0,
+                  0
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "MeshRenderer": {
+                "meshId": "tree",
+                "materialId": "default",
+                "enabled": true,
+                "castShadows": true,
+                "receiveShadows": true,
+                "modelPath": ""
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "metadata": {
+        "createdAt": "2025-10-12T16:09:12.873Z",
+        "createdFrom": 5
+      },
+      "dependencies": [
+        "default"
+      ],
+      "tags": []
+    }
+  ],
+  "inputAssets": [
+    {
+      "name": "Default Input",
+      "controlSchemes": [
+        {
+          "name": "Keyboard & Mouse",
+          "deviceRequirements": [
+            {
+              "deviceType": "keyboard",
+              "optional": false
+            },
+            {
+              "deviceType": "mouse",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "Gamepad",
+          "deviceRequirements": [
+            {
+              "deviceType": "gamepad",
+              "optional": false
+            }
+          ]
+        }
+      ],
+      "actionMaps": [
+        {
+          "name": "Gameplay",
+          "actions": [
+            {
+              "name": "Move",
+              "actionType": "passthrough",
+              "controlType": "vector2",
+              "bindings": [
+                {
+                  "compositeType": "2DVector",
+                  "bindings": {
+                    "up": {
+                      "type": "keyboard",
+                      "path": "w"
+                    },
+                    "down": {
+                      "type": "keyboard",
+                      "path": "s"
+                    },
+                    "left": {
+                      "type": "keyboard",
+                      "path": "a"
+                    },
+                    "right": {
+                      "type": "keyboard",
+                      "path": "d"
+                    }
+                  }
+                },
+                {
+                  "compositeType": "2DVector",
+                  "bindings": {
+                    "up": {
+                      "type": "keyboard",
+                      "path": "arrowup"
+                    },
+                    "down": {
+                      "type": "keyboard",
+                      "path": "arrowdown"
+                    },
+                    "left": {
+                      "type": "keyboard",
+                      "path": "arrowleft"
+                    },
+                    "right": {
+                      "type": "keyboard",
+                      "path": "arrowright"
+                    }
+                  }
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Jump",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "keyboard",
+                  "path": "space"
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Fire",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "mouse",
+                  "path": "leftButton"
+                },
+                {
+                  "type": "keyboard",
+                  "path": "f"
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Look",
+              "actionType": "passthrough",
+              "controlType": "vector2",
+              "bindings": [
+                {
+                  "type": "mouse",
+                  "path": "delta"
+                }
+              ],
+              "enabled": true
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "name": "UI",
+          "actions": [
+            {
+              "name": "Navigate",
+              "actionType": "passthrough",
+              "controlType": "vector2",
+              "bindings": [
+                {
+                  "compositeType": "2DVector",
+                  "bindings": {
+                    "up": {
+                      "type": "keyboard",
+                      "path": "arrowup"
+                    },
+                    "down": {
+                      "type": "keyboard",
+                      "path": "arrowdown"
+                    },
+                    "left": {
+                      "type": "keyboard",
+                      "path": "arrowleft"
+                    },
+                    "right": {
+                      "type": "keyboard",
+                      "path": "arrowright"
+                    }
+                  }
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Submit",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "keyboard",
+                  "path": "enter"
+                },
+                {
+                  "type": "keyboard",
+                  "path": "space"
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Cancel",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "keyboard",
+                  "path": "escape"
+                }
+              ],
+              "enabled": true
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "name": "Default Input",
+      "controlSchemes": [
+        {
+          "name": "Keyboard & Mouse",
+          "deviceRequirements": [
+            {
+              "deviceType": "keyboard",
+              "optional": false
+            },
+            {
+              "deviceType": "mouse",
+              "optional": true
+            }
+          ]
+        },
+        {
+          "name": "Gamepad",
+          "deviceRequirements": [
+            {
+              "deviceType": "gamepad",
+              "optional": false
+            }
+          ]
+        }
+      ],
+      "actionMaps": [
+        {
+          "name": "Gameplay",
+          "actions": [
+            {
+              "name": "Move",
+              "actionType": "passthrough",
+              "controlType": "vector2",
+              "bindings": [
+                {
+                  "compositeType": "2DVector",
+                  "bindings": {
+                    "up": {
+                      "type": "keyboard",
+                      "path": "w"
+                    },
+                    "down": {
+                      "type": "keyboard",
+                      "path": "s"
+                    },
+                    "left": {
+                      "type": "keyboard",
+                      "path": "a"
+                    },
+                    "right": {
+                      "type": "keyboard",
+                      "path": "d"
+                    }
+                  }
+                },
+                {
+                  "compositeType": "2DVector",
+                  "bindings": {
+                    "up": {
+                      "type": "keyboard",
+                      "path": "arrowup"
+                    },
+                    "down": {
+                      "type": "keyboard",
+                      "path": "arrowdown"
+                    },
+                    "left": {
+                      "type": "keyboard",
+                      "path": "arrowleft"
+                    },
+                    "right": {
+                      "type": "keyboard",
+                      "path": "arrowright"
+                    }
+                  }
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Jump",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "keyboard",
+                  "path": "space"
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Fire",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "mouse",
+                  "path": "leftButton"
+                },
+                {
+                  "type": "keyboard",
+                  "path": "f"
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Look",
+              "actionType": "passthrough",
+              "controlType": "vector2",
+              "bindings": [
+                {
+                  "type": "mouse",
+                  "path": "delta"
+                }
+              ],
+              "enabled": true
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "name": "UI",
+          "actions": [
+            {
+              "name": "Navigate",
+              "actionType": "passthrough",
+              "controlType": "vector2",
+              "bindings": [
+                {
+                  "compositeType": "2DVector",
+                  "bindings": {
+                    "up": {
+                      "type": "keyboard",
+                      "path": "arrowup"
+                    },
+                    "down": {
+                      "type": "keyboard",
+                      "path": "arrowdown"
+                    },
+                    "left": {
+                      "type": "keyboard",
+                      "path": "arrowleft"
+                    },
+                    "right": {
+                      "type": "keyboard",
+                      "path": "arrowright"
+                    }
+                  }
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Submit",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "keyboard",
+                  "path": "enter"
+                },
+                {
+                  "type": "keyboard",
+                  "path": "space"
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Cancel",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "keyboard",
+                  "path": "escape"
+                }
+              ],
+              "enabled": true
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "lockedEntityIds": [
+    4
+  ],
+  "version": 1,
+  "name": "testscripting"
+}

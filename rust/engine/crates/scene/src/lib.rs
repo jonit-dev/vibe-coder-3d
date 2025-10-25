@@ -174,7 +174,9 @@ impl Entity {
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Scene {
+    #[serde(default)]
     pub version: u32,
+    #[serde(default = "default_scene_name")]
     pub name: String,
     pub entities: Vec<Entity>,
     #[serde(default)]
@@ -190,6 +192,23 @@ pub struct Scene {
 }
 
 impl Scene {
+    /// Normalize scene by extracting version/name from metadata if not at root level
+    pub fn normalize(&mut self) {
+        // If version/name are missing at root but present in metadata, extract them
+        if self.version == 0 || self.name.is_empty() || self.name == default_scene_name() {
+            if let Some(metadata_value) = &self.metadata {
+                if let Ok(metadata) = serde_json::from_value::<Metadata>(metadata_value.clone()) {
+                    if self.version == 0 && metadata.version != 0 {
+                        self.version = metadata.version;
+                    }
+                    if (self.name.is_empty() || self.name == default_scene_name()) && !metadata.name.is_empty() {
+                        self.name = metadata.name;
+                    }
+                }
+            }
+        }
+    }
+
     /// Find entity by ID
     pub fn find_entity(&self, id: EntityId) -> Option<&Entity> {
         self.entities.iter().find(|e| e.entity_id() == Some(id))
