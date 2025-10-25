@@ -1,11 +1,12 @@
 /// Material management for the three-d renderer
 ///
 /// Handles material caching, creation, color parsing, and texture loading
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use three_d::{Context, CpuMaterial, PhysicalMaterial, Srgba};
 use vibe_assets::Material;
 
 use super::texture_cache::TextureCache;
+use crate::io::schema_validator;
 
 /// Manages material caching and creation with texture support
 pub struct MaterialManager {
@@ -225,6 +226,9 @@ impl MaterialManager {
         if let Some(materials_array) = materials_value.as_array() {
             log::info!("Loading {} materials...", materials_array.len());
             for (idx, material_json) in materials_array.iter().enumerate() {
+                // Validate material schema BEFORE deserialization
+                Self::validate_material_schema(material_json, idx);
+
                 if let Ok(material) = serde_json::from_value::<Material>(material_json.clone()) {
                     let mat_name = material.name.as_ref().unwrap_or(&material.id);
                     log::info!("\nMaterial {}: {}", idx + 1, mat_name);
@@ -248,6 +252,62 @@ impl MaterialManager {
                 }
             }
             log::info!("Successfully loaded {} materials", materials_array.len());
+        }
+    }
+
+    /// Validate material JSON schema and warn about common mistakes
+    fn validate_material_schema(material_json: &serde_json::Value, idx: usize) {
+        if let Some(obj) = material_json.as_object() {
+            let default_id = format!("material_{}", idx);
+            let mat_id = obj.get("id")
+                .and_then(|v| v.as_str())
+                .unwrap_or(&default_id);
+
+            // Define expected Material fields (from vibe_assets::Material)
+            let expected_fields: HashSet<&str> = [
+                "id", "name", "color", "roughness", "emissive", "shader", "materialType",
+                "metalness", "emissiveIntensity",
+                // Texture maps
+                "albedoTexture", "normalTexture", "metallicTexture", "roughnessTexture",
+                "emissiveTexture", "occlusionTexture",
+                // Texture transform
+                "normalScale", "occlusionStrength",
+                "textureOffsetX", "textureOffsetY", "textureRepeatX", "textureRepeatY",
+                // Transparency
+                "transparent", "alphaMode", "alphaCutoff",
+            ].iter().copied().collect();
+
+            // Use generic schema validator
+            let context = format!("Material '{}'", mat_id);
+            let unknown_count = schema_validator::validate_fields(obj, &expected_fields, &context);
+
+            if unknown_count > 0 {
+                // Provide specific guidance for common mistakes
+                if obj.contains_key("albedoColor") {
+                    log::warn!("   💡 Hint: Use 'color' with hex string (\"#ff0000\") instead of 'albedoColor' array");
+                }
+                if obj.contains_key("metallic") {
+                    log::warn!("   💡 Hint: Use 'metalness' (Three.js naming) instead of 'metallic'");
+                }
+                if obj.contains_key("emissiveColor") {
+                    log::warn!("   💡 Hint: Use 'emissive' with hex string (\"#00ff00\") instead of 'emissiveColor' array");
+                }
+                if obj.contains_key("type") {
+                    log::warn!("   💡 Hint: Use 'shader' + 'materialType' fields instead of 'type'");
+                }
+            }
+
+            // Validate color format
+            if let Some(color_val) = obj.get("color") {
+                if !color_val.is_string() {
+                    log::warn!(
+                        "⚠️  {}: 'color' must be a hex string, not {:?}",
+                        context,
+                        color_val
+                    );
+                    log::warn!("   Expected: \"color\": \"#ff0000\"");
+                }
+            }
         }
     }
 }

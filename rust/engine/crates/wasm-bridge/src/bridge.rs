@@ -27,6 +27,7 @@ impl LiveBridge {
                 entities: Vec::new(),
                 materials: Vec::new(),
                 meshes: None,
+                prefabs: None,
                 metadata: None,
                 inputAssets: None,
                 lockedEntityIds: None,

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use vibe_ecs_bridge::decoders::create_default_registry;
 use vibe_scene::Scene as SceneData;
 
@@ -172,6 +172,8 @@ mod tests {
                 .collect(),
             }],
             materials: vec![],
+            meshes: None,
+            prefabs: None,
             inputAssets: None,
             lockedEntityIds: None,
         };
@@ -206,6 +208,8 @@ mod tests {
                 .collect(),
             }],
             materials: vec![],
+            meshes: None,
+            prefabs: None,
             inputAssets: None,
             lockedEntityIds: None,
         };

@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "name": "Scene API Visual Test",
+  "entities": [
+    {
+      "id": 1,
+      "name": "SceneDisplay",
+      "components": {
+        "Transform": {
+          "position": [0, 2, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "scene_test_material"
+        },
+        "Script": {
+          "scriptPath": "scene_api_visual_test.lua",
+          "enabled": true
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "StatusIndicator",
+      "parentPersistentId": "SceneDisplay",
+      "components": {
+        "Transform": {
+          "position": [-3, 0.5, -1],
+          "rotation": [0, 0, 0],
+          "scale": [0.8, 0.8, 0.8]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "success_material"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "LoadTestIndicator",
+      "parentPersistentId": "SceneDisplay",
+      "components": {
+        "Transform": {
+          "position": [3, 0.5, -1],
+          "rotation": [0, 0, 0],
+          "scale": [0.8, 0.8, 0.8]
+        },
+        "MeshRenderer": {
+          "meshId": "box",
+          "materialId": "test_material"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "InfoPanel",
+      "components": {
+        "Transform": {
+          "position": [0, 3, -5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "info_material"
+        },
+        "Script": {
+          "scriptPath": "scene_info_display.lua",
+          "enabled": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "scene_test_material",
+      "type": "StandardPBR",
+      "albedoColor": [0.2, 0.3, 0.8],
+      "metallic": 0.1,
+      "roughness": 0.7
+    },
+    {
+      "id": "success_material",
+      "type": "StandardPBR",
+      "albedoColor": [0.1, 0.8, 0.2],
+      "metallic": 0.3,
+      "roughness": 0.4
+    },
+    {
+      "id": "test_material",
+      "type": "StandardPBR",
+      "albedoColor": [0.8, 0.2, 0.1],
+      "metallic": 0.1,
+      "roughness": 0.6
+    },
+    {
+      "id": "info_material",
+      "type": "StandardPBR",
+      "albedoColor": [0.9, 0.9, 0.7],
+      "metallic": 0.0,
+      "roughness": 0.8
+    }
+  ],
+  "meshes": null
+}

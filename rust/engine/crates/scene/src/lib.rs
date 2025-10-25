@@ -186,6 +186,8 @@ pub struct Scene {
     #[serde(default)]
     pub meshes: Option<Value>,
     #[serde(default)]
+    pub prefabs: Option<Value>,
+    #[serde(default)]
     pub metadata: Option<Value>,
     #[serde(default)]
     pub inputAssets: Option<Value>,

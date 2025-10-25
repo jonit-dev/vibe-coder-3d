@@ -183,6 +183,12 @@ impl AppThreeD {
         // Set scene manager for GameObject API
         script_system.set_scene_manager(Arc::downgrade(&scene_manager));
 
+        // Set scene manager for Scene API with current scene path
+        script_system.set_script_scene_manager(Some(scene_path.to_string_lossy().to_string()));
+
+        // Set up prefab manager for Prefab API
+        script_system.setup_prefab_manager();
+
         match script_system.initialize(&scene) {
             Ok(_) => {
                 log::info!(

@@ -1,0 +1,271 @@
+{
+  "version": 1,
+  "name": "Scene API Comprehensive Test",
+  "entities": [
+    {
+      "id": 1,
+      "name": "TestController",
+      "components": {
+        "Transform": {
+          "position": [0, 5, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Script": {
+          "scriptPath": "tests/scene_api_simple_test.lua",
+          "enabled": true
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "StatusSphere",
+      "components": {
+        "Transform": {
+          "position": [0, 2, -3],
+          "rotation": [0, 0, 0],
+          "scale": [1.2, 1.2, 1.2]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "status_material"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "LoadTestCube",
+      "components": {
+        "Transform": {
+          "position": [-3, 1, -2],
+          "rotation": [0, 45, 0],
+          "scale": [0.8, 0.8, 0.8]
+        },
+        "MeshRenderer": {
+          "meshId": "box",
+          "materialId": "load_test_material"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "AdditiveTestCube",
+      "components": {
+        "Transform": {
+          "position": [3, 1, -2],
+          "rotation": [0, -45, 0],
+          "scale": [0.8, 0.8, 0.8]
+        },
+        "MeshRenderer": {
+          "meshId": "box",
+          "materialId": "additive_test_material"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "InfoPanel",
+      "components": {
+        "Transform": {
+          "position": [0, 3, -5],
+          "rotation": [0, 0, 0],
+          "scale": [3, 1.5, 0.1]
+        },
+        "MeshRenderer": {
+          "meshId": "box",
+          "materialId": "info_panel_material"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "GroundPlane",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [10, 10, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground_material"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "TestLabel1",
+      "components": {
+        "Transform": {
+          "position": [-3, 0.2, -1],
+          "rotation": [-90, 0, 0],
+          "scale": [0.6, 0.6, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "label_material"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "TestLabel2",
+      "components": {
+        "Transform": {
+          "position": [3, 0.2, -1],
+          "rotation": [-90, 0, 0],
+          "scale": [0.6, 0.6, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "label_material"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "BackgroundSphere",
+      "components": {
+        "Transform": {
+          "position": [0, 2, -8],
+          "rotation": [0, 0, 0],
+          "scale": [2, 2, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "background_material"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "DirectionalLight",
+      "components": {
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [-45, 30, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": [1.0, 0.95, 0.9],
+          "intensity": 1.2,
+          "castShadows": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "AmbientLight",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": [0.4, 0.4, 0.5],
+          "intensity": 0.6
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "MainCamera",
+      "components": {
+        "Transform": {
+          "position": [0, 4, 8],
+          "rotation": [-20, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 1000,
+          "isActive": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "status_material",
+      "name": "Status Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#1ae633",
+      "metalness": 0.4,
+      "roughness": 0.3,
+      "emissive": "#0d6619",
+      "emissiveIntensity": 0.8
+    },
+    {
+      "id": "load_test_material",
+      "name": "Load Test Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#3380e6",
+      "metalness": 0.2,
+      "roughness": 0.5,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "additive_test_material",
+      "name": "Additive Test Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#e68033",
+      "metalness": 0.2,
+      "roughness": 0.5,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "info_panel_material",
+      "name": "Info Panel Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#e6e6b3",
+      "metalness": 0.1,
+      "roughness": 0.7,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "ground_material",
+      "name": "Ground Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#4d4d59",
+      "metalness": 0.0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "label_material",
+      "name": "Label Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#f2f2f2",
+      "metalness": 0.0,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "background_material",
+      "name": "Background Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#334d66",
+      "metalness": 0.1,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    }
+  ],
+  "meshes": null
+}

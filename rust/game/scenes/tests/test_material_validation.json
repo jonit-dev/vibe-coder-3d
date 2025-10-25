@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "name": "Material Schema Validation Test",
+  "entities": [
+    {
+      "id": 1,
+      "name": "TestCube",
+      "components": {
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "box",
+          "materialId": "wrong_schema_material"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "MainCamera",
+      "components": {
+        "Transform": {
+          "position": [0, 2, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 1000,
+          "isActive": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "wrong_schema_material",
+      "type": "StandardPBR",
+      "albedoColor": [1.0, 0.0, 0.0],
+      "metallic": 0.5,
+      "roughness": 0.3,
+      "emissiveColor": [0.5, 0.5, 0.0],
+      "emissiveIntensity": 1.0
+    }
+  ],
+  "meshes": null
+}

@@ -5,6 +5,7 @@
 
 pub mod apis;
 pub mod lua_runtime;
+pub mod script_prefab_manager;
 pub mod script_system;
 
 #[cfg(feature = "hot-reload")]

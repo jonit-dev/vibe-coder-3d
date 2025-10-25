@@ -1,0 +1,46 @@
+{
+  "version": 0,
+  "name": "Prefab API Test Scene",
+  "entities": [
+    {
+      "id": 1,
+      "name": "TestRunner",
+      "components": {
+        "Transform": {
+          "position": [0, 2, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Script": {
+          "scriptPath": "tests/prefab_api_test.lua",
+          "parameters": {
+            "testMode": "integration"
+          },
+          "enabled": true
+        }
+      }
+    }
+  ],
+  "materials": [],
+  "prefabs": [
+    {
+      "id": "test_cube",
+      "root": {
+        "name": "TestCube",
+        "tags": ["test", "cube"],
+        "components": {
+          "Transform": {
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0],
+            "scale": [1, 1, 1]
+          },
+          "MeshRenderer": {
+            "meshId": "cube",
+            "materialId": "default"
+          }
+        },
+        "children": []
+      }
+    }
+  ]
+}

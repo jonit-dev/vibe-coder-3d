@@ -14,8 +14,10 @@
 //! - audio API (implemented - Sound playback and control)
 //! - mesh API (implemented - Visibility, shadow control)
 //! - collision API (implemented - Physics event callbacks)
+//! - scene API (implemented - Scene loading/unloading)
 //! - input API (stubs)
 //! - timer API (placeholder - handled by engine)
+//! - prefab API (implemented - Runtime entity spawning)
 
 pub mod audio_api;
 pub mod camera_api;
@@ -32,7 +34,9 @@ pub mod material_api;
 pub mod math_api;
 pub mod mesh_api;
 pub mod physics_api;
+pub mod prefab_api;
 pub mod query_api;
+pub mod scene_api;
 pub mod time_api;
 pub mod timer_api;
 
@@ -55,6 +59,8 @@ pub use material_api::register_material_api;
 pub use math_api::register_math_api;
 pub use mesh_api::MeshAPI;
 pub use physics_api::register_physics_api;
+pub use prefab_api::{register_prefab_api, PrefabManagerProvider, PrefabManagerRef};
 pub use query_api::register_query_api;
+pub use scene_api::{register_scene_api, SceneManagerProvider, SceneManagerRef};
 pub use time_api::{register_time_api, update_time_api, TimeInfo};
 pub use timer_api::register_timer_api;
