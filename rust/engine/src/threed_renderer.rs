@@ -25,6 +25,40 @@ use crate::renderer::{
     SkyboxRenderer,
 };
 
+/// Mesh rendering state extracted from scene (visibility, shadows, etc.)
+/// This allows passing rendering state without holding a borrow on the full scene.
+#[derive(Debug, Clone, Default)]
+pub struct MeshRenderState {
+    /// Map of entity ID to visibility state (MeshRenderer.enabled)
+    pub visibility: HashMap<EntityId, bool>,
+}
+
+impl MeshRenderState {
+    /// Extract mesh rendering state from scene
+    pub fn from_scene(scene: &SceneData) -> Self {
+        let mut visibility = HashMap::new();
+
+        for entity in &scene.entities {
+            if let Some(entity_id) = entity.entity_id() {
+                // Check MeshRenderer.enabled field
+                if let Some(mesh_renderer_value) = entity.components.get("MeshRenderer") {
+                    if let Ok(mesh_renderer) =
+                        serde_json::from_value::<serde_json::Value>(mesh_renderer_value.clone())
+                    {
+                        if let Some(enabled) =
+                            mesh_renderer.get("enabled").and_then(|v| v.as_bool())
+                        {
+                            visibility.insert(entity_id, enabled);
+                        }
+                    }
+                }
+            }
+        }
+
+        Self { visibility }
+    }
+}
+
 /// ThreeDRenderer - Rendering backend using three-d library for PBR rendering
 ///
 /// This renderer is focused on core rendering responsibilities:
@@ -321,12 +355,37 @@ impl ThreeDRenderer {
         }
     }
 
+    /// Get indices of visible meshes based on current render state
+    /// Returns Vec<usize> instead of references to avoid borrow conflicts
+    fn get_visible_mesh_indices(&self, render_state: Option<&MeshRenderState>) -> Vec<usize> {
+        let Some(state) = render_state else {
+            // No render state - return all indices
+            return (0..self.meshes.len()).collect();
+        };
+
+        (0..self.meshes.len())
+            .filter(|&idx| {
+                // Get entity ID for this mesh
+                let Some(&entity_id) = self.mesh_entity_ids.get(idx) else {
+                    return true; // Include if no entity mapping
+                };
+
+                // Check visibility in render state
+                match state.visibility.get(&entity_id) {
+                    Some(&false) => false, // Explicitly disabled
+                    _ => true,             // Enabled or not specified (default visible)
+                }
+            })
+            .collect()
+    }
+
     /// Render a frame
     pub fn render(
         &mut self,
         delta_time: f32,
         debug_mode: bool,
         physics_world: Option<&vibe_physics::PhysicsWorld>,
+        render_state: Option<&MeshRenderState>,
     ) -> Result<()> {
         self.log_first_frame();
 
@@ -390,6 +449,9 @@ impl ThreeDRenderer {
                             lights.push(ambient);
                         }
 
+                        // Extract visible mesh indices BEFORE creating render_target (avoids borrow conflicts)
+                        let visible_indices = self.get_visible_mesh_indices(render_state);
+
                         {
                             let render_target = {
                                 let color_target = self
@@ -413,7 +475,12 @@ impl ThreeDRenderer {
                                 self.skybox_renderer.render(&render_target, &self.camera);
                             }
 
-                            render_target.render(&self.camera, &self.meshes, &lights);
+                            // Convert indices to mesh references
+                            let visible_meshes: Vec<_> = visible_indices
+                                .iter()
+                                .filter_map(|&idx| self.meshes.get(idx))
+                                .collect();
+                            render_target.render(&self.camera, &visible_meshes, &lights);
                         }
 
                         let color_texture =
@@ -436,7 +503,12 @@ impl ThreeDRenderer {
                         }
 
                         let lights = self.collect_lights();
-                        screen.render(&self.camera, &self.meshes, &lights);
+                        let visible_indices = self.get_visible_mesh_indices(render_state);
+                        let visible_meshes: Vec<_> = visible_indices
+                            .iter()
+                            .filter_map(|&idx| self.meshes.get(idx))
+                            .collect();
+                        screen.render(&self.camera, &visible_meshes, &lights);
                     }
 
                     if let Some((tone, color)) = tone_restore {
@@ -492,6 +564,9 @@ impl ThreeDRenderer {
                             lights.push(ambient);
                         }
 
+                        // Extract visible mesh indices BEFORE creating render_target (avoids borrow conflicts)
+                        let visible_indices = self.get_visible_mesh_indices(render_state);
+
                         {
                             let render_target = {
                                 let color_target = self
@@ -518,8 +593,13 @@ impl ThreeDRenderer {
                                 skybox_renderer.render(&render_target, camera_ref);
                             }
 
+                            // Convert indices to mesh references
+                            let visible_meshes: Vec<_> = visible_indices
+                                .iter()
+                                .filter_map(|&idx| self.meshes.get(idx))
+                                .collect();
                             let camera_ref = &self.additional_cameras[index].camera;
-                            render_target.render(camera_ref, &self.meshes, &lights);
+                            render_target.render(camera_ref, &visible_meshes, &lights);
                         }
 
                         let color_texture =
@@ -539,8 +619,13 @@ impl ThreeDRenderer {
                         }
 
                         let lights = self.collect_lights();
+                        let visible_indices = self.get_visible_mesh_indices(render_state);
+                        let visible_meshes: Vec<_> = visible_indices
+                            .iter()
+                            .filter_map(|&idx| self.meshes.get(idx))
+                            .collect();
                         let camera_ref = &self.additional_cameras[index].camera;
-                        screen.render(camera_ref, &self.meshes, &lights);
+                        screen.render(camera_ref, &visible_meshes, &lights);
                     }
 
                     if let Some((tone, color)) = tone_restore {
@@ -571,6 +656,7 @@ impl ThreeDRenderer {
         &mut self,
         path: &std::path::Path,
         physics_world: Option<&vibe_physics::PhysicsWorld>,
+        render_state: Option<&MeshRenderState>,
         scale: f32,
         quality: u8,
     ) -> Result<()> {
@@ -663,7 +749,12 @@ impl ThreeDRenderer {
 
             // Collect lights and render scene
             let lights = self.collect_lights();
-            render_target.render(&self.camera, &self.meshes, &lights);
+            let visible_indices = self.get_visible_mesh_indices(render_state);
+            let visible_meshes: Vec<_> = visible_indices
+                .iter()
+                .filter_map(|&idx| self.meshes.get(idx))
+                .collect();
+            render_target.render(&self.camera, &visible_meshes, &lights);
 
             // Render debug overlay if physics world is provided
             if let Some(physics) = physics_world {
@@ -1073,12 +1164,14 @@ impl ThreeDRenderer {
     pub fn sync_physics_transforms(&mut self, physics_world: &vibe_physics::PhysicsWorld) {
         // Iterate through all entities with physics bodies
         for (entity_id, body_handle) in physics_world.entity_to_body.iter() {
-            // Get the rigid body
             if let Some(body) = physics_world.rigid_bodies.get(*body_handle) {
-                // Find mesh index for this entity
-                if let Some(mesh_idx) = self.mesh_entity_ids.iter().position(|&id| id == *entity_id)
-                {
-                    self.update_mesh_from_physics(mesh_idx, body);
+                // A single entity (especially GLTF models) may expand to multiple submeshes,
+                // so update every mesh that references this physics body.
+                let mesh_count = self.mesh_entity_ids.len();
+                for mesh_idx in 0..mesh_count {
+                    if self.mesh_entity_ids[mesh_idx] == *entity_id {
+                        self.update_mesh_from_physics(mesh_idx, body);
+                    }
                 }
             }
         }
@@ -1102,7 +1195,7 @@ impl ThreeDRenderer {
         // Get all entity IDs that have scripts
         for entity_id in entity_ids {
             // Get the transform from the script system
-            if let Some(transform) = script_system.get_transform(entity_id) {
+            if let Some(transform) = script_system.take_transform_if_dirty(entity_id) {
                 log::debug!(
                     "  Script entity {}: rotation={:?}",
                     entity_id,
@@ -1157,6 +1250,106 @@ impl ThreeDRenderer {
                         mesh.set_transformation(transform_mat);
                         self.mesh_scales[mesh_idx] = final_scale;
                         log::debug!("    Transform applied successfully");
+                    }
+                }
+            }
+        }
+    }
+
+    /// Update entity material from script mutation (e.g., material:setColor())
+    ///
+    /// Updates the material properties for all meshes belonging to the given entity
+    pub fn update_entity_material(
+        &mut self,
+        entity_id: vibe_scene::EntityId,
+        data: &serde_json::Value,
+    ) {
+        use three_d::Srgba;
+
+        log::debug!("update_entity_material called for entity {:?}", entity_id);
+
+        // Find all mesh indices for this entity
+        let matching_indices: Vec<usize> = self
+            .mesh_entity_ids
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, id)| if *id == entity_id { Some(idx) } else { None })
+            .collect();
+
+        if matching_indices.is_empty() {
+            log::warn!("Entity {:?} has no meshes to update", entity_id);
+            return;
+        }
+
+        log::debug!(
+            "Found {} meshes for entity {:?}",
+            matching_indices.len(),
+            entity_id
+        );
+
+        // Extract material changes from the data
+        if let Some(material_obj) = data.get("material").and_then(|v| v.as_object()) {
+            for mesh_idx in matching_indices {
+                if let Some(mesh) = self.meshes.get_mut(mesh_idx) {
+                    // Access material directly (PhysicalMaterial is the second type parameter)
+                    let material = &mut mesh.material;
+
+                    // Update color if present
+                    if let Some(color_str) = material_obj.get("color").and_then(|v| v.as_str()) {
+                        if let Some(color) =
+                            crate::renderer::material_manager::parse_hex_color(color_str)
+                        {
+                            material.albedo = color;
+                            log::info!("Updated mesh {} material color to {}", mesh_idx, color_str);
+                        }
+                    }
+
+                    // Update metalness if present
+                    if let Some(metalness) = material_obj.get("metalness").and_then(|v| v.as_f64())
+                    {
+                        material.metallic = metalness as f32;
+                        log::debug!("Updated mesh {} metalness to {}", mesh_idx, metalness);
+                    }
+
+                    // Update roughness if present
+                    if let Some(roughness) = material_obj.get("roughness").and_then(|v| v.as_f64())
+                    {
+                        material.roughness = roughness as f32;
+                        log::debug!("Updated mesh {} roughness to {}", mesh_idx, roughness);
+                    }
+
+                    // Update emissive if present
+                    if let Some(emissive_str) =
+                        material_obj.get("emissive").and_then(|v| v.as_str())
+                    {
+                        if let Some(emissive_color) =
+                            crate::renderer::material_manager::parse_hex_color(emissive_str)
+                        {
+                            material.emissive = emissive_color;
+                            log::debug!("Updated mesh {} emissive to {}", mesh_idx, emissive_str);
+                        }
+                    }
+
+                    // Update emissive intensity if present
+                    if let Some(intensity) = material_obj
+                        .get("emissiveIntensity")
+                        .and_then(|v| v.as_f64())
+                    {
+                        let intensity = intensity.max(0.0) as f32;
+                        let emissive = material.emissive;
+                        let scale =
+                            |channel: u8| ((channel as f32 * intensity).clamp(0.0, 255.0)) as u8;
+                        material.emissive = Srgba::new(
+                            scale(emissive.r),
+                            scale(emissive.g),
+                            scale(emissive.b),
+                            emissive.a,
+                        );
+                        log::debug!(
+                            "Updated mesh {} emissive intensity factor to {}",
+                            mesh_idx,
+                            intensity
+                        );
                     }
                 }
             }

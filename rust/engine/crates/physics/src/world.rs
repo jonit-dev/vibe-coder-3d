@@ -1,11 +1,11 @@
 use anyhow::Result;
 use glam::{Quat, Vec3};
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use nalgebra::UnitQuaternion as NUnitQuaternion;
 use rapier3d::prelude::*;
 use vibe_scene::EntityId;
 
-use crate::events::PhysicsEventQueue;
+use crate::events::{CollisionEvent, PhysicsEventQueue};
 
 /// Result of a raycast query
 #[derive(Debug, Clone)]
@@ -63,6 +63,12 @@ pub struct PhysicsWorld {
 
     /// Event queue for downstream consumers
     pub event_queue: PhysicsEventQueue,
+
+    /// Track previous frame contacts to detect enter/exit events
+    previous_contacts: HashSet<(EntityId, EntityId)>,
+
+    /// Track previous frame trigger intersections to detect enter/exit events
+    previous_triggers: HashSet<(EntityId, EntityId)>,
 }
 
 impl PhysicsWorld {
@@ -92,6 +98,8 @@ impl PhysicsWorld {
             entity_to_body: HashMap::new(),
             entity_to_colliders: HashMap::new(),
             event_queue: PhysicsEventQueue::new(),
+            previous_contacts: HashSet::new(),
+            previous_triggers: HashSet::new(),
         }
     }
 
@@ -165,7 +173,11 @@ impl PhysicsWorld {
         // Update integration parameters with current dt
         self.integration_params.dt = dt;
 
-        // Step the physics pipeline
+        // Collect current contacts and triggers before the step
+        let current_contacts = self.collect_current_contacts();
+        let current_triggers = self.collect_current_triggers();
+
+        // Step physics pipeline with basic event handling
         self.pipeline.step(
             &self.gravity,
             &self.integration_params,
@@ -178,9 +190,16 @@ impl PhysicsWorld {
             &mut self.multibody_joints,
             &mut self.ccd_solver,
             None, // query pipeline (not needed for basic sim)
-            &(),  // hooks
-            &(),  // events (we'll implement custom event handling later)
+            &(),
+            &(),  // We'll handle events manually after the step
         );
+
+        // Process collision events before updating previous frame tracking
+        self.process_collision_events(&current_contacts, &current_triggers);
+
+        // Update previous frame tracking
+        self.previous_contacts = current_contacts;
+        self.previous_triggers = current_triggers;
     }
 
     /// Get the position and rotation of an entity's rigid body
@@ -376,7 +395,80 @@ impl PhysicsWorld {
         });
         hits
     }
+
+    /// Collect current contact pairs between entities
+    fn collect_current_contacts(&self) -> HashSet<(EntityId, EntityId)> {
+        let mut contacts = HashSet::new();
+
+        // Iterate through all contact pairs in narrow phase
+        for contact_pair in self.narrow_phase.contact_pairs() {
+            let handle1 = contact_pair.collider1;
+            let handle2 = contact_pair.collider2;
+
+            // Find entity IDs for both colliders
+            if let (Some(entity1), Some(entity2)) = (
+                self.find_entity_by_collider(handle1),
+                self.find_entity_by_collider(handle2)
+            ) {
+                if entity1 != entity2 {
+                    // Store in sorted order to avoid duplicates
+                    let pair = if entity1.as_u64() < entity2.as_u64() {
+                        (entity1, entity2)
+                    } else {
+                        (entity2, entity1)
+                    };
+                    contacts.insert(pair);
+                }
+            }
+        }
+
+        contacts
+    }
+
+    /// Collect current trigger (sensor) intersections
+    fn collect_current_triggers(&self) -> HashSet<(EntityId, EntityId)> {
+        let mut triggers = HashSet::new();
+
+        // Simplified: for now, just collect basic collision pairs
+        // and handle trigger detection separately if needed
+        // This avoids complex intersection iteration for now
+        triggers
+    }
+
+    /// Find entity ID by collider handle
+    fn find_entity_by_collider(&self, collider_handle: ColliderHandle) -> Option<EntityId> {
+        for (entity_id, collider_handles) in &self.entity_to_colliders {
+            if collider_handles.contains(&collider_handle) {
+                return Some(*entity_id);
+            }
+        }
+        None
+    }
+
+    /// Process collision events by comparing current and previous frame contacts/triggers
+    fn process_collision_events(&mut self, current_contacts: &HashSet<(EntityId, EntityId)>, current_triggers: &HashSet<(EntityId, EntityId)>) {
+        // Find new contacts (collision enter)
+        for &(entity_a, entity_b) in current_contacts.difference(&self.previous_contacts) {
+            self.event_queue.push(CollisionEvent::ContactStarted { entity_a, entity_b });
+        }
+
+        // Find ended contacts (collision exit)
+        for &(entity_a, entity_b) in self.previous_contacts.difference(current_contacts) {
+            self.event_queue.push(CollisionEvent::ContactEnded { entity_a, entity_b });
+        }
+
+        // Find new triggers (trigger enter)
+        for &(entity_a, entity_b) in current_triggers.difference(&self.previous_triggers) {
+            self.event_queue.push(CollisionEvent::TriggerStarted { entity_a, entity_b });
+        }
+
+        // Find ended triggers (trigger exit)
+        for &(entity_a, entity_b) in self.previous_triggers.difference(current_triggers) {
+            self.event_queue.push(CollisionEvent::TriggerEnded { entity_a, entity_b });
+        }
+    }
 }
+
 
 impl Default for PhysicsWorld {
     fn default() -> Self {

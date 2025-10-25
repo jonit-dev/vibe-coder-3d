@@ -1,5 +1,7 @@
 use mlua::prelude::*;
-use vibe_audio::{AudioManager, SoundHandle};
+
+// Note: Audio API is currently stubbed due to AudioManager not being Send/Sync
+// The actual audio integration will need to be done differently to avoid threading issues
 
 /// Register the Audio API for Lua scripts
 ///
@@ -7,7 +9,7 @@ use vibe_audio::{AudioManager, SoundHandle};
 /// - Loading and playing sounds
 /// - Volume control
 /// - Playback speed/pitch control
-/// - Looping sounds
+/// - Looping sounds (note: must be set at load time in rodio)
 /// - Stopping sounds
 ///
 /// TypeScript API Reference: src/core/lib/scripting/apis/AudioAPI.ts
@@ -18,73 +20,44 @@ use vibe_audio::{AudioManager, SoundHandle};
 /// function onStart()
 ///     -- Load and play a sound
 ///     local soundId = Audio.load("game/sounds/click.wav")
-///     Audio.play(soundId, {volume = 0.8})
+///     Audio.play(soundId)
+///     Audio.setVolume(soundId, 0.8)
 ///
-///     -- Play with options
+///     -- Load with path
 ///     local musicId = Audio.load("game/sounds/music.mp3")
-///     Audio.play(musicId, {
-///         volume = 0.5,
-///         loop = true,
-///         speed = 1.0
-///     })
+///     Audio.play(musicId)
+///     Audio.setVolume(musicId, 0.5)
+///     Audio.setSpeed(musicId, 1.0)
 /// end
 ///
 /// function onUpdate()
 ///     -- Check if playing
 ///     if Audio.isPlaying(soundId) then
-///         console:log("Sound is playing")
+///         console.log("Sound is playing")
 ///     end
 /// end
 /// ```
-pub fn register_audio_api(lua: &Lua, audio_manager: &mut AudioManager) -> LuaResult<()> {
-    // Create Audio table
+pub fn register_audio_api(lua: &Lua) -> LuaResult<()> {
+    log::info!("Registering Audio API (stubbed implementation)");
+
     let audio_table = lua.create_table()?;
 
-    // Store audio manager as userdata for access in closures
-    // Note: In a full implementation, you'd want to use Arc<Mutex<AudioManager>>
-    // for thread-safe shared access. For now, we'll use a simpler approach.
-
-    // Audio.load(path: string) -> number (sound handle)
+    // Audio.load(path: string) -> number (sound handle ID)
     // Loads a sound file and returns a handle for later use
     audio_table.set(
         "load",
-        lua.create_function(|lua, path: String| {
-            // Get audio manager from context
-            // For now, this is a stub - needs proper context access
-            let handle_id = 0u64; // Placeholder
-            Ok(handle_id)
+        lua.create_function(|_, path: String| -> LuaResult<f64> {
+            log::debug!("[Audio API] Stub: load('{}')", path);
+            Ok(1.0) // Return a dummy handle ID
         })?,
     )?;
 
-    // Audio.play(soundId: number, options?: table) -> void
-    // Plays a loaded sound with optional parameters
+    // Audio.play(soundId: number) -> void
+    // Plays a loaded sound
     audio_table.set(
         "play",
-        lua.create_function(|lua, (sound_id, options): (u64, Option<LuaTable>)| {
-            let volume = if let Some(opts) = options.as_ref() {
-                opts.get::<Option<f32>>("volume")?.unwrap_or(1.0)
-            } else {
-                1.0
-            };
-
-            let loop_sound = if let Some(opts) = options.as_ref() {
-                opts.get::<Option<bool>>("loop")?.unwrap_or(false)
-            } else {
-                false
-            };
-
-            let speed = if let Some(opts) = options.as_ref() {
-                opts.get::<Option<f32>>("speed")?.unwrap_or(1.0)
-            } else {
-                1.0
-            };
-
-            // Stub implementation - needs actual audio manager access
-            println!(
-                "Audio.play called: id={}, volume={}, loop={}, speed={}",
-                sound_id, volume, loop_sound, speed
-            );
-
+        lua.create_function(|_, sound_id: f64| -> LuaResult<()> {
+            log::debug!("[Audio API] Stub: play({})", sound_id);
             Ok(())
         })?,
     )?;
@@ -93,8 +66,8 @@ pub fn register_audio_api(lua: &Lua, audio_manager: &mut AudioManager) -> LuaRes
     // Stops a playing sound
     audio_table.set(
         "stop",
-        lua.create_function(|_lua, sound_id: u64| {
-            println!("Audio.stop called: id={}", sound_id);
+        lua.create_function(|_, sound_id: f64| -> LuaResult<()> {
+            log::debug!("[Audio API] Stub: stop({})", sound_id);
             Ok(())
         })?,
     )?;
@@ -103,8 +76,8 @@ pub fn register_audio_api(lua: &Lua, audio_manager: &mut AudioManager) -> LuaRes
     // Pauses a playing sound
     audio_table.set(
         "pause",
-        lua.create_function(|_lua, sound_id: u64| {
-            println!("Audio.pause called: id={}", sound_id);
+        lua.create_function(|_, sound_id: f64| -> LuaResult<()> {
+            log::debug!("[Audio API] Stub: pause({})", sound_id);
             Ok(())
         })?,
     )?;
@@ -113,12 +86,8 @@ pub fn register_audio_api(lua: &Lua, audio_manager: &mut AudioManager) -> LuaRes
     // Sets the volume of a sound (0.0 to 1.0)
     audio_table.set(
         "setVolume",
-        lua.create_function(|_lua, (sound_id, volume): (u64, f32)| {
-            let clamped_volume = volume.clamp(0.0, 1.0);
-            println!(
-                "Audio.setVolume called: id={}, volume={}",
-                sound_id, clamped_volume
-            );
+        lua.create_function(|_, (sound_id, volume): (f64, f32)| -> LuaResult<()> {
+            log::debug!("[Audio API] Stub: setVolume({}, {})", sound_id, volume);
             Ok(())
         })?,
     )?;
@@ -127,12 +96,8 @@ pub fn register_audio_api(lua: &Lua, audio_manager: &mut AudioManager) -> LuaRes
     // Sets the playback speed/pitch (0.1 to 4.0)
     audio_table.set(
         "setSpeed",
-        lua.create_function(|_lua, (sound_id, speed): (u64, f32)| {
-            let clamped_speed = speed.clamp(0.1, 4.0);
-            println!(
-                "Audio.setSpeed called: id={}, speed={}",
-                sound_id, clamped_speed
-            );
+        lua.create_function(|_, (sound_id, speed): (f64, f32)| -> LuaResult<()> {
+            log::debug!("[Audio API] Stub: setSpeed({}, {})", sound_id, speed);
             Ok(())
         })?,
     )?;
@@ -141,9 +106,8 @@ pub fn register_audio_api(lua: &Lua, audio_manager: &mut AudioManager) -> LuaRes
     // Checks if a sound is currently playing
     audio_table.set(
         "isPlaying",
-        lua.create_function(|_lua, sound_id: u64| {
-            // Stub implementation
-            println!("Audio.isPlaying called: id={}", sound_id);
+        lua.create_function(|_, sound_id: f64| -> LuaResult<bool> {
+            log::debug!("[Audio API] Stub: isPlaying({})", sound_id);
             Ok(false)
         })?,
     )?;
@@ -152,10 +116,9 @@ pub fn register_audio_api(lua: &Lua, audio_manager: &mut AudioManager) -> LuaRes
     // Gets the total duration of a sound in seconds
     audio_table.set(
         "getDuration",
-        lua.create_function(|_lua, sound_id: u64| {
-            // Stub implementation
-            println!("Audio.getDuration called: id={}", sound_id);
-            Ok(0.0f32)
+        lua.create_function(|_, sound_id: f64| -> LuaResult<f32> {
+            log::debug!("[Audio API] Stub: getDuration({})", sound_id);
+            Ok(0.0)
         })?,
     )?;
 
@@ -172,9 +135,8 @@ mod tests {
     #[test]
     fn test_register_audio_api() {
         let lua = Lua::new();
-        let mut audio_manager = AudioManager::new().unwrap();
 
-        let result = register_audio_api(&lua, &mut audio_manager);
+        let result = register_audio_api(&lua);
         assert!(result.is_ok());
 
         // Verify Audio global exists
@@ -186,8 +148,7 @@ mod tests {
     #[test]
     fn test_audio_api_methods_exist() {
         let lua = Lua::new();
-        let mut audio_manager = AudioManager::new().unwrap();
-        register_audio_api(&lua, &mut audio_manager).unwrap();
+        register_audio_api(&lua).unwrap();
 
         // Check all methods exist
         let methods = vec![
@@ -216,58 +177,22 @@ mod tests {
     }
 
     #[test]
-    fn test_audio_play_with_options() {
+    fn test_audio_api_stub_methods() {
         let lua = Lua::new();
-        let mut audio_manager = AudioManager::new().unwrap();
-        register_audio_api(&lua, &mut audio_manager).unwrap();
+        register_audio_api(&lua).unwrap();
 
-        // Test play with options table
+        // Test that stub methods work without errors
         let result: LuaResult<()> = lua
             .load(
                 r#"
-                Audio.play(1, {
-                    volume = 0.5,
-                    loop = true,
-                    speed = 1.5
-                })
-                "#,
-            )
-            .exec();
-
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_audio_volume_clamping() {
-        let lua = Lua::new();
-        let mut audio_manager = AudioManager::new().unwrap();
-        register_audio_api(&lua, &mut audio_manager).unwrap();
-
-        // Test volume clamping (should not error)
-        let result: LuaResult<()> = lua
-            .load(
-                r#"
-                Audio.setVolume(1, 2.0)  -- Should clamp to 1.0
-                Audio.setVolume(1, -0.5) -- Should clamp to 0.0
-                "#,
-            )
-            .exec();
-
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_audio_speed_clamping() {
-        let lua = Lua::new();
-        let mut audio_manager = AudioManager::new().unwrap();
-        register_audio_api(&lua, &mut audio_manager).unwrap();
-
-        // Test speed clamping (should not error)
-        let result: LuaResult<()> = lua
-            .load(
-                r#"
-                Audio.setSpeed(1, 5.0)  -- Should clamp to 4.0
-                Audio.setSpeed(1, 0.05) -- Should clamp to 0.1
+                local handle = Audio.load("test.wav")
+                Audio.play(handle)
+                Audio.stop(handle)
+                Audio.pause(handle)
+                Audio.setVolume(handle, 0.5)
+                Audio.setSpeed(handle, 1.5)
+                local playing = Audio.isPlaying(handle)
+                local duration = Audio.getDuration(handle)
                 "#,
             )
             .exec();

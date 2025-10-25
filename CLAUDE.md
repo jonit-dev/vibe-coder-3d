@@ -46,3 +46,139 @@
 - When discovering important patterns, architectural decisions, or learnings during development, document them in nested folder CLAUDE.md files
 - Update existing nested CLAUDE.md files when new insights are gained about that area of the codebase
 - Keep documentation focused on implementation details, gotchas, and architectural decisions specific to that folder/module
+
+---
+
+## Development & Debugging Workflow
+
+### Running Scenes
+
+**TypeScript Editor (Web):**
+
+```bash
+yarn dev  # Starts at http://localhost:5173
+# Scenes auto-load from localStorage or default scene
+# Scenes located in: src/game/scenes/*.tsx
+```
+
+**Rust Engine (Native):**
+
+```bash
+# Basic run
+yarn rust:engine --scene testphysics
+
+# With debug mode (colliders, FPS, grid)
+yarn rust:engine --scene testphysics --debug
+
+# Custom window size
+yarn rust:engine --scene testphysics --width 1920 --height 1080
+
+# Scenes located in: rust/game/scenes/tests/*.json
+```
+
+### Debugging Tools
+
+**TypeScript Editor:**
+
+- **Status Bar** (bottom): FPS, memory, entity count, script perf, triangle budget, LOD quality
+- **Debug Section** (inspector): Entity/component details, real-time property editing
+- **Logger**: Use `Logger.create('Name')` for structured logging (see Logging Guidelines)
+- **Browser DevTools**: Full log output in dev mode, filtered in production
+
+**Rust Engine Debug Mode:**
+
+```bash
+yarn rust:engine --scene testphysics --debug
+```
+
+- **F1**: Toggle HUD (FPS, frame time, physics stats, GPU timings)
+- **F2**: Toggle collider gizmos (yellow outlines)
+- **F3**: Toggle debug camera (orbital controller)
+- **F4**: Toggle GPU profiler
+- Ground grid and axes visualization
+- Verbose logging: `RUST_LOG=debug yarn rust:engine --scene testphysics`
+- Stack traces: `RUST_BACKTRACE=1 yarn rust:engine --scene testphysics`
+
+**Editor Keyboard Shortcuts:**
+
+- **Ctrl+N**: Add Object
+- **Ctrl+S**: Save Scene (saves both .tsx and .json)
+- **Ctrl+/**: Toggle Chat
+- **Delete**: Delete Selected
+
+### Taking Screenshots
+
+```bash
+# Basic screenshot (saves to rust/engine/screenshots/<scene>.jpg)
+yarn rust:screenshot --scene testphysics
+
+# Custom path and quality
+cargo run -- --scene testphysics --screenshot \
+  --screenshot_path output/test.jpg \
+  --screenshot_quality 85 \
+  --screenshot_scale 0.8
+```
+
+### Common Debugging Workflows
+
+**Debug Physics:**
+
+```bash
+yarn rust:engine --scene testphysics --debug
+# Press F2 for colliders, F3 for orbit cam, F1 for stats
+```
+
+**Debug Scripts:**
+
+```bash
+RUST_LOG=debug yarn rust:engine --scene testscripting --verbose
+# Scripts: rust/game/scripts/tests/*.lua
+```
+
+**Debug Rendering:**
+
+```bash
+yarn rust:screenshot --scene testmaterials  # Capture state
+yarn rust:engine --scene testmaterials --debug  # F4 for GPU timings
+```
+
+**Performance Profiling:**
+
+```bash
+yarn rust:engine --scene testphysics --debug
+# F1: FPS/frame time, F4: GPU breakdown
+# Monitor triangle count in TS editor status bar
+```
+
+### Quick Development Cycle
+
+```bash
+# 1. Start editor
+yarn dev
+
+# 2. Edit scene in browser, save with Ctrl+S
+#    → Saves to src/game/scenes/<name>.tsx (compressed)
+#    → Also saves to rust/game/scenes/tests/<name>.json (full dump)
+
+# 3. Test in Rust engine
+yarn rust:engine --scene <name> --debug
+
+# 4. Iterate on Rust code
+cd rust/engine && cargo check  # Fast error check
+yarn rust:build                # Incremental build (1-5s)
+yarn rust:engine --scene <name>
+
+# 5. Code quality
+yarn lint && yarn typecheck    # TypeScript
+cd rust/engine && cargo clippy && cargo fmt  # Rust
+```
+
+### Key File Locations
+
+- **TypeScript scenes**: `src/game/scenes/*.tsx` (compressed, for editor)
+- **Rust scenes**: `rust/game/scenes/tests/*.json` (full, for engine)
+- **Lua scripts**: `rust/game/scripts/*.lua` (production), `rust/game/scripts/tests/*.lua` (tests)
+- **Screenshots**: `rust/engine/screenshots/`
+- **Docs**: `docs/` (see `docs/0-navigation.md`)
+- **Rust README**: `rust/engine/README.md`
+- **Debug Mode PRD**: `docs/PRDs/rust/rust-debug-mode-prd.md`

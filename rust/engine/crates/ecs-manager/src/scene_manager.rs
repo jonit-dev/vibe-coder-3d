@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use std::sync::Arc;
 use vibe_ecs_bridge::ComponentRegistry;
 use vibe_physics::PhysicsWorld;
-use vibe_scene::{EntityCommand, EntityCommandBuffer, EntityId, Scene, SceneState};
+use vibe_scene::{ComponentKindId, EntityCommand, EntityCommandBuffer, EntityId, Scene, SceneState};
 
 use crate::entity_builder::EntityBuilder;
 
@@ -119,6 +119,35 @@ impl SceneManager {
     /// Get number of pending commands
     pub fn pending_command_count(&self) -> usize {
         self.command_buffer.len()
+    }
+
+    /// Immediately set or update a component on an existing entity
+    pub fn set_component_immediate(
+        &mut self,
+        entity_id: EntityId,
+        component_type: impl Into<ComponentKindId>,
+        data: serde_json::Value,
+    ) -> Result<()> {
+        self.handle_set_component(entity_id, component_type.into(), data)
+    }
+
+    /// Immediately remove a component from an entity
+    pub fn remove_component_immediate(
+        &mut self,
+        entity_id: EntityId,
+        component_type: impl Into<ComponentKindId>,
+    ) -> Result<()> {
+        self.handle_remove_component(entity_id, component_type.into())
+    }
+
+    /// Immediately destroy an existing entity
+    pub fn destroy_entity_immediate(&mut self, entity_id: EntityId) -> Result<()> {
+        self.handle_destroy_entity(entity_id)
+    }
+
+    /// Immediately set the active state for an entity
+    pub fn set_active_immediate(&mut self, entity_id: EntityId, active: bool) -> Result<()> {
+        self.handle_set_active(entity_id, active)
     }
 
     // Private command handlers

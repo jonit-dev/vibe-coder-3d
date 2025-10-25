@@ -93,6 +93,7 @@ pub struct EntityTransformState {
     pub position: Vec3,
     pub rotation: Vec3, // Stored as Euler degrees for TS compatibility
     pub scale: Vec3,
+    pub dirty: bool,
 }
 
 impl EntityTransformState {
@@ -120,6 +121,7 @@ impl EntityTransformState {
             position,
             rotation,
             scale,
+            dirty: false,
         }
     }
 
@@ -130,6 +132,10 @@ impl EntityTransformState {
             scale: Some([self.scale.x, self.scale.y, self.scale.z]),
         }
     }
+
+    pub fn mark_dirty(&mut self) {
+        self.dirty = true;
+    }
 }
 
 impl Default for EntityTransformState {
@@ -138,6 +144,7 @@ impl Default for EntityTransformState {
             position: Vec3::ZERO,
             rotation: Vec3::ZERO,
             scale: Vec3::ONE,
+            dirty: false,
         }
     }
 }
@@ -239,6 +246,7 @@ pub fn register_entity_api(
                     .lock()
                     .map_err(|e| mlua::Error::RuntimeError(format!("Lock error: {}", e)))?;
                 s.position = Vec3::new(x, y, z);
+                s.mark_dirty();
                 Ok(())
             })?,
         )?;
@@ -255,6 +263,7 @@ pub fn register_entity_api(
                     .lock()
                     .map_err(|e| mlua::Error::RuntimeError(format!("Lock error: {}", e)))?;
                 s.rotation = Vec3::new(x.to_degrees(), y.to_degrees(), z.to_degrees()); // Store as degrees
+                s.mark_dirty();
                 Ok(())
             })?,
         )?;
@@ -271,6 +280,7 @@ pub fn register_entity_api(
                     .lock()
                     .map_err(|e| mlua::Error::RuntimeError(format!("Lock error: {}", e)))?;
                 s.scale = Vec3::new(x, y, z);
+                s.mark_dirty();
                 Ok(())
             })?,
         )?;
@@ -288,6 +298,7 @@ pub fn register_entity_api(
                         .lock()
                         .map_err(|e| mlua::Error::RuntimeError(format!("Lock error: {}", e)))?;
                     s.position += Vec3::new(dx, dy, dz);
+                    s.mark_dirty();
                     Ok(())
                 },
             )?,
@@ -312,6 +323,7 @@ pub fn register_entity_api(
                         .map_err(|e| mlua::Error::RuntimeError(format!("Lock error: {}", e)))?;
                     let old_rotation = s.rotation;
                     s.rotation += Vec3::new(dx.to_degrees(), dy.to_degrees(), dz.to_degrees()); // Add radians converted to degrees
+                    s.mark_dirty();
                     log::debug!(
                         "Rotation updated from {:?} to {:?}",
                         old_rotation,

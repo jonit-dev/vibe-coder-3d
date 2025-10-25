@@ -300,11 +300,29 @@ impl AppThreeD {
             std::thread::sleep(std::time::Duration::from_millis(16)); // ~60fps
         }
 
+        // Extract mesh rendering state for screenshot
+        let render_state =
+            if let Some(ref scene_manager) = self.scene_manager {
+                if let Ok(mgr) = scene_manager.lock() {
+                    let scene_state = mgr.scene_state();
+                    Some(scene_state.with_scene(|scene| {
+                        crate::threed_renderer::MeshRenderState::from_scene(scene)
+                    }))
+                } else {
+                    None
+                }
+            } else {
+                self.scene
+                    .as_ref()
+                    .map(|scene| crate::threed_renderer::MeshRenderState::from_scene(scene))
+            };
+
         // Capture screenshot after warmup
         log::info!("Capturing screenshot...");
         self.renderer.render_to_screenshot(
             &output_path,
             self.physics_world.as_ref(),
+            render_state.as_ref(),
             scale,
             quality,
         )?;
@@ -340,6 +358,36 @@ impl AppThreeD {
 
             // Sync script transforms back to renderer
             self.renderer.sync_script_transforms(script_system);
+
+            // Drain and apply all mutations from scripts (material:setColor(), etc.)
+            let mutations = script_system.drain_all_mutations();
+            if !mutations.is_empty() {
+                let mut scene_manager_guard =
+                    self.scene_manager.as_ref().and_then(|mgr| mgr.lock().ok());
+
+                for mutation in &mutations {
+                    if let Some(scene) = self.scene.as_mut() {
+                        Self::apply_mutation_to_scene(scene, mutation);
+                    }
+
+                    if let Some(mgr) = scene_manager_guard.as_mut() {
+                        if let Err(e) = Self::apply_mutation_to_scene_manager(mgr, mutation) {
+                            log::error!("Failed to apply mutation via SceneManager: {}", e);
+                        }
+                    }
+
+                    if let vibe_scripting::EntityMutation::SetComponent {
+                        entity_id,
+                        component_type,
+                        data,
+                    } = mutation
+                    {
+                        if component_type == "MeshRenderer" {
+                            self.renderer.update_entity_material(*entity_id, data);
+                        }
+                    }
+                }
+            }
         }
 
         // Physics simulation (if enabled)
@@ -358,8 +406,119 @@ impl AppThreeD {
                 steps += 1;
             }
 
-            // Sync physics transforms back to renderer
+            // Process collision events and dispatch to scripts
             if steps > 0 {
+                // Process collision events from physics world
+                let collision_events: Vec<_> = physics_world.poll_events().collect();
+
+                if !collision_events.is_empty() {
+                    if let Some(ref mut script_system) = self.script_system {
+                        for event in collision_events {
+                            match event {
+                                vibe_physics::CollisionEvent::ContactStarted {
+                                    entity_a,
+                                    entity_b,
+                                } => {
+                                    // Dispatch collision enter events to both entities
+                                    if let Err(e) = script_system.dispatch_collision_event(
+                                        entity_a,
+                                        entity_b,
+                                        "collisionEnter",
+                                    ) {
+                                        log::error!(
+                                            "Failed to dispatch collision enter event: {}",
+                                            e
+                                        );
+                                    }
+                                    if let Err(e) = script_system.dispatch_collision_event(
+                                        entity_b,
+                                        entity_a,
+                                        "collisionEnter",
+                                    ) {
+                                        log::error!(
+                                            "Failed to dispatch collision enter event: {}",
+                                            e
+                                        );
+                                    }
+                                }
+                                vibe_physics::CollisionEvent::ContactEnded {
+                                    entity_a,
+                                    entity_b,
+                                } => {
+                                    // Dispatch collision exit events to both entities
+                                    if let Err(e) = script_system.dispatch_collision_event(
+                                        entity_a,
+                                        entity_b,
+                                        "collisionExit",
+                                    ) {
+                                        log::error!(
+                                            "Failed to dispatch collision exit event: {}",
+                                            e
+                                        );
+                                    }
+                                    if let Err(e) = script_system.dispatch_collision_event(
+                                        entity_b,
+                                        entity_a,
+                                        "collisionExit",
+                                    ) {
+                                        log::error!(
+                                            "Failed to dispatch collision exit event: {}",
+                                            e
+                                        );
+                                    }
+                                }
+                                vibe_physics::CollisionEvent::TriggerStarted {
+                                    entity_a,
+                                    entity_b,
+                                } => {
+                                    // Dispatch trigger enter events to both entities
+                                    if let Err(e) = script_system.dispatch_collision_event(
+                                        entity_a,
+                                        entity_b,
+                                        "triggerEnter",
+                                    ) {
+                                        log::error!(
+                                            "Failed to dispatch trigger enter event: {}",
+                                            e
+                                        );
+                                    }
+                                    if let Err(e) = script_system.dispatch_collision_event(
+                                        entity_b,
+                                        entity_a,
+                                        "triggerEnter",
+                                    ) {
+                                        log::error!(
+                                            "Failed to dispatch trigger enter event: {}",
+                                            e
+                                        );
+                                    }
+                                }
+                                vibe_physics::CollisionEvent::TriggerEnded {
+                                    entity_a,
+                                    entity_b,
+                                } => {
+                                    // Dispatch trigger exit events to both entities
+                                    if let Err(e) = script_system.dispatch_collision_event(
+                                        entity_a,
+                                        entity_b,
+                                        "triggerExit",
+                                    ) {
+                                        log::error!("Failed to dispatch trigger exit event: {}", e);
+                                    }
+                                    if let Err(e) = script_system.dispatch_collision_event(
+                                        entity_b,
+                                        entity_a,
+                                        "triggerExit",
+                                    ) {
+                                        log::error!("Failed to dispatch trigger exit event: {}", e);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Sync physics transforms back to renderer
                 self.renderer.sync_physics_transforms(physics_world);
             }
         }
@@ -373,9 +532,8 @@ impl AppThreeD {
 
                 // Sync newly created entities to renderer (async operation)
                 let scene_state = mgr.scene_state();
-                let sync_result = scene_state.with_scene(|scene| {
-                    pollster::block_on(self.renderer.sync_new_entities(scene))
-                });
+                let sync_result = scene_state
+                    .with_scene(|scene| pollster::block_on(self.renderer.sync_new_entities(scene)));
                 if let Err(e) = sync_result {
                     log::error!("Failed to sync new entities to renderer: {}", e);
                 }
@@ -386,9 +544,140 @@ impl AppThreeD {
         self.input_manager.clear_frame_state();
     }
 
+    fn apply_mutation_to_scene(scene: &mut SceneData, mutation: &vibe_scripting::EntityMutation) {
+        match mutation {
+            vibe_scripting::EntityMutation::SetComponent {
+                entity_id,
+                component_type,
+                data,
+            } => {
+                if let Some(entity) = scene
+                    .entities
+                    .iter_mut()
+                    .find(|e| e.entity_id() == Some(*entity_id))
+                {
+                    if let Some(existing_component) = entity.components.get_mut(component_type) {
+                        if let (Some(existing_obj), Some(new_obj)) =
+                            (existing_component.as_object_mut(), data.as_object())
+                        {
+                            for (key, value) in new_obj {
+                                existing_obj.insert(key.clone(), value.clone());
+                            }
+                            log::debug!(
+                                "Applied SetComponent mutation: entity {:?}, component {}",
+                                entity_id,
+                                component_type
+                            );
+                        } else {
+                            *existing_component = data.clone();
+                            log::debug!(
+                                "Replaced component: entity {:?}, component {}",
+                                entity_id,
+                                component_type
+                            );
+                        }
+                    } else {
+                        entity
+                            .components
+                            .insert(component_type.clone(), data.clone());
+                        log::debug!(
+                            "Created component: entity {:?}, component {}",
+                            entity_id,
+                            component_type
+                        );
+                    }
+                } else {
+                    log::warn!("SetComponent mutation: entity {:?} not found", entity_id);
+                }
+            }
+            vibe_scripting::EntityMutation::RemoveComponent {
+                entity_id,
+                component_type,
+            } => {
+                if let Some(entity) = scene
+                    .entities
+                    .iter_mut()
+                    .find(|e| e.entity_id() == Some(*entity_id))
+                {
+                    entity.components.remove(component_type);
+                    log::debug!(
+                        "Removed component: entity {:?}, component {}",
+                        entity_id,
+                        component_type
+                    );
+                } else {
+                    log::warn!("RemoveComponent mutation: entity {:?} not found", entity_id);
+                }
+            }
+            vibe_scripting::EntityMutation::DestroyEntity { entity_id } => {
+                scene.entities.retain(|e| e.entity_id() != Some(*entity_id));
+                log::debug!("Destroyed entity: {:?}", entity_id);
+            }
+            vibe_scripting::EntityMutation::SetActive { entity_id, active } => {
+                log::trace!(
+                    "SetActive mutation not yet implemented: entity {:?}, active={}",
+                    entity_id,
+                    active
+                );
+            }
+        }
+    }
+
+    fn apply_mutation_to_scene_manager(
+        scene_manager: &mut SceneManager,
+        mutation: &vibe_scripting::EntityMutation,
+    ) -> anyhow::Result<()> {
+        match mutation {
+            vibe_scripting::EntityMutation::SetComponent {
+                entity_id,
+                component_type,
+                data,
+            } => scene_manager.set_component_immediate(
+                *entity_id,
+                component_type.as_str(),
+                data.clone(),
+            ),
+            vibe_scripting::EntityMutation::RemoveComponent {
+                entity_id,
+                component_type,
+            } => scene_manager.remove_component_immediate(*entity_id, component_type.as_str()),
+            vibe_scripting::EntityMutation::DestroyEntity { entity_id } => {
+                scene_manager.destroy_entity_immediate(*entity_id)
+            }
+            vibe_scripting::EntityMutation::SetActive { entity_id, active } => {
+                scene_manager.set_active_immediate(*entity_id, *active)
+            }
+        }
+    }
+
     fn render(&mut self) -> anyhow::Result<()> {
         let delta_time = self.timer.delta_seconds();
-        self.renderer
-            .render(delta_time, self.debug_mode, self.physics_world.as_ref())
+
+        // Get current scene state for runtime ECS sync
+        // Extract mesh rendering state without holding a borrow on the scene
+        let render_state =
+            if let Some(ref scene_manager) = self.scene_manager {
+                if let Ok(mgr) = scene_manager.lock() {
+                    let scene_state = mgr.scene_state();
+                    Some(scene_state.with_scene(|scene| {
+                        crate::threed_renderer::MeshRenderState::from_scene(scene)
+                    }))
+                } else {
+                    None
+                }
+            } else {
+                // Fallback to static scene
+                self.scene
+                    .as_ref()
+                    .map(|scene| crate::threed_renderer::MeshRenderState::from_scene(scene))
+            };
+
+        // Render with extracted state (no borrow conflicts)
+        self.renderer.render(
+            delta_time,
+            self.debug_mode,
+            self.physics_world.as_ref(),
+            render_state.as_ref(),
+        )
     }
 }

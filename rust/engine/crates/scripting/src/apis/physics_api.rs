@@ -111,8 +111,12 @@ use mlua::prelude::*;
 use serde_json::Value;
 use std::sync::Arc;
 use vibe_scene::Scene;
+use vibe_ecs_manager::SceneManager;
 
-use super::entity_mutations::{EntityMutation, EntityMutationBuffer};
+use super::{
+    collision_api::{dispatch_physics_event, cleanup_collision_api},
+    entity_mutations::{EntityMutation, EntityMutationBuffer},
+};
 
 /// Register Physics API on the entity table
 ///
@@ -620,50 +624,9 @@ fn create_mesh_collider_accessor(
 }
 
 /// Create PhysicsEvents API
-fn create_physics_events_api(lua: &Lua, _entity_id: u64) -> LuaResult<LuaTable> {
-    let api = lua.create_table()?;
-
-    // NOTE: Physics events are placeholder stubs for now
-    // In a full implementation, these would interact with a physics engine event system
-
-    // onCollisionEnter(callback)
-    api.set(
-        "onCollisionEnter",
-        lua.create_function(|_, (_self, _callback): (LuaValue, LuaFunction)| {
-            log::warn!("PhysicsEvents::onCollisionEnter not yet implemented in Rust engine");
-            // Return unsubscribe function (stub)
-            Ok(())
-        })?,
-    )?;
-
-    // onCollisionExit(callback)
-    api.set(
-        "onCollisionExit",
-        lua.create_function(|_, (_self, _callback): (LuaValue, LuaFunction)| {
-            log::warn!("PhysicsEvents::onCollisionExit not yet implemented in Rust engine");
-            Ok(())
-        })?,
-    )?;
-
-    // onTriggerEnter(callback)
-    api.set(
-        "onTriggerEnter",
-        lua.create_function(|_, (_self, _callback): (LuaValue, LuaFunction)| {
-            log::warn!("PhysicsEvents::onTriggerEnter not yet implemented in Rust engine");
-            Ok(())
-        })?,
-    )?;
-
-    // onTriggerExit(callback)
-    api.set(
-        "onTriggerExit",
-        lua.create_function(|_, (_self, _callback): (LuaValue, LuaFunction)| {
-            log::warn!("PhysicsEvents::onTriggerExit not yet implemented in Rust engine");
-            Ok(())
-        })?,
-    )?;
-
-    Ok(api)
+fn create_physics_events_api(lua: &Lua, entity_id: u64) -> LuaResult<LuaTable> {
+    // Use the collision API to create the events table
+    super::collision_api::create_collision_api(lua, vibe_scene::EntityId::new(entity_id))
 }
 
 /// Create CharacterController API

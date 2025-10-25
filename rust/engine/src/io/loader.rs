@@ -41,16 +41,9 @@ fn dump_scene_diagnostics(scene: &SceneData) {
     log::info!("========================================");
     log::info!("SCENE DIAGNOSTIC DUMP - Visual Parity");
     log::info!("========================================");
-    log::info!(
-        "Scene: {} (v{})",
-        scene.name,
-        scene.version
-    );
+    log::info!("Scene: {} (v{})", scene.name, scene.version);
     log::info!("Entities: {}", scene.entities.len());
-    log::info!(
-        "Materials: {}",
-        scene.materials.len()
-    );
+    log::info!("Materials: {}", scene.materials.len());
     log::info!("");
 
     // Dump each entity with detailed component information

@@ -1,0 +1,532 @@
+{
+  "metadata": {
+    "name": "collision_comprehensive_test",
+    "version": 1,
+    "timestamp": "2025-10-25T02:30:00.000Z",
+    "description": "Comprehensive collision test with multiple scenarios and visual feedback"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {"id": "collision-test-camera"},
+        "Transform": {
+          "position": [0, 6, -12],
+          "rotation": [15, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 45,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "depth": 0,
+          "isMain": true,
+          "clearFlags": "skybox",
+          "skyboxTexture": "",
+          "backgroundColor": {"r": 0.2, "g": 0.3, "b": 0.4, "a": 1},
+          "controlMode": "free",
+          "viewportRect": {"x": 0, "y": 0, "width": 1, "height": 1},
+          "hdr": false,
+          "toneMapping": "none",
+          "toneMappingExposure": 1,
+          "enablePostProcessing": false,
+          "postProcessingPreset": "none",
+          "enableSmoothing": false,
+          "followTarget": 0,
+          "followOffset": {"x": 0, "y": 5, "z": -10},
+          "smoothingSpeed": 2,
+          "rotationSmoothing": 1.5,
+          "skyboxScale": {"x": 1, "y": 1, "z": 1},
+          "skyboxRotation": {"x": 0, "y": 0, "z": 0},
+          "skyboxRepeat": {"u": 1, "v": 1},
+          "skyboxOffset": {"u": 0, "v": 0},
+          "skyboxIntensity": 1,
+          "skyboxBlur": 0
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {"id": "collision-test-light"},
+        "Transform": {
+          "position": [5, 10, 5],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {"r": 1, "g": 1, "b": 1},
+          "intensity": 0.8,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -1,
+          "directionZ": -0.5,
+          "range": 10,
+          "decay": 1,
+          "angle": 0.5235987755982988,
+          "penumbra": 0.1,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {"id": "collision-test-ambient"},
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {"r": 0.4, "g": 0.4, "b": 0.4},
+          "intensity": 0.5,
+          "enabled": true,
+          "castShadow": false,
+          "directionX": 0,
+          "directionY": -1,
+          "directionZ": 0,
+          "range": 10,
+          "decay": 1,
+          "angle": 0.5235987755982988,
+          "penumbra": 0.1,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.0001,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Dynamic Cube Blue",
+      "components": {
+        "PersistentId": {"id": "blue-cube"},
+        "Transform": {
+          "position": [-4, 4, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "blue",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "RigidBody": {
+          "enabled": true,
+          "bodyType": "dynamic",
+          "type": "dynamic",
+          "mass": 1,
+          "gravityScale": 1,
+          "canSleep": true,
+          "material": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        },
+        "MeshCollider": {
+          "enabled": true,
+          "isTrigger": false,
+          "colliderType": "box",
+          "center": [0, 0, 0],
+          "size": {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "radius": 0.5,
+            "capsuleRadius": 0.5,
+            "capsuleHeight": 2
+          },
+          "physicsMaterial": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        },
+        "Script": {
+          "enabled": true,
+          "scriptPath": "tests/collision_comprehensive_test.lua",
+          "executeInUpdate": true,
+          "executeOnStart": true,
+          "parameters": {}
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Dynamic Cube Red",
+      "components": {
+        "PersistentId": {"id": "red-cube"},
+        "Transform": {
+          "position": [0, 4, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "RigidBody": {
+          "enabled": true,
+          "bodyType": "dynamic",
+          "type": "dynamic",
+          "mass": 1,
+          "gravityScale": 1,
+          "canSleep": true,
+          "material": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        },
+        "MeshCollider": {
+          "enabled": true,
+          "isTrigger": false,
+          "colliderType": "box",
+          "center": [0, 0, 0],
+          "size": {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "radius": 0.5,
+            "capsuleRadius": 0.5,
+            "capsuleHeight": 2
+          },
+          "physicsMaterial": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        },
+        "Script": {
+          "enabled": true,
+          "scriptPath": "tests/collision_comprehensive_test.lua",
+          "executeInUpdate": true,
+          "executeOnStart": true,
+          "parameters": {}
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Trigger Volume Green",
+      "components": {
+        "PersistentId": {"id": "green-trigger"},
+        "Transform": {
+          "position": [4, 2, 0],
+          "rotation": [0, 0, 0],
+          "scale": [2, 2, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "green",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "MeshCollider": {
+          "enabled": true,
+          "isTrigger": true,
+          "colliderType": "sphere",
+          "center": [0, 0, 0],
+          "size": {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "radius": 1,
+            "capsuleRadius": 0.5,
+            "capsuleHeight": 2
+          },
+          "physicsMaterial": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        },
+        "Script": {
+          "enabled": true,
+          "scriptPath": "tests/collision_comprehensive_test.lua",
+          "executeInUpdate": true,
+          "executeOnStart": true,
+          "parameters": {}
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Trigger Volume Yellow",
+      "components": {
+        "PersistentId": {"id": "yellow-trigger"},
+        "Transform": {
+          "position": [-4, 2, 0],
+          "rotation": [0, 0, 0],
+          "scale": [2, 2, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "yellow",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "MeshCollider": {
+          "enabled": true,
+          "isTrigger": true,
+          "colliderType": "sphere",
+          "center": [0, 0, 0],
+          "size": {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "radius": 1,
+            "capsuleRadius": 0.5,
+            "capsuleHeight": 2
+          },
+          "physicsMaterial": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        },
+        "Script": {
+          "enabled": true,
+          "scriptPath": "tests/collision_comprehensive_test.lua",
+          "executeInUpdate": true,
+          "executeOnStart": true,
+          "parameters": {}
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "Floor Platform",
+      "components": {
+        "PersistentId": {"id": "floor-platform"},
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [12, 0.5, 12]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "gray",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "RigidBody": {
+          "enabled": true,
+          "bodyType": "fixed",
+          "type": "fixed",
+          "mass": 1,
+          "gravityScale": 1,
+          "canSleep": false,
+          "material": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        },
+        "MeshCollider": {
+          "enabled": true,
+          "isTrigger": false,
+          "colliderType": "box",
+          "center": [0, 0, 0],
+          "size": {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "radius": 0.5,
+            "capsuleRadius": 0.5,
+            "capsuleHeight": 2
+          },
+          "physicsMaterial": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "Wall Platform",
+      "components": {
+        "PersistentId": {"id": "wall-platform"},
+        "Transform": {
+          "position": [6, 2, 0],
+          "rotation": [0, 0, 0],
+          "scale": [0.5, 4, 4]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "gray",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "RigidBody": {
+          "enabled": true,
+          "bodyType": "fixed",
+          "type": "fixed",
+          "mass": 1,
+          "gravityScale": 1,
+          "canSleep": false,
+          "material": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        },
+        "MeshCollider": {
+          "enabled": true,
+          "isTrigger": false,
+          "colliderType": "box",
+          "center": [0, 0, 0],
+          "size": {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "radius": 0.5,
+            "capsuleRadius": 0.5,
+            "capsuleHeight": 2
+          },
+          "physicsMaterial": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "Moving Platform",
+      "components": {
+        "PersistentId": {"id": "moving-platform"},
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [3, 0.5, 3]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "purple",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "RigidBody": {
+          "enabled": true,
+          "bodyType": "fixed",
+          "type": "fixed",
+          "mass": 1,
+          "gravityScale": 1,
+          "canSleep": false,
+          "material": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        },
+        "MeshCollider": {
+          "enabled": true,
+          "isTrigger": false,
+          "colliderType": "box",
+          "center": [0, 0, 0],
+          "size": {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+            "radius": 0.5,
+            "capsuleRadius": 0.5,
+            "capsuleHeight": 2
+          },
+          "physicsMaterial": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1
+          }
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "blue",
+      "name": "Blue",
+      "color": "#0066ff",
+      "metalness": 0.1,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "red",
+      "name": "Red",
+      "color": "#ff0000",
+      "metalness": 0.1,
+      "roughness": 0.5,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "green",
+      "name": "Green",
+      "color": "#008800",
+      "metalness": 0.1,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "yellow",
+      "name": "Yellow",
+      "color": "#ffff00",
+      "metalness": 0.1,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "gray",
+      "name": "Gray",
+      "color": "#666666",
+      "metalness": 0.1,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    },
+    {
+      "id": "purple",
+      "name": "Purple",
+      "color": "#8000ff",
+      "metalness": 0.1,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0
+    }
+  ]
+}

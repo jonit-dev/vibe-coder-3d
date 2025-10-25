@@ -425,6 +425,66 @@ impl ScriptSystem {
                 )
             })?;
 
+        // Register Audio API (stubbed implementation)
+        crate::apis::register_audio_api(runtime.lua()).with_context(|| {
+            format!(
+                "Failed to register Audio API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
+        // Register Collision API for entities with physics components
+        let scene_ref_for_collision = self
+            .scene
+            .clone()
+            .context("Scene not initialized for CollisionAPI")?;
+
+        // Check if entity has physics components (RigidBody or MeshCollider)
+        let has_physics = entity.components.contains_key("RigidBody") || entity.components.contains_key("MeshCollider");
+        if has_physics {
+            let collision_api = crate::apis::create_collision_api(runtime.lua(), vibe_scene::EntityId::new(entity_id))
+                .with_context(|| {
+                    format!(
+                        "Failed to create Collision API for entity '{}' (ID {})",
+                        entity_name, entity_id
+                    )
+                })?;
+
+            // Set collision API on entity
+            let entity_table: mlua::Table = runtime.lua().globals().get("entity")?;
+            entity_table.set("collision", collision_api).with_context(|| {
+                format!(
+                    "Failed to set collision API on entity for '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            })?;
+        }
+
+        // Register Mesh API for entities with MeshRenderer components
+        if entity.components.contains_key("MeshRenderer") {
+            // Use scene_manager reference if available, otherwise skip (Mesh API requires live scene)
+            if let Some(scene_mgr_ref) = &self.scene_manager {
+                let mesh_api = crate::apis::MeshAPI::new(
+                    vibe_scene::EntityId::new(entity_id),
+                    scene_mgr_ref.clone(),
+                );
+
+                // Set mesh API on entity
+                let entity_table: mlua::Table = runtime.lua().globals().get("entity")?;
+                entity_table.set("mesh", mesh_api).with_context(|| {
+                    format!(
+                        "Failed to set mesh API on entity for '{}' (ID {})",
+                        entity_name, entity_id
+                    )
+                })?;
+            } else {
+                log::warn!(
+                    "Entity '{}' has MeshRenderer but no SceneManager available - Mesh API disabled",
+                    entity_name
+                );
+            }
+        }
+
         // Register script parameters as a global Lua table
         let params_lua = Self::json_to_lua(runtime.lua(), &script_comp.parameters)
             .map_err(|e| anyhow::anyhow!("Failed to convert parameters to Lua: {}", e))?;
@@ -524,6 +584,36 @@ impl ScriptSystem {
         Ok(())
     }
 
+    /// Drain all queued mutations from all scripts
+    ///
+    /// Collects mutations from all entity mutation buffers (used by material:setColor(), etc.)
+    /// and returns them for application to the scene.
+    ///
+    /// # Returns
+    ///
+    /// Vector of all queued mutations across all scripts
+    pub fn drain_all_mutations(&self) -> Vec<super::apis::EntityMutation> {
+        let mut all_mutations = Vec::new();
+
+        for (entity_id, entity_script) in &self.scripts {
+            let mutations = entity_script.mutation_buffer.drain();
+            if !mutations.is_empty() {
+                log::debug!(
+                    "Drained {} mutations from entity {}",
+                    mutations.len(),
+                    entity_id
+                );
+                all_mutations.extend(mutations);
+            }
+        }
+
+        if !all_mutations.is_empty() {
+            log::info!("Total mutations drained from all scripts: {}", all_mutations.len());
+        }
+
+        all_mutations
+    }
+
     /// Get the current transform state for an entity
     ///
     /// This allows the engine to read transform changes made by scripts
@@ -539,6 +629,20 @@ impl ScriptSystem {
         self.scripts
             .get(&entity_id)
             .map(|entity_script| entity_script.transform_state.lock().unwrap().to_transform())
+    }
+
+    /// Get the transform if it was modified by a script since the last read.
+    ///
+    /// Returns None when the transform is unchanged to avoid overriding physics-driven transforms.
+    pub fn take_transform_if_dirty(&self, entity_id: u64) -> Option<Transform> {
+        let entity_script = self.scripts.get(&entity_id)?;
+        let mut state = entity_script.transform_state.lock().ok()?;
+        if state.dirty {
+            state.dirty = false;
+            Some(state.to_transform())
+        } else {
+            None
+        }
     }
 
     /// Destroy a script for a specific entity
@@ -560,6 +664,9 @@ impl ScriptSystem {
             crate::apis::cleanup_event_api(entity_script.runtime.lua(), entity_id as u32)
                 .with_context(|| format!("Error cleaning up event API for entity {}", entity_id))?;
 
+            // Cleanup collision handlers for this entity
+            crate::apis::cleanup_collision_api(vibe_scene::EntityId::new(entity_id));
+
             log::debug!("Successfully destroyed script for entity {}", entity_id);
         }
         Ok(())
@@ -578,6 +685,55 @@ impl ScriptSystem {
     /// Get all entity IDs that have scripts loaded
     pub fn entity_ids(&self) -> Vec<u64> {
         self.scripts.keys().copied().collect()
+    }
+
+    /// Dispatch a collision event to a specific entity's script
+    ///
+    /// # Arguments
+    /// * `entity_id` - The entity to dispatch the event to
+    /// * `other_entity_id` - The other entity involved in the collision
+    /// * `event_type` - The type of collision event ("collisionEnter", "collisionExit", "triggerEnter", "triggerExit")
+    ///
+    /// # Returns
+    /// Ok(()) if successful, Err if the entity has no script or the event dispatch fails
+    pub fn dispatch_collision_event(
+        &self,
+        entity_id: vibe_scene::EntityId,
+        other_entity_id: vibe_scene::EntityId,
+        event_type: &str,
+    ) -> Result<()> {
+        let eid = entity_id.as_u64();
+        let other_eid = other_entity_id.as_u64() as f64;
+
+        if let Some(entity_script) = self.scripts.get(&eid) {
+            // Convert event type to PhysicsEventType for collision API
+            let physics_event_type = match event_type {
+                "collisionEnter" => crate::apis::collision_api::PhysicsEventType::CollisionEnter,
+                "collisionExit" => crate::apis::collision_api::PhysicsEventType::CollisionExit,
+                "triggerEnter" => crate::apis::collision_api::PhysicsEventType::TriggerEnter,
+                "triggerExit" => crate::apis::collision_api::PhysicsEventType::TriggerExit,
+                _ => {
+                    log::warn!("Unknown collision event type: {}", event_type);
+                    return Ok(());
+                }
+            };
+
+            // Dispatch the event using the collision API dispatcher
+            crate::apis::collision_api::dispatch_physics_event(
+                entity_script.runtime.lua(),
+                entity_id,
+                physics_event_type,
+                other_entity_id,
+            )
+            .with_context(|| {
+                format!(
+                    "Failed to dispatch {} event from entity {} to {}",
+                    event_type, eid, other_eid
+                )
+            })?;
+        }
+
+        Ok(())
     }
 }
 
@@ -710,6 +866,35 @@ mod tests {
         // Check transform was modified
         let transform = system.get_transform(42).unwrap();
         assert_eq!(transform.position, Some([10.0, 20.0, 30.0]));
+    }
+
+    #[test]
+    fn test_take_transform_if_dirty() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let script_path = temp_dir.path().join("dirty.lua");
+        let mut script_file = std::fs::File::create(&script_path).unwrap();
+        writeln!(
+            script_file,
+            r#"
+            function onUpdate(deltaTime)
+                entity.transform:setPosition(5, 6, 7)
+            end
+            "#
+        )
+        .unwrap();
+
+        let scene = create_test_scene_with_script("dirty.lua");
+        let mut system = ScriptSystem::new(temp_dir.path().to_path_buf());
+        system.initialize(&scene).unwrap();
+
+        system.update(0.016).unwrap();
+
+        let first = system.take_transform_if_dirty(42).unwrap();
+        assert_eq!(first.position, Some([5.0, 6.0, 7.0]));
+
+        // Second call should return None until another script change occurs
+        assert!(system.take_transform_if_dirty(42).is_none());
     }
 
     #[test]

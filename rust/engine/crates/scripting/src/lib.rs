@@ -11,7 +11,7 @@ pub mod script_system;
 pub mod hot_reload;
 
 // Re-exports for convenience
-pub use apis::{InputApiProvider, InputManagerRef};
+pub use apis::{EntityMutation, InputApiProvider, InputManagerRef};
 pub use lua_runtime::{LuaScript, LuaScriptRuntime};
 pub use script_system::ScriptSystem;
 
