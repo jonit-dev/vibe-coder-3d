@@ -142,42 +142,38 @@ mod tests {
     fn create_test_scene() -> Scene {
         let entity1 = Entity {
             id: Some(1),
-            persistentId: Some("entity-1".to_string()),
+            persistent_id: Some("entity-1".to_string()),
             name: Some("Player".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec!["player".to_string(), "character".to_string()],
             components: HashMap::new(),
         };
 
         let entity2 = Entity {
             id: Some(2),
-            persistentId: Some("entity-2".to_string()),
+            persistent_id: Some("entity-2".to_string()),
             name: Some("Enemy".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec!["enemy".to_string(), "character".to_string()],
             components: HashMap::new(),
         };
 
         let entity3 = Entity {
             id: Some(3),
-            persistentId: Some("entity-3".to_string()),
+            persistent_id: Some("entity-3".to_string()),
             name: Some("Player".to_string()), // Duplicate name
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec!["player".to_string()],
             components: HashMap::new(),
         };
 
         Scene {
-            metadata: Metadata {
-                name: "Test Scene".to_string(),
-                version: 1,
-                timestamp: "2025-01-01T00:00:00Z".to_string(),
-                author: None,
-                description: None,
-            },
+            version: 1,
+            name: "Test Scene".to_string(),
             entities: vec![entity1, entity2, entity3],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
+            meshes: None,
+            metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
         }

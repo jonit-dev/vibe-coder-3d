@@ -1,7 +1,7 @@
 use serde_json::json;
 use std::collections::HashMap;
 use vibe_ecs_bridge::decoders::{create_default_registry, ScriptComponent};
-use vibe_scene::{Entity, Metadata, Scene};
+use vibe_scene::{Entity, Scene};
 
 #[test]
 fn test_script_component_decoding() {
@@ -9,18 +9,13 @@ fn test_script_component_decoding() {
 
     // Create test scene
     let scene = Scene {
-        metadata: Metadata {
-            name: "Test".to_string(),
-            version: 1,
-            timestamp: "2025-01-01T00:00:00Z".to_string(),
-            author: None,
-            description: None,
-        },
+        version: 1,
+        name: "Test".to_string(),
         entities: vec![Entity {
             id: Some(100),
-            persistentId: None,
+            persistent_id: None,
             name: Some("TestEntity".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: [(
                 "Script".to_string(),
@@ -34,8 +29,9 @@ fn test_script_component_decoding() {
             .cloned()
             .collect::<HashMap<_, _>>(),
         }],
-        materials: None,
-        prefabs: None,
+        materials: vec![],
+        meshes: None,
+        metadata: None,
         inputAssets: None,
         lockedEntityIds: None,
     };

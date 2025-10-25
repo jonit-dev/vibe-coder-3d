@@ -288,6 +288,9 @@ mod tests {
 
         let collision_api = create_collision_api(&lua, entity_id).unwrap();
 
+        // Set as global for Lua code to access
+        lua.globals().set("collision_api", collision_api).unwrap();
+
         // Verify all methods exist
         let has_on_enter: bool = lua
             .load("return type(collision_api.onEnter) == 'function'")
@@ -333,13 +336,13 @@ mod tests {
         // Register a callback that increments counter
         lua.load(
             r#"
-            local handler_id = collision.onEnter(function(otherId)
+            local handler_id = collision:onEnter(function(otherId)
                 collision_count = collision_count + 1
             end)
             return handler_id
             "#,
         )
-        .call()
+        .eval::<u64>()
         .unwrap();
 
         // Verify callback was registered
@@ -363,7 +366,7 @@ mod tests {
         // Register a callback that increments counter
         lua.load(
             r#"
-            collision.onEnter(function(otherId)
+            collision:onEnter(function(otherId)
                 collision_count = collision_count + 1
             end)
             "#,

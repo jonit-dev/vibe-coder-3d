@@ -691,18 +691,20 @@ mod tests {
 
         let entity = Entity {
             id: Some(entity_id as u32),
-            persistentId: None,
+            persistent_id: None,
             name: Some(entity_name.to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components,
         };
 
         Arc::new(Scene {
-            metadata: Metadata::default(),
+            version: 1,
+            name: "Test Scene".to_string(),
             entities: vec![entity],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
+            meshes: None,
+            metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
         })
@@ -716,9 +718,9 @@ mod tests {
 
         let parent = Entity {
             id: Some(1),
-            persistentId: Some("parent-1".to_string()),
+            persistent_id: Some("parent-1".to_string()),
             name: Some("Parent".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: parent_components,
         };
@@ -729,9 +731,9 @@ mod tests {
 
         let child = Entity {
             id: Some(2),
-            persistentId: Some("child-2".to_string()),
+            persistent_id: Some("child-2".to_string()),
             name: Some("Child".to_string()),
-            parentPersistentId: Some("parent-1".to_string()), // Points to parent's persistentId
+            parent_persistent_id: Some("parent-1".to_string()), // Points to parent's persistentId
             tags: vec![],
             components: child_components,
         };
@@ -742,18 +744,20 @@ mod tests {
 
         let child2 = Entity {
             id: Some(3),
-            persistentId: Some("child-3".to_string()),
+            persistent_id: Some("child-3".to_string()),
             name: Some("ChildTwo".to_string()),
-            parentPersistentId: Some("parent-1".to_string()),
+            parent_persistent_id: Some("parent-1".to_string()),
             tags: vec![],
             components: child2_components,
         };
 
         Arc::new(Scene {
-            metadata: Metadata::default(),
+            version: 1,
+            name: "Test Scene".to_string(),
             entities: vec![parent, child, child2],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
+            meshes: None,
+            metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
         })

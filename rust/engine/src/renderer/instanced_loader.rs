@@ -236,7 +236,7 @@ mod tests {
             rotation: Some([90.0, 0.0, 0.0]), // Degrees!
             scale: Some([2.0, 2.0, 2.0]),
             color: Some([1.0, 0.0, 0.0]),
-            userData: None,
+            user_data: None,
         };
 
         // Verify position
@@ -263,7 +263,7 @@ mod tests {
             rotation: None,
             scale: None,
             color: None,
-            userData: None,
+            user_data: None,
         };
 
         // Verify defaults

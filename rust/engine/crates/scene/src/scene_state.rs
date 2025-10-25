@@ -137,9 +137,9 @@ mod tests {
     fn create_test_entity(id: u32, name: &str) -> Entity {
         Entity {
             id: Some(id),
-            persistentId: Some(format!("entity-{}", id)),
+            persistent_id: Some(format!("entity-{}", id)),
             name: Some(name.to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: HashMap::new(),
         }

@@ -147,18 +147,19 @@ mod tests {
     #[test]
     fn test_validate_scene_with_implemented_components() {
         let scene = Scene {
-            metadata: Metadata {
-                name: "Test Scene".to_string(),
-                version: 1,
-                timestamp: "2025-01-01T00:00:00Z".to_string(),
-                author: None,
-                description: None,
-            },
+            version: 1,
+            name: "Test Scene".to_string(),
+            metadata: Some(json!({
+                "name": "Test Scene",
+                "version": 1,
+                "timestamp": "2025-01-01T00:00:00Z"
+            })),
             entities: vec![Entity {
                 id: Some(1),
-                persistentId: Some("entity-1".to_string()),
+                persistent_id: Some("entity-1".to_string()),
                 name: Some("Test Entity".to_string()),
-                parentPersistentId: None,
+                parent_persistent_id: None,
+                tags: vec![],
                 components: vec![(
                     "Transform".to_string(),
                     json!({
@@ -170,8 +171,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             }],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
             inputAssets: None,
             lockedEntityIds: None,
         };
@@ -183,18 +183,19 @@ mod tests {
     #[test]
     fn test_validate_scene_with_unimplemented_component() {
         let scene = Scene {
-            metadata: Metadata {
-                name: "Test Scene".to_string(),
-                version: 1,
-                timestamp: "2025-01-01T00:00:00Z".to_string(),
-                author: None,
-                description: None,
-            },
+            version: 1,
+            name: "Test Scene".to_string(),
+            metadata: Some(json!({
+                "name": "Test Scene",
+                "version": 1,
+                "timestamp": "2025-01-01T00:00:00Z"
+            })),
             entities: vec![Entity {
                 id: Some(1),
-                persistentId: Some("entity-1".to_string()),
+                persistent_id: Some("entity-1".to_string()),
                 name: Some("Test Entity".to_string()),
-                parentPersistentId: None,
+                parent_persistent_id: None,
+                tags: vec![],
                 components: vec![(
                     "UnimplementedComponent".to_string(),
                     json!({
@@ -204,8 +205,7 @@ mod tests {
                 .into_iter()
                 .collect(),
             }],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
             inputAssets: None,
             lockedEntityIds: None,
         };

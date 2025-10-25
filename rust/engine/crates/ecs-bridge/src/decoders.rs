@@ -404,15 +404,18 @@ pub struct RigidBody {
     #[serde(default = "default_enabled")]
     pub enabled: bool,
     #[serde(default = "default_body_type")]
-    pub bodyType: String,
+    #[serde(rename = "bodyType")]
+    pub body_type: String,
     #[serde(default, rename = "type")]
     pub type_: Option<String>, // Legacy field for backward compat
     #[serde(default = "default_mass")]
     pub mass: f32,
     #[serde(default = "default_gravity_scale")]
-    pub gravityScale: f32,
+    #[serde(rename = "gravityScale")]
+    pub gravity_scale: f32,
     #[serde(default = "default_can_sleep")]
-    pub canSleep: bool,
+    #[serde(rename = "canSleep")]
+    pub can_sleep: bool,
     #[serde(default)]
     pub material: Option<RigidBodyMaterial>,
 }
@@ -439,13 +442,13 @@ impl RigidBody {
     pub fn get_body_type(&self) -> &str {
         // If type_ is explicitly set and bodyType is the default, prefer type_
         if let Some(ref type_) = self.type_ {
-            if self.bodyType == "dynamic" {
+            if self.body_type == "dynamic" {
                 // bodyType is default, so legacy type takes precedence
                 return type_;
             }
         }
         // Otherwise use bodyType (either explicitly set or default)
-        &self.bodyType
+        &self.body_type
     }
 }
 
@@ -460,9 +463,11 @@ pub struct MeshColliderSize {
     #[serde(default = "default_radius")]
     pub radius: f32,
     #[serde(default = "default_radius")]
-    pub capsuleRadius: f32,
+    #[serde(rename = "capsuleRadius")]
+    pub capsule_radius: f32,
     #[serde(default = "default_capsule_height")]
-    pub capsuleHeight: f32,
+    #[serde(rename = "capsuleHeight")]
+    pub capsule_height: f32,
 }
 
 fn default_radius() -> f32 {
@@ -488,15 +493,18 @@ pub struct MeshCollider {
     #[serde(default = "default_enabled")]
     pub enabled: bool,
     #[serde(default = "default_collider_type")]
-    pub colliderType: String,
+    #[serde(rename = "colliderType")]
+    pub collider_type: String,
     #[serde(default)]
-    pub isTrigger: bool,
+    #[serde(rename = "isTrigger")]
+    pub is_trigger: bool,
     #[serde(default = "default_center")]
     pub center: [f32; 3],
     #[serde(default)]
     pub size: MeshColliderSize,
     #[serde(default)]
-    pub physicsMaterial: PhysicsMaterialData,
+    #[serde(rename = "physicsMaterial")]
+    pub physics_material: PhysicsMaterialData,
 }
 
 fn default_collider_type() -> String {
@@ -514,8 +522,8 @@ impl Default for MeshColliderSize {
             height: default_one(),
             depth: default_one(),
             radius: default_radius(),
-            capsuleRadius: default_radius(),
-            capsuleHeight: default_capsule_height(),
+            capsule_radius: default_radius(),
+            capsule_height: default_capsule_height(),
         }
     }
 }
@@ -537,14 +545,18 @@ impl Default for PhysicsMaterialData {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct GeometryAssetOptions {
     #[serde(default)]
+    #[serde(rename = "recomputeNormals")]
     pub recomputeNormals: bool,
     #[serde(default)]
+    #[serde(rename = "recomputeTangents")]
     pub recomputeTangents: bool,
     #[serde(default)]
     pub recenter: bool,
     #[serde(default = "default_enabled")]
+    #[serde(rename = "computeBounds")]
     pub computeBounds: bool,
     #[serde(default)]
+    #[serde(rename = "flipNormals")]
     pub flipNormals: bool,
     #[serde(default = "default_one")]
     pub scale: f32,
@@ -867,13 +879,16 @@ pub struct PrefabDefinition {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PrefabInstance {
     #[serde(default)]
-    pub prefabId: String,
+    #[serde(rename = "prefabId")]
+    pub prefab_id: String,
     #[serde(default = "default_version")]
     pub version: u32,
     #[serde(default)]
-    pub instanceUuid: String,
+    #[serde(rename = "instanceUuid")]
+    pub instance_uuid: String,
     #[serde(default)]
-    pub overridePatch: Option<Value>,
+    #[serde(rename = "overridePatch")]
+    pub override_patch: Option<Value>,
 }
 
 fn default_version() -> u32 {
@@ -919,7 +934,8 @@ pub struct InstanceData {
     #[serde(default)]
     pub color: Option<[f32; 3]>,
     #[serde(default)]
-    pub userData: Option<Value>,
+    #[serde(rename = "userData")]
+    pub user_data: Option<Value>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -990,7 +1006,8 @@ pub struct Terrain {
     #[serde(default = "default_segments")]
     pub segments: [u32; 2],
     #[serde(default = "default_height_scale")]
-    pub heightScale: f32,
+    #[serde(rename = "heightScale")]
+    pub height_scale: f32,
     #[serde(default = "default_true")]
     pub noiseEnabled: bool,
     #[serde(default = "default_noise_seed")]
@@ -1452,10 +1469,10 @@ mod tests {
         let decoded = decoder.decode(&json).unwrap();
         let rigid_body = decoded.downcast_ref::<RigidBody>().unwrap();
         assert_eq!(rigid_body.enabled, true);
-        assert_eq!(rigid_body.bodyType, "dynamic");
+        assert_eq!(rigid_body.body_type, "dynamic");
         assert_eq!(rigid_body.mass, 5.0);
-        assert_eq!(rigid_body.gravityScale, 0.5);
-        assert_eq!(rigid_body.canSleep, false);
+        assert_eq!(rigid_body.gravity_scale, 0.5);
+        assert_eq!(rigid_body.can_sleep, false);
         assert!(rigid_body.material.is_some());
         let material = rigid_body.material.as_ref().unwrap();
         assert_eq!(material.friction, 0.8);
@@ -1471,10 +1488,10 @@ mod tests {
         let decoded = decoder.decode(&json).unwrap();
         let rigid_body = decoded.downcast_ref::<RigidBody>().unwrap();
         assert_eq!(rigid_body.enabled, true);
-        assert_eq!(rigid_body.bodyType, "dynamic");
+        assert_eq!(rigid_body.body_type, "dynamic");
         assert_eq!(rigid_body.mass, 1.0);
-        assert_eq!(rigid_body.gravityScale, 1.0);
-        assert_eq!(rigid_body.canSleep, true);
+        assert_eq!(rigid_body.gravity_scale, 1.0);
+        assert_eq!(rigid_body.can_sleep, true);
     }
 
     #[test]
@@ -1516,11 +1533,11 @@ mod tests {
         let decoded = decoder.decode(&json).unwrap();
         let collider = decoded.downcast_ref::<MeshCollider>().unwrap();
         assert_eq!(collider.enabled, true);
-        assert_eq!(collider.colliderType, "sphere");
-        assert_eq!(collider.isTrigger, true);
+        assert_eq!(collider.collider_type, "sphere");
+        assert_eq!(collider.is_trigger, true);
         assert_eq!(collider.center, [1.0, 2.0, 3.0]);
         assert_eq!(collider.size.radius, 1.0);
-        assert_eq!(collider.physicsMaterial.friction, 0.9);
+        assert_eq!(collider.physics_material.friction, 0.9);
     }
 
     #[test]
@@ -1531,18 +1548,18 @@ mod tests {
         let decoded = decoder.decode(&json).unwrap();
         let collider = decoded.downcast_ref::<MeshCollider>().unwrap();
         assert_eq!(collider.enabled, true);
-        assert_eq!(collider.colliderType, "box");
-        assert_eq!(collider.isTrigger, false);
+        assert_eq!(collider.collider_type, "box");
+        assert_eq!(collider.is_trigger, false);
         assert_eq!(collider.center, [0.0, 0.0, 0.0]);
         assert_eq!(collider.size.width, 1.0);
         assert_eq!(collider.size.height, 1.0);
         assert_eq!(collider.size.depth, 1.0);
         assert_eq!(collider.size.radius, 0.5);
-        assert_eq!(collider.size.capsuleRadius, 0.5);
-        assert_eq!(collider.size.capsuleHeight, 2.0);
-        assert_eq!(collider.physicsMaterial.friction, 0.7);
-        assert_eq!(collider.physicsMaterial.restitution, 0.3);
-        assert_eq!(collider.physicsMaterial.density, 1.0);
+        assert_eq!(collider.size.capsule_radius, 0.5);
+        assert_eq!(collider.size.capsule_height, 2.0);
+        assert_eq!(collider.physics_material.friction, 0.7);
+        assert_eq!(collider.physics_material.restitution, 0.3);
+        assert_eq!(collider.physics_material.density, 1.0);
     }
 
     #[test]
@@ -1633,10 +1650,10 @@ mod tests {
 
         let decoded = decoder.decode(&json).unwrap();
         let component = decoded.downcast_ref::<PrefabInstance>().unwrap();
-        assert_eq!(component.prefabId, "tree-prefab");
+        assert_eq!(component.prefab_id, "tree-prefab");
         assert_eq!(component.version, 2);
-        assert_eq!(component.instanceUuid, "abc-123");
-        assert!(component.overridePatch.is_some());
+        assert_eq!(component.instance_uuid, "abc-123");
+        assert!(component.override_patch.is_some());
     }
 
     #[test]
@@ -1646,10 +1663,10 @@ mod tests {
 
         let decoded = decoder.decode(&json).unwrap();
         let component = decoded.downcast_ref::<PrefabInstance>().unwrap();
-        assert_eq!(component.prefabId, "");
+        assert_eq!(component.prefab_id, "");
         assert_eq!(component.version, 1);
-        assert_eq!(component.instanceUuid, "");
-        assert!(component.overridePatch.is_none());
+        assert_eq!(component.instance_uuid, "");
+        assert!(component.override_patch.is_none());
     }
 
     #[test]
@@ -1687,8 +1704,8 @@ mod tests {
                     "position": [4.0, 5.0, 6.0]
                 }
             ],
-            "cast_shadows": true,
-            "receive_shadows": false,
+            "castShadows": true,
+            "receiveShadows": false,
             "frustum_culled": true
         });
 
@@ -1696,8 +1713,8 @@ mod tests {
         let component = decoded.downcast_ref::<Instanced>().unwrap();
         assert_eq!(component.enabled, true);
         assert_eq!(component.capacity, 500);
-        assert_eq!(component.baseMeshId, "cube");
-        assert_eq!(component.baseMaterialId, "mat-1");
+        assert_eq!(component.base_mesh_id, "cube");
+        assert_eq!(component.base_material_id, "mat-1");
         assert_eq!(component.instances.len(), 2);
         assert_eq!(component.instances[0].position, [1.0, 2.0, 3.0]);
         assert_eq!(component.instances[0].rotation, Some([0.0, 90.0, 0.0]));
@@ -1719,8 +1736,8 @@ mod tests {
         let component = decoded.downcast_ref::<Instanced>().unwrap();
         assert_eq!(component.enabled, true);
         assert_eq!(component.capacity, 100);
-        assert_eq!(component.baseMeshId, "");
-        assert_eq!(component.baseMaterialId, "");
+        assert_eq!(component.base_mesh_id, "");
+        assert_eq!(component.base_material_id, "");
         assert_eq!(component.instances.len(), 0);
         assert_eq!(component.cast_shadows, true);
         assert_eq!(component.receive_shadows, true);
@@ -1762,7 +1779,7 @@ mod tests {
         let component = decoded.downcast_ref::<Terrain>().unwrap();
         assert_eq!(component.size, [40.0, 40.0]);
         assert_eq!(component.segments, [257, 257]);
-        assert_eq!(component.heightScale, 5.0);
+        assert_eq!(component.height_scale, 5.0);
         assert_eq!(component.noiseEnabled, true);
         assert_eq!(component.noiseSeed, 42);
         assert_eq!(component.noiseFrequency, 8.0);
@@ -1780,7 +1797,7 @@ mod tests {
         let component = decoded.downcast_ref::<Terrain>().unwrap();
         assert_eq!(component.size, [20.0, 20.0]);
         assert_eq!(component.segments, [129, 129]);
-        assert_eq!(component.heightScale, 2.0);
+        assert_eq!(component.height_scale, 2.0);
         assert_eq!(component.noiseEnabled, true);
         assert_eq!(component.noiseSeed, 1337);
         assert_eq!(component.noiseFrequency, 4.0);

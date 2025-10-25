@@ -22,7 +22,7 @@ pub async fn generate_terrain(
     log::info!("  Terrain:");
     log::info!("    Size:         {:?}", terrain.size);
     log::info!("    Segments:     {:?}", terrain.segments);
-    log::info!("    Height Scale: {}", terrain.heightScale);
+    log::info!("    Height Scale: {}", terrain.height_scale);
     log::info!("    Noise:        {}", terrain.noiseEnabled);
     if terrain.noiseEnabled {
         log::info!("      Seed:       {}", terrain.noiseSeed);
@@ -93,7 +93,7 @@ fn create_terrain_mesh(terrain: &Terrain) -> Result<CpuMesh> {
                     terrain.noiseOctaves,
                     terrain.noisePersistence,
                     terrain.noiseLacunarity,
-                ) * terrain.heightScale
+                ) * terrain.height_scale
             } else {
                 0.0
             };
@@ -303,7 +303,7 @@ mod tests {
         let terrain = Terrain {
             size: [10.0, 10.0],
             segments: [10, 10],
-            heightScale: 1.0,
+            height_scale: 1.0,
             noiseEnabled: false,
             noiseSeed: 0,
             noiseFrequency: 1.0,
@@ -336,7 +336,7 @@ mod tests {
         let terrain = Terrain {
             size: [20.0, 20.0],
             segments: [50, 50],
-            heightScale: 2.0,
+            height_scale: 2.0,
             noiseEnabled: true,
             noiseSeed: 1337,
             noiseFrequency: 4.0,
@@ -410,7 +410,7 @@ mod tests {
         let terrain = Terrain {
             size: [10.0, 10.0],
             segments: [1, 1], // Should be clamped to 2
-            heightScale: 1.0,
+            height_scale: 1.0,
             noiseEnabled: false,
             noiseSeed: 0,
             noiseFrequency: 1.0,

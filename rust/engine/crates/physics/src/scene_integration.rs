@@ -124,8 +124,8 @@ fn build_rigid_body(
         .position(position)
         .rotation(rotation)
         .mass(component.mass)
-        .gravity_scale(component.gravityScale)
-        .can_sleep(component.canSleep);
+        .gravity_scale(component.gravity_scale)
+        .can_sleep(component.can_sleep);
 
     // Apply material if present
     if let Some(ref material) = component.material {
@@ -141,7 +141,7 @@ fn build_rigid_body(
 
 /// Build a Rapier collider from MeshCollider component
 fn build_collider(component: &MeshCollider, scale: Vec3) -> Result<rapier3d::geometry::Collider> {
-    let collider_type = ColliderType::from_str(&component.colliderType);
+    let collider_type = ColliderType::from_str(&component.collider_type);
 
     let center = Vec3::new(
         component.center[0],
@@ -154,21 +154,21 @@ fn build_collider(component: &MeshCollider, scale: Vec3) -> Result<rapier3d::geo
         height: component.size.height,
         depth: component.size.depth,
         radius: component.size.radius,
-        capsule_radius: component.size.capsuleRadius,
-        capsule_height: component.size.capsuleHeight,
+        capsule_radius: component.size.capsule_radius,
+        capsule_height: component.size.capsule_height,
     };
 
     let material = PhysicsMaterial {
-        friction: component.physicsMaterial.friction,
-        restitution: component.physicsMaterial.restitution,
-        density: component.physicsMaterial.density,
+        friction: component.physics_material.friction,
+        restitution: component.physics_material.restitution,
+        density: component.physics_material.density,
     };
 
     ColliderBuilder::new(collider_type)
         .center(center)
         .size(size)
         .material(material)
-        .sensor(component.isTrigger)
+        .sensor(component.is_trigger)
         .scale(scale)
         .build()
         .context("Failed to build collider")
@@ -179,7 +179,7 @@ mod tests {
     use super::*;
     use serde_json::json;
     use vibe_ecs_bridge::create_default_registry;
-    use vibe_scene::{Metadata, Scene};
+    use vibe_scene::Scene;
 
     #[test]
     fn test_populate_physics_world_with_rigid_body() {
@@ -188,12 +188,14 @@ mod tests {
 
         // Create a test scene with one physics entity
         let scene = Scene {
-            metadata: Metadata::default(),
+            version: 1,
+            name: "Test Scene".to_string(),
             entities: vec![Entity {
                 id: Some(1),
-                persistentId: Some("test-entity-1".to_string()),
+                persistent_id: Some("test-entity-1".to_string()),
                 name: Some("TestEntity".to_string()),
-                parentPersistentId: None,
+                parent_persistent_id: None,
+                tags: vec![],
                 components: vec![
                     (
                         "Transform".to_string(),
@@ -219,8 +221,9 @@ mod tests {
                 .into_iter()
                 .collect(),
             }],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
+            meshes: None,
+            metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
         };
@@ -246,12 +249,14 @@ mod tests {
         let mut world = PhysicsWorld::new();
 
         let scene = Scene {
-            metadata: Metadata::default(),
+            version: 1,
+            name: "Test Scene".to_string(),
             entities: vec![Entity {
                 id: Some(1),
-                persistentId: Some("disabled-entity".to_string()),
+                persistent_id: Some("disabled-entity".to_string()),
                 name: Some("Disabled".to_string()),
-                parentPersistentId: None,
+                parent_persistent_id: None,
+                tags: vec![],
                 components: vec![(
                     "RigidBody".to_string(),
                     json!({"enabled": false, "bodyType": "dynamic"}),
@@ -259,8 +264,9 @@ mod tests {
                 .into_iter()
                 .collect(),
             }],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
+            meshes: None,
+            metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
         };
@@ -279,12 +285,14 @@ mod tests {
         let mut world = PhysicsWorld::new();
 
         let scene = Scene {
-            metadata: Metadata::default(),
+            version: 1,
+            name: "Test Scene".to_string(),
             entities: vec![Entity {
                 id: Some(1),
-                persistentId: Some("ground-entity".to_string()),
+                persistent_id: Some("ground-entity".to_string()),
                 name: Some("Ground".to_string()),
-                parentPersistentId: None,
+                parent_persistent_id: None,
+                tags: vec![],
                 components: vec![(
                     "MeshCollider".to_string(),
                     json!({
@@ -296,8 +304,9 @@ mod tests {
                 .into_iter()
                 .collect(),
             }],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
+            meshes: None,
+            metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
         };

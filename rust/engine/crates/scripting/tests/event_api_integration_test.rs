@@ -3,25 +3,20 @@
 use serde_json::json;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use vibe_scene::{Entity, Metadata, Scene};
+use vibe_scene::{Entity, Scene};
 use vibe_scripting::ScriptSystem;
 
 #[test]
 fn test_event_api_integration() {
     // Create a minimal scene with one entity that has the event demo script
     let scene = Scene {
-        metadata: Metadata {
-            name: "Event API Test Scene".to_string(),
-            version: 1,
-            timestamp: "2025-01-22T00:00:00Z".to_string(),
-            author: Some("Event API Integration Test".to_string()),
-            description: Some("Testing Event API with Lua script".to_string()),
-        },
+        version: 1,
+        name: "Event API Test Scene".to_string(),
         entities: vec![Entity {
             id: Some(1),
-            persistentId: None,
+            persistent_id: None,
             name: Some("EventTestEntity".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: [
                 (
@@ -45,8 +40,9 @@ fn test_event_api_integration() {
             .cloned()
             .collect::<HashMap<_, _>>(),
         }],
-        materials: None,
-        prefabs: None,
+        materials: vec![],
+        meshes: None,
+        metadata: None,
         inputAssets: None,
         lockedEntityIds: None,
     };

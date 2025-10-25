@@ -181,7 +181,7 @@ mod integration_tests {
 
             assert_eq!(child.name.as_deref(), Some("Child"));
             assert_eq!(parent.name.as_deref(), Some("Parent"));
-            assert!(child.parentPersistentId.is_some());
+            assert!(child.parent_persistent_id.is_some());
         });
     }
 

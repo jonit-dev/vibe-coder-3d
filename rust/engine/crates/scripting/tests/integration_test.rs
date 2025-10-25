@@ -9,7 +9,7 @@
 use serde_json::json;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use vibe_scene::{Entity, Metadata, Scene};
+use vibe_scene::{Entity, Scene};
 use vibe_scripting::ScriptSystem;
 
 /// Test the complete flow using a real transpiled script
@@ -37,18 +37,13 @@ fn test_end_to_end_rotating_cube_script() {
 
     // Create a test scene with an entity that uses the rotating-cube script
     let scene = Scene {
-        metadata: Metadata {
-            name: "Integration Test Scene".to_string(),
-            version: 1,
-            timestamp: "2025-01-01T00:00:00Z".to_string(),
-            author: Some("Integration Test".to_string()),
-            description: Some("Testing TypeScript → Lua → Rust flow".to_string()),
-        },
+        version: 1,
+        name: "Test Scene".to_string(),
         entities: vec![Entity {
             id: Some(100),
-            persistentId: None, // Use numeric ID for simplicity
+            persistent_id: None, // Use numeric ID for simplicity
             name: Some("RotatingCube".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: [
                 (
@@ -72,8 +67,9 @@ fn test_end_to_end_rotating_cube_script() {
             .cloned()
             .collect::<HashMap<_, _>>(),
         }],
-        materials: None,
-        prefabs: None,
+        materials: vec![],
+        meshes: None,
+        metadata: None,
         inputAssets: None,
         lockedEntityIds: None,
     };
@@ -176,18 +172,13 @@ fn test_end_to_end_moving_sphere_script() {
     );
 
     let scene = Scene {
-        metadata: Metadata {
-            name: "Moving Sphere Test".to_string(),
-            version: 1,
-            timestamp: "2025-01-01T00:00:00Z".to_string(),
-            author: None,
-            description: None,
-        },
+        version: 1,
+        name: "Test Scene".to_string(),
         entities: vec![Entity {
             id: Some(201),
-            persistentId: None,
+            persistent_id: None,
             name: Some("MovingSphere".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: [
                 (
@@ -214,8 +205,9 @@ fn test_end_to_end_moving_sphere_script() {
             .cloned()
             .collect(),
         }],
-        materials: None,
-        prefabs: None,
+        materials: vec![],
+        meshes: None,
+        metadata: None,
         inputAssets: None,
         lockedEntityIds: None,
     };

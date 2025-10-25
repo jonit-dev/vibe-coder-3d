@@ -83,7 +83,7 @@ impl SpatialAudioCalculator {
 
         // Calculate listener's right vector (perpendicular to forward, assuming Y is up)
         let up = Vec3::Y;
-        let listener_right = listener_forward.cross(up).normalize_or_zero();
+        let listener_right = up.cross(listener_forward).normalize_or_zero();
 
         if listener_right == Vec3::ZERO {
             return 0.0; // Edge case: forward is straight up/down

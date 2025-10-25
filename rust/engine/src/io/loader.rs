@@ -56,10 +56,10 @@ fn dump_scene_diagnostics(scene: &SceneData) {
         );
         log::info!(
             "  PersistentID: {}",
-            entity.persistentId.as_deref().unwrap_or("(none)")
+            entity.persistent_id.as_deref().unwrap_or("(none)")
         );
 
-        if let Some(parent_id) = &entity.parentPersistentId {
+        if let Some(parent_id) = &entity.parent_persistent_id {
             log::info!("  Parent: {}", parent_id);
         }
 

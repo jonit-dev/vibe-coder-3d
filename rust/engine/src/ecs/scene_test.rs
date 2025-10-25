@@ -17,8 +17,22 @@ mod tests {
 
         let scene: SceneData = serde_json::from_str(json).unwrap();
 
-        assert_eq!(scene.metadata.name, "Test Scene");
-        assert_eq!(scene.metadata.version, 1);
+        // metadata is stored as JSON Value, need to parse it
+        if let Some(metadata) = &scene.metadata {
+            if let Some(name) = metadata.get("name").and_then(|v| v.as_str()) {
+                assert_eq!(name, "Test Scene");
+            } else {
+                panic!("Expected metadata.name to be 'Test Scene'");
+            }
+
+            if let Some(version) = metadata.get("version").and_then(|v| v.as_u64()) {
+                assert_eq!(version, 1);
+            } else {
+                panic!("Expected metadata.version to be 1");
+            }
+        } else {
+            panic!("Expected metadata to be present");
+        }
         assert_eq!(scene.entities.len(), 0);
     }
 
@@ -153,12 +167,11 @@ mod tests {
 
         let scene: SceneData = serde_json::from_str(json).unwrap();
 
-        assert!(scene.materials.is_some());
+        assert!(!scene.materials.is_empty());
 
         // Test that materials can be parsed
-        if let Some(materials_value) = scene.materials {
-            let materials: Vec<vibe_assets::Material> =
-                serde_json::from_value(materials_value).unwrap();
+        let materials: Vec<vibe_assets::Material> =
+            serde_json::from_value(materials_value).unwrap();
 
             assert_eq!(materials.len(), 1);
             assert_eq!(materials[0].id, "mat-red");

@@ -87,6 +87,7 @@ mod tests {
             version: 1,
             root: crate::decoders::PrefabEntity {
                 name: "Root".to_string(),
+                tags: vec![],
                 components: HashMap::new(),
                 children: Vec::new(),
             },
@@ -111,6 +112,7 @@ mod tests {
             version: 1,
             root: crate::decoders::PrefabEntity {
                 name: "Root".to_string(),
+                tags: vec![],
                 components: HashMap::new(),
                 children: Vec::new(),
             },

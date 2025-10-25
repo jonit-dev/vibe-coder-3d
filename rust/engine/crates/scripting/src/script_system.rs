@@ -758,18 +758,13 @@ mod tests {
 
     fn create_test_scene_with_script(script_path: &str) -> Scene {
         Scene {
-            metadata: vibe_scene::Metadata {
-                name: "Test Scene".to_string(),
-                version: 0,
-                timestamp: "2025-01-01T00:00:00Z".to_string(),
-                author: None,
-                description: None,
-            },
+            version: 0,
+            name: "Test Scene".to_string(),
             entities: vec![Entity {
                 id: Some(42),
-                persistentId: None, // Don't set persistentId so entity_id() uses numeric id
+                persistent_id: None, // Don't set persistentId so entity_id() uses numeric id
                 name: Some("TestEntity".to_string()),
-                parentPersistentId: None,
+                parent_persistent_id: None,
                 tags: vec![],
                 components: [
                     (
@@ -793,8 +788,9 @@ mod tests {
                 .cloned()
                 .collect(),
             }],
-            materials: None,
-            prefabs: None,
+            materials: vec![],
+            meshes: None,
+            metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
         }

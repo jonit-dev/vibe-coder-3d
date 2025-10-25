@@ -1052,19 +1052,19 @@ impl ThreeDRenderer {
             if let Some(prefab_instance) =
                 self.get_component::<vibe_ecs_bridge::PrefabInstance>(entity, "PrefabInstance")
             {
-                log::info!("  Instantiating prefab: {}", prefab_instance.prefabId);
+                log::info!("  Instantiating prefab: {}", prefab_instance.prefab_id);
 
                 // Extract instance Transform to position the prefab
                 let instance_transform = entity.components.get("Transform");
 
-                match prefab_registry.get(&prefab_instance.prefabId) {
+                match prefab_registry.get(&prefab_instance.prefab_id) {
                     Some(prefab) => {
                         match vibe_ecs_bridge::instantiate_prefab(
                             prefab,
-                            entity.persistentId.clone(),
-                            prefab_instance.overridePatch.as_ref(),
+                            entity.persistent_id.clone(),
+                            prefab_instance.override_patch.as_ref(),
                             instance_transform,
-                            &prefab_instance.instanceUuid,
+                            &prefab_instance.instance_uuid,
                             &self.component_registry,
                         ) {
                             Ok(instances) => {
@@ -1074,14 +1074,14 @@ impl ThreeDRenderer {
                             Err(e) => {
                                 log::warn!(
                                     "    Failed to instantiate prefab {}: {}",
-                                    prefab_instance.prefabId,
+                                    prefab_instance.prefab_id,
                                     e
                                 );
                             }
                         }
                     }
                     None => {
-                        log::warn!("    Prefab not found: {}", prefab_instance.prefabId);
+                        log::warn!("    Prefab not found: {}", prefab_instance.prefab_id);
                     }
                 }
             }

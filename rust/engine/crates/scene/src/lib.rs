@@ -111,11 +111,13 @@ pub struct Entity {
     pub id: Option<u32>,
     /// Direct persistentId field (optional, for compatibility)
     #[serde(default)]
-    pub persistentId: Option<String>,
+    #[serde(rename = "persistentId")]
+    pub persistent_id: Option<String>,
     #[serde(default)]
     pub name: Option<String>,
     #[serde(default)]
-    pub parentPersistentId: Option<String>,
+    #[serde(rename = "parentPersistentId")]
+    pub parent_persistent_id: Option<String>,
     /// Tags for categorization and querying
     #[serde(default)]
     pub tags: Vec<String>,
@@ -126,7 +128,7 @@ impl Entity {
     /// Get stable entity ID - tries multiple sources
     pub fn entity_id(&self) -> Option<EntityId> {
         // First try direct persistentId field
-        if let Some(ref id) = self.persistentId {
+        if let Some(ref id) = self.persistent_id {
             return Some(EntityId::from_persistent_id(id));
         }
 
@@ -147,7 +149,7 @@ impl Entity {
 
     /// Get parent entity ID
     pub fn parent_id(&self) -> Option<EntityId> {
-        self.parentPersistentId
+        self.parent_persistent_id
             .as_ref()
             .map(|id| EntityId::from_persistent_id(id))
     }
@@ -218,7 +220,7 @@ impl Scene {
     pub fn find_entity_by_persistent_id(&self, persistent_id: &str) -> Option<&Entity> {
         self.entities
             .iter()
-            .find(|e| e.persistentId.as_deref() == Some(persistent_id))
+            .find(|e| e.persistent_id.as_deref() == Some(persistent_id))
     }
 
     /// Get all entities with a specific component
@@ -265,9 +267,9 @@ mod tests {
     fn test_entity_ids() {
         let entity = Entity {
             id: None,
-            persistentId: Some("entity-1".to_string()),
+            persistent_id: Some("entity-1".to_string()),
             name: Some("Test".to_string()),
-            parentPersistentId: Some("parent-1".to_string()),
+            parent_persistent_id: Some("parent-1".to_string()),
             tags: vec![],
             components: HashMap::new(),
         };
@@ -288,9 +290,9 @@ mod tests {
 
         let entity = Entity {
             id: None,
-            persistentId: Some("entity-1".to_string()),
+            persistent_id: Some("entity-1".to_string()),
             name: Some("Test".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components,
         };
@@ -304,18 +306,18 @@ mod tests {
     fn test_scene_entity_lookup() {
         let entity1 = Entity {
             id: None,
-            persistentId: Some("entity-1".to_string()),
+            persistent_id: Some("entity-1".to_string()),
             name: Some("Entity1".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: HashMap::new(),
         };
 
         let entity2 = Entity {
             id: None,
-            persistentId: Some("entity-2".to_string()),
+            persistent_id: Some("entity-2".to_string()),
             name: Some("Entity2".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: HashMap::new(),
         };
@@ -346,18 +348,18 @@ mod tests {
 
         let entity1 = Entity {
             id: None,
-            persistentId: Some("entity-1".to_string()),
+            persistent_id: Some("entity-1".to_string()),
             name: Some("HasTransform".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: components.clone(),
         };
 
         let entity2 = Entity {
             id: None,
-            persistentId: Some("entity-2".to_string()),
+            persistent_id: Some("entity-2".to_string()),
             name: Some("NoTransform".to_string()),
-            parentPersistentId: None,
+            parent_persistent_id: None,
             tags: vec![],
             components: HashMap::new(),
         };

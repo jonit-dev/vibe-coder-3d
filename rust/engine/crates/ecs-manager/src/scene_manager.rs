@@ -167,9 +167,9 @@ impl SceneManager {
         // This ensures entity_id() returns the correct EntityId
         let mut entity = vibe_scene::Entity {
             id: Some(entity_id.as_u64() as u32),
-            persistentId: None, // Don't set persistentId - use numeric ID
+            persistent_id: None, // Don't set persistentId - use numeric ID
             name: Some(name.clone()),
-            parentPersistentId: parent_id.map(|_| format!("runtime-parent")), // Simplified for now
+            parent_persistent_id: parent_id.map(|_| format!("runtime-parent")), // Simplified for now
             tags: vec![],
             components: HashMap::new(),
         };
@@ -289,7 +289,7 @@ impl SceneManager {
         log::debug!("Setting parent of entity {} to {:?}", entity_id, parent_id);
 
         let found = self.state.find_entity_mut(entity_id, |entity| {
-            entity.parentPersistentId = parent_id.map(|id| format!("runtime-{}", id.as_u64()));
+            entity.parent_persistent_id = parent_id.map(|id| format!("runtime-{}", id.as_u64()));
         });
 
         if !found {
@@ -382,8 +382,8 @@ impl SceneManager {
                 .position(position)
                 .rotation(rotation)
                 .mass(rb_component.mass)
-                .gravity_scale(rb_component.gravityScale)
-                .can_sleep(rb_component.canSleep);
+                .gravity_scale(rb_component.gravity_scale)
+                .can_sleep(rb_component.can_sleep);
 
             // Apply material if present
             if let Some(ref material) = rb_component.material {
@@ -407,7 +407,7 @@ impl SceneManager {
         let mut colliders = Vec::new();
         if let Some(mc_component) = mesh_collider_opt {
             if mc_component.enabled {
-                let collider_type = ColliderType::from_str(&mc_component.colliderType);
+                let collider_type = ColliderType::from_str(&mc_component.collider_type);
                 let center = glam::Vec3::new(
                     mc_component.center[0],
                     mc_component.center[1],
@@ -419,21 +419,21 @@ impl SceneManager {
                     height: mc_component.size.height,
                     depth: mc_component.size.depth,
                     radius: mc_component.size.radius,
-                    capsule_radius: mc_component.size.capsuleRadius,
-                    capsule_height: mc_component.size.capsuleHeight,
+                    capsule_radius: mc_component.size.capsule_radius,
+                    capsule_height: mc_component.size.capsule_height,
                 };
 
                 let material = PhysicsMaterial {
-                    friction: mc_component.physicsMaterial.friction,
-                    restitution: mc_component.physicsMaterial.restitution,
-                    density: mc_component.physicsMaterial.density,
+                    friction: mc_component.physics_material.friction,
+                    restitution: mc_component.physics_material.restitution,
+                    density: mc_component.physics_material.density,
                 };
 
                 if let Ok(collider) = ColliderBuilder::new(collider_type)
                     .center(center)
                     .size(size)
                     .material(material)
-                    .sensor(mc_component.isTrigger)
+                    .sensor(mc_component.is_trigger)
                     .scale(scale)
                     .build()
                 {

@@ -6,48 +6,44 @@
 use mlua::prelude::*;
 use std::collections::HashMap;
 use std::sync::Arc;
-use vibe_scene::{Entity, Metadata, Scene};
+use vibe_scene::{Entity, Scene};
 use vibe_scripting::apis::{register_entities_api, register_query_api};
 
 fn create_test_scene() -> Scene {
     let player = Entity {
         id: Some(1),
-        persistentId: Some("player-1".to_string()),
+        persistent_id: Some("player-1".to_string()),
         name: Some("Player".to_string()),
-        parentPersistentId: None,
+        parent_persistent_id: None,
         tags: vec!["player".to_string(), "character".to_string()],
         components: HashMap::new(),
     };
 
     let enemy1 = Entity {
         id: Some(2),
-        persistentId: Some("enemy-1".to_string()),
+        persistent_id: Some("enemy-1".to_string()),
         name: Some("Enemy".to_string()),
-        parentPersistentId: None,
+        parent_persistent_id: None,
         tags: vec!["enemy".to_string(), "character".to_string()],
         components: HashMap::new(),
     };
 
     let enemy2 = Entity {
         id: Some(3),
-        persistentId: Some("enemy-2".to_string()),
+        persistent_id: Some("enemy-2".to_string()),
         name: Some("Enemy".to_string()),
-        parentPersistentId: None,
+        parent_persistent_id: None,
         tags: vec!["enemy".to_string(), "character".to_string()],
         components: HashMap::new(),
     };
 
     Scene {
-        metadata: Metadata {
-            name: "Integration Test Scene".to_string(),
-            version: 1,
-            timestamp: "2025-01-01T00:00:00Z".to_string(),
-            author: None,
-            description: None,
-        },
+        version: 1,
+        name: "Test Scene".to_string(),
         entities: vec![player, enemy1, enemy2],
-        materials: None,
-        prefabs: None,
+        materials: vec![],
+        meshes: None,
+        metadata: None,
         inputAssets: None,
         lockedEntityIds: None,
     }

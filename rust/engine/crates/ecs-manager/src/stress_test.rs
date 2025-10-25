@@ -9,7 +9,7 @@
 mod tests {
     use crate::scene_manager::SceneManager;
     use serde_json::json;
-    use vibe_scene::{EntityId, Scene};
+    use vibe_scene::Scene;
 
     fn create_test_scene() -> Scene {
         Scene {

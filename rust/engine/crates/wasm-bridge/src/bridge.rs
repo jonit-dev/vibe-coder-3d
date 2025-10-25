@@ -98,9 +98,9 @@ impl LiveBridge {
 
                 let mut entity = Entity {
                     id: *id,
-                    persistentId: Some(persistent_id.clone()),
+                    persistent_id: Some(persistent_id.clone()),
                     name: name.clone(),
-                    parentPersistentId: parent_persistent_id.clone(),
+                    parent_persistent_id: parent_persistent_id.clone(),
                     tags: vec![],
                     components: HashMap::new(),
                 };
@@ -142,7 +142,7 @@ impl LiveBridge {
                         entity.name = Some(new_name.clone());
                     }
                     if parent_persistent_id.is_some() {
-                        entity.parentPersistentId = parent_persistent_id.clone();
+                        entity.parent_persistent_id = parent_persistent_id.clone();
                     }
                 } else {
                     log::warn!("Entity not found for update: {}", persistent_id);

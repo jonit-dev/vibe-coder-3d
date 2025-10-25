@@ -7,7 +7,7 @@
 mod tests {
     use crate::scene_manager::SceneManager;
     use serde_json::json;
-    use vibe_scene::{Entity, Scene};
+    use vibe_scene::Scene;
 
     fn create_test_scene() -> Scene {
         Scene {
@@ -84,7 +84,7 @@ mod tests {
         let mut manager = SceneManager::new(scene);
 
         // Create collider-only entity (should create Fixed body)
-        let entity_id = manager
+        let _entity_id = manager
             .create_entity()
             .with_name("Ground")
             .with_position([0.0, 0.0, 0.0])
