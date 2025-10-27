@@ -597,7 +597,7 @@ fn lua_value_to_json(value: &LuaValue, lua: &Lua) -> LuaResult<JsonValue> {
 }
 
 /// Convert JSON value to Lua value
-fn json_to_lua_value<'lua>(lua: &'lua Lua, value: &JsonValue) -> LuaResult<LuaValue<'lua>> {
+fn json_to_lua_value<'lua>(lua: &'lua Lua, value: &JsonValue) -> LuaResult<LuaValue> {
     match value {
         JsonValue::Null => Ok(LuaValue::Nil),
         JsonValue::Bool(b) => Ok(LuaValue::Boolean(*b)),
