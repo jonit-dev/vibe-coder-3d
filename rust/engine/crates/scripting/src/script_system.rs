@@ -526,6 +526,15 @@ impl ScriptSystem {
             )
         })?;
 
+        // Register Save/Load API (global) - persistent key-value storage
+        let save_manager = crate::apis::create_file_save_manager(None); // Uses default path: ./saves/savegame.json
+        crate::apis::register_save_api(runtime.lua(), Some(save_manager)).with_context(|| {
+            format!(
+                "Failed to register Save API for entity '{}' (ID {})",
+                entity_name, entity_id
+            )
+        })?;
+
         // Register Mesh API for entities with MeshRenderer components
         if entity.components.contains_key("MeshRenderer") {
             // Use scene_manager reference if available, otherwise skip (Mesh API requires live scene)
@@ -856,6 +865,7 @@ mod tests {
             }],
             materials: vec![],
             meshes: None,
+            prefabs: None,
             metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
