@@ -44,10 +44,25 @@ describe('PersistentId Integration', () => {
       }).toThrow('Duplicate PersistentId');
     });
 
-    it('should reject invalid persistent ID format', () => {
+    it('should reject empty persistent ID', () => {
       expect(() => {
-        entityManager.createEntity('Test Entity', undefined, 'invalid-id');
+        entityManager.createEntity('Test Entity', undefined, '');
       }).toThrow('Invalid PersistentId');
+    });
+
+    it('should accept human-readable persistent IDs', () => {
+      const humanReadableIds = [
+        'forest-rock-004',
+        'player-spawn-001',
+        'main-camera',
+        'entity_123',
+      ];
+
+      humanReadableIds.forEach((id) => {
+        const entity = entityManager.createEntity(`Test Entity ${id}`, undefined, id);
+        const persistentId = entityManager.getEntityPersistentId(entity.id);
+        expect(persistentId).toBe(id);
+      });
     });
   });
 

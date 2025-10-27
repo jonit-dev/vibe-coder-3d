@@ -163,6 +163,18 @@ async function findOrphanedFiles(sourceDir, destDir, excludePaths = []) {
   const destFiles = await findAssetFiles(destDir, destDir, excludePaths);
 
   for (const destFile of destFiles) {
+    // For scenes directory: .json files in dest may correspond to .tsx files in source
+    const isSceneDir = sourceDir.includes('scenes') && destDir.includes('scenes');
+    if (isSceneDir && destFile.endsWith('.json')) {
+      // Check if there's a corresponding .tsx file in source (check filesystem directly)
+      const baseName = destFile.replace(/\.json$/, '');
+      const tsxFilePath = join(sourceDir, `${baseName}.tsx`);
+      if (existsSync(tsxFilePath)) {
+        // This JSON has a corresponding TSX source file, don't delete it
+        continue;
+      }
+    }
+
     if (!sourceFiles.has(destFile)) {
       orphaned.push(join(destDir, destFile));
     }

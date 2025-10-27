@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
-export type IdKind = 'uuid';
+export type IdKind = 'string';
 
 export const PersistentIdSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, 'Persistent ID cannot be empty'),
 });
 
 export const idConfig = {
-  kind: 'uuid' as const satisfies IdKind,
+  kind: 'string' as const satisfies IdKind,
   validate: (id: string): boolean => {
     try {
       PersistentIdSchema.parse({ id });

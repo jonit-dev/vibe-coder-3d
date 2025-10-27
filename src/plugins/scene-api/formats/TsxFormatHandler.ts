@@ -97,9 +97,6 @@ export class TsxFormatHandler implements ISceneFormatHandler {
       author: sceneData.author,
     };
 
-    // Save full scene dump to Rust folder (no compression)
-    await this.rustExporter.export(cleanName, sceneData, metadata);
-
     // Apply compression to entities
     const materialDeduplicator = new MaterialDeduplicator();
 
@@ -161,6 +158,38 @@ export class TsxFormatHandler implements ISceneFormatHandler {
     // Get deduplicated materials
     const extractedMaterials = materialDeduplicator.getMaterials();
     const allMaterials = [...extractedMaterials, ...(sceneData.materials || [])];
+
+    // Restore defaults for Rust export (Rust needs full data, not compressed)
+    const entitiesForRust = compressedEntities.map((entity) => {
+      const restoredComponents: Record<string, unknown> = {};
+
+      for (const [componentType, componentData] of Object.entries(entity.components || {})) {
+        const defaults = getComponentDefaults(componentType);
+        if (defaults && typeof componentData === 'object' && componentData !== null) {
+          restoredComponents[componentType] = restoreDefaults(
+            componentData as Record<string, unknown>,
+            defaults,
+          );
+        } else {
+          restoredComponents[componentType] = componentData;
+        }
+      }
+
+      return {
+        ...entity,
+        components: restoredComponents,
+      };
+    });
+
+    // Save full scene dump to Rust folder (no compression)
+    // IMPORTANT: Must happen AFTER materials are extracted from entities
+    await this.rustExporter.export(cleanName, {
+      entities: entitiesForRust,
+      materials: allMaterials,
+      prefabs: sceneData.prefabs || [],
+      inputAssets: sceneData.inputAssets || [],
+      lockedEntityIds: sceneData.lockedEntityIds || [],
+    }, metadata);
 
     // Save assets to global library and collect path references
     const { FsAssetStore } = await import('../../assets-api/FsAssetStore');

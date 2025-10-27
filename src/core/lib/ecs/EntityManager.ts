@@ -160,7 +160,7 @@ export class EntityManager {
   private validateAndSetPersistentId(eid: EntityId, persistentId?: string): string {
     let finalPersistentId: string;
 
-    if (persistentId) {
+    if (persistentId !== undefined && persistentId !== null) {
       // Validate the provided persistent ID
       const validation = PersistentIdSchema.safeParse({ id: persistentId });
       if (!validation.success) {

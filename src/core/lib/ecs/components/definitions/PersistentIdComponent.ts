@@ -10,9 +10,9 @@ import { z } from 'zod';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 
-// Persistent ID Schema - strict UUID validation only
+// Persistent ID Schema - accepts any non-empty string for human-readable IDs
 export const PersistentIdSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, 'Persistent ID cannot be empty'),
 });
 
 // Helper to generate a simple hash from string to u32

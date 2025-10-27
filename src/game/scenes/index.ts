@@ -6,6 +6,7 @@ import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import TestPhysicsScene from './testphysics';
 import ExampleMultiFileScene from './examplemultifile';
 import FmlScene from './fml';
+import ForestScene from './forest';
 
 export function registerAllScenes(): void {
   // Register testphysics scene
@@ -62,6 +63,25 @@ export function registerAllScenes(): void {
     {
       name: FmlScene.metadata.name,
       description: FmlScene.metadata.description || 'FML scene',
+    },
+  );
+
+  // Register forest scene
+  sceneRegistry.defineScene(
+    'forest',
+    async () => {
+      const sceneLoader = new SceneLoader();
+      const entityManager = EntityManager.getInstance();
+      const componentManager = componentRegistry;
+
+      await sceneLoader.load(ForestScene.data, entityManager, componentManager, {
+        refreshMaterials: () => {},
+        refreshPrefabs: () => {},
+      });
+    },
+    {
+      name: ForestScene.metadata.name,
+      description: ForestScene.metadata.description || 'Peaceful forest scene',
     },
   );
 }

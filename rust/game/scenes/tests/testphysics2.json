@@ -2,8 +2,8 @@
   "metadata": {
     "name": "testphysics",
     "version": 1,
-    "timestamp": "2025-10-27T06:33:40.583Z",
-    "description": "Scene with 5 entities"
+    "timestamp": "2025-10-18T23:29:24.482Z",
+    "description": "Scene with 6 entities"
   },
   "entities": [
     {
@@ -11,7 +11,7 @@
       "name": "Main Camera",
       "components": {
         "PersistentId": {
-          "id": "d093ac81-9909-4629-9a55-0b8ead63a459"
+          "id": "254ddfc5-4a6a-477c-a6db-e9482330c756"
         },
         "Transform": {
           "position": [
@@ -95,7 +95,7 @@
       "name": "Directional Light",
       "components": {
         "PersistentId": {
-          "id": "59155f4d-dac0-41b0-8232-50d18965aa53"
+          "id": "18bf02bd-cecf-415f-b47d-8a6d5fc78029"
         },
         "Transform": {
           "position": [
@@ -124,9 +124,9 @@
           "intensity": 0.800000011920929,
           "enabled": true,
           "castShadow": true,
-          "directionX": 0,
+          "directionX": -0.5,
           "directionY": -1,
-          "directionZ": 0,
+          "directionZ": -0.5,
           "range": 10,
           "decay": 1,
           "angle": 0.5235987901687622,
@@ -142,7 +142,7 @@
       "name": "Ambient Light",
       "components": {
         "PersistentId": {
-          "id": "d6cef29d-6413-4d6b-83ce-1cd391332bc1"
+          "id": "abe0990c-9b29-4913-8863-6f2d5b5c5dee"
         },
         "Transform": {
           "position": [
@@ -189,13 +189,13 @@
       "name": "Cube 0",
       "components": {
         "PersistentId": {
-          "id": "99e5bdd3-9b77-43ae-907d-d1a37d46e11a"
+          "id": "94c9a896-c512-4e57-b90f-d60e5c4fbd83"
         },
         "Transform": {
           "position": [
-            -0.75,
-            2.75,
-            0
+            -2.25,
+            4.25,
+            3
           ],
           "rotation": [
             0,
@@ -259,12 +259,12 @@
       "name": "Plane 0",
       "components": {
         "PersistentId": {
-          "id": "3f7ec530-4217-4f8e-8088-39a1ccc5a303"
+          "id": "6cfdf392-ae66-4d40-9f76-3cf50bd30665"
         },
         "Transform": {
           "position": [
-            0,
-            0,
+            0.25,
+            0.25,
             0
           ],
           "rotation": [
@@ -280,7 +280,7 @@
         },
         "MeshRenderer": {
           "meshId": "plane",
-          "materialId": "mat1",
+          "materialId": "red",
           "enabled": true,
           "castShadows": true,
           "receiveShadows": true,
@@ -292,7 +292,7 @@
           "type": "fixed",
           "mass": 1,
           "gravityScale": 1,
-          "canSleep": true,
+          "canSleep": false,
           "material": {
             "friction": 0.699999988079071,
             "restitution": 0.30000001192092896,
@@ -311,7 +311,77 @@
           "size": {
             "width": 1,
             "height": 1,
-            "depth": 0.009999999776482582,
+            "depth": 0.10000000149011612,
+            "radius": 0.5,
+            "capsuleRadius": 0.5,
+            "capsuleHeight": 2
+          },
+          "physicsMaterial": {
+            "friction": 0.699999988079071,
+            "restitution": 0.30000001192092896,
+            "density": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "sphere",
+      "components": {
+        "PersistentId": {
+          "id": "6cd2badd-1292-4408-9e65-8ce9b1bfbed8"
+        },
+        "Transform": {
+          "position": [
+            1.5,
+            5.25,
+            2.75
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "default",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        },
+        "RigidBody": {
+          "enabled": true,
+          "bodyType": "dynamic",
+          "type": "dynamic",
+          "mass": 1,
+          "gravityScale": 1,
+          "canSleep": true,
+          "material": {
+            "friction": 0.699999988079071,
+            "restitution": 0.30000001192092896,
+            "density": 1
+          }
+        },
+        "MeshCollider": {
+          "enabled": true,
+          "isTrigger": false,
+          "colliderType": "sphere",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "size": {
+            "width": 1,
+            "height": 1,
+            "depth": 1,
             "radius": 0.5,
             "capsuleRadius": 0.5,
             "capsuleHeight": 2
@@ -344,13 +414,13 @@
       "textureRepeatY": 1
     },
     {
-      "id": "mat1",
-      "name": "Material 1",
+      "id": "red",
+      "name": "red",
       "shader": "standard",
       "materialType": "solid",
       "color": "#ff0000",
       "metalness": 0,
-      "roughness": 0.5,
+      "roughness": 0.7,
       "emissive": "#000000",
       "emissiveIntensity": 0,
       "normalScale": 1,
@@ -414,6 +484,23 @@
       "textureRepeatY": 1
     },
     {
+      "id": "mat1",
+      "name": "Material 1",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff0000",
+      "metalness": 0,
+      "roughness": 0.5,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
       "id": "mat2",
       "name": "Material 2",
       "shader": "standard",
@@ -461,23 +548,6 @@
       "color": "#00ff00",
       "metalness": 0,
       "roughness": 0.5,
-      "emissive": "#000000",
-      "emissiveIntensity": 0,
-      "normalScale": 1,
-      "occlusionStrength": 1,
-      "textureOffsetX": 0,
-      "textureOffsetY": 0,
-      "textureRepeatX": 1,
-      "textureRepeatY": 1
-    },
-    {
-      "id": "red",
-      "name": "red",
-      "shader": "standard",
-      "materialType": "solid",
-      "color": "#ff0000",
-      "metalness": 0,
-      "roughness": 0.7,
       "emissive": "#000000",
       "emissiveIntensity": 0,
       "normalScale": 1,
@@ -976,5 +1046,7 @@
       ]
     }
   ],
-  "lockedEntityIds": []
+  "lockedEntityIds": [
+    4
+  ]
 }
