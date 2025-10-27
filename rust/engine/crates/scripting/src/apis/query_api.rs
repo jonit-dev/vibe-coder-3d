@@ -173,6 +173,7 @@ mod tests {
             entities: vec![entity1, entity2, entity3],
             materials: vec![],
             meshes: None,
+            prefabs: None,
             metadata: None,
             inputAssets: None,
             lockedEntityIds: None,

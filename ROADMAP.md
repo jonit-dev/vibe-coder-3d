@@ -448,7 +448,7 @@
 
 **TypeScript APIs Missing (7/24):** 15. ❌ Camera API 16. ❌ Material API 17. ❌ Mesh API 18. ❌ Light API 19. ❌ Collision API 20. ❌ UI API 21. ✅ Scene API 22. ❌ Save/Load API 23. ❌ Particle API (blocked by Particle System) 24. ❌ Animation API (blocked by Animation System)
 
-**Rust APIs (Complete - 23/25):**
+**Rust APIs (Complete - 24/25):**
 
 1. ✅ **Input API** (full parity - keyboard, mouse, actions)
 2. ✅ **Timer API** (complete)
@@ -458,21 +458,21 @@
 6. ✅ **Time API** (complete)
 7. ✅ **Console API** (complete)
 8. ✅ **Event API** (complete - on/off/emit with payload support)
-9. ✅ **Audio API** (load, play, stop, pause, setVolume, setSpeed, isPlaying, getDuration) - **COMPLETE!** - **NEW!**
+9. ✅ **Audio API** (load, play, stop, pause, setVolume, setSpeed, isPlaying, getDuration) - **COMPLETE!**
 10. ✅ **Query API** (findByName, findByTag, raycast stubs)
-11. ✅ **Prefab API** (instantiate, destroy, getInstances, isInstance, getPath) - **COMPLETE!** - **NEW!** (2025-10-25)
+11. ✅ **Prefab API** (instantiate, destroy, getInstances, isInstance, getPath) - **COMPLETE!** (2025-10-25)
 12. ✅ **GameObject API** (create, createPrimitive, destroy - FULLY IMPLEMENTED via SceneManager) - **COMPLETE!**
 13. ✅ **Entities API** (fromRef, get, findByName, findByTag, exists)
 14. ✅ **Physics API** (RigidBody, MeshCollider, PhysicsEvents, CharacterController) - **COMPLETE!**
 15. ✅ **Camera API** (setFov, setClipping, setProjection, setAsMain) - **COMPLETE!**
 16. ✅ **Material API** (MeshRenderer + material sub-API: setColor, setMetalness, setRoughness, setEmissive, setTexture) - **COMPLETE!**
 17. ✅ **Light API** (setType, setColor, setIntensity, setCastShadow, setDirection, setRange, setDecay, setAngle, setPenumbra, setShadowMapSize, setShadowBias) - **COMPLETE!**
-18. ✅ **Mesh API** (setVisible, setCastShadows, setReceiveShadows, isVisible) - **COMPLETE!** - **NEW!**
-19. ✅ **Collision API** (onEnter, onExit, onStay, onTriggerEnter, onTriggerExit) - **COMPLETE!** - **NEW!**
+18. ✅ **Mesh API** (setVisible, setCastShadows, setReceiveShadows, isVisible) - **COMPLETE!**
+19. ✅ **Collision API** (onEnter, onExit, onStay, onTriggerEnter, onTriggerExit) - **COMPLETE!**
 20. ✅ **CharacterController API** (isGrounded, move, jump, setSlopeLimit, setStepOffset) - **COMPLETE!**
 21. ❌ UI API
-22. ✅ **Scene API** (getCurrentScene, load, unload, loadAdditive) - **COMPLETE!** - **NEW!** (2025-10-25)
-23. ❌ Save/Load API
+22. ✅ **Scene API** (getCurrentScene, load, unload, loadAdditive) - **COMPLETE!** (2025-10-25)
+23. ✅ **Save/Load API** (setInt, getInt, setFloat, getFloat, setString, getString, setObject, getObject, deleteKey, clear, hasKey, save, load) - **COMPLETE!** - **NEW!** (2025-10-26)
 24. ❌ Particle API (blocked by Particle System implementation)
 25. ❌ Animation API (blocked by Animation System implementation)
 
@@ -863,8 +863,8 @@ interface ParticleEmitterComponent {
 ### 3. 🚧 **Rust Scripting APIs** (★★★★★)
 
 **Impact:** Limited gameplay functionality in Rust engine
-**Status:** 19/24 APIs complete, including GameObject CRUD - major milestone achieved!
-**Effort:** Medium (2-3 weeks for remaining 7 APIs)
+**Status:** 24/25 APIs complete, including GameObject CRUD and Save/Load - major milestone achieved!
+**Effort:** Small (1-2 weeks for remaining 1 API: UI API)
 **Dependencies:** None (mutable ECS complete)
 
 #### What Exists (17 Complete APIs):
@@ -888,7 +888,7 @@ interface ParticleEmitterComponent {
 - ✅ **Light API** - `light_api.rs`
 - 🚧 Audio API (partial) - `audio_api.rs`
 
-#### What's Missing (3 APIs):
+#### What's Missing (1 API):
 
 **1. ✅ Prefab API** - ✅ **Complete** (2025-10-25) - **NEW!**
 
@@ -940,13 +940,28 @@ scene.getCurrentScene() -> string
 
 ````
 
-**6. Save/Load API** - ❌ Missing
+**6. ✅ Save/Load API** - ✅ **Complete** (2025-10-26) - **NEW!**
 
 ```rust
-// Persistent data
-save.setInt(key: string, value: number)
-save.getInt(key: string) -> number
-````
+// ✅ All functions implemented:
+save.setInt(key, value)
+save.getInt(key, default?) -> number
+save.setFloat(key, value)
+save.getFloat(key, default?) -> number
+save.setString(key, value)
+save.getString(key, default?) -> string
+save.setObject(key, value)
+save.getObject(key) -> table|nil
+save.deleteKey(key)
+save.clear()
+save.hasKey(key) -> boolean
+save.save() -> boolean  -- Manual save to disk
+save.load() -> boolean  -- Manual load from disk
+```
+
+**Files:** `/home/jonit/projects/vibe-coder-3d/rust/engine/crates/scripting/src/apis/save_api.rs`
+**Status:** ✅ **IMPLEMENTED** - Full persistent key-value storage with auto-save
+**Test Script:** `/home/jonit/projects/vibe-coder-3d/rust/game/scripts/tests/save_load_test.lua` - 13 comprehensive tests
 
 **7. Particle API** - ❌ Missing (blocked by Particle System)
 
@@ -958,15 +973,18 @@ particles.stop(emitter: Entity)
 
 #### Implementation Priority:
 
-**Remaining 7 APIs:**
+**Remaining 1 API:**
 
-1. **Complete Audio API** (structure exists, needs implementation) - 3-5 days
-2. **Mesh API** (runtime mesh control) - 3-5 days
-3. **Collision API** (gameplay interactions) - 1 week
-4. **Scene API** (level transitions) - 1 week
-5. **Save/Load API** (game persistence) - 1 week
-6. **UI API** (in-game HUD/menus) - 1-2 weeks
-7. **Particle API** (after Particle System implemented)
+1. **UI API** (in-game HUD/menus) - 1-2 weeks
+
+**Completed (recently):**
+
+- ✅ **Save/Load API** (2025-10-26) - Persistent game data with auto-save
+- ✅ **Scene API** (2025-10-25) - Scene loading/unloading
+- ✅ **Prefab API** (2025-10-25) - Runtime entity spawning
+- ✅ **Collision API** - Physics event callbacks
+- ✅ **Mesh API** - Runtime mesh control
+- ✅ **Complete Audio API** - Sound playback and control
 
 **Reference Implementation:**
 
@@ -2681,3 +2699,4 @@ Pre-built shader effects for rapid prototyping:
 - Rapid visual prototyping
 - Professional shader effects out-of-the-box
 - Learning resource for custom shaders
+````
