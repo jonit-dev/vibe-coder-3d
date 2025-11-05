@@ -10,6 +10,7 @@ vibe-ecs-bridge = { path = "../ecs-bridge" }
 vibe-ecs-manager = { path = "../ecs-manager" }
 vibe-scene-graph = { path = "../scene-graph" }
 vibe-audio = { path = "../audio" }
+vibe-events = { path = "../events" }
 
 # Lua runtime (vendored = bundle Lua source, no system dependency required)
 mlua = { version = "0.11", features = ["lua54", "send", "serialize", "vendored"] }

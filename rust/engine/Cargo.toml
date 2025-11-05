@@ -10,6 +10,7 @@ members = [
     "crates/physics",
     "crates/audio",
     "crates/scripting",
+    "crates/events",
 ]
 
 [package]
@@ -28,6 +29,7 @@ vibe-wasm-bridge = { path = "crates/wasm-bridge" }
 vibe-physics = { path = "crates/physics" }
 vibe-audio = { path = "crates/audio", optional = true }
 vibe-scripting = { path = "crates/scripting", optional = true }
+vibe-events = { path = "crates/events" }
 
 # Physics (for debug collider visualization)
 rapier3d = { version = "0.17", features = ["dim3"] }

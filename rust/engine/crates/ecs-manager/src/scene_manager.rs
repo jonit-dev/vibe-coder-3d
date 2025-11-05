@@ -6,6 +6,7 @@
 use anyhow::{Context, Result};
 use std::sync::Arc;
 use vibe_ecs_bridge::ComponentRegistry;
+use vibe_events::SceneEventBus;
 use vibe_physics::PhysicsWorld;
 use vibe_scene::{ComponentKindId, EntityCommand, EntityCommandBuffer, EntityId, Scene, SceneState};
 
@@ -17,6 +18,7 @@ pub struct SceneManager {
     physics_world: PhysicsWorld,
     command_buffer: EntityCommandBuffer,
     registry: ComponentRegistry,
+    events: Arc<SceneEventBus>,
 }
 
 impl SceneManager {
@@ -25,12 +27,14 @@ impl SceneManager {
         let state = Arc::new(SceneState::new(scene));
         let physics_world = PhysicsWorld::new();
         let registry = vibe_ecs_bridge::create_default_registry();
+        let events = Arc::new(SceneEventBus::new());
 
         Self {
             state,
             physics_world,
             command_buffer: EntityCommandBuffer::new(),
             registry,
+            events,
         }
     }
 
@@ -121,6 +125,19 @@ impl SceneManager {
         self.command_buffer.len()
     }
 
+    /// Get reference to the event bus
+    pub fn events(&self) -> Arc<SceneEventBus> {
+        self.events.clone()
+    }
+
+    /// Process all pending events. Call once per frame on the main thread.
+    pub fn pump_events<F>(&mut self, lua_dispatch: F)
+    where
+        F: FnMut(&vibe_events::EventEnvelope),
+    {
+        self.events.pump_events(lua_dispatch);
+    }
+
     /// Immediately set or update a component on an existing entity
     pub fn set_component_immediate(
         &mut self,
@@ -201,6 +218,12 @@ impl SceneManager {
         // Verify the ID matches
         debug_assert_eq!(added_id, entity_id, "Entity ID mismatch after creation");
 
+        // Emit entity spawned event
+        self.events.emit_to(entity_id, vibe_events::keys::ENTITY_SPAWNED, serde_json::json!({
+            "entityId": entity_id.as_u64(),
+            "name": name
+        }));
+
         // Lifecycle hook: on_entity_created
         self.on_entity_created(entity_id)?;
 
@@ -216,11 +239,16 @@ impl SceneManager {
             return Ok(());
         }
 
+        // Emit entity destroyed event
+        self.events.emit_to(entity_id, vibe_events::keys::ENTITY_DESTROYED, serde_json::json!({
+            "entityId": entity_id.as_u64()
+        }));
+
         // Lifecycle hook: on_entity_destroyed (before removal)
         self.on_entity_destroyed(entity_id)?;
 
         // Remove from physics world first
-        self.physics_world.remove_entity(entity_id);
+        let _ = self.physics_world.remove_entity(entity_id);
 
         // Remove from scene
         self.state.remove_entity(entity_id);
@@ -464,9 +492,14 @@ impl SceneManager {
             .map(|boxed| *boxed)
     }
 
-    fn on_entity_destroyed(&mut self, _entity_id: EntityId) -> Result<()> {
-        // Hook for cleanup before entity is destroyed
-        // Currently just logs, can be extended for custom cleanup
+    fn on_entity_destroyed(&mut self, entity_id: EntityId) -> Result<()> {
+        // Clean up event subscriptions for this entity
+        self.events.cleanup_entity(entity_id);
+
+        // Hook for additional cleanup before entity is destroyed
+        // Can be extended for custom cleanup
+
+        log::debug!("Cleaned up event subscriptions for entity {}", entity_id);
         Ok(())
     }
 }
@@ -482,6 +515,7 @@ mod tests {
             entities: vec![],
             materials: vec![],
             meshes: None,
+            prefabs: None,
             metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
