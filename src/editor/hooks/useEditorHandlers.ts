@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { ShapeType } from '../types/shapes';
+import { useEditorStore } from '../store/editorStore';
 
 import { useEntityCreation } from './useEntityCreation';
 import { usePhysicsControls } from './usePhysicsControls';
@@ -33,6 +34,8 @@ export const useEditorHandlers = ({
   isLeftPanelCollapsed,
   isMaterialsExpanded,
 }: IUseEditorHandlersProps) => {
+  // Get clearSelection directly from store to avoid prop drilling issues
+  const clearSelection = useEditorStore((state) => state.clearSelection);
   // Entity creation hooks
   const {
     createEntity,
@@ -74,6 +77,7 @@ export const useEditorHandlers = ({
     createPointLight,
     createSpotLight,
     createAmbientLight,
+    createCharacterController,
   } = useEntityCreation();
 
   // Scene action hooks
@@ -173,6 +177,9 @@ export const useEditorHandlers = ({
           case 'AmbientLight':
             entity = createAmbientLight();
             break;
+          case 'CharacterController':
+            entity = createCharacterController();
+            break;
           default:
             entity = createEntity(type as string);
             break;
@@ -227,6 +234,7 @@ export const useEditorHandlers = ({
       createPointLight,
       createSpotLight,
       createAmbientLight,
+      createCharacterController,
       setSelectedId,
       setStatusMessage,
       setShowAddMenu,
@@ -272,9 +280,11 @@ export const useEditorHandlers = ({
 
   // Physics control handlers with status updates
   const handlePlayWithStatus = useCallback(() => {
+    // Clear selection when entering play mode to hide gizmos and outlines
+    clearSelection();
     setIsPlaying(true);
     handlePlay();
-  }, [setIsPlaying, handlePlay]);
+  }, [clearSelection, setIsPlaying, handlePlay]);
 
   const handlePauseWithStatus = useCallback(() => {
     setIsPlaying(false);

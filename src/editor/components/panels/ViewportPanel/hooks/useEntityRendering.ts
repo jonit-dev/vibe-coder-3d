@@ -34,8 +34,8 @@ export function useEntityRendering({
   }, [meshType, entityId, isPrimarySelection, shouldHavePhysics]);
 
   const shouldShowGizmo = React.useMemo(
-    () => isPrimarySelection && !shouldHavePhysics,
-    [isPrimarySelection, shouldHavePhysics],
+    () => isPrimarySelection && !shouldHavePhysics && !isPlaying,
+    [isPrimarySelection, shouldHavePhysics, isPlaying],
   );
 
   return {

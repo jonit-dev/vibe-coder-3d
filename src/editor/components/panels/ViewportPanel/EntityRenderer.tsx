@@ -33,6 +33,7 @@ export interface IEntityRendererProps {
   setGizmoMode?: (mode: GizmoMode) => void;
   setIsTransforming?: (isTransforming: boolean) => void;
   allEntityIds?: number[];
+  isPlaying?: boolean;
 }
 
 export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
@@ -45,8 +46,10 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     setGizmoMode,
     setIsTransforming,
     allEntityIds = [],
+    isPlaying = false,
   }) => {
-    const isPlaying = useEditorStore((s) => s.isPlaying);
+    // isPlaying is now passed as a prop instead of reading from store
+    // This ensures the component re-renders when play mode changes
 
     // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS!
     // This prevents "Rendered fewer hooks than expected" React error
@@ -227,7 +230,8 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       prevProps.entityId !== nextProps.entityId ||
       prevProps.selected !== nextProps.selected ||
       prevProps.isPrimarySelection !== nextProps.isPrimarySelection ||
-      prevProps.mode !== nextProps.mode
+      prevProps.mode !== nextProps.mode ||
+      prevProps.isPlaying !== nextProps.isPlaying
     ) {
       return false; // Props changed, need re-render
     }

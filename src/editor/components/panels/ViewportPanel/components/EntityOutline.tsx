@@ -19,6 +19,14 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
     // Don't render at all when not selected or no mesh type
     if (!selected || !meshType) return null;
 
+    // Don't show selection outline when playing
+    if (isPlaying) return null;
+
+    // Special handling for camera entities - no outline for cameras
+    if (meshType === 'Camera') {
+      return null; // Cameras don't need selection outlines
+    }
+
     // Memoized geometry for outline
     const geometry = useMemo(() => {
       switch (meshType) {
@@ -39,17 +47,9 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
       }
     }, [meshType]);
 
-    // Render but make invisible when playing (so it can still follow the cube)
-    const shouldBeVisible = !isPlaying;
-
-    // Special handling for camera entities - no outline for cameras
-    if (meshType === 'Camera') {
-      return null; // Cameras don't need selection outlines
-    }
-
     return (
       <group ref={outlineGroupRef}>
-        <mesh ref={outlineMeshRef} visible={shouldBeVisible}>
+        <mesh ref={outlineMeshRef}>
           {geometry}
           <meshBasicMaterial visible={false} />
           <Edges color="#ff6b35" lineWidth={2} />

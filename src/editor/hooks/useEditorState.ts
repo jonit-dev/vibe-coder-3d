@@ -5,6 +5,7 @@ interface IEntityState {
   selectedId: number | null;
   setEntityIds: (idsOrUpdater: number[] | ((prev: number[]) => number[])) => void;
   setSelectedId: (id: number | null) => void;
+  clearSelection: () => void;
 }
 
 interface IUIState {
@@ -42,12 +43,14 @@ export const useEntityState = (): IEntityState => {
   const selectedId = useEditorStore((state) => state.selectedId);
   const setEntityIds = useEditorStore((state) => state.setEntityIds);
   const setSelectedId = useEditorStore((state) => state.setSelectedId);
+  const clearSelection = useEditorStore((state) => state.clearSelection);
 
   return {
     entityIds,
     selectedId,
     setEntityIds,
     setSelectedId,
+    clearSelection,
   };
 };
 

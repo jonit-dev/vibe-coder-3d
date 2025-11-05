@@ -26,6 +26,7 @@ import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
 import { useEditorStore } from '../../../store/editorStore';
 
 import { lodManager } from '@/core/lib/rendering/LODManager';
+import { CharacterControllerPhysicsSystem } from '@/core/components/physics/CharacterControllerPhysicsSystem';
 import { AxesIndicator } from './components/AxesIndicator';
 import { CameraPerformanceController } from './components/CameraPerformanceController';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
@@ -234,6 +235,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
               {/* Physics binding - processes script physics mutations */}
               <PhysicsBindingManager />
 
+              {/* Character Controller Physics System - handles WASD movement with physics */}
+              <CharacterControllerPhysicsSystem isPlaying={isPlaying} />
+
               {/* Grid - Unity style */}
               <gridHelper args={[20, 20, '#444444', '#222222']} />
 
@@ -256,6 +260,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
                     }
                     setGizmoMode={isPrimary && !hasMultipleSelected ? setGizmoMode : undefined}
                     allEntityIds={entityIds}
+                    isPlaying={isPlaying}
                   />
                 );
               })}
