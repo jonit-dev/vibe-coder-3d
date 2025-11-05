@@ -58,7 +58,7 @@ flowchart TD
     P --> R[Analyze screenshots]
     Q --> R
     R --> S{Visual proof<br/>working?}
-    S -->|Yes| T[Document in<br/>API_TEST_STATUS.md]
+    S -->|Yes| T[Document in<br/>docs/API_TEST_STATUS.md]
     S -->|No| U[Debug issue]
     U --> V{Black screen?}
     V -->|Yes| W[Check lights exist]
@@ -675,7 +675,7 @@ Before considering a test complete:
 - [ ] Materials render correctly: Using hex colors, IDs match
 - [ ] Script runs: Console.log output appears (even if empty strings)
 - [ ] Visual proof: Screenshots show expected changes
-- [ ] Documented: Results added to `API_TEST_STATUS.md`
+- [ ] Documented: Results added to `docs/API_TEST_STATUS.md`
 
 ## Known Limitations
 
@@ -705,8 +705,8 @@ rust/
 ├── engine/
 │   ├── screenshots/
 │   │   └── tests/              # Screenshot output directory
-│   ├── API_TEST_STATUS.md      # Test results documentation
-│   └── SCENE_TESTING_GUIDE.md  # Detailed testing guide
+│   ├── docs/API_TEST_STATUS.md      # Test results documentation
+│   └── docs/SCENE_TESTING_GUIDE.md  # Detailed testing guide
 ├── game/
 │   ├── scenes/
 │   │   └── tests/              # Test scene JSON files
@@ -758,7 +758,7 @@ xdg-open rust/engine/screenshots/tests/my_test.jpg  # Linux
 
 After completing tests, update these files:
 
-1. **API_TEST_STATUS.md** - Test results, visual proof, known issues
+1. **docs/API_TEST_STATUS.md** - Test results, visual proof, known issues
 2. **ROADMAP.md** - Implementation status for tested features
 3. **Git commit** - Include proof screenshots in commit
 
