@@ -4,6 +4,10 @@
  */
 
 export { cameraComponent, type CameraData } from './CameraComponent';
+export {
+  characterControllerComponent,
+  type ICharacterControllerData,
+} from './CharacterControllerComponent';
 export { customShapeComponent, type CustomShapeData } from './CustomShapeComponent';
 export { geometryAssetComponent, type GeometryAssetData } from './GeometryAssetComponent';
 export {

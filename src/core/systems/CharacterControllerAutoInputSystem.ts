@@ -390,6 +390,21 @@ export function updateCharacterControllerAutoInputSystem(
             velocity.y = 0;
           }
 
+          // Detect if movement was blocked by collision (wall hit)
+          // If desired movement differs significantly from computed movement, we hit something
+          const movementBlocked = {
+            x: Math.abs(computedMovement.x) < Math.abs(desiredMovement.x) * 0.1,
+            z: Math.abs(computedMovement.z) < Math.abs(desiredMovement.z) * 0.1,
+          };
+
+          // Reset horizontal velocity if blocked by wall to prevent sliding/floating
+          if (movementBlocked.x) {
+            velocity.x = 0;
+          }
+          if (movementBlocked.z) {
+            velocity.z = 0;
+          }
+
           // Update transform
           componentRegistry.updateComponent(entityId, KnownComponentTypes.TRANSFORM, {
             ...transform,

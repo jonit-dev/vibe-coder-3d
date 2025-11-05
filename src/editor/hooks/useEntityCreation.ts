@@ -6,6 +6,7 @@ import { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainCompon
 import type { GeometryAssetData } from '@/core/lib/ecs/components/definitions';
 import type { CustomShapeData } from '@/core/lib/ecs/components/definitions/CustomShapeComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { ICharacterControllerData } from '@/core/lib/ecs/components/definitions/CharacterControllerComponent';
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { useEditorStore } from '@/editor/store/editorStore';
 import { shapeRegistry } from '@/core/lib/rendering/shapes/shapeRegistry';
@@ -425,6 +426,44 @@ export const useEntityCreation = () => {
     [createEntity, addComponent, getNextNumber],
   );
 
+  const createCharacterController = useCallback(
+    (name?: string, parentId?: number) => {
+      const actualName = name || `Character ${getNextNumber('Character')}`;
+      const entity = createEntity(actualName, parentId);
+
+      // Add CharacterController component with defaults (Contract v2.0)
+      const defaultCharacterControllerData: ICharacterControllerData = {
+        enabled: true,
+        slopeLimit: 45.0,
+        stepOffset: 0.3,
+        skinWidth: 0.08,
+        gravityScale: 1.0,
+        maxSpeed: 6.0,
+        jumpStrength: 6.5,
+        controlMode: 'auto',
+        inputMapping: {
+          forward: 'w',
+          backward: 's',
+          left: 'a',
+          right: 'd',
+          jump: ' ',
+        },
+        isGrounded: false,
+      };
+      addComponent(
+        entity.id,
+        KnownComponentTypes.CHARACTER_CONTROLLER,
+        defaultCharacterControllerData,
+      );
+
+      // Add capsule mesh for visualization
+      addMeshRenderer(entity.id, 'capsule');
+
+      return entity;
+    },
+    [createEntity, addComponent, addMeshRenderer, getNextNumber],
+  );
+
   const createTrapezoid = useCallback(
     (name?: string, parentId?: number) => {
       const actualName = name || `Trapezoid ${getNextNumber('Trapezoid')}`;
@@ -799,6 +838,7 @@ export const useEntityCreation = () => {
     createPointLight,
     createSpotLight,
     createAmbientLight,
+    createCharacterController,
     createTrapezoid,
     createOctahedron,
     createPrism,

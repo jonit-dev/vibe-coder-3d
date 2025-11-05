@@ -160,6 +160,9 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
             step={0.01}
             min={0.01}
             resetValue={0.5}
+            enableDrag={true}
+            dragSensitivity={0.01}
+            dragColor="#ff9800"
           />
           <ComponentField
             label="Height"
@@ -170,6 +173,9 @@ export const MeshColliderSection: React.FC<IMeshColliderSectionProps> = ({
             step={0.01}
             min={0.01}
             resetValue={2}
+            enableDrag={true}
+            dragSensitivity={0.01}
+            dragColor="#ff9800"
           />
         </FieldGroup>
       )}

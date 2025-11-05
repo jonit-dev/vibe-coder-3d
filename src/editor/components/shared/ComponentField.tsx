@@ -69,7 +69,17 @@ export const ComponentField: React.FC<IComponentFieldProps> = React.memo(
                 <input
                   type="number"
                   value={String(value)}
-                  onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // Allow typing decimal point and negative sign
+                    if (val === '' || val === '-' || val === '.') {
+                      return; // Don't update while typing partial values
+                    }
+                    const parsed = parseFloat(val);
+                    if (!isNaN(parsed)) {
+                      onChange(parsed);
+                    }
+                  }}
                   className={`flex-1 ${baseInputClasses}`}
                   min={min}
                   max={max}
@@ -102,7 +112,17 @@ export const ComponentField: React.FC<IComponentFieldProps> = React.memo(
             <input
               type="number"
               value={String(value)}
-              onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Allow typing decimal point and negative sign
+                if (val === '' || val === '-' || val === '.') {
+                  return; // Don't update while typing partial values
+                }
+                const parsed = parseFloat(val);
+                if (!isNaN(parsed)) {
+                  onChange(parsed);
+                }
+              }}
               className={baseInputClasses}
               min={min}
               max={max}

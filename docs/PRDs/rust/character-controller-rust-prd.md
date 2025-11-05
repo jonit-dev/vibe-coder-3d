@@ -46,8 +46,69 @@ rust/engine/crates/physics/
 rust/engine/crates/scripting/
   src/apis/physics_api.rs  # already registers entity.controller (extend if needed)
 
+src/core/lib/ecs/components/
+  definitions/
+    CharacterControllerComponent.ts      # TS schema + defaults (zod), editor-facing
+  accessors/
+    types.ts                             # add ICharacterControllerData & accessor if needed
+
+src/editor/components/inspector/adapters/
+  CharacterControllerAdapter.tsx         # Adapter wires ECS <-> Inspector section
+
+src/editor/components/panels/InspectorPanel/CharacterController/
+  CharacterControllerSection.tsx         # Inspector UI for controller config
+
 docs/PRDs/rust/character-controller-rust-prd.md
 ```
+
+### Shared Contract v2.0 (TS ↔ Rust)
+
+| TS Field        | Rust Field      | Serde Rename                                                           | Default  | Notes                                 |
+| --------------- | --------------- | ---------------------------------------------------------------------- | -------- | ------------------------------------- |
+| enabled         | enabled         | n/a                                                                    | true     | Component enabled state               |
+| slopeLimit      | slope_limit_deg | #[serde(rename="slopeLimit")]                                          | 45.0     | Max climbable slope (degrees)         |
+| stepOffset      | step_offset     | #[serde(rename="stepOffset")]                                          | 0.3      | Max step height                       |
+| skinWidth       | skin_width      | #[serde(rename="skinWidth")]                                           | 0.08     | Ground detection offset               |
+| gravityScale    | gravity_scale   | #[serde(rename="gravityScale")]                                        | 1.0      | Gravity multiplier                    |
+| maxSpeed        | max_speed       | #[serde(rename="maxSpeed")]                                            | 6.0      | Maximum movement speed                |
+| jumpStrength    | jump_strength   | #[serde(rename="jumpStrength")]                                        | 6.5      | Jump impulse force                    |
+| controlMode     | control_mode    | #[serde(rename="controlMode")]                                         | "auto"   | "auto" or "manual"                    |
+| inputMapping    | input_mapping   | #[serde(rename="inputMapping", skip_serializing_if="Option::is_none")] | Optional | Key bindings for auto mode            |
+| isGrounded (ro) | is_grounded     | #[serde(rename="isGrounded")]                                          | false    | Runtime-only, not serialized to scene |
+
+**Contract v2.0** (2025-11-05): Added `controlMode` and `inputMapping` for Unity-like auto-input support.
+
+#### Input Mapping Schema (for auto mode)
+
+| TS Field | Rust Field | Type   | Default |
+| -------- | ---------- | ------ | ------- |
+| forward  | forward    | string | "w"     |
+| backward | backward   | string | "s"     |
+| left     | left       | string | "a"     |
+| right    | right      | string | "d"     |
+| jump     | jump       | string | " "     |
+
+Contract v2.0 (2025‑11‑05). See TS PRD for editor details: `docs/PRDs/editor/character-controller-ts-prd.md`.
+
+**Rust Implementation Notes for Auto Mode:**
+
+- When `control_mode == "auto"`, the Rust engine should process keyboard input directly using the `input_mapping` configuration
+- System should listen for configured keys and automatically call movement/jump logic without script intervention
+- When `control_mode == "manual"`, behavior is script-driven as originally designed
+- Input mapping is serialized/deserialized as JSON object with string keys matching the schema above
+
+### Three.js Editor Integration (TS + R3F)
+
+- Add an editor Inspector section for `CharacterController` with fields: `slopeLimit`, `stepOffset`, `skinWidth`, `gravityScale`, `maxSpeed`, `jumpStrength` and Enabled toggle.
+- Persist edits via the mutation buffer and `updateComponent('CharacterController', patch)` using existing editor plumbing.
+- Validate inputs with Zod; clamp and mirror Rust defaults for parity.
+- Show warnings when a suitable collider (capsule/box) is missing or incompatible.
+- In Play mode, disable editing of runtime-only values; show read-only `isGrounded` indicator.
+- Follow existing component patterns:
+  - Add `CharacterController` to `KnownComponentTypes`.
+  - Define TS schema under `src/core/lib/ecs/components/definitions/` like Camera/RigidBody.
+  - Use an Adapter (e.g., `RigidBodyAdapter`) that feeds a Section component.
+  - Integrate into `ComponentList` and `useEntityComponents` for presence/getters.
 
 ## 4. Implementation Plan
 
@@ -69,6 +130,15 @@ docs/PRDs/rust/character-controller-rust-prd.md
 2. Expose readback of `is_grounded` to scripting and optional `getGroundNormal()` (future).
 3. Keep TS helper API behavior consistent; TS’s `move` and `jump` should remain thin wrappers where applicable.
 
+### Phase 3b: Editor Integration (0.5 day)
+
+1. Create `definitions/CharacterControllerComponent.ts` (TS) with Zod schema, defaults mirroring Rust.
+2. Add `ICharacterControllerData` to `accessors/types.ts` and optional accessor interface for future helpers.
+3. Implement `CharacterControllerSection.tsx` with inputs, clamping, and enable toggle using Tailwind.
+4. Add `CharacterControllerAdapter.tsx` under `inspector/adapters`, convert ECS data to section props, and call `updateComponent`/`removeComponent` using `KnownComponentTypes`.
+5. Display live `isGrounded` read-only value during Play mode.
+6. Add to `KnownComponentTypes` and extend `ComponentList` to render the adapter when present.
+
 ### Phase 4: Tests & Demo (0.5–1 day)
 
 1. Unit tests for slope-limit logic, step resolution, grounded detection, coyote time.
@@ -89,6 +159,17 @@ rust/engine/crates/physics/src/character_controller/
 ├── system.rs        # CharacterControllerSystem: frame update logic
 ├── queries.rs       # Ground detection, sweeps, slope tests
 └── mod.rs           # pub use, module wiring
+```
+
+```
+src/editor/components/panels/InspectorPanel/CharacterController/
+├── CharacterControllerSection.tsx  # Editor UI for controller
+
+src/core/lib/ecs/components/
+├── definitions/
+│   └── CharacterControllerComponent.ts # Zod schema + defaults (camelCase)
+└── accessors/
+    └── types.ts                    # add ICharacterControllerData
 ```
 
 ## 6. Technical Details
@@ -203,6 +284,230 @@ pub fn compute_ground(
   - `stepOffset: number`
 - The controller system reads these intents each frame, updates component state, and applies motion.
 
+### Three.js Editor: TS Schemas & UI (skeletons)
+
+```ts
+// src/core/lib/ecs/components/definitions/CharacterControllerComponent.ts
+import { z } from 'zod';
+
+export const characterControllerSchema = z.object({
+  enabled: z.boolean().default(true),
+  slopeLimit: z.number().min(0).max(90).default(45),
+  stepOffset: z.number().min(0).default(0.3),
+  skinWidth: z.number().min(0).default(0.08),
+  gravityScale: z.number().default(1),
+  maxSpeed: z.number().min(0).default(6),
+  jumpStrength: z.number().min(0).default(6.5),
+});
+
+export type ICharacterControllerData = z.infer<typeof characterControllerSchema>;
+
+export const CHARACTER_CONTROLLER_COMPONENT = 'CharacterController';
+```
+
+```tsx
+// src/editor/components/panels/InspectorPanel/CharacterController/CharacterControllerSection.tsx
+import React from 'react';
+import { FiUser } from 'react-icons/fi';
+import { GenericComponentSection } from '@/editor/components/shared/GenericComponentSection';
+
+export interface ICharacterControllerSectionProps {
+  data: ICharacterControllerData | null;
+  setData: (data: ICharacterControllerData | null) => void;
+  isPlaying: boolean;
+  isGrounded?: boolean; // read-only at runtime
+}
+
+export const CharacterControllerSection: React.FC<ICharacterControllerSectionProps> = ({
+  data,
+  setData,
+  isPlaying,
+  isGrounded,
+}) => {
+  if (!data) return null;
+  const update = (patch: Partial<ICharacterControllerData>) => setData({ ...data, ...patch });
+  return (
+    <GenericComponentSection
+      title="Character Controller"
+      icon={<FiUser />}
+      headerColor="purple"
+      componentId="CharacterController"
+    >
+      {/* Enabled */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-gray-400">Enabled</span>
+        <input
+          type="checkbox"
+          checked={data.enabled}
+          onChange={(e) => update({ enabled: e.target.checked })}
+          disabled={isPlaying}
+          className="rounded border-gray-600 bg-black/30 text-purple-500 focus:ring-purple-500 disabled:opacity-50"
+        />
+      </div>
+      {/* Numeric fields: slopeLimit, stepOffset, skinWidth, gravityScale, maxSpeed, jumpStrength */}
+      {/* Implement with standard number inputs and clamping in onChange */}
+      {isPlaying && (
+        <div className="text-[10px] text-gray-500">Grounded: {isGrounded ? 'Yes' : 'No'}</div>
+      )}
+    </GenericComponentSection>
+  );
+};
+```
+
+```tsx
+// src/editor/components/inspector/adapters/CharacterControllerAdapter.tsx
+import React from 'react';
+import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { ICharacterControllerData } from '@/core/lib/ecs/components/definitions/CharacterControllerComponent';
+import { CharacterControllerSection } from '@/editor/components/panels/InspectorPanel/CharacterController/CharacterControllerSection';
+
+export const CharacterControllerAdapter: React.FC<{
+  component: IComponent<ICharacterControllerData> | null;
+  updateComponent: (type: string, data: ICharacterControllerData | null) => boolean;
+  removeComponent: (type: string) => boolean;
+  addComponent: (
+    type: string,
+    data: ICharacterControllerData,
+  ) => IComponent<ICharacterControllerData> | null;
+  isPlaying: boolean;
+}> = ({ component, updateComponent, removeComponent, addComponent, isPlaying }) => {
+  const data = component?.data;
+  if (!data) return null;
+  const setData = (next: ICharacterControllerData | null) => {
+    if (next === null) removeComponent(KnownComponentTypes.CHARACTER_CONTROLLER as any);
+    else updateComponent(KnownComponentTypes.CHARACTER_CONTROLLER as any, next);
+  };
+  return (
+    <CharacterControllerSection
+      data={data}
+      setData={setData}
+      isPlaying={isPlaying}
+      isGrounded={false}
+    />
+  );
+};
+```
+
+```diff
+// src/core/lib/ecs/IComponent.ts
+ export const KnownComponentTypes = {
+   TRANSFORM: 'Transform',
+   MESH_RENDERER: 'MeshRenderer',
+   RIGID_BODY: 'RigidBody',
+   MESH_COLLIDER: 'MeshCollider',
+   CAMERA: 'Camera',
+   LIGHT: 'Light',
+   SCRIPT: 'Script',
+   SOUND: 'Sound',
+   TERRAIN: 'Terrain',
+   PERSISTENT_ID: 'PersistentId',
+   GEOMETRY_ASSET: 'GeometryAsset',
++  CHARACTER_CONTROLLER: 'CharacterController',
+ } as const;
+```
+
+```diff
+// src/editor/components/inspector/sections/ComponentList.tsx (render adapter when present)
+ {/* CharacterController Component */}
+ {components.find((c) => c.type === 'CharacterController') && (
+   <CharacterControllerAdapter
+     component={/* getter */ null as any}
+     updateComponent={updateComponent}
+     removeComponent={removeComponent}
+     addComponent={addComponent}
+     isPlaying={isPlaying}
+   />
+ )}
+```
+
+### Cross-Language Schema Mapping (TS ↔ Rust)
+
+See Contract v2.0 above for complete field mapping including `controlMode` and `inputMapping`.
+
+### Rust ECS-Bridge Decoder (skeleton - Contract v2.0)
+
+```rust
+// rust/engine/crates/ecs-bridge/src/decoders_character_controller.rs
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct InputMapping {
+    #[serde(default = "default_forward")] pub forward: String,
+    #[serde(default = "default_backward")] pub backward: String,
+    #[serde(default = "default_left")] pub left: String,
+    #[serde(default = "default_right")] pub right: String,
+    #[serde(default = "default_jump")] pub jump: String,
+}
+
+fn default_forward() -> String { "w".to_string() }
+fn default_backward() -> String { "s".to_string() }
+fn default_left() -> String { "a".to_string() }
+fn default_right() -> String { "d".to_string() }
+fn default_jump() -> String { " ".to_string() }
+
+impl Default for InputMapping {
+    fn default() -> Self {
+        Self {
+            forward: default_forward(),
+            backward: default_backward(),
+            left: default_left(),
+            right: default_right(),
+            jump: default_jump(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct CharacterController {
+    #[serde(default = "default_true")] pub enabled: bool,
+    #[serde(default = "default_slope", rename = "slopeLimit")] pub slope_limit_deg: f32,
+    #[serde(default = "default_step", rename = "stepOffset")] pub step_offset: f32,
+    #[serde(default = "default_skin", rename = "skinWidth")] pub skin_width: f32,
+    #[serde(default = "default_one", rename = "gravityScale")] pub gravity_scale: f32,
+    #[serde(default = "default_speed", rename = "maxSpeed")] pub max_speed: f32,
+    #[serde(default = "default_jump", rename = "jumpStrength")] pub jump_strength: f32,
+    #[serde(default = "default_control_mode", rename = "controlMode")] pub control_mode: String,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "inputMapping")] pub input_mapping: Option<InputMapping>,
+    #[serde(default, rename = "isGrounded")] pub is_grounded: bool,
+}
+
+fn default_true() -> bool { true }
+fn default_slope() -> f32 { 45.0 }
+fn default_step() -> f32 { 0.3 }
+fn default_skin() -> f32 { 0.08 }
+fn default_one() -> f32 { 1.0 }
+fn default_speed() -> f32 { 6.0 }
+fn default_jump() -> f32 { 6.5 }
+fn default_control_mode() -> String { "auto".to_string() }
+```
+
+```rust
+// ecs-bridge: register decoder
+pub struct CharacterControllerDecoder;
+impl IComponentDecoder for CharacterControllerDecoder {
+    fn can_decode(&self, kind: &str) -> bool { kind == "CharacterController" }
+    fn decode(&self, value: &Value) -> Result<Box<dyn Any>> {
+        let c: CharacterController = serde_json::from_value(value.clone())?;
+        Ok(Box::new(c))
+    }
+    fn capabilities(&self) -> ComponentCapabilities {
+        ComponentCapabilities { affects_rendering: false, requires_pass: None, stable: true }
+    }
+    fn component_kinds(&self) -> Vec<ComponentKindId> { vec![ComponentKindId::new("CharacterController")] }
+}
+```
+
+```diff
+// ecs-bridge/src/decoders.rs
+ pub fn create_default_registry() -> ComponentRegistry {
+   let mut registry = ComponentRegistry::new();
+   // ... existing register(...)
++  registry.register(CharacterControllerDecoder);
+   registry
+ }
+```
+
 ## 7. Usage Examples
 
 ### TypeScript (scripts)
@@ -210,8 +515,9 @@ pub fn compute_ground(
 ```ts
 // Move + Jump using Input system
 const [mx, mz] = input.getActionValue('Gameplay', 'Move') as [number, number];
-controller.move([mx, mz], 6.0);
-if (input.isActionActive('Gameplay', 'Jump') && controller.isGrounded()) {
+const controller = entity.controller;
+controller?.move([mx, mz], 6.0);
+if (controller && input.isActionActive('Gameplay', 'Jump') && controller.isGrounded()) {
   controller.jump(6.5);
 }
 ```
@@ -225,6 +531,16 @@ entity.controller:move(mv, 6.0, time.deltaTime)
 if input:isActionActive('Gameplay','Jump') and entity.controller:isGrounded() then
   entity.controller:jump(6.5)
 end
+```
+
+### Editor (TS) - add/update component
+
+```ts
+// Add component with defaults
+addComponent('CharacterController', { enabled: true });
+
+// Update from inspector
+updateComponent('CharacterController', { slopeLimit: 50, stepOffset: 0.4 });
 ```
 
 ## 8. Testing Strategy
@@ -243,6 +559,9 @@ end
 - **Script/Runtime (TS)**:
   - Example scene: WASD + Jump works; `controller.isGrounded()` toggles appropriately.
   - Regression: `move` while airborne preserves lateral intent but respects gravity.
+- **Editor (TS)**:
+  - Inspector shows and persists controller fields; Zod validation clamps invalid input.
+  - Play mode disables edits to runtime-only data; `isGrounded` displays correctly.
 - **Performance**:
   - 1k controllers at 60 FPS on target machine (document baseline & results).
 
@@ -277,12 +596,14 @@ sequenceDiagram
 
 ## 11. Risks & Mitigations
 
-| Risk                                      | Mitigation                                                               |
-| ----------------------------------------- | ------------------------------------------------------------------------ |
-| Edge-case explosion in collision handling | Start with a minimal, tested subset; add toggles and diagnostics.        |
-| Ordering with physics step                | Run controller before rigid body integration; define clear update order. |
-| Performance with many controllers         | Batch queries; reduce allocations; early-out when idle.                  |
-| API drift vs TS helper                    | Align typings; add CI checks to compare rust/TS API surface docs.        |
+| Risk                                      | Mitigation                                                                          |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| Edge-case explosion in collision handling | Start with a minimal, tested subset; add toggles and diagnostics.                   |
+| Ordering with physics step                | Run controller before rigid body integration; define clear update order.            |
+| Performance with many controllers         | Batch queries; reduce allocations; early-out when idle.                             |
+| API drift vs TS helper                    | Align typings; add CI checks to compare rust/TS API surface docs.                   |
+| Editor/Engine schema drift                | Generate TS schema from Rust JSON/IDL or maintain a shared schema source.           |
+| Adapter vs Section divergence             | Use Adapter pattern consistently (like RigidBodyAdapter); avoid direct section use. |
 
 ## 12. Timeline
 
@@ -292,6 +613,7 @@ sequenceDiagram
   - Phase 3: 0.5 day
   - Phase 4: 0.5–1 day
   - Phase 5: 0.5 day
+  - Phase 3b (Editor): 0.5 day
   - Buffer & iteration: remainder to harden edge cases and perf
 
 ## 13. Acceptance Criteria
@@ -301,6 +623,9 @@ sequenceDiagram
 - `entity.controller` works in scripts: `isGrounded`, `move`, `jump`, `setSlopeLimit`, `setStepOffset`.
 - Demo scene shows reliable grounded locomotion and jumping; steep slopes block ascent.
 - Unit and integration tests pass; performance target documented.
+- Three.js Editor: Inspector exposes Character Controller; edits persist and reflect at runtime; `isGrounded` shown during Play mode.
+- KnownComponentTypes includes CharacterController; ComponentList renders CharacterControllerAdapter.
+- ECS-Bridge registers CharacterControllerDecoder; TS↔Rust field mapping validated.
 
 ## 14. Assumptions & Dependencies
 
@@ -308,3 +633,4 @@ sequenceDiagram
 - ECS and mutation buffer already in place (existing engine infrastructure).
 - Input system already complete; example uses action maps for movement/jump.
 - TS helper API remains a thin layer; Rust becomes source of truth for physical correctness.
+- Three.js editor (R3F + Tailwind + Zustand) provides Inspector, mutation buffer, and play/pause; TS/Rust kept in sync via shared defaults and schema parity.

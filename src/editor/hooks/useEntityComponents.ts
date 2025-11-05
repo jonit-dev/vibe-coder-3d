@@ -179,6 +179,11 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     [components],
   );
 
+  const hasCharacterController = useMemo(
+    () => components.some((c) => c.type === KnownComponentTypes.CHARACTER_CONTROLLER),
+    [components],
+  );
+
   const hasTerrain = useMemo(() => components.some((c) => c.type === 'Terrain'), [components]);
 
   // Legacy getter methods for compatibility
@@ -212,6 +217,10 @@ export const useEntityComponents = (entityId: EntityId | null) => {
 
   const getSound = useCallback(() => {
     return getComponent(KnownComponentTypes.SOUND);
+  }, [getComponent]);
+
+  const getCharacterController = useCallback(() => {
+    return getComponent(KnownComponentTypes.CHARACTER_CONTROLLER);
   }, [getComponent]);
 
   const getTerrain = useCallback(() => {
@@ -248,6 +257,7 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     hasMeshCollider,
     hasCamera,
     hasLight,
+    hasCharacterController,
     hasScript,
     hasSound,
     hasTerrain,
@@ -257,6 +267,7 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     getMeshCollider,
     getCamera,
     getLight,
+    getCharacterController,
     getScript,
     getSound,
     getTerrain,

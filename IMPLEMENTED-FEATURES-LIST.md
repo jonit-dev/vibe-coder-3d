@@ -290,6 +290,53 @@
 - Complete physics material system
 - Sweep tests for character movement
 
+### ✅ Character Controller (★★★★☆) - COMPLETE (TypeScript Side)
+
+**Status:** Complete TypeScript implementation with Unity-like auto-input support
+
+**Implemented Features:**
+
+- ✅ **Component Schema** - Contract v2.0 with Zod validation
+- ✅ **Unity-like Auto Mode** - Built-in WASD + Space input handling
+- ✅ **Manual Mode** - Script-controlled via `entity.controller` API
+- ✅ **Inspector UI** - Complete parameter editing with validation
+- ✅ **Input Configuration** - Customizable key bindings with detection UI
+- ✅ **Auto-Input System** - Play mode processing with caching and performance optimization
+- ✅ **Runtime State** - Grounded detection visualization during Play
+- ✅ **Contract v2.0** - Full TS-Rust parity with shared schema
+
+**Key Features:**
+
+- **Dual Control Modes**: Auto (Unity-like) for beginners, Manual for advanced use cases
+- **Performance Optimized**: Cached API instances, reduced logging spam, efficient input processing
+- **Configurable Physics**: Slope limits, step offset, skin width, gravity scale, jump strength
+- **Input Remapping**: Visual key binding editor with real-time detection
+- **Runtime Feedback**: Grounded state indicator and physics status
+
+**Files:**
+
+- Component: `src/core/lib/ecs/components/definitions/CharacterControllerComponent.ts`
+- UI: `src/editor/components/panels/InspectorPanel/CharacterController/`
+- Adapter: `src/editor/components/inspector/adapters/CharacterControllerAdapter.tsx`
+- System: `src/core/systems/CharacterControllerAutoInputSystem.ts`
+- Types: `src/core/lib/ecs/components/accessors/types.ts`
+
+**Technical Details:**
+
+- Contract v2.0 ensures TS-Rust data parity
+- Auto-input system runs only during Play mode for optimal performance
+- Component incompatible with RigidBody (manages its own physics)
+- Input keys normalized to lowercase for consistency
+- Always calls `move([0, 0])` when no keys pressed to stop momentum
+- Comprehensive logging with warnings only shown once per entity
+
+**Integration:**
+
+- Fully integrated with ComponentRegistry and KnownComponentTypes
+- EngineLoop integration with proper cleanup on unmount
+- Complete inspector panel integration with ComponentList
+- Ready for Rust engine physics processing bridge
+
 ---
 
 ### ✅ Input System (★★★★★) - COMPLETE

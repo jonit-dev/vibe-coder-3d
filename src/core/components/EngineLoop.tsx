@@ -22,6 +22,8 @@ import {
   updateInstanceSystem,
   cleanupInstanceSystem,
 } from '../systems/InstanceSystem';
+// Character Controller system now handled by CharacterControllerPhysicsSystem component
+// which runs inside the Physics context to access Rapier world
 import { useEngineStore } from '../state/engineStore';
 import { Logger } from '@core/lib/logger';
 
@@ -144,6 +146,7 @@ export const EngineLoop = ({
     return () => {
       disposeBVHSystem();
       cleanupInstanceSystem();
+      // CharacterController cleanup is now handled by CharacterControllerPhysicsSystem component
     };
   }, [scene, camera]);
 
@@ -238,6 +241,9 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
   // Update input state BEFORE any systems run
   const inputManager = InputManager.getInstance();
   inputManager.update();
+
+  // Character Controller system is now handled by CharacterControllerPhysicsSystem component
+  // which runs inside the Physics context to access Rapier world (see ViewportPanel)
 
   // Run transform system - updates Three.js objects from ECS Transform components
   transformSystem();

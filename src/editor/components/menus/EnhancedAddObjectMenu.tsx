@@ -104,6 +104,12 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
       return;
     }
 
+    // Handle gameplay objects
+    if (item.type === 'CharacterController') {
+      onAdd(item.type as string);
+      return;
+    }
+
     // Handle light types
     const lightTypes = ['DirectionalLight', 'PointLight', 'SpotLight', 'AmbientLight'];
     if (lightTypes.includes(item.type as string)) {

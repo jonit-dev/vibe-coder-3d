@@ -11,6 +11,7 @@ import { ComponentCategory, ComponentFactory, componentRegistry } from '../Compo
 // Import all core component definitions from individual files
 import {
   cameraComponent,
+  characterControllerComponent,
   customShapeComponent,
   geometryAssetComponent,
   instancedComponent,
@@ -26,6 +27,7 @@ import {
   transformComponent,
   type CameraData,
   type CustomShapeData,
+  type ICharacterControllerData,
   type InstancedComponentData,
   type LightData,
   type MeshColliderData,
@@ -54,6 +56,7 @@ export function registerCoreComponents(registry = componentRegistry): void {
   registry.register(lightComponent);
   registry.register(scriptComponent);
   registry.register(soundComponent);
+  registry.register(characterControllerComponent);
   registry.register(PrefabInstanceComponent);
 }
 
@@ -131,6 +134,7 @@ export function registerExampleComponents(): void {
 export type {
   CameraData,
   CustomShapeData,
+  ICharacterControllerData,
   InstancedComponentData,
   LightData,
   MeshColliderData,

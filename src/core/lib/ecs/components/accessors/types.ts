@@ -318,6 +318,92 @@ export interface IMeshColliderData {
 }
 
 /**
+ * Input mapping configuration for auto mode
+ */
+export interface IInputMapping {
+  forward: string;
+  backward: string;
+  left: string;
+  right: string;
+  jump: string;
+}
+
+/**
+ * Character Controller data interface (Contract v2.0)
+ */
+export interface ICharacterControllerData {
+  enabled: boolean;
+  slopeLimit: number;
+  stepOffset: number;
+  skinWidth: number;
+  gravityScale: number;
+  maxSpeed: number;
+  jumpStrength: number;
+  controlMode: 'auto' | 'manual';
+  inputMapping?: IInputMapping;
+  isGrounded: boolean; // Runtime-only
+}
+
+/**
+ * Character Controller-specific accessor with helper methods
+ */
+export interface ICharacterControllerAccessor extends IComponentAccessor<ICharacterControllerData> {
+  /**
+   * Enable/disable the character controller
+   */
+  enable(value: boolean): void;
+
+  /**
+   * Set movement parameters
+   */
+  setMovementParams(maxSpeed: number, jumpStrength: number): void;
+
+  /**
+   * Set physics parameters
+   */
+  setPhysicsParams(
+    slopeLimit: number,
+    stepOffset: number,
+    skinWidth: number,
+    gravityScale: number,
+  ): void;
+
+  /**
+   * Set control mode
+   */
+  setControlMode(mode: 'auto' | 'manual'): void;
+
+  /**
+   * Configure input mapping for auto mode
+   */
+  setInputMapping(mapping: Partial<IInputMapping>): void;
+
+  /**
+   * Move the character (for manual mode)
+   * @param direction - Movement vector [x, z] (normalized)
+   * @param speed - Movement speed multiplier
+   */
+  move(direction: [number, number], speed?: number): void;
+
+  /**
+   * Make the character jump (for manual mode)
+   * @param strength - Optional jump strength override
+   */
+  jump(strength?: number): void;
+
+  /**
+   * Check if character is grounded
+   */
+  isGrounded(): boolean;
+
+  /**
+   * Teleport character to position
+   * @param position - World position [x, y, z]
+   */
+  teleport(position: [number, number, number]): void;
+}
+
+/**
  * MeshCollider-specific accessor with helper methods
  */
 export interface IMeshColliderAccessor extends IComponentAccessor<IMeshColliderData> {

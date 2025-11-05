@@ -9,6 +9,7 @@ import {
   FiSearch,
   FiShield,
   FiSun,
+  FiUser,
   FiVolume2,
   FiX,
   FiZap,
@@ -112,9 +113,10 @@ const COMPONENT_DEFINITIONS: IComponentDefinition[] = [
   {
     id: KnownComponentTypes.RIGID_BODY,
     name: 'Rigid Body',
-    description: 'Physics simulation body',
+    description: 'Physics simulation body with dynamic/kinematic/static types',
     icon: <FiZap className="w-4 h-4" />,
     category: 'Physics',
+    // RigidBody can coexist with CharacterController (CharacterController can push dynamic bodies)
   },
   {
     id: KnownComponentTypes.MESH_COLLIDER,
@@ -152,6 +154,14 @@ const COMPONENT_DEFINITIONS: IComponentDefinition[] = [
     description: '3D spatial audio with playback controls',
     icon: <FiVolume2 className="w-4 h-4" />,
     category: 'Audio',
+  },
+  {
+    id: KnownComponentTypes.CHARACTER_CONTROLLER,
+    name: 'Character Controller',
+    description: 'Character movement controller with physics-based collision',
+    icon: <FiUser className="w-4 h-4" />,
+    category: 'Gameplay',
+    requiredComponents: ['MeshCollider'], // CharacterController requires a collider for physics queries
   },
 ];
 
@@ -214,10 +224,10 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
         const color = `#${Math.round(r * 255)
           .toString(16)
           .padStart(2, '0')}${Math.round(g * 255)
-            .toString(16)
-            .padStart(2, '0')}${Math.round(b * 255)
-              .toString(16)
-              .padStart(2, '0')}`;
+          .toString(16)
+          .padStart(2, '0')}${Math.round(b * 255)
+          .toString(16)
+          .padStart(2, '0')}`;
         return { color };
       } else if (typeof (materialData as any).color === 'string') {
         return { color: (materialData as any).color as string };
@@ -271,6 +281,11 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     if (!isValidEntityId(entityId)) return [];
     const existingTypes = entityComponents.map((c) => c.type);
 
+    // Debug: Log existing components
+    if (existingTypes.length > 0) {
+      console.log('[AddComponentMenu] Entity components:', { entityId, existingTypes });
+    }
+
     return COMPONENT_DEFINITIONS.filter((comp) => {
       // Don't show if already exists
       if (existingTypes.includes(comp.id)) return false;
@@ -278,11 +293,17 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
       // Check for incompatible components using the component definition
       const hasIncompatibleComponent = existingTypes.some((existingType) => {
         // Check if this component is incompatible with any existing component
-        if (comp.incompatibleComponents?.includes(existingType)) return true;
+        if (comp.incompatibleComponents?.includes(existingType)) {
+          console.log(`[AddComponentMenu] ${comp.name} incompatible with existing ${existingType}`);
+          return true;
+        }
 
         // Check if any existing component is incompatible with this component
         const existingCompDef = COMPONENT_DEFINITIONS.find((c) => c.id === existingType);
-        if (existingCompDef?.incompatibleComponents?.includes(comp.id)) return true;
+        if (existingCompDef?.incompatibleComponents?.includes(comp.id)) {
+          console.log(`[AddComponentMenu] Existing ${existingType} incompatible with ${comp.name}`);
+          return true;
+        }
 
         return false;
       });
@@ -447,6 +468,26 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
           duration: 0,
         };
         break;
+      case KnownComponentTypes.CHARACTER_CONTROLLER:
+        defaultData = {
+          enabled: true,
+          slopeLimit: 45.0,
+          stepOffset: 0.3,
+          skinWidth: 0.08,
+          gravityScale: 1.0,
+          maxSpeed: 6.0,
+          jumpStrength: 6.5,
+          controlMode: 'auto',
+          inputMapping: {
+            forward: 'w',
+            backward: 's',
+            left: 'a',
+            right: 'd',
+            jump: 'space',
+          },
+          isGrounded: false,
+        };
+        break;
     }
 
     componentManager.addComponent(entityId, componentType, defaultData);
@@ -558,23 +599,37 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
         <div className="flex border-b border-gray-600/50">
           <button
             onClick={() => setSelectedTab('components')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${selectedTab === 'components'
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              selectedTab === 'components'
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-gray-700/30'
                 : 'text-gray-400 hover:text-gray-300'
-              }`}
+            }`}
           >
             Individual Components
           </button>
           <button
             onClick={() => setSelectedTab('packs')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${selectedTab === 'packs'
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              selectedTab === 'packs'
                 ? 'text-cyan-400 border-b-2 border-cyan-400 bg-gray-700/30'
                 : 'text-gray-400 hover:text-gray-300'
-              }`}
+            }`}
           >
             Component Packs
           </button>
         </div>
+
+        {/* Component Requirements Warning */}
+        {entityComponents.some((c) => c.type === 'CharacterController') &&
+          !entityComponents.some((c) => c.type === 'MeshCollider') && (
+            <div className="px-4 py-2 bg-yellow-900/30 border-y border-yellow-700/50">
+              <p className="text-xs text-yellow-400">
+                <strong>Note:</strong> Character Controller requires a MeshCollider component for
+                physics-based movement. Add a MeshCollider (preferably Capsule type) for proper
+                collision detection.
+              </p>
+            </div>
+          )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[400px]">
@@ -721,10 +776,10 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
         color = `#${Math.round(r * 255)
           .toString(16)
           .padStart(2, '0')}${Math.round(g * 255)
-            .toString(16)
-            .padStart(2, '0')}${Math.round(b * 255)
-              .toString(16)
-              .padStart(2, '0')}`;
+          .toString(16)
+          .padStart(2, '0')}${Math.round(b * 255)
+          .toString(16)
+          .padStart(2, '0')}`;
       } else if (typeof materialData.color === 'string') {
         color = materialData.color;
       }
@@ -908,6 +963,26 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
           duration: 0,
         };
         break;
+      case KnownComponentTypes.CHARACTER_CONTROLLER:
+        defaultData = {
+          enabled: true,
+          slopeLimit: 45.0,
+          stepOffset: 0.3,
+          skinWidth: 0.08,
+          gravityScale: 1.0,
+          maxSpeed: 6.0,
+          jumpStrength: 6.5,
+          controlMode: 'auto',
+          inputMapping: {
+            forward: 'w',
+            backward: 's',
+            left: 'a',
+            right: 'd',
+            jump: 'space',
+          },
+          isGrounded: false,
+        };
+        break;
     }
 
     componentManager.addComponent(entityId, componentType, defaultData);
@@ -962,17 +1037,19 @@ export const CompactAddComponentMenu: React.FC<ICompactAddComponentMenuProps> = 
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item)}
-                className={`w-full text-left p-2 rounded border transition-all duration-200 group ${isPack
+                className={`w-full text-left p-2 rounded border transition-all duration-200 group ${
+                  isPack
                     ? 'bg-gradient-to-r from-purple-900/20 to-purple-800/20 border-purple-600/30 hover:from-purple-800/30 hover:to-purple-700/30 hover:border-purple-500/50'
                     : 'bg-gray-700/50 border-gray-600/50 hover:bg-gray-600/50 hover:border-gray-500/50'
-                  }`}
+                }`}
               >
                 <div className="flex items-center gap-2">
                   <div
-                    className={`flex-shrink-0 transition-colors ${isPack
+                    className={`flex-shrink-0 transition-colors ${
+                      isPack
                         ? 'text-purple-400 group-hover:text-purple-300'
                         : 'text-cyan-400 group-hover:text-cyan-300'
-                      }`}
+                    }`}
                   >
                     {item.icon}
                   </div>

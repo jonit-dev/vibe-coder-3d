@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiFolder, FiSun, FiZap } from 'react-icons/fi';
+import { FiFolder, FiSun, FiUser, FiZap } from 'react-icons/fi';
 import {
   TbBox,
   TbBuildingBridge,
@@ -143,6 +143,17 @@ export const GAME_OBJECT_CATEGORIES: IGameObjectCategory[] = [
         type: ShapeType.Terrain,
         label: 'Terrain',
         icon: <TbMountain size={18} />,
+      },
+    ],
+  },
+  {
+    label: 'Gameplay',
+    icon: <FiUser size={18} />,
+    items: [
+      {
+        type: 'CharacterController',
+        label: 'Character Controller',
+        icon: <FiUser size={18} />,
       },
     ],
   },
