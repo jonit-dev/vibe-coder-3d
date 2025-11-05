@@ -1,6 +1,7 @@
 ## Most Critical Rule
 
 - Don't trust, verify. Whenever you finish your code, add tests to prove it works or sping the `visual-debugger` agent to actually visualize the changes. If changes are only visible sequentially, feel free to take screenshots and analize differences.
+- Only stop your iterations when related tests are PASSING and the visual debugger shows expected results.
 
 **Rules**
 
