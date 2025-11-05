@@ -4,10 +4,11 @@
  * Unified Optimization Script
  *
  * KISS Principle: Single entry point for all model optimization
+ * - Decompresses Draco-compressed models offline (faster than runtime)
  * - Analyzes models automatically
  * - Applies appropriate decimation (Blender or meshopt)
  * - Generates LODs
- * - Compresses with Draco
+ * - Compresses with meshoptimizer
  *
  * Usage:
  *   yarn optimize                    # Optimize all models
@@ -45,8 +46,8 @@ config();
 
 // Initialize glTF I/O with all dependencies
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
-  'draco3d.decoder': await draco3d.createDecoderModule(),
-  'draco3d.encoder': await draco3d.createEncoderModule(),
+  'draco3d.decoder': await draco3d.createDecoderModule(), // For decompressing input models
+  // Note: No Draco encoder - we use meshopt for output (works in Rust!)
   'meshopt.decoder': MeshoptSimplifier,
   'meshopt.encoder': MeshoptEncoder,
 });
@@ -95,6 +96,48 @@ async function saveManifest(manifest) {
 async function getFileHash(filePath) {
   const content = await readFile(filePath);
   return createHash('sha256').update(content).digest('hex').slice(0, 16);
+}
+
+/**
+ * Check if a model uses Draco compression
+ */
+function isDracoCompressed(document) {
+  const root = document.getRoot();
+  const extensionsUsed = root.listExtensionsUsed();
+  return extensionsUsed.some((ext) => ext.extensionName === 'KHR_draco_mesh_compression');
+}
+
+/**
+ * Decompress Draco-compressed model in-place
+ * Returns true if decompression occurred, false if already uncompressed
+ */
+async function decompressDracoIfNeeded(modelPath) {
+  const document = await io.read(modelPath);
+
+  if (!isDracoCompressed(document)) {
+    return false; // Not Draco-compressed
+  }
+
+  logger.info(`Decompressing Draco model: ${basename(modelPath)}`);
+
+  // Remove Draco extension
+  const root = document.getRoot();
+  const dracoExtension = root
+    .listExtensionsUsed()
+    .find((ext) => ext.extensionName === 'KHR_draco_mesh_compression');
+
+  if (dracoExtension) {
+    dracoExtension.dispose();
+  }
+
+  // Clean up the document
+  await document.transform(prune(), dedup());
+
+  // Overwrite source file with decompressed version
+  await io.write(modelPath, document);
+
+  logger.success(`Decompressed ${basename(modelPath)} (now uncompressed)`);
+  return true;
 }
 
 /**
@@ -192,11 +235,32 @@ async function checkComplexity(models) {
 }
 
 /**
+ * Apply meshopt compression to a document
+ * This works in both Three.js and Rust (unlike Draco)
+ */
+async function applyMeshoptCompression(document) {
+  const { quantize } = await import('@gltf-transform/functions');
+
+  // Apply quantization + meshopt via write options
+  await document.transform(
+    quantize({
+      quantizePosition: 14, // 14 bits = 0.006mm precision at 1m scale
+      quantizeNormal: 10, // 10 bits sufficient for normals
+      quantizeTexcoord: 12, // 12 bits = 0.02% UV precision
+      quantizeColor: 8, // 8 bits = standard RGB
+    }),
+  );
+
+  return document;
+}
+
+/**
  * Generate LOD variants from base model
  * Based on industry LOD benchmarks:
  * - LOD0 (base): 20k-80k (hero), 5k-20k (prop), 1k-5k (background)
  * - LOD1 (high_fidelity): 40% of base (targeting mid-range)
  * - LOD2 (low_fidelity): 10% of base (targeting low-end/distant view)
+ * All variants are compressed with meshopt (works in Rust + Three.js)
  */
 async function generateLODVariants(baseModelPath, modelDir, fileName) {
   const lodDir = join(modelDir, 'lod');
@@ -229,6 +293,9 @@ async function generateLODVariants(baseModelPath, modelDir, fileName) {
       await document.transform(
         simplify({ simplifier: MeshoptSimplifier, ratio: variant.ratio, error: variant.error }),
       );
+
+      // Apply meshopt compression (works in both Three.js and Rust!)
+      await applyMeshoptCompression(document);
 
       // Write LOD variant
       await io.write(outputPath, document);
@@ -301,6 +368,13 @@ async function optimizeModel(model, blenderAvailable) {
         location: relative(process.cwd(), outputPath),
       });
 
+      // Apply meshopt compression to the decimated base model
+      logger.info(`Applying meshopt compression to base model...`);
+      const baseDocument = await io.read(outputPath);
+      await applyMeshoptCompression(baseDocument);
+      await io.write(outputPath, baseDocument);
+      logger.success(`Compressed base model with meshopt`);
+
       // Generate LOD variants from the decimated base model
       const fileName = basename(file, extname(file));
       const lodResults = await generateLODVariants(outputPath, modelDir, fileName);
@@ -362,6 +436,23 @@ async function main() {
   if (modelsToOptimize.length === 0) {
     logger.info('All models are up to date');
     return;
+  }
+
+  // Decompress any Draco-compressed models (preprocessing step)
+  let dracoDecompressed = 0;
+  for (const model of modelsToOptimize) {
+    try {
+      const wasDecompressed = await decompressDracoIfNeeded(model.path);
+      if (wasDecompressed) {
+        dracoDecompressed++;
+      }
+    } catch (err) {
+      logger.error(`Failed to decompress ${model.path}`, { error: err.message });
+    }
+  }
+
+  if (dracoDecompressed > 0) {
+    logger.info(`Decompressed ${dracoDecompressed} Draco-compressed model(s)`);
   }
 
   // Analyze complexity for models that need optimization
