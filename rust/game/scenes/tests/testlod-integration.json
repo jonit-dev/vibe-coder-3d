@@ -1,0 +1,97 @@
+{
+  "name": "testlod-integration",
+  "version": "1.0",
+  "entities": [
+    {
+      "id": 0,
+      "name": "camera",
+      "components": {
+        "Camera": {
+          "position": [0, 2, 20],
+          "rotation": [0, 0, 0, 1],
+          "fov": 60,
+          "near": 0.1,
+          "far": 1000
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "lod_test_cube",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "mesh_path": "models/test_cube.glb",
+          "material_path": "materials/default.json"
+        },
+        "LODComponent": {
+          "path": "models/test_cube.glb",
+          "high_quality_path": "models/lod/test_cube_high.glb",
+          "low_quality_path": "models/lod/test_cube_low.glb",
+          "distance_thresholds": [5, 15],
+          "quality_override": null,
+          "current_quality": "Original"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "lod_test_sphere",
+      "components": {
+        "Transform": {
+          "position": [5, 0, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "mesh_path": "models/test_sphere.glb",
+          "material_path": "materials/default.json"
+        },
+        "LODComponent": {
+          "path": "models/test_sphere.glb",
+          "high_quality_path": "models/lod/test_sphere_high.glb",
+          "low_quality_path": "models/lod/test_sphere_low.glb",
+          "distance_thresholds": [3, 10],
+          "quality_override": null,
+          "current_quality": "Original"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "lod_override_entity",
+      "components": {
+        "Transform": {
+          "position": [-5, 0, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "mesh_path": "models/test_cylinder.glb",
+          "material_path": "materials/default.json"
+        },
+        "LODComponent": {
+          "path": "models/test_cylinder.glb",
+          "high_quality_path": "models/lod/test_cylinder_high.glb",
+          "low_quality_path": "models/lod/test_cylinder_low.glb",
+          "distance_thresholds": [5, 15],
+          "quality_override": "HighFidelity",
+          "current_quality": "HighFidelity"
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "description": "LOD integration test scene with multiple entities at different distances and configurations",
+    "test_cases": [
+      "Distance-based quality switching",
+      "Quality override behavior",
+      "Multiple LOD entities management",
+      "Performance with multiple LOD calculations"
+    ]
+  }
+}
