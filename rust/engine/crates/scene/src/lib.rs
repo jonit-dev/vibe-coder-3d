@@ -4,10 +4,12 @@ use std::collections::HashMap;
 
 // Export new modules for mutable ECS
 pub mod entity_commands;
+pub mod models;
 pub mod scene_state;
 
 // Re-export key types
 pub use entity_commands::{EntityCommand, EntityCommandBuffer};
+pub use models::{LODComponent, LODQuality};
 pub use scene_state::SceneState;
 
 /// Stable entity identifier (wraps the persistentId from JSON)
@@ -330,6 +332,7 @@ mod tests {
             entities: vec![entity1.clone(), entity2.clone()],
             materials: vec![],
             meshes: None,
+            prefabs: None,
             metadata: None,
             inputAssets: None,
             lockedEntityIds: None,
@@ -372,6 +375,7 @@ mod tests {
             entities: vec![entity1, entity2],
             materials: vec![],
             meshes: None,
+            prefabs: None,
             metadata: None,
             inputAssets: None,
             lockedEntityIds: None,

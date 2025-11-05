@@ -41,19 +41,30 @@ pub fn load_gltf(path: &str) -> Result<Vec<Mesh>> {
 pub fn load_gltf_full(path: &str) -> Result<GltfData> {
     log::info!("Loading GLTF model from: {}", path);
 
+    // Resolve path relative to engine's working directory
+    // If path starts with "assets/", prepend "../game/" to make it relative to rust/engine/
+    let resolved_path = if path.starts_with("assets/") {
+        format!("../game/{}", path)
+    } else {
+        path.to_string()
+    };
+
+    log::debug!("Resolved GLTF path: {} -> {}", path, resolved_path);
+
     // Check if file exists first for better error messages
-    let path_obj = Path::new(path);
+    let path_obj = Path::new(&resolved_path);
     if !path_obj.exists() {
         anyhow::bail!(
-            "GLTF file does not exist: {} (cwd: {:?})",
+            "GLTF file does not exist: {} (resolved from: {}, cwd: {:?})",
+            resolved_path,
             path,
             std::env::current_dir()
         );
     }
 
-    let (document, buffers, images) = gltf::import(path)
+    let (document, buffers, images) = gltf::import(&resolved_path)
         .map_err(|e| anyhow::anyhow!("gltf::import failed: {:?}", e))
-        .with_context(|| format!("Failed to load GLTF file: {}", path))?;
+        .with_context(|| format!("Failed to load GLTF file: {}", resolved_path))?;
 
     // Convert images up-front and generate stable IDs
     let mut image_id_map: Vec<String> = Vec::new();
@@ -102,6 +113,16 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
         log::debug!("Processing GLTF mesh: {}", mesh_name);
 
         for primitive in gltf_mesh.primitives() {
+            // Check if this primitive uses Draco compression
+            let draco_ext = primitive.extensions()
+                .and_then(|ext| ext.get("KHR_draco_mesh_compression"));
+
+            if draco_ext.is_some() {
+                log::info!("  Draco compression detected - trying LOD models instead");
+                continue; // Skip Draco meshes - use LOD models instead
+            }
+
+            // Standard (non-Draco) mesh loading
             let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
 
             let positions = reader

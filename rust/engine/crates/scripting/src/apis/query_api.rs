@@ -8,18 +8,47 @@
 use mlua::prelude::*;
 use std::sync::Arc;
 use vibe_scene::Scene;
+use glam::Vec3;
+
+use crate::apis::query_helpers::{parse_vec3_from_table, create_hit_table};
+
+/// Trait for BVH raycasting functionality
+pub trait BvhRaycaster: Send + Sync {
+    /// Perform raycast and return the closest hit
+    fn raycast_first(&mut self, origin: Vec3, dir: Vec3, max_distance: f32) -> Option<RaycastHit>;
+
+    /// Perform raycast and return all hits (sorted by distance)
+    fn raycast_all(&mut self, origin: Vec3, dir: Vec3, max_distance: f32) -> Vec<RaycastHit>;
+}
+
+/// Raycast hit result that can be passed to Lua
+#[derive(Debug, Clone)]
+pub struct RaycastHit {
+    /// Entity ID that was hit
+    pub entity_id: u64,
+    /// Distance from ray origin to hit point
+    pub distance: f32,
+    /// Hit point in world space
+    pub point: Vec3,
+    /// Barycentric coordinates on the triangle (u, v, w where u+v+w=1)
+    pub barycentric: (f32, f32, f32),
+    /// Triangle index within the mesh
+    pub triangle_index: usize,
+}
 
 /// Register query API in Lua global scope
 ///
 /// Provides:
 /// - `query.findByName(name: string): number[]` - Find entities by name
-/// - `query.findByTag(tag: string): number[]` - Find entities by tag (TODO)
-/// - `query.raycastFirst(origin: table, dir: table): table|nil` - Raycast (TODO)
+/// - `query.findByTag(tag: string): number[]` - Find entities by tag
+/// - `query.raycastFirst(origin: table, dir: table, max_distance?: number): table|nil` - Raycast for closest hit
+/// - `query.raycastAll(origin: table, dir: table, max_distance?: number): table[]` - Raycast for all hits
 ///
 /// # Arguments
 ///
 /// * `lua` - The Lua VM
 /// * `scene` - The loaded scene to query
+/// * `bvh_manager` - Optional BVH manager for accelerated raycasting
 ///
 /// # Example Lua usage
 ///
@@ -29,8 +58,25 @@ use vibe_scene::Scene;
 /// for i, id in ipairs(playerIds) do
 ///     console.log("Found player: " .. id)
 /// end
+///
+/// -- Raycast from camera position
+/// local cameraPos = {0, 2, 5}
+/// local cameraDir = {0, 0, -1}
+/// local hit = query.raycastFirst(cameraPos, cameraDir, 100)
+/// if hit then
+///     console.log("Hit entity: " .. hit.entityId .. " at distance: " .. hit.distance)
+/// end
 /// ```
 pub fn register_query_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
+    register_query_api_with_bvh(lua, scene, None)
+}
+
+/// Register query API with BVH raycaster for accelerated raycasting
+pub fn register_query_api_with_bvh(
+    lua: &Lua,
+    scene: Arc<Scene>,
+    bvh_raycasters: Option<Arc<std::sync::Mutex<dyn BvhRaycaster>>>,
+) -> LuaResult<()> {
     let globals = lua.globals();
     let query = lua.create_table()?;
 
@@ -105,27 +151,68 @@ pub fn register_query_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
         )?;
     }
 
-    // raycastFirst - Raycast and find first hit (stub - requires physics integration)
-    query.set(
-        "raycastFirst",
-        lua.create_function(|_, _args: LuaMultiValue| {
-            log::debug!("Query: raycastFirst called (not implemented)");
-            // TODO: Implement raycasting with physics system
-            // For now, return nil
-            Ok(LuaNil)
-        })?,
-    )?;
+    // raycastFirst - Raycast and find first hit
+    {
+        let scene_clone = Arc::clone(&scene);
+        let bvh_clone = bvh_raycasters.clone();
+        query.set(
+            "raycastFirst",
+            lua.create_function(move |lua, (origin, dir, max_distance): (LuaTable, LuaTable, Option<f32>)| {
+                log::debug!("Query: raycastFirst called");
 
-    // raycastAll - Raycast and find all hits (stub - requires physics integration)
-    query.set(
-        "raycastAll",
-        lua.create_function(|lua, _args: LuaMultiValue| {
-            log::debug!("Query: raycastAll called (not implemented)");
-            // TODO: Implement raycasting with physics system
-            // For now, return empty array
-            lua.create_table()
-        })?,
-    )?;
+                // Parse origin and direction from Lua tables
+                let origin_vec = parse_vec3_from_table(&origin)?;
+                let dir_vec = parse_vec3_from_table(&dir)?;
+                let max_dist = max_distance.unwrap_or(1000.0);
+
+                // Use BVH accelerated raycasting if available
+                if let Some(bvh_raycasters) = &bvh_clone {
+                    let mut raycaster = bvh_raycasters.lock().unwrap();
+                    if let Some(hit) = raycaster.raycast_first(origin_vec, dir_vec, max_dist) {
+                        return create_hit_table(lua, &hit);
+                    }
+                }
+
+                // Fallback: simple scene-based raycasting (stub)
+                log::warn!("BVH raycasting not available, using stub implementation");
+                Ok(lua.create_table()?) // Return empty table instead of nil
+            })?,
+        )?;
+    }
+
+    // raycastAll - Raycast and find all hits
+    {
+        let scene_clone = Arc::clone(&scene);
+        let bvh_clone = bvh_raycasters.clone();
+        query.set(
+            "raycastAll",
+            lua.create_function(move |lua, (origin, dir, max_distance): (LuaTable, LuaTable, Option<f32>)| {
+                log::debug!("Query: raycastAll called");
+
+                // Parse origin and direction from Lua tables
+                let origin_vec = parse_vec3_from_table(&origin)?;
+                let dir_vec = parse_vec3_from_table(&dir)?;
+                let max_dist = max_distance.unwrap_or(1000.0);
+
+                // Use BVH accelerated raycasting if available
+                if let Some(bvh_raycasters) = &bvh_clone {
+                    let mut raycaster = bvh_raycasters.lock().unwrap();
+                    let hits = raycaster.raycast_all(origin_vec, dir_vec, max_dist);
+
+                    let result = lua.create_table()?;
+                    for (i, hit) in hits.iter().enumerate() {
+                        let hit_table = create_hit_table(lua, &hit)?;
+                        result.set(i + 1, hit_table)?; // Lua arrays are 1-indexed
+                    }
+                    return Ok(result);
+                }
+
+                // Fallback: simple scene-based raycasting (stub)
+                log::warn!("BVH raycasting not available, using stub implementation");
+                lua.create_table()
+            })?,
+        )?;
+    }
 
     globals.set("query", query)?;
     log::debug!("Query API registered");
@@ -133,278 +220,4 @@ pub fn register_query_api(lua: &Lua, scene: Arc<Scene>) -> LuaResult<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    use std::collections::HashMap;
-    use vibe_scene::{Entity, Metadata};
-
-    fn create_test_scene() -> Scene {
-        let entity1 = Entity {
-            id: Some(1),
-            persistent_id: Some("entity-1".to_string()),
-            name: Some("Player".to_string()),
-            parent_persistent_id: None,
-            tags: vec!["player".to_string(), "character".to_string()],
-            components: HashMap::new(),
-        };
-
-        let entity2 = Entity {
-            id: Some(2),
-            persistent_id: Some("entity-2".to_string()),
-            name: Some("Enemy".to_string()),
-            parent_persistent_id: None,
-            tags: vec!["enemy".to_string(), "character".to_string()],
-            components: HashMap::new(),
-        };
-
-        let entity3 = Entity {
-            id: Some(3),
-            persistent_id: Some("entity-3".to_string()),
-            name: Some("Player".to_string()), // Duplicate name
-            parent_persistent_id: None,
-            tags: vec!["player".to_string()],
-            components: HashMap::new(),
-        };
-
-        Scene {
-            version: 1,
-            name: "Test Scene".to_string(),
-            entities: vec![entity1, entity2, entity3],
-            materials: vec![],
-            meshes: None,
-            prefabs: None,
-            metadata: None,
-            inputAssets: None,
-            lockedEntityIds: None,
-        }
-    }
-
-    #[test]
-    fn test_query_api_registration() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-
-        assert!(register_query_api(&lua, scene).is_ok());
-
-        // Verify query table exists
-        let result: LuaResult<bool> = lua.load("return query ~= nil").eval();
-        assert!(result.is_ok());
-        assert!(result.unwrap());
-    }
-
-    #[test]
-    fn test_find_by_name_single() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-        register_query_api(&lua, scene).unwrap();
-
-        // Find entity with unique name
-        let result: LuaResult<Vec<u64>> = lua
-            .load(
-                r#"
-                local ids = query.findByName("Enemy")
-                local result = {}
-                for i = 1, #ids do
-                    table.insert(result, ids[i])
-                end
-                return result
-            "#,
-            )
-            .eval();
-
-        assert!(result.is_ok());
-        let ids = result.unwrap();
-        assert_eq!(ids.len(), 1);
-    }
-
-    #[test]
-    fn test_find_by_name_multiple() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-        register_query_api(&lua, scene).unwrap();
-
-        // Find entities with duplicate name
-        let result: LuaResult<Vec<u64>> = lua
-            .load(
-                r#"
-                local ids = query.findByName("Player")
-                local result = {}
-                for i = 1, #ids do
-                    table.insert(result, ids[i])
-                end
-                return result
-            "#,
-            )
-            .eval();
-
-        assert!(result.is_ok());
-        let ids = result.unwrap();
-        assert_eq!(ids.len(), 2);
-    }
-
-    #[test]
-    fn test_find_by_name_not_found() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-        register_query_api(&lua, scene).unwrap();
-
-        // Find non-existent entity
-        let result: LuaResult<Vec<u64>> = lua
-            .load(
-                r#"
-                local ids = query.findByName("NonExistent")
-                local result = {}
-                for i = 1, #ids do
-                    table.insert(result, ids[i])
-                end
-                return result
-            "#,
-            )
-            .eval();
-
-        assert!(result.is_ok());
-        let ids = result.unwrap();
-        assert_eq!(ids.len(), 0);
-    }
-
-    #[test]
-    fn test_find_by_name_case_sensitive() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-        register_query_api(&lua, scene).unwrap();
-
-        // Name search is case-sensitive
-        let result: LuaResult<Vec<u64>> = lua
-            .load(
-                r#"
-                local ids = query.findByName("player")  -- lowercase
-                local result = {}
-                for i = 1, #ids do
-                    table.insert(result, ids[i])
-                end
-                return result
-            "#,
-            )
-            .eval();
-
-        assert!(result.is_ok());
-        let ids = result.unwrap();
-        assert_eq!(ids.len(), 0); // Should not find "Player" (capital P)
-    }
-
-    #[test]
-    fn test_find_by_tag() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-        register_query_api(&lua, scene).unwrap();
-
-        // Find entities with "player" tag (case-insensitive)
-        let result: LuaResult<Vec<u64>> = lua
-            .load(
-                r#"
-                local ids = query.findByTag("player")
-                local result = {}
-                for i = 1, #ids do
-                    table.insert(result, ids[i])
-                end
-                return result
-            "#,
-            )
-            .eval();
-
-        assert!(result.is_ok());
-        let ids = result.unwrap();
-        assert_eq!(ids.len(), 2); // entity1 and entity3 have "player" tag
-    }
-
-    #[test]
-    fn test_find_by_tag_character() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-        register_query_api(&lua, scene).unwrap();
-
-        // Find entities with "character" tag (both player and enemy have this)
-        let result: LuaResult<Vec<u64>> = lua
-            .load(
-                r#"
-                local ids = query.findByTag("character")
-                local result = {}
-                for i = 1, #ids do
-                    table.insert(result, ids[i])
-                end
-                return result
-            "#,
-            )
-            .eval();
-
-        assert!(result.is_ok());
-        let ids = result.unwrap();
-        assert_eq!(ids.len(), 2); // entity1 and entity2 have "character" tag
-    }
-
-    #[test]
-    fn test_find_by_tag_case_insensitive() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-        register_query_api(&lua, scene).unwrap();
-
-        // Find entities with "ENEMY" tag (should work case-insensitively)
-        let result: LuaResult<Vec<u64>> = lua
-            .load(
-                r#"
-                local ids = query.findByTag("ENEMY")
-                local result = {}
-                for i = 1, #ids do
-                    table.insert(result, ids[i])
-                end
-                return result
-            "#,
-            )
-            .eval();
-
-        assert!(result.is_ok());
-        let ids = result.unwrap();
-        assert_eq!(ids.len(), 1); // entity2 has "enemy" tag
-    }
-
-    #[test]
-    fn test_raycast_first_stub() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-        register_query_api(&lua, scene).unwrap();
-
-        // raycastFirst should return nil (stub)
-        let result: LuaResult<bool> = lua
-            .load(
-                r#"
-                local hit = query.raycastFirst({0, 0, 0}, {0, 1, 0})
-                return hit == nil
-            "#,
-            )
-            .eval();
-
-        assert!(result.is_ok());
-        assert!(result.unwrap()); // Should be nil
-    }
-
-    #[test]
-    fn test_raycast_all_stub() {
-        let lua = Lua::new();
-        let scene = Arc::new(create_test_scene());
-        register_query_api(&lua, scene).unwrap();
-
-        // raycastAll should return empty array (stub)
-        let result: LuaResult<usize> = lua
-            .load(
-                r#"
-                local hits = query.raycastAll({0, 0, 0}, {0, 1, 0})
-                return #hits
-            "#,
-            )
-            .eval();
-
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 0); // Stub implementation returns empty
-    }
-}
+mod query_api_test;

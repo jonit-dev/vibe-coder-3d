@@ -6,6 +6,9 @@ use vibe_scene::ComponentKindId;
 
 use crate::{ComponentCapabilities, IComponentDecoder};
 
+// Re-export LODComponent from vibe-scene
+pub use vibe_scene::{LODComponent, LODQuality};
+
 // ============================================================================
 // Component Types (duplicated from main engine for now, will refactor later)
 // ============================================================================
@@ -1343,6 +1346,35 @@ impl IComponentDecoder for ScriptDecoder {
 
 use crate::ComponentRegistry;
 
+// ============================================================================
+// LOD Component Decoder
+// ============================================================================
+
+pub struct LODDecoder;
+
+impl IComponentDecoder for LODDecoder {
+    fn can_decode(&self, kind: &str) -> bool {
+        kind == "LOD" || kind == "LodComponent"
+    }
+
+    fn decode(&self, value: &Value) -> Result<Box<dyn Any>> {
+        let component: LODComponent = serde_json::from_value(value.clone())?;
+        Ok(Box::new(component))
+    }
+
+    fn capabilities(&self) -> ComponentCapabilities {
+        ComponentCapabilities {
+            affects_rendering: true,
+            requires_pass: Some("geometry"),
+            stable: true,
+        }
+    }
+
+    fn component_kinds(&self) -> Vec<ComponentKindId> {
+        vec![ComponentKindId::new("LOD"), ComponentKindId::new("LodComponent")]
+    }
+}
+
 pub fn create_default_registry() -> ComponentRegistry {
     let mut registry = ComponentRegistry::new();
     registry.register(TransformDecoder);
@@ -1359,6 +1391,7 @@ pub fn create_default_registry() -> ComponentRegistry {
     registry.register(TerrainDecoder);
     registry.register(SoundDecoder);
     registry.register(ScriptDecoder);
+    registry.register(LODDecoder);
     registry
 }
 

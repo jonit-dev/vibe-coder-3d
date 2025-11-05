@@ -14,8 +14,8 @@
           "id": "cam-gltf-001"
         },
         "Transform": {
-          "position": [0, 2, -5],
-          "rotation": [10, 0, 0],
+          "position": [0, 3, -10],
+          "rotation": [0, 0, 0],
           "scale": [1, 1, 1]
         },
         "Camera": {
@@ -119,13 +119,13 @@
     },
     {
       "id": 11,
-      "name": "GLTF Model - Simple",
+      "name": "FarmHouse - Center",
       "components": {
         "PersistentId": {
-          "id": "gltf-simple-001"
+          "id": "farmhouse-center"
         },
         "Transform": {
-          "position": [0, 1, 0],
+          "position": [0, 0, 0],
           "rotation": [0, 0, 0],
           "scale": [1, 1, 1]
         },
@@ -135,43 +135,21 @@
           "enabled": true,
           "castShadows": true,
           "receiveShadows": true,
-          "modelPath": "/assets/models/suzanne.glb"
+          "modelPath": "assets/models/FarmHouse/glb/farm_house_basic_shaded_uncompressed.glb"
         }
       }
     },
     {
       "id": 12,
-      "name": "GLTF Model - With Custom Material",
+      "name": "FarmHouse - Right",
       "components": {
         "PersistentId": {
-          "id": "gltf-custom-mat"
+          "id": "farmhouse-right"
         },
         "Transform": {
-          "position": [3, 0.5, 0],
+          "position": [8, 0, 0],
           "rotation": [0, 45, 0],
           "scale": [0.8, 0.8, 0.8]
-        },
-        "MeshRenderer": {
-          "meshId": "",
-          "materialId": "red",
-          "enabled": true,
-          "castShadows": true,
-          "receiveShadows": true,
-          "modelPath": "/assets/models/cube.glb"
-        }
-      }
-    },
-    {
-      "id": 13,
-      "name": "GLTF Model - Scaled",
-      "components": {
-        "PersistentId": {
-          "id": "gltf-scaled"
-        },
-        "Transform": {
-          "position": [-3, 0.5, 0],
-          "rotation": [0, -30, 0],
-          "scale": [1.5, 1.5, 1.5]
         },
         "MeshRenderer": {
           "meshId": "",
@@ -179,24 +157,46 @@
           "enabled": true,
           "castShadows": true,
           "receiveShadows": true,
-          "modelPath": "/assets/models/sphere.glb"
+          "modelPath": "assets/models/FarmHouse/glb/farm_house_basic_shaded_uncompressed.glb"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "FarmHouse - Left",
+      "components": {
+        "PersistentId": {
+          "id": "farmhouse-left"
+        },
+        "Transform": {
+          "position": [-8, 0, 0],
+          "rotation": [0, -30, 0],
+          "scale": [1.2, 1.2, 1.2]
+        },
+        "MeshRenderer": {
+          "meshId": "",
+          "materialId": "default",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": "assets/models/FarmHouse/glb/farm_house_basic_shaded_uncompressed.glb"
         }
       }
     },
     {
       "id": 14,
-      "name": "Comparison Primitive Sphere",
+      "name": "Cube - Comparison",
       "components": {
         "PersistentId": {
-          "id": "sphere-primitive"
+          "id": "cube-comparison"
         },
         "Transform": {
-          "position": [0, 1, 2.5],
-          "rotation": [0, 0, 0],
-          "scale": [1, 1, 1]
+          "position": [0, 1, 8],
+          "rotation": [0, 45, 0],
+          "scale": [2, 2, 2]
         },
         "MeshRenderer": {
-          "meshId": "sphere",
+          "meshId": "Box",
           "materialId": "blue",
           "enabled": true,
           "castShadows": true,

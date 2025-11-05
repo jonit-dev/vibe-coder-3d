@@ -14,10 +14,10 @@ use vibe_scene::ComponentKindId;
 // Re-export commonly used types
 pub use decoders::{
     create_default_registry, CameraComponent, CustomShape, GeometryAsset, GeometryAssetOptions,
-    InstanceData, Instanced, Light, LightColor, Material, MeshCollider, MeshColliderSize,
-    MeshRenderer, MeshRendererMaterialOverride, PhysicsMaterialData, PrefabDefinition,
-    PrefabEntity, PrefabInstance, RigidBody, RigidBodyMaterial, ScriptComponent, Sound, Terrain,
-    Transform,
+    InstanceData, Instanced, Light, LightColor, LODComponent, LODQuality, Material, MeshCollider,
+    MeshColliderSize, MeshRenderer, MeshRendererMaterialOverride, PhysicsMaterialData,
+    PrefabDefinition, PrefabEntity, PrefabInstance, RigidBody, RigidBodyMaterial, ScriptComponent,
+    Sound, Terrain, Transform,
 };
 
 // Re-export prefab system

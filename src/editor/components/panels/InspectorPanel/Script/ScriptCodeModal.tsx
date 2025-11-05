@@ -88,7 +88,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
             // Show conflict resolution dialog
             const resolution = window.confirm(
               'The external file was modified by another source.\n\n' +
-              'Click OK to overwrite with your local changes, or Cancel to reload from file.',
+                'Click OK to overwrite with your local changes, or Cancel to reload from file.',
             );
 
             if (resolution) {
@@ -423,7 +423,11 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
         const response = await fetch('/api/script/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: scriptId, code: scriptData.code || '', description: `Script ${scriptData.scriptName || ''}`.trim() }),
+          body: JSON.stringify({
+            id: scriptId,
+            code: scriptData.code || '',
+            description: `Script ${scriptData.scriptName || ''}`.trim(),
+          }),
         });
 
         const result = await response.json();
@@ -702,26 +706,62 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
                     <div>entity.transform.position</div>
                     <div>entity.transform.rotation</div>
                     <div>entity.transform.scale</div>
-                    <div>entity.three.mesh</div>
-                    <div>entity.three.material</div>
+                    <div>entity.getComponent(type)</div>
+                    <div>entity.setComponent(type, data)</div>
+                    <div>entity.hasComponent(type)</div>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-white font-medium mb-1">Three.js API</div>
+                  <div className="text-white font-medium mb-1">Scene & Query API</div>
                   <div className="bg-gray-900 p-2 rounded font-mono text-gray-300">
-                    <div>three.object3D</div>
-                    <div>three.material.get()</div>
-                    <div>three.scene</div>
-                    <div>three.animate.position()</div>
+                    <div>query.findByName(name)</div>
+                    <div>query.findByTag(tag)</div>
+                    <div>query.raycastFirst(origin, dir)</div>
+                    <div>entities.get(id)</div>
+                    <div>entities.findByName(name)</div>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-white font-medium mb-1">Utilities</div>
+                  <div className="text-white font-medium mb-1">Game Object API</div>
                   <div className="bg-gray-900 p-2 rounded font-mono text-gray-300">
+                    <div>gameObject.createEntity(name)</div>
+                    <div>gameObject.createPrimitive(kind)</div>
+                    <div>gameObject.createModel(model)</div>
+                    <div>gameObject.clone(source)</div>
+                    <div>gameObject.destroy(target)</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-white font-medium mb-1">Input & Time API</div>
+                  <div className="bg-gray-900 p-2 rounded font-mono text-gray-300">
+                    <div>input.isKeyDown(key)</div>
+                    <div>input.mousePosition()</div>
+                    <div>input.getActionValue(map, action)</div>
+                    <div>time.deltaTime</div>
+                    <div>time.frameCount</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-white font-medium mb-1">Event & Audio API</div>
+                  <div className="bg-gray-900 p-2 rounded font-mono text-gray-300">
+                    <div>events.on(type, handler)</div>
+                    <div>events.emit(type, data)</div>
+                    <div>audio.play(url, options)</div>
+                    <div>audio.stop(handle)</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-white font-medium mb-1">Timer & Utilities</div>
+                  <div className="bg-gray-900 p-2 rounded font-mono text-gray-300">
+                    <div>timer.setTimeout(cb, ms)</div>
+                    <div>timer.setInterval(cb, ms)</div>
                     <div>math.lerp(a, b, t)</div>
-                    <div>math.distance()</div>
+                    <div>math.distance(x1,y1,z1,x2,y2,z2)</div>
                     <div>console.log()</div>
                     <div>parameters.speed</div>
                   </div>

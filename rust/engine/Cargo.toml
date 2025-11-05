@@ -38,7 +38,7 @@ parry3d = "0.13"
 # Core rendering (three-d)
 winit = "0.28"
 three-d = "0.17"
-three-d-asset = "0.7"
+three-d-asset = { version = "0.7", features = ["http"] }  # http feature enables meshopt support
 
 # Math
 glam = { version = "0.27", features = ["serde"] }
@@ -49,6 +49,9 @@ serde_json = "1.0"
 
 # Asset loading
 gltf = { version = "1.4", features = ["utils"], optional = true }
+
+# Random number generation (for testing)
+rand = "0.8"
 
 # Error handling
 anyhow = "1.0"
@@ -77,6 +80,7 @@ gltf-support = ["gltf"]
 audio-support = ["vibe-audio"]
 scripting-support = ["vibe-scripting"]
 scripting-hot-reload = ["scripting-support", "vibe-scripting/hot-reload"]
+bvh-acceleration = []
 
 [lib]
 name = "vibe_coder_engine"

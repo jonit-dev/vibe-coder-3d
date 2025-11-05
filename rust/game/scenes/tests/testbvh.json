@@ -1,0 +1,635 @@
+{
+  "metadata": {
+    "name": "testbvh",
+    "version": 1,
+    "timestamp": "2025-11-04T10:00:00.000Z",
+    "description": "BVH integration test scene with multiple meshes for frustum culling and raycasting tests"
+  },
+  "entities": [
+    {
+      "id": 0,
+      "name": "Main Camera",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-camera-001"
+        },
+        "Transform": {
+          "position": [0, 5, 15],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 100,
+          "projectionType": "perspective",
+          "orthographicSize": 10,
+          "depth": 0,
+          "isMain": true,
+          "clearFlags": "skybox",
+          "skyboxTexture": "",
+          "backgroundColor": {
+            "r": 0.2,
+            "g": 0.3,
+            "b": 0.4,
+            "a": 1
+          },
+          "controlMode": "free",
+          "viewportRect": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 1
+          },
+          "hdr": false,
+          "toneMapping": "none",
+          "toneMappingExposure": 1,
+          "enablePostProcessing": false,
+          "postProcessingPreset": "none",
+          "enableSmoothing": false,
+          "followTarget": 0,
+          "followOffset": {
+            "x": 0,
+            "y": 5,
+            "z": -10
+          },
+          "smoothingSpeed": 2,
+          "rotationSmoothing": 1.5,
+          "skyboxScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "skyboxRotation": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "skyboxRepeat": {
+            "u": 1,
+            "v": 1
+          },
+          "skyboxOffset": {
+            "u": 0,
+            "v": 0
+          },
+          "skyboxIntensity": 1,
+          "skyboxBlur": 0
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Directional Light",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-light-001"
+        },
+        "Transform": {
+          "position": [10, 20, 10],
+          "rotation": [45, -45, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "directional",
+          "color": {
+            "r": 1,
+            "g": 1,
+            "b": 1
+          },
+          "intensity": 1.0,
+          "enabled": true,
+          "castShadow": true,
+          "directionX": -0.5,
+          "directionY": -0.7,
+          "directionZ": -0.5,
+          "range": 10,
+          "decay": 1,
+          "angle": 0.5235987901687622,
+          "penumbra": 0.10000000149011612,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.00009999999747378752,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Ambient Light",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-ambient-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "lightType": "ambient",
+          "color": {
+            "r": 0.3,
+            "g": 0.3,
+            "b": 0.4
+          },
+          "intensity": 0.4,
+          "enabled": true,
+          "castShadow": false,
+          "directionX": 0,
+          "directionY": -1,
+          "directionZ": 0,
+          "range": 10,
+          "decay": 1,
+          "angle": 0.5235987901687622,
+          "penumbra": 0.10000000149011612,
+          "shadowMapSize": 1024,
+          "shadowBias": -0.00009999999747378752,
+          "shadowRadius": 1
+        }
+      }
+    },
+    {
+      "id": 3,
+      "name": "Ground Plane",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-ground-001"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [-90, 0, 0],
+          "scale": [50, 50, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "plane",
+          "materialId": "ground",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 4,
+      "name": "Near Cube - Visible",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-cube-near"
+        },
+        "Transform": {
+          "position": [0, 1, 5],
+          "rotation": [0, 45, 0],
+          "scale": [2, 2, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "red",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 5,
+      "name": "Far Cube - Near Frustum Edge",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-cube-far"
+        },
+        "Transform": {
+          "position": [15, 1, 30],
+          "rotation": [0, 30, 0],
+          "scale": [1.5, 1.5, 1.5]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "blue",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 6,
+      "name": "Left Sphere - Should Be Culled",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-sphere-left"
+        },
+        "Transform": {
+          "position": [-25, 2, 10],
+          "rotation": [0, 0, 0],
+          "scale": [3, 3, 3]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "green",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 7,
+      "name": "Right Cylinder - Should Be Culled",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-cylinder-right"
+        },
+        "Transform": {
+          "position": [30, 2, 15],
+          "rotation": [0, 0, 0],
+          "scale": [2, 4, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "cylinder",
+          "materialId": "yellow",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "Center Sphere - Raycasting Target",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-sphere-center"
+        },
+        "Transform": {
+          "position": [0, 2, 10],
+          "rotation": [0, 0, 0],
+          "scale": [1.5, 1.5, 1.5]
+        },
+        "MeshRenderer": {
+          "meshId": "sphere",
+          "materialId": "magenta",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "Distant Objects Array - Performance Test",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-array-001"
+        },
+        "Transform": {
+          "position": [0, 1, 80],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "cyan",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 10,
+      "name": "Distant Objects Array - Performance Test",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-array-002"
+        },
+        "Transform": {
+          "position": [5, 1, 82],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "cyan",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 11,
+      "name": "Distant Objects Array - Performance Test",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-array-003"
+        },
+        "Transform": {
+          "position": [-5, 1, 78],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "cyan",
+          "enabled": true,
+          "castShadows": false,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Tall Box - Raycast Obstacle",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-obstacle-001"
+        },
+        "Transform": {
+          "position": [2, 3, 8],
+          "rotation": [0, 15, 0],
+          "scale": [1, 6, 1]
+        },
+        "MeshRenderer": {
+          "meshId": "cube",
+          "materialId": "orange",
+          "enabled": true,
+          "castShadows": true,
+          "receiveShadows": true,
+          "modelPath": ""
+        }
+      }
+    },
+    {
+      "id": 13,
+      "name": "BVH Test Controller",
+      "components": {
+        "PersistentId": {
+          "id": "bvh-test-controller"
+        },
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "LuaScript": {
+          "scriptPath": "bvh_test.lua",
+          "enabled": true
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#404040",
+      "metalness": 0,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "red",
+      "name": "Red Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff4444",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "blue",
+      "name": "Blue Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#4444ff",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "green",
+      "name": "Green Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#44ff44",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "yellow",
+      "name": "Yellow Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ffff44",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "magenta",
+      "name": "Magenta Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff44ff",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "cyan",
+      "name": "Cyan Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#44ffff",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    },
+    {
+      "id": "orange",
+      "name": "Orange Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff8844",
+      "metalness": 0,
+      "roughness": 0.6,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1,
+      "textureOffsetX": 0,
+      "textureOffsetY": 0,
+      "textureRepeatX": 1,
+      "textureRepeatY": 1
+    }
+  ],
+  "prefabs": [],
+  "inputAssets": [
+    {
+      "name": "BVH Test Input",
+      "controlSchemes": [
+        {
+          "name": "Keyboard & Mouse",
+          "deviceRequirements": [
+            {
+              "deviceType": "keyboard",
+              "optional": false
+            },
+            {
+              "deviceType": "mouse",
+              "optional": true
+            }
+          ]
+        }
+      ],
+      "actionMaps": [
+        {
+          "name": "BVH Test",
+          "actions": [
+            {
+              "name": "Test Raycast",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "keyboard",
+                  "path": "r"
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Toggle BVH",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "keyboard",
+                  "path": "b"
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Performance Test",
+              "actionType": "button",
+              "controlType": "button",
+              "bindings": [
+                {
+                  "type": "keyboard",
+                  "path": "p"
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Move",
+              "actionType": "passthrough",
+              "controlType": "vector2",
+              "bindings": [
+                {
+                  "compositeType": "2DVector",
+                  "bindings": {
+                    "up": {
+                      "type": "keyboard",
+                      "path": "w"
+                    },
+                    "down": {
+                      "type": "keyboard",
+                      "path": "s"
+                    },
+                    "left": {
+                      "type": "keyboard",
+                      "path": "a"
+                    },
+                    "right": {
+                      "type": "keyboard",
+                      "path": "d"
+                    }
+                  }
+                }
+              ],
+              "enabled": true
+            },
+            {
+              "name": "Look",
+              "actionType": "passthrough",
+              "controlType": "vector2",
+              "bindings": [
+                {
+                  "type": "mouse",
+                  "path": "delta"
+                }
+              ],
+              "enabled": true
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "lockedEntityIds": []
+}

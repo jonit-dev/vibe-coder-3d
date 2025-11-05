@@ -686,4 +686,23 @@ impl AppThreeD {
             render_state.as_ref(),
         )
     }
+
+    // ========================================================================
+    // LOD Configuration API (delegates to renderer)
+    // ========================================================================
+
+    /// Set global LOD quality
+    pub fn set_lod_quality(&mut self, quality: crate::renderer::LODQuality) {
+        self.renderer.set_lod_quality(quality);
+    }
+
+    /// Enable/disable automatic distance-based LOD switching
+    pub fn set_lod_auto_switch(&mut self, enabled: bool) {
+        self.renderer.set_lod_auto_switch(enabled);
+    }
+
+    /// Set distance thresholds for LOD switching
+    pub fn set_lod_distance_thresholds(&mut self, high: f32, low: f32) {
+        self.renderer.set_lod_distance_thresholds(high, low);
+    }
 }

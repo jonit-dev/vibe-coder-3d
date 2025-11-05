@@ -7,6 +7,7 @@ mod ecs;
 mod input;
 mod io;
 mod renderer;
+mod spatial;
 mod threed_renderer;
 mod util;
 
@@ -53,6 +54,26 @@ struct Args {
     /// JPEG quality (1-100) - only applies if output path ends with .jpg/.jpeg
     #[arg(long, default_value_t = 85)]
     screenshot_quality: u8,
+
+    /// LOD quality level (original, high_fidelity, low_fidelity) - overrides auto-switch
+    #[arg(long)]
+    lod_quality: Option<String>,
+
+    /// LOD high quality distance threshold (default: 50.0)
+    #[arg(long)]
+    lod_threshold_high: Option<f32>,
+
+    /// LOD low quality distance threshold (default: 100.0)
+    #[arg(long)]
+    lod_threshold_low: Option<f32>,
+
+    /// Run BVH integration tests and exit
+    #[arg(long)]
+    bvh_test: bool,
+
+    /// Run BVH performance comparison tests and exit
+    #[arg(long)]
+    bvh_performance_test: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -65,6 +86,78 @@ fn main() -> anyhow::Result<()> {
     // Initialize logger
     let filter = if args.verbose { "debug" } else { "info" };
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(filter)).init();
+
+    // Check if we should run BVH tests
+    if args.bvh_test {
+        log::info!("Running BVH integration tests...");
+        #[cfg(test)]
+        {
+            use vibe_engine::bvh_integration_test::{BvhIntegrationTester, BvhTestConfig};
+
+            let config = BvhTestConfig {
+                enable_bvh: true,
+                performance_raycast_count: 1000,
+                tolerance: 0.001,
+                verbose_logging: args.verbose,
+                screenshot_dir: Some("screenshots".to_string()),
+            };
+
+            let mut tester = BvhIntegrationTester::new(config);
+            match tester.run_all_tests() {
+                Ok(results) => {
+                    if results.errors.is_empty() {
+                        log::info!("✅ All BVH tests passed!");
+                        std::process::exit(0);
+                    } else {
+                        log::error!("❌ {} BVH test failures detected", results.errors.len());
+                        std::process::exit(1);
+                    }
+                }
+                Err(e) => {
+                    log::error!("BVH test execution failed: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        #[cfg(not(test))]
+        {
+            log::error!("BVH testing requires test compilation. Use `cargo test --bin vibe-engine -- --bvh-test`");
+            std::process::exit(1);
+        }
+    }
+
+    // Check if we should run BVH performance tests
+    if args.bvh_performance_test {
+        log::info!("Running BVH performance comparison tests...");
+        #[cfg(test)]
+        {
+            use vibe_engine::bvh_performance_test::{BvhPerformanceTester, PerformanceTestConfig, EntityPattern};
+
+            let config = PerformanceTestConfig {
+                entity_count: 1000,
+                raycast_count: 10000,
+                frustum_test_count: 1000,
+                entity_pattern: EntityPattern::Grid { size: 32, spacing: 5.0 },
+            };
+
+            let tester = BvhPerformanceTester::new(config);
+            match tester.run_performance_comparison() {
+                Ok(_) => {
+                    log::info!("✅ BVH performance tests completed!");
+                    std::process::exit(0);
+                }
+                Err(e) => {
+                    log::error!("BVH performance test execution failed: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        #[cfg(not(test))]
+        {
+            log::error!("BVH performance testing requires test compilation. Use `cargo test --bin vibe-engine -- --bvh-performance-test`");
+            std::process::exit(1);
+        }
+    }
 
     // Run the application
     log::info!("Initializing three-d renderer...");
@@ -106,7 +199,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
     let event_loop = winit::event_loop::EventLoop::new();
 
     // Check if a scene was specified
-    let app = if args.scene != "Default" {
+    let mut app = if args.scene != "Default" {
         // Load specific scene
         let scene_path = resolve_scene_path(&args.scene)?;
         log::info!("Loading scene: {}", scene_path.display());
@@ -122,6 +215,27 @@ async fn run(args: Args) -> anyhow::Result<()> {
         log::info!("Using test scene (POC mode)");
         app_threed::AppThreeD::new(args.width, args.height, args.debug, &event_loop)?
     };
+
+    // Configure LOD system from CLI arguments
+    // Note: auto-switch is enabled by default, manual quality override disables it
+    if let Some(quality_str) = &args.lod_quality {
+        use crate::renderer::LODQuality;
+        let quality = match quality_str.to_lowercase().as_str() {
+            "original" => LODQuality::Original,
+            "high_fidelity" | "high" => LODQuality::HighFidelity,
+            "low_fidelity" | "low" => LODQuality::LowFidelity,
+            _ => {
+                log::warn!("Invalid LOD quality '{}', using Original", quality_str);
+                LODQuality::Original
+            }
+        };
+        app.set_lod_quality(quality); // This disables auto-switch
+    }
+
+    // Custom distance thresholds (auto-switch remains enabled)
+    if let (Some(high), Some(low)) = (args.lod_threshold_high, args.lod_threshold_low) {
+        app.set_lod_distance_thresholds(high, low);
+    }
 
     // Handle screenshot mode
     if args.screenshot {

@@ -21,8 +21,8 @@ use crate::renderer::coordinate_conversion::threejs_to_threed_position;
 use crate::renderer::{
     apply_post_processing, create_camera, generate_terrain, load_camera, load_instanced,
     load_light, load_mesh_renderer, CameraConfig, ColorGradingEffect, DebugLineRenderer,
-    EnhancedDirectionalLight, EnhancedSpotLight, LoadedLight, MaterialManager, PostProcessSettings,
-    SkyboxRenderer,
+    EnhancedDirectionalLight, EnhancedSpotLight, LODManager, LODSelector, LoadedLight,
+    MaterialManager, PostProcessSettings, SkyboxRenderer,
 };
 
 /// Mesh rendering state extracted from scene (visibility, shadows, etc.)
@@ -98,6 +98,10 @@ pub struct ThreeDRenderer {
     // Camera follow smoothing
     last_camera_position: Vec3,
     last_camera_target: Vec3,
+
+    // LOD Management
+    lod_manager: Arc<LODManager>,
+    lod_selector: LODSelector,
 }
 
 struct RenderSettings {
@@ -169,6 +173,12 @@ impl ThreeDRenderer {
 
         let debug_line_renderer = DebugLineRenderer::new(&context);
 
+        // Initialize LOD system with default configuration
+        let lod_manager = LODManager::new();
+        let lod_selector = LODSelector::new(Arc::clone(&lod_manager));
+
+        log::info!("  LOD System initialized (quality: Original, auto-switch: ENABLED)");
+
         Ok(Self {
             windowed_context,
             context,
@@ -197,6 +207,8 @@ impl ThreeDRenderer {
             loaded_entity_ids: HashSet::new(),
             last_camera_position: initial_pos,
             last_camera_target: initial_target,
+            lod_manager,
+            lod_selector,
         })
     }
 
@@ -1423,9 +1435,12 @@ impl ThreeDRenderer {
         // Try to get Transform component
         let transform = self.get_component::<Transform>(entity, "Transform");
 
+        // Check for LOD component
+        let lod_component = self.get_component::<vibe_ecs_bridge::LODComponent>(entity, "LOD");
+
         // Check for MeshRenderer
         if let Some(mesh_renderer) = self.get_component::<MeshRenderer>(entity, "MeshRenderer") {
-            self.handle_mesh_renderer(entity, &mesh_renderer, transform.as_ref())
+            self.handle_mesh_renderer(entity, &mesh_renderer, transform.as_ref(), lod_component.as_ref())
                 .await?;
         }
 
@@ -1480,6 +1495,7 @@ impl ThreeDRenderer {
         entity: &Entity,
         mesh_renderer: &MeshRenderer,
         transform: Option<&Transform>,
+        lod_component: Option<&vibe_ecs_bridge::LODComponent>,
     ) -> Result<()> {
         let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
 
@@ -1504,12 +1520,22 @@ impl ThreeDRenderer {
             transform.cloned()
         };
 
+        // Get camera position for LOD distance calculations
+        let camera_pos = GlamVec3::new(
+            self.camera.position().x,
+            self.camera.position().y,
+            self.camera.position().z,
+        );
+
         let submeshes = load_mesh_renderer(
             &self.context,
             entity,
             mesh_renderer,
             effective_transform.as_ref(),
             &mut self.material_manager,
+            lod_component,
+            &self.lod_manager,
+            camera_pos,
         )
         .await?;
 
@@ -2001,6 +2027,38 @@ impl ThreeDRenderer {
         log::info!("═══════════════════════════════════════════════════════════");
         log::info!("END RUST SCENE LOAD");
         log::info!("═══════════════════════════════════════════════════════════\n");
+    }
+
+    // ========================================================================
+    // LOD Management API
+    // ========================================================================
+
+    /// Get reference to LOD manager for configuration
+    pub fn lod_manager(&self) -> &Arc<LODManager> {
+        &self.lod_manager
+    }
+
+    /// Set global LOD quality (disables auto-switch)
+    pub fn set_lod_quality(&self, quality: crate::renderer::LODQuality) {
+        self.lod_manager.set_quality(quality);
+        log::info!("LOD quality set to: {:?}", quality);
+    }
+
+    /// Enable/disable automatic distance-based LOD switching
+    pub fn set_lod_auto_switch(&self, enabled: bool) {
+        self.lod_manager.set_auto_switch(enabled);
+        log::info!("LOD auto-switch: {}", if enabled { "enabled" } else { "disabled" });
+    }
+
+    /// Set distance thresholds for LOD switching
+    pub fn set_lod_distance_thresholds(&self, high: f32, low: f32) {
+        self.lod_manager.set_distance_thresholds(high, low);
+        log::info!("LOD thresholds set to: high={}, low={}", high, low);
+    }
+
+    /// Get current LOD configuration
+    pub fn get_lod_config(&self) -> crate::renderer::LODConfig {
+        self.lod_manager.get_config()
     }
 }
 

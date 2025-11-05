@@ -168,8 +168,9 @@ export const scriptComponent = ComponentFactory.create({
 
 // Hello World TypeScript Script
 function onStart(): void {
-  if (three.mesh) {
-    three.material.setColor("#000000");
+  const meshRenderer = entity.getComponent('MeshRenderer');
+  if (meshRenderer) {
+    console.log('Entity has a MeshRenderer component!');
   }
 }
 

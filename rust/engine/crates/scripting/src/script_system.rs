@@ -50,7 +50,7 @@ pub struct ScriptSystem {
     script_prefab_manager: Option<crate::apis::prefab_api::PrefabManagerRef>,
     /// Concrete prefab manager for loading scene prefabs
     concrete_prefab_manager: Option<crate::script_prefab_manager::ScriptPrefabManager>,
-}
+    }
 
 impl ScriptSystem {
     /// Create a new ScriptSystem
@@ -98,6 +98,7 @@ impl ScriptSystem {
         self.script_scene_manager = Some(create_simple_scene_manager(scene_path));
     }
 
+    
   /// Update the current scene path (call this when loading a new scene)
   pub fn update_scene_path(&self, scene_path: Option<String>) {
         if let Some(ref manager) = self.script_scene_manager {

@@ -17,6 +17,7 @@ image = "0.24"
 
 # GLTF loading
 # Note: extensions feature allows handling models with unsupported extensions like KHR_mesh_quantization
+# Note: Draco-compressed models should be decompressed offline using gltf-transform
 gltf = { version = "1.4", features = ["utils", "extensions"], optional = true }
 
 [features]

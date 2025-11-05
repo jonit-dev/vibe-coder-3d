@@ -36,6 +36,7 @@ pub mod mesh_api;
 pub mod physics_api;
 pub mod prefab_api;
 pub mod query_api;
+pub mod query_helpers;
 pub mod save_api;
 pub mod scene_api;
 pub mod time_api;
