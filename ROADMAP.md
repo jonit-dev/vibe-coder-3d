@@ -1,5 +1,9 @@
 # Vibe Coder 3D - Feature Roadmap
 
+> **🎨 Visual-First Development Strategy**
+>
+> **Reordered for Maximum Progress Feeling:** Critical architectural features are important, but we've prioritized highly visible features that provide immediate user satisfaction and motivation.
+
 > **80/20 3D Game Engine Features Checklist**
 > Tracks implementation status across TypeScript Editor and Rust Engine
 
@@ -720,6 +724,8 @@
 **Effort:** Medium (2-4 weeks)
 **Dependencies:** None
 
+**Why #1:** Most visually impressive feature, instantly makes projects feel alive and professional. Creates immediate visual gratification and user excitement.
+
 #### What's Missing:
 
 - ❌ No particle emitter component
@@ -788,16 +794,41 @@ interface ParticleEmitterComponent {
 
 ---
 
-### 2. ⚠️ **LOD in Rust Engine** (★★★★☆)
+#### What Exists:
+
+- ✅ Basic tone mapping and bloom in both TS and Rust
+- ✅ Basic post-processing pipeline
+- ✅ Mobile-friendly effects work
+
+#### What's Missing:
+
+- ❌ **FXAA (Fast Approximate Anti-Aliasing)** - Jagged edges everywhere
+- ❌ **TAA (Temporal Anti-Aliasing)** - Better quality with temporal stability
+- ❌ **SSAO (Screen Space Ambient Occlusion)** - Flat lighting, no contact shadows
+- ❌ **Motion Blur** - Camera movement feels stuttery
+- ❌ **Depth of Field** - No cinematic focus effects
+- ❌ **Color Grading LUTs** - Washed out colors, no artistic control
+
+#### Quick Visual Wins:
+
+1. **FXAA (1 week)** - Instantly smooth all jagged edges
+2. **SSAO (1 week)** - Add depth and contact shadows everywhere
+3. **Motion Blur (3-5 days)** - Smooth camera movement, cinematic feel
+4. **DOF (3-5 days)** - Professional focus effects for cinematic shots
+
+---
+
+### 3. ⚠️ **LOD in Rust Engine** (★★★★☆)
 
 **Impact:** Poor performance in Rust builds, no quality scaling
 **Status:** TypeScript complete (3 quality tiers), Rust missing
 **Effort:** Medium (1-2 weeks)
 **Dependencies:** Model optimization pipeline
 
+**Why #3:** Performance is critical, but this is porting existing TS functionality. Important but less visually exciting than new features.
+
 #### What Exists in TypeScript:
 
-- ✅ `src/core/lib/rendering/LODManager.ts` - Full LOD system
 - ✅ 3 quality tiers: original (100%), high_fidelity (75%), low_fidelity (35%)
 - ✅ Distance-based auto-switching
 - ✅ Global quality management
@@ -860,7 +891,26 @@ interface ParticleEmitterComponent {
 
 ---
 
-### 3. ✅ **Rust Scripting APIs** (★★★★★)
+### 4. 🚧 **Custom Shader System** (★★★★☆)
+
+**Impact:** Limited to basic PBR materials, no custom visual effects
+**Status:** Not implemented
+**Effort:** Medium (2-3 weeks for basic system)
+**Dependencies:** Material system
+
+**Why #4:** Enables unlimited visual creativity - custom materials, stylized rendering (toon/cel shading), holograms, water, fire effects. High visual impact with moderate effort.
+
+#### Quick Visual Effects to Enable:
+
+1. **Toon/Cel Shading** - Instant stylized art style
+2. **Hologram Effects** - Sci-fi visuals
+3. **Water/Shaders** - Transparent materials with refraction
+4. **Dissolve Effects** - Object teleportation/destruction
+5. **Edge Detection** - Outline effects for stylized look
+
+---
+
+### 5. ✅ **Rust Scripting APIs** (★★★★★)
 
 **Impact:** Complete gameplay functionality in Rust engine
 **Status:** ✅ **COMPLETE** - All 24/25 APIs implemented, including Query, Prefab, and GameObject CRUD - major milestone achieved!
@@ -954,12 +1004,32 @@ ui.setVisible(element: UIElement, visible: boolean)
 
 ---
 
-### 4. ❌ **Undo/Redo System** (★★★★☆)
+### 6. 🚧 **Character Controller & Player Movement** (★★★★☆)
+
+**Impact:** Cannot create playable characters or first-person controllers
+**Status:** Physics shapes exist, controller logic missing
+**Effort:** Medium (2-3 weeks)
+**Dependencies:** Scripting APIs complete
+
+**Why #6:** Highly visible - users instantly see player character moving, jumping, and responding to input. Critical for creating interactive experiences.
+
+#### Quick Visible Results:
+
+1. **First Person Controller** - Walk around scenes immediately
+2. **Third Person Character** - Visible character with animations
+3. **Jump/Gravity** - Basic physics feels responsive
+4. **Slope/Step Handling** - Characters walk up stairs and ramps smoothly
+
+---
+
+### 7. ❌ **Undo/Redo System** (★★★★☆)
 
 **Impact:** Professional editor requires undo/redo for usability
 **Status:** Not implemented
 **Effort:** Medium (2-3 weeks)
 **Dependencies:** Command pattern architecture
+
+**Why #7:** Important for productivity but completely invisible to users. Moved down as it's quality-of-life rather than visible progress.
 
 #### What's Missing:
 
@@ -2030,53 +2100,64 @@ fn particle_physics(@builtin(global_invocation_id) id: vec3<u32>) {
 
 ## 🎯 Recommended Implementation Order
 
-### Phase 1: Core Stability (4-6 weeks)
+### Phase 1: Visual Impact & Quick Wins (4-6 weeks) 🎨
 
-1. ✅ **Rust Scripting APIs** - Complete Lua bindings for 12 APIs
-2. ⚠️ **LOD in Rust** - Port TypeScript LOD system
-3. ⚠️ **BVH Culling in Rust** - Port TypeScript BVH for 10-100x speedup
+**Goal:** Maximum visible progress with immediate user satisfaction
 
-**Rationale:** Achieve feature parity between TS and Rust for core systems
+1. ❌ **Particle/VFX System** (2-4 weeks) - Explosions, fire, smoke effects - instantly makes projects feel alive
+2. 🚧 **Advanced Post-Processing Effects** (2-3 weeks) - FXAA, SSAO, motion blur - instant visual polish
+3. 🚧 **Custom Shader System** (2-3 weeks) - Toon shading, holograms, water - unlimited visual creativity
+4. 🚧 **Character Controller & Player Movement** (2-3 weeks) - Walkable scenes, responsive controls
 
----
-
-### Phase 2: Essential Features (4-6 weeks)
-
-4. ❌ **Particle/VFX System** - Enable visual effects in both systems
-5. ❌ **Undo/Redo System** - Professional editor experience
-6. 🚧 **Character Controller** - Enable player/NPC movement
-
-**Rationale:** Add critical missing features for workable game creation
+**Rationale:** Start with features users can see immediately for maximum motivation and progress feeling
 
 ---
 
-### Phase 3: Polish & Performance (4-6 weeks)
+### Phase 2: Performance & Polish (3-4 weeks) ⚡
 
-7. 🚧 **Comprehensive Profiler** - Optimize performance
-8. 🚧 **Advanced Post-Processing** - Visual quality improvements
-9. 🚧 **Skinned Mesh Animation** - Character animation support
+**Goal:** Make the visual experience smooth and professional
 
-**Rationale:** Improve quality and performance for production readiness
+5. ⚠️ **LOD in Rust** (1-2 weeks) - Port TypeScript LOD system for smooth performance
+6. ⚠️ **BVH Culling in Rust** (3-4 weeks) - Port TypeScript BVH for 10-100x speedup
+7. 🚧 **Enhanced Entity-Component Access** (1-2 weeks) - Better developer experience for visual tweaks
+
+**Rationale:** Ensure the beautiful visuals run smoothly at scale
+
+### Phase 3: Editor Quality & Animation (4-5 weeks) 🔧
+
+**Goal:** Professional editor tools and character animation
+
+8. ❌ **Undo/Redo System** (2-3 weeks) - Professional editor experience
+9. 🚧 **Skinned Mesh Animation** (4-6 weeks) - Character animation support
+10. ✅ **Complete Rust Scripting APIs** (1 week) - Finish remaining UI API
+
+**Rationale:** Professional editor tools and character animation create complete development experience
 
 ---
 
-### Phase 4: Platform Expansion (4-8 weeks)
+### Phase 4: Platform & Advanced Features (6-8 weeks) 🚀
 
-10. ❌ **Build System** - Multi-platform deployment
-11. 🚧 **Terrain Editor** - Complete terrain workflow
-12. ❌ **Navigation/Pathfinding** - AI agent support
+**Goal:** Multi-platform deployment and advanced capabilities
 
-**Rationale:** Expand deployment options and advanced features
+11. ❌ **Build System** (4-6 weeks) - Multi-platform deployment
+12. 🚧 **Terrain Editor** (4-6 weeks) - Complete terrain workflow
+13. ❌ **Navigation/Pathfinding** (4-6 weeks) - AI agent support
+
+**Rationale:** Expand deployment options and enable complex game mechanics
 
 ---
 
-### Phase 5: Advanced Features (8-12 weeks)
+### Phase 5: Commercial Polish (8-12 weeks) 💼
 
-13. ❌ **Decal System** - Environmental detail
-14. ❌ **Localization** - Multi-language support
-15. ❌ **Networking** - Multiplayer capabilities
+**Goal:** Professional-grade engine features
 
-**Rationale:** Add advanced features for commercial-grade engine
+14. ❌ **Decal System** (2-3 weeks) - Environmental detail
+15. ❌ **Localization** (2-3 weeks) - Multi-language support
+16. ❌ **Networking** (8-12 weeks) - Multiplayer capabilities
+17. 🚧 **Compute Shaders** (4-6 weeks) - GPU physics and advanced effects
+18. 🚧 **Fluid Physics System** (6-8 weeks) - Water, smoke, fire simulation
+
+**Rationale:** Commercial-grade features for professional development
 
 ---
 
@@ -2483,87 +2564,87 @@ The following 7 APIs significantly enhance gameplay capabilities:
 
 ## 🎯 Recommended Prioritization (Existing Systems Focus)
 
-### Sprint 1: Quick Wins (4-6 weeks) ⚡
+### Sprint 1: Visual Impact (3-4 weeks) 🎨
 
-**Goal:** Maximum impact with minimal effort - port existing TS optimizations to Rust
+**Goal:** Maximum visible progress and user excitement
 
-1. **LOD in Rust** (1-2 weeks) - Port `LODManager.ts` → Critical performance
-2. **Math API (Rust)** (1 week) - Foundation for all scripting
-3. **Time API (Rust)** (2-3 days) - Essential gameplay utility
-4. **Console API (Rust)** (2-3 days) - Debugging support
-5. **Material Deduplication (Rust)** (3-5 days) - Memory optimization
-6. **Mesh Optimization (Rust)** (1 week) - 60-80% file reduction
-7. **Hierarchy Traversal (TS)** (3-5 days) - ✅ Completed (script API traversal + tests)
+1. **Particle/VFX System** (2-4 weeks) - Fire, explosions, smoke effects
+   - Create impressive visual demonstrations
+   - Add particle emitters to test scenes
+   - Showcase multiple effect types
+2. **FXAA Anti-Aliasing** (1 week) - Instantly smooth all jagged edges
+3. **Basic Character Controller** (1 week) - Walk around scenes immediately
 
-**Expected Outcome:** Performance parity, foundational APIs, reduced memory footprint
-
----
-
-### Sprint 2: Critical API Parity (3-4 weeks) 🔴
-
-**Goal:** Complete critical Rust APIs for gameplay functionality
-
-8. **Transform API (Rust)** (1 week) - Most commonly used API
-9. **Entity API (Rust)** (1 week) - Component access foundation
-10. **Event API (Rust)** (1 week) - Cross-entity communication
-11. **Query API (Rust)** (1 week) - Entity finding
-12. **Complete Audio API (Rust)** (1 week) - Finish partial implementation
-
-**Expected Outcome:** Basic gameplay scripting in Rust engine
+**Expected Outcome:** Users immediately see impressive visual results and can play with their creations
 
 ---
 
-### Sprint 3: Performance & Optimization (4-5 weeks) 🚀
+### Sprint 2: Visual Polish (2-3 weeks) ✨
 
-**Goal:** Port advanced TS performance systems to Rust
+**Goal:** Make everything look professional and polished
 
-13. **BVH Culling in Rust** (3-4 weeks) - 10-100x raycasting speedup
-14. **Material Key Sorting (Rust)** (3-5 days) - Rendering optimization
-15. **Dynamic Batching (Rust)** (1 week) - Complete partial implementation
-16. **FXAA Post-Processing (Rust)** (1 week) - Anti-aliasing
+1. **SSAO Ambient Occlusion** (1 week) - Add depth and contact shadows everywhere
+2. **Motion Blur** (3-5 days) - Smooth camera movement for cinematic feel
+3. **Custom Shader System - Basic** (1 week) - Toon shading and hologram effects
 
-**Expected Outcome:** Performance parity with TS optimizations
+**Expected Outcome:** Professional visual quality that feels complete and polished
 
 ---
 
-### Sprint 4: Remaining Critical APIs (4-5 weeks) 🔴
+### Sprint 3: Performance Foundation (2-3 weeks) ⚡
 
-**Goal:** Complete all critical Rust APIs for feature parity
+**Goal:** Ensure smooth performance with all the visual features
 
-17. **Prefab API (Rust)** (1-2 weeks) - Runtime entity spawning
-18. **GameObject API (Rust)** (1 week) - High-level entity creation
-19. **Entities API (Rust)** (1 week) - Batch operations
-20. **Additional TS Component Accessors** (2 weeks) - Light, Audio, Particle
+1. **LOD in Rust** (1-2 weeks) - Port TypeScript LOD system
+2. **BVH Culling in Rust** (3-4 weeks) - Port TypeScript BVH for 10-100x speedup
+3. **Material Deduplication (Rust)** (3-5 days) - Memory optimization
 
-**Expected Outcome:** Full TypeScript/Rust API parity for core systems
+**Expected Outcome:** Smooth 60fps performance even with complex visual scenes
+
+---
+
+### Sprint 4: Professional Tools (3-4 weeks) 🔧
+
+**Goal:** Complete professional development experience
+
+1. **Undo/Redo System** (2-3 weeks) - Professional editor experience
+2. **Complete Rust APIs** (1 week) - Finish remaining UI API
+3. **Enhanced Entity-Component Access** (1-2 weeks) - Better developer experience
+
+**Expected Outcome:** Professional-grade tools for efficient development
 
 ---
 
 ## 📊 Sprint Summary Matrix
 
-| Sprint       | Focus          | Duration  | Features           | Impact       | ROI                |
-| ------------ | -------------- | --------- | ------------------ | ------------ | ------------------ |
-| **Sprint 1** | Quick Wins     | 4-6 weeks | 7 features         | 🔴 Critical  | ⭐⭐⭐⭐⭐ Highest |
-| **Sprint 2** | Critical APIs  | 3-4 weeks | 5 APIs             | 🔴 Critical  | ⭐⭐⭐⭐⭐ Highest |
-| **Sprint 3** | Performance    | 4-5 weeks | 4 features         | 🔴 Critical  | ⭐⭐⭐⭐ Very High |
-| **Sprint 4** | API Completion | 4-5 weeks | 4 APIs + Accessors | 🟡 Important | ⭐⭐⭐⭐ Very High |
+| Sprint       | Focus              | Duration  | Features                         | Impact       | User Excitement            |
+| ------------ | ------------------ | --------- | -------------------------------- | ------------ | -------------------------- |
+| **Sprint 1** | Visual Impact      | 3-4 weeks | Particles + Character Controller | 🔴 Critical  | ⭐⭐⭐⭐⭐ **WOW!**        |
+| **Sprint 2** | Visual Polish      | 2-3 weeks | Post-processing + Custom Shaders | 🟡 Important | ⭐⭐⭐⭐ **Professional!** |
+| **Sprint 3** | Performance        | 2-3 weeks | LOD + BVH + Optimizations        | 🔴 Critical  | ⭐⭐⭐ **Smooth!**         |
+| **Sprint 4** | Professional Tools | 3-4 weeks | Undo/Redo + Complete APIs        | 🟡 Important | ⭐⭐⭐ **Efficient!**      |
 
-**Total Timeline:** 15-20 weeks to achieve full existing system parity
+**Total Timeline:** 10-14 weeks to achieve impressive, professional results
 
-**Key Metrics After Completion:**
+**Immediate Results After Each Sprint:**
 
-- ✅ All TS optimizations ported to Rust
-- ✅ 15/24 Rust APIs complete (62.5%)
-- ✅ Performance parity (BVH, LOD, batching)
-- ✅ Memory parity (deduplication, optimization)
-- ✅ 12 component accessors in TS
-- ✅ Ready for new feature development
+- **After Sprint 1:** Users see explosions, fire, smoke effects and can walk around their scenes
+- **After Sprint 2:** Projects look professional with anti-aliasing and custom visual effects
+- **After Sprint 3:** Everything runs smoothly at 60fps even with complex scenes
+- **After Sprint 4:** Complete professional development workflow
+
+**Psychological Benefits:**
+
+1. **Immediate Gratification:** Sprint 1 delivers highly visible results
+2. **Progressive Polish:** Each sprint makes things look better
+3. **Motivation Loop:** Visual results → more development → better visuals
+4. **Professional Confidence:** Users quickly create impressive-looking projects
 
 ---
 
-**Last Updated:** 2025-10-24
-**Engine Version:** Vibe Coder 3D (Rust Integration Phase)
-**Codebase:** `/home/jonit/projects/vibe-coder-3d`
+**Last Updated:** 2025-11-04
+**Engine Version:** Vibe Coder 3D (Visual-First Phase)
+**Codebase:** `/home/joao/projects/vibe-coder-3d`
 
 **Total Estimated Development Time:**
 

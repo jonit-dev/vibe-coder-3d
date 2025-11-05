@@ -155,6 +155,9 @@ impl BvhManager {
         self.mesh_bvhs.insert(entity_id, mesh_bvh);
         self.local_aabbs.insert(entity_id, local_aabb);
 
+        // Initialize world AABB with identity transform (no transform applied yet)
+        self.world_aabbs.insert(entity_id, local_aabb);
+
         // Mark as dirty for SceneBVH update
         self.dirty_entities.insert(entity_id, true);
         self.scene_needs_rebuild = true;

@@ -22,6 +22,7 @@ use crate::spatial::bvh_manager::{BvhManager, BvhConfig, RaycastHit, BvhMetrics}
 use crate::spatial::primitives::Aabb;
 use crate::spatial::scene_bvh::Frustum;
 use crate::renderer::visibility::VisibilityCuller;
+use vibe_scripting::apis::query_api::BvhRaycaster;
 
 /// BVH Integration Test Configuration
 #[derive(Debug, Clone)]
@@ -300,14 +301,14 @@ impl BvhIntegrationTester {
                             results.failed += 1;
                             let error = format!("Raycast test '{}' failed: distance error {:.3} > tolerance {:.3}",
                                               case.name, distance_error, expected.tolerance);
-                            results.errors.push(error);
+                            results.errors.push(error.clone());
                             warn!("{}", error);
                         }
                     } else {
                         results.failed += 1;
                         let error = format!("Raycast test '{}' failed: hit entity {} but expected {}",
                                           case.name, actual.entity_id, expected.entity_id);
-                        results.errors.push(error);
+                        results.errors.push(error.clone());
                         warn!("{}", error);
                     }
                 }
@@ -321,14 +322,14 @@ impl BvhIntegrationTester {
                     results.failed += 1;
                     let error = format!("Raycast test '{}' failed: expected hit on entity {} but got none",
                                       case.name, expected.entity_id);
-                    results.errors.push(error);
+                    results.errors.push(error.clone());
                     warn!("{}", error);
                 }
                 (None, Some(actual)) => {
                     results.failed += 1;
                     let error = format!("Raycast test '{}' failed: unexpected hit on entity {}",
                                       case.name, actual.entity_id);
-                    results.errors.push(error);
+                    results.errors.push(error.clone());
                     warn!("{}", error);
                 }
             }

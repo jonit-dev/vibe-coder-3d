@@ -198,8 +198,25 @@ pub fn point_in_aabb(point: Vec3, aabb: &Aabb) -> bool {
 /// Get the signed distance from a point to the closest point on an AABB
 /// Positive means outside, negative means inside
 pub fn point_distance_to_aabb(point: Vec3, aabb: &Aabb) -> f32 {
-    let closest = point.clamp(aabb.min, aabb.max);
-    (point - closest).length() * if aabb.contains(point) { -1.0 } else { 1.0 }
+    if aabb.contains(point) {
+        // For points inside, return negative distance to nearest face
+        let dx_min = point.x - aabb.min.x;
+        let dx_max = aabb.max.x - point.x;
+        let dy_min = point.y - aabb.min.y;
+        let dy_max = aabb.max.y - point.y;
+        let dz_min = point.z - aabb.min.z;
+        let dz_max = aabb.max.z - point.z;
+
+        let min_dist = dx_min.min(dx_max)
+            .min(dy_min).min(dy_max)
+            .min(dz_min).min(dz_max);
+
+        -min_dist
+    } else {
+        // For points outside, return distance to closest point on surface
+        let closest = point.clamp(aabb.min, aabb.max);
+        (point - closest).length()
+    }
 }
 
 #[cfg(test)]

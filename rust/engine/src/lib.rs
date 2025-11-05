@@ -13,3 +13,7 @@ pub use renderer::{load_light, EnhancedDirectionalLight, EnhancedSpotLight, Load
 pub mod bvh_integration_test;
 #[cfg(test)]
 pub mod bvh_performance_test;
+
+// BVH demonstration modules
+pub mod bvh_demo;
+pub mod bvh_integration_demo;

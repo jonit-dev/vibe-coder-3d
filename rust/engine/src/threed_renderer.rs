@@ -102,6 +102,11 @@ pub struct ThreeDRenderer {
     // LOD Management
     lod_manager: Arc<LODManager>,
     lod_selector: LODSelector,
+
+    // BVH System for visibility culling and raycasting
+    bvh_manager: Option<std::sync::Arc<std::sync::Mutex<crate::spatial::bvh_manager::BvhManager>>>,
+    visibility_culler: Option<crate::renderer::visibility::VisibilityCuller>,
+    bvh_debug_logger: Option<crate::renderer::bvh_debug::BvhDebugLogger>,
 }
 
 struct RenderSettings {
@@ -209,6 +214,11 @@ impl ThreeDRenderer {
             last_camera_target: initial_target,
             lod_manager,
             lod_selector,
+
+            // Initialize BVH System
+            bvh_manager: None, // Will be initialized on first scene load
+            visibility_culler: None,
+            bvh_debug_logger: Some(crate::renderer::bvh_debug::BvhDebugLogger::new(5.0)), // Log every 5 seconds
         })
     }
 
@@ -367,7 +377,99 @@ impl ThreeDRenderer {
         }
     }
 
-    /// Get indices of visible meshes based on current render state
+    /// Initialize BVH system if not already initialized
+    fn ensure_bvh_initialized(&mut self) {
+        if self.bvh_manager.is_none() {
+            log::info!("🎯 Initializing BVH System for real-time culling...");
+
+            let config = crate::spatial::bvh_manager::BvhConfig {
+                enable_bvh_culling: true,
+                enable_bvh_raycasts: true,
+                max_leaf_triangles: 8,
+                max_leaf_refs: 4,
+                mesh_split_strategy: crate::spatial::mesh_bvh::SplitStrategy::Sah,
+                enable_incremental_updates: true,
+            };
+
+            let bvh_manager = std::sync::Arc::new(std::sync::Mutex::new(
+                crate::spatial::bvh_manager::BvhManager::with_config(config)
+            ));
+            let visibility_culler = crate::renderer::visibility::VisibilityCuller::new(bvh_manager.clone());
+
+            self.bvh_manager = Some(bvh_manager);
+            self.visibility_culler = Some(visibility_culler);
+
+            log::info!("✅ BVH System initialized with SAH splitting and incremental updates");
+        }
+    }
+
+    /// Register a mesh with the BVH system
+    fn register_mesh_with_bvh(&mut self, mesh_idx: usize) {
+        if let (Some(bvh_manager), Some(&entity_id)) = (&self.bvh_manager, self.mesh_entity_ids.get(mesh_idx)) {
+            // Get mesh geometry data
+            if let Some(mesh) = self.meshes.get(mesh_idx) {
+                // Extract vertex positions from the mesh
+                let positions: Vec<[f32; 3]> = mesh.geometry.positions().to_vec();
+                let indices: Vec<[u32; 3]> = mesh.geometry.indices().unwrap().to_vec();
+
+                // Calculate local AABB
+                let mut min_pos = [f32::MAX, f32::MAX, f32::MAX];
+                let mut max_pos = [f32::MIN, f32::MIN, f32::MIN];
+
+                for pos in &positions {
+                    for i in 0..3 {
+                        min_pos[i] = min_pos[i].min(pos[i]);
+                        max_pos[i] = max_pos[i].max(pos[i]);
+                    }
+                }
+
+                let local_aabb = crate::spatial::primitives::Aabb::new(
+                    glam::Vec3::from_array(min_pos),
+                    glam::Vec3::from_array(max_pos)
+                );
+
+                // Register with BVH manager
+                let mut manager = bvh_manager.lock().unwrap();
+                manager.register_mesh(
+                    entity_id.as_u64(),
+                    &positions,
+                    &indices,
+                    local_aabb
+                );
+
+                log::debug!("📦 Registered mesh {} (entity {}) with BVH: {} triangles",
+                    mesh_idx, entity_id, indices.len());
+            }
+        }
+    }
+
+    /// Update BVH transforms and rebuild structure
+    fn update_bvh_system(&mut self) {
+        // Initialize BVH system on first use
+        self.ensure_bvh_initialized();
+
+        if let Some(bvh_manager) = &self.bvh_manager {
+            // Update BVH transforms for all meshes
+            let mut manager = bvh_manager.lock().unwrap();
+            for (mesh_idx, &entity_id) in self.mesh_entity_ids.iter().enumerate() {
+                if let (Some(_mesh), Some(scale)) = (self.meshes.get(mesh_idx), self.mesh_scales.get(mesh_idx)) {
+                    // Calculate world transform matrix
+                    let world_matrix = glam::Mat4::from_scale_rotation_translation(
+                        *scale,
+                        glam::Quat::IDENTITY, // Assuming no rotation for now
+                        glam::Vec3::ZERO      // Assuming origin position for now
+                    );
+
+                    manager.update_transform(entity_id.as_u64(), world_matrix);
+                }
+            }
+
+            // Force BVH rebuild
+            manager.force_rebuild();
+        }
+    }
+
+    /// Get indices of visible meshes using BVH frustum culling
     /// Returns Vec<usize> instead of references to avoid borrow conflicts
     fn get_visible_mesh_indices(&self, render_state: Option<&MeshRenderState>) -> Vec<usize> {
         let Some(state) = render_state else {
@@ -375,20 +477,37 @@ impl ThreeDRenderer {
             return (0..self.meshes.len()).collect();
         };
 
-        (0..self.meshes.len())
-            .filter(|&idx| {
-                // Get entity ID for this mesh
-                let Some(&entity_id) = self.mesh_entity_ids.get(idx) else {
-                    return true; // Include if no entity mapping
-                };
+        // If BVH system is available, use frustum culling
+        if let (Some(bvh_manager), Some(visibility_culler)) = (&self.bvh_manager, &self.visibility_culler) {
+            // Extract view-projection matrix for frustum culling
+            let view_projection = glam::Mat4::IDENTITY; // Simplified for now - will implement proper conversion
 
-                // Check visibility in render state
-                match state.visibility.get(&entity_id) {
-                    Some(&false) => false, // Explicitly disabled
-                    _ => true,             // Enabled or not specified (default visible)
-                }
-            })
-            .collect()
+            // Get all entity IDs as u64
+            let entity_ids: Vec<u64> = self.mesh_entity_ids.iter().map(|&id| id.as_u64()).collect();
+
+            // Perform BVH frustum culling
+            let visible_indices = visibility_culler.get_visible_entities(view_projection, &entity_ids);
+
+            log::debug!("🎭 BVH Culling: {}/{} meshes visible", visible_indices.len(), self.meshes.len());
+
+            visible_indices
+        } else {
+            // Fallback to original visibility checking
+            (0..self.meshes.len())
+                .filter(|&idx| {
+                    // Get entity ID for this mesh
+                    let Some(&entity_id) = self.mesh_entity_ids.get(idx) else {
+                        return true; // Include if no entity mapping
+                    };
+
+                    // Check visibility in render state
+                    match state.visibility.get(&entity_id) {
+                        Some(&false) => false, // Explicitly disabled
+                        _ => true,             // Enabled or not specified (default visible)
+                    }
+                })
+                .collect()
+        }
     }
 
     /// Render a frame
@@ -403,6 +522,15 @@ impl ThreeDRenderer {
 
         // Update camera (follow system, etc.)
         self.update_camera_internal(delta_time);
+
+        // Update BVH system for culling
+        self.update_bvh_system();
+
+        // Update BVH debug logging
+        if let (Some(bvh_manager), Some(ref mut debug_logger)) = (&self.bvh_manager, &mut self.bvh_debug_logger) {
+            let manager = bvh_manager.lock().unwrap();
+            debug_logger.update(delta_time, &manager);
+        }
 
         // Generate shadow maps for lights that cast shadows
         self.generate_shadow_maps();
@@ -1541,6 +1669,7 @@ impl ThreeDRenderer {
 
         // Handle all submeshes (primitives return 1, GLTF models may return multiple)
         for (idx, (gm, final_scale, base_scale)) in submeshes.into_iter().enumerate() {
+            let mesh_idx = self.meshes.len();
             self.meshes.push(gm);
             self.mesh_entity_ids.push(entity_id);
             self.mesh_scales.push(final_scale);
@@ -1548,6 +1677,9 @@ impl ThreeDRenderer {
             self.mesh_cast_shadows.push(mesh_renderer.cast_shadows);
             self.mesh_receive_shadows
                 .push(mesh_renderer.receive_shadows);
+
+            // Register mesh with BVH system for culling and raycasting
+            self.register_mesh_with_bvh(mesh_idx);
 
             if let Some(transform) = transform {
                 let ts_position =

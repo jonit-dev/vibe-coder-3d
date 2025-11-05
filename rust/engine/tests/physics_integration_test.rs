@@ -16,7 +16,7 @@ fn test_physics_scene_loads_correctly() {
     let scene: Scene = serde_json::from_str(&json).expect("Failed to parse testphysics.json");
 
     // Verify scene metadata
-    assert_eq!(scene.metadata.name, "testphysics");
+    assert_eq!(scene.name, "testphysics");
     assert_eq!(scene.entities.len(), 6); // camera, 2 lights, plane (ground), cube, sphere
 
     // Initialize physics world

@@ -403,25 +403,17 @@ impl BvhPerformanceTester {
         info!("=== BVH Performance Comparison Results ===");
         info!("Entity Count: {}", results.entity_count);
         info!("Triangle Count: {}", results.triangle_count);
-        info!();
-
         info!("With BVH:");
         info!("  Raycast Time: {:.3}ms ({} rays)", results.bvh_raycast_time_ms, self.config.raycast_count);
         info!("  Frustum Cull Time: {:.3}ms ({} tests)", results.bvh_frustum_time_ms, self.config.frustum_test_count);
         info!("  BVH Build Time: {:.3}ms", results.bvh_build_time_ms);
         info!("  Memory Usage: {:.2}MB", results.bvh_memory_usage_mb);
-        info!();
-
         info!("Without BVH (Brute Force):");
         info!("  Raycast Time: {:.3}ms ({} rays)", results.no_bvh_raycast_time_ms, self.config.raycast_count);
         info!("  Frustum Cull Time: {:.3}ms ({} tests)", results.no_bvh_frustum_time_ms, self.config.frustum_test_count);
-        info!();
-
         info!("Performance Improvements:");
         info!("  Raycast Speedup: {:.2}x", results.raycast_speedup);
         info!("  Frustum Culling Speedup: {:.2}x", results.frustum_speedup);
-        info!();
-
         if results.raycast_speedup > 2.0 {
             info!("✅ Significant raycasting performance improvement detected!");
         } else if results.raycast_speedup > 1.1 {

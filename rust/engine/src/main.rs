@@ -87,76 +87,10 @@ fn main() -> anyhow::Result<()> {
     let filter = if args.verbose { "debug" } else { "info" };
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(filter)).init();
 
-    // Check if we should run BVH tests
-    if args.bvh_test {
-        log::info!("Running BVH integration tests...");
-        #[cfg(test)]
-        {
-            use vibe_engine::bvh_integration_test::{BvhIntegrationTester, BvhTestConfig};
-
-            let config = BvhTestConfig {
-                enable_bvh: true,
-                performance_raycast_count: 1000,
-                tolerance: 0.001,
-                verbose_logging: args.verbose,
-                screenshot_dir: Some("screenshots".to_string()),
-            };
-
-            let mut tester = BvhIntegrationTester::new(config);
-            match tester.run_all_tests() {
-                Ok(results) => {
-                    if results.errors.is_empty() {
-                        log::info!("✅ All BVH tests passed!");
-                        std::process::exit(0);
-                    } else {
-                        log::error!("❌ {} BVH test failures detected", results.errors.len());
-                        std::process::exit(1);
-                    }
-                }
-                Err(e) => {
-                    log::error!("BVH test execution failed: {}", e);
-                    std::process::exit(1);
-                }
-            }
-        }
-        #[cfg(not(test))]
-        {
-            log::error!("BVH testing requires test compilation. Use `cargo test --bin vibe-engine -- --bvh-test`");
-            std::process::exit(1);
-        }
-    }
-
-    // Check if we should run BVH performance tests
-    if args.bvh_performance_test {
-        log::info!("Running BVH performance comparison tests...");
-        #[cfg(test)]
-        {
-            use vibe_engine::bvh_performance_test::{BvhPerformanceTester, PerformanceTestConfig, EntityPattern};
-
-            let config = PerformanceTestConfig {
-                entity_count: 1000,
-                raycast_count: 10000,
-                frustum_test_count: 1000,
-                entity_pattern: EntityPattern::Grid { size: 32, spacing: 5.0 },
-            };
-
-            let tester = BvhPerformanceTester::new(config);
-            match tester.run_performance_comparison() {
-                Ok(_) => {
-                    log::info!("✅ BVH performance tests completed!");
-                    std::process::exit(0);
-                }
-                Err(e) => {
-                    log::error!("BVH performance test execution failed: {}", e);
-                    std::process::exit(1);
-                }
-            }
-        }
-        #[cfg(not(test))]
-        {
-            log::error!("BVH performance testing requires test compilation. Use `cargo test --bin vibe-engine -- --bvh-performance-test`");
-            std::process::exit(1);
-        }
+    // TODO: BVH tests - disabled for now (compilation issue with test modules in binary)
+    if args.bvh_test || args.bvh_performance_test {
+        log::error!("BVH tests are currently disabled. Run with `cargo test` instead.");
+        std::process::exit(1);
     }
 
     // Run the application

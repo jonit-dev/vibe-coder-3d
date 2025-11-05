@@ -381,7 +381,7 @@
           "scale": [1, 1, 1]
         },
         "LuaScript": {
-          "scriptPath": "bvh_test.lua",
+          "scriptPath": "tests/bvh_test.lua",
           "enabled": true
         }
       }
