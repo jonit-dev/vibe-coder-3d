@@ -3,10 +3,13 @@
 /// Handles loading and creating mesh renderers from ECS components
 use anyhow::{Context as AnyhowContext, Result};
 use glam::Vec3 as GlamVec3;
+use std::sync::Arc;
 use three_d::{Context, CpuMesh, Gm, Indices, Mesh, PhysicalMaterial, Positions};
 use vibe_ecs_bridge::decoders::{MeshRenderer, Transform};
+use vibe_ecs_bridge::LODComponent;
 use vibe_scene::Entity;
 
+use super::lod_manager::LODManager;
 use super::material_manager::MaterialManager;
 use super::primitive_mesh::create_primitive_mesh;
 use super::transform_utils::{convert_transform_to_matrix, create_base_scale_matrix};
@@ -14,12 +17,16 @@ use super::transform_utils::{convert_transform_to_matrix, create_base_scale_matr
 /// Load a mesh renderer component and create the corresponding Gm object(s)
 /// Returns a vector to support multi-submesh GLTF models
 /// Now async to support texture loading!
+/// Supports LOD (Level of Detail) - uses camera distance to select appropriate model quality
 pub async fn load_mesh_renderer(
     context: &Context,
     _entity: &Entity,
     mesh_renderer: &MeshRenderer,
     transform: Option<&Transform>,
     material_manager: &mut MaterialManager,
+    lod_component: Option<&LODComponent>,
+    lod_manager: &Arc<LODManager>,
+    camera_position: GlamVec3,
 ) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3, GlamVec3)>> {
     log::info!("  MeshRenderer:");
     log::info!("    Mesh ID:     {:?}", mesh_renderer.mesh_id);
@@ -27,10 +34,42 @@ pub async fn load_mesh_renderer(
     log::info!("    Material ID: {:?}", mesh_renderer.material_id);
     log::info!("    Materials:   {:?}", mesh_renderer.materials);
 
+    // Resolve LOD path if LOD component is present
+    let effective_model_path = if let Some(lod) = lod_component {
+        // Calculate entity position
+        let entity_pos = vibe_ecs_bridge::position_to_vec3_opt(
+            transform.and_then(|t| t.position.as_ref())
+        );
+
+        // Calculate distance from camera
+        let distance = camera_position.distance(entity_pos);
+
+        // Get target quality based on distance or override
+        let lod_path = if let Some(override_q) = lod.override_quality {
+            let path = lod_manager.get_lod_path(&lod.original_path, Some(override_q));
+            log::info!("    LOD: Using quality {:?} (override) for distance {:.2}", override_q, distance);
+            path
+        } else {
+            // Get custom thresholds from LOD component or use global defaults
+            let quality = if let Some(thresholds) = lod.distance_thresholds {
+                lod_manager.get_quality_for_distance_with_thresholds(distance, thresholds)
+            } else {
+                lod_manager.get_quality_for_distance(distance)
+            };
+            let path = lod_manager.get_lod_path(&lod.original_path, Some(quality));
+            log::info!("    LOD: Using quality {:?} for distance {:.2}", quality, distance);
+            path
+        };
+
+        Some(lod_path)
+    } else {
+        mesh_renderer.model_path.clone()
+    };
+
     // Check if we should load a GLTF model (filter out empty strings)
     #[cfg(feature = "gltf-support")]
     let (cpu_meshes, gltf_textures, _gltf_images) =
-        if let Some(model_path) = &mesh_renderer.model_path {
+        if let Some(model_path) = &effective_model_path {
             if !model_path.is_empty() {
                 let gltf_result = load_gltf_meshes_with_textures(model_path)?;
 

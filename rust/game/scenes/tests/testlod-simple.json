@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "name": "Simple LOD Test",
+  "metadata": {
+    "name": "Simple LOD Test Scene",
+    "version": 1,
+    "timestamp": "2025-01-04T00:00:00Z",
+    "description": "Simple test scene for LOD system using primitives"
+  },
+  "entities": [
+    {
+      "id": 1,
+      "persistentId": "camera-1",
+      "name": "Main Camera",
+      "components": {
+        "Transform": {
+          "position": [0, 5, 15],
+          "rotation": [-15, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 1000,
+          "isMain": true,
+          "projectionType": "perspective",
+          "backgroundColor": { "r": 0.5, "g": 0.7, "b": 0.9, "a": 1.0 }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "persistentId": "ground-1",
+      "name": "Ground",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [50, 0.5, 50]
+        },
+        "MeshRenderer": {
+          "meshId": "Box",
+          "materialId": "ground",
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "persistentId": "cube-close",
+      "name": "Cube Close",
+      "components": {
+        "Transform": {
+          "position": [0, 2, 0],
+          "rotation": [0, 45, 0],
+          "scale": [2, 2, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "Box",
+          "materialId": "red",
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 4,
+      "persistentId": "sphere-medium",
+      "name": "Sphere Medium",
+      "components": {
+        "Transform": {
+          "position": [10, 2, 0],
+          "rotation": [0, 0, 0],
+          "scale": [2, 2, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "Sphere",
+          "materialId": "blue",
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 5,
+      "persistentId": "cylinder-far",
+      "name": "Cylinder Far",
+      "components": {
+        "Transform": {
+          "position": [0, 2, -30],
+          "rotation": [0, 0, 0],
+          "scale": [2, 3, 2]
+        },
+        "MeshRenderer": {
+          "meshId": "Cylinder",
+          "materialId": "green",
+          "castShadows": true,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 6,
+      "persistentId": "light-sun",
+      "name": "Directional Light",
+      "components": {
+        "Transform": {
+          "position": [10, 20, 10],
+          "rotation": [-45, -30, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "type": "directional",
+          "color": { "r": 1.0, "g": 0.95, "b": 0.9 },
+          "intensity": 1.5,
+          "castShadows": true
+        }
+      }
+    },
+    {
+      "id": 7,
+      "persistentId": "light-ambient",
+      "name": "Ambient Light",
+      "components": {
+        "Light": {
+          "type": "ambient",
+          "color": { "r": 0.3, "g": 0.3, "b": 0.4 },
+          "intensity": 0.5
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "albedo": { "r": 0.3, "g": 0.5, "b": 0.3, "a": 1.0 },
+      "roughness": 0.9,
+      "metallic": 0.0
+    },
+    {
+      "id": "red",
+      "name": "Red Material",
+      "albedo": { "r": 0.9, "g": 0.1, "b": 0.1, "a": 1.0 },
+      "roughness": 0.6,
+      "metallic": 0.1
+    },
+    {
+      "id": "blue",
+      "name": "Blue Material",
+      "albedo": { "r": 0.1, "g": 0.4, "b": 0.9, "a": 1.0 },
+      "roughness": 0.4,
+      "metallic": 0.3
+    },
+    {
+      "id": "green",
+      "name": "Green Material",
+      "albedo": { "r": 0.1, "g": 0.9, "b": 0.3, "a": 1.0 },
+      "roughness": 0.5,
+      "metallic": 0.2
+    }
+  ]
+}

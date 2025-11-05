@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "name": "LOD Test Scene",
+  "metadata": {
+    "name": "LOD Test Scene",
+    "version": 1,
+    "timestamp": "2025-01-04T00:00:00Z",
+    "description": "Test scene for LOD (Level of Detail) system with models at various distances"
+  },
+  "entities": [
+    {
+      "id": 1,
+      "persistentId": "camera-1",
+      "name": "Main Camera",
+      "components": {
+        "Transform": {
+          "position": [0, 5, 15],
+          "rotation": [-15, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 1000,
+          "isMain": true,
+          "projectionType": "perspective",
+          "backgroundColor": { "r": 0.5, "g": 0.7, "b": 0.9, "a": 1.0 }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "persistentId": "ground-1",
+      "name": "Ground",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [50, 0.5, 50]
+        },
+        "MeshRenderer": {
+          "meshId": "Box",
+          "materialId": "ground",
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "persistentId": "robot-close-1",
+      "name": "Robot Close (Original Quality)",
+      "components": {
+        "Transform": {
+          "position": [0, 1, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "/assets/models/Robot/glb/Robot.glb",
+          "materialId": "default",
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "LOD": {
+          "originalPath": "/assets/models/Robot/glb/Robot.glb",
+          "distanceThresholds": [50, 100]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "persistentId": "robot-medium-1",
+      "name": "Robot Medium Distance (High Fidelity)",
+      "components": {
+        "Transform": {
+          "position": [15, 1, 0],
+          "rotation": [0, -45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "/assets/models/Robot/glb/Robot.glb",
+          "materialId": "default",
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "LOD": {
+          "originalPath": "/assets/models/Robot/glb/Robot.glb",
+          "distanceThresholds": [50, 100]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "persistentId": "robot-far-1",
+      "name": "Robot Far Distance (Low Fidelity)",
+      "components": {
+        "Transform": {
+          "position": [0, 1, -40],
+          "rotation": [0, 180, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "/assets/models/Robot/glb/Robot.glb",
+          "materialId": "default",
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "LOD": {
+          "originalPath": "/assets/models/Robot/glb/Robot.glb",
+          "distanceThresholds": [50, 100]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "persistentId": "robot-override-1",
+      "name": "Robot Override (Always High Fidelity)",
+      "components": {
+        "Transform": {
+          "position": [-15, 1, 0],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "/assets/models/Robot/glb/Robot.glb",
+          "materialId": "default",
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "LOD": {
+          "originalPath": "/assets/models/Robot/glb/Robot.glb",
+          "overrideQuality": "HighFidelity"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "persistentId": "light-sun",
+      "name": "Directional Light",
+      "components": {
+        "Transform": {
+          "position": [10, 20, 10],
+          "rotation": [-45, -30, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "type": "directional",
+          "color": { "r": 1.0, "g": 0.95, "b": 0.9 },
+          "intensity": 1.5,
+          "castShadows": true
+        }
+      }
+    },
+    {
+      "id": 8,
+      "persistentId": "light-ambient",
+      "name": "Ambient Light",
+      "components": {
+        "Light": {
+          "type": "ambient",
+          "color": { "r": 0.3, "g": 0.3, "b": 0.4 },
+          "intensity": 0.5
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "albedo": { "r": 0.3, "g": 0.5, "b": 0.3, "a": 1.0 },
+      "roughness": 0.9,
+      "metallic": 0.0
+    },
+    {
+      "id": "default",
+      "name": "Default Material",
+      "albedo": { "r": 0.8, "g": 0.8, "b": 0.8, "a": 1.0 },
+      "roughness": 0.5,
+      "metallic": 0.0
+    }
+  ]
+}

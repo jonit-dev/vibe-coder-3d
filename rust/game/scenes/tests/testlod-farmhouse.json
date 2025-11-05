@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "name": "FarmHouse LOD Test Scene",
+  "metadata": {
+    "name": "FarmHouse LOD Test Scene",
+    "version": 1,
+    "timestamp": "2025-01-05T00:00:00Z",
+    "description": "Test scene for LOD system with FarmHouse models at various distances"
+  },
+  "entities": [
+    {
+      "id": 1,
+      "persistentId": "camera-1",
+      "name": "Main Camera",
+      "components": {
+        "Transform": {
+          "position": [0, 8, 25],
+          "rotation": [-15, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "Camera": {
+          "fov": 60,
+          "near": 0.1,
+          "far": 1000,
+          "isMain": true,
+          "projectionType": "perspective",
+          "backgroundColor": { "r": 0.5, "g": 0.7, "b": 0.9, "a": 1.0 }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "persistentId": "ground-1",
+      "name": "Ground",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [100, 0.5, 100]
+        },
+        "MeshRenderer": {
+          "meshId": "Box",
+          "materialId": "ground",
+          "castShadows": false,
+          "receiveShadows": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "persistentId": "farmhouse-close-1",
+      "name": "FarmHouse Close (Original)",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "materialId": "default",
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "LOD": {
+          "originalPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "distanceThresholds": [50, 100]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "persistentId": "farmhouse-medium-1",
+      "name": "FarmHouse Medium (High Fidelity)",
+      "components": {
+        "Transform": {
+          "position": [40, 0, -20],
+          "rotation": [0, -45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "materialId": "default",
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "LOD": {
+          "originalPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "distanceThresholds": [50, 100]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "persistentId": "farmhouse-far-1",
+      "name": "FarmHouse Far (Low Fidelity)",
+      "components": {
+        "Transform": {
+          "position": [0, 0, -80],
+          "rotation": [0, 180, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "materialId": "default",
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "LOD": {
+          "originalPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "distanceThresholds": [50, 100]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "persistentId": "farmhouse-override-high-1",
+      "name": "FarmHouse Override High",
+      "components": {
+        "Transform": {
+          "position": [-40, 0, -20],
+          "rotation": [0, 45, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "materialId": "default",
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "LOD": {
+          "originalPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "overrideQuality": "HighFidelity",
+          "distanceThresholds": [50, 100]
+        }
+      }
+    },
+    {
+      "id": 7,
+      "persistentId": "farmhouse-override-low-1",
+      "name": "FarmHouse Override Low",
+      "components": {
+        "Transform": {
+          "position": [20, 0, 5],
+          "rotation": [0, -90, 0],
+          "scale": [1, 1, 1]
+        },
+        "MeshRenderer": {
+          "modelPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "materialId": "default",
+          "castShadows": true,
+          "receiveShadows": true
+        },
+        "LOD": {
+          "originalPath": "../game/assets/models/FarmHouse/glb/farm_house_basic_shaded.glb",
+          "overrideQuality": "LowFidelity",
+          "distanceThresholds": [50, 100]
+        }
+      }
+    },
+    {
+      "id": 8,
+      "persistentId": "light-1",
+      "name": "Directional Light",
+      "components": {
+        "Transform": {
+          "position": [0, 10, 0],
+          "rotation": [-45, 30, 0],
+          "scale": [1, 1, 1]
+        },
+        "Light": {
+          "type": "directional",
+          "color": { "r": 1.0, "g": 1.0, "b": 1.0 },
+          "intensity": 1.0,
+          "castShadows": true
+        }
+      }
+    },
+    {
+      "id": 9,
+      "persistentId": "ambient-1",
+      "name": "Ambient Light",
+      "components": {
+        "Light": {
+          "type": "ambient",
+          "color": { "r": 0.4, "g": 0.4, "b": 0.5 },
+          "intensity": 0.5
+        }
+      }
+    }
+  ],
+  "materials": [
+    {
+      "id": "ground",
+      "name": "Ground Material",
+      "albedo": { "r": 0.3, "g": 0.6, "b": 0.3, "a": 1.0 },
+      "metallic": 0.0,
+      "roughness": 0.9
+    },
+    {
+      "id": "default",
+      "name": "Default Material",
+      "albedo": { "r": 0.8, "g": 0.8, "b": 0.8, "a": 1.0 },
+      "metallic": 0.0,
+      "roughness": 0.5
+    }
+  ]
+}
