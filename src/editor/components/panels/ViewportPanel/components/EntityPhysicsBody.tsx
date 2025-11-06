@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { RapierRigidBody, RigidBody } from '@react-three/rapier';
+import type { Collider as RapierCollider } from '@dimforge/rapier3d-compat';
+import { useFrame } from '@react-three/fiber';
 import type { IPhysicsContributions } from '../hooks/useEntityMesh';
 import { EntityColliders } from './EntityColliders';
 import { Logger } from '@/core/lib/logger';
@@ -8,6 +10,8 @@ import {
   unregisterRigidBody,
 } from '@/core/lib/scripting/adapters/physics-binding';
 import { useEntityContextOptional } from '@/core/components/jsx/EntityContext';
+import { colliderRegistry } from '@/core/physics/character/ColliderRegistry';
+import type { IEntityPhysicsRefs } from '@/core/physics/character/types';
 
 interface IEntityPhysicsBodyProps {
   terrainColliderKey: string;
@@ -38,17 +42,45 @@ export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
     const rigidBodyRef = useRef<RapierRigidBody>(null);
     const entityContext = useEntityContextOptional();
     const entityId = entityContext?.entityId;
+    const registeredRef = useRef(false);
 
-    // Register rigid body with physics binding system
+    // Register rigid body with physics binding system (legacy)
     useEffect(() => {
       if (rigidBodyRef.current && entityId !== undefined) {
         registerRigidBody(entityId, rigidBodyRef.current);
 
         return () => {
           unregisterRigidBody(entityId);
+          colliderRegistry.unregister(entityId);
+          registeredRef.current = false;
         };
       }
     }, [entityId]);
+
+    // Register colliders after they're mounted (happens async after RigidBody creation)
+    useFrame(() => {
+      if (rigidBodyRef.current && entityId !== undefined && !registeredRef.current) {
+        const numColliders = rigidBodyRef.current.numColliders();
+
+        // Only register once colliders are present
+        if (numColliders > 0) {
+          const colliders: RapierCollider[] = [];
+          for (let i = 0; i < numColliders; i++) {
+            const collider = rigidBodyRef.current.collider(i);
+            if (collider) {
+              colliders.push(collider);
+            }
+          }
+
+          const physicsRefs: IEntityPhysicsRefs = {
+            rigidBody: rigidBodyRef.current,
+            colliders,
+          };
+          colliderRegistry.register(entityId, physicsRefs);
+          registeredRef.current = true;
+        }
+      }
+    });
 
     if (!physicsContributions) {
       return <>{children}</>;

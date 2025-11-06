@@ -3,360 +3,434 @@ import { defineScene } from './defineScene';
 /**
  * testcharactercontroller
  * Scene with 6 entities
- * Generated: 2025-11-05T07:02:19.485Z
+ * Generated: 2025-11-06T21:17:07.863Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
-    name: 'testcharactercontroller',
-    version: 1,
-    timestamp: '2025-11-05T07:02:19.485Z',
-    description: 'Scene with 6 entities',
-  },
+  "name": "testcharactercontroller",
+  "version": 1,
+  "timestamp": "2025-11-06T21:17:07.863Z",
+  "description": "Scene with 6 entities"
+},
   entities: [
-    {
-      id: 0,
-      name: 'Main Camera',
-      components: {
-        PersistentId: {
-          id: '83ef8096-99c8-4704-bcab-a3c112981f71',
-        },
-        Transform: {
-          position: [0, 1, -10],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-        },
-        Camera: {
-          fov: 20,
-          near: 0.1,
-          far: 100,
-          projectionType: 'perspective',
-          orthographicSize: 10,
-          depth: 0,
-          isMain: true,
-          clearFlags: 'skybox',
-          skyboxTexture: '',
-          backgroundColor: {
-            r: 0,
-            g: 0,
-            b: 0,
-            a: 0,
-          },
-          controlMode: 'free',
-          viewportRect: {
-            x: 0,
-            y: 0,
-            width: 1,
-            height: 1,
-          },
-          hdr: false,
-          toneMapping: 'none',
-          toneMappingExposure: 1,
-          enablePostProcessing: false,
-          postProcessingPreset: 'none',
-          enableSmoothing: false,
-          followTarget: 0,
-          followOffset: {
-            x: 0,
-            y: 5,
-            z: -10,
-          },
-          smoothingSpeed: 2,
-          rotationSmoothing: 1.5,
-          skyboxScale: {
-            x: 1,
-            y: 1,
-            z: 1,
-          },
-          skyboxRotation: {
-            x: 0,
-            y: 0,
-            z: 0,
-          },
-          skyboxRepeat: {
-            u: 1,
-            v: 1,
-          },
-          skyboxOffset: {
-            u: 0,
-            v: 0,
-          },
-          skyboxIntensity: 1,
-          skyboxBlur: 0,
-        },
+  {
+    "id": 0,
+    "name": "Main Camera",
+    "components": {
+      "PersistentId": {
+        "id": "83ef8096-99c8-4704-bcab-a3c112981f71"
       },
-    },
-    {
-      id: 1,
-      name: 'Directional Light',
-      components: {
-        PersistentId: {
-          id: 'ed8ffb14-0424-4d44-a6c5-1f2df30e3ffe',
-        },
-        Transform: {
-          position: [5, 10, 5],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-        },
-        Light: {
-          color: {
-            r: 1,
-            g: 1,
-            b: 1,
-          },
-          intensity: 0.8,
-          enabled: true,
-          castShadow: true,
-          directionX: 0,
-          directionY: -1,
-          directionZ: 0,
-          range: 10,
-          decay: 1,
-          angle: 0.5235987755982988,
-          penumbra: 0.1,
-          shadowMapSize: 1024,
-          shadowBias: -0.0001,
-          shadowRadius: 1,
-          lightType: 'directional',
-        },
+      "Transform": {
+        "position": [
+          0,
+          1,
+          -10
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
       },
-    },
-    {
-      id: 2,
-      name: 'Ambient Light',
-      components: {
-        PersistentId: {
-          id: '8e2a8982-4e1a-452e-8196-f35dc523e0c0',
+      "Camera": {
+        "fov": 20,
+        "near": 0.1,
+        "far": 100,
+        "projectionType": "perspective",
+        "orthographicSize": 10,
+        "depth": 0,
+        "isMain": true,
+        "clearFlags": "skybox",
+        "skyboxTexture": "",
+        "backgroundColor": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 0
         },
-        Transform: {
-          position: [0, 0, 0],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
+        "controlMode": "free",
+        "viewportRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
         },
-        Light: {
-          color: {
-            r: 0.4,
-            g: 0.4,
-            b: 0.4,
-          },
-          intensity: 0.5,
-          enabled: true,
-          castShadow: false,
-          directionX: 0,
-          directionY: -1,
-          directionZ: 0,
-          range: 10,
-          decay: 1,
-          angle: 0.5235987755982988,
-          penumbra: 0.1,
-          shadowMapSize: 1024,
-          shadowBias: -0.0001,
-          shadowRadius: 1,
-          lightType: 'ambient',
+        "hdr": false,
+        "toneMapping": "none",
+        "toneMappingExposure": 1,
+        "enablePostProcessing": false,
+        "postProcessingPreset": "none",
+        "enableSmoothing": false,
+        "followTarget": 0,
+        "followOffset": {
+          "x": 0,
+          "y": 5,
+          "z": -10
         },
-      },
-    },
-    {
-      id: 3,
-      name: 'Cube 0',
-      components: {
-        PersistentId: {
-          id: '237186bd-a644-40c8-96ed-e0b619b568ed',
+        "smoothingSpeed": 2,
+        "rotationSmoothing": 1.5,
+        "skyboxScale": {
+          "x": 1,
+          "y": 1,
+          "z": 1
         },
-        Transform: {
-          position: [0, 0.75, 0],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
+        "skyboxRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
         },
-        MeshRenderer: {
-          enabled: true,
-          castShadows: true,
-          receiveShadows: true,
-          modelPath: '',
-          meshId: 'cube',
-          materialId: 'default',
+        "skyboxRepeat": {
+          "u": 1,
+          "v": 1
         },
-        RigidBody: {
-          enabled: true,
-          bodyType: 'dynamic',
-          mass: 1,
-          gravityScale: 1,
-          canSleep: true,
-          material: {
-            friction: 0.7,
-            restitution: 0.3,
-            density: 1,
-          },
-          type: 'dynamic',
+        "skyboxOffset": {
+          "u": 0,
+          "v": 0
         },
-        MeshCollider: {
-          enabled: true,
-          isTrigger: false,
-          colliderType: 'box',
-          center: [0, 0, 0],
-          size: {
-            width: 1,
-            height: 1,
-            depth: 1,
-            radius: 0.5,
-            capsuleRadius: 0.5,
-            capsuleHeight: 2,
-          },
-          physicsMaterial: {
-            friction: 0.7,
-            restitution: 0.3,
-            density: 1,
-          },
-        },
-      },
-    },
-    {
-      id: 4,
-      name: 'Plane 0',
-      components: {
-        PersistentId: {
-          id: 'fd017bf3-5bd1-40af-bbff-ef0d9be85046',
-        },
-        Transform: {
-          position: [0, 0, 0],
-          rotation: [-90, 0, 0],
-          scale: [10, 10, 1],
-        },
-        MeshRenderer: {
-          enabled: true,
-          castShadows: true,
-          receiveShadows: true,
-          modelPath: '',
-          meshId: 'plane',
-          materialId: 'default',
-        },
-        RigidBody: {
-          enabled: true,
-          bodyType: 'fixed',
-          mass: 1,
-          gravityScale: 1,
-          canSleep: true,
-          material: {
-            friction: 0.7,
-            restitution: 0.3,
-            density: 1,
-          },
-          type: 'fixed',
-        },
-        MeshCollider: {
-          enabled: true,
-          isTrigger: false,
-          colliderType: 'box',
-          center: [0, 0, 0],
-          size: {
-            width: 1,
-            height: 1,
-            depth: 0.01,
-            radius: 0.5,
-            capsuleRadius: 0.5,
-            capsuleHeight: 2,
-          },
-          physicsMaterial: {
-            friction: 0.7,
-            restitution: 0.3,
-            density: 1,
-          },
-        },
-      },
-    },
-    {
-      id: 5,
-      name: 'Character 0',
-      components: {
-        PersistentId: {
-          id: '57483d14-ef10-438c-8edd-aa024aa91248',
-        },
-        Transform: {
-          position: [2.25, 0.5, 0],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-        },
-        MeshRenderer: {
-          enabled: true,
-          castShadows: true,
-          receiveShadows: true,
-          modelPath: '',
-          meshId: 'capsule',
-          materialId: 'default',
-        },
-        RigidBody: {
-          enabled: true,
-          bodyType: 'kinematic',
-          mass: 1,
-          gravityScale: 0,
-          canSleep: false,
-          material: {
-            friction: 0.6,
-            restitution: 0,
-            density: 1,
-          },
-          type: 'kinematic',
-        },
-        MeshCollider: {
-          enabled: true,
-          isTrigger: false,
-          colliderType: 'capsule',
-          center: [0, 0, 0],
-          size: {
-            width: 1,
-            height: 1,
-            depth: 1,
-            radius: 0.25,
-            capsuleRadius: 0.25,
-            capsuleHeight: 0.5,
-          },
-          physicsMaterial: {
-            friction: 0.6,
-            restitution: 0.3,
-            density: 1,
-          },
-        },
-        CharacterController: {
-          enabled: true,
-          slopeLimit: 45,
-          stepOffset: 0.30000001192092896,
-          skinWidth: 0.07999999821186066,
-          gravityScale: 1,
-          maxSpeed: 6,
-          jumpStrength: 6.5,
-          controlMode: 'auto',
-          inputMapping: {
-            forward: 'w',
-            backward: 's',
-            left: 'a',
-            right: 'd',
-            jump: 'space',
-          },
-          isGrounded: true,
-        },
-      },
-    },
-  ],
-  assetReferences: {
-    materials: [
-      '@/materials/default',
-      '@/materials/bark',
-      '@/materials/dss',
-      '@/materials/farm-grass',
-      '@/materials/forestground',
-      '@/materials/grass',
-      '@/materials/leaves',
-      '@/materials/mat1',
-      '@/materials/mat2',
-      '@/materials/mat_38910607',
-      '@/materials/myMaterial',
-      '@/materials/red',
-      '@/materials/rock',
-      '@/materials/sky',
-      '@/materials/test123',
-    ],
-    inputs: ['@/inputs/defaultInput'],
-    prefabs: ['@/prefabs/trees'],
+        "skyboxIntensity": 1,
+        "skyboxBlur": 0
+      }
+    }
   },
-  lockedEntityIds: [4],
+  {
+    "id": 1,
+    "name": "Directional Light",
+    "components": {
+      "PersistentId": {
+        "id": "ed8ffb14-0424-4d44-a6c5-1f2df30e3ffe"
+      },
+      "Transform": {
+        "position": [
+          5,
+          10,
+          5
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "Light": {
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
+        },
+        "intensity": 0.8,
+        "enabled": true,
+        "castShadow": true,
+        "directionX": 0,
+        "directionY": -1,
+        "directionZ": 0,
+        "range": 10,
+        "decay": 1,
+        "angle": 0.5235987755982988,
+        "penumbra": 0.1,
+        "shadowMapSize": 1024,
+        "shadowBias": -0.0001,
+        "shadowRadius": 1,
+        "lightType": "directional"
+      }
+    }
+  },
+  {
+    "id": 2,
+    "name": "Ambient Light",
+    "components": {
+      "PersistentId": {
+        "id": "8e2a8982-4e1a-452e-8196-f35dc523e0c0"
+      },
+      "Transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "Light": {
+        "color": {
+          "r": 0.4,
+          "g": 0.4,
+          "b": 0.4
+        },
+        "intensity": 0.5,
+        "enabled": true,
+        "castShadow": false,
+        "directionX": 0,
+        "directionY": -1,
+        "directionZ": 0,
+        "range": 10,
+        "decay": 1,
+        "angle": 0.5235987755982988,
+        "penumbra": 0.1,
+        "shadowMapSize": 1024,
+        "shadowBias": -0.0001,
+        "shadowRadius": 1,
+        "lightType": "ambient"
+      }
+    }
+  },
+  {
+    "id": 3,
+    "name": "Cube 0",
+    "components": {
+      "PersistentId": {
+        "id": "237186bd-a644-40c8-96ed-e0b619b568ed"
+      },
+      "Transform": {
+        "position": [
+          0,
+          0.75,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "MeshRenderer": {
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": "",
+        "meshId": "cube",
+        "materialId": "default"
+      },
+      "RigidBody": {
+        "enabled": true,
+        "bodyType": "dynamic",
+        "mass": 1,
+        "gravityScale": 1,
+        "canSleep": true,
+        "material": {
+          "friction": 0.7,
+          "restitution": 0.3,
+          "density": 1
+        },
+        "type": "dynamic"
+      },
+      "MeshCollider": {
+        "enabled": true,
+        "isTrigger": false,
+        "colliderType": "box",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "size": {
+          "width": 1,
+          "height": 1,
+          "depth": 1,
+          "radius": 0.5,
+          "capsuleRadius": 0.5,
+          "capsuleHeight": 2
+        },
+        "physicsMaterial": {
+          "friction": 0.7,
+          "restitution": 0.3,
+          "density": 1
+        }
+      }
+    }
+  },
+  {
+    "id": 4,
+    "name": "Plane 0",
+    "components": {
+      "PersistentId": {
+        "id": "fd017bf3-5bd1-40af-bbff-ef0d9be85046"
+      },
+      "Transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          -90,
+          0,
+          0
+        ],
+        "scale": [
+          10,
+          10,
+          1
+        ]
+      },
+      "MeshRenderer": {
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": "",
+        "meshId": "plane",
+        "materialId": "default"
+      },
+      "RigidBody": {
+        "enabled": true,
+        "bodyType": "fixed",
+        "mass": 1,
+        "gravityScale": 1,
+        "canSleep": true,
+        "material": {
+          "friction": 0.7,
+          "restitution": 0.3,
+          "density": 1
+        },
+        "type": "fixed"
+      },
+      "MeshCollider": {
+        "enabled": true,
+        "isTrigger": false,
+        "colliderType": "box",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "size": {
+          "width": 1,
+          "height": 1,
+          "depth": 0.01,
+          "radius": 0.5,
+          "capsuleRadius": 0.5,
+          "capsuleHeight": 2
+        },
+        "physicsMaterial": {
+          "friction": 0.7,
+          "restitution": 0.3,
+          "density": 1
+        }
+      }
+    }
+  },
+  {
+    "id": 5,
+    "name": "Character 0",
+    "components": {
+      "PersistentId": {
+        "id": "57483d14-ef10-438c-8edd-aa024aa91248"
+      },
+      "Transform": {
+        "position": [
+          2.25,
+          0.5,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "MeshRenderer": {
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": "",
+        "meshId": "capsule",
+        "materialId": "default"
+      },
+      "RigidBody": {
+        "enabled": true,
+        "bodyType": "kinematic",
+        "mass": 1,
+        "gravityScale": 0,
+        "canSleep": false,
+        "material": {
+          "friction": 0.6,
+          "restitution": 0,
+          "density": 1
+        },
+        "type": "kinematic"
+      },
+      "MeshCollider": {
+        "enabled": true,
+        "isTrigger": false,
+        "colliderType": "capsule",
+        "center": [
+          0,
+          0,
+          0
+        ],
+        "size": {
+          "width": 1,
+          "height": 1,
+          "depth": 1,
+          "radius": 0.25,
+          "capsuleRadius": 0.25,
+          "capsuleHeight": 0.5
+        },
+        "physicsMaterial": {
+          "friction": 0.6,
+          "restitution": 0.3,
+          "density": 1
+        }
+      },
+      "CharacterController": {
+        "enabled": true,
+        "slopeLimit": 45,
+        "stepOffset": 0.30000001192092896,
+        "skinWidth": 0.07999999821186066,
+        "gravityScale": 1,
+        "maxSpeed": 6,
+        "jumpStrength": 6.5,
+        "controlMode": "auto",
+        "inputMapping": {
+          "forward": "w",
+          "backward": "s",
+          "left": "a",
+          "right": "d",
+          "jump": "space"
+        },
+        "snapMaxSpeed": 5,
+        "maxDepenetrationPerFrame": 0.5,
+        "pushStrength": 1,
+        "maxPushMass": 0,
+        "isGrounded": false
+      }
+    }
+  }
+],
+  assetReferences: {
+    materials: ["@/materials/default","@/materials/bark","@/materials/dss","@/materials/farm-grass","@/materials/forestground","@/materials/grass","@/materials/leaves","@/materials/mat1","@/materials/mat2","@/materials/mat_38910607","@/materials/myMaterial","@/materials/red","@/materials/rock","@/materials/sky","@/materials/test123"],
+    inputs: ["@/inputs/defaultInput"],
+    prefabs: ["@/prefabs/trees"]
+  },
+  lockedEntityIds: [
+  4
+]
 });

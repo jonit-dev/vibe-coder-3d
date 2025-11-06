@@ -31,7 +31,7 @@ class CharacterControllerAPI {
     private entityId: number,
     private getComponentData: () => ICharacterControllerData | null,
     private world: World | null,
-    private _getCollider: () => Collider | null, // Prefixed with _ to indicate intentionally unused for now
+    _getCollider: () => Collider | null, // Intentionally unused parameter (for now)
   ) {
     // Initialize velocity if needed
     if (!characterVelocities.has(entityId)) {

@@ -329,7 +329,7 @@ export interface IInputMapping {
 }
 
 /**
- * Character Controller data interface (Contract v2.0)
+ * Character Controller data interface (Contract v2.0 + Interaction Tuning)
  */
 export interface ICharacterControllerData {
   enabled: boolean;
@@ -341,6 +341,11 @@ export interface ICharacterControllerData {
   jumpStrength: number;
   controlMode: 'auto' | 'manual';
   inputMapping?: IInputMapping;
+  // Interaction tuning parameters
+  snapMaxSpeed: number;
+  maxDepenetrationPerFrame: number;
+  pushStrength: number;
+  maxPushMass: number;
   isGrounded: boolean; // Runtime-only
 }
 

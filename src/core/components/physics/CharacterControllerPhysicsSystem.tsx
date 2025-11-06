@@ -10,11 +10,11 @@ import { useEffect } from 'react';
 
 import { InputManager } from '@core/lib/input/InputManager';
 import {
-  updateCharacterControllerAutoInputSystem,
-  cleanupCharacterControllerAutoInputSystem,
-} from '@core/systems/CharacterControllerAutoInputSystem';
+  updateCharacterControllerSystem,
+  cleanupCharacterControllerSystem,
+} from '@core/systems/CharacterControllerSystem';
 import { Logger } from '@core/lib/logger';
-import type { Collider } from '@dimforge/rapier3d-compat';
+import { colliderRegistry } from '@core/physics/character/ColliderRegistry';
 
 const logger = Logger.create('CharacterControllerPhysicsSystem');
 
@@ -31,16 +31,6 @@ export const CharacterControllerPhysicsSystem: React.FC<ICharacterControllerPhys
 }) => {
   const { world } = useRapier();
 
-  // Map to store collider handles for entities
-  // This would need to be populated by the physics rendering system
-  // For now, we'll provide a simple accessor that returns null
-  const getEntityCollider = (_entityId: number): Collider | null => {
-    // TODO: Implement proper collider lookup based on entity ID
-    // This should query the physics world for colliders associated with entities
-    // For now, return null and let the system use fallback physics
-    return null;
-  };
-
   useFrame((_, delta) => {
     if (!isPlaying) return;
 
@@ -49,12 +39,11 @@ export const CharacterControllerPhysicsSystem: React.FC<ICharacterControllerPhys
 
     // Update character controller system with physics world
     try {
-      updateCharacterControllerAutoInputSystem(
+      updateCharacterControllerSystem(
         inputManager,
         isPlaying,
         delta,
         world,
-        getEntityCollider,
       );
     } catch (error) {
       logger.error('Error updating character controller system', {
@@ -63,12 +52,18 @@ export const CharacterControllerPhysicsSystem: React.FC<ICharacterControllerPhys
     }
   });
 
-  // Cleanup on unmount
+  // Cleanup on unmount or play stop
   useEffect(() => {
+    // Clear registry when play stops
+    if (!isPlaying) {
+      colliderRegistry.clear();
+    }
+
     return () => {
-      cleanupCharacterControllerAutoInputSystem(world);
+      cleanupCharacterControllerSystem(world);
+      colliderRegistry.clear();
     };
-  }, [world]);
+  }, [world, isPlaying]);
 
   return null; // No visual rendering, just system logic
 };

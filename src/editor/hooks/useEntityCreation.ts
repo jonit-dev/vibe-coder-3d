@@ -431,7 +431,7 @@ export const useEntityCreation = () => {
       const actualName = name || `Character ${getNextNumber('Character')}`;
       const entity = createEntity(actualName, parentId);
 
-      // Add CharacterController component with defaults (Contract v2.0)
+      // Add CharacterController component with defaults (Contract v2.0 + Interaction Tuning)
       const defaultCharacterControllerData: ICharacterControllerData = {
         enabled: true,
         slopeLimit: 45.0,
@@ -448,6 +448,11 @@ export const useEntityCreation = () => {
           right: 'd',
           jump: ' ',
         },
+        // Interaction tuning defaults
+        snapMaxSpeed: 5.0,
+        maxDepenetrationPerFrame: 0.5,
+        pushStrength: 1.0,
+        maxPushMass: 0,
         isGrounded: false,
       };
       addComponent(

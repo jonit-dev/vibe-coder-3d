@@ -20,7 +20,7 @@ const InputMappingSchema = z.object({
   jump: z.string().default('space'),
 });
 
-// Character Controller Schema (Contract v2.0)
+// Character Controller Schema (Contract v2.0 + Interaction Tuning)
 const CharacterControllerSchema = z.object({
   enabled: z.boolean().default(true),
   slopeLimit: z.number().min(0).max(90).default(45.0),
@@ -31,6 +31,11 @@ const CharacterControllerSchema = z.object({
   jumpStrength: z.number().min(0).default(6.5),
   controlMode: z.enum(['auto', 'manual']).default('auto'),
   inputMapping: InputMappingSchema.optional(),
+  // Interaction tuning parameters
+  snapMaxSpeed: z.number().min(0).default(5.0), // Max vertical speed to allow ground snapping
+  maxDepenetrationPerFrame: z.number().min(0).default(0.5), // Max depenetration per frame (meters)
+  pushStrength: z.number().min(0).default(1.0), // Force multiplier when pushing objects
+  maxPushMass: z.number().min(0).default(0), // Max mass of pushable objects (0 = unlimited)
   // Runtime-only field (not serialized to scene)
   isGrounded: z.boolean().default(false),
 });
@@ -55,6 +60,11 @@ export const characterControllerComponent = ComponentFactory.create({
     inputMappingLeftHash: Types.ui32,
     inputMappingRightHash: Types.ui32,
     inputMappingJumpHash: Types.ui32,
+    // Interaction tuning fields
+    snapMaxSpeed: Types.f32,
+    maxDepenetrationPerFrame: Types.f32,
+    pushStrength: Types.f32,
+    maxPushMass: Types.f32,
     isGrounded: Types.ui8, // Runtime-only
   },
   serialize: (eid: EntityId, bitECSComponent: unknown) => {
@@ -83,6 +93,11 @@ export const characterControllerComponent = ComponentFactory.create({
       jumpStrength: Number(component.jumpStrength[eid]),
       controlMode: controlMode as 'auto' | 'manual',
       inputMapping,
+      // Interaction tuning
+      snapMaxSpeed: Number(component.snapMaxSpeed[eid]),
+      maxDepenetrationPerFrame: Number(component.maxDepenetrationPerFrame[eid]),
+      pushStrength: Number(component.pushStrength[eid]),
+      maxPushMass: Number(component.maxPushMass[eid]),
       isGrounded: Boolean(component.isGrounded[eid]), // Runtime-only, included for live state
     };
   },
@@ -96,6 +111,11 @@ export const characterControllerComponent = ComponentFactory.create({
     component.maxSpeed[eid] = data.maxSpeed ?? 6.0;
     component.jumpStrength[eid] = data.jumpStrength ?? 6.5;
     component.controlModeHash[eid] = storeString(data.controlMode || 'auto');
+    // Interaction tuning with defaults
+    component.snapMaxSpeed[eid] = data.snapMaxSpeed ?? 5.0;
+    component.maxDepenetrationPerFrame[eid] = data.maxDepenetrationPerFrame ?? 0.5;
+    component.pushStrength[eid] = data.pushStrength ?? 1.0;
+    component.maxPushMass[eid] = data.maxPushMass ?? 0;
     component.isGrounded[eid] = data.isGrounded ? 1 : 0; // Runtime-only state
 
     // Store input mapping if provided
