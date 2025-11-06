@@ -34,6 +34,13 @@
 - **Performance Fix**: Reduced logging spam by caching API instances and logging warnings once per entity
 - **Critical Bug Fix**: Entity wouldn't stop when releasing keys - fixed by always calling move() even with [0,0] input
 
+### 2.1.1 Physics Stability Fix (2025-11-06)
+
+- **Observed**: Character becomes unstable or “floats” when colliding with physics-enabled entities.
+- **Root Cause**: Character entity was allowed to be simulated as a dynamic `RigidBody`, causing conflicts with kinematic controller-driven movement.
+- **Fix**: When an entity has `CharacterController` and `RigidBody` together, force the `RigidBody` to `kinematicPosition`, set `gravityScale=0`, and `canSleep=false`. The character remains controller-driven while the other body receives impulses and reacts physically.
+- **Effect**: Only the other entity is physics affected during collisions; the character remains stable and predictable.
+
 ## 2.2. Physics Integration Requirements (2025-11-04)
 
 **Critical Issue Identified: No Physics Integration:**
@@ -186,6 +193,7 @@ Both PRDs must keep this table identical (Contract v2.0, 2025‑11‑05). Any ch
    - Test slope climbing with angle limits
    - Test step climbing and collision response
    - Verify interactions with dynamic objects
+   - Verify character remains stable when pushing dynamic bodies (no floating/jitter)
 
 ## 5. Technical Details
 
@@ -460,6 +468,7 @@ This TypeScript implementation provides the editor interface and auto-input hand
 - [ ] Character climbs steps within stepOffset height
 - [ ] Character cannot climb slopes steeper than slopeLimit
 - [ ] Character pushes dynamic RigidBody objects when moving
+- [ ] Character remains stable when colliding; only the other entity reacts physically
 - [ ] Inspector shows isGrounded status correctly during Play
 - [ ] Custom input mapping works when configured
 - [ ] Manual mode allows script control of movement

@@ -855,5 +855,18 @@ export function combinePhysicsContributions(
     }
   });
 
+  // Enforce stability when CharacterController is present:
+  // - Keep the character kinematic and unaffected by gravity
+  // - Let only the other physics body respond (via impulses) on collisions
+  const hasCharacterController = entityComponents.some((c) => c.type === 'CharacterController');
+  if (hasCharacterController && combined.enabled) {
+    // Force kinematic position-based control for the character body
+    combined.rigidBodyProps.type = 'kinematicPosition';
+    // Characters are moved by the controller/transform; disable gravity on the body to avoid drift
+    combined.rigidBodyProps.gravityScale = 0;
+    // Keep the body awake to avoid 1st-contact jitters
+    combined.rigidBodyProps.canSleep = false;
+  }
+
   return combined;
 }
