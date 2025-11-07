@@ -13,6 +13,7 @@ pub mod camera_follow;
 pub mod camera_loader;
 pub mod coordinate_conversion;
 pub mod debug_lines;
+pub mod debug_rendering;
 pub mod enhanced_lights;
 pub mod instanced_loader;
 pub mod light_loader;
