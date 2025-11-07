@@ -973,12 +973,29 @@ impl ThreeDRenderer {
         // Load materials
         self.load_materials(scene);
 
-        // Load and register prefabs
+        // Load and register prefabs (if any are embedded in the scene file)
         let mut prefab_registry = vibe_ecs_bridge::PrefabRegistry::new();
         let mut prefab_instances: Vec<Entity> = Vec::new();
 
-        // Note: Prefabs are no longer stored as a top-level scene field
-        // They may be loaded from a separate source in the future
+        if let Some(prefabs_value) = &scene.prefabs {
+            match vibe_ecs_bridge::parse_prefabs(prefabs_value) {
+                Ok(prefabs) => {
+                    for prefab in prefabs {
+                        log::info!("Registering prefab definition: {}", prefab.id);
+                        prefab_registry.register(prefab);
+                    }
+                    log::info!(
+                        "Registered {} prefab definition(s) from scene",
+                        prefab_registry.count()
+                    );
+                }
+                Err(err) => {
+                    log::warn!("Failed to parse prefabs from scene: {}", err);
+                }
+            }
+        } else {
+            log::info!("Scene does not embed prefab definitions");
+        }
 
         // Process PrefabInstance components and instantiate prefabs
         log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -1257,26 +1274,12 @@ impl ThreeDRenderer {
     ) -> Result<()> {
         let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
 
-        // Try to get world transform from scene graph (for parent-child hierarchies)
-        let effective_transform = if let Some(scene_graph) = &mut self.scene_graph {
-            if let Some(world_matrix) = scene_graph.get_world_transform(entity_id) {
-                // Decompose world matrix into TRS components
-                let (scale, rotation, translation) = world_matrix.to_scale_rotation_translation();
-
-                // Create a Transform with world values
-                Some(Transform {
-                    position: Some([translation.x, translation.y, translation.z]),
-                    rotation: Some(vec![rotation.x, rotation.y, rotation.z, rotation.w]), // Quaternion XYZW
-                    scale: Some([scale.x, scale.y, scale.z]),
-                })
-            } else {
-                // Entity not in scene graph, use local transform
-                transform.cloned()
-            }
-        } else {
-            // No scene graph, use local transform
-            transform.cloned()
-        };
+        // Get effective transform (world transform if in scene graph, else local)
+        let effective_transform = crate::renderer::entity_loader::get_effective_transform(
+            entity_id,
+            transform,
+            &mut self.scene_graph,
+        );
 
         // Get camera position for LOD distance calculations
         let camera_pos = GlamVec3::new(
@@ -1285,20 +1288,21 @@ impl ThreeDRenderer {
             self.camera.position().z,
         );
 
-        let submeshes = load_mesh_renderer(
+        let submeshes = crate::renderer::entity_loader::handle_mesh_renderer(
             &self.context,
             entity,
             mesh_renderer,
             effective_transform.as_ref(),
-            &mut self.material_manager,
+            transform,
             lod_component,
+            &mut self.material_manager,
             &self.lod_manager,
             camera_pos,
         )
         .await?;
 
         // Handle all submeshes (primitives return 1, GLTF models may return multiple)
-        for (idx, (gm, final_scale, base_scale)) in submeshes.into_iter().enumerate() {
+        for (gm, final_scale, base_scale) in submeshes.into_iter() {
             let mesh_idx = self.meshes.len();
             self.meshes.push(gm);
             self.mesh_entity_ids.push(entity_id);
@@ -1310,36 +1314,6 @@ impl ThreeDRenderer {
 
             // Register mesh with BVH system for culling and raycasting
             self.register_mesh_with_bvh(mesh_idx);
-
-            if let Some(transform) = transform {
-                let ts_position =
-                    vibe_ecs_bridge::position_to_vec3_opt(transform.position.as_ref());
-                let converted = threejs_to_threed_position(ts_position);
-                log::info!(
-                    "    Submesh {} transform: three.js pos [{:.2}, {:.2}, {:.2}] → three-d pos [{:.2}, {:.2}, {:.2}]",
-                    idx,
-                    ts_position.x,
-                    ts_position.y,
-                    ts_position.z,
-                    converted.x,
-                    converted.y,
-                    converted.z
-                );
-            } else {
-                log::info!(
-                    "    Submesh {} transform: no Transform component, using primitive base scale only",
-                    idx
-                );
-            }
-
-            log::info!(
-                "      Shadows → cast: {}, receive: {}, final scale [{:.2}, {:.2}, {:.2}]",
-                mesh_renderer.cast_shadows,
-                mesh_renderer.receive_shadows,
-                final_scale.x,
-                final_scale.y,
-                final_scale.z
-            );
         }
 
         Ok(())
@@ -1351,119 +1325,27 @@ impl ThreeDRenderer {
         geometry_asset: &GeometryAsset,
         transform: Option<&Transform>,
     ) -> Result<()> {
-        use crate::renderer::mesh_loader::convert_geometry_meta_to_cpu_mesh;
+        // Delegate to entity_loader module
+        let result = crate::renderer::entity_loader::handle_geometry_asset(
+            &self.context,
+            entity,
+            geometry_asset,
+            transform,
+            &mut self.material_manager,
+        )
+        .await;
 
-        log::info!("  GeometryAsset:");
-        log::info!("    Path:        {:?}", geometry_asset.path);
-        log::info!("    Geometry ID: {:?}", geometry_asset.geometry_id);
-        log::info!("    Material ID: {:?}", geometry_asset.material_id);
-        log::info!("    Enabled:     {}", geometry_asset.enabled);
-
-        if !geometry_asset.enabled {
-            log::info!("    Skipping disabled geometry asset");
-            return Ok(());
+        // Only store if successful
+        if let Ok((gm, final_scale, base_scale)) = result {
+            let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
+            self.meshes.push(gm);
+            self.mesh_entity_ids.push(entity_id);
+            self.mesh_scales.push(final_scale);
+            self.mesh_base_scales.push(base_scale);
+            self.mesh_cast_shadows.push(geometry_asset.cast_shadows);
+            self.mesh_receive_shadows
+                .push(geometry_asset.receive_shadows);
         }
-
-        // 1. Load the geometry metadata from path
-        // Resolve path: TypeScript stores paths like "/src/game/geometry/file.shape.json"
-        // Geometry files are synced from src/game/geometry/ to rust/game/geometry/ via yarn rust:sync-assets
-        // Since we run from rust/engine/, we load from ../game/geometry/
-        let resolved_path = if geometry_asset.path.starts_with("/src/game/geometry/") {
-            // Extract just the filename from the TypeScript path
-            let filename = geometry_asset
-                .path
-                .strip_prefix("/src/game/geometry/")
-                .unwrap_or(&geometry_asset.path);
-            PathBuf::from("../game/geometry").join(filename)
-        } else if geometry_asset.path.starts_with('/') {
-            // Legacy fallback: strip leading slash and use relative path
-            let relative_path = geometry_asset
-                .path
-                .strip_prefix('/')
-                .unwrap_or(&geometry_asset.path);
-            PathBuf::from("../..").join(relative_path)
-        } else {
-            PathBuf::from(&geometry_asset.path)
-        };
-
-        log::info!("    Resolved path: {}", resolved_path.display());
-
-        let geometry_meta =
-            vibe_assets::GeometryMeta::from_file(&resolved_path).with_context(|| {
-                format!("Failed to load geometry metadata: {}", geometry_asset.path)
-            })?;
-
-        log::info!(
-            "    Loaded metadata: {} vertices, {} indices",
-            geometry_meta.vertex_count().unwrap_or(0),
-            geometry_meta.index_count().unwrap_or(0)
-        );
-
-        // 2. Convert to CpuMesh
-        let cpu_mesh = convert_geometry_meta_to_cpu_mesh(&geometry_meta)?;
-
-        // 3. Create GPU mesh
-        let mut mesh = Mesh::new(&self.context, &cpu_mesh);
-
-        // 4. Get or create material
-        let material = if let Some(material_id) = &geometry_asset.material_id {
-            if let Some(material_data) = self.material_manager.get_material(material_id) {
-                log::info!("    Using material: {}", material_id);
-                let material_clone = material_data.clone();
-                self.material_manager
-                    .create_physical_material(&self.context, &material_clone)
-                    .await?
-            } else {
-                log::warn!("    Material '{}' not found, using default", material_id);
-                self.material_manager.create_default_material(&self.context)
-            }
-        } else {
-            log::info!("    Using default material");
-            self.material_manager.create_default_material(&self.context)
-        };
-
-        // 5. Apply transform
-        let (final_scale, base_scale) = if let Some(transform) = transform {
-            let converted =
-                crate::renderer::transform_utils::convert_transform_to_matrix(transform, None);
-            mesh.set_transformation(converted.matrix);
-
-            let ts_position = vibe_ecs_bridge::position_to_vec3_opt(transform.position.as_ref());
-            let converted_pos = threejs_to_threed_position(ts_position);
-            log::info!(
-                "    Transform: three.js pos [{:.2}, {:.2}, {:.2}] → three-d pos [{:.2}, {:.2}, {:.2}]",
-                ts_position.x,
-                ts_position.y,
-                ts_position.z,
-                converted_pos.x,
-                converted_pos.y,
-                converted_pos.z
-            );
-
-            (converted.final_scale, converted.base_scale)
-        } else {
-            log::info!("    No Transform component, using identity transform");
-            (GlamVec3::ONE, GlamVec3::ONE)
-        };
-
-        // 6. Store in parallel arrays
-        let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
-        self.meshes.push(Gm::new(mesh, material));
-        self.mesh_entity_ids.push(entity_id);
-        self.mesh_scales.push(final_scale);
-        self.mesh_base_scales.push(base_scale);
-        self.mesh_cast_shadows.push(geometry_asset.cast_shadows);
-        self.mesh_receive_shadows
-            .push(geometry_asset.receive_shadows);
-
-        log::info!(
-            "    GeometryAsset loaded → cast shadows: {}, receive shadows: {}, final scale [{:.2}, {:.2}, {:.2}]",
-            geometry_asset.cast_shadows,
-            geometry_asset.receive_shadows,
-            final_scale.x,
-            final_scale.y,
-            final_scale.z
-        );
 
         Ok(())
     }
@@ -1474,7 +1356,7 @@ impl ThreeDRenderer {
         instanced: &Instanced,
         transform: Option<&Transform>,
     ) -> Result<()> {
-        let instances = load_instanced(
+        let instances = crate::renderer::entity_loader::handle_instanced(
             &self.context,
             entity,
             instanced,
@@ -1484,32 +1366,15 @@ impl ThreeDRenderer {
         .await?;
 
         let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
-        let instance_count = instances.len();
 
         // Each instance becomes a separate mesh (three-d doesn't have native GPU instancing)
-        for (idx, (gm, final_scale, base_scale)) in instances.into_iter().enumerate() {
+        for (gm, final_scale, base_scale) in instances.into_iter() {
             self.meshes.push(gm);
             self.mesh_entity_ids.push(entity_id);
             self.mesh_scales.push(final_scale);
             self.mesh_base_scales.push(base_scale);
             self.mesh_cast_shadows.push(instanced.cast_shadows);
             self.mesh_receive_shadows.push(instanced.receive_shadows);
-
-            if idx < 3 {
-                log::info!(
-                    "    Instance {}: shadows (cast: {}, recv: {}), scale [{:.2}, {:.2}, {:.2}]",
-                    idx,
-                    instanced.cast_shadows,
-                    instanced.receive_shadows,
-                    final_scale.x,
-                    final_scale.y,
-                    final_scale.z
-                );
-            }
-        }
-
-        if instance_count > 3 {
-            log::info!("    ... and {} more instances added", instance_count - 3);
         }
 
         Ok(())
@@ -1521,7 +1386,7 @@ impl ThreeDRenderer {
         terrain: &Terrain,
         transform: Option<&Transform>,
     ) -> Result<()> {
-        let meshes = generate_terrain(
+        let meshes = crate::renderer::entity_loader::handle_terrain(
             &self.context,
             entity,
             terrain,
@@ -1539,13 +1404,6 @@ impl ThreeDRenderer {
             self.mesh_base_scales.push(base_scale);
             self.mesh_cast_shadows.push(true); // Terrains cast shadows by default
             self.mesh_receive_shadows.push(true); // Terrains receive shadows by default
-
-            log::info!(
-                "    Terrain mesh added: scale [{:.2}, {:.2}, {:.2}]",
-                final_scale.x,
-                final_scale.y,
-                final_scale.z
-            );
         }
 
         Ok(())
@@ -1556,7 +1414,11 @@ impl ThreeDRenderer {
         light: &LightComponent,
         transform: Option<&Transform>,
     ) -> Result<()> {
-        if let Some(loaded_light) = load_light(&self.context, light, transform)? {
+        if let Some(loaded_light) = crate::renderer::entity_loader::handle_light(
+            &self.context,
+            light,
+            transform,
+        )? {
             match loaded_light {
                 LoadedLight::Directional(light) => self.directional_lights.push(light),
                 LoadedLight::Point(light) => self.point_lights.push(light),
@@ -1572,59 +1434,28 @@ impl ThreeDRenderer {
         camera_component: &CameraComponent,
         transform: Option<&Transform>,
     ) -> Result<()> {
-        if let Some(config) = load_camera(camera_component, transform)? {
-            let mut camera = create_camera(&config, self.window_size);
-            camera.tone_mapping = parse_tone_mapping(config.tone_mapping.as_deref());
-            camera.color_mapping = ColorMapping::ComputeToSrgb;
-
-            let mut skybox_renderer = SkyboxRenderer::new();
-            if config.skybox_texture.is_some() {
-                if let Err(err) = skybox_renderer
-                    .load_from_config(&self.context, &config)
-                    .await
-                {
-                    log::warn!("Failed to load skybox texture: {}", err);
-                    skybox_renderer.clear();
-                }
-            }
-
-            if config.is_main {
-                self.camera = camera;
-                self.camera_config = Some(config.clone());
-                self.skybox_renderer = skybox_renderer;
-                self.last_camera_position = config.position;
-                self.last_camera_target = config.target;
-
-                log::info!(
-                    "    Main camera loaded → position [{:.2}, {:.2}, {:.2}], target [{:.2}, {:.2}, {:.2}], clearFlags={:?}, background={:?}",
-                    config.position.x,
-                    config.position.y,
-                    config.position.z,
-                    config.target.x,
-                    config.target.y,
-                    config.target.z,
-                    config.clear_flags,
-                    config.background_color
-                );
+        if let Some(result) = crate::renderer::entity_loader::handle_camera(
+            &self.context,
+            camera_component,
+            transform,
+            self.window_size,
+        )
+        .await?
+        {
+            if result.config.is_main {
+                self.camera = result.camera;
+                self.camera_config = Some(result.config.clone());
+                self.skybox_renderer = result.skybox_renderer;
+                self.last_camera_position = result.config.position;
+                self.last_camera_target = result.config.target;
             } else {
                 self.additional_cameras.push(AdditionalCamera {
-                    camera,
-                    config: config.clone(),
-                    skybox_renderer,
-                    last_position: config.position,
-                    last_target: config.target,
+                    camera: result.camera,
+                    config: result.config.clone(),
+                    skybox_renderer: result.skybox_renderer,
+                    last_position: result.config.position,
+                    last_target: result.config.target,
                 });
-
-                log::info!(
-                    "    Additional camera (depth {}) loaded → position [{:.2}, {:.2}, {:.2}], target [{:.2}, {:.2}, {:.2}]",
-                    config.depth,
-                    config.position.x,
-                    config.position.y,
-                    config.position.z,
-                    config.target.x,
-                    config.target.y,
-                    config.target.z
-                );
             }
         }
         Ok(())
@@ -1690,19 +1521,6 @@ impl ThreeDRenderer {
     /// Get current LOD configuration
     pub fn get_lod_config(&self) -> crate::renderer::LODConfig {
         self.lod_manager.get_config()
-    }
-}
-
-fn parse_tone_mapping(mode: Option<&str>) -> ToneMapping {
-    match mode.unwrap_or("aces").to_ascii_lowercase().as_str() {
-        "none" | "linear" => ToneMapping::None,
-        "reinhard" => ToneMapping::Reinhard,
-        "cineon" | "filmic" => ToneMapping::Filmic,
-        "aces" => ToneMapping::Aces,
-        other => {
-            log::warn!("Unknown tone mapping mode '{}', defaulting to ACES", other);
-            ToneMapping::Aces
-        }
     }
 }
 

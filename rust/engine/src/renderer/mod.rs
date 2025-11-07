@@ -15,6 +15,7 @@ pub mod coordinate_conversion;
 pub mod debug_lines;
 pub mod debug_rendering;
 pub mod enhanced_lights;
+pub mod entity_loader;
 pub mod instanced_loader;
 pub mod light_loader;
 pub mod lighting;
