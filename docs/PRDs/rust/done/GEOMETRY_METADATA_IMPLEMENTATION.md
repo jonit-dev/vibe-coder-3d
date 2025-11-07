@@ -18,12 +18,14 @@ Successfully implemented a JSON-based geometry metadata format that replaces TSX
 ### Phase 1: TypeScript Schema & Parsers (COMPLETE)
 
 **Files Created:**
+
 - `/src/core/lib/geometry/metadata/IGeometryMeta.ts` - Zod schema definitions
 - `/src/core/lib/geometry/metadata/parseMetaToBufferGeometry.ts` - JSON → BufferGeometry
 - `/src/core/lib/geometry/metadata/exportBufferGeometryToMeta.ts` - BufferGeometry → JSON
 - `/src/core/lib/geometry/metadata/io.ts` - File I/O utilities
 
 **Features:**
+
 - ✅ Complete Zod schema for geometry metadata
 - ✅ TypedArray support (float32, uint32, uint16, etc.)
 - ✅ All attributes: position, normal, uv, color, tangent
@@ -36,11 +38,13 @@ Successfully implemented a JSON-based geometry metadata format that replaces TSX
 ### Phase 2: Rust Structures & Mesh Loading (COMPLETE)
 
 **Files Created/Modified:**
+
 - `/rust/engine/crates/assets/src/geometry_meta.rs` - Rust structs + parsing
 - `/rust/engine/crates/assets/src/lib.rs` - Public exports
 - `/rust/engine/src/renderer/mesh_loader.rs` - CpuMesh conversion
 
 **Features:**
+
 - ✅ Complete serde-based deserialization
 - ✅ JSON parsing with validation
 - ✅ `from_file()` and `from_json()` methods
@@ -54,15 +58,18 @@ Successfully implemented a JSON-based geometry metadata format that replaces TSX
 ### Phase 3: ECS & Rendering Integration (COMPLETE)
 
 **TypeScript Files:**
+
 - `/src/core/lib/ecs/components/definitions/GeometryAssetComponent.ts`
 - `/src/core/lib/ecs/components/definitions/index.ts` (updated)
 
 **Rust Files:**
+
 - `/rust/engine/crates/ecs-bridge/src/decoders.rs` (updated)
 - `/rust/engine/crates/ecs-bridge/src/lib.rs` (updated)
 - `/rust/engine/src/threed_renderer.rs` (updated)
 
 **Features:**
+
 - ✅ `GeometryAssetComponent` with BitECS fields
 - ✅ Full Zod schema with options (recomputeNormals, scale, etc.)
 - ✅ Rust `GeometryAsset` decoder
@@ -77,10 +84,12 @@ Successfully implemented a JSON-based geometry metadata format that replaces TSX
 ### Example Assets & Documentation (COMPLETE)
 
 **Files Created:**
+
 - `/src/game/geometry/example_box.shape.json` - Example cube geometry
 - `/src/game/geometry/Readme.md` - Comprehensive usage guide
 
 **Documentation Includes:**
+
 - File format specification
 - Attribute descriptions
 - Usage examples (TypeScript & Rust)
@@ -196,6 +205,7 @@ render() {
 ## 🧪 Testing Status
 
 ### ✅ Compilation Tests
+
 - **TypeScript**: N/A (no build tested, but schema is valid Zod)
 - **Rust**: ✅ **PASSED** - Full engine builds successfully
   - `cargo build --package vibe-ecs-bridge` ✅
@@ -203,19 +213,23 @@ render() {
   - `cargo build --bin vibe-engine` ✅
 
 ### Unit Tests (Rust)
+
 Location: `/rust/engine/crates/assets/src/geometry_meta.rs`
 
 ✅ **Implemented Tests:**
+
 - `test_parse_minimal_geometry` - Parses minimal JSON with only position
 - `test_parse_full_geometry` - Parses complete JSON with all attributes
 - `test_attribute_types` - Verifies type handling (float32, uint16, etc.)
 
 **Run Tests:**
+
 ```bash
 cargo test --package vibe-assets geometry_meta
 ```
 
 ### ⚠️ Missing Tests
+
 - [ ] TypeScript unit tests for importer/exporter
 - [ ] Integration tests (TS → JSON → Rust round-trip)
 - [ ] Visual tests (compare rendered output)
@@ -226,17 +240,18 @@ cargo test --package vibe-assets geometry_meta
 
 ## 📊 Acceptance Criteria Status
 
-| Criteria | Status | Notes |
-|----------|--------|-------|
-| Exporter produces `*.shape.json` importable in TS and Rust | ✅ | Schemas and parsers implemented |
-| Identical vertex/index counts and bounding volumes | ✅ | Conversion functions preserve all data |
-| Editor can browse/import geometry assets | ⚠️ | Backend ready, UI not implemented |
-| Rust loader renders geometry assets | ✅ | Fully integrated into rendering pipeline |
-| Normals/tangents computed when requested | ⚠️ | Structure in place, computation not implemented |
-| Legacy CustomShape flows removed | ❌ | Migration not started |
-| Tests/docs updated | ⚠️ | Partial - Rust tests exist, TS tests missing |
+| Criteria                                                   | Status | Notes                                           |
+| ---------------------------------------------------------- | ------ | ----------------------------------------------- |
+| Exporter produces `*.shape.json` importable in TS and Rust | ✅     | Schemas and parsers implemented                 |
+| Identical vertex/index counts and bounding volumes         | ✅     | Conversion functions preserve all data          |
+| Editor can browse/import geometry assets                   | ⚠️     | Backend ready, UI not implemented               |
+| Rust loader renders geometry assets                        | ✅     | Fully integrated into rendering pipeline        |
+| Normals/tangents computed when requested                   | ⚠️     | Structure in place, computation not implemented |
+| Legacy CustomShape flows removed                           | ❌     | Migration not started                           |
+| Tests/docs updated                                         | ⚠️     | Partial - Rust tests exist, TS tests missing    |
 
 ### Legend
+
 - ✅ Complete
 - ⚠️ Partial / Backend Ready
 - ❌ Not Started
@@ -248,6 +263,7 @@ cargo test --package vibe-assets geometry_meta
 ### Creating a Geometry Asset (Manual)
 
 1. **Export from Three.js:**
+
 ```typescript
 import { exportBufferGeometryToMeta, downloadGeometryMeta } from '@/core/lib/geometry/metadata';
 
@@ -258,6 +274,7 @@ downloadGeometryMeta(meta, 'my_cube');
 ```
 
 2. **Use in Entity:**
+
 ```json
 {
   "entityId": 42,
@@ -279,6 +296,7 @@ downloadGeometryMeta(meta, 'my_cube');
 ```
 
 3. **Rust Auto-Loads:**
+
 ```
 [Entity 42] "CustomBox"
   GeometryAsset:
@@ -311,11 +329,13 @@ scene.add(mesh);
 ### High Priority
 
 1. **TypeScript Viewport Rendering** (Phase 3.2-3.3)
+
    - Add GeometryAsset support to editor viewport
    - Integrate with Three.js renderer
    - Preview in editor before exporting
 
 2. **Editor UX** (Phase 4)
+
    - `GeometryBrowserModal.tsx` - Browse/search geometry assets
    - Export feature - "Export Selection as Geometry Asset"
    - Add Object Menu integration
@@ -328,11 +348,13 @@ scene.add(mesh);
 ### Medium Priority
 
 4. **Unit Tests**
+
    - TypeScript importer/exporter round-trip tests
    - Rust mesh conversion tests
    - Schema validation tests
 
 5. **Integration Tests**
+
    - Full pipeline test: Export → Save → Load → Render
    - Visual regression tests
    - Performance benchmarks
@@ -357,26 +379,31 @@ scene.add(mesh);
 ## 🔒 Critical Decisions Made
 
 ### 1. JSON-First, Binary Optional
+
 - **Decision**: Default to inline JSON arrays, support external BIN later
 - **Rationale**: Simplicity for MVP, human-readable, version-controllable
 - **Future**: Add BIN support for large meshes (>10k vertices)
 
 ### 2. Engine-Agnostic Format
+
 - **Decision**: Mirror THREE.BufferGeometry semantics exactly
 - **Rationale**: Ensures perfect parity, familiar to Three.js users
 - **Impact**: Easy migration from existing code
 
 ### 3. Component Over Custom Shapes
+
 - **Decision**: Replace TSX modules with JSON + ECS component
 - **Rationale**: Decouples authoring from runtime, enables Rust parity
 - **Migration Path**: Phased rollout, coexistence period, then cleanup
 
 ### 4. Separate from GLTF
+
 - **Decision**: Custom format instead of extending GLTF
 - **Rationale**: Simpler schema, no external dependencies, easier validation
 - **Tradeoff**: Not compatible with external tools (acceptable for internal use)
 
 ### 5. Degrees → Radians Handled Separately
+
 - **Decision**: Geometry metadata stores raw data, transforms handled elsewhere
 - **Rationale**: Geometry is agnostic to coordinate systems, transform utils handle conversion
 - **Consistency**: Uses existing `vibe_ecs_bridge::transform_utils`
@@ -386,6 +413,7 @@ scene.add(mesh);
 ## 📁 Files Modified/Created
 
 ### TypeScript (9 files)
+
 ```
 src/core/lib/geometry/metadata/
 ├── IGeometryMeta.ts                          [NEW]
@@ -403,6 +431,7 @@ src/game/geometry/
 ```
 
 ### Rust (6 files)
+
 ```
 rust/engine/crates/assets/src/
 ├── geometry_meta.rs                          [NEW]
@@ -418,6 +447,7 @@ rust/engine/src/
 ```
 
 ### Documentation (2 files)
+
 ```
 docs/PRDs/rust/
 ├── geometry-metadata-prd.md                  [EXISTING]
@@ -431,26 +461,31 @@ docs/PRDs/rust/
 ## 🎓 Learnings & Best Practices
 
 ### 1. Zod + Serde Parity
+
 - Matching schema on both sides ensured compatibility
 - Use `serde(rename = "camelCase")` for field name alignment
 - Default values must match exactly
 
 ### 2. TypedArray Handling
+
 - Always specify type parameter in `.collect()` to avoid inference issues
 - Handle both `Vec<Vector3>` and `Vec<Vector4>` explicitly
 - Convert f32 → u32 for indices carefully
 
 ### 3. Color Formats
+
 - Three.js uses float RGB [0-1]
 - three-d uses Srgba (u8 RGBA [0-255])
 - Always multiply by 255 when converting
 
 ### 4. Parallel Arrays Pattern
+
 - Keep all mesh metadata arrays in sync
 - Push to ALL arrays when adding a mesh
 - Use consistent indexing
 
 ### 5. Transform Utilities
+
 - ALWAYS use `vibe_ecs_bridge::transform_utils` for rotations
 - TypeScript stores degrees, Rust expects radians
 - Utilities handle this automatically
@@ -460,24 +495,28 @@ docs/PRDs/rust/
 ## 🚦 Next Steps
 
 ### Immediate (This Week)
+
 1. ✅ Add comprehensive implementation documentation ← **YOU ARE HERE**
 2. Create simple test scene with GeometryAsset
 3. Test Rust engine rendering with example_box.shape.json
 4. Fix any runtime issues discovered
 
 ### Short Term (Next Week)
+
 1. Implement TypeScript viewport rendering
 2. Add GeometryBrowserModal UI component
 3. Implement "Export Selection" feature
 4. Write unit tests for TS and Rust
 
 ### Medium Term (Next 2 Weeks)
+
 1. Normal/tangent computation
 2. Migration script for CustomShape
 3. Feature flag implementation
 4. Integration tests
 
 ### Long Term (Next Month)
+
 1. Remove legacy CustomShape code
 2. Performance optimization
 3. Binary .bin file support
@@ -490,6 +529,7 @@ docs/PRDs/rust/
 The Geometry Metadata system successfully provides a JSON-based, engine-agnostic format for 3D geometry that ensures exact `BufferGeometry` parity between TypeScript and Rust. The core implementation is **complete and functional**, with the Rust rendering pipeline fully integrated and tested.
 
 **Key Achievements:**
+
 - ✅ Complete schema and parsing infrastructure (TS + Rust)
 - ✅ Full ECS component integration
 - ✅ Rust rendering pipeline integration
@@ -497,6 +537,7 @@ The Geometry Metadata system successfully provides a JSON-based, engine-agnostic
 - ✅ All Rust code compiles and tests pass
 
 **Remaining Work:**
+
 - Editor UI features (browser, export)
 - TypeScript viewport rendering
 - Additional unit/integration tests
