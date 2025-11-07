@@ -310,39 +310,20 @@ impl ThreeDRenderer {
     }
 
     fn ensure_post_process_targets(&mut self) {
-        let (width, height) = self.window_size;
-
-        let recreate_color = match self.hdr_color_texture {
-            Some(ref tex) => tex.width() != width || tex.height() != height,
-            None => true,
-        };
-
-        if recreate_color {
-            self.hdr_color_texture = Some(Texture2D::new_empty::<[f32; 4]>(
-                &self.context,
-                width,
-                height,
-                Interpolation::Linear,
-                Interpolation::Linear,
-                Some(Interpolation::Linear),
-                Wrapping::ClampToEdge,
-                Wrapping::ClampToEdge,
-            ));
+        if let Some(new_texture) = crate::renderer::post_process_targets::ensure_color_texture(
+            &self.context,
+            self.hdr_color_texture.as_ref(),
+            self.window_size,
+        ) {
+            self.hdr_color_texture = Some(new_texture);
         }
 
-        let recreate_depth = match self.hdr_depth_texture {
-            Some(ref tex) => tex.width() != width || tex.height() != height,
-            None => true,
-        };
-
-        if recreate_depth {
-            self.hdr_depth_texture = Some(three_d::DepthTexture2D::new::<f32>(
-                &self.context,
-                width,
-                height,
-                Wrapping::ClampToEdge,
-                Wrapping::ClampToEdge,
-            ));
+        if let Some(new_texture) = crate::renderer::post_process_targets::ensure_depth_texture(
+            &self.context,
+            self.hdr_depth_texture.as_ref(),
+            self.window_size,
+        ) {
+            self.hdr_depth_texture = Some(new_texture);
         }
     }
 

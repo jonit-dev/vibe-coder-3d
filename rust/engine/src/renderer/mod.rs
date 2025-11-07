@@ -29,6 +29,7 @@ pub mod mesh_filtering;
 pub mod mesh_loader;
 pub mod physics_sync;
 pub mod post_processing;
+pub mod post_process_targets;
 pub mod primitive_mesh;
 pub mod render_settings;
 pub mod scene_utilities;
