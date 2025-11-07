@@ -8,13 +8,17 @@ use vibe_ecs_bridge::position_to_vec3_opt;
 
 use super::coordinate_conversion::threejs_to_threed_direction;
 use super::enhanced_lights::{EnhancedDirectionalLight, EnhancedSpotLight};
+use super::lighting::AmbientLightMetadata;
 
 /// Light types that can be created
 pub enum LoadedLight {
     Directional(EnhancedDirectionalLight),
     Point(PointLight),
     Spot(EnhancedSpotLight),
-    Ambient(AmbientLight),
+    Ambient {
+        light: AmbientLight,
+        metadata: AmbientLightMetadata,
+    },
 }
 
 /// Load a light component and create the corresponding light object
@@ -52,7 +56,15 @@ pub fn load_light(
         "ambientlight" | "ambient" => {
             log::info!("    Cast Shadow: {}", light.cast_shadow);
             let ambient = AmbientLight::new(context, light.intensity, color);
-            Ok(Some(LoadedLight::Ambient(ambient)))
+            let metadata = AmbientLightMetadata {
+                intensity: light.intensity,
+                color,
+                enabled: light.enabled,
+            };
+            Ok(Some(LoadedLight::Ambient {
+                light: ambient,
+                metadata,
+            }))
         }
         _ => {
             log::warn!("    Unknown light type: {}", light.light_type);

@@ -104,12 +104,13 @@ impl ThreeDRenderer {
             EntityId::new(0),
             GlamVec3::ONE,
             GlamVec3::ONE,
-            true,  // cast shadows
-            true,  // receive shadows
+            true, // cast shadows
+            true, // receive shadows
         );
 
         // Add test lights
-        self.light_manager.create_test_lights(self.context_state.context());
+        self.light_manager
+            .create_test_lights(self.context_state.context());
 
         log::info!("  Added cube with PBR material");
 
@@ -135,17 +136,17 @@ impl ThreeDRenderer {
         );
 
         // Update camera (follow system, etc.)
-        self.camera_manager.update_camera_follow(
-            self.scene_loader_state.scene_graph_mut(),
-            delta_time,
-        );
+        self.camera_manager
+            .update_camera_follow(self.scene_loader_state.scene_graph_mut(), delta_time);
 
         // Update BVH system for culling
-        self.mesh_manager.update_bvh(delta_time)
+        self.mesh_manager
+            .update_bvh(delta_time)
             .context("Failed to update BVH system")?;
 
         // Generate shadow maps for lights that cast shadows
-        self.mesh_manager.generate_shadow_maps(&mut self.light_manager);
+        self.mesh_manager
+            .generate_shadow_maps(&mut self.light_manager);
 
         // Render all cameras using coordinator
         {
@@ -158,7 +159,7 @@ impl ThreeDRenderer {
                 window_size,
                 &mut self.camera_manager,
                 &mut self.mesh_manager,
-                &self.light_manager,
+                &mut self.light_manager,
                 &mut self.context_state,
                 render_state,
                 debug_mode,
@@ -195,7 +196,8 @@ impl ThreeDRenderer {
         quality: u8,
     ) -> Result<()> {
         // Generate shadow maps first (required for proper rendering)
-        self.mesh_manager.generate_shadow_maps(&mut self.light_manager);
+        self.mesh_manager
+            .generate_shadow_maps(&mut self.light_manager);
 
         // Preserve current camera viewports so we can restore them after the capture
         let original_main_viewport = self.camera_manager.camera().viewport();
@@ -220,7 +222,9 @@ impl ThreeDRenderer {
             crate::util::calculate_screenshot_viewports((width, height), &additional_configs);
 
         // Adjust viewports to match the offscreen render target
-        self.camera_manager.camera_mut().set_viewport(screenshot_main_viewport);
+        self.camera_manager
+            .camera_mut()
+            .set_viewport(screenshot_main_viewport);
         for (cam, viewport) in self
             .camera_manager
             .additional_cameras_mut()
@@ -231,10 +235,11 @@ impl ThreeDRenderer {
         }
 
         // Collect data for screenshot rendering
-        let lights = self.light_manager.collect_lights();
-        let visible_indices = self.mesh_manager.get_visible_mesh_indices(
-            render_state.map(|s| &s.visibility),
-        );
+        let context = self.context_state.context();
+        let lights = self.light_manager.collect_lights(context);
+        let visible_indices = self
+            .mesh_manager
+            .get_visible_mesh_indices(render_state.map(|s| &s.visibility));
         let visible_meshes: Vec<_> = visible_indices
             .iter()
             .filter_map(|&idx| self.mesh_manager.meshes().get(idx))
@@ -259,7 +264,9 @@ impl ThreeDRenderer {
         );
 
         // Restore original viewports
-        self.camera_manager.camera_mut().set_viewport(original_main_viewport);
+        self.camera_manager
+            .camera_mut()
+            .set_viewport(original_main_viewport);
         for (cam, viewport) in self
             .camera_manager
             .additional_cameras_mut()
@@ -410,8 +417,13 @@ impl ThreeDRenderer {
 
         // Check for MeshRenderer
         if let Some(mesh_renderer) = self.get_component::<MeshRenderer>(entity, "MeshRenderer") {
-            self.handle_mesh_renderer(entity, &mesh_renderer, transform.as_ref(), lod_component.as_ref())
-                .await?;
+            self.handle_mesh_renderer(
+                entity,
+                &mesh_renderer,
+                transform.as_ref(),
+                lod_component.as_ref(),
+            )
+            .await?;
         }
 
         // Check for GeometryAsset
@@ -455,7 +467,12 @@ impl ThreeDRenderer {
         entity
             .components
             .get(component_name)
-            .and_then(|value| self.context_state.component_registry().decode(component_name, value).ok())
+            .and_then(|value| {
+                self.context_state
+                    .component_registry()
+                    .decode(component_name, value)
+                    .ok()
+            })
             .and_then(|boxed| boxed.downcast::<T>().ok())
             .map(|boxed| *boxed)
     }
@@ -480,7 +497,8 @@ impl ThreeDRenderer {
         let camera_pos = self.camera_manager.camera_position_glam();
 
         // Extract needed values from context_state to avoid multiple borrows
-        let (context, lod_manager, material_manager) = self.context_state.context_lod_and_material_manager_mut();
+        let (context, lod_manager, material_manager) =
+            self.context_state.context_lod_and_material_manager_mut();
 
         let submeshes = crate::renderer::entity_loader::handle_mesh_renderer(
             context,
@@ -606,8 +624,8 @@ impl ThreeDRenderer {
                 entity_id,
                 final_scale,
                 base_scale,
-                true,  // Terrains cast shadows by default
-                true,  // Terrains receive shadows by default
+                true, // Terrains cast shadows by default
+                true, // Terrains receive shadows by default
             );
         }
 
@@ -621,16 +639,16 @@ impl ThreeDRenderer {
     ) -> Result<()> {
         let context = self.context_state.context();
 
-        if let Some(loaded_light) = crate::renderer::entity_loader::handle_light(
-            context,
-            light,
-            transform,
-        )? {
+        if let Some(loaded_light) =
+            crate::renderer::entity_loader::handle_light(context, light, transform)?
+        {
             match loaded_light {
                 LoadedLight::Directional(light) => self.light_manager.add_directional_light(light),
                 LoadedLight::Point(light) => self.light_manager.add_point_light(light),
                 LoadedLight::Spot(light) => self.light_manager.add_spot_light(light),
-                LoadedLight::Ambient(light) => self.light_manager.set_ambient_light(light),
+                LoadedLight::Ambient { light, metadata } => {
+                    self.light_manager.add_ambient_light(light, metadata);
+                }
             }
         }
         Ok(())
@@ -687,12 +705,17 @@ impl ThreeDRenderer {
     /// Enable/disable automatic distance-based LOD switching
     pub fn set_lod_auto_switch(&self, enabled: bool) {
         self.context_state.lod_manager().set_auto_switch(enabled);
-        log::info!("LOD auto-switch: {}", if enabled { "enabled" } else { "disabled" });
+        log::info!(
+            "LOD auto-switch: {}",
+            if enabled { "enabled" } else { "disabled" }
+        );
     }
 
     /// Set distance thresholds for LOD switching
     pub fn set_lod_distance_thresholds(&self, high: f32, low: f32) {
-        self.context_state.lod_manager().set_distance_thresholds(high, low);
+        self.context_state
+            .lod_manager()
+            .set_distance_thresholds(high, low);
         log::info!("LOD thresholds set to: high={}, low={}", high, low);
     }
 

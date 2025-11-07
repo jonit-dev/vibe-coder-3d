@@ -90,7 +90,7 @@ impl ThreeDRenderCoordinator {
         window_size: (u32, u32),
         camera_manager: &mut super::threed_camera_manager::ThreeDCameraManager,
         mesh_manager: &mut super::threed_mesh_manager::ThreeDMeshManager,
-        light_manager: &super::threed_light_manager::ThreeDLightManager,
+        light_manager: &mut super::threed_light_manager::ThreeDLightManager,
         context_state: &mut super::threed_context_state::ThreeDContextState,
         render_state: Option<&MeshRenderState>,
         debug_mode: bool,
@@ -122,25 +122,35 @@ impl ThreeDRenderCoordinator {
                         None => continue,
                     };
 
-                    // Extract all needed data from managers before any mutable borrows
-                    let skybox_loaded = context_state.skybox_renderer().is_loaded();
-                    let directional_lights = light_manager.directional_lights();
-                    let point_lights = light_manager.point_lights();
-                    let spot_lights = light_manager.spot_lights();
-                    let ambient_light = light_manager.ambient_light_ref();
+                    // Get lights from light manager (this will trigger recompute_combined_ambient if needed)
+                    let lights = light_manager.collect_lights(context);
 
-                    Self::render_single_camera_with_state(
+                    // Use BVH frustum culling to get visible mesh indices
+                    let visible_indices = mesh_manager.get_visible_mesh_indices_with_camera(
+                        camera_manager.camera(),
+                        render_state.map(|s| &s.visibility),
+                        debug_mode,
+                    );
+
+                    // Get visible meshes from indices
+                    let meshes = mesh_manager.meshes();
+                    let visible_meshes: Vec<_> =
+                        visible_indices.iter().map(|&idx| &meshes[idx]).collect();
+
+                    // Extract skybox renderer and mutable HDR textures together to avoid borrow checker issues
+                    let (skybox_renderer, hdr_color, hdr_depth) =
+                        context_state.skybox_and_hdr_textures_mut();
+
+                    Self::render_single_camera_with_lights(
                         context,
                         &screen,
                         camera_manager.camera_mut(),
                         &config,
-                        context_state,
-                        skybox_loaded,
+                        skybox_renderer,
                         mesh_manager,
-                        directional_lights,
-                        point_lights,
-                        spot_lights,
-                        ambient_light,
+                        &lights,
+                        hdr_color,
+                        hdr_depth,
                         render_state,
                         debug_mode,
                     )?;
@@ -151,15 +161,10 @@ impl ThreeDRenderCoordinator {
                     }
 
                     // Clone config and get skybox info before mutably borrowing
-                    let (config, skybox_loaded) = {
+                    let (config, _skybox_loaded) = {
                         let cam = &camera_manager.additional_cameras()[index];
                         (cam.config.clone(), cam.skybox_renderer.is_loaded())
                     };
-
-                    let directional_lights = light_manager.directional_lights();
-                    let point_lights = light_manager.point_lights();
-                    let spot_lights = light_manager.spot_lights();
-                    let ambient_light = light_manager.ambient_light_ref();
 
                     // Get mutable HDR textures before other mutable borrows
                     let (hdr_color, hdr_depth) = context_state.hdr_textures_mut();
@@ -168,17 +173,29 @@ impl ThreeDRenderCoordinator {
                     let additional_cameras = camera_manager.additional_cameras_mut();
                     let cam = &mut additional_cameras[index];
 
-                    Self::render_single_camera(
+                    // Get lights from light manager (this will trigger recompute_combined_ambient if needed)
+                    let lights = light_manager.collect_lights(context);
+
+                    // Use BVH frustum culling to get visible mesh indices
+                    let visible_indices = mesh_manager.get_visible_mesh_indices_with_camera(
+                        &cam.camera,
+                        render_state.map(|s| &s.visibility),
+                        debug_mode,
+                    );
+
+                    // Get visible meshes from indices
+                    let meshes = mesh_manager.meshes();
+                    let visible_meshes: Vec<_> =
+                        visible_indices.iter().map(|&idx| &meshes[idx]).collect();
+
+                    Self::render_single_camera_with_lights(
                         context,
                         &screen,
                         &mut cam.camera,
                         &config,
                         &cam.skybox_renderer,
                         mesh_manager,
-                        directional_lights,
-                        point_lights,
-                        spot_lights,
-                        ambient_light,
+                        &lights,
                         hdr_color,
                         hdr_depth,
                         render_state,
@@ -325,7 +342,7 @@ impl ThreeDRenderCoordinator {
             let color_texture = three_d::ColorTexture::Single(
                 hdr_color_texture
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("HDR color texture not initialized"))?
+                    .ok_or_else(|| anyhow::anyhow!("HDR color texture not initialized"))?,
             );
             let effect = ColorGradingEffect::from(post_settings);
             crate::renderer::apply_post_processing(screen, effect, camera, color_texture, scissor);
@@ -369,6 +386,197 @@ impl ThreeDRenderCoordinator {
         }
 
         Ok(())
+    }
+
+    /// Render a single camera with light manager (for main camera)
+    fn render_single_camera_with_light_manager(
+        context: &Context,
+        screen: &RenderTarget,
+        camera: &mut Camera,
+        config: &CameraConfig,
+        context_state: &mut super::threed_context_state::ThreeDContextState,
+        _skybox_loaded: bool,
+        mesh_manager: &mut super::threed_mesh_manager::ThreeDMeshManager,
+        light_manager: &mut super::threed_light_manager::ThreeDLightManager,
+        render_state: Option<&MeshRenderState>,
+        debug_mode: bool,
+    ) -> Result<()> {
+        let (skybox_renderer, hdr_color, hdr_depth) = context_state.skybox_and_hdr_textures_mut();
+
+        // Collect lights using the light manager's new API
+        let lights = light_manager.collect_lights(context);
+
+        Self::render_single_camera_with_lights(
+            context,
+            screen,
+            camera,
+            config,
+            skybox_renderer,
+            mesh_manager,
+            &lights,
+            hdr_color,
+            hdr_depth,
+            render_state,
+            debug_mode,
+        )
+    }
+
+    /// Render a single camera with pre-collected lights
+    fn render_single_camera_with_lights(
+        context: &Context,
+        screen: &RenderTarget,
+        camera: &mut Camera,
+        config: &CameraConfig,
+        skybox_renderer: &crate::renderer::SkyboxRenderer,
+        mesh_manager: &mut super::threed_mesh_manager::ThreeDMeshManager,
+        lights: &[&dyn Light],
+        hdr_color_texture: &mut Option<Texture2D>,
+        hdr_depth_texture: &mut Option<three_d::DepthTexture2D>,
+        render_state: Option<&MeshRenderState>,
+        debug_mode: bool,
+    ) -> Result<()> {
+        let scissor: ScissorBox = camera.viewport().into();
+        let settings = crate::renderer::render_settings::prepare_render_settings_for(
+            config,
+            skybox_renderer.is_loaded(),
+        );
+
+        let mut tone_restore: Option<(ToneMapping, ColorMapping)> = None;
+        if let Some(ref post_settings) = settings.post_settings {
+            if post_settings.apply_tone_mapping {
+                tone_restore = Some((camera.tone_mapping, camera.color_mapping));
+                camera.disable_tone_and_color_mapping();
+            }
+        }
+
+        if let Some(post_settings) = settings.post_settings.clone() {
+            // Ensure HDR textures exist
+            if let Some(new_texture) = crate::renderer::post_process_targets::ensure_color_texture(
+                context,
+                hdr_color_texture.as_ref(),
+                (camera.viewport().width, camera.viewport().height),
+            ) {
+                *hdr_color_texture = Some(new_texture);
+            }
+            if let Some(new_texture) = crate::renderer::post_process_targets::ensure_depth_texture(
+                context,
+                hdr_depth_texture.as_ref(),
+                (camera.viewport().width, camera.viewport().height),
+            ) {
+                *hdr_depth_texture = Some(new_texture);
+            }
+
+            // Use BVH frustum culling to get visible mesh indices
+            let visible_indices = mesh_manager.get_visible_mesh_indices_with_camera(
+                camera,
+                render_state.map(|s| &s.visibility),
+                debug_mode,
+            );
+
+            // Get visible meshes from indices
+            let meshes = mesh_manager.meshes();
+            let visible_meshes: Vec<_> = visible_indices
+                .iter()
+                .filter_map(|&idx| meshes.get(idx))
+                .collect();
+
+            {
+                let render_target = {
+                    let color_target = hdr_color_texture
+                        .as_mut()
+                        .ok_or_else(|| anyhow::anyhow!("HDR color texture not initialized"))?
+                        .as_color_target(None);
+                    let depth_target = hdr_depth_texture
+                        .as_mut()
+                        .ok_or_else(|| anyhow::anyhow!("HDR depth texture not initialized"))?
+                        .as_depth_target();
+                    RenderTarget::new(color_target, depth_target)
+                };
+
+                if let Some(clear_state) = settings.clear_state {
+                    render_target.clear_partially(scissor, clear_state);
+                }
+
+                if settings.render_skybox {
+                    skybox_renderer.render(&render_target, camera);
+                }
+
+                // Render with pre-collected lights
+                render_target.render(camera, &visible_meshes, lights);
+            }
+
+            let color_texture = three_d::ColorTexture::Single(
+                hdr_color_texture
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("HDR color texture not initialized"))?,
+            );
+            let effect = ColorGradingEffect::from(post_settings);
+            crate::renderer::apply_post_processing(screen, effect, camera, color_texture, scissor);
+        } else {
+            if let Some(clear_state) = settings.clear_state {
+                screen.clear_partially(scissor, clear_state);
+            }
+
+            if settings.render_skybox {
+                skybox_renderer.render(screen, camera);
+            }
+
+            // Use BVH frustum culling to get visible mesh indices
+            let visible_indices = mesh_manager.get_visible_mesh_indices_with_camera(
+                camera,
+                render_state.map(|s| &s.visibility),
+                debug_mode,
+            );
+
+            // Get visible meshes from indices
+            let meshes = mesh_manager.meshes();
+            let visible_meshes: Vec<_> = visible_indices
+                .iter()
+                .filter_map(|&idx| meshes.get(idx))
+                .collect();
+
+            // Render with pre-collected lights
+            screen.render(camera, &visible_meshes, lights);
+        }
+
+        if let Some((tone, color)) = tone_restore {
+            camera.tone_mapping = tone;
+            camera.color_mapping = color;
+        }
+
+        Ok(())
+    }
+
+    /// Render an additional camera with light manager (for additional cameras)
+    fn render_additional_camera_with_light_manager(
+        context: &Context,
+        screen: &RenderTarget,
+        camera: &mut Camera,
+        config: &CameraConfig,
+        skybox_renderer: &crate::renderer::SkyboxRenderer,
+        mesh_manager: &mut super::threed_mesh_manager::ThreeDMeshManager,
+        light_manager: &mut super::threed_light_manager::ThreeDLightManager,
+        hdr_color_texture: &mut Option<Texture2D>,
+        hdr_depth_texture: &mut Option<three_d::DepthTexture2D>,
+        render_state: Option<&MeshRenderState>,
+        debug_mode: bool,
+    ) -> Result<()> {
+        // Collect lights using the light manager's new API
+        let lights = light_manager.collect_lights(context);
+
+        Self::render_single_camera_with_lights(
+            context,
+            screen,
+            camera,
+            config,
+            skybox_renderer,
+            mesh_manager,
+            &lights,
+            hdr_color_texture,
+            hdr_depth_texture,
+            render_state,
+            debug_mode,
+        )
     }
 
     /// Render debug overlay (grid, colliders, etc.)
