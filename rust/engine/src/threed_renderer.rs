@@ -779,16 +779,8 @@ impl ThreeDRenderer {
         scale: f32,
         quality: u8,
     ) -> Result<()> {
-        log::info!("Rendering screenshot to: {}", path.display());
-
         // Generate shadow maps first (required for proper rendering)
         self.generate_shadow_maps();
-
-        // Calculate scaled dimensions
-        let width = ((self.window_size.0 as f32) * scale).max(1.0) as u32;
-        let height = ((self.window_size.1 as f32) * scale).max(1.0) as u32;
-
-        log::info!("  Resolution: {}x{} (scale: {:.2})", width, height, scale);
 
         // Preserve current camera viewports so we can restore them after the capture
         let original_main_viewport = self.camera.viewport();
@@ -798,15 +790,18 @@ impl ThreeDRenderer {
             .map(|cam| cam.camera.viewport())
             .collect();
 
-        // Adjust viewports to match the offscreen render target so the capture fills the frame
+        // Calculate screenshot viewports
+        let width = ((self.window_size.0 as f32) * scale).max(1.0) as u32;
+        let height = ((self.window_size.1 as f32) * scale).max(1.0) as u32;
         let additional_configs: Vec<_> = self
             .additional_cameras
             .iter()
             .map(|cam| cam.config.clone())
             .collect();
         let (screenshot_main_viewport, screenshot_additional_viewports) =
-            Self::screenshot_viewports((width, height), &additional_configs);
+            crate::util::calculate_screenshot_viewports((width, height), &additional_configs);
 
+        // Adjust viewports to match the offscreen render target
         self.camera.set_viewport(screenshot_main_viewport);
         for (cam, viewport) in self
             .additional_cameras
@@ -816,125 +811,33 @@ impl ThreeDRenderer {
             cam.camera.set_viewport(*viewport);
         }
 
-        let result = (|| -> Result<()> {
-            // Create a color texture to render to
-            let mut color_texture = Texture2D::new_empty::<[u8; 4]>(
-                &self.context,
-                width,
-                height,
-                Interpolation::Nearest,
-                Interpolation::Nearest,
-                None,
-                Wrapping::ClampToEdge,
-                Wrapping::ClampToEdge,
-            );
+        // Collect data for screenshot rendering
+        let lights = self.collect_lights();
+        let visible_indices = self.get_visible_mesh_indices(render_state);
+        let visible_meshes: Vec<_> = visible_indices
+            .iter()
+            .filter_map(|&idx| self.meshes.get(idx))
+            .collect();
 
-            // Create a depth texture
-            let mut depth_texture = DepthTexture2D::new::<f32>(
-                &self.context,
-                width,
-                height,
-                Wrapping::ClampToEdge,
-                Wrapping::ClampToEdge,
-            );
+        // Delegate to screenshot module
+        let result = crate::util::render_to_screenshot(
+            &self.context,
+            &self.camera,
+            &[],  // TODO: Support additional cameras in screenshot
+            self.camera_config.as_ref(),
+            &self.skybox_renderer,
+            &visible_meshes,
+            &lights,
+            render_state,
+            self.window_size,
+            path,
+            scale,
+            quality,
+            physics_world,
+            Some(&self.debug_line_renderer),
+        );
 
-            // Create render target
-            let render_target = RenderTarget::new(
-                color_texture.as_color_target(None),
-                depth_texture.as_depth_target(),
-            );
-
-            // Clear the render target using camera's background color
-            let clear_color = self
-                .camera_config
-                .as_ref()
-                .and_then(|c| c.background_color)
-                .unwrap_or((0.0, 0.0, 0.0, 1.0));
-
-            render_target.clear(ClearState::color_and_depth(
-                clear_color.0,
-                clear_color.1,
-                clear_color.2,
-                clear_color.3,
-                1.0,
-            ));
-
-            // Render skybox if enabled
-            if let Some(ref config) = self.camera_config {
-                if config.clear_flags.as_deref() == Some("skybox") {
-                    self.skybox_renderer.render(&render_target, &self.camera);
-                }
-            }
-
-            // Collect lights and render scene
-            let lights = self.collect_lights();
-            let visible_indices = self.get_visible_mesh_indices(render_state);
-            let visible_meshes: Vec<_> = visible_indices
-                .iter()
-                .filter_map(|&idx| self.meshes.get(idx))
-                .collect();
-            render_target.render(&self.camera, &visible_meshes, &lights);
-
-            // Render debug overlay if physics world is provided
-            if let Some(physics) = physics_world {
-                self.render_debug_overlay(&render_target, Some(physics))?;
-            }
-
-            // Read pixels from the render target (RGBA u8 format)
-            let pixels: Vec<[u8; 4]> = render_target.read_color();
-
-            // Flatten the pixel data into a byte vec
-            let bytes: Vec<u8> = pixels.into_iter().flat_map(|pixel| pixel).collect();
-
-            // Create the image
-            let img = image::RgbaImage::from_raw(width, height, bytes)
-                .with_context(|| "Failed to create image from pixels")?;
-
-            // Determine output format from file extension
-            let extension = path
-                .extension()
-                .and_then(|e| e.to_str())
-                .map(|s| s.to_lowercase());
-
-            match extension.as_deref() {
-                Some("jpg") | Some("jpeg") => {
-                    // Convert RGBA to RGB (JPEG doesn't support alpha)
-                    let rgb_img = image::DynamicImage::ImageRgba8(img).to_rgb8();
-
-                    // Save as JPEG with specified quality
-                    use image::codecs::jpeg::JpegEncoder;
-                    let file = std::fs::File::create(path)
-                        .with_context(|| "Failed to create output file")?;
-                    let mut encoder = JpegEncoder::new_with_quality(file, quality);
-                    encoder
-                        .encode(
-                            rgb_img.as_raw(),
-                            width,
-                            height,
-                            image::ColorType::Rgb8.into(),
-                        )
-                        .with_context(|| "Failed to encode JPEG")?;
-                    log::info!("Screenshot saved as JPEG (quality: {})", quality);
-                }
-                Some("png") | None => {
-                    // Save as PNG (image crate will use default compression)
-                    img.save(path)
-                        .with_context(|| format!("Failed to save PNG to {}", path.display()))?;
-                    log::info!("Screenshot saved as PNG");
-                }
-                _ => {
-                    // Fallback to default save for other formats
-                    img.save(path).with_context(|| {
-                        format!("Failed to save screenshot to {}", path.display())
-                    })?;
-                    log::info!("Screenshot saved successfully");
-                }
-            }
-
-            Ok(())
-        })();
-
-        // Restore original viewports to leave runtime rendering untouched
+        // Restore original viewports
         self.camera.set_viewport(original_main_viewport);
         for (cam, viewport) in self
             .additional_cameras
@@ -947,18 +850,6 @@ impl ThreeDRenderer {
         result
     }
 
-    fn screenshot_viewports(
-        target_size: (u32, u32),
-        additional_configs: &[CameraConfig],
-    ) -> (Viewport, Vec<Viewport>) {
-        let main = Viewport::new_at_origo(target_size.0.max(1), target_size.1.max(1));
-        let additional = additional_configs
-            .iter()
-            .map(|config| Self::viewport_from_config(config, target_size))
-            .collect();
-
-        (main, additional)
-    }
 
     /// Update camera position and target
     pub fn update_camera(&mut self, position: glam::Vec3, target: glam::Vec3) {
@@ -2227,35 +2118,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn screenshot_viewports_match_target_size() {
-        let (main_viewport, additional) = ThreeDRenderer::screenshot_viewports((1920, 1080), &[]);
-
-        assert_eq!(main_viewport.x, 0);
-        assert_eq!(main_viewport.y, 0);
-        assert_eq!(main_viewport.width, 1920);
-        assert_eq!(main_viewport.height, 1080);
-        assert!(additional.is_empty());
-    }
-
-    #[test]
-    fn screenshot_viewports_scale_additional_cameras() {
-        let mut config = base_camera_config();
-        config.viewport_rect = Some(ViewportRect {
-            x: 0.5,
-            y: 0.25,
-            width: 0.5,
-            height: 0.5,
-        });
-
-        let (_, additional) = ThreeDRenderer::screenshot_viewports((800, 600), &[config]);
-        assert_eq!(additional.len(), 1);
-        let vp = additional[0];
-        assert_eq!(vp.x, 400);
-        assert_eq!(vp.y, 150);
-        assert_eq!(vp.width, 400);
-        assert_eq!(vp.height, 300);
-    }
 }
 
 #[cfg(test)]
