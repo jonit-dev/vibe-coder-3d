@@ -464,9 +464,18 @@ export const useEntityCreation = () => {
       // Add capsule mesh for visualization
       addMeshRenderer(entity.id, 'capsule');
 
+      // Position capsule so its bottom (feet) are at floor level
+      // Capsule mesh has pivot at center, so offset by half height
+      const transformData: ITransformData = {
+        position: [0, 0.5, 0], // Position at ground level (half height up)
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+      };
+      updateComponent(entity.id, KnownComponentTypes.TRANSFORM, transformData);
+
       return entity;
     },
-    [createEntity, addComponent, addMeshRenderer, getNextNumber],
+    [createEntity, addComponent, addMeshRenderer, updateComponent, getNextNumber],
   );
 
   const createTrapezoid = useCallback(
