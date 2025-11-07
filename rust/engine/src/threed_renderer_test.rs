@@ -2,12 +2,50 @@
 mod tests {
     use super::*;
     use crate::renderer::material_manager::parse_hex_color;
+    use crate::renderer::camera_loader::CameraConfig;
     use rapier3d::na::{vector, UnitQuaternion};
     use rapier3d::prelude::*;
+    use three_d::vec3;
 
     // Note: These tests are limited because three-d requires a real windowing context
     // which is not available in headless test environments. Full integration tests
     // should be run manually with `cargo run -- --scene testphysics`
+
+    /// Helper function to create a base camera config for testing
+    pub fn base_camera_config() -> CameraConfig {
+        CameraConfig {
+            position: vec3(0.0, 0.0, 0.0),
+            target: vec3(0.0, 0.0, -1.0),
+            fov: 60.0,
+            near: 0.1,
+            far: 1000.0,
+            is_main: false,
+            projection_type: "perspective".to_string(),
+            orthographic_size: 5.0,
+            depth: 0,
+            clear_flags: None,
+            background_color: None,
+            skybox_texture: None,
+            control_mode: None,
+            enable_smoothing: false,
+            follow_target: None,
+            follow_offset: None,
+            smoothing_speed: 0.0,
+            rotation_smoothing: 0.0,
+            viewport_rect: None,
+            hdr: false,
+            tone_mapping: None,
+            tone_mapping_exposure: 1.0,
+            enable_post_processing: false,
+            post_processing_preset: None,
+            skybox_scale: None,
+            skybox_rotation: None,
+            skybox_repeat: None,
+            skybox_offset: None,
+            skybox_intensity: 1.0,
+            skybox_blur: 0.0,
+        }
+    }
 
     #[test]
     fn test_renderer_struct_size_is_reasonable() {

@@ -17,6 +17,7 @@ use vibe_scene::{Entity, EntityId};
 use vibe_scene_graph::SceneGraph;
 
 // Import renderer modules
+use crate::renderer::camera_renderer::{AdditionalCamera, CameraEntry, CameraVariant};
 use crate::renderer::coordinate_conversion::threejs_to_threed_position;
 use crate::renderer::{
     apply_post_processing, create_camera, generate_terrain, load_camera, load_instanced,
@@ -107,24 +108,6 @@ pub struct ThreeDRenderer {
     bvh_manager: Option<std::sync::Arc<std::sync::Mutex<crate::spatial::bvh_manager::BvhManager>>>,
     visibility_culler: Option<crate::renderer::visibility::VisibilityCuller>,
     bvh_debug_logger: Option<crate::renderer::bvh_debug::BvhDebugLogger>,
-}
-
-struct AdditionalCamera {
-    camera: Camera,
-    config: CameraConfig,
-    skybox_renderer: SkyboxRenderer,
-    last_position: Vec3,
-    last_target: Vec3,
-}
-
-struct CameraEntry {
-    depth: i32,
-    variant: CameraVariant,
-}
-
-enum CameraVariant {
-    Main,
-    Additional(usize),
 }
 
 impl ThreeDRenderer {
@@ -272,8 +255,27 @@ impl ThreeDRenderer {
     }
 
     /// Update camera based on follow system and other camera features
-    pub fn update_camera_internal(&mut self, delta_time: f32) {
-        // Update main camera follow
+
+    /// Initialize BVH system if not already initialized
+    /// Render a frame
+    pub fn render(
+        &mut self,
+        delta_time: f32,
+        debug_mode: bool,
+        physics_world: Option<&vibe_physics::PhysicsWorld>,
+        render_state: Option<&MeshRenderState>,
+    ) -> Result<()> {
+        crate::renderer::scene_utilities::log_first_frame(
+            self.meshes.len(),
+            self.directional_lights.len(),
+            self.point_lights.len(),
+            self.spot_lights.len(),
+            self.ambient_light.is_some(),
+            self.camera.position(),
+            self.camera.target(),
+        );
+
+        // Update camera (follow system, etc.) - main camera
         if let Some(ref config) = self.camera_config.clone() {
             crate::renderer::update_camera_follow(
                 &mut self.camera,
@@ -284,7 +286,6 @@ impl ThreeDRenderer {
                 delta_time,
             );
         }
-
         // Update additional cameras follow
         for idx in 0..self.additional_cameras.len() {
             let (config, camera, last_position, last_target, scene_graph) = {
@@ -297,7 +298,6 @@ impl ThreeDRenderer {
                     self.scene_graph.as_mut(),
                 )
             };
-
             crate::renderer::update_camera_follow(
                 camera,
                 config,
@@ -307,95 +307,15 @@ impl ThreeDRenderer {
                 delta_time,
             );
         }
-    }
 
-    fn ensure_post_process_targets(&mut self) {
-        if let Some(new_texture) = crate::renderer::post_process_targets::ensure_color_texture(
-            &self.context,
-            self.hdr_color_texture.as_ref(),
-            self.window_size,
-        ) {
-            self.hdr_color_texture = Some(new_texture);
-        }
-
-        if let Some(new_texture) = crate::renderer::post_process_targets::ensure_depth_texture(
-            &self.context,
-            self.hdr_depth_texture.as_ref(),
-            self.window_size,
-        ) {
-            self.hdr_depth_texture = Some(new_texture);
-        }
-    }
-
-    /// Initialize BVH system if not already initialized
-    fn ensure_bvh_initialized(&mut self) {
+        // Update BVH system for culling (ensure BVH exists first)
         if self.bvh_manager.is_none() {
             let (bvh_manager, visibility_culler) =
                 crate::renderer::bvh_integration::initialize_bvh_system();
             self.bvh_manager = Some(bvh_manager);
             self.visibility_culler = Some(visibility_culler);
         }
-    }
-
-    /// Register a mesh with the BVH system.
-    fn register_mesh_with_bvh(&mut self, mesh_idx: usize) {
-        // Ensure BVH exists
-        self.ensure_bvh_initialized();
-
-        let (Some(ref bvh_manager), Some(&entity_id)) =
-            (&self.bvh_manager, self.mesh_entity_ids.get(mesh_idx))
-        else {
-            return;
-        };
-
-        let Some(mesh) = self.meshes.get(mesh_idx) else {
-            return;
-        };
-
-        crate::renderer::bvh_integration::register_mesh_with_bvh(
-            bvh_manager,
-            mesh,
-            entity_id,
-            mesh_idx,
-        );
-    }
-
-    /// Update BVH system transforms from current mesh transforms.
-    fn update_bvh_system(&mut self) {
-        // Ensure BVH exists
-        self.ensure_bvh_initialized();
-
         crate::renderer::bvh_integration::update_bvh_transforms(&self.bvh_manager);
-    }
-
-    /// Get indices of visible meshes based solely on MeshRenderer.enabled.
-    ///
-    /// BVH/frustum culling is intentionally disabled for now to avoid regressions
-    /// (gray/empty scenes, stack overflows from bad math). This function is guaranteed
-    /// to be O(mesh_count) and non-recursive.
-    fn get_visible_mesh_indices(&self, render_state: Option<&MeshRenderState>) -> Vec<usize> {
-        crate::renderer::mesh_filtering::get_visible_mesh_indices(
-            self.meshes.len(),
-            &self.mesh_entity_ids,
-            render_state.map(|s| &s.visibility),
-        )
-    }
-
-    /// Render a frame
-    pub fn render(
-        &mut self,
-        delta_time: f32,
-        debug_mode: bool,
-        physics_world: Option<&vibe_physics::PhysicsWorld>,
-        render_state: Option<&MeshRenderState>,
-    ) -> Result<()> {
-        self.log_first_frame();
-
-        // Update camera (follow system, etc.)
-        self.update_camera_internal(delta_time);
-
-        // Update BVH system for culling
-        self.update_bvh_system();
 
         // Update BVH debug logging
         if let (Some(bvh_manager), Some(ref mut debug_logger)) = (&self.bvh_manager, &mut self.bvh_debug_logger) {
@@ -435,8 +355,10 @@ impl ThreeDRenderer {
                         continue;
                     };
                     let scissor: ScissorBox = self.camera.viewport().into();
-                    let settings =
-                        Self::prepare_render_settings_for(config, self.skybox_renderer.is_loaded());
+                    let settings = crate::renderer::render_settings::prepare_render_settings_for(
+                        config,
+                        self.skybox_renderer.is_loaded(),
+                    );
 
                     let mut tone_restore: Option<(ToneMapping, ColorMapping)> = None;
                     if let Some(ref post_settings) = settings.post_settings {
@@ -448,7 +370,21 @@ impl ThreeDRenderer {
                     }
 
                     if let Some(post_settings) = settings.post_settings.clone() {
-                        self.ensure_post_process_targets();
+                        // Ensure HDR textures exist
+                        if let Some(new_texture) = crate::renderer::post_process_targets::ensure_color_texture(
+                            &self.context,
+                            self.hdr_color_texture.as_ref(),
+                            self.window_size,
+                        ) {
+                            self.hdr_color_texture = Some(new_texture);
+                        }
+                        if let Some(new_texture) = crate::renderer::post_process_targets::ensure_depth_texture(
+                            &self.context,
+                            self.hdr_depth_texture.as_ref(),
+                            self.window_size,
+                        ) {
+                            self.hdr_depth_texture = Some(new_texture);
+                        }
 
                         // Manually collect light references to avoid borrowing all of self
                         let mut lights: Vec<&dyn Light> = Vec::new();
@@ -466,7 +402,11 @@ impl ThreeDRenderer {
                         }
 
                         // Extract visible mesh indices BEFORE creating render_target (avoids borrow conflicts)
-                        let visible_indices = self.get_visible_mesh_indices(render_state);
+                        let visible_indices = crate::renderer::mesh_filtering::get_visible_mesh_indices(
+                            self.meshes.len(),
+                            &self.mesh_entity_ids,
+                            render_state.map(|s| &s.visibility),
+                        );
 
                         {
                             let render_target = {
@@ -524,7 +464,11 @@ impl ThreeDRenderer {
                             &self.spot_lights,
                             &self.ambient_light,
                         );
-                        let visible_indices = self.get_visible_mesh_indices(render_state);
+                        let visible_indices = crate::renderer::mesh_filtering::get_visible_mesh_indices(
+                            self.meshes.len(),
+                            &self.mesh_entity_ids,
+                            render_state.map(|s| &s.visibility),
+                        );
                         let visible_meshes: Vec<_> = visible_indices
                             .iter()
                             .filter_map(|&idx| self.meshes.get(idx))
@@ -550,7 +494,10 @@ impl ThreeDRenderer {
                         let cam = &self.additional_cameras[index];
                         cam.skybox_renderer.is_loaded()
                     };
-                    let settings = Self::prepare_render_settings_for(&config_clone, skybox_loaded);
+                    let settings = crate::renderer::render_settings::prepare_render_settings_for(
+                        &config_clone,
+                        skybox_loaded,
+                    );
 
                     let scissor: ScissorBox = {
                         let cam = &self.additional_cameras[index];
@@ -568,7 +515,21 @@ impl ThreeDRenderer {
                     }
 
                     if let Some(post_settings) = settings.post_settings.clone() {
-                        self.ensure_post_process_targets();
+                        // Ensure HDR textures exist
+                        if let Some(new_texture) = crate::renderer::post_process_targets::ensure_color_texture(
+                            &self.context,
+                            self.hdr_color_texture.as_ref(),
+                            self.window_size,
+                        ) {
+                            self.hdr_color_texture = Some(new_texture);
+                        }
+                        if let Some(new_texture) = crate::renderer::post_process_targets::ensure_depth_texture(
+                            &self.context,
+                            self.hdr_depth_texture.as_ref(),
+                            self.window_size,
+                        ) {
+                            self.hdr_depth_texture = Some(new_texture);
+                        }
 
                         // Manually collect light references to avoid borrowing all of self
                         let mut lights: Vec<&dyn Light> = Vec::new();
@@ -586,7 +547,11 @@ impl ThreeDRenderer {
                         }
 
                         // Extract visible mesh indices BEFORE creating render_target (avoids borrow conflicts)
-                        let visible_indices = self.get_visible_mesh_indices(render_state);
+                        let visible_indices = crate::renderer::mesh_filtering::get_visible_mesh_indices(
+                            self.meshes.len(),
+                            &self.mesh_entity_ids,
+                            render_state.map(|s| &s.visibility),
+                        );
 
                         {
                             let render_target = {
@@ -645,7 +610,11 @@ impl ThreeDRenderer {
                             &self.spot_lights,
                             &self.ambient_light,
                         );
-                        let visible_indices = self.get_visible_mesh_indices(render_state);
+                        let visible_indices = crate::renderer::mesh_filtering::get_visible_mesh_indices(
+                            self.meshes.len(),
+                            &self.mesh_entity_ids,
+                            render_state.map(|s| &s.visibility),
+                        );
                         let visible_meshes: Vec<_> = visible_indices
                             .iter()
                             .filter_map(|&idx| self.meshes.get(idx))
@@ -730,7 +699,11 @@ impl ThreeDRenderer {
             &self.spot_lights,
             &self.ambient_light,
         );
-        let visible_indices = self.get_visible_mesh_indices(render_state);
+        let visible_indices = crate::renderer::mesh_filtering::get_visible_mesh_indices(
+                            self.meshes.len(),
+                            &self.mesh_entity_ids,
+                            render_state.map(|s| &s.visibility),
+                        );
         let visible_meshes: Vec<_> = visible_indices
             .iter()
             .filter_map(|&idx| self.meshes.get(idx))
@@ -789,7 +762,7 @@ impl ThreeDRenderer {
         self.hdr_depth_texture = None;
 
         if let Some(ref config) = self.camera_config {
-            let viewport = Self::viewport_from_config(config, self.window_size);
+            let viewport = crate::renderer::render_settings::viewport_from_config(config, self.window_size);
             self.camera.set_viewport(viewport);
         } else {
             self.camera
@@ -797,129 +770,39 @@ impl ThreeDRenderer {
         }
 
         for cam in &mut self.additional_cameras {
-            let viewport = Self::viewport_from_config(&cam.config, self.window_size);
+            let viewport = crate::renderer::render_settings::viewport_from_config(&cam.config, self.window_size);
             cam.camera.set_viewport(viewport);
         }
-    }
-
-    fn viewport_from_config(config: &CameraConfig, window_size: (u32, u32)) -> Viewport {
-        crate::renderer::render_settings::viewport_from_config(config, window_size)
-    }
-
-    fn prepare_render_settings_for(
-        config: &CameraConfig,
-        skybox_loaded: bool,
-    ) -> crate::renderer::render_settings::RenderSettings {
-        crate::renderer::render_settings::prepare_render_settings_for(config, skybox_loaded)
     }
 
 
     /// Load a full scene from SceneData
     /// Now async to support texture loading!
     pub async fn load_scene(&mut self, scene: &SceneData) -> Result<()> {
-        self.log_scene_load_start(scene);
+        crate::renderer::scene_utilities::log_scene_load_start(scene);
         self.clear_scene();
 
         // Build scene graph for transform hierarchy and camera follow
-        log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        log::info!("SCENE GRAPH");
-        log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        let scene_graph = SceneGraph::build(scene)?;
-        log::info!(
-            "Scene graph built with {} entities",
-            scene_graph.entity_count()
-        );
-        self.scene_graph = Some(scene_graph);
+        self.scene_graph = Some(crate::renderer::scene_loader::build_scene_graph(scene)?);
 
         // Load materials
-        self.load_materials(scene);
-
-        // Load and register prefabs (if any are embedded in the scene file)
-        let mut prefab_registry = vibe_ecs_bridge::PrefabRegistry::new();
-        let mut prefab_instances: Vec<Entity> = Vec::new();
-
-        if let Some(prefabs_value) = &scene.prefabs {
-            match vibe_ecs_bridge::parse_prefabs(prefabs_value) {
-                Ok(prefabs) => {
-                    for prefab in prefabs {
-                        log::info!("Registering prefab definition: {}", prefab.id);
-                        prefab_registry.register(prefab);
-                    }
-                    log::info!(
-                        "Registered {} prefab definition(s) from scene",
-                        prefab_registry.count()
-                    );
-                }
-                Err(err) => {
-                    log::warn!("Failed to parse prefabs from scene: {}", err);
-                }
-            }
-        } else {
-            log::info!("Scene does not embed prefab definitions");
-        }
-
-        // Process PrefabInstance components and instantiate prefabs
         log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        log::info!("PREFAB INSTANCES");
+        log::info!("MATERIALS");
         log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-        for entity in &scene.entities {
-            if let Some(prefab_instance) =
-                self.get_component::<vibe_ecs_bridge::PrefabInstance>(entity, "PrefabInstance")
-            {
-                log::info!("  Instantiating prefab: {}", prefab_instance.prefab_id);
-
-                // Extract instance Transform to position the prefab
-                let instance_transform = entity.components.get("Transform");
-
-                match prefab_registry.get(&prefab_instance.prefab_id) {
-                    Some(prefab) => {
-                        match vibe_ecs_bridge::instantiate_prefab(
-                            prefab,
-                            entity.persistent_id.clone(),
-                            prefab_instance.override_patch.as_ref(),
-                            instance_transform,
-                            &prefab_instance.instance_uuid,
-                            &self.component_registry,
-                        ) {
-                            Ok(instances) => {
-                                log::info!("    → Created {} entity/entities", instances.len());
-                                prefab_instances.extend(instances);
-                            }
-                            Err(e) => {
-                                log::warn!(
-                                    "    Failed to instantiate prefab {}: {}",
-                                    prefab_instance.prefab_id,
-                                    e
-                                );
-                            }
-                        }
-                    }
-                    None => {
-                        log::warn!("    Prefab not found: {}", prefab_instance.prefab_id);
-                    }
-                }
-            }
+        if !scene.materials.is_empty() {
+            let materials_value = serde_json::Value::Array(scene.materials.clone());
+            self.material_manager.load_from_scene(&materials_value);
+        } else {
+            log::warn!("No materials found in scene");
         }
 
-        // Rebuild scene graph with prefab instances included
-        if !prefab_instances.is_empty() {
-            log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            log::info!("REBUILDING SCENE GRAPH WITH PREFAB INSTANCES");
-            log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            log::info!("  Original entities: {}", scene.entities.len());
-            log::info!("  Prefab instances: {}", prefab_instances.len());
+        // Process prefab definitions and instances
+        let (updated_scene_graph, prefab_instances) =
+            crate::renderer::scene_loader::process_prefabs(scene, &self.component_registry)?;
 
-            // Create merged scene with both original entities and prefab instances
-            let mut full_scene = scene.clone();
-            full_scene.entities.extend(prefab_instances.clone());
-
-            // Rebuild scene graph to include prefab hierarchies
-            self.scene_graph = Some(SceneGraph::build(&full_scene)?);
-            log::info!(
-                "  Scene graph rebuilt with {} total entities",
-                full_scene.entities.len()
-            );
+        // Update scene graph if prefab instances were created
+        if let Some(scene_graph) = updated_scene_graph {
+            self.scene_graph = Some(scene_graph);
         }
 
         // Process entities
@@ -937,7 +820,13 @@ impl ThreeDRenderer {
             self.load_entity(entity).await?;
         }
 
-        self.log_scene_load_summary();
+        crate::renderer::scene_utilities::log_scene_load_summary(
+            self.meshes.len(),
+            self.directional_lights.len(),
+            self.point_lights.len(),
+            self.spot_lights.len(),
+            self.ambient_light.is_some(),
+        );
 
         Ok(())
     }
@@ -945,27 +834,22 @@ impl ThreeDRenderer {
     /// Sync newly created entities to renderer
     /// This is called after SceneManager applies entity commands to add runtime-created entities to the renderer
     pub async fn sync_new_entities(&mut self, scene: &SceneData) -> Result<()> {
-        log::debug!(
-            "sync_new_entities: checking {} scene entities against {} loaded entities",
-            scene.entities.len(),
-            self.loaded_entity_ids.len()
+        let new_entities = crate::renderer::scene_loader::filter_new_entities(
+            &scene.entities,
+            &self.loaded_entity_ids,
         );
 
-        for entity in &scene.entities {
+        for entity in new_entities {
             let entity_id = entity.entity_id().unwrap_or(EntityId::new(0));
+            log::info!(
+                "Syncing new entity {} ({})",
+                entity_id,
+                entity.name.as_deref().unwrap_or("unnamed")
+            );
 
-            // Check if this entity has already been loaded (prevents duplicate cameras/lights/meshes)
-            if !self.loaded_entity_ids.contains(&entity_id) {
-                log::info!(
-                    "Syncing new entity {} ({})",
-                    entity_id,
-                    entity.name.as_deref().unwrap_or("unnamed")
-                );
-
-                // Load the new entity (handles all component types)
-                // Note: load_entity() automatically adds entity_id to loaded_entity_ids
-                self.load_entity(entity).await?;
-            }
+            // Load the new entity (handles all component types)
+            // Note: load_entity() automatically adds entity_id to loaded_entity_ids
+            self.load_entity(entity).await?;
         }
 
         log::debug!(
@@ -1045,19 +929,6 @@ impl ThreeDRenderer {
                 loaded_entity_ids: &mut self.loaded_entity_ids,
             },
         );
-    }
-
-    fn load_materials(&mut self, scene: &SceneData) {
-        log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        log::info!("MATERIALS");
-        log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-        if !scene.materials.is_empty() {
-            let materials_value = serde_json::Value::Array(scene.materials.clone());
-            self.material_manager.load_from_scene(&materials_value);
-        } else {
-            log::warn!("No materials found in scene");
-        }
     }
 
     async fn load_entity(&mut self, entity: &Entity) -> Result<()> {
@@ -1174,7 +1045,20 @@ impl ThreeDRenderer {
                 .push(mesh_renderer.receive_shadows);
 
             // Register mesh with BVH system for culling and raycasting
-            self.register_mesh_with_bvh(mesh_idx);
+            if self.bvh_manager.is_none() {
+                let (bvh_manager, visibility_culler) =
+                    crate::renderer::bvh_integration::initialize_bvh_system();
+                self.bvh_manager = Some(bvh_manager);
+                self.visibility_culler = Some(visibility_culler);
+            }
+            if let (Some(ref bvh_manager), Some(mesh)) = (&self.bvh_manager, self.meshes.get(mesh_idx)) {
+                crate::renderer::bvh_integration::register_mesh_with_bvh(
+                    bvh_manager,
+                    mesh,
+                    entity_id,
+                    mesh_idx,
+                );
+            }
         }
 
         Ok(())
@@ -1324,33 +1208,6 @@ impl ThreeDRenderer {
 
 
 
-    // ===== Logging Methods =====
-
-    fn log_first_frame(&self) {
-        crate::renderer::scene_utilities::log_first_frame(
-            self.meshes.len(),
-            self.directional_lights.len(),
-            self.point_lights.len(),
-            self.spot_lights.len(),
-            self.ambient_light.is_some(),
-            self.camera.position(),
-            self.camera.target(),
-        );
-    }
-
-    fn log_scene_load_start(&self, scene: &SceneData) {
-        crate::renderer::scene_utilities::log_scene_load_start(scene);
-    }
-
-    fn log_scene_load_summary(&self) {
-        crate::renderer::scene_utilities::log_scene_load_summary(
-            self.meshes.len(),
-            self.directional_lights.len(),
-            self.point_lights.len(),
-            self.spot_lights.len(),
-            self.ambient_light.is_some(),
-        );
-    }
 
     // ========================================================================
     // LOD Management API
@@ -1384,50 +1241,6 @@ impl ThreeDRenderer {
         self.lod_manager.get_config()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use three_d::vec3;
-    use vibe_ecs_bridge::decoders::ViewportRect;
-
-    fn base_camera_config() -> CameraConfig {
-        CameraConfig {
-            position: vec3(0.0, 0.0, 0.0),
-            target: vec3(0.0, 0.0, -1.0),
-            fov: 60.0,
-            near: 0.1,
-            far: 1000.0,
-            is_main: false,
-            projection_type: "perspective".to_string(),
-            orthographic_size: 5.0,
-            depth: 0,
-            clear_flags: None,
-            background_color: None,
-            skybox_texture: None,
-            control_mode: None,
-            enable_smoothing: false,
-            follow_target: None,
-            follow_offset: None,
-            smoothing_speed: 0.0,
-            rotation_smoothing: 0.0,
-            viewport_rect: None,
-            hdr: false,
-            tone_mapping: None,
-            tone_mapping_exposure: 1.0,
-            enable_post_processing: false,
-            post_processing_preset: None,
-            skybox_scale: None,
-            skybox_rotation: None,
-            skybox_repeat: None,
-            skybox_offset: None,
-            skybox_intensity: 1.0,
-            skybox_blur: 0.0,
-        }
-    }
-
-}
-
 
 #[cfg(test)]
 #[path = "threed_renderer_test.rs"]
