@@ -398,6 +398,16 @@ impl AppThreeD {
 
         // Physics simulation (if enabled)
         if let Some(ref mut physics_world) = self.physics_world {
+            // Apply a very small, engine-side character controller so we have
+            // immediate keyboard response parity with the editor. This moves any
+            // kinematic body that has a CharacterController component using WASD/Space.
+            Self::apply_character_controller_inputs(
+                delta_time,
+                self.scene.as_ref(),
+                &self.input_manager,
+                physics_world,
+            );
+
             // Fixed timestep physics update (60 Hz)
             const PHYSICS_TIMESTEP: f32 = 1.0 / 60.0;
             self.physics_accumulator += delta_time;
@@ -548,6 +558,113 @@ impl AppThreeD {
 
         // Clear frame-based input state at end of frame
         self.input_manager.clear_frame_state();
+    }
+
+    /// Minimal engine-side character controller to mirror TS auto mode.
+    ///
+    /// Moves any entity that has a CharacterController component and a
+    /// kinematic rigid body using simple WASD + Space input. This is a
+    /// stopgap until a full Rapier KinematicCharacterController is wired.
+    fn apply_character_controller_inputs(
+        delta_time: f32,
+        scene: Option<&SceneData>,
+        input_manager: &InputManager,
+        physics_world: &mut PhysicsWorld,
+    ) {
+        let scene = match scene {
+            Some(s) => s,
+            None => return,
+        };
+
+        // Helper to read a float field from component JSON
+        fn read_number(map: &serde_json::Map<String, serde_json::Value>, key: &str, default_v: f32) -> f32 {
+            map.get(key)
+                .and_then(|v| v.as_f64())
+                .map(|v| v as f32)
+                .unwrap_or(default_v)
+        }
+
+        for entity in &scene.entities {
+            // Only consider entities with CharacterController component
+            if !entity.components.contains_key("CharacterController") {
+                continue;
+            }
+
+            let entity_id = match entity.entity_id() {
+                Some(id) => id,
+                None => continue,
+            };
+
+            // Must have a kinematic rigid body already registered in physics
+            let body_handle = match physics_world.entity_to_body.get(&entity_id).copied() {
+                Some(h) => h,
+                None => continue,
+            };
+
+            let is_kinematic = physics_world
+                .rigid_bodies
+                .get(body_handle)
+                .map(|b| b.body_type() == rapier3d::prelude::RigidBodyType::KinematicPositionBased)
+                .unwrap_or(false);
+            if !is_kinematic {
+                continue;
+            }
+
+            // Read optional settings
+            let (max_speed, _jump_strength, input_forward, input_backward, input_left, input_right, input_jump) = {
+                if let Some(cc) = entity.components.get("CharacterController").and_then(|v| v.as_object()) {
+                    let speed = read_number(cc, "maxSpeed", 6.0);
+                    let jump = read_number(cc, "jumpStrength", 6.5);
+
+                    // Input mapping defaults
+                    let (mut f, mut b, mut l, mut r, mut j) = ("w", "s", "a", "d", "space");
+                    if let Some(mapping) = cc.get("inputMapping").and_then(|m| m.as_object()) {
+                        if let Some(s) = mapping.get("forward").and_then(|v| v.as_str()) { f = s; }
+                        if let Some(s) = mapping.get("backward").and_then(|v| v.as_str()) { b = s; }
+                        if let Some(s) = mapping.get("left").and_then(|v| v.as_str()) { l = s; }
+                        if let Some(s) = mapping.get("right").and_then(|v| v.as_str()) { r = s; }
+                        if let Some(s) = mapping.get("jump").and_then(|v| v.as_str()) { j = if s == " " { "space" } else { s }; }
+                    }
+
+                    (speed, jump, f.to_string(), b.to_string(), l.to_string(), r.to_string(), j.to_string())
+                } else {
+                    (6.0, 6.5, "w".to_string(), "s".to_string(), "a".to_string(), "d".to_string(), "space".to_string())
+                }
+            };
+
+            // Aggregate input into world XZ movement (Three.js/three-d both Y-up, +Z forward)
+            let forward = input_manager.is_key_down(&input_forward);
+            let backward = input_manager.is_key_down(&input_backward);
+            let left = input_manager.is_key_down(&input_left);
+            let right = input_manager.is_key_down(&input_right);
+            let jump = input_manager.is_key_down(&input_jump);
+
+            let mut move_x = 0.0_f32;
+            let mut move_z = 0.0_f32;
+            // Match TypeScript calculateMovementDirection: forward=+Z, backward=-Z, left=+X, right=-X
+            if forward { move_z += 1.0; }
+            if backward { move_z -= 1.0; }
+            if left { move_x += 1.0; }
+            if right { move_x -= 1.0; }
+
+            if move_x != 0.0 || move_z != 0.0 || jump {
+                let (mut position, rotation) = physics_world
+                    .get_entity_transform(entity_id)
+                    .unwrap_or((glam::Vec3::ZERO, glam::Quat::IDENTITY));
+
+                // Normalize horizontal direction and scale by speed and delta.
+                let dir = glam::Vec3::new(move_x, 0.0, move_z);
+                let dir = if dir.length_squared() > 0.0 { dir.normalize() } else { dir };
+                position += dir * max_speed * delta_time;
+
+                // Simple jump impulse (no gravity integration here; kinematic body)
+                if jump {
+                    position.y += 0.1 * _jump_strength; // small hop for visual feedback
+                }
+
+                physics_world.set_entity_transform(entity_id, position, rotation);
+            }
+        }
     }
 
     fn apply_mutation_to_scene(scene: &mut SceneData, mutation: &vibe_scripting::EntityMutation) {

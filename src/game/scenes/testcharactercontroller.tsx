@@ -3,14 +3,14 @@ import { defineScene } from './defineScene';
 /**
  * testcharactercontroller
  * Scene with 6 entities
- * Generated: 2025-11-07T01:49:57.788Z
+ * Generated: 2025-11-07T02:39:33.932Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
     name: 'testcharactercontroller',
     version: 1,
-    timestamp: '2025-11-07T01:49:57.788Z',
+    timestamp: '2025-11-07T02:39:33.932Z',
     description: 'Scene with 6 entities',
   },
   entities: [

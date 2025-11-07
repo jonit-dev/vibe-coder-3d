@@ -18,8 +18,10 @@ pub fn primitive_base_scale(mesh_id: Option<&str>) -> GlamVec3 {
         }
         primitive if primitive.contains("sphere") => GlamVec3::splat(0.5),
         primitive if primitive.contains("plane") => GlamVec3::splat(0.5),
-        primitive if primitive.contains("cylinder") => GlamVec3::splat(0.5),
-        primitive if primitive.contains("capsule") => GlamVec3::splat(0.5),
+        // Cylindrical family below are generated via vibe_assets with real-world unit sizing,
+        // so we must NOT shrink them again. Keep base scale at 1.0 to match editor parity.
+        primitive if primitive.contains("cylinder") => GlamVec3::ONE,
+        primitive if primitive.contains("capsule") => GlamVec3::ONE,
         primitive if primitive.contains("cone") => GlamVec3::splat(0.5),
         primitive if primitive.contains("torus") => GlamVec3::splat(0.5),
         // Geometric variations
@@ -106,6 +108,8 @@ pub fn create_primitive_mesh(mesh_id: Option<&str>) -> CpuMesh {
             }
             mesh if mesh.contains("capsule") || mesh == "Capsule" => {
                 log::info!("    Creating:    Capsule primitive (with UVs)");
+                // Match editor default: radius 0.3, height 0.4, capSegments 4, radialSegments 16
+                // Total height = 0.4 + 2*0.3 = 1.0 unit (matches cube size for visual parity)
                 let vibe_mesh = vibe_assets::create_capsule(0.3, 0.4, 4, 16);
                 convert_vibe_mesh_to_cpu_mesh(&vibe_mesh)
             }

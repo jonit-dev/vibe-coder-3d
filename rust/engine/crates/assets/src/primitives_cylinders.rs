@@ -276,12 +276,14 @@ pub fn create_capsule(radius: f32, length: f32, cap_segments: u32, radial_segmen
     indices.extend(body_indices);
 
     // Generate bottom hemisphere cap
+    // Parameterization mirrors the top cap but extends downward from the cylinder edge.
+    // t in [0, PI/2]: t = 0 at the cylinder edge (full radius), t = PI/2 at the tip (radius 0)
     let bottom_cap_start = vertices.len() as u32;
     for ring in 0..=cap_segments {
-        let phi = PI / 2.0 + (ring as f32 / cap_segments as f32) * (PI / 2.0);
-        let sin_phi = phi.sin();
-        let cos_phi = phi.cos();
-        let y = -half_length + radius * sin_phi;
+        let t = (ring as f32 / cap_segments as f32) * (PI / 2.0);
+        let sin_t = t.sin();
+        let cos_t = t.cos();
+        let y = -half_length - radius * sin_t;
 
         for segment in 0..=radial_segments {
             let u = segment as f32 / radial_segments as f32;
@@ -289,22 +291,28 @@ pub fn create_capsule(radius: f32, length: f32, cap_segments: u32, radial_segmen
             let sin_theta = theta.sin();
             let cos_theta = theta.cos();
 
-            let x = radius * cos_phi * cos_theta;
-            let z = radius * cos_phi * sin_theta;
+            let x = radius * cos_t * cos_theta;
+            let z = radius * cos_t * sin_theta;
 
-            // Normal for sphere
-            let normal = [cos_phi * cos_theta, sin_phi, cos_phi * sin_theta];
+            // Outward/downward normal for bottom hemisphere
+            let normal = [cos_t * cos_theta, -sin_t, cos_t * sin_theta];
             let uv_v = 1.0 - (ring as f32 / cap_segments as f32) * 0.5;
 
             vertices.push(vertex_pnu([x, y, z], normal, [u, uv_v]));
         }
     }
 
-    // Bottom cap indices
+    // Bottom cap indices - reverse winding order for correct face orientation
     for ring in 0..cap_segments {
         let ring_start = bottom_cap_start + ring * (radial_segments + 1);
         let next_ring_start = ring_start + radial_segments + 1;
-        let ring_indices = ring_strip_indices(ring_start, next_ring_start, radial_segments);
+        let mut ring_indices = ring_strip_indices(ring_start, next_ring_start, radial_segments);
+        // Reverse winding order for bottom cap (flip every triangle)
+        for i in (0..ring_indices.len()).step_by(3) {
+            if i + 2 < ring_indices.len() {
+                ring_indices.swap(i + 1, i + 2);
+            }
+        }
         indices.extend(ring_indices);
     }
 
