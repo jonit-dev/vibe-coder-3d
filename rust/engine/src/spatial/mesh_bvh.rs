@@ -240,15 +240,13 @@ impl MeshBvh {
             }
         }
 
-        // Ensure both sides have some triangles
-        if left.is_empty() {
-            left.push(triangles[0]);
+        // If one side is empty, split by index instead to ensure progress
+        if left.is_empty() || right.is_empty() {
+            let mid = triangles.len() / 2;
+            (triangles[..mid].to_vec(), triangles[mid..].to_vec())
+        } else {
+            (left, right)
         }
-        if right.is_empty() {
-            right.push(triangles[0]);
-        }
-
-        (left, right)
     }
 
     /// Split by average centroid position
@@ -292,15 +290,13 @@ impl MeshBvh {
             }
         }
 
-        // Ensure both sides have some triangles
-        if left.is_empty() {
-            left.push(triangles[0]);
+        // If one side is empty, split by index instead to ensure progress
+        if left.is_empty() || right.is_empty() {
+            let mid = triangles.len() / 2;
+            (triangles[..mid].to_vec(), triangles[mid..].to_vec())
+        } else {
+            (left, right)
         }
-        if right.is_empty() {
-            right.push(triangles[0]);
-        }
-
-        (left, right)
     }
 
     /// Split using Surface Area Heuristic
@@ -531,8 +527,6 @@ mod tests {
     }
 
 #[test]
-    #[ignore] // TODO: Fix stack overflow in BVH build
-    #[ignore] // TODO: Fix stack overflow in get_stats - likely infinite recursion
     fn test_mesh_bvh_stats() {
         let (positions, indices) = create_test_cube();
         let bvh = MeshBvh::build(&positions, &indices, 4, SplitStrategy::Center);
