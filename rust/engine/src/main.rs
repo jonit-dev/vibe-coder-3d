@@ -8,7 +8,13 @@ mod input;
 mod io;
 mod renderer;
 mod spatial;
+mod threed_camera_manager;
+mod threed_context_state;
+mod threed_light_manager;
+mod threed_mesh_manager;
+mod threed_render_coordinator;
 mod threed_renderer;
+mod threed_scene_loader_state;
 mod util;
 
 /// Vibe Coder 3D Engine - Native renderer for scene JSON
