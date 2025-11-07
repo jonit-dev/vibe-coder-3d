@@ -9,6 +9,7 @@
 /// - Primitive mesh creation
 /// - Transform conversion utilities
 pub mod audio_loader;
+pub mod bvh_integration;
 pub mod camera_follow;
 pub mod camera_loader;
 pub mod coordinate_conversion;
@@ -29,6 +30,7 @@ pub mod mesh_loader;
 pub mod physics_sync;
 pub mod post_processing;
 pub mod primitive_mesh;
+pub mod render_settings;
 pub mod scene_utilities;
 pub mod skybox;
 pub mod terrain_generator;

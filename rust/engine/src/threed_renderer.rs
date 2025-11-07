@@ -109,12 +109,6 @@ pub struct ThreeDRenderer {
     bvh_debug_logger: Option<crate::renderer::bvh_debug::BvhDebugLogger>,
 }
 
-struct RenderSettings {
-    clear_state: Option<ClearState>,
-    render_skybox: bool,
-    post_settings: Option<PostProcessSettings>,
-}
-
 struct AdditionalCamera {
     camera: Camera,
     config: CameraConfig,
@@ -355,34 +349,14 @@ impl ThreeDRenderer {
     /// Initialize BVH system if not already initialized
     fn ensure_bvh_initialized(&mut self) {
         if self.bvh_manager.is_none() {
-            log::info!("🎯 Initializing BVH System for real-time culling...");
-
-            let config = crate::spatial::bvh_manager::BvhConfig {
-                enable_bvh_culling: true,
-                enable_bvh_raycasts: true,
-                max_leaf_triangles: 8,
-                max_leaf_refs: 4,
-                mesh_split_strategy: crate::spatial::mesh_bvh::SplitStrategy::Sah,
-                enable_incremental_updates: true,
-            };
-
-            let bvh_manager = std::sync::Arc::new(std::sync::Mutex::new(
-                crate::spatial::bvh_manager::BvhManager::with_config(config)
-            ));
-            let visibility_culler = crate::renderer::visibility::VisibilityCuller::new(bvh_manager.clone());
-
+            let (bvh_manager, visibility_culler) =
+                crate::renderer::bvh_integration::initialize_bvh_system();
             self.bvh_manager = Some(bvh_manager);
             self.visibility_culler = Some(visibility_culler);
-
-            log::info!("✅ BVH System initialized with SAH splitting and incremental updates");
         }
     }
 
     /// Register a mesh with the BVH system.
-    ///
-    /// Uses three-d's built-in axis-aligned bounding box for the mesh (local space) and
-    /// stores it in the BVH keyed by the entity id. We do NOT try to read raw vertex
-    /// buffers; we rely on three-d's geometry metadata instead.
     fn register_mesh_with_bvh(&mut self, mesh_idx: usize) {
         // Ensure BVH exists
         self.ensure_bvh_initialized();
@@ -397,47 +371,20 @@ impl ThreeDRenderer {
             return;
         };
 
-        // three-d Mesh::aabb() returns an axis-aligned bounding box in mesh-local space.
-        // We convert it into our internal Aabb type.
-        let mesh_aabb = mesh.aabb();
-        let min = glam::Vec3::new(
-            mesh_aabb.min().x,
-            mesh_aabb.min().y,
-            mesh_aabb.min().z,
-        );
-        let max = glam::Vec3::new(
-            mesh_aabb.max().x,
-            mesh_aabb.max().y,
-            mesh_aabb.max().z,
-        );
-        let local_aabb = crate::spatial::primitives::Aabb::new(min, max);
-
-        // For initial registration we use identity transform; update_bvh_system() will
-        // apply the current world transform each frame.
-        let mut manager = bvh_manager.lock().unwrap();
-        manager.register_mesh(entity_id.as_u64(), &[], &[], local_aabb);
-
-        log::debug!(
-            "📦 Registered mesh {} (entity {}) with BVH using three-d aabb",
+        crate::renderer::bvh_integration::register_mesh_with_bvh(
+            bvh_manager,
+            mesh,
+            entity_id,
             mesh_idx,
-            entity_id
         );
     }
 
     /// Update BVH system transforms from current mesh transforms.
-    ///
-    /// This wires the BVH to actual world transforms so frustum culling is correct
-    /// instead of using placeholder identity matrices.
     fn update_bvh_system(&mut self) {
         // Ensure BVH exists
         self.ensure_bvh_initialized();
 
-        // BVH update temporarily disabled: keep it a no-op to avoid impacting rendering.
-        // This avoids incorrect transforms and expensive rebuilds while BVH integration
-        // is still experimental.
-        if self.bvh_manager.is_some() {
-            log::debug!("BVH manager present; update_bvh_system is currently a no-op");
-        }
+        crate::renderer::bvh_integration::update_bvh_transforms(&self.bvh_manager);
     }
 
     /// Get indices of visible meshes based solely on MeshRenderer.enabled.
@@ -875,81 +822,14 @@ impl ThreeDRenderer {
     }
 
     fn viewport_from_config(config: &CameraConfig, window_size: (u32, u32)) -> Viewport {
-        if let Some(ref rect) = config.viewport_rect {
-            let x = (rect.x * window_size.0 as f32) as u32;
-            let y = (rect.y * window_size.1 as f32) as u32;
-            let width = (rect.width * window_size.0 as f32) as u32;
-            let height = (rect.height * window_size.1 as f32) as u32;
-
-            Viewport {
-                x: x as i32,
-                y: y as i32,
-                width: width.max(1),
-                height: height.max(1),
-            }
-        } else {
-            Viewport::new_at_origo(window_size.0, window_size.1)
-        }
+        crate::renderer::render_settings::viewport_from_config(config, window_size)
     }
 
-    fn prepare_render_settings_for(config: &CameraConfig, skybox_loaded: bool) -> RenderSettings {
-        const NEUTRAL_GRAY: (f32, f32, f32, f32) = (64.0 / 255.0, 64.0 / 255.0, 64.0 / 255.0, 1.0);
-
-        let solid_color = config
-            .background_color
-            .unwrap_or((0.0_f32, 0.0_f32, 0.0_f32, 1.0));
-
-        let solid_clear = ClearState::color_and_depth(
-            solid_color.0,
-            solid_color.1,
-            solid_color.2,
-            solid_color.3,
-            1.0,
-        );
-        let gray_clear = ClearState::color_and_depth(
-            NEUTRAL_GRAY.0,
-            NEUTRAL_GRAY.1,
-            NEUTRAL_GRAY.2,
-            NEUTRAL_GRAY.3,
-            1.0,
-        );
-
-        let mut render_skybox = false;
-
-        let clear_state = match config
-            .clear_flags
-            .as_deref()
-            .map(|s| s.to_ascii_lowercase())
-            .unwrap_or_else(|| "solidcolor".to_string())
-            .as_str()
-        {
-            "skybox" => {
-                if skybox_loaded {
-                    render_skybox = true;
-                    Some(ClearState::depth(1.0))
-                } else {
-                    Some(gray_clear)
-                }
-            }
-            "depthonly" => Some(ClearState::depth(1.0)),
-            "dontclear" => None,
-            "solidcolor" | "color" => Some(solid_clear),
-            other => {
-                log::warn!(
-                    "Unknown clear flag '{}', defaulting to neutral gray clear.",
-                    other
-                );
-                Some(gray_clear)
-            }
-        };
-
-        let post_settings = PostProcessSettings::from_camera(config);
-
-        RenderSettings {
-            clear_state,
-            render_skybox,
-            post_settings,
-        }
+    fn prepare_render_settings_for(
+        config: &CameraConfig,
+        skybox_loaded: bool,
+    ) -> crate::renderer::render_settings::RenderSettings {
+        crate::renderer::render_settings::prepare_render_settings_for(config, skybox_loaded)
     }
 
 
