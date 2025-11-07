@@ -9,6 +9,7 @@
 /// - Primitive mesh creation
 /// - Transform conversion utilities
 pub mod audio_loader;
+pub mod camera_follow;
 pub mod camera_loader;
 pub mod coordinate_conversion;
 pub mod debug_lines;
@@ -30,6 +31,7 @@ pub mod visibility;
 pub mod bvh_debug;
 
 // Re-export commonly used types
+pub use camera_follow::update_camera_follow;
 pub use camera_loader::{create_camera, load_camera, CameraConfig};
 pub use debug_lines::DebugLineRenderer;
 pub use enhanced_lights::{EnhancedDirectionalLight, EnhancedSpotLight};

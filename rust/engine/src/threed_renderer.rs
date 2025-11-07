@@ -279,64 +279,39 @@ impl ThreeDRenderer {
 
     /// Update camera based on follow system and other camera features
     pub fn update_camera_internal(&mut self, delta_time: f32) {
+        // Update main camera follow
         if let Some(ref config) = self.camera_config.clone() {
-            if let Some(target_id) = Self::follow_target_if_locked(&config) {
-                let target_vec3 =
-                    Self::compute_follow_target_position(self.scene_graph.as_mut(), target_id);
-                if let Some(target_vec3) = target_vec3 {
-                    Self::apply_follow_to_camera(
-                        &mut self.camera,
-                        &config,
-                        target_vec3,
-                        &mut self.last_camera_position,
-                        &mut self.last_camera_target,
-                        delta_time,
-                    );
-                } else {
-                    log::warn!(
-                        "Camera follow target entity {} not found in scene",
-                        target_id
-                    );
-                }
-            }
+            crate::renderer::update_camera_follow(
+                &mut self.camera,
+                &config,
+                self.scene_graph.as_mut(),
+                &mut self.last_camera_position,
+                &mut self.last_camera_target,
+                delta_time,
+            );
         }
 
+        // Update additional cameras follow
         for idx in 0..self.additional_cameras.len() {
-            let follow_target = {
-                let cam = &self.additional_cameras[idx];
-                Self::follow_target_if_locked(&cam.config)
+            let (config, camera, last_position, last_target, scene_graph) = {
+                let cam = &mut self.additional_cameras[idx];
+                (
+                    &cam.config,
+                    &mut cam.camera,
+                    &mut cam.last_position,
+                    &mut cam.last_target,
+                    self.scene_graph.as_mut(),
+                )
             };
 
-            if let Some(target_id) = follow_target {
-                let target_vec3 =
-                    Self::compute_follow_target_position(self.scene_graph.as_mut(), target_id);
-
-                if let Some(target_vec3) = target_vec3 {
-                    let (config, camera, last_position, last_target) = {
-                        let cam = &mut self.additional_cameras[idx];
-                        (
-                            &cam.config,
-                            &mut cam.camera,
-                            &mut cam.last_position,
-                            &mut cam.last_target,
-                        )
-                    };
-
-                    Self::apply_follow_to_camera(
-                        camera,
-                        config,
-                        target_vec3,
-                        last_position,
-                        last_target,
-                        delta_time,
-                    );
-                } else {
-                    log::warn!(
-                        "Camera follow target entity {} not found in scene",
-                        target_id
-                    );
-                }
-            }
+            crate::renderer::update_camera_follow(
+                camera,
+                config,
+                scene_graph,
+                last_position,
+                last_target,
+                delta_time,
+            );
         }
     }
 
@@ -963,68 +938,6 @@ impl ThreeDRenderer {
         }
     }
 
-    fn follow_target_if_locked(config: &CameraConfig) -> Option<u32> {
-        let target_id = config.follow_target?;
-        match config
-            .control_mode
-            .as_deref()
-            .map(|mode| mode.to_ascii_lowercase())
-        {
-            Some(ref mode) if mode == "locked" => Some(target_id),
-            Some(ref mode) if mode == "free" => None,
-            Some(ref mode) => {
-                log::warn!(
-                    "Unknown camera controlMode '{}'; defaulting to locked follow.",
-                    mode
-                );
-                Some(target_id)
-            }
-            None => Some(target_id),
-        }
-    }
-
-    fn compute_follow_target_position(
-        scene_graph: Option<&mut SceneGraph>,
-        target_id: u32,
-    ) -> Option<Vec3> {
-        let graph = scene_graph?;
-        let entity_id = EntityId::new(target_id as u64);
-        let transform = graph.get_world_transform(entity_id)?;
-        let target_pos = transform.w_axis.truncate();
-        Some(vec3(target_pos.x, target_pos.y, target_pos.z))
-    }
-
-    fn apply_follow_to_camera(
-        camera: &mut Camera,
-        config: &CameraConfig,
-        target_vec3: Vec3,
-        last_position: &mut Vec3,
-        last_target: &mut Vec3,
-        delta_time: f32,
-    ) {
-        let offset = config.follow_offset.unwrap_or(vec3(0.0, 2.0, -5.0));
-        let desired_position = target_vec3 + offset;
-
-        let new_position = if config.enable_smoothing {
-            let smoothing_factor = (config.smoothing_speed * delta_time).min(1.0);
-            *last_position * (1.0 - smoothing_factor) + desired_position * smoothing_factor
-        } else {
-            desired_position
-        };
-
-        let desired_target = target_vec3;
-        let new_target = if config.enable_smoothing {
-            let rotation_factor = (config.rotation_smoothing * delta_time).min(1.0);
-            *last_target * (1.0 - rotation_factor) + desired_target * rotation_factor
-        } else {
-            desired_target
-        };
-
-        camera.set_view(new_position, new_target, vec3(0.0, 1.0, 0.0));
-
-        *last_position = new_position;
-        *last_target = new_target;
-    }
 
     /// Load a full scene from SceneData
     /// Now async to support texture loading!
@@ -2120,67 +2033,6 @@ mod tests {
 
 }
 
-#[cfg(test)]
-mod follow_tests {
-    use super::*;
-    use crate::renderer::load_camera;
-    use vibe_ecs_bridge::decoders::CameraComponent;
-
-    fn config_with_control(control: Option<&str>) -> CameraConfig {
-        let component = CameraComponent {
-            fov: 60.0,
-            near: 0.1,
-            far: 100.0,
-            is_main: true,
-            projection_type: "perspective".to_string(),
-            orthographic_size: 10.0,
-            depth: 0,
-            clear_flags: None,
-            background_color: None,
-            skybox_texture: None,
-            control_mode: control.map(|mode| mode.to_string()),
-            enable_smoothing: false,
-            follow_target: Some(42),
-            follow_offset: None,
-            smoothing_speed: 5.0,
-            rotation_smoothing: 5.0,
-            viewport_rect: None,
-            hdr: false,
-            tone_mapping: None,
-            tone_mapping_exposure: 1.0,
-            enable_post_processing: false,
-            post_processing_preset: None,
-            skybox_scale: None,
-            skybox_rotation: None,
-            skybox_repeat: None,
-            skybox_offset: None,
-            skybox_intensity: 1.0,
-            skybox_blur: 0.0,
-        };
-
-        load_camera(&component, None)
-            .expect("load_camera should succeed")
-            .expect("CameraConfig expected")
-    }
-
-    #[test]
-    fn follow_enabled_when_locked() {
-        let config = config_with_control(Some("locked"));
-        assert_eq!(ThreeDRenderer::follow_target_if_locked(&config), Some(42));
-    }
-
-    #[test]
-    fn follow_disabled_when_free() {
-        let config = config_with_control(Some("free"));
-        assert_eq!(ThreeDRenderer::follow_target_if_locked(&config), None);
-    }
-
-    #[test]
-    fn follow_defaults_to_locked_when_unspecified() {
-        let config = config_with_control(None);
-        assert_eq!(ThreeDRenderer::follow_target_if_locked(&config), Some(42));
-    }
-}
 
 #[cfg(test)]
 #[path = "threed_renderer_test.rs"]
