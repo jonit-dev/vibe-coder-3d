@@ -100,9 +100,9 @@ export const LIGHT_DEFAULTS = {
   decay: 1,
   angle: 0.5235987755982988, // Math.PI / 6 (30 degrees)
   penumbra: 0.1,
-  shadowMapSize: 1024,
-  shadowBias: -0.0001,
-  shadowRadius: 1,
+  shadowMapSize: 4096,
+  shadowBias: -0.0005,
+  shadowRadius: 0.2,
 } as const;
 
 /**

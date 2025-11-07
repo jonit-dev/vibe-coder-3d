@@ -239,6 +239,32 @@ export interface IGeometryAssetComponent {
 }
 
 /**
+ * Character Controller Component - Handles character movement with physics-based collision
+ */
+export interface ICharacterControllerComponent {
+  enabled?: boolean;
+  slopeLimit?: number;
+  stepOffset?: number;
+  skinWidth?: number;
+  gravityScale?: number;
+  maxSpeed?: number;
+  jumpStrength?: number;
+  controlMode?: 'auto' | 'manual';
+  inputMapping?: {
+    forward?: string;
+    backward?: string;
+    left?: string;
+    right?: string;
+    jump?: string;
+  };
+  snapMaxSpeed?: number;
+  maxDepenetrationPerFrame?: number;
+  pushStrength?: number;
+  maxPushMass?: number;
+  isGrounded?: boolean;
+}
+
+/**
  * Component map - Maps component names to their types
  * This provides autocomplete and type checking for component data
  *
@@ -255,6 +281,7 @@ export interface IComponentMap {
   PrefabInstance: IPrefabInstanceComponent;
   Script: IScriptComponent;
   GeometryAsset: IGeometryAssetComponent;
+  CharacterController: ICharacterControllerComponent;
 }
 
 /**

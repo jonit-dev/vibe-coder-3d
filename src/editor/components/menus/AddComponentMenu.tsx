@@ -81,6 +81,7 @@ interface IComponentDefinition {
   description: string;
   icon: React.ReactNode;
   category: string;
+  requiredComponents?: string[]; // Components that must exist for this component to be added
   incompatibleComponents?: string[]; // Components that cannot coexist with this one
 }
 

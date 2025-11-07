@@ -84,13 +84,13 @@ export const LightRenderer: React.FC<ILightRendererProps> = React.memo(({ entity
             ]}
             target-position={[position.x, position.y, position.z]}
             castShadow={lightData.castShadow}
-            shadow-mapSize={[lightData.shadowMapSize ?? 1024, lightData.shadowMapSize ?? 1024]}
-            shadow-bias={lightData.shadowBias ?? -0.0001}
-            shadow-radius={lightData.shadowRadius ?? 1.0}
-            shadow-camera-left={-50}
-            shadow-camera-right={50}
-            shadow-camera-top={50}
-            shadow-camera-bottom={-50}
+            shadow-mapSize={[lightData.shadowMapSize ?? 4096, lightData.shadowMapSize ?? 4096]}
+            shadow-bias={lightData.shadowBias ?? -0.0005}
+            shadow-radius={lightData.shadowRadius ?? 0.2}
+            shadow-camera-left={-10}
+            shadow-camera-right={10}
+            shadow-camera-top={10}
+            shadow-camera-bottom={-10}
             shadow-camera-near={0.5}
             shadow-camera-far={500}
           />
@@ -116,9 +116,9 @@ export const LightRenderer: React.FC<ILightRendererProps> = React.memo(({ entity
             distance={lightData.range ?? 10}
             decay={lightData.decay ?? 1}
             castShadow={lightData.castShadow}
-            shadow-mapSize={[lightData.shadowMapSize ?? 1024, lightData.shadowMapSize ?? 1024]}
-            shadow-bias={lightData.shadowBias ?? -0.0001}
-            shadow-radius={lightData.shadowRadius ?? 1.0}
+            shadow-mapSize={[lightData.shadowMapSize ?? 4096, lightData.shadowMapSize ?? 4096]}
+            shadow-bias={lightData.shadowBias ?? -0.0005}
+            shadow-radius={lightData.shadowRadius ?? 0.2}
           />
         </group>
       );
@@ -145,9 +145,9 @@ export const LightRenderer: React.FC<ILightRendererProps> = React.memo(({ entity
             penumbra={lightData.penumbra ?? 0.1}
             decay={lightData.decay ?? 1}
             castShadow={lightData.castShadow}
-            shadow-mapSize={[lightData.shadowMapSize ?? 1024, lightData.shadowMapSize ?? 1024]}
-            shadow-bias={lightData.shadowBias ?? -0.0001}
-            shadow-radius={lightData.shadowRadius ?? 1.0}
+            shadow-mapSize={[lightData.shadowMapSize ?? 4096, lightData.shadowMapSize ?? 4096]}
+            shadow-bias={lightData.shadowBias ?? -0.0005}
+            shadow-radius={lightData.shadowRadius ?? 0.2}
           />
         </group>
       );

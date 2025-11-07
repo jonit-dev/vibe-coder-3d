@@ -18,6 +18,7 @@ import {
 } from './Layers';
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
+import type { ITransformData } from '@core/lib/ecs/components/TransformComponent';
 
 const logger = Logger.create('KinematicBodyController');
 
@@ -259,7 +260,7 @@ export class KinematicBodyController {
     this.motor.applyGravity(velocity, deltaTime);
 
     // Get current transform
-    const transform = componentRegistry.getComponentData(
+    const transform = componentRegistry.getComponentData<ITransformData>(
       entityId,
       KnownComponentTypes.TRANSFORM,
     );

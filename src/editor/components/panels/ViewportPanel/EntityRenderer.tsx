@@ -3,7 +3,6 @@ import React from 'react';
 import * as THREE from 'three';
 
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
-import { useEditorStore } from '@/editor/store/editorStore';
 import { compareArrays } from '@/core/utils/comparison';
 
 import { GizmoControls } from './GizmoControls';

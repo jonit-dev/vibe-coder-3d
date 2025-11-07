@@ -75,24 +75,6 @@ export default defineScene({
         },
         "smoothingSpeed": 2,
         "rotationSmoothing": 1.5,
-        "skyboxScale": {
-          "x": 1,
-          "y": 1,
-          "z": 1
-        },
-        "skyboxRotation": {
-          "x": 0,
-          "y": 0,
-          "z": 0
-        },
-        "skyboxRepeat": {
-          "u": 1,
-          "v": 1
-        },
-        "skyboxOffset": {
-          "u": 0,
-          "v": 0
-        },
         "skyboxIntensity": 1,
         "skyboxBlur": 0
       }
@@ -220,7 +202,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": false,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "plane",
         "materialId": "forestground"
       }
@@ -307,7 +288,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -342,7 +322,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -403,7 +382,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -438,7 +416,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -499,7 +476,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -534,7 +510,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -595,7 +570,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -630,7 +604,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -691,7 +664,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -726,7 +698,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -787,7 +758,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -822,7 +792,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -883,7 +852,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -918,7 +886,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -979,7 +946,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -1014,7 +980,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -1075,7 +1040,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -1110,7 +1074,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -1171,7 +1134,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cylinder",
         "materialId": "bark"
       }
@@ -1206,7 +1168,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "cone",
         "materialId": "leaves"
       }
@@ -1240,7 +1201,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "sphere",
         "materialId": "rock"
       }
@@ -1274,7 +1234,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "sphere",
         "materialId": "rock"
       }
@@ -1308,7 +1267,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "sphere",
         "materialId": "rock"
       }
@@ -1342,7 +1300,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "sphere",
         "materialId": "rock"
       }
@@ -1376,7 +1333,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "sphere",
         "materialId": "rock"
       }
@@ -1410,7 +1366,6 @@ export default defineScene({
         "enabled": true,
         "castShadows": true,
         "receiveShadows": true,
-        "modelPath": "",
         "meshId": "sphere",
         "materialId": "rock"
       }

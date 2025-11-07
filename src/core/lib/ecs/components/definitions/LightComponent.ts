@@ -97,9 +97,9 @@ export const lightComponent = ComponentFactory.create({
       angle: component.angle[eid] ?? Math.PI / 6,
       penumbra: component.penumbra[eid] ?? 0.1,
       // Shadow Properties (simplified)
-      shadowMapSize: component.shadowMapSize[eid] ?? 1024,
-      shadowBias: component.shadowBias[eid] ?? -0.0001,
-      shadowRadius: component.shadowRadius[eid] ?? 1.0,
+      shadowMapSize: component.shadowMapSize[eid] ?? 4096,
+      shadowBias: component.shadowBias[eid] ?? -0.0005,
+      shadowRadius: component.shadowRadius[eid] ?? 0.2,
     };
   },
   deserialize: (eid: EntityId, data, component: any) => {
@@ -127,9 +127,9 @@ export const lightComponent = ComponentFactory.create({
     component.penumbra[eid] = data.penumbra ?? 0.1;
 
     // Shadow Properties (simplified)
-    component.shadowMapSize[eid] = data.shadowMapSize ?? 1024;
-    component.shadowBias[eid] = data.shadowBias ?? -0.0001;
-    component.shadowRadius[eid] = data.shadowRadius ?? 1.0;
+    component.shadowMapSize[eid] = data.shadowMapSize ?? 4096;
+    component.shadowBias[eid] = data.shadowBias ?? -0.0005;
+    component.shadowRadius[eid] = data.shadowRadius ?? 0.2;
 
     component.needsUpdate[eid] = 1; // Mark for update
   },
