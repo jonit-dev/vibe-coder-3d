@@ -51,6 +51,39 @@ impl MeshRenderState {
 pub struct ThreeDRenderCoordinator;
 
 impl ThreeDRenderCoordinator {
+    /// Helper function to collect lights and filter visible meshes
+    /// Extracts common pattern used in both post-processing and direct rendering paths
+    fn collect_lights_and_filter_meshes<'a>(
+        meshes: &'a [Gm<Mesh, PhysicalMaterial>],
+        mesh_entity_ids: &[EntityId],
+        directional_lights: &'a [crate::renderer::EnhancedDirectionalLight],
+        point_lights: &'a [PointLight],
+        spot_lights: &'a [crate::renderer::EnhancedSpotLight],
+        ambient_light: &'a Option<AmbientLight>,
+        render_state: Option<&MeshRenderState>,
+    ) -> (Vec<&'a dyn Light>, Vec<&'a Gm<Mesh, PhysicalMaterial>>) {
+        let lights = crate::renderer::lighting::collect_lights(
+            directional_lights,
+            point_lights,
+            spot_lights,
+            ambient_light,
+        );
+
+        // Extract visible mesh indices
+        let visible_indices = crate::renderer::mesh_filtering::get_visible_mesh_indices(
+            meshes.len(),
+            mesh_entity_ids,
+            render_state.map(|s| &s.visibility),
+        );
+
+        let visible_meshes: Vec<_> = visible_indices
+            .iter()
+            .filter_map(|&idx| meshes.get(idx))
+            .collect();
+
+        (lights, visible_meshes)
+    }
+
     /// Render all cameras in depth order
     pub fn render_cameras(
         context: &Context,
@@ -245,30 +278,26 @@ impl ThreeDRenderCoordinator {
                 *hdr_depth_texture = Some(new_texture);
             }
 
-            // Collect lights
-            let lights = crate::renderer::lighting::collect_lights(
+            // Collect lights and filter visible meshes using helper function
+            let (lights, visible_meshes) = Self::collect_lights_and_filter_meshes(
+                meshes,
+                mesh_entity_ids,
                 directional_lights,
                 point_lights,
                 spot_lights,
                 ambient_light,
-            );
-
-            // Extract visible mesh indices
-            let visible_indices = crate::renderer::mesh_filtering::get_visible_mesh_indices(
-                meshes.len(),
-                mesh_entity_ids,
-                render_state.map(|s| &s.visibility),
+                render_state,
             );
 
             {
                 let render_target = {
                     let color_target = hdr_color_texture
                         .as_mut()
-                        .expect("HDR color texture not initialized")
+                        .ok_or_else(|| anyhow::anyhow!("HDR color texture not initialized"))?
                         .as_color_target(None);
                     let depth_target = hdr_depth_texture
                         .as_mut()
-                        .expect("HDR depth texture not initialized")
+                        .ok_or_else(|| anyhow::anyhow!("HDR depth texture not initialized"))?
                         .as_depth_target();
                     RenderTarget::new(color_target, depth_target)
                 };
@@ -281,14 +310,15 @@ impl ThreeDRenderCoordinator {
                     skybox_renderer.render(&render_target, camera);
                 }
 
-                let visible_meshes: Vec<_> = visible_indices
-                    .iter()
-                    .filter_map(|&idx| meshes.get(idx))
-                    .collect();
+                // visible_meshes already collected by helper function
                 render_target.render(camera, &visible_meshes, &lights);
             }
 
-            let color_texture = three_d::ColorTexture::Single(hdr_color_texture.as_ref().unwrap());
+            let color_texture = three_d::ColorTexture::Single(
+                hdr_color_texture
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("HDR color texture not initialized"))?
+            );
             let effect = ColorGradingEffect::from(post_settings);
             crate::renderer::apply_post_processing(screen, effect, camera, color_texture, scissor);
         } else {
@@ -300,21 +330,16 @@ impl ThreeDRenderCoordinator {
                 skybox_renderer.render(screen, camera);
             }
 
-            let lights = crate::renderer::lighting::collect_lights(
+            // Use the same helper function to avoid DRY violation
+            let (lights, visible_meshes) = Self::collect_lights_and_filter_meshes(
+                meshes,
+                mesh_entity_ids,
                 directional_lights,
                 point_lights,
                 spot_lights,
                 ambient_light,
+                render_state,
             );
-            let visible_indices = crate::renderer::mesh_filtering::get_visible_mesh_indices(
-                meshes.len(),
-                mesh_entity_ids,
-                render_state.map(|s| &s.visibility),
-            );
-            let visible_meshes: Vec<_> = visible_indices
-                .iter()
-                .filter_map(|&idx| meshes.get(idx))
-                .collect();
             screen.render(camera, &visible_meshes, &lights);
         }
 

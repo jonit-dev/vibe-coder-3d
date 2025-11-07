@@ -141,7 +141,8 @@ impl ThreeDRenderer {
         );
 
         // Update BVH system for culling
-        self.mesh_manager.update_bvh(delta_time);
+        self.mesh_manager.update_bvh(delta_time)
+            .context("Failed to update BVH system")?;
 
         // Generate shadow maps for lights that cast shadows
         self.mesh_manager.generate_shadow_maps(&mut self.light_manager);

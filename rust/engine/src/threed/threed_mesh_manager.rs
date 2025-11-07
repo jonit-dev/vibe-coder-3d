@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use glam::Vec3 as GlamVec3;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -179,15 +180,17 @@ impl ThreeDMeshManager {
     }
 
     /// Update BVH system for culling
-    pub fn update_bvh(&mut self, delta_time: f32) {
+    pub fn update_bvh(&mut self, delta_time: f32) -> Result<()> {
         self.ensure_bvh_initialized();
         crate::renderer::bvh_integration::update_bvh_transforms(&self.bvh_manager);
 
         // Update BVH debug logging
         if let (Some(bvh_manager), Some(ref mut debug_logger)) = (&self.bvh_manager, &mut self.bvh_debug_logger) {
-            let manager = bvh_manager.lock().unwrap();
+            let manager = bvh_manager.lock().map_err(|_| anyhow::anyhow!("BVH manager mutex poisoned"))?;
             debug_logger.update(delta_time, &manager);
         }
+
+        Ok(())
     }
 
     /// Generate shadow maps for meshes
