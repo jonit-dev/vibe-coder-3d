@@ -21,6 +21,7 @@ pub mod lod_selector;
 pub mod material_manager;
 pub mod material_overrides;
 pub mod mesh_loader;
+pub mod physics_sync;
 pub mod post_processing;
 pub mod primitive_mesh;
 pub mod skybox;
