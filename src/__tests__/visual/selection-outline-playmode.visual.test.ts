@@ -20,7 +20,7 @@ import puppeteer, { Browser, Page } from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const EDITOR_URL = 'http://localhost:5176';
+const EDITOR_URL = 'http://localhost:5173';
 const SCREENSHOTS_DIR = path.join(process.cwd(), 'src/__tests__/visual/screenshots');
 
 describe('Selection Outline - Play Mode Visual Test', () => {
@@ -47,7 +47,6 @@ describe('Selection Outline - Play Mode Visual Test', () => {
 
     // Wait for editor to initialize
     await page.waitForSelector('canvas', { timeout: 10000 });
-    await page.waitForTimeout(2000); // Give time for 3D scene to load
   });
 
   afterAll(async () => {
@@ -62,13 +61,11 @@ describe('Selection Outline - Play Mode Visual Test', () => {
     await page.keyboard.down('Control');
     await page.keyboard.press('n');
     await page.keyboard.up('Control');
-    await page.waitForTimeout(500);
 
     // Select "Cube" from the menu
     const cubeButton = await page.waitForSelector('text=Cube', { timeout: 5000 });
     if (cubeButton) {
       await cubeButton.click();
-      await page.waitForTimeout(1000); // Wait for cube to be created and rendered
     }
 
     // Step 2: Verify entity is selected and has orange outline in edit mode
@@ -93,7 +90,6 @@ describe('Selection Outline - Play Mode Visual Test', () => {
 
     if (playButton) {
       await playButton.click();
-      await page.waitForTimeout(1000); // Wait for play mode to activate
     }
 
     // Step 4: Take screenshot showing NO selection outline in PLAY MODE
@@ -114,7 +110,6 @@ describe('Selection Outline - Play Mode Visual Test', () => {
 
     if (stopButton) {
       await stopButton.click();
-      await page.waitForTimeout(1000); // Wait for edit mode to restore
     }
 
     // Step 6: Take screenshot showing selection outline RESTORED in edit mode
@@ -142,12 +137,10 @@ describe('Selection Outline - Play Mode Visual Test', () => {
     await page.keyboard.down('Control');
     await page.keyboard.press('n');
     await page.keyboard.up('Control');
-    await page.waitForTimeout(500);
 
     const sphereButton = await page.waitForSelector('text=Sphere', { timeout: 5000 });
     if (sphereButton) {
       await sphereButton.click();
-      await page.waitForTimeout(1000);
     }
 
     // In edit mode, check that Edges component exists in React tree
@@ -164,7 +157,6 @@ describe('Selection Outline - Play Mode Visual Test', () => {
 
     if (playButton) {
       await playButton.click();
-      await page.waitForTimeout(500);
     }
 
     // The EntityOutline component should return null and not render at all
