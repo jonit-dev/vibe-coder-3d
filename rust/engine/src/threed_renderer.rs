@@ -446,22 +446,11 @@ impl ThreeDRenderer {
     /// (gray/empty scenes, stack overflows from bad math). This function is guaranteed
     /// to be O(mesh_count) and non-recursive.
     fn get_visible_mesh_indices(&self, render_state: Option<&MeshRenderState>) -> Vec<usize> {
-        match render_state {
-            None => (0..self.meshes.len()).collect(),
-            Some(state) => {
-                (0..self.meshes.len())
-                    .filter(|&idx| {
-                        if let Some(&entity_id) = self.mesh_entity_ids.get(idx) {
-                            // Only hide when explicitly disabled
-                            !matches!(state.visibility.get(&entity_id), Some(false))
-                        } else {
-                            // If we don't know the entity, keep it visible
-                            true
-                        }
-                    })
-                    .collect()
-            }
-        }
+        crate::renderer::mesh_filtering::get_visible_mesh_indices(
+            self.meshes.len(),
+            &self.mesh_entity_ids,
+            render_state.map(|s| &s.visibility),
+        )
     }
 
     /// Render a frame
