@@ -238,8 +238,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
               {/* Character Controller Physics System - handles WASD movement with physics */}
               <CharacterControllerPhysicsSystem isPlaying={isPlaying} />
 
-              {/* Grid - Unity style */}
-              <gridHelper args={[20, 20, '#444444', '#222222']} />
+              {/* Grid - Unity style - only show in edit mode */}
+              {!isPlaying && <gridHelper args={[20, 20, '#444444', '#222222']} />}
 
               {/* Render all entities */}
               {entityIds.map((id) => {
