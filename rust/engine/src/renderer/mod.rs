@@ -16,6 +16,7 @@ pub mod debug_lines;
 pub mod enhanced_lights;
 pub mod instanced_loader;
 pub mod light_loader;
+pub mod lighting;
 pub mod lod_manager;
 pub mod lod_selector;
 pub mod material_manager;

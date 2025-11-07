@@ -487,7 +487,12 @@ impl ThreeDRenderer {
         }
 
         // Generate shadow maps for lights that cast shadows
-        self.generate_shadow_maps();
+        crate::renderer::lighting::generate_shadow_maps(
+            &self.meshes,
+            &self.mesh_cast_shadows,
+            &mut self.directional_lights,
+            &mut self.spot_lights,
+        );
 
         let mut camera_entries = Vec::new();
         if let Some(ref config) = self.camera_config {
@@ -596,7 +601,12 @@ impl ThreeDRenderer {
                             self.skybox_renderer.render(&screen, &self.camera);
                         }
 
-                        let lights = self.collect_lights();
+                        let lights = crate::renderer::lighting::collect_lights(
+                            &self.directional_lights,
+                            &self.point_lights,
+                            &self.spot_lights,
+                            &self.ambient_light,
+                        );
                         let visible_indices = self.get_visible_mesh_indices(render_state);
                         let visible_meshes: Vec<_> = visible_indices
                             .iter()
@@ -712,7 +722,12 @@ impl ThreeDRenderer {
                             skybox_renderer.render(&screen, camera_ref);
                         }
 
-                        let lights = self.collect_lights();
+                        let lights = crate::renderer::lighting::collect_lights(
+                            &self.directional_lights,
+                            &self.point_lights,
+                            &self.spot_lights,
+                            &self.ambient_light,
+                        );
                         let visible_indices = self.get_visible_mesh_indices(render_state);
                         let visible_meshes: Vec<_> = visible_indices
                             .iter()
@@ -755,7 +770,12 @@ impl ThreeDRenderer {
         quality: u8,
     ) -> Result<()> {
         // Generate shadow maps first (required for proper rendering)
-        self.generate_shadow_maps();
+        crate::renderer::lighting::generate_shadow_maps(
+            &self.meshes,
+            &self.mesh_cast_shadows,
+            &mut self.directional_lights,
+            &mut self.spot_lights,
+        );
 
         // Preserve current camera viewports so we can restore them after the capture
         let original_main_viewport = self.camera.viewport();
@@ -787,7 +807,12 @@ impl ThreeDRenderer {
         }
 
         // Collect data for screenshot rendering
-        let lights = self.collect_lights();
+        let lights = crate::renderer::lighting::collect_lights(
+            &self.directional_lights,
+            &self.point_lights,
+            &self.spot_lights,
+            &self.ambient_light,
+        );
         let visible_indices = self.get_visible_mesh_indices(render_state);
         let visible_meshes: Vec<_> = visible_indices
             .iter()
@@ -1708,70 +1733,6 @@ impl ThreeDRenderer {
         Ok(())
     }
 
-    fn collect_lights(&self) -> Vec<&dyn Light> {
-        let mut lights: Vec<&dyn Light> = Vec::new();
-
-        for light in &self.directional_lights {
-            lights.push(light);
-        }
-        for light in &self.point_lights {
-            lights.push(light);
-        }
-        for light in &self.spot_lights {
-            lights.push(light);
-        }
-        if let Some(ref ambient) = self.ambient_light {
-            lights.push(ambient);
-        }
-
-        lights
-    }
-
-    /// Helper method to render with lights, splitting borrows properly
-    fn render_scene_with_lights(
-        &self,
-        render_target: &RenderTarget,
-        camera: &Camera,
-        meshes: &[Gm<Mesh, PhysicalMaterial>],
-    ) {
-        let lights = self.collect_lights();
-        render_target.render(camera, meshes, &lights);
-    }
-
-    fn generate_shadow_maps(&mut self) {
-        // Extract mesh geometries for shadow casting, filtering by cast_shadows flag
-        let geometries: Vec<&dyn Geometry> = self
-            .meshes
-            .iter()
-            .zip(self.mesh_cast_shadows.iter())
-            .filter(|(_, &casts_shadow)| casts_shadow)
-            .map(|(gm, _)| &gm.geometry as &dyn Geometry)
-            .collect();
-
-        if geometries.is_empty() {
-            log::debug!("No shadow-casting meshes in scene");
-            return;
-        }
-
-        log::debug!(
-            "Generating shadow maps for {} shadow-casting meshes",
-            geometries.len()
-        );
-
-        // Generate shadow maps for directional lights that cast shadows
-        for light in &mut self.directional_lights {
-            if light.cast_shadow {
-                light.generate_shadow_map(light.shadow_map_size, geometries.clone());
-            }
-        }
-
-        // Generate shadow maps for spot lights that cast shadows
-        for light in &mut self.spot_lights {
-            if light.cast_shadow {
-                light.generate_shadow_map(light.shadow_map_size, geometries.clone());
-            }
-        }
-    }
 
 
     // ===== Logging Methods =====
