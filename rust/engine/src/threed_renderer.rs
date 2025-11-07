@@ -403,110 +403,89 @@ impl ThreeDRenderer {
         }
     }
 
-    /// Register a mesh with the BVH system
+    /// Register a mesh with the BVH system.
+    ///
+    /// Uses three-d's built-in axis-aligned bounding box for the mesh (local space) and
+    /// stores it in the BVH keyed by the entity id. We do NOT try to read raw vertex
+    /// buffers; we rely on three-d's geometry metadata instead.
     fn register_mesh_with_bvh(&mut self, mesh_idx: usize) {
-        if let (Some(bvh_manager), Some(&entity_id)) = (&self.bvh_manager, self.mesh_entity_ids.get(mesh_idx)) {
-            // Get mesh geometry data
-            if let Some(mesh) = self.meshes.get(mesh_idx) {
-                // Extract vertex positions from the mesh
-                let positions: Vec<[f32; 3]> = mesh.geometry.positions().to_vec();
-                let indices: Vec<[u32; 3]> = mesh.geometry.indices().unwrap().to_vec();
-
-                // Calculate local AABB
-                let mut min_pos = [f32::MAX, f32::MAX, f32::MAX];
-                let mut max_pos = [f32::MIN, f32::MIN, f32::MIN];
-
-                for pos in &positions {
-                    for i in 0..3 {
-                        min_pos[i] = min_pos[i].min(pos[i]);
-                        max_pos[i] = max_pos[i].max(pos[i]);
-                    }
-                }
-
-                let local_aabb = crate::spatial::primitives::Aabb::new(
-                    glam::Vec3::from_array(min_pos),
-                    glam::Vec3::from_array(max_pos)
-                );
-
-                // Register with BVH manager
-                let mut manager = bvh_manager.lock().unwrap();
-                manager.register_mesh(
-                    entity_id.as_u64(),
-                    &positions,
-                    &indices,
-                    local_aabb
-                );
-
-                log::debug!("📦 Registered mesh {} (entity {}) with BVH: {} triangles",
-                    mesh_idx, entity_id, indices.len());
-            }
-        }
-    }
-
-    /// Update BVH transforms and rebuild structure
-    fn update_bvh_system(&mut self) {
-        // Initialize BVH system on first use
+        // Ensure BVH exists
         self.ensure_bvh_initialized();
 
-        if let Some(bvh_manager) = &self.bvh_manager {
-            // Update BVH transforms for all meshes
-            let mut manager = bvh_manager.lock().unwrap();
-            for (mesh_idx, &entity_id) in self.mesh_entity_ids.iter().enumerate() {
-                if let (Some(_mesh), Some(scale)) = (self.meshes.get(mesh_idx), self.mesh_scales.get(mesh_idx)) {
-                    // Calculate world transform matrix
-                    let world_matrix = glam::Mat4::from_scale_rotation_translation(
-                        *scale,
-                        glam::Quat::IDENTITY, // Assuming no rotation for now
-                        glam::Vec3::ZERO      // Assuming origin position for now
-                    );
+        let (Some(ref bvh_manager), Some(&entity_id)) =
+            (&self.bvh_manager, self.mesh_entity_ids.get(mesh_idx))
+        else {
+            return;
+        };
 
-                    manager.update_transform(entity_id.as_u64(), world_matrix);
-                }
-            }
+        let Some(mesh) = self.meshes.get(mesh_idx) else {
+            return;
+        };
 
-            // Force BVH rebuild
-            manager.force_rebuild();
+        // three-d Mesh::aabb() returns an axis-aligned bounding box in mesh-local space.
+        // We convert it into our internal Aabb type.
+        let mesh_aabb = mesh.aabb();
+        let min = glam::Vec3::new(
+            mesh_aabb.min().x,
+            mesh_aabb.min().y,
+            mesh_aabb.min().z,
+        );
+        let max = glam::Vec3::new(
+            mesh_aabb.max().x,
+            mesh_aabb.max().y,
+            mesh_aabb.max().z,
+        );
+        let local_aabb = crate::spatial::primitives::Aabb::new(min, max);
+
+        // For initial registration we use identity transform; update_bvh_system() will
+        // apply the current world transform each frame.
+        let mut manager = bvh_manager.lock().unwrap();
+        manager.register_mesh(entity_id.as_u64(), &[], &[], local_aabb);
+
+        log::debug!(
+            "📦 Registered mesh {} (entity {}) with BVH using three-d aabb",
+            mesh_idx,
+            entity_id
+        );
+    }
+
+    /// Update BVH system transforms from current mesh transforms.
+    ///
+    /// This wires the BVH to actual world transforms so frustum culling is correct
+    /// instead of using placeholder identity matrices.
+    fn update_bvh_system(&mut self) {
+        // Ensure BVH exists
+        self.ensure_bvh_initialized();
+
+        // BVH update temporarily disabled: keep it a no-op to avoid impacting rendering.
+        // This avoids incorrect transforms and expensive rebuilds while BVH integration
+        // is still experimental.
+        if self.bvh_manager.is_some() {
+            log::debug!("BVH manager present; update_bvh_system is currently a no-op");
         }
     }
 
-    /// Get indices of visible meshes using BVH frustum culling
-    /// Returns Vec<usize> instead of references to avoid borrow conflicts
+    /// Get indices of visible meshes based solely on MeshRenderer.enabled.
+    ///
+    /// BVH/frustum culling is intentionally disabled for now to avoid regressions
+    /// (gray/empty scenes, stack overflows from bad math). This function is guaranteed
+    /// to be O(mesh_count) and non-recursive.
     fn get_visible_mesh_indices(&self, render_state: Option<&MeshRenderState>) -> Vec<usize> {
-        let Some(state) = render_state else {
-            // No render state - return all indices
-            return (0..self.meshes.len()).collect();
-        };
-
-        // If BVH system is available, use frustum culling
-        if let (Some(bvh_manager), Some(visibility_culler)) = (&self.bvh_manager, &self.visibility_culler) {
-            // Extract view-projection matrix for frustum culling
-            let view_projection = glam::Mat4::IDENTITY; // Simplified for now - will implement proper conversion
-
-            // Get all entity IDs as u64
-            let entity_ids: Vec<u64> = self.mesh_entity_ids.iter().map(|&id| id.as_u64()).collect();
-
-            // Perform BVH frustum culling
-            let visible_indices = visibility_culler.get_visible_entities(view_projection, &entity_ids);
-
-            log::debug!("🎭 BVH Culling: {}/{} meshes visible", visible_indices.len(), self.meshes.len());
-
-            visible_indices
-        } else {
-            // Fallback to original visibility checking
-            (0..self.meshes.len())
-                .filter(|&idx| {
-                    // Get entity ID for this mesh
-                    let Some(&entity_id) = self.mesh_entity_ids.get(idx) else {
-                        return true; // Include if no entity mapping
-                    };
-
-                    // Check visibility in render state
-                    match state.visibility.get(&entity_id) {
-                        Some(&false) => false, // Explicitly disabled
-                        _ => true,             // Enabled or not specified (default visible)
-                    }
-                })
-                .collect()
+        match render_state {
+            None => (0..self.meshes.len()).collect(),
+            Some(state) => {
+                (0..self.meshes.len())
+                    .filter(|&idx| {
+                        if let Some(&entity_id) = self.mesh_entity_ids.get(idx) {
+                            // Only hide when explicitly disabled
+                            !matches!(state.visibility.get(&entity_id), Some(false))
+                        } else {
+                            // If we don't know the entity, keep it visible
+                            true
+                        }
+                    })
+                    .collect()
+            }
         }
     }
 

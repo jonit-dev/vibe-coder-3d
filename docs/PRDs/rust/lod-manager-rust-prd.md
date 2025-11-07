@@ -343,3 +343,4 @@ This PRD delivers a Rust-native LOD system that mirrors our TS implementation fo
 - Scene model can be extended with `LODComponent` and serialized accordingly.
 - Global config may later be exposed to scripting; current scope is engine-level APIs only.
 
+

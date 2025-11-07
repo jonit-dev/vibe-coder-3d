@@ -327,3 +327,4 @@ Porting BVH acceleration to Rust brings the TypeScript engine’s mature spatial
 - Query API integration path exists (`rust/engine/crates/scripting/src/apis/query_api.rs`).
 - Rust naming uses snake_case throughout; TypeScript interop preserves camelCase in TS-facing APIs.
 
+
