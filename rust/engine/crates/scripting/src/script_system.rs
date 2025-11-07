@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use vibe_ecs_bridge::{ScriptComponent, Transform};
 use vibe_scene::{Entity, Scene};
+use vibe_ecs_manager::SceneManager;
 
 use crate::apis::entity_api::{register_entity_api, EntityTransformState};
 use crate::apis::{EntityMutationBuffer, InputManagerRef};
@@ -360,12 +361,39 @@ impl ScriptSystem {
             })?;
 
         // Register event API for inter-entity communication
-        crate::apis::register_event_api(runtime.lua(), entity_id as u32).with_context(|| {
-            format!(
-                "Failed to register event API for entity '{}' (ID {})",
+        // Get SceneEventBus from SceneManager if available
+        let event_bus = if let Some(scene_manager_weak) = &self.scene_manager {
+            if let Some(scene_manager) = scene_manager_weak.upgrade() {
+                let scene_manager = scene_manager.lock().unwrap();
+                Some(scene_manager.events())
+            } else {
+                log::warn!(
+                    "SceneManager has been dropped for entity '{}' (ID {}), event API disabled",
+                    entity_name, entity_id
+                );
+                None
+            }
+        } else {
+            log::warn!(
+                "No SceneManager available for entity '{}' (ID {}), event API disabled",
                 entity_name, entity_id
-            )
-        })?;
+            );
+            None
+        };
+
+        if let Some(event_bus) = event_bus {
+            crate::apis::register_event_api(runtime.lua(), entity_id as u32, event_bus).with_context(|| {
+                format!(
+                    "Failed to register event API for entity '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            })?;
+        } else {
+            log::warn!(
+                "Event API not registered for entity '{}' (ID {}) due to missing SceneManager",
+                entity_name, entity_id
+            );
+        }
 
         // Register query API for entity/scene queries
         let scene_ref_for_query = self
@@ -657,6 +685,9 @@ impl ScriptSystem {
                 // Continue processing other scripts even if one fails
             }
         }
+
+        // Pump inter-entity events after scripts have updated
+        self.pump_events()?;
         Ok(())
     }
 
@@ -761,6 +792,32 @@ impl ScriptSystem {
     /// Get all entity IDs that have scripts loaded
     pub fn entity_ids(&self) -> Vec<u64> {
         self.scripts.keys().copied().collect()
+    }
+
+    /// Pump events from SceneEventBus to Lua handlers
+    ///
+    /// This should be called once per frame to process queued events
+    /// and deliver them to Lua script handlers.
+    pub fn pump_events(&mut self) -> Result<()> {
+        // Get SceneEventBus from SceneManager if available
+        if let Some(scene_manager_weak) = &self.scene_manager {
+            if let Some(scene_manager) = scene_manager_weak.upgrade() {
+                let mut scene_manager = scene_manager.lock().unwrap();
+
+                // Pump events through the SceneManager's event bus
+                // The event bus will call the Lua dispatch function for each event
+                scene_manager.pump_events(|_envelope| {
+                    // The actual dispatch happens via the handlers registered with SceneEventBus
+                    // This closure is for any additional dispatch logic if needed
+                });
+            } else {
+                log::warn!("SceneManager has been dropped, cannot pump events");
+            }
+        } else {
+            log::warn!("No SceneManager available, cannot pump events");
+        }
+
+        Ok(())
     }
 
     /// Dispatch a collision event to a specific entity's script

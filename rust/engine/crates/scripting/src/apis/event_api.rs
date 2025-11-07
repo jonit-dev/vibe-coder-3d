@@ -6,15 +6,16 @@ use mlua::{Function, Lua, Result as LuaResult, Table, Value};
 use std::sync::{Arc, Mutex};
 use vibe_events::{EventEnvelope, EventKey, SceneEventBus, SubscriberId};
 use vibe_scene::EntityId;
+use once_cell::sync::Lazy;
 
 /// Per-entity subscriptions for cleanup
 /// Maps entity ID to subscriber IDs that need cleanup
-static ENTITY_SUBSCRIPTIONS: Mutex<std::collections::HashMap<u32, Vec<SubscriberId>>> =
-    Mutex::new(std::collections::HashMap::new());
+static ENTITY_SUBSCRIPTIONS: Lazy<Mutex<std::collections::HashMap<u32, Vec<SubscriberId>>>> =
+    Lazy::new(|| Mutex::new(std::collections::HashMap::new()));
 
 /// Global registry of event buses for cleanup
-static EVENT_BUSES: Mutex<std::collections::HashMap<u32, Arc<SceneEventBus>>> =
-    Mutex::new(std::collections::HashMap::new());
+static EVENT_BUSES: Lazy<Mutex<std::collections::HashMap<u32, Arc<SceneEventBus>>>> =
+    Lazy::new(|| Mutex::new(std::collections::HashMap::new()));
 
 /// Register event API in the Lua environment
 ///
@@ -61,6 +62,9 @@ pub fn register_event_api(
     let event_bus_on = event_bus.clone();
     let on_fn = lua.create_function(
         move |lua, (_self, event_type, handler): (Table, String, Function)| {
+            // Clone handler for registry storage
+            let handler_for_registry = handler.clone();
+
             // Create a wrapped handler that calls the Lua function
             let lua_for_handler = lua.clone();
             let event_type_clone = event_type.clone();
@@ -89,14 +93,14 @@ pub fn register_event_api(
 
             // Subscribe to the event bus with entity ownership
             let subscriber_id = event_bus_on.on_entity(
-                EntityId::from(entity_id_on as u64),
+                EntityId::new(entity_id_on as u64),
                 event_type.clone(),
                 handler_wrapper,
             );
 
             // Store handler in registry to keep it alive
             let handler_registry_key = format!("event_handler_{}_{}", entity_id_on, subscriber_id);
-            lua.set_named_registry_value(&handler_registry_key, handler.clone())?;
+            lua.set_named_registry_value(&handler_registry_key, handler_for_registry)?;
 
             // Track subscription for this entity
             {
@@ -251,12 +255,9 @@ fn lua_to_json(lua: &Lua, value: mlua::Value) -> LuaResult<serde_json::Value> {
                         object_pairs.push((i.to_string(), lua_to_json(lua, value)?));
                     }
                     mlua::Value::Number(n) => {
-                        if let Some(i) = n.as_i64() {
-                            if i > 0 && i <= 2147483647 {
-                                max_array_index = max_array_index.max(i as usize);
-                            } else {
-                                is_array = false;
-                            }
+                        // Check if it's a valid integer array index
+                        if n.fract() == 0.0 && n > 0.0 && n <= 2147483647.0 {
+                            max_array_index = max_array_index.max(n as usize);
                         } else {
                             is_array = false;
                         }
@@ -294,6 +295,8 @@ fn lua_to_json(lua: &Lua, value: mlua::Value) -> LuaResult<serde_json::Value> {
         mlua::Value::Thread(_) => Ok(serde_json::Value::String("[thread]".to_string())),
         mlua::Value::UserData(_) => Ok(serde_json::Value::String("[userdata]".to_string())),
         mlua::Value::LightUserData(_) => Ok(serde_json::Value::String("[lightuserdata]".to_string())),
+        mlua::Value::Error(_) => Ok(serde_json::Value::String("[error]".to_string())),
+        mlua::Value::Other(_) => Ok(serde_json::Value::String("[other]".to_string())),
     }
 }
 
