@@ -1,59 +1,50 @@
 # Engine Crates
 
-This directory contains internal workspace crates that modularize the engine architecture.
+Internal workspace crates for modular architecture.
 
-## Structure
+## Crate Dependency Graph
 
-- **scene/** - Stable scene model with typed entity/component abstractions
-- **ecs-bridge/** - Component registry and decoders for Three.js ECS integration
-- **scene-graph/** (planned) - Parent/child DAG and transform propagation
-- **assets/** (planned) - Mesh/texture/material caches and loaders
-- **render-core/** (planned) - Device, buffers, and common GPU resources
-- **render-graph/** (planned) - Pass graph and resource scheduling
-- **passes/** (planned) - Individual render passes (geometry, shadow, skybox, post)
-- **wasm-bridge/** (planned) - WASM/native live-sync bridge for editor integration
+```mermaid
+graph TD
+    E[engine bin] --> S[vibe-scene]
+    E --> B[vibe-ecs-bridge]
+    E --> G[vibe-scene-graph]
+    E --> P[vibe-physics]
+    E --> M[vibe-ecs-manager]
 
-## Design Principles
+    B --> S
+    G --> S
+    P --> B
+    M --> S
+    M --> P
 
-- **Single Responsibility**: Each crate has one clear purpose
-- **Incremental Migration**: Extract from monolithic `src/` gradually
-- **Backward Compatibility**: Re-export from engine main for existing code
-- **Stable APIs**: Internal crate APIs should remain stable across features
-- **Test Coverage**: Each crate must have comprehensive unit tests
+    style S fill:#FFD700
+    style E fill:#87CEEB
+```
 
-## Current Status
+## Implemented
 
-### ✅ Implemented
+- **vibe-scene** - Core types: EntityId, Scene, Entity, ComponentKindId
+- **vibe-ecs-bridge** - Component registry, decoders, **transform_utils** (degrees→radians)
+- **vibe-scene-graph** - Parent/child DAG, transform propagation, renderable extraction
+- **vibe-physics** - Rapier integration, scene population
+- **vibe-ecs-manager** - Command buffer pattern for runtime entity CRUD
 
-- `vibe-scene`: Stable EntityId, Scene, Entity, and ComponentKindId types
-- `vibe-ecs-bridge`: ComponentRegistry, IComponentDecoder trait, decoders for Transform/Camera/Light/MeshRenderer/Material
+## Planned
 
-### 🚧 In Progress
+- **vibe-assets** - Mesh/texture/material caches, GLTF
+- **render-core** - Device, buffers, GPU resources
+- **render-graph** - Pass graph, resource scheduling
 
-- Integrating registry-backed parsing into main engine
+## Principles
 
-### 📋 Planned
+- **Single Responsibility** per crate
+- **Acyclic Dependencies** (scene has no deps, ecs-bridge depends only on scene, etc.)
+- **Stable APIs** - minimize breaking changes
+- **Test Coverage** - all public functions
 
-- scene-graph, assets, render-core, render-graph, passes, wasm-bridge crates
-
-## Usage
-
-Add as workspace dependencies in `/rust/engine/Cargo.toml`:
+**Usage**: Add to `engine/Cargo.toml`:
 
 ```toml
-[dependencies]
 vibe-scene = { path = "crates/scene" }
-vibe-ecs-bridge = { path = "crates/ecs-bridge" }
 ```
-
-## Inter-Crate Dependencies
-
-```
-vibe-scene (base types)
-    ↓
-vibe-ecs-bridge (depends on scene)
-    ↓
-engine (uses both)
-```
-
-Keep dependencies acyclic. scene should have no internal dependencies, ecs-bridge can depend on scene, etc.

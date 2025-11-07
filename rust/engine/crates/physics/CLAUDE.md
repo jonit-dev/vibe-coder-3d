@@ -1,333 +1,111 @@
 # vibe-physics
 
-Rapier3D physics integration for the Vibe engine.
+Rapier3D integration bridging Three.js physics components to native simulation.
 
-## Purpose
+## Critical: Transform Sync
 
-This crate bridges the gap between Three.js physics (via ECS components) and Rapier3D by:
-
-- **Scene integration**: Populating PhysicsWorld from Scene entities
-- **Rigid body management**: Dynamic, static, and kinematic bodies
-- **Collider support**: Box, sphere, capsule, cylinder, and trimesh colliders
-- **Transform synchronization**: Keeping physics transforms in sync with rendering
-- **Material properties**: Friction, restitution, and density
-
-## Critical: Coordinate System Conversions
-
-**ALWAYS use `vibe_ecs_bridge::transform_utils` for rotation conversions!**
-
-TypeScript/JSON stores rotations in **DEGREES**, but Rapier3D (via glam) expects **RADIANS**.
+**ALWAYS use `vibe_ecs_bridge::transform_utils`**. TypeScript stores rotation in DEGREES, Rapier expects RADIANS.
 
 ```rust
 use vibe_ecs_bridge::{rotation_to_quat_opt, position_to_vec3_opt, scale_to_vec3_opt};
 
-// ✅ CORRECT - uses standardized utilities
-let position = position_to_vec3_opt(transform.position.as_ref());
-let rotation = rotation_to_quat_opt(transform.rotation.as_ref()); // Handles degrees → radians
-let scale = scale_to_vec3_opt(transform.scale.as_ref());
+// ✅ CORRECT - handles degrees→radians automatically
+let rotation = rotation_to_quat_opt(transform.rotation.as_ref());
 
-// ❌ WRONG - manual conversion (THE BUG WE FIXED)
-let rotation = Quat::from_euler(glam::EulerRot::XYZ, rot[0], rot[1], rot[2]); // WRONG! Treats as radians
+// ❌ WRONG - treats degrees as radians
+let rotation = Quat::from_euler(glam::EulerRot::XYZ, rot[0], rot[1], rot[2]);
 ```
 
-See `/rust/CLAUDE.md` "Transform Coordinate System Conventions" for full details.
+See `/rust/engine/crates/ecs-bridge/CLAUDE.md` for full transform utilities docs.
 
-## Architecture
+## Scene Integration Flow
 
-### PhysicsWorld
-
-Main physics simulation container:
-
-```rust
-pub struct PhysicsWorld {
-    rigid_body_set: RigidBodySet,
-    collider_set: ColliderSet,
-    integration_params: IntegrationParameters,
-    physics_pipeline: PhysicsPipeline,
-    // ...
-}
+```mermaid
+graph LR
+    A[Scene Entity] --> B{Has Physics?}
+    B -->|RigidBody| C[Extract Transform]
+    B -->|MeshCollider| C
+    B -->|No| D[Skip]
+    C --> E[rotation_to_quat_opt<br/>degrees→radians]
+    E --> F[Build Rapier Body]
+    F --> G[Build Colliders<br/>apply scale]
+    G --> H[Add to PhysicsWorld]
 ```
 
-**Key Methods:**
-- `new()` - Create empty world
-- `add_entity()` - Add rigid body + colliders for an entity
-- `step()` - Advance simulation by delta time
-- `get_entity_transform()` - Read physics transform back
-- `stats()` - Get counts for debugging
+**Entry Point**: `populate_physics_world(world, scene, registry)`
 
-### Scene Integration
+## Three.js Parity Rules
 
-`populate_physics_world()` in `scene_integration.rs` converts Scene entities to physics:
+| Behavior             | Implementation                                           |
+| -------------------- | -------------------------------------------------------- |
+| Collider-only entity | Creates implicit Fixed (static) body                     |
+| `enabled: false`     | Skip during population                                   |
+| Transform.scale      | Multiplies collider base size                            |
+| Rotation units       | JSON degrees → Rapier radians via `rotation_to_quat_opt` |
 
-```rust
-pub fn populate_physics_world(
-    world: &mut PhysicsWorld,
-    scene: &Scene,
-    registry: &ComponentRegistry,
-) -> Result<usize>
-```
+## Collider Size Conventions
 
-**Process:**
-1. Iterate all scene entities
-2. Check for RigidBody or MeshCollider components
-3. Extract Transform (using standardized utilities!)
-4. Build Rapier rigid body from RigidBody component
-5. Build Rapier colliders from MeshCollider component
-6. Add to PhysicsWorld with entity ID mapping
+**Rapier vs Three.js units:**
 
-**Critical**: Uses `vibe_ecs_bridge::transform_utils` for all conversions!
+| Collider | Rapier API           | JSON Field                           | Notes                     |
+| -------- | -------------------- | ------------------------------------ | ------------------------- |
+| Box      | Half-extents         | width/height/depth (full)            | Divide by 2 before Rapier |
+| Sphere   | Radius               | radius                               | Direct                    |
+| Capsule  | Radius + half-height | capsuleRadius, capsuleHeight (total) | Height includes caps      |
+| Cylinder | Radius + half-height | radius, height (full)                | Divide height by 2        |
 
-### Component Mapping
-
-| TypeScript Component | Rust Type | Notes |
-|---------------------|-----------|-------|
-| `RigidBody` | `vibe_ecs_bridge::RigidBody` | bodyType, mass, gravityScale, canSleep |
-| `MeshCollider` | `vibe_ecs_bridge::MeshCollider` | colliderType, size, physicsMaterial, isTrigger |
-| `Transform` | `vibe_ecs_bridge::Transform` | position, rotation (degrees!), scale |
-
-### Rigid Body Types
-
-```rust
-pub enum RigidBodyType {
-    Dynamic,   // Affected by forces, gravity, collisions
-    Static,    // Immovable (ground, walls)
-    Kinematic, // Moved by code, affects others but not affected
-    Fixed,     // Alias for Static
-}
-```
-
-Conversion from TypeScript:
-
-```rust
-impl RigidBodyType {
-    pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "dynamic" => RigidBodyType::Dynamic,
-            "static" | "fixed" => RigidBodyType::Static,
-            "kinematic" => RigidBodyType::Kinematic,
-            _ => {
-                log::warn!("Unknown body type '{}', defaulting to Dynamic", s);
-                RigidBodyType::Dynamic
-            }
-        }
-    }
-}
-```
-
-### Collider Types
-
-```rust
-pub enum ColliderType {
-    Box,      // Rectangular box
-    Sphere,   // Sphere
-    Capsule,  // Capsule (pill shape)
-    Cylinder, // Cylinder
-    Trimesh,  // Triangle mesh (for complex shapes)
-}
-```
-
-**Size Parameters:**
-
-Different colliders use different size fields from `MeshCollider.size`:
-
-| Collider | Uses | Notes |
-|----------|------|-------|
-| Box | width, height, depth | Half-extents (Rapier convention) |
-| Sphere | radius | Full radius |
-| Capsule | capsuleRadius, capsuleHeight | Height is total (includes caps) |
-| Cylinder | radius, height | Half-height (Rapier convention) |
-
-**Scale Application:**
-
-Scale is applied AFTER base size is determined:
+**Scale Application**: Applied AFTER base size calculation:
 
 ```rust
 let half_extents = Vec3::new(width, height, depth) * 0.5 * scale;
 ColliderBuilder::cuboid(half_extents.x, half_extents.y, half_extents.z)
 ```
 
-### Physics Material
-
-```rust
-pub struct PhysicsMaterial {
-    pub friction: f32,      // 0.0 = ice, 1.0 = rubber
-    pub restitution: f32,   // 0.0 = no bounce, 1.0 = perfect bounce
-    pub density: f32,       // kg/m³ (only for Dynamic bodies)
-}
-```
-
-Default values match Three.js Rapier integration:
-
-```rust
-impl Default for PhysicsMaterial {
-    fn default() -> Self {
-        Self {
-            friction: 0.5,
-            restitution: 0.0,
-            density: 1.0,
-        }
-    }
-}
-```
-
-## Three.js Integration
-
-### Matching Three.js Behavior
-
-**Critical Rules:**
-
-1. **Rotation Units**: Three.js stores Euler angles in DEGREES
-   - ✅ Use `rotation_to_quat_opt()` - handles conversion automatically
-   - ❌ Never manually convert - easy to forget `.to_radians()`
-
-2. **Collider-Only Entities**: Three.js MeshCollider without RigidBody
-   - Creates implicit Fixed (static) body
-   - Implemented in `populate_physics_world()` lines 44-50
-
-3. **Disabled Components**: `enabled: false` in JSON
-   - Skip during population
-   - Implemented via early continue
-
-4. **Scale Application**: Transform.scale affects collider size
-   - Applied as multiplier to base size
-   - Matches Three.js behavior
-
-### Example Scene Entity
-
-TypeScript/JSON:
-
-```json
-{
-  "id": 1,
-  "name": "Ground",
-  "components": {
-    "Transform": {
-      "position": [0, 0, 0],
-      "rotation": [0, 0, 0],
-      "scale": [10, 1, 10]
-    },
-    "MeshCollider": {
-      "enabled": true,
-      "colliderType": "box",
-      "size": {"width": 1, "height": 1, "depth": 1},
-      "physicsMaterial": {"friction": 0.7}
-    }
-  }
-}
-```
-
-Rust conversion:
-
-```rust
-// Extract transform using standardized utilities
-let position = position_to_vec3_opt(transform.position.as_ref()); // [0, 0, 0]
-let rotation = rotation_to_quat_opt(transform.rotation.as_ref()); // IDENTITY
-let scale = scale_to_vec3_opt(transform.scale.as_ref());           // [10, 1, 10]
-
-// Build collider with scale applied
-let size = ColliderSize { width: 1.0, height: 1.0, depth: 1.0, ... };
-// Effective half-extents: [1.0 * 10, 1.0 * 1, 1.0 * 10] * 0.5 = [5, 0.5, 5]
-let collider = ColliderBuilder::new(ColliderType::Box)
-    .size(size)
-    .scale(scale)
-    .build()?;
-```
-
-## Testing
-
-### Unit Tests
-
-All core functionality has tests in `scene_integration.rs`:
-
-```bash
-cargo test -p vibe-physics
-```
-
-**Test Coverage:**
-- ✅ Populate world with rigid body + collider
-- ✅ Skip disabled entities
-- ✅ Collider-only creates Fixed body
-- ✅ Transform extraction (degrees → radians)
-- ✅ Error handling for invalid data
-
-### Integration Testing
-
-Test with real scene files:
-
-```bash
-cd /home/jonit/projects/vibe-coder-3d
-yarn rust:engine --scene testphysics
-```
-
-Expected behavior (matches Three.js):
-- Cube and sphere fall straight down (gravity)
-- Land on red plane and stop (collision + friction)
-- No sliding/rolling (objects stabilize)
-
 ## Common Pitfalls
 
 ### ❌ Forgetting Degrees → Radians
 
-**Symptom**: Objects appear rotated incorrectly, physics colliders don't match visuals
+**Symptom**: Plane `rotation: [-90, 0, 0]` becomes slanted ramp, objects slide.
 
-**Cause**: Using rotation values directly without conversion
+**Fix**: Use `rotation_to_quat_opt` - handles conversion automatically.
 
-```rust
-// ❌ WRONG - treats degrees as radians
-let quat = Quat::from_euler(glam::EulerRot::XYZ, rot[0], rot[1], rot[2]);
+### ❌ Applying Scale Twice
 
-// ✅ CORRECT - uses standardized utility
-let quat = rotation_to_quat_opt(transform.rotation.as_ref());
-```
-
-**How We Fixed It**: See `/rust/CLAUDE.md` "Transform Coordinate System Conventions"
-
-### ❌ Incorrect Scale Application
-
-**Symptom**: Colliders too large or too small
-
-**Cause**: Forgetting to apply Transform.scale or applying it twice
+**Wrong**:
 
 ```rust
-// ✅ CORRECT - ColliderBuilder handles scale internally
-ColliderBuilder::new(ColliderType::Box)
-    .size(size)
-    .scale(scale)  // Applied once here
-    .build()?
-
-// ❌ WRONG - manual scaling in size calculation
-let width = component.size.width * scale.x;  // Don't do this!
+let width = component.size.width * scale.x;  // Don't do this
+let half_extents = Vec3::new(width, height, depth) * 0.5;
 ```
 
-### ❌ Half-Extents vs Full Size
+**Correct**: Let `ColliderBuilder` handle scale internally.
 
-**Symptom**: Box colliders are 2x too large
+### ❌ Half-Extents Confusion
 
-**Cause**: Rapier uses half-extents, Three.js uses full size
+**Wrong**: Using full size for cuboid (creates 2x too large collider).
 
-```rust
-// ✅ CORRECT - ColliderBuilder handles conversion
-pub fn build(self) -> Result<Collider> {
-    match self.collider_type {
-        ColliderType::Box => {
-            let half_extents = Vec3::new(width, height, depth) * 0.5 * scale;
-            SharedShape::cuboid(half_extents.x, half_extents.y, half_extents.z)
-        }
-    }
-}
-```
+**Correct**: Divide full size by 2 before `SharedShape::cuboid()`.
 
-## Future Work
+## PhysicsWorld Key Methods
 
-- [ ] Continuous collision detection (CCD) for fast-moving objects
-- [ ] Joint/constraint support (hinges, fixed, etc.)
-- [ ] Raycasting for interaction
-- [ ] Physics material presets (ice, rubber, metal)
-- [ ] Performance: broad-phase optimization for large scenes
-- [ ] Debug visualization (collider wireframes)
+- `add_entity(entity_id, body, colliders)` - Register entity with Rapier
+- `step(delta)` - Advance simulation
+- `get_entity_transform(entity_id)` - Read physics-updated position/rotation
+- `remove_entity(entity_id)` - Cleanup on entity destruction
 
-## Resources
+## Testing
 
-- [Rapier3D Documentation](https://rapier.rs/docs/user_guides/rust/getting_started)
-- [Three.js Rapier Integration](https://github.com/pmndrs/react-three-rapier)
-- [glam Math Library](https://docs.rs/glam/latest/glam/)
+Integration tests verify:
+
+- ✅ Transform extraction (degrees → radians)
+- ✅ Collider-only → Fixed body creation
+- ✅ Scale application
+- ✅ Disabled component skip
+
+**Run**: `cargo test -p vibe-physics`
+
+**Validate**: `yarn rust:engine --scene testphysics` - objects fall straight down, no sliding.
+
+## Coordinate System
+
+Right-handed, Y-up, +Z forward (matches Three.js). Euler order: XYZ.

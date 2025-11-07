@@ -1,88 +1,59 @@
 # vibe-scene
 
-Stable scene model providing typed entity/component abstractions.
-
-## Purpose
-
-This crate defines the core scene data model that is:
-
-- **Stable**: EntityId and ComponentKindId won't change across refactors
-- **Serializable**: Full serde support for JSON scene loading
-- **Query-friendly**: Methods for finding entities and components
-- **Three.js compatible**: Preserves camelCase field names for JS interop
+Core scene data model with stable IDs and JSON serialization.
 
 ## Key Types
 
-### EntityId
+```mermaid
+graph LR
+    A[Scene] --> B[Entity]
+    B --> C[Components<br/>HashMap&lt;String, Value&gt;]
+    A --> D[Materials]
+    A --> E[Metadata]
 
-Stable 64-bit entity identifier derived from `persistentId` strings via hashing.
-
-```rust
-let id = EntityId::from_persistent_id("entity-123");
+    F[persistentId: String] --> G[EntityId: u64<br/>via hash]
 ```
 
-### ComponentKindId
+**EntityId**: Stable 64-bit ID from hashing `persistentId` string. Same string → same ID.
 
-String-based component type identifier.
-
-```rust
-let kind = ComponentKindId::new("Transform");
-```
-
-### Scene
-
-Top-level scene container with metadata, entities, materials, etc.
-
-```rust
-let scene: Scene = serde_json::from_str(json)?;
-let entity = scene.find_entity_by_persistent_id("player")?;
-```
-
-### Entity
-
-Individual entity with components stored as `HashMap<String, Value>`.
-
-```rust
-let transform: Transform = entity.get_component("Transform")?;
-```
+**ComponentKindId**: String-based component type identifier (e.g., "Transform", "Camera").
 
 ## Design Decisions
 
-### Why hash persistentId into u64?
+**Why hash persistentId?**
 
-- Provides stable numeric IDs for indexing and lookups
-- Avoids string comparisons in hot paths
-- Same persistent ID always produces same EntityId
+- Fast numeric lookups instead of string comparisons
+- Stable across sessions
 
-### Why keep camelCase fields?
+**Why camelCase fields?**
 
-- Maintains 1:1 compatibility with TypeScript JSON exports
-- Avoids serde rename complexity
-- Rust warnings are acceptable for interop
+- 1:1 compatibility with TypeScript JSON exports
+- No serde rename complexity
 
-### Why store components as JSON Value?
+**Why store components as JSON Value?**
 
-- Flexible - unknown components don't break parsing
-- Decoders handle typed extraction on-demand
-- Preserves extensibility for editor features
+- Unknown components don't break parsing
+- Decoders handle typed extraction on-demand (see `vibe-ecs-bridge`)
+- Extensible for editor features
 
-## Test Coverage
+## API
 
-All public APIs have unit tests:
+```rust
+// Load scene
+let scene: Scene = serde_json::from_str(json)?;
 
-- EntityId hashing and equality
-- Entity component access (has/get)
-- Scene queries by ID and component type
-- Round-trip serialization
+// Find entity
+let entity = scene.find_entity_by_persistent_id("player")?;
 
-Run tests:
+// Check component
+if entity.has_component("RigidBody") { ... }
 
-```bash
-cargo test -p vibe-scene
+// Query by component type
+let cameras = scene.find_entities_with_component("Camera");
 ```
 
-## Future Extensions
+## Testing
 
-- Index entities by component type for faster queries
-- Component versioning for migration
-- Diff/patch support for live updates
+Unit tests for EntityId hashing, component queries, serialization round-trips.
+
+`cargo test -p vibe-scene`
