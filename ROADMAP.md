@@ -29,7 +29,7 @@
 | ---------------------- | ------------ | --------- | ---------- | -------- |
 | Particle/VFX System    | 🔴 Critical  | 2-4 weeks | ❌ Missing | P0       |
 | Custom Shader System   | 🔴 Critical  | 2-3 weeks | ❌ Missing | P0       |
-| Character Controller   | 🔴 Critical  | 2-3 weeks | ❌ Missing | P0       |
+| Character Controller   | 🔴 Critical  | 1-2 weeks | 🚧 Partial | P0       |
 | Undo/Redo System       | 🔴 Critical  | 2-3 weeks | ❌ Missing | P1       |
 | Skinned Mesh Animation | 🟡 Important | 4-6 weeks | 🚧 Partial | P2       |
 | Navigation/Pathfinding | 🟡 Important | 4-6 weeks | ❌ Missing | P3       |
@@ -80,7 +80,7 @@
 
 **Optimization (Complete Parity):**
 
-- ✅ BVH Spatial Acceleration - 10-100x raycasting speedup (TS + Rust)
+- ✅ BVH Spatial Acceleration - 10-100x raycasting speedup (TS + Rust, scripting integration complete)
 - ✅ LOD System - 3 quality tiers (100%, 75%, 35%) (TS + Rust)
 - ✅ Asset Pipeline - 60-80% file size reduction (TS only)
 - ✅ Scene Serialization - 60-80% compression (TS only)
@@ -91,18 +91,18 @@
 
 ## 🎯 Sprint Planning Overview
 
-| Sprint       | Focus              | Duration  | Features                         | Impact       | User Excitement            |
-| ------------ | ------------------ | --------- | -------------------------------- | ------------ | -------------------------- |
-| **Sprint 1** | Visual Impact      | 3-4 weeks | Particles + Character Controller | 🔴 Critical  | ⭐⭐⭐⭐⭐ **WOW!**        |
-| **Sprint 2** | Visual Polish      | 2-3 weeks | Post-processing + Custom Shaders | 🟡 Important | ⭐⭐⭐⭐ **Professional!** |
-| **Sprint 3** | Performance        | 1-2 weeks | Material Dedup + Asset Pipeline  | 🟡 Important | ⭐⭐⭐ **Optimized!**      |
-| **Sprint 4** | Professional Tools | 3-4 weeks | Undo/Redo + Complete APIs        | 🟡 Important | ⭐⭐⭐ **Efficient!**      |
+| Sprint       | Focus              | Duration  | Features                                  | Impact       | User Excitement            |
+| ------------ | ------------------ | --------- | ----------------------------------------- | ------------ | -------------------------- |
+| **Sprint 1** | Visual Impact      | 3-4 weeks | Particles + Complete Character Controller | 🔴 Critical  | ⭐⭐⭐⭐⭐ **WOW!**        |
+| **Sprint 2** | Visual Polish      | 2-3 weeks | Post-processing + Custom Shaders          | 🟡 Important | ⭐⭐⭐⭐ **Professional!** |
+| **Sprint 3** | Performance        | 1-2 weeks | Material Dedup + Asset Pipeline           | 🟡 Important | ⭐⭐⭐ **Optimized!**      |
+| **Sprint 4** | Professional Tools | 3-4 weeks | Undo/Redo + Complete APIs                 | 🟡 Important | ⭐⭐⭐ **Efficient!**      |
 
 **Total Timeline:** 9-13 weeks to achieve impressive, professional results
 
 **Progress After Each Sprint:**
 
-- **Sprint 1:** Explosions, fire, smoke effects + walkable scenes
+- **Sprint 1:** Explosions, fire, smoke effects + fully walkable scenes with slope/step handling
 - **Sprint 2:** Professional anti-aliasing and custom visual effects
 - **Sprint 3:** Memory optimization + asset pipeline (LOD/BVH already done ✅)
 - **Sprint 4:** Complete professional development workflow
@@ -272,23 +272,28 @@
 
 | Feature                                                | Editor (TS) | Rust Engine | Notes                         |
 | ------------------------------------------------------ | ----------- | ----------- | ----------------------------- |
-| Line hits (shooting, picking, camera focus, AI vision) | ✅          | 🚧          | BVH-accelerated in TS         |
+| Line hits (shooting, picking, camera focus, AI vision) | ✅          | ✅          | BVH-accelerated in both       |
 | Layer filtering                                        | ✅          | 🚧          | Optimize queries              |
 | Hit info struct                                        | ✅          | ✅          | Decals, effects, impact logic |
 
-**Status:** 🚧 **PARTIAL** - TS has advanced BVH raycasting (10-100x faster)
+**Status:** ✅ **COMPLETE** - BVH-accelerated raycasting available in both TS and Rust (10-100x faster)
+**Files:** TS: `src/core/lib/rendering/BVHManager.ts`, Rust: `rust/engine/src/spatial/bvh_manager.rs`, `rust/engine/src/spatial/scripting_raycaster.rs`
 
 ---
 
 ### Character Controller (★★★★☆)
 
-| Feature             | Editor (TS) | Rust Engine | Notes                                  |
-| ------------------- | ----------- | ----------- | -------------------------------------- |
-| Capsule collider    | ✅          | ✅          | Physics shapes support                 |
-| Slope/step handling | ❌          | ❌          | Needs implementation (scripting ready) |
-| Ground snapping     | ❌          | ❌          | Needs implementation (scripting ready) |
+| Feature             | Editor (TS) | Rust Engine | Notes                                                                           |
+| ------------------- | ----------- | ----------- | ------------------------------------------------------------------------------- |
+| Capsule collider    | ✅          | ✅          | Physics shapes support                                                          |
+| Scripting API       | ✅          | ✅          | entity.controller (isGrounded, move, jump, setSlopeLimit, setStepOffset)        |
+| Basic movement      | ✅          | ✅          | WASD + Space input handling                                                     |
+| Physics collisions  | ✅          | ✅          | Uses Rapier kinematic bodies - collisions work                                  |
+| Slope/step handling | ✅          | 🚧          | TS complete with KinematicCharacterController, Rust uses basic kinematic bodies |
+| Ground snapping     | ✅          | 🚧          | TS complete with KinematicCharacterController, Rust uses basic kinematic bodies |
 
-**Status:** ❌ **NOT IMPLEMENTED** - Scripting APIs available, needs character controller logic
+**Status:** 🚧 **PARTIAL** - TS complete with Rapier KinematicCharacterController (slope/step/snap), Rust uses kinematic bodies (collisions work, but missing advanced features)
+**Files:** TS: `src/core/systems/CharacterControllerAutoInputSystem.ts`, Rust: `rust/engine/src/app_threed.rs`, `rust/engine/crates/scripting/src/apis/physics_api.rs`
 
 ---
 
@@ -517,10 +522,11 @@
 **Effort:** 2-3 weeks | **Dependencies:** Material system
 **Enables:** Toon/cel shading, holograms, water, fire effects
 
-### 3. ❌ Character Controller (★★★★☆)
+### 3. 🚧 Character Controller (★★★★☆)
 
-**Impact:** Cannot create playable characters or first-person controllers
-**Effort:** 2-3 weeks | **Dependencies:** None (scripting ready ✅)
+**Impact:** Basic movement and collisions work via Rapier kinematic bodies, needs KinematicCharacterController for advanced features
+**Status:** 🚧 Partial - Scripting API complete, basic WASD movement + physics collisions working, needs KinematicCharacterController for slope/step/snap
+**Effort:** 1-2 weeks | **Dependencies:** None (scripting ready ✅)
 
 ### 4. ❌ Undo/Redo System (★★★★☆)
 
@@ -542,9 +548,9 @@
 **Goal:** Maximum visible progress with immediate user satisfaction
 
 1. **Particle/VFX System** (2-4 weeks) - Explosions, fire, smoke - instantly impressive
-2. **FXAA Anti-Aliasing** (1 week) - Smooth jagged edges
-3. **Custom Shader System - Basic** (2-3 weeks) - Toon shading, holograms, water
-4. **Character Controller** (2-3 weeks) - Walk around scenes immediately
+2. **Complete Character Controller** (1-2 weeks) - Upgrade to Rapier KinematicCharacterController for slope/step/snap features (basic collisions already work)
+3. **FXAA Anti-Aliasing** (1 week) - Smooth jagged edges
+4. **Custom Shader System - Basic** (2-3 weeks) - Toon shading, holograms, water
 
 **Outcome:** Users see impressive visual results and can interact with creations
 
@@ -595,8 +601,8 @@
 
 **Feature Parity (TS vs Rust):**
 
-- ✅ Full Parity: Physics, Scene Graph, Lighting, Materials, Input, BVH, LOD
-- 🚧 Partial Parity: Rendering, Scripting, Audio, Serialization
+- ✅ Full Parity: Physics, Scene Graph, Lighting, Materials, Input, BVH, LOD, Raycasting
+- 🚧 Partial Parity: Rendering, Scripting, Audio, Serialization, Character Controller
 - ⚠️ Critical Gaps: Particle System
 
 **Scripting API Completion:**
@@ -617,9 +623,10 @@
 5. **TypeScript Scripting** - 14 complete APIs
 6. **Rust Scripting** - 24/25 complete APIs (96%)
 7. **Asset Optimization** - 60-80% file size reduction
-8. **BVH Spatial Acceleration** - 10-100x raycasting speedup (TS)
-9. **LOD System** - 3 quality tiers (TS)
+8. **BVH Spatial Acceleration** - 10-100x raycasting speedup (TS + Rust)
+9. **LOD System** - 3 quality tiers (TS + Rust)
 10. **Input System** - Full parity with action mapping
+11. **Character Controller** - Scripting API + basic movement (TS complete, Rust partial)
 
 ### 🎯 Competitive Advantages
 
@@ -631,7 +638,7 @@
 
 ---
 
-**Last Updated:** 2025-11-04
+**Last Updated:** 2025-11-07
 **Engine Version:** Vibe Coder 3D (Visual-First Phase)
 **Codebase:** `/home/joao/projects/vibe-coder-3d`
 
@@ -643,7 +650,121 @@
 
 ---
 
-## 📚 Additional Documentation
+## 🎮 Getting to a Playable Game (Platformer/Endless Runner)
+
+**Goal:** Ship a basic functional game in 2-3 weeks
+
+### Critical Path (Must Have)
+
+| Priority | Feature                       | Status     | Effort    | Why Critical                                                                   |
+| -------- | ----------------------------- | ---------- | --------- | ------------------------------------------------------------------------------ |
+| **P0**   | Complete Character Controller | 🚧 Partial | 1-2 weeks | Movement + collisions work, but need slope/step handling for platformers       |
+| **P0**   | Basic UI/HUD (workaround)     | 🚧 Partial | 2-3 days  | Score display, game over screen - can use console.log or simple text rendering |
+| **P1**   | Game State Management         | ✅ Ready   | Scripts   | Can be done entirely in Lua scripts using existing APIs                        |
+| **P1**   | Obstacle/Enemy Spawning       | ✅ Ready   | Scripts   | Use GameObject.createPrimitive() + physics in scripts                          |
+
+### What You Already Have ✅
+
+- ✅ **Character Controller** - Basic movement + collisions working
+- ✅ **Physics System** - Full Rapier3D integration
+- ✅ **Input System** - Complete (WASD, Space, etc.)
+- ✅ **Scripting** - 24/25 APIs (can do game logic in Lua)
+- ✅ **Rendering** - PBR materials, lighting, shadows
+- ✅ **Scene Management** - Load/save scenes, prefabs
+- ✅ **Entity System** - Create/destroy entities at runtime
+
+### Minimal Viable Game Path (2-3 weeks)
+
+**Week 1: Core Gameplay**
+
+1. **Complete Character Controller** (1-2 weeks)
+   - Upgrade to Rapier KinematicCharacterController
+   - Add slope limiting, step climbing, ground snapping
+   - Test with platforms and slopes
+
+**Week 2: Game Mechanics** (Can do in parallel with Week 1) 2. **Basic UI Workaround** (2-3 days)
+
+- Option A: Use `console.log` for score/debug (quickest)
+- Option B: Simple text rendering overlay (better UX)
+- Option C: Wait for UI API (1 week) - if you want proper UI
+
+3. **Game Logic Scripts** (2-3 days)
+   - Score tracking (use Save/Load API or global variables)
+   - Obstacle spawning (GameObject.createPrimitive)
+   - Collision detection (Collision API already exists)
+   - Game over logic
+
+**Week 3: Polish & Testing** 4. **Level Design** (1-2 days)
+
+- Create platformer level or endless runner obstacles
+- Test difficulty curve
+
+5. **Polish** (2-3 days)
+   - Add sound effects (Audio API exists)
+   - Tune character controller feel
+   - Add simple visual feedback
+
+### Platformer-Specific Needs
+
+| Feature            | Status        | Solution                                           |
+| ------------------ | ------------- | -------------------------------------------------- |
+| Jump mechanics     | ✅ Ready      | Character controller has jump, can tune in scripts |
+| Platform collision | ✅ Ready      | Physics collisions work                            |
+| Slope handling     | 🚧 Needs work | Complete Character Controller (P0)                 |
+| Step climbing      | 🚧 Needs work | Complete Character Controller (P0)                 |
+| Moving platforms   | ✅ Ready      | Use kinematic rigid bodies + scripts               |
+| Collectibles       | ✅ Ready      | Use triggers + Collision API                       |
+
+### Endless Runner-Specific Needs
+
+| Feature             | Status   | Solution                                |
+| ------------------- | -------- | --------------------------------------- |
+| Forward movement    | ✅ Ready | Character controller move()             |
+| Obstacle spawning   | ✅ Ready | GameObject.createPrimitive() in scripts |
+| Obstacle removal    | ✅ Ready | GameObject.destroy() when off-screen    |
+| Score tracking      | ✅ Ready | Save/Load API or scripts                |
+| Speed increase      | ✅ Ready | Script logic                            |
+| Collision detection | ✅ Ready | Collision API                           |
+
+### Quick Win: Console-Based Game (1 week)
+
+If you want to ship something FAST, you can skip UI API and use:
+
+```lua
+-- Simple score display via console
+function update()
+    local score = getScore()
+    console.log("Score: " .. score)
+end
+
+-- Game over detection
+function onCollisionEnter(otherEntityId)
+    if otherEntityId == obstacleId then
+        console.log("GAME OVER! Final Score: " .. score)
+        -- Reset game logic here
+    end
+end
+```
+
+### Recommended Order for First Playable Game
+
+1. **Complete Character Controller** (1-2 weeks) - **BLOCKER** for platformers
+2. **Basic UI Workaround** (2-3 days) - Use console or simple text
+3. **Game Scripts** (2-3 days) - Score, obstacles, game over
+4. **Level Design** (1-2 days) - Build your first level
+5. **Polish** (2-3 days) - Sound, feel, difficulty
+
+**Total: 2-3 weeks to playable game**
+
+### What You DON'T Need (Yet)
+
+- ❌ Particle/VFX System - Nice to have, not required
+- ❌ Custom Shaders - Basic PBR is fine
+- ❌ Animation System - Static meshes work
+- ❌ Advanced Profiling - Basic stats are enough
+- ❌ Undo/Redo - Not needed for gameplay
+
+---
 
 - **[IMPLEMENTED-FEATURES-LIST.md](./IMPLEMENTED-FEATURES-LIST.md)** - Detailed documentation of all completed features with technical details, test coverage, file paths, and performance metrics
 - **[rust/engine/README.md](./rust/engine/README.md)** - Rust engine documentation
