@@ -2,6 +2,7 @@
 mod tests {
     use super::*;
     use three_d::*;
+    use crate::renderer::lighting::{AmbientCombineConfig, AmbientLightMetadata};
 
     fn create_test_context() -> Context {
         // Note: In actual tests, you would need to create a proper context
@@ -11,7 +12,7 @@ mod tests {
 
     #[test]
     fn test_recompute_combined_ambient_empty() {
-        let metadata = [];
+        let metadata: [AmbientLightMetadata; 0] = [];
         let cfg = AmbientCombineConfig::default();
 
         // This test would require a proper context to run
@@ -153,7 +154,7 @@ mod tests {
     fn test_ambient_combine_config_color_clamping() {
         let metadata = [AmbientLightMetadata {
             intensity: 10.0,
-            color: Srgba::new(300, 300, 300, 255), // Values above 255
+            color: Srgba::new(255, 255, 255, 255), // Maximum valid values
             enabled: true,
         }];
 

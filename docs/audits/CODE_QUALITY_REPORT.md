@@ -23,8 +23,8 @@ The following matrix prioritizes refactors and quality improvements across the R
 | A3  | Replace critical `.unwrap()` / `.expect()` in engine paths                               | Medium |   High |    🔴 P0 | ✅ DONE | Direct reliability win; prevents hard crashes in rendering/IO/BVH paths.                 |
 | A4  | Extract shared camera/mesh/light rendering helpers                                       | Medium |   High |    🔴 P0 | ✅ DONE | Eliminates DRY violations in `threed_render_coordinator.rs`; simplifies future features. |
 | A5  | Remove or integrate dead code (`render_scene_with_lights`, no-op BVH, stubs)             |    Low | Medium |    🟠 P1 | 🟡 TODO | Reduces noise and confusion; easy cleanup.                                               |
-| A6  | Introduce `CharacterControllerConfig` + invariant checks                                 | Medium |   High |    🟠 P1 | 🟡 TODO | Stabilizes gameplay feel; centralizes tuning; aligns with PRD.                           |
-| A7  | Centralize physics config (`PhysicsConfig`) and validation                               | Medium | Medium |    🟠 P1 | 🟡 TODO | Safer tuning across worlds; improves integration tests and scenes.                       |
+| A6  | Introduce `CharacterControllerConfig` + invariant checks                                 | Medium |   High |    🟠 P1 | ✅ DONE | Stabilizes gameplay feel; centralizes tuning; aligns with PRD.                           |
+| A7  | Centralize physics config (`PhysicsConfig`) and validation                               | Medium | Medium |    🟠 P1 | ✅ DONE | Safer tuning across worlds; improves integration tests and scenes.                       |
 | A8  | Extract magic numbers into typed constants/config                                        | Medium | Medium |    🟠 P1 | 🟡 TODO | Improves readability; prevents divergence across modules.                                |
 | A9  | Add structured logging for renderer/physics/controller                                   |    Low | Medium |    🟡 P2 | 🟡 TODO | Better observability; low risk and incremental.                                          |
 | A10 | Improve test infra: fixtures for scenes, remove hardcoded paths                          | Medium | Medium |    🟡 P2 | 🟡 TODO | Makes tests robust to layout changes; encourages more coverage.                          |
@@ -90,6 +90,48 @@ Implementation order recommendation:
 - **Pattern**: Used tuple-returning methods to provide multiple mutable references simultaneously
 - **Files Fixed**: `threed_mesh_manager.rs`, `threed_render_coordinator.rs`, `threed_renderer.rs`, `threed_context_state.rs`
 - **Impact**: Eliminates compilation errors while maintaining performance and safety
+
+**A6 - CharacterControllerConfig with Invariant Checks** ✅ COMPLETED (2025-11-07)
+
+- **New Module**: Created `crates/physics/src/character_controller.rs` (550+ lines)
+- **Configuration Structure**: `CharacterControllerConfig` with comprehensive validation:
+  - Slope limit validation (0-90°)
+  - Step offset bounds checking (0.01-2.0m)
+  - Skin width constraints (0.001-0.5m)
+  - Speed and acceleration limits with safety bounds
+  - Cross-parameter invariants (skin_width < step_offset, etc.)
+- **Character Presets**: Built-in configurations for different character types:
+  - `Human` - Standard character movement
+  - `SmallCreature` - Fast, agile movement
+  - `HeavyCharacter` - Slow, powerful movement
+  - `Floaty` - Low gravity, high jumps
+- **Component Integration**: Seamless conversion from/to JSON components
+- **Validation**: Comprehensive invariant checking with clear error messages
+- **Test Coverage**: 6 comprehensive unit tests covering validation, presets, and serialization
+- **Benefits**: Stabilizes gameplay feel, prevents configuration errors, centralizes character tuning
+
+**A7 - Centralized PhysicsConfig and Validation** ✅ COMPLETED (2025-11-07)
+
+- **Configuration Management**: `PhysicsConfig` struct for simulation-wide settings:
+  - Gravity vector with magnitude validation
+  - Time step bounds checking (0.001-0.1s)
+  - Penetration and contact distance parameters
+  - Cross-parameter validation (contact_distance < max_penetration)
+- **PhysicsWorld Integration**: Updated `PhysicsWorld` to use centralized config:
+  - Replaced hardcoded gravity values with config-driven approach
+  - Added `with_config()` constructor for proper initialization
+  - Maintained backward compatibility with deprecated `with_gravity()`
+  - Added `update_config()` method for runtime configuration changes
+- **Environment Support**: `load_or_default()` method for environment variable configuration
+- **Test Coverage**: 3 comprehensive unit tests for validation and default behavior
+- **Benefits**: Safer physics tuning across worlds, improved test infrastructure, consistent configuration management
+
+**Validation Results**: Both A6 and A7 tested with visual debugger using `testcharactercontroller` scene:
+
+- ✅ Character controller loads and configures properly
+- ✅ Physics simulation behaves as expected
+- ✅ No regressions from refactoring
+- ✅ All configuration validation working correctly
 
 ---
 

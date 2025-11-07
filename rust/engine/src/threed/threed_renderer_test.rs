@@ -50,7 +50,7 @@ mod tests {
     #[test]
     fn test_renderer_struct_size_is_reasonable() {
         // Ensure the renderer struct isn't accidentally bloated
-        let size = std::mem::size_of::<crate::threed_renderer::ThreeDRenderer>();
+        let size = std::mem::size_of::<crate::threed::threed_renderer::ThreeDRenderer>();
         // Should be less than 10KB (mostly vectors and a few small structs)
         assert!(
             size < 10 * 1024,

@@ -4,6 +4,7 @@ mod tests {
     use crate::renderer::lighting::{
         recompute_combined_ambient, AmbientCombineConfig, AmbientLightMetadata,
     };
+    use crate::threed::threed_light_manager::ThreeDLightManager;
     use three_d::*;
 
     // Note: These tests would need proper Three.js context setup to run

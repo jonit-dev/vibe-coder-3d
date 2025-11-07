@@ -6,6 +6,7 @@ use rapier3d::prelude::*;
 use vibe_scene::EntityId;
 
 use crate::events::{CollisionEvent, PhysicsEventQueue};
+use crate::PhysicsConfig;
 
 /// Result of a raycast query
 #[derive(Debug, Clone)]
@@ -22,8 +23,8 @@ pub struct RaycastHit {
 
 /// Main physics world managing Rapier simulation
 pub struct PhysicsWorld {
-    /// Gravity vector (default: [0, -9.81, 0])
-    pub gravity: Vector<Real>,
+    /// Physics configuration parameters
+    config: PhysicsConfig,
 
     /// Rapier physics pipeline
     pub pipeline: PhysicsPipeline,
@@ -74,17 +75,29 @@ pub struct PhysicsWorld {
 impl PhysicsWorld {
     /// Create a new physics world with default settings
     pub fn new() -> Self {
-        Self::with_gravity(vector![0.0, -9.81, 0.0])
+        Self::with_config(PhysicsConfig::default())
     }
 
-    /// Create a new physics world with custom gravity
+    /// Create a new physics world with custom gravity (deprecated: use with_config)
+    #[deprecated(note = "Use with_config() instead for better configuration management")]
     pub fn with_gravity(gravity: Vector<Real>) -> Self {
+        let mut config = PhysicsConfig::default();
+        config.gravity = [gravity.x, gravity.y, gravity.z];
+        Self::with_config(config)
+    }
+
+    /// Create a new physics world with the given configuration
+    pub fn with_config(config: PhysicsConfig) -> Self {
         let mut integration_params = IntegrationParameters::default();
-        // Target 60 Hz physics simulation
-        integration_params.dt = 1.0 / 60.0;
+        integration_params.dt = config.time_step;
+
+        // Note: Rapier 3D doesn't expose velocity/position solver iterations directly
+        // These are controlled internally for stability
+
+        let gravity_vec = vector![config.gravity[0] as Real, config.gravity[1] as Real, config.gravity[2] as Real];
 
         Self {
-            gravity,
+            config,
             pipeline: PhysicsPipeline::new(),
             island_manager: IslandManager::new(),
             broad_phase: BroadPhase::new(),
@@ -101,6 +114,31 @@ impl PhysicsWorld {
             previous_contacts: HashSet::new(),
             previous_triggers: HashSet::new(),
         }
+    }
+
+    /// Get a reference to the physics configuration
+    pub fn config(&self) -> &PhysicsConfig {
+        &self.config
+    }
+
+    /// Update the physics configuration
+    pub fn update_config(&mut self, config: PhysicsConfig) -> Result<()> {
+        config.validate()?;
+
+        // Update integration parameters
+        self.integration_params.dt = config.time_step;
+
+        self.config = config;
+        Ok(())
+    }
+
+    /// Get the current gravity vector
+    pub fn gravity(&self) -> Vector<Real> {
+        vector![
+            self.config.gravity[0] as Real,
+            self.config.gravity[1] as Real,
+            self.config.gravity[2] as Real
+        ]
     }
 
     /// Add a rigid body with optional colliders for an entity
@@ -178,8 +216,9 @@ impl PhysicsWorld {
         let current_triggers = self.collect_current_triggers();
 
         // Step physics pipeline with basic event handling
+        let gravity = self.gravity();
         self.pipeline.step(
-            &self.gravity,
+            &gravity,
             &self.integration_params,
             &mut self.island_manager,
             &mut self.broad_phase,
@@ -492,14 +531,14 @@ mod tests {
     #[test]
     fn test_physics_world_creation() {
         let world = PhysicsWorld::new();
-        assert_eq!(world.gravity.y, -9.81);
+        assert_eq!(world.gravity().y, -9.81);
         assert_eq!(world.integration_params.dt, 1.0 / 60.0);
     }
 
     #[test]
     fn test_physics_world_custom_gravity() {
         let world = PhysicsWorld::with_gravity(vector![0.0, -20.0, 0.0]);
-        assert_eq!(world.gravity.y, -20.0);
+        assert_eq!(world.gravity().y, -20.0);
     }
 
     #[test]
