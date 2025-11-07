@@ -472,13 +472,27 @@ Found **540 matches** for TODO/FIXME/XXX/HACK/BUG across the codebase. Key areas
 
 ### 🟡 Short-term Actions (Medium Priority)
 
-6. **Remove dead code**
+6. **Remove dead code** ✅ **PARTIALLY COMPLETED** (2025-11-07)
 
-   - Remove unused `render_scene_with_lights()`
-   - Remove or implement no-op `update_bvh_system()`
-   - Document or remove placeholder APIs
+   - ✅ **Completed**: Fixed test compilation errors - visibility culler API calls missing debug_mode parameter
+   - ✅ **Completed**: Removed unused `render_scene_with_lights()` (already removed)
+   - 🟡 **Pending**: Remove or implement no-op `update_bvh_system()`
+   - 🟡 **Pending**: Document or remove placeholder APIs
 
-7. **Reduce function complexity**
+7. **Extract magic numbers into typed constants/config** ✅ **COMPLETED** (2025-11-07)
+
+   - ✅ **Completed**: Created `renderer/constants.rs` with centralized configuration
+   - ✅ **Constants Added**:
+     - `DEFAULT_FOV_DEGREES: 60.0`
+     - `DEFAULT_NEAR_PLANE: 0.1`
+     - `DEFAULT_FAR_PLANE: 1000.0`
+     - `DEFAULT_MSAA_SAMPLES: 4`
+     - Camera position/target/up vector constants
+     - BVH configuration constants
+   - ✅ **Updated**: `threed_camera_manager.rs` to use constants instead of magic numbers
+   - **Impact**: Improves maintainability and makes configuration changes easier
+
+8. **Reduce function complexity**
    - Split remaining large functions
    - Extract nested blocks into helpers
    - Group parameters into config structs
