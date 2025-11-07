@@ -8,7 +8,7 @@ use std::path::Path;
 use three_d::*;
 
 use crate::renderer::{CameraConfig, SkyboxRenderer};
-use crate::threed_renderer::MeshRenderState;
+use crate::threed::threed_renderer::MeshRenderState;
 
 /// Capture a screenshot by rendering to an offscreen texture and saving it to a file
 ///

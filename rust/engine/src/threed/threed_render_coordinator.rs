@@ -55,10 +55,10 @@ impl ThreeDRenderCoordinator {
     pub fn render_cameras(
         context: &Context,
         window_size: (u32, u32),
-        camera_manager: &mut crate::threed_camera_manager::ThreeDCameraManager,
-        mesh_manager: &crate::threed_mesh_manager::ThreeDMeshManager,
-        light_manager: &crate::threed_light_manager::ThreeDLightManager,
-        context_state: &mut crate::threed_context_state::ThreeDContextState,
+        camera_manager: &mut super::threed_camera_manager::ThreeDCameraManager,
+        mesh_manager: &super::threed_mesh_manager::ThreeDMeshManager,
+        light_manager: &super::threed_light_manager::ThreeDLightManager,
+        context_state: &mut super::threed_context_state::ThreeDContextState,
         render_state: Option<&MeshRenderState>,
     ) -> Result<()> {
         // Build camera entries sorted by depth
@@ -167,7 +167,7 @@ impl ThreeDRenderCoordinator {
         screen: &RenderTarget,
         camera: &mut Camera,
         config: &CameraConfig,
-        context_state: &mut crate::threed_context_state::ThreeDContextState,
+        context_state: &mut super::threed_context_state::ThreeDContextState,
         _skybox_loaded: bool,
         meshes: &[Gm<Mesh, PhysicalMaterial>],
         mesh_entity_ids: &[EntityId],

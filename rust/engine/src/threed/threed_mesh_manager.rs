@@ -193,7 +193,7 @@ impl ThreeDMeshManager {
     /// Generate shadow maps for meshes
     pub fn generate_shadow_maps(
         &self,
-        light_manager: &mut crate::threed_light_manager::ThreeDLightManager,
+        light_manager: &mut super::threed_light_manager::ThreeDLightManager,
     ) {
         let (directional_lights, spot_lights) = light_manager.directional_and_spot_lights_mut();
         crate::renderer::lighting::generate_shadow_maps(

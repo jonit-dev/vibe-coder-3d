@@ -13,15 +13,15 @@ use vibe_scene::Scene as SceneData;
 use vibe_scene::{Entity, EntityId};
 
 // Re-export MeshRenderState from render coordinator
-pub use crate::threed_render_coordinator::MeshRenderState;
+pub use super::threed_render_coordinator::MeshRenderState;
 
 // Import new modular components
-use crate::threed_camera_manager::ThreeDCameraManager;
-use crate::threed_context_state::ThreeDContextState;
-use crate::threed_light_manager::ThreeDLightManager;
-use crate::threed_mesh_manager::ThreeDMeshManager;
-use crate::threed_render_coordinator::ThreeDRenderCoordinator;
-use crate::threed_scene_loader_state::ThreeDSceneLoaderState;
+use super::threed_camera_manager::ThreeDCameraManager;
+use super::threed_context_state::ThreeDContextState;
+use super::threed_light_manager::ThreeDLightManager;
+use super::threed_mesh_manager::ThreeDMeshManager;
+use super::threed_render_coordinator::ThreeDRenderCoordinator;
+use super::threed_scene_loader_state::ThreeDSceneLoaderState;
 
 // Import renderer modules
 use crate::renderer::camera_renderer::AdditionalCamera;

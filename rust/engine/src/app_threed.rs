@@ -1,5 +1,5 @@
 use crate::input::InputManager;
-use crate::threed_renderer::ThreeDRenderer;
+use crate::threed::threed_renderer::ThreeDRenderer;
 use crate::util::FrameTimer;
 use anyhow::Context;
 use std::path::PathBuf;
@@ -312,7 +312,7 @@ impl AppThreeD {
                 if let Ok(mgr) = scene_manager.lock() {
                     let scene_state = mgr.scene_state();
                     Some(scene_state.with_scene(|scene| {
-                        crate::threed_renderer::MeshRenderState::from_scene(scene)
+                        crate::threed::threed_renderer::MeshRenderState::from_scene(scene)
                     }))
                 } else {
                     None
@@ -320,7 +320,7 @@ impl AppThreeD {
             } else {
                 self.scene
                     .as_ref()
-                    .map(|scene| crate::threed_renderer::MeshRenderState::from_scene(scene))
+                    .map(|scene| crate::threed::threed_renderer::MeshRenderState::from_scene(scene))
             };
 
         // Capture screenshot after warmup
@@ -783,7 +783,7 @@ impl AppThreeD {
                 if let Ok(mgr) = scene_manager.lock() {
                     let scene_state = mgr.scene_state();
                     Some(scene_state.with_scene(|scene| {
-                        crate::threed_renderer::MeshRenderState::from_scene(scene)
+                        crate::threed::threed_renderer::MeshRenderState::from_scene(scene)
                     }))
                 } else {
                     None
@@ -792,7 +792,7 @@ impl AppThreeD {
                 // Fallback to static scene
                 self.scene
                     .as_ref()
-                    .map(|scene| crate::threed_renderer::MeshRenderState::from_scene(scene))
+                    .map(|scene| crate::threed::threed_renderer::MeshRenderState::from_scene(scene))
             };
 
         // Render with extracted state (no borrow conflicts)
