@@ -157,10 +157,11 @@ impl ThreeDRenderer {
                 &context,
                 window_size,
                 &mut self.camera_manager,
-                &self.mesh_manager,
+                &mut self.mesh_manager,
                 &self.light_manager,
                 &mut self.context_state,
                 render_state,
+                debug_mode,
             )?;
         }
 

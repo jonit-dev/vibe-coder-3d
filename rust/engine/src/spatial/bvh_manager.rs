@@ -3,8 +3,8 @@ use crate::spatial::scene_bvh::{SceneBvh, SceneRef, Frustum};
 use crate::spatial::primitives::{Aabb, Ray};
 use crate::spatial::intersect::{ray_intersect_triangle, RayHit};
 use glam::{Mat4, Vec3};
-use std::collections::HashMap;
-use log::{debug, warn};
+use std::collections::{HashMap, HashSet};
+use log::{debug, info, warn};
 
 /// Configuration for BVH system
 #[derive(Debug, Clone)]
@@ -95,6 +95,8 @@ pub struct BvhManager {
     dirty_entities: HashMap<u64, bool>,
     /// Scene BVH needs full rebuild
     scene_needs_rebuild: bool,
+    /// Previous frame's visible entities for change detection
+    previous_visible_entities: HashSet<u64>,
 }
 
 impl BvhManager {
@@ -114,6 +116,7 @@ impl BvhManager {
             scene_needs_rebuild: false,
             config,
             metrics: BvhMetrics::default(),
+            previous_visible_entities: HashSet::new(),
         }
     }
 
@@ -184,26 +187,30 @@ impl BvhManager {
         debug!("Unregistered entity {} from BVH system", entity_id);
     }
 
-    /// Update the world transform for an entity
+    /// Update the world transform for an entity using the stored local AABB
     pub fn update_transform(&mut self, entity_id: u64, world_matrix: Mat4) {
         if let Some(local_aabb) = self.local_aabbs.get(&entity_id) {
             let world_aabb = local_aabb.transformed(world_matrix);
+            self.update_world_aabb(entity_id, world_aabb);
+        }
+    }
 
-            // Check if AABB changed significantly
-            let changed = match self.world_aabbs.get(&entity_id) {
-                Some(old_aabb) => {
-                    let size_diff = (world_aabb.size() - old_aabb.size()).length();
-                    let center_diff = (world_aabb.center() - old_aabb.center()).length();
-                    size_diff > 0.001 || center_diff > 0.001
-                }
-                None => true,
-            };
-
-            if changed {
-                self.world_aabbs.insert(entity_id, world_aabb);
-                self.dirty_entities.insert(entity_id, true);
-                self.scene_needs_rebuild = true;
+    /// Update the world-space AABB for an entity directly
+    pub fn update_world_aabb(&mut self, entity_id: u64, world_aabb: Aabb) {
+        // Check if AABB changed significantly
+        let changed = match self.world_aabbs.get(&entity_id) {
+            Some(old_aabb) => {
+                let size_diff = (world_aabb.size() - old_aabb.size()).length();
+                let center_diff = (world_aabb.center() - old_aabb.center()).length();
+                size_diff > 0.001 || center_diff > 0.001
             }
+            None => true,
+        };
+
+        if changed {
+            self.world_aabbs.insert(entity_id, world_aabb);
+            self.dirty_entities.insert(entity_id, true);
+            self.scene_needs_rebuild = true;
         }
     }
 
@@ -251,7 +258,7 @@ impl BvhManager {
     }
 
     /// Perform frustum culling and return visible entity IDs
-    pub fn cull_frustum(&mut self, frustum_planes: [[f32; 4]; 6]) -> Vec<u64> {
+    pub fn cull_frustum(&mut self, frustum_planes: [[f32; 4]; 6], debug_mode: bool) -> Vec<u64> {
         if !self.config.enable_bvh_culling {
             // Return all entities if BVH culling is disabled
             return self.world_aabbs.keys().copied().collect();
@@ -263,6 +270,39 @@ impl BvhManager {
         let frustum = Frustum::from_planes(frustum_planes);
         let mut visible_entities = Vec::new();
         self.scene_bvh.query_frustum(&frustum, &mut visible_entities);
+
+        let total_entities = self.world_aabbs.len();
+        let current_visible_set: HashSet<u64> = visible_entities.iter().copied().collect();
+
+        // Only log when visibility changes occur and debug mode is enabled
+        if current_visible_set != self.previous_visible_entities && debug_mode {
+            // Log newly visible entities
+            for entity_id in &visible_entities {
+                if !self.previous_visible_entities.contains(entity_id) {
+                    info!("✅ BVH VISIBLE: Entity {}", entity_id);
+                }
+            }
+
+            // Log newly culled entities
+            for entity_id in &self.previous_visible_entities {
+                if !current_visible_set.contains(entity_id) {
+                    info!("❌ BVH CULLED: Entity {}", entity_id);
+                }
+            }
+
+            // Log summary
+            let culled_count = total_entities.saturating_sub(visible_entities.len());
+            if culled_count > 0 {
+                info!("🔄 BVH STATUS: {}/{} visible, {} culled (changed)",
+                    visible_entities.len(), total_entities, culled_count);
+            } else {
+                info!("🔄 BVH STATUS: All {}/{} entities visible (changed)",
+                    visible_entities.len(), total_entities);
+            }
+        }
+
+        // Update previous state for next frame
+        self.previous_visible_entities = current_visible_set;
 
         // Update metrics
         self.metrics.visible_meshes_last_frame = visible_entities.len();
@@ -402,6 +442,7 @@ impl BvhManager {
         self.dirty_entities.clear();
         self.scene_needs_rebuild = true;
         self.scene_bvh = SceneBvh::new(self.config.max_leaf_refs);
+        self.previous_visible_entities.clear();
     }
 
     /// Check if an entity is registered in the BVH system
@@ -544,7 +585,7 @@ mod tests {
             [0.0, 0.0, -1.0, 5.0],   // z <= 5
         ];
 
-        let visible = manager.cull_frustum(frustum_planes);
+        let visible = manager.cull_frustum(frustum_planes, false);
         assert!(visible.contains(&42));
     }
 
@@ -575,7 +616,7 @@ mod tests {
             [0.0, 0.0, 1.0, 5.0],
             [0.0, 0.0, -1.0, 5.0],
         ];
-        let visible = manager.cull_frustum(frustum_planes);
+        let visible = manager.cull_frustum(frustum_planes, false);
         assert!(visible.contains(&42));
     }
 

@@ -44,20 +44,9 @@ pub fn register_mesh_with_bvh<M: Material>(
     entity_id: EntityId,
     mesh_idx: usize,
 ) {
-    // three-d Mesh::aabb() returns an axis-aligned bounding box in mesh-local space.
-    // We convert it into our internal Aabb type.
-    let mesh_aabb = mesh.aabb();
-    let min = GlamVec3::new(
-        mesh_aabb.min().x,
-        mesh_aabb.min().y,
-        mesh_aabb.min().z,
-    );
-    let max = GlamVec3::new(
-        mesh_aabb.max().x,
-        mesh_aabb.max().y,
-        mesh_aabb.max().z,
-    );
-    let local_aabb = Aabb::new(min, max);
+    // three-d Mesh::aabb() returns an axis-aligned bounding box transformed into world space.
+    // We'll convert it into our internal Aabb representation (also world space at registration time).
+    let local_aabb = convert_threed_aabb(mesh.aabb());
 
     // For initial registration we use identity transform; update_bvh_transforms() will
     // apply the current world transform each frame.
@@ -75,13 +64,30 @@ pub fn register_mesh_with_bvh<M: Material>(
 ///
 /// This wires the BVH to actual world transforms so frustum culling is correct
 /// instead of using placeholder identity matrices.
-///
-/// Note: Currently a no-op to avoid regressions while BVH integration is experimental.
-pub fn update_bvh_transforms(_bvh_manager: &Option<Arc<Mutex<BvhManager>>>) {
-    // BVH update temporarily disabled: keep it a no-op to avoid impacting rendering.
-    // This avoids incorrect transforms and expensive rebuilds while BVH integration
-    // is still experimental.
-    if _bvh_manager.is_some() {
-        log::debug!("BVH manager present; update_bvh_transforms is currently a no-op");
+pub fn update_bvh_transforms<M: Material>(
+    bvh_manager: &Option<Arc<Mutex<BvhManager>>>,
+    meshes: &[Gm<Mesh, M>],
+    entity_ids: &[EntityId],
+) {
+    if let Some(ref manager) = bvh_manager {
+        let mut bvh = manager.lock().unwrap();
+
+        for (mesh, &entity_id) in meshes.iter().zip(entity_ids.iter()) {
+            // Get the mesh's current world-space AABB directly from three-d
+            let world_aabb = convert_threed_aabb(mesh.aabb());
+            let center = world_aabb.center();
+            let size = world_aabb.size();
+
+            // No logging for BVH reads - too noisy
+
+            // Update the BVH with the new world-space AABB
+            bvh.update_world_aabb(entity_id.as_u64(), world_aabb);
+        }
     }
+}
+
+fn convert_threed_aabb(aabb: three_d::AxisAlignedBoundingBox) -> Aabb {
+    let min = GlamVec3::new(aabb.min().x, aabb.min().y, aabb.min().z);
+    let max = GlamVec3::new(aabb.max().x, aabb.max().y, aabb.max().z);
+    Aabb::new(min, max)
 }

@@ -94,7 +94,7 @@ pub fn create_bvh_test_scene() {
     let frustum_planes = extract_frustum_planes(view_projection);
 
     // Perform BVH frustum culling
-    let visible_entities = bvh_manager.cull_frustum(frustum_planes);
+    let visible_entities = bvh_manager.cull_frustum(frustum_planes, true);
     println!("   ✅ Visible entities: {}/{}", visible_entities.len(), 4);
 
     for &entity_id in &visible_entities {

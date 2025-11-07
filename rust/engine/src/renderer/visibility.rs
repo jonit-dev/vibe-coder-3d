@@ -23,6 +23,7 @@ impl VisibilityCuller {
         &self,
         view_projection_matrix: Mat4,
         all_entity_ids: &[u64],
+        debug_mode: bool,
     ) -> Vec<usize> {
         let mut bvh_manager = self.bvh_manager.lock().unwrap();
 
@@ -30,7 +31,7 @@ impl VisibilityCuller {
         let frustum_planes = self.extract_frustum_planes(view_projection_matrix);
 
         // Perform BVH frustum culling
-        let visible_entity_ids = bvh_manager.cull_frustum(frustum_planes);
+        let visible_entity_ids = bvh_manager.cull_frustum(frustum_planes, debug_mode);
 
         // Convert entity IDs to indices in the renderer's entity list
         self.entity_ids_to_indices(&visible_entity_ids, all_entity_ids)

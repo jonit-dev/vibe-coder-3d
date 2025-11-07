@@ -1,6 +1,7 @@
 use crate::spatial::primitives::{Aabb, Ray};
 use crate::spatial::intersect::ray_intersects_aabb;
 use glam::Vec3;
+use std::cmp::Ordering;
 
 /// Scene reference containing entity ID and world-space AABB
 #[derive(Debug, Clone, Copy)]
@@ -134,7 +135,7 @@ impl SceneBvh {
 
         // Build the tree
         if !self.refs.is_empty() {
-            self.build_node(0);
+            self.build_node(0, self.refs.len());
         }
 
         self.refs.shrink_to_fit();
@@ -192,78 +193,56 @@ impl SceneBvh {
         aabb
     }
 
-    /// Build a BVH node recursively
-    fn build_node(&mut self, ref_range_start: usize) -> u32 {
+    /// Build a BVH node recursively covering `count` refs starting at `start`
+    fn build_node(&mut self, start: usize, count: usize) -> u32 {
         let node_index = self.nodes.len() as u32;
-
-        // Determine the range of refs this node covers
-        let ref_count = if node_index == 0 {
-            // Root node covers all refs
-            self.refs.len()
-        } else {
-            // For non-root nodes, this would be calculated during splitting
-            // For now, we'll use a simple approach
-            self.refs.len() - ref_range_start
-        };
-
-        // Compute bounding box for this node
-        let aabb = self.compute_refs_aabb(ref_range_start, ref_count);
+        let aabb = self.compute_refs_aabb(start, count);
 
         // Check if we should create a leaf node
-        if ref_count <= self.max_leaf_refs as usize {
-            let ref_start = ref_range_start as u32;
+        if count <= self.max_leaf_refs as usize {
+            let ref_start = start as u32;
 
             self.nodes.push(SceneBvhNode {
                 aabb,
                 node_type: SceneBvhNodeType::Leaf {
                     ref_start,
-                    ref_count: ref_count as u32,
+                    ref_count: count as u32,
                 },
             });
         } else {
-            // Split refs and create internal node
-            let (left_refs, right_refs) = self.split_refs(ref_range_start, ref_count);
-
-            // Handle edge case where split fails
-            if left_refs.is_empty() || right_refs.is_empty() {
-                // Fall back to creating a leaf node
-                let ref_start = ref_range_start as u32;
-                self.nodes.push(SceneBvhNode {
-                    aabb,
-                    node_type: SceneBvhNodeType::Leaf {
-                        ref_start,
-                        ref_count: ref_count as u32,
-                    },
-                });
+            // Determine split axis by largest extent
+            let size = aabb.size();
+            let axis = if size.x >= size.y && size.x >= size.z {
+                0
+            } else if size.y >= size.z {
+                1
             } else {
-                // Reserve space for this node
-                self.nodes.push(SceneBvhNode {
-                    aabb,
-                    node_type: SceneBvhNodeType::Internal { left: 0, right: 0 },
-                });
+                2
+            };
 
-                // Rearrange refs array: left refs first, then right refs
-                for (i, &ref_index) in left_refs.iter().enumerate() {
-                    self.refs[ref_range_start + i] = self.refs[ref_index];
-                }
-                let left_start = ref_range_start;
-                let left_count = left_refs.len();
+            // Sort refs in-place along chosen axis and split at median
+            let end = start + count;
+            self.refs[start..end].sort_by(|a, b| {
+                let a_val = Self::axis_value(&a.aabb, axis);
+                let b_val = Self::axis_value(&b.aabb, axis);
+                a_val
+                    .partial_cmp(&b_val)
+                    .unwrap_or(Ordering::Equal)
+            });
+            let mid = start + count / 2;
 
-                for (i, &ref_index) in right_refs.iter().enumerate() {
-                    self.refs[ref_range_start + left_count + i] = self.refs[ref_index];
-                }
-                let right_start = ref_range_start + left_count;
+            self.nodes.push(SceneBvhNode {
+                aabb,
+                node_type: SceneBvhNodeType::Internal { left: 0, right: 0 },
+            });
 
-                // Build children
-                let left_index = self.build_node(left_start);
-                let right_index = self.build_node(right_start);
+            let left_index = self.build_node(start, mid - start);
+            let right_index = self.build_node(mid, end - mid);
 
-                // Update node with child indices
-                self.nodes[node_index as usize].node_type = SceneBvhNodeType::Internal {
-                    left: left_index,
-                    right: right_index,
-                };
-            }
+            self.nodes[node_index as usize].node_type = SceneBvhNodeType::Internal {
+                left: left_index,
+                right: right_index,
+            };
         }
 
         node_index
@@ -280,52 +259,12 @@ impl SceneBvh {
         aabb
     }
 
-    /// Split scene references into two groups
-    fn split_refs(&self, start: usize, count: usize) -> (Vec<usize>, Vec<usize>) {
-        if count <= 1 {
-            return (vec![start], Vec::new());
+    fn axis_value(aabb: &Aabb, axis: usize) -> f32 {
+        match axis {
+            0 => aabb.center().x,
+            1 => aabb.center().y,
+            _ => aabb.center().z,
         }
-
-        // Compute bounding box for the range
-        let aabb = self.compute_refs_aabb(start, count);
-        let size = aabb.size();
-
-        // Find longest axis
-        let axis = if size.x >= size.y && size.x >= size.z {
-            0
-        } else if size.y >= size.z {
-            1
-        } else {
-            2
-        };
-
-        // Split at center
-        let center = if axis == 0 { aabb.center().x } else if axis == 1 { aabb.center().y } else { aabb.center().z };
-
-        let mut left_indices = Vec::new();
-        let mut right_indices = Vec::new();
-
-        let end = (start + count).min(self.refs.len());
-        for i in start..end {
-            let scene_ref = &self.refs[i];
-            let ref_center_coord = if axis == 0 { scene_ref.aabb.center().x } else if axis == 1 { scene_ref.aabb.center().y } else { scene_ref.aabb.center().z };
-
-            if ref_center_coord < center {
-                left_indices.push(i);
-            } else {
-                right_indices.push(i);
-            }
-        }
-
-        // Ensure both sides have some refs
-        if left_indices.is_empty() {
-            left_indices.push(start);
-        }
-        if right_indices.is_empty() {
-            right_indices.push(start);
-        }
-
-        (left_indices, right_indices)
     }
 
     /// Query the frustum and return visible entity IDs

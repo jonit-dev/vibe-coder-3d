@@ -29,6 +29,8 @@ pub fn sync_physics_transforms(
                             .get(mesh_idx)
                             .copied()
                             .unwrap_or(GlamVec3::ONE);
+                        let translation = body.translation();
+                        // No logging for physics sync - too noisy
                         update_mesh_from_physics(mesh, body, scale);
                     }
                 }

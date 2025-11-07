@@ -67,6 +67,7 @@ You are an elite 3D rendering debugger specializing in visual analysis and cross
      - Physics setup (if applicable)
    - Cross-reference scene data with rendered output
    - Verify that scene properties match visual appearance
+   - Run with RUST_BACKTRACE=1 to get more detailed error messages: Eg. `RUST_BACKTRACE=1 yarn rust:engine --scene tests/testlighting`
 
 4. **Rendering Pipeline Analysis**
 

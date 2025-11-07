@@ -95,7 +95,7 @@ pub fn demonstrate_bvh_functionality() {
 
     println!("   Testing frustum culling with 6 planes...");
 
-    let visible_entities = bvh_manager.cull_frustum(frustum_planes);
+    let visible_entities = bvh_manager.cull_frustum(frustum_planes, true);
     println!("   ✅ Visible entities: {}", visible_entities.len());
 
     if visible_entities.contains(&entity_id) {

@@ -89,10 +89,11 @@ impl ThreeDRenderCoordinator {
         context: &Context,
         window_size: (u32, u32),
         camera_manager: &mut super::threed_camera_manager::ThreeDCameraManager,
-        mesh_manager: &super::threed_mesh_manager::ThreeDMeshManager,
+        mesh_manager: &mut super::threed_mesh_manager::ThreeDMeshManager,
         light_manager: &super::threed_light_manager::ThreeDLightManager,
         context_state: &mut super::threed_context_state::ThreeDContextState,
         render_state: Option<&MeshRenderState>,
+        debug_mode: bool,
     ) -> Result<()> {
         // Build camera entries sorted by depth
         let mut camera_entries = Vec::new();
@@ -123,8 +124,6 @@ impl ThreeDRenderCoordinator {
 
                     // Extract all needed data from managers before any mutable borrows
                     let skybox_loaded = context_state.skybox_renderer().is_loaded();
-                    let meshes = mesh_manager.meshes();
-                    let mesh_entity_ids = mesh_manager.mesh_entity_ids();
                     let directional_lights = light_manager.directional_lights();
                     let point_lights = light_manager.point_lights();
                     let spot_lights = light_manager.spot_lights();
@@ -137,13 +136,13 @@ impl ThreeDRenderCoordinator {
                         &config,
                         context_state,
                         skybox_loaded,
-                        meshes,
-                        mesh_entity_ids,
+                        mesh_manager,
                         directional_lights,
                         point_lights,
                         spot_lights,
                         ambient_light,
                         render_state,
+                        debug_mode,
                     )?;
                 }
                 CameraVariant::Additional(index) => {
@@ -157,8 +156,6 @@ impl ThreeDRenderCoordinator {
                         (cam.config.clone(), cam.skybox_renderer.is_loaded())
                     };
 
-                    let meshes = mesh_manager.meshes();
-                    let mesh_entity_ids = mesh_manager.mesh_entity_ids();
                     let directional_lights = light_manager.directional_lights();
                     let point_lights = light_manager.point_lights();
                     let spot_lights = light_manager.spot_lights();
@@ -177,8 +174,7 @@ impl ThreeDRenderCoordinator {
                         &mut cam.camera,
                         &config,
                         &cam.skybox_renderer,
-                        meshes,
-                        mesh_entity_ids,
+                        mesh_manager,
                         directional_lights,
                         point_lights,
                         spot_lights,
@@ -186,6 +182,7 @@ impl ThreeDRenderCoordinator {
                         hdr_color,
                         hdr_depth,
                         render_state,
+                        debug_mode,
                     )?;
                 }
             }
@@ -202,13 +199,13 @@ impl ThreeDRenderCoordinator {
         config: &CameraConfig,
         context_state: &mut super::threed_context_state::ThreeDContextState,
         _skybox_loaded: bool,
-        meshes: &[Gm<Mesh, PhysicalMaterial>],
-        mesh_entity_ids: &[EntityId],
+        mesh_manager: &mut super::threed_mesh_manager::ThreeDMeshManager,
         directional_lights: &[crate::renderer::EnhancedDirectionalLight],
         point_lights: &[PointLight],
         spot_lights: &[crate::renderer::EnhancedSpotLight],
         ambient_light: &Option<AmbientLight>,
         render_state: Option<&MeshRenderState>,
+        debug_mode: bool,
     ) -> Result<()> {
         let (skybox_renderer, hdr_color, hdr_depth) = context_state.skybox_and_hdr_textures_mut();
 
@@ -218,8 +215,7 @@ impl ThreeDRenderCoordinator {
             camera,
             config,
             skybox_renderer,
-            meshes,
-            mesh_entity_ids,
+            mesh_manager,
             directional_lights,
             point_lights,
             spot_lights,
@@ -227,6 +223,7 @@ impl ThreeDRenderCoordinator {
             hdr_color,
             hdr_depth,
             render_state,
+            debug_mode,
         )
     }
 
@@ -237,8 +234,7 @@ impl ThreeDRenderCoordinator {
         camera: &mut Camera,
         config: &CameraConfig,
         skybox_renderer: &crate::renderer::SkyboxRenderer,
-        meshes: &[Gm<Mesh, PhysicalMaterial>],
-        mesh_entity_ids: &[EntityId],
+        mesh_manager: &mut super::threed_mesh_manager::ThreeDMeshManager,
         directional_lights: &[crate::renderer::EnhancedDirectionalLight],
         point_lights: &[PointLight],
         spot_lights: &[crate::renderer::EnhancedSpotLight],
@@ -246,6 +242,7 @@ impl ThreeDRenderCoordinator {
         hdr_color_texture: &mut Option<Texture2D>,
         hdr_depth_texture: &mut Option<three_d::DepthTexture2D>,
         render_state: Option<&MeshRenderState>,
+        debug_mode: bool,
     ) -> Result<()> {
         let scissor: ScissorBox = camera.viewport().into();
         let settings = crate::renderer::render_settings::prepare_render_settings_for(
@@ -278,16 +275,27 @@ impl ThreeDRenderCoordinator {
                 *hdr_depth_texture = Some(new_texture);
             }
 
-            // Collect lights and filter visible meshes using helper function
-            let (lights, visible_meshes) = Self::collect_lights_and_filter_meshes(
-                meshes,
-                mesh_entity_ids,
+            // Use BVH frustum culling to get visible mesh indices
+            let visible_indices = mesh_manager.get_visible_mesh_indices_with_camera(
+                camera,
+                render_state.map(|s| &s.visibility),
+                debug_mode,
+            );
+
+            // Collect lights
+            let lights = crate::renderer::lighting::collect_lights(
                 directional_lights,
                 point_lights,
                 spot_lights,
                 ambient_light,
-                render_state,
             );
+
+            // Get visible meshes from indices
+            let meshes = mesh_manager.meshes();
+            let visible_meshes: Vec<_> = visible_indices
+                .iter()
+                .filter_map(|&idx| meshes.get(idx))
+                .collect();
 
             {
                 let render_target = {
@@ -330,16 +338,28 @@ impl ThreeDRenderCoordinator {
                 skybox_renderer.render(screen, camera);
             }
 
-            // Use the same helper function to avoid DRY violation
-            let (lights, visible_meshes) = Self::collect_lights_and_filter_meshes(
-                meshes,
-                mesh_entity_ids,
+            // Use BVH frustum culling to get visible mesh indices
+            let visible_indices = mesh_manager.get_visible_mesh_indices_with_camera(
+                camera,
+                render_state.map(|s| &s.visibility),
+                debug_mode,
+            );
+
+            // Collect lights
+            let lights = crate::renderer::lighting::collect_lights(
                 directional_lights,
                 point_lights,
                 spot_lights,
                 ambient_light,
-                render_state,
             );
+
+            // Get visible meshes from indices
+            let meshes = mesh_manager.meshes();
+            let visible_meshes: Vec<_> = visible_indices
+                .iter()
+                .filter_map(|&idx| meshes.get(idx))
+                .collect();
+
             screen.render(camera, &visible_meshes, &lights);
         }
 
