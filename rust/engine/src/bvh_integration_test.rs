@@ -350,7 +350,7 @@ impl BvhIntegrationTester {
             let view_projection = case.projection_matrix * case.view_matrix;
             let all_entity_ids = vec![1, 2, 3, 4, 5]; // All test entities
 
-            let visible_indices = self.visibility_culler.get_visible_entities(view_projection, &all_entity_ids);
+            let visible_indices = self.visibility_culler.get_visible_entities(view_projection, &all_entity_ids, false);
             let visible_entity_ids: Vec<u64> = visible_indices.iter()
                 .map(|&index| all_entity_ids[index])
                 .collect();
@@ -457,7 +457,7 @@ impl BvhIntegrationTester {
         for _ in 0..1000 { // Test frustum culling 1000 times
             let view_projection = projection_matrix * view_matrix;
             let all_entity_ids = vec![1, 2, 3, 4, 5];
-            let _visible_indices = self.visibility_culler.get_visible_entities(view_projection, &all_entity_ids);
+            let _visible_indices = self.visibility_culler.get_visible_entities(view_projection, &all_entity_ids, false);
         }
 
         let frustum_duration = frustum_start.elapsed();

@@ -251,7 +251,7 @@ mod tests {
         let all_entity_ids = vec![42];
         let view_projection = Mat4::IDENTITY;
 
-        let visible_indices = culler.get_visible_entities(view_projection, &all_entity_ids);
+        let visible_indices = culler.get_visible_entities(view_projection, &all_entity_ids, false);
 
         // Should either return the entity index or empty depending on frustum culling
         assert!(visible_indices.len() <= 1);

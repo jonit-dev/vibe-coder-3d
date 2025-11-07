@@ -281,7 +281,7 @@ impl BvhPerformanceTester {
 
         for _ in 0..self.config.frustum_test_count {
             let view_projection = projection_matrix * view_matrix;
-            let _visible_indices = visibility_culler.get_visible_entities(view_projection, &entity_ids);
+            let _visible_indices = visibility_culler.get_visible_entities(view_projection, &entity_ids, false);
         }
 
         let frustum_time = frustum_start.elapsed().as_millis() as f32;

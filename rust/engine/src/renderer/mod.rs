@@ -13,6 +13,7 @@ pub mod bvh_integration;
 pub mod camera_follow;
 pub mod camera_loader;
 pub mod camera_renderer;
+pub mod constants;
 pub mod coordinate_conversion;
 pub mod debug_lines;
 pub mod debug_rendering;

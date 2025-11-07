@@ -4,6 +4,7 @@ use vibe_scene_graph::SceneGraph;
 
 use crate::renderer::camera_renderer::AdditionalCamera;
 use crate::renderer::CameraConfig;
+use crate::renderer::constants::*;
 
 /// Manages all camera-related state for the renderer
 ///
@@ -35,19 +36,20 @@ impl ThreeDCameraManager {
         let viewport = Viewport::new_at_origo(window_size.0, window_size.1);
         let camera = Camera::new_perspective(
             viewport,
-            vec3(0.0, 2.0, 5.0), // position
-            vec3(0.0, 0.0, 0.0), // target
-            vec3(0.0, 1.0, 0.0), // up
-            degrees(60.0),       // fov
-            0.1,                 // near
-            1000.0,              // far
+            vec3(DEFAULT_CAMERA_POS_X, DEFAULT_CAMERA_POS_Y, DEFAULT_CAMERA_POS_Z),
+            vec3(DEFAULT_CAMERA_TARGET_X, DEFAULT_CAMERA_TARGET_Y, DEFAULT_CAMERA_TARGET_Z),
+            vec3(DEFAULT_CAMERA_UP_X, DEFAULT_CAMERA_UP_Y, DEFAULT_CAMERA_UP_Z),
+            degrees(DEFAULT_FOV_DEGREES),
+            DEFAULT_NEAR_PLANE,
+            DEFAULT_FAR_PLANE,
         );
 
         log::info!("  Viewport: {}x{}", window_size.0, window_size.1);
-        log::info!("  Camera FOV: 60°, Near: 0.1, Far: 1000.0");
+        log::info!("  Camera FOV: {}°, Near: {}, Far: {}",
+                 DEFAULT_FOV_DEGREES, DEFAULT_NEAR_PLANE, DEFAULT_FAR_PLANE);
 
-        let initial_pos = vec3(0.0, 2.0, 5.0);
-        let initial_target = vec3(0.0, 0.0, 0.0);
+        let initial_pos = vec3(DEFAULT_CAMERA_POS_X, DEFAULT_CAMERA_POS_Y, DEFAULT_CAMERA_POS_Z);
+        let initial_target = vec3(DEFAULT_CAMERA_TARGET_X, DEFAULT_CAMERA_TARGET_Y, DEFAULT_CAMERA_TARGET_Z);
 
         Self {
             camera,
