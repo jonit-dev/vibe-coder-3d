@@ -1151,18 +1151,22 @@ impl ThreeDRenderer {
     // ===== Private Helper Methods =====
 
     fn clear_scene(&mut self) {
-        self.meshes.clear();
-        self.mesh_entity_ids.clear();
-        self.mesh_scales.clear();
-        self.mesh_base_scales.clear();
-        self.mesh_cast_shadows.clear();
-        self.mesh_receive_shadows.clear();
-        self.directional_lights.clear();
-        self.point_lights.clear();
-        self.spot_lights.clear();
-        self.ambient_light = None;
-        self.skybox_renderer.clear();
-        self.loaded_entity_ids.clear();
+        crate::renderer::scene_utilities::clear_scene(
+            crate::renderer::scene_utilities::SceneState {
+                meshes: &mut self.meshes,
+                mesh_entity_ids: &mut self.mesh_entity_ids,
+                mesh_scales: &mut self.mesh_scales,
+                mesh_base_scales: &mut self.mesh_base_scales,
+                mesh_cast_shadows: &mut self.mesh_cast_shadows,
+                mesh_receive_shadows: &mut self.mesh_receive_shadows,
+                directional_lights: &mut self.directional_lights,
+                point_lights: &mut self.point_lights,
+                spot_lights: &mut self.spot_lights,
+                ambient_light: &mut self.ambient_light,
+                skybox_renderer: &mut self.skybox_renderer,
+                loaded_entity_ids: &mut self.loaded_entity_ids,
+            },
+        );
     }
 
     fn load_materials(&mut self, scene: &SceneData) {
@@ -1631,67 +1635,29 @@ impl ThreeDRenderer {
     // ===== Logging Methods =====
 
     fn log_first_frame(&self) {
-        static mut FIRST_FRAME: bool = true;
-        unsafe {
-            if FIRST_FRAME {
-                log::info!("=== FIRST FRAME RENDER ===");
-                log::info!("  Meshes: {}", self.meshes.len());
-                log::info!("  Directional lights: {}", self.directional_lights.len());
-                log::info!("  Point lights: {}", self.point_lights.len());
-                log::info!("  Spot lights: {}", self.spot_lights.len());
-                log::info!(
-                    "  Ambient light: {}",
-                    if self.ambient_light.is_some() {
-                        "yes"
-                    } else {
-                        "no"
-                    }
-                );
-                log::info!("  Camera position: {:?}", self.camera.position());
-                log::info!("  Camera target: {:?}", self.camera.target());
-                log::info!("=========================");
-                FIRST_FRAME = false;
-            }
-        }
+        crate::renderer::scene_utilities::log_first_frame(
+            self.meshes.len(),
+            self.directional_lights.len(),
+            self.point_lights.len(),
+            self.spot_lights.len(),
+            self.ambient_light.is_some(),
+            self.camera.position(),
+            self.camera.target(),
+        );
     }
 
     fn log_scene_load_start(&self, scene: &SceneData) {
-        log::info!("═══════════════════════════════════════════════════════════");
-        log::info!("RUST SCENE LOAD: {}", scene.name);
-        log::info!("═══════════════════════════════════════════════════════════");
-
-        log::info!("Scene Metadata:");
-        log::info!("  Name: {}", scene.name);
-        log::info!("  Version: {}", scene.version);
-        if let Some(metadata) = &scene.metadata {
-            if let Some(desc) = metadata.get("description") {
-                if let Some(desc_str) = desc.as_str() {
-                    log::info!("  Description: {}", desc_str);
-                }
-            }
-        }
-        log::info!("  Total Entities: {}", scene.entities.len());
+        crate::renderer::scene_utilities::log_scene_load_start(scene);
     }
 
     fn log_scene_load_summary(&self) {
-        log::info!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        log::info!("SCENE LOAD SUMMARY");
-        log::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        log::info!("Meshes:             {}", self.meshes.len());
-        log::info!("Directional Lights: {}", self.directional_lights.len());
-        log::info!("Point Lights:       {}", self.point_lights.len());
-        log::info!("Spot Lights:        {}", self.spot_lights.len());
-        log::info!(
-            "Ambient Light:      {}",
-            if self.ambient_light.is_some() {
-                "yes"
-            } else {
-                "no"
-            }
+        crate::renderer::scene_utilities::log_scene_load_summary(
+            self.meshes.len(),
+            self.directional_lights.len(),
+            self.point_lights.len(),
+            self.spot_lights.len(),
+            self.ambient_light.is_some(),
         );
-        log::info!("═══════════════════════════════════════════════════════════");
-        log::info!("END RUST SCENE LOAD");
-        log::info!("═══════════════════════════════════════════════════════════\n");
     }
 
     // ========================================================================

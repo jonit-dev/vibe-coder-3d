@@ -28,6 +28,7 @@ pub mod mesh_loader;
 pub mod physics_sync;
 pub mod post_processing;
 pub mod primitive_mesh;
+pub mod scene_utilities;
 pub mod skybox;
 pub mod terrain_generator;
 pub mod texture_cache;
