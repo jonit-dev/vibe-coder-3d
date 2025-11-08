@@ -29,7 +29,7 @@ pub fn primitive_base_scale(mesh_id: Option<&str>) -> GlamVec3 {
         primitive if primitive.contains("prism") => GlamVec3::splat(0.5),
         primitive if primitive.contains("pyramid") => GlamVec3::splat(0.5),
         // Structural shapes
-        primitive if primitive.contains("wall") => GlamVec3::new(1.0, 0.5, 0.05), // 2x1x0.1
+        primitive if primitive.contains("wall") => GlamVec3::new(2.0, 1.0, 0.1), // 2x1x0.1 (vibe_assets::create_cube is unit-sized)
         primitive if primitive.contains("ramp") => GlamVec3::splat(0.5),
         primitive if primitive.contains("stairs") => GlamVec3::splat(0.5),
         primitive if primitive.contains("spiralstairs") || primitive.contains("spiral") => {
