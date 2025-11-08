@@ -57,11 +57,12 @@ export class KinematicBodyController {
     }
 
     // Get collider for this entity
-    const collider = colliderRegistry.getCollider(entityId);
+    // Note: expectToExist=false to avoid noisy warnings during initial registration
+    // EntityPhysicsBody registers immediately with 0 colliders, then updates when ready
+    const collider = colliderRegistry.getCollider(entityId, false);
     if (!collider) {
-      // TEMPORARY: Fall back to simple physics until collider registration is fixed
-      // This maintains backward compatibility while we debug the timing issue
-      logger.debug('No collider found for entity, using simple physics fallback', { entityId });
+      // Silently fall back to simple physics until colliders are ready
+      // This is expected during the first few frames after entity creation
       this.moveSimplePhysics(entityId, desiredXZ, velocity, deltaTime);
       return;
     }

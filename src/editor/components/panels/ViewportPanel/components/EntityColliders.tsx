@@ -1,4 +1,4 @@
-import { BallCollider, CuboidCollider, TrimeshCollider } from '@react-three/rapier';
+import { BallCollider, CapsuleCollider, CuboidCollider, TrimeshCollider } from '@react-three/rapier';
 import React from 'react';
 
 interface IColliderSize {
@@ -45,12 +45,8 @@ export const EntityColliders: React.FC<IEntityCollidersProps> = React.memo(({ co
         <BallCollider args={[size?.radius ?? 0.5]} position={center} sensor={isTrigger} />
       )}
       {type === 'capsule' && (
-        <CuboidCollider
-          args={[
-            size?.capsuleRadius ?? 0.5,
-            (size?.capsuleHeight ?? 1) / 2,
-            size?.capsuleRadius ?? 0.5,
-          ]}
+        <CapsuleCollider
+          args={[(size?.capsuleHeight ?? 1) / 2, size?.capsuleRadius ?? 0.5]}
           position={center}
           sensor={isTrigger}
         />

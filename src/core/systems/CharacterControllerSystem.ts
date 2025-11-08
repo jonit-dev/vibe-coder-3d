@@ -2,17 +2,27 @@
  * Character Controller System
  * Unified system using CharacterMotor + KinematicBodyController
  * Replaces CharacterControllerAutoInputSystem with cleaner architecture
+ *
+ * BASELINE REFACTOR: Added diagnostic instrumentation and validation
  */
 
 import type { World } from '@dimforge/rapier3d-compat';
 import { InputManager } from '../lib/input/InputManager';
 import { componentRegistry } from '../lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '../lib/ecs/IComponent';
-import type { ICharacterControllerData, IInputMapping } from '../lib/ecs/components/accessors/types';
+import type { ICharacterControllerData } from '../lib/ecs/components/accessors/types';
 import { Logger } from '../lib/logger';
 import { CharacterMotor } from '../physics/character/CharacterMotor';
 import { KinematicBodyController } from '../physics/character/KinematicBodyController';
 import type { ICharacterMotorConfig } from '../physics/character/types';
+import {
+  getNormalizedInputMapping,
+  readInputState,
+  calculateMovementDirection,
+  validateEntityPhysics,
+  logEntityPhysicsDiagnostics,
+} from './CharacterControllerHelpers';
+import { validateGoldenSignals, logComprehensiveHealthReport } from './CharacterControllerGoldenSignals';
 
 const logger = Logger.create('CharacterControllerSystem');
 
@@ -34,43 +44,10 @@ const motorCache = new Map<number, CharacterMotor>();
 const loggedEntities = new Set<number>();
 
 /**
- * Normalize input key to match stored input mapping
+ * Track last validation time to avoid spamming diagnostics
  */
-function normalizeInputKey(key: string): string {
-  return key.toLowerCase();
-}
-
-/**
- * Calculate movement direction from key states
- */
-function calculateMovementDirection(
-  forwardKey: boolean,
-  backwardKey: boolean,
-  leftKey: boolean,
-  rightKey: boolean,
-): [number, number] {
-  let x = 0;
-  let z = 0;
-
-  // Forward/backward (Z axis)
-  if (forwardKey) z += 1;
-  if (backwardKey) z -= 1;
-
-  // Left/right (X axis)
-  if (leftKey) x += 1;
-  if (rightKey) x -= 1;
-
-  // Normalize if movement in multiple directions
-  if (x !== 0 || z !== 0) {
-    const length = Math.sqrt(x * x + z * z);
-    if (length > 0) {
-      x /= length;
-      z /= length;
-    }
-  }
-
-  return [x, z];
-}
+let lastValidationTime = 0;
+const VALIDATION_INTERVAL_MS = 5000; // Validate every 5 seconds
 
 /**
  * Create motor config from character controller component data
@@ -149,6 +126,18 @@ export function updateCharacterControllerSystem(
     };
     const tempMotor = new CharacterMotor(defaultConfig);
     kinematicController = new KinematicBodyController(world, tempMotor);
+
+    logger.info('CharacterControllerSystem initialized');
+  }
+
+  // Periodic golden signal validation
+  const now = Date.now();
+  if (now - lastValidationTime > VALIDATION_INTERVAL_MS) {
+    const isValid = validateGoldenSignals();
+    if (!isValid) {
+      logger.warn('Golden signal validation failed - entities may be dropping out');
+    }
+    lastValidationTime = now;
   }
 
   // Get all entities with CharacterController components
@@ -172,41 +161,37 @@ export function updateCharacterControllerSystem(
       continue;
     }
 
+    // BASELINE REFACTOR: Validate physics registration before processing
+    const physicsValidation = validateEntityPhysics(entityId);
+    if (!physicsValidation.isValid) {
+      // Log diagnostics once per entity
+      if (!loggedEntities.has(entityId)) {
+        logEntityPhysicsDiagnostics(entityId, 'CharacterControllerSystem update');
+        loggedEntities.add(entityId);
+      }
+      // Controller will fall back to simple physics in move() method
+    }
+
     // Get or create motor for this entity
     const motor = getOrCreateMotor(entityId, controllerData);
 
     // Create controller with this entity's motor
     const controller = new KinematicBodyController(world, motor);
 
-    // Use default input mapping if none configured
-    let inputMapping: IInputMapping = controllerData.inputMapping || {
-      forward: 'w',
-      backward: 's',
-      left: 'a',
-      right: 'd',
-      jump: 'space',
-    };
+    // Get normalized input mapping (handles legacy fixes)
+    const inputMapping = getNormalizedInputMapping(controllerData);
 
-    // Fix legacy ' ' jump key to 'space'
-    if (inputMapping.jump === ' ') {
-      inputMapping = { ...inputMapping, jump: 'space' };
-    }
-
-    // Check key states
-    const forwardKey = inputManager.isKeyDown(normalizeInputKey(inputMapping.forward));
-    const backwardKey = inputManager.isKeyDown(normalizeInputKey(inputMapping.backward));
-    const leftKey = inputManager.isKeyDown(normalizeInputKey(inputMapping.left));
-    const rightKey = inputManager.isKeyDown(normalizeInputKey(inputMapping.right));
-    const jumpKey = inputManager.isKeyDown(normalizeInputKey(inputMapping.jump));
+    // Read input state
+    const inputState = readInputState(inputManager, inputMapping);
 
     // Calculate movement direction
-    const [moveX, moveZ] = calculateMovementDirection(forwardKey, backwardKey, leftKey, rightKey);
+    const [moveX, moveZ] = calculateMovementDirection(inputState);
 
     // Apply movement via kinematic controller
     controller.move(entityId, [moveX, moveZ], deltaTime);
 
     // Handle jump input
-    if (jumpKey) {
+    if (inputState.jump) {
       controller.jump(entityId);
     }
 
@@ -235,6 +220,10 @@ export function updateCharacterControllerSystem(
  * Cleanup function to clear caches and destroy controllers
  */
 export function cleanupCharacterControllerSystem(world: World | null): void {
+  // Log final health report before cleanup
+  logger.info('Cleaning up CharacterControllerSystem - Final Health Report:');
+  logComprehensiveHealthReport();
+
   // Cleanup kinematic controller
   if (kinematicController && world) {
     KinematicBodyController.cleanupAll(world);
@@ -245,5 +234,8 @@ export function cleanupCharacterControllerSystem(world: World | null): void {
   motorCache.clear();
   loggedEntities.clear();
 
-  logger.debug('CharacterControllerSystem cleaned up');
+  // Reset validation timer
+  lastValidationTime = 0;
+
+  logger.info('CharacterControllerSystem cleaned up');
 }

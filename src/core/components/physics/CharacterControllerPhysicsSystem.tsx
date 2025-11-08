@@ -2,6 +2,8 @@
  * Character Controller Physics System Component
  * Integrates character controller with Rapier physics world
  * Must be rendered inside <Physics> context from @react-three/rapier
+ *
+ * BASELINE REFACTOR: Added lifecycle logging integration
  */
 
 import { useFrame } from '@react-three/fiber';
@@ -15,6 +17,12 @@ import {
 } from '@core/systems/CharacterControllerSystem';
 import { Logger } from '@core/lib/logger';
 import { colliderRegistry } from '@core/physics/character/ColliderRegistry';
+import {
+  startPhysicsLifecycleLogging,
+  stopPhysicsLifecycleLogging,
+  clearLifecycleHistory,
+} from '@core/physics/character/PhysicsLifecycleLogger';
+import { clearSignalHistory } from '@core/systems/CharacterControllerGoldenSignals';
 
 const logger = Logger.create('CharacterControllerPhysicsSystem');
 
@@ -52,16 +60,31 @@ export const CharacterControllerPhysicsSystem: React.FC<ICharacterControllerPhys
     }
   });
 
-  // Cleanup on unmount or play stop
+  // Lifecycle management: start/stop logging and cleanup
   useEffect(() => {
-    // Clear registry when play stops
-    if (!isPlaying) {
+    if (isPlaying) {
+      // Start physics lifecycle logging
+      startPhysicsLifecycleLogging();
+      logger.info('Play mode started - physics lifecycle logging enabled');
+    } else {
+      // Stop physics lifecycle logging
+      stopPhysicsLifecycleLogging();
+
+      // Clear registries and history
       colliderRegistry.clear();
+      clearLifecycleHistory();
+      clearSignalHistory();
+
+      logger.info('Play mode stopped - cleared physics state');
     }
 
     return () => {
+      // Final cleanup on unmount
+      stopPhysicsLifecycleLogging();
       cleanupCharacterControllerSystem(world);
       colliderRegistry.clear();
+      clearLifecycleHistory();
+      clearSignalHistory();
     };
   }, [world, isPlaying]);
 

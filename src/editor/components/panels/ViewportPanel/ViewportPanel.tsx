@@ -25,8 +25,8 @@ import { useGroupSelection } from '@/editor/hooks/useGroupSelection';
 
 import { useEditorStore } from '../../../store/editorStore';
 
-import { lodManager } from '@/core/lib/rendering/LODManager';
 import { CharacterControllerPhysicsSystem } from '@/core/components/physics/CharacterControllerPhysicsSystem';
+import { lodManager } from '@/core/lib/rendering/LODManager';
 import { AxesIndicator } from './components/AxesIndicator';
 import { CameraPerformanceController } from './components/CameraPerformanceController';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
@@ -231,7 +231,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
             ))}
 
             {/* Physics wrapper - only enabled when playing */}
-            <Physics paused={!isPlaying} gravity={[0, -9.81, 0]}>
+            {/* CRITICAL: key prop forces full remount on play/stop to prevent Rapier WASM aliasing errors */}
+            <Physics key={isPlaying ? 'playing' : 'stopped'} paused={!isPlaying} gravity={[0, -9.81, 0]}>
               {/* Physics binding - processes script physics mutations */}
               <PhysicsBindingManager />
 

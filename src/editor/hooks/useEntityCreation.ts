@@ -446,7 +446,7 @@ export const useEntityCreation = () => {
           backward: 's',
           left: 'a',
           right: 'd',
-          jump: ' ',
+          jump: 'space',
         },
         // Interaction tuning defaults
         snapMaxSpeed: 5.0,
@@ -460,6 +460,41 @@ export const useEntityCreation = () => {
         KnownComponentTypes.CHARACTER_CONTROLLER,
         defaultCharacterControllerData,
       );
+
+      // Add kinematic rigid body for character controller
+      addComponent(entity.id, KnownComponentTypes.RIGID_BODY, {
+        enabled: true,
+        bodyType: 'kinematic',
+        mass: 1,
+        gravityScale: 0, // Character controller handles its own gravity
+        canSleep: false, // Character should never sleep
+        material: {
+          friction: 0.6,
+          restitution: 0.0,
+          density: 1,
+        },
+      } as any);
+
+      // Add capsule mesh collider for character controller
+      addComponent(entity.id, KnownComponentTypes.MESH_COLLIDER, {
+        enabled: true,
+        colliderType: 'capsule',
+        isTrigger: false,
+        center: [0, 0, 0],
+        size: {
+          radius: 0.25,
+          capsuleRadius: 0.25,
+          capsuleHeight: 0.5,
+          width: 1,
+          height: 1,
+          depth: 1,
+        },
+        physicsMaterial: {
+          friction: 0.6,
+          restitution: 0.3,
+          density: 1,
+        },
+      });
 
       // Add capsule mesh for visualization
       addMeshRenderer(entity.id, 'capsule');

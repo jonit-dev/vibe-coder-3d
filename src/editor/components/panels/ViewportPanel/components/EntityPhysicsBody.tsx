@@ -1,19 +1,19 @@
-import React, { useEffect, useRef } from 'react';
-import { RapierRigidBody, RigidBody } from '@react-three/rapier';
-import type { Collider as RapierCollider } from '@dimforge/rapier3d-compat';
-import { useFrame } from '@react-three/fiber';
-import type { IPhysicsContributions } from '../hooks/useEntityMesh';
-import { EntityColliders } from './EntityColliders';
 import { Logger } from '@/core/lib/logger';
 import {
   registerRigidBody,
   unregisterRigidBody,
 } from '@/core/lib/scripting/adapters/physics-binding';
-import { useEntityContextOptional } from '@/core/components/jsx/EntityContext';
 import { colliderRegistry } from '@/core/physics/character/ColliderRegistry';
 import type { IEntityPhysicsRefs } from '@/core/physics/character/types';
+import type { Collider as RapierCollider } from '@dimforge/rapier3d-compat';
+import { useFrame } from '@react-three/fiber';
+import { RapierRigidBody, RigidBody } from '@react-three/rapier';
+import React, { useEffect, useRef } from 'react';
+import type { IPhysicsContributions } from '../hooks/useEntityMesh';
+import { EntityColliders } from './EntityColliders';
 
 interface IEntityPhysicsBodyProps {
+  entityId: number;
   terrainColliderKey: string;
   physicsContributions?: IPhysicsContributions;
   position: [number, number, number];
@@ -28,6 +28,7 @@ interface IEntityPhysicsBodyProps {
 
 export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
   ({
+    entityId,
     terrainColliderKey,
     physicsContributions,
     position,
@@ -40,45 +41,81 @@ export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
     children,
   }) => {
     const rigidBodyRef = useRef<RapierRigidBody>(null);
-    const entityContext = useEntityContextOptional();
-    const entityId = entityContext?.entityId;
     const registeredRef = useRef(false);
 
-    // Register rigid body with physics binding system (legacy)
+    // Cleanup on unmount only - registration happens in useFrame
     useEffect(() => {
-      if (rigidBodyRef.current && entityId !== undefined) {
-        registerRigidBody(entityId, rigidBodyRef.current);
-
-        return () => {
-          unregisterRigidBody(entityId);
-          colliderRegistry.unregister(entityId);
-          registeredRef.current = false;
-        };
-      }
+      return () => {
+        Logger.create('EntityPhysicsBody').debug('Unmounting - cleaning up', {
+          entityId,
+          timestamp: Date.now(),
+        });
+        unregisterRigidBody(entityId);
+        colliderRegistry.unregister(entityId);
+        registeredRef.current = false;
+      };
     }, [entityId]);
 
-    // Register colliders after they're mounted (happens async after RigidBody creation)
+    // Register/update colliders in useFrame (after Rapier objects are created)
+    // Also handles re-registration after registry is cleared (stop/replay scenario)
     useFrame(() => {
-      if (rigidBodyRef.current && entityId !== undefined && !registeredRef.current) {
-        const numColliders = rigidBodyRef.current.numColliders();
+      if (!rigidBodyRef.current) return;
 
-        // Only register once colliders are present
-        if (numColliders > 0) {
-          const colliders: RapierCollider[] = [];
-          for (let i = 0; i < numColliders; i++) {
-            const collider = rigidBodyRef.current.collider(i);
-            if (collider) {
-              colliders.push(collider);
-            }
-          }
+      try {
+        // Register with legacy binding system (idempotent)
+        registerRigidBody(entityId, rigidBodyRef.current);
 
+        // Check if entity is still registered (it might have been cleared on stop)
+        const isRegistered = colliderRegistry.hasPhysics(entityId);
+
+        // Re-register if registry was cleared (e.g., on stop/replay)
+        if (!isRegistered) {
+          Logger.create('EntityPhysicsBody').debug('Re-registering after registry clear', {
+            entityId,
+            timestamp: Date.now(),
+          });
           const physicsRefs: IEntityPhysicsRefs = {
             rigidBody: rigidBodyRef.current,
-            colliders,
+            colliders: [], // Will be updated below if colliders are ready
           };
           colliderRegistry.register(entityId, physicsRefs);
-          registeredRef.current = true;
+          registeredRef.current = false; // Force collider update
         }
+
+        // Update colliders if not yet done
+        if (!registeredRef.current) {
+          // CRITICAL: numColliders() can throw if the rigid body was destroyed (e.g., on stop)
+          // This happens because useFrame continues running after physics world is destroyed
+          const numColliders = rigidBodyRef.current.numColliders();
+
+          // Update registry once colliders are present
+          if (numColliders > 0) {
+            const colliders: RapierCollider[] = [];
+            for (let i = 0; i < numColliders; i++) {
+              const collider = rigidBodyRef.current.collider(i);
+              if (collider) {
+                colliders.push(collider);
+              }
+            }
+
+            Logger.create('EntityPhysicsBody').info('Updating colliders in registry', {
+              entityId,
+              colliderCount: colliders.length,
+              timestamp: Date.now(),
+              registrationSource: 'useFrame',
+            });
+
+            const physicsRefs: IEntityPhysicsRefs = {
+              rigidBody: rigidBodyRef.current,
+              colliders,
+            };
+            colliderRegistry.register(entityId, physicsRefs); // Re-register with colliders
+            registeredRef.current = true;
+          }
+        }
+      } catch {
+        // Silently ignore errors from destroyed rigid bodies (happens on stop/cleanup)
+        // The cleanup in useEffect will handle proper unregistration
       }
     });
 
