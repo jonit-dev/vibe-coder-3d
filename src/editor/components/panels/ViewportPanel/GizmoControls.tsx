@@ -383,13 +383,6 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
       }, 16); // Reduced from 50ms to 16ms (~1 frame) for faster sync
     }, [setIsTransforming, meshRef, mode, entityId, componentManager, onTransformChange]);
 
-    // Don't render gizmo controls for camera entities as they contain HTML elements
-    // that cause TransformControls scene graph errors
-    if (meshType === 'Camera') {
-      logger.debug(`Skipping render for Camera entity ${entityId}`);
-      return null;
-    }
-
     // Don't render if mesh isn't ready
     if (!meshRef.current) {
       logger.debug(`Skipping render - no meshRef for entity ${entityId}`);

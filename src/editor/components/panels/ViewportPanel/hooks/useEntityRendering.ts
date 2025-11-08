@@ -33,10 +33,25 @@ export function useEntityRendering({
     }
   }, [meshType, entityId, isPrimarySelection, shouldHavePhysics]);
 
-  const shouldShowGizmo = React.useMemo(
-    () => isPrimarySelection && !shouldHavePhysics && !isPlaying,
-    [isPrimarySelection, shouldHavePhysics, isPlaying],
-  );
+  const shouldShowGizmo = React.useMemo(() => {
+    // Show gizmo for primary selection when not in play mode and no physics
+    // This should work for all entity types including cameras
+    const result = isPrimarySelection && !shouldHavePhysics && !isPlaying;
+
+    // Debug logging for cameras specifically
+    if (meshType === 'Camera') {
+      console.log('Camera gizmo logic:', {
+        entityId,
+        meshType,
+        isPrimarySelection,
+        shouldHavePhysics,
+        isPlaying,
+        willShowGizmo: result,
+      });
+    }
+
+    return result;
+  }, [isPrimarySelection, shouldHavePhysics, isPlaying, entityId, meshType]);
 
   return {
     shouldHideMesh,

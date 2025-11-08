@@ -232,7 +232,11 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
 
             {/* Physics wrapper - only enabled when playing */}
             {/* CRITICAL: key prop forces full remount on play/stop to prevent Rapier WASM aliasing errors */}
-            <Physics key={isPlaying ? 'playing' : 'stopped'} paused={!isPlaying} gravity={[0, -9.81, 0]}>
+            <Physics
+              key={isPlaying ? 'playing' : 'stopped'}
+              paused={!isPlaying}
+              gravity={[0, -9.81, 0]}
+            >
               {/* Physics binding - processes script physics mutations */}
               <PhysicsBindingManager />
 
@@ -247,6 +251,18 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
                 // PERFORMANCE: Use memoized values instead of function calls
                 const isSelected = selectedIdsSet.has(id);
                 const isPrimary = primarySelectionId === id;
+
+                // Debug camera entities
+                const isCamera = hasComponent(id, KnownComponentTypes.CAMERA);
+                if (isCamera) {
+                  console.log('Rendering camera entity:', {
+                    id,
+                    isSelected,
+                    isPrimary,
+                    hasMultipleSelected,
+                    willShowGizmo: isPrimary && !hasMultipleSelected && !isPlaying,
+                  });
+                }
 
                 return (
                   <EntityRenderer
