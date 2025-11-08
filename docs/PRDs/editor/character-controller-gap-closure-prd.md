@@ -376,7 +376,170 @@ const deferredEntities = new Map<
 2. **ColliderRegistry Diagnostics**: Monitor registration counts and dropouts
 3. **Entity-Specific Debug Logging**: Focus on problematic entities (e.g., Entity 5)
 
-## 15. Assumptions & Dependencies
+### Critical Fixes (2025-11-07): Registration Race Condition & WASM Crashes
+
+**Issue 1: Registration Race Condition - First Play Works, Replay Fails**
+
+**Symptoms:**
+
+- Character controller works on first play
+- Stop → Play again causes 122+ dropouts
+- Entity never registers in `ColliderRegistry` on second play
+- Warning: "Entity dropout detected, No collider found for entity"
+
+**Root Cause:**
+
+- Two `useFrame` hooks with non-deterministic execution order:
+  1. `EntityPhysicsBody.useFrame()` - Registers colliders asynchronously
+  2. `CharacterControllerPhysicsSystem.useFrame()` - Tries to use colliders immediately
+- On stop/play, `colliderRegistry.clear()` removes all registrations
+- React components don't unmount, so `useEffect` doesn't re-run
+- Registry remains empty on second play
+
+**Solution Implemented:**
+
+```tsx
+// src/editor/components/panels/ViewportPanel/components/EntityPhysicsBody.tsx
+useFrame(() => {
+  if (!rigidBodyRef.current) return;
+
+  try {
+    // Register with legacy binding
+    registerRigidBody(entityId, rigidBodyRef.current);
+
+    // Re-register if registry was cleared (stop/replay)
+    const isRegistered = colliderRegistry.hasPhysics(entityId);
+    if (!isRegistered) {
+      colliderRegistry.register(entityId, {
+        rigidBody: rigidBodyRef.current,
+        colliders: [],
+      });
+      registeredRef.current = false; // Force collider update
+    }
+
+    // Update colliders when ready
+    if (!registeredRef.current) {
+      const numColliders = rigidBodyRef.current.numColliders();
+      if (numColliders > 0) {
+        const colliders = [...];
+        colliderRegistry.register(entityId, { rigidBody, colliders });
+        registeredRef.current = true;
+      }
+    }
+  } catch {
+    // Silently ignore destroyed rigid body errors
+  }
+});
+```
+
+**Key Changes:**
+
+- Moved ALL registration to `useFrame` (not `useEffect`)
+- Added re-registration detection on each frame
+- Graceful fallback to simple physics during initial frames
+- Try-catch protection for destroyed Rapier objects
+
+**Files Modified:**
+
+- `src/editor/components/panels/ViewportPanel/components/EntityPhysicsBody.tsx`
+- `src/core/physics/character/KinematicBodyController.ts`
+
+**Documentation:** `docs/fixes/character-controller-registration-race-condition-fix.md`
+
+---
+
+**Issue 2: Rapier WASM Crash on Stop/Play**
+
+**Symptoms:**
+
+- `Error: recursive use of an object detected which would lead to unsafe aliasing in rust`
+- `Error: attempted to take ownership of Rust value while it was borrowed`
+- WebGL context lost
+- Crash when pressing Play after Stop
+
+**Root Cause:**
+
+- `<Physics paused={!isPlaying}>` reuses same component instance on toggle
+- React components hold references to **old** Rapier WASM world
+- New physics world created while old references still exist
+- Rapier detects unsafe memory aliasing and panics
+
+**Solution Implemented:**
+
+```tsx
+// src/editor/components/panels/ViewportPanel/ViewportPanel.tsx
+// CRITICAL: key prop forces full remount on play/stop
+<Physics key={isPlaying ? 'playing' : 'stopped'} paused={!isPlaying} gravity={[0, -9.81, 0]}>
+  {/* All physics content */}
+</Physics>
+```
+
+**How It Works:**
+
+- Changing `key` forces React to unmount old `<Physics>` tree
+- All Rapier WASM objects properly freed
+- Fresh `<Physics>` tree mounted with clean Rapier world
+- No stale references to old WASM objects
+
+**Files Modified:**
+
+- `src/editor/components/panels/ViewportPanel/ViewportPanel.tsx`
+
+**Documentation:** `docs/fixes/rapier-wasm-crash-on-stop-play-fix.md`
+
+---
+
+**Issue 3: Capsule Collider Using Wrong Shape**
+
+**Symptoms:**
+
+- Character capsule "drowning" into floor
+- Collider not matching visual capsule mesh
+
+**Root Cause:**
+
+- Capsule collider type was using `CuboidCollider` (box) instead of `CapsuleCollider`
+- Created box-shaped collision instead of capsule
+
+**Solution Implemented:**
+
+```tsx
+// src/editor/components/panels/ViewportPanel/components/EntityColliders.tsx
+// Before (broken):
+{
+  type === 'capsule' && <CuboidCollider args={[radius, height / 2, radius]} />;
+}
+
+// After (correct):
+import { CapsuleCollider } from '@react-three/rapier';
+
+{
+  type === 'capsule' && <CapsuleCollider args={[height / 2, radius]} />;
+}
+```
+
+**Files Modified:**
+
+- `src/editor/components/panels/ViewportPanel/components/EntityColliders.tsx`
+
+---
+
+**Verification Steps:**
+
+1. ✅ First play - Character responds to WASD input
+2. ✅ Stop - No crashes, no WASM errors
+3. ✅ Second play - Character still works (no dropouts)
+4. ✅ Multiple cycles - Remains stable
+5. ✅ Capsule collider - Proper ground contact
+6. ✅ Console logs - No registration failures
+
+**Success Metrics:**
+
+- Dropout count: 0 (was 122+)
+- Stop/play stability: 100% (was crash)
+- Collider accuracy: Correct shape (was box)
+
+## 16. Assumptions & Dependencies
 
 - Rapier world available via `<Physics>` context; R3F editor stack (Tailwind/Zustand) in place.
 - `KnownComponentTypes.CHARACTER_CONTROLLER` present with fields mirroring Rust contract v2.0.
