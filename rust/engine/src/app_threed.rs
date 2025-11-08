@@ -7,6 +7,9 @@ use std::sync::{Arc, Mutex};
 use vibe_ecs_bridge::create_default_registry;
 use vibe_ecs_manager::SceneManager;
 use vibe_physics::{populate_physics_world, PhysicsWorld};
+use vibe_physics::character_controller::{
+    CharacterControllerComponent, CharacterControllerConfig, CharacterControllerSystem,
+};
 use vibe_scene::Scene as SceneData;
 use vibe_scripting::ScriptSystem;
 use winit::{
@@ -28,6 +31,61 @@ pub struct AppThreeD {
     scene: Option<SceneData>,
     scene_manager: Option<Arc<Mutex<SceneManager>>>,
     debug_mode: bool,
+    /// Optional character controller system (enabled when scene contains CharacterController)
+    character_controller_system: Option<CharacterControllerSystem>,
+}
+
+impl AppThreeD {
+    /// Apply auto-input to character controllers (WASD + jump) before updating the system
+    fn apply_character_controller_auto_input(&mut self) {
+        let Some(ref mut cc_system) = self.character_controller_system else { return; };
+        let entity_ids = cc_system.get_all_entity_ids();
+        for entity_id in entity_ids {
+            if let Some(controller) = cc_system.get_controller_mut(entity_id) {
+                // Only handle auto mode; manual mode is expected to be script-driven
+                if controller.config.control_mode != "auto" {
+                    continue;
+                }
+                // Resolve mapping (defaults if missing)
+                let mapping = controller
+                    .config
+                    .input_mapping
+                    .clone()
+                    .unwrap_or_else(|| vibe_physics::character_controller::InputMapping::default());
+
+                // Horizontal input
+                let mut x = 0.0f32;
+                let mut z = 0.0f32;
+                if self.input_manager.is_key_down(&mapping.left) {
+                    x += 1.0;
+                }
+                if self.input_manager.is_key_down(&mapping.right) {
+                    x -= 1.0;
+                }
+                if self.input_manager.is_key_down(&mapping.forward) {
+                    z += 1.0;
+                }
+                if self.input_manager.is_key_down(&mapping.backward) {
+                    z -= 1.0;
+                }
+                // Normalize to unit length to avoid faster diagonal movement
+                let mag = (x * x + z * z).sqrt();
+                if mag > 0.0001 {
+                    x /= mag;
+                    z /= mag;
+                } else {
+                    x = 0.0;
+                    z = 0.0;
+                }
+                controller.set_move_input([x, z]);
+
+                // Jump on press (edge triggered)
+                if self.input_manager.is_key_pressed(&mapping.jump) {
+                    controller.request_jump();
+                }
+            }
+        }
+    }
 }
 
 impl AppThreeD {
@@ -91,6 +149,7 @@ impl AppThreeD {
             scene: None,
             scene_manager: None,
             debug_mode,
+            character_controller_system: None,
         })
     }
 
@@ -165,6 +224,43 @@ impl AppThreeD {
             }
         }
 
+        // Initialize CharacterControllerSystem from scene (if any)
+        let mut cc_system = CharacterControllerSystem::new();
+        for entity in &scene.entities {
+            if !entity.components.contains_key("CharacterController") {
+                continue;
+            }
+            let entity_id = match entity.entity_id() {
+                Some(id) => id,
+                None => continue,
+            };
+            if let Some(value) = entity.components.get("CharacterController") {
+                match CharacterControllerConfig::from_component(value) {
+                    Ok(config) => {
+                        let controller = CharacterControllerComponent::new(entity_id, config);
+                        cc_system.add_controller(controller);
+                    }
+                    Err(e) => {
+                        log::warn!(
+                            "Invalid CharacterController config for entity {:?}: {}",
+                            entity.name,
+                            e
+                        );
+                    }
+                }
+            }
+        }
+        let has_controllers = !cc_system.get_all_entity_ids().is_empty();
+        let character_controller_system = if has_controllers {
+            log::info!(
+                "CharacterControllerSystem initialized with {} controllers",
+                cc_system.get_all_entity_ids().len()
+            );
+            Some(cc_system)
+        } else {
+            None
+        };
+
         // Initialize input manager
         let input_manager = InputManager::new();
 
@@ -212,6 +308,7 @@ impl AppThreeD {
             scene: Some(scene),
             scene_manager: Some(scene_manager),
             debug_mode,
+            character_controller_system,
         })
     }
 
@@ -295,7 +392,7 @@ impl AppThreeD {
         };
 
         log::info!("Rendering {} warmup frames...", num_warmup_frames);
-        for i in 0..num_warmup_frames {
+        for _i in 0..num_warmup_frames {
             // Update all systems (scripts, physics, timing)
             self.update();
 
@@ -397,16 +494,22 @@ impl AppThreeD {
         }
 
         // Physics simulation (if enabled)
+        // Feed auto input into controllers BEFORE physics step (avoids borrow conflicts)
+        self.apply_character_controller_auto_input();
+        
         if let Some(ref mut physics_world) = self.physics_world {
-            // Apply a very small, engine-side character controller so we have
-            // immediate keyboard response parity with the editor. This moves any
-            // kinematic body that has a CharacterController component using WASD/Space.
-            Self::apply_character_controller_inputs(
-                delta_time,
-                self.scene.as_ref(),
-                &self.input_manager,
-                physics_world,
-            );
+                // Run CharacterControllerSystem before stepping physics (preferred)
+                if let Some(ref mut cc_system) = self.character_controller_system {
+                    cc_system.update(physics_world, delta_time);
+                } else {
+                    // Fallback: simple input-driven movement (legacy)
+                    Self::apply_character_controller_inputs(
+                        delta_time,
+                        self.scene.as_ref(),
+                        &self.input_manager,
+                        physics_world,
+                    );
+                }
 
             // Fixed timestep physics update (60 Hz)
             const PHYSICS_TIMESTEP: f32 = 1.0 / 60.0;

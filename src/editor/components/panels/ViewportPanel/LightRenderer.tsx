@@ -78,9 +78,9 @@ export const LightRenderer: React.FC<ILightRendererProps> = React.memo(({ entity
             color={[color.r, color.g, color.b]}
             intensity={intensity}
             position={[
-              position.x + (lightData.directionX ?? 0) * 10,
-              position.y + (lightData.directionY ?? -1) * 10,
-              position.z + (lightData.directionZ ?? 0) * 10,
+              position.x - (lightData.directionX ?? 0) * 10,
+              position.y - (lightData.directionY ?? -1) * 10,
+              position.z - (lightData.directionZ ?? 0) * 10,
             ]}
             target-position={[position.x, position.y, position.z]}
             castShadow={lightData.castShadow}

@@ -2,16 +2,16 @@ import { defineScene } from './defineScene';
 
 /**
  * testcharactercontroller
- * Scene with 8 entities
- * Generated: 2025-11-08T07:03:48.568Z
+ * Scene with 7 entities
+ * Generated: 2025-11-08T08:01:17.246Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
     name: 'testcharactercontroller',
     version: 1,
-    timestamp: '2025-11-08T07:03:48.568Z',
-    description: 'Scene with 8 entities',
+    timestamp: '2025-11-08T08:01:17.246Z',
+    description: 'Scene with 7 entities',
   },
   entities: [
     {
@@ -348,7 +348,7 @@ export default defineScene({
           id: '86d5643d-e3a3-482c-a0fe-6b0b834541c5',
         },
         Transform: {
-          position: [-0.25, 0.5, -1.75],
+          position: [-1.5, 0.5, 2],
           rotation: [0, 0, 0],
           scale: [1, 1, 1],
         },
@@ -358,7 +358,7 @@ export default defineScene({
           receiveShadows: true,
           modelPath: '',
           meshId: 'Wall',
-          materialId: 'default',
+          materialId: 'grass',
         },
         RigidBody: {
           enabled: true,
@@ -394,76 +394,10 @@ export default defineScene({
         },
       },
     },
-    {
-      id: 7,
-      name: 'Terrain 0',
-      components: {
-        PersistentId: {
-          id: '9ce9ff26-6b88-48e9-b567-0e2b5c7713ae',
-        },
-        Transform: {
-          position: [0, -2, 0],
-          rotation: [0, 0, 0],
-          scale: [1, 1, 1],
-        },
-        MeshRenderer: {
-          enabled: true,
-          castShadows: true,
-          receiveShadows: true,
-          modelPath: '',
-          meshId: 'terrain',
-          materialId: 'mat_37ade631',
-        },
-        Terrain: {
-          size: [100, 100],
-          segments: [129, 129],
-          heightScale: 20,
-          noiseEnabled: true,
-          noiseSeed: 42,
-          noiseFrequency: 2.5,
-          noiseOctaves: 4,
-          noisePersistence: 0.5,
-          noiseLacunarity: 2,
-        },
-        RigidBody: {
-          enabled: true,
-          bodyType: 'fixed',
-          mass: 1,
-          gravityScale: 1,
-          canSleep: true,
-          material: {
-            friction: 0.9,
-            restitution: 0,
-            density: 1,
-          },
-          type: 'fixed',
-        },
-        MeshCollider: {
-          enabled: true,
-          isTrigger: false,
-          colliderType: 'heightfield',
-          center: [0, 0, 0],
-          size: {
-            width: 20,
-            height: 1,
-            depth: 20,
-            radius: 0.5,
-            capsuleRadius: 0.5,
-            capsuleHeight: 2,
-          },
-          physicsMaterial: {
-            friction: 0.9,
-            restitution: 0.3,
-            density: 1,
-          },
-        },
-      },
-    },
   ],
   assetReferences: {
     materials: [
       '@/materials/default',
-      '@/materials/mat_37ade631',
       '@/materials/bark',
       '@/materials/dss',
       '@/materials/farm-grass',
@@ -472,6 +406,7 @@ export default defineScene({
       '@/materials/leaves',
       '@/materials/mat1',
       '@/materials/mat2',
+      '@/materials/mat_37ade631',
       '@/materials/mat_38910607',
       '@/materials/myMaterial',
       '@/materials/red',

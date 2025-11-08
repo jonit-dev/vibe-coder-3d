@@ -27,6 +27,7 @@
 - Favor using Zod
 - Use zustand for state management
 - Unless explicitly oriented, do not keep deprecated code or write legacy versions of it. Just cleanup.
+- DO NOT add extra formatting, verbose logging, or unnecessary comments without being explicitly asked
 
 **Technical Debt Prevention**
 

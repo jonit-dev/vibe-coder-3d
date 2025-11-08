@@ -159,17 +159,12 @@ impl ThreeDLightManager {
 
     /// Ensure combined ambient light is up to date
     fn ensure_combined_ambient(&mut self, context: &Context) {
-        log::debug!("ensure_combined_ambient: dirty={}, metadata_count={}",
-                   self.ambient_dirty, self.ambient_light_metadata.len());
         if !self.ambient_dirty {
-            log::debug!("  Skipping - ambient lights not dirty");
             return;
         }
-        log::debug!("  Recomputing combined ambient light...");
         self.combined_ambient_light =
             recompute_combined_ambient(&self.ambient_light_metadata, context, &self.ambient_cfg);
         self.ambient_dirty = false;
-        log::debug!("  Combined ambient light recompute complete, dirty flag cleared");
     }
 
     /// Collect all lights into a vector for rendering
@@ -193,7 +188,6 @@ impl ThreeDLightManager {
             self.normal_guard_light = None;
         } else {
             self.ensure_normal_guard(context);
-            log::info!("  Scene has ONLY ambient lights - added zero-intensity guard light for proper rendering");
         }
 
         let mut lights: Vec<&dyn Light> = Vec::new();
@@ -207,25 +201,16 @@ impl ThreeDLightManager {
             lights.push(l);
         }
 
-        log::debug!("collect_lights: directional={}, point={}, spot={}",
-                   self.directional_lights.len(), self.point_lights.len(), self.spot_lights.len());
-
         if let Some(ref ambient) = self.combined_ambient_light {
             lights.push(ambient);
-            log::info!("  Added combined ambient light to collection (intensity={})",
-                      0.5); // We know it's 0.5 from the log above
-        } else {
-            log::warn!("  No combined ambient light available!");
         }
 
         if !has_normal_light {
             if let Some(ref guard) = self.normal_guard_light {
                 lights.push(guard);
-                log::debug!("  Added normal guard light");
             }
         }
 
-        log::info!("collect_lights: returning {} total lights for rendering", lights.len());
         lights
     }
 
