@@ -2,13 +2,43 @@
 //!
 //! Centralized configuration and validation for character controller parameters.
 //! Provides invariant checks and reasonable defaults to stabilize gameplay feel.
+//! Aligned with TypeScript Contract v2.0 for cross-platform parity.
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-/// Centralized configuration for character controller behavior
+/// Input mapping for auto-control mode
+/// Maps gameplay actions to keyboard keys
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InputMapping {
+    pub forward: String,
+    pub backward: String,
+    pub left: String,
+    pub right: String,
+    pub jump: String,
+}
+
+impl Default for InputMapping {
+    fn default() -> Self {
+        Self {
+            forward: "w".to_string(),
+            backward: "s".to_string(),
+            left: "a".to_string(),
+            right: "d".to_string(),
+            jump: "space".to_string(),
+        }
+    }
+}
+
+/// Centralized configuration for character controller behavior
+/// Contract v2.0 - Matches TypeScript implementation exactly
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CharacterControllerConfig {
+    /// Whether the character controller is enabled
+    pub enabled: bool,
+
     /// Maximum angle (in degrees) the character can walk up
     /// Valid range: 0-90 degrees
     pub slope_limit: f32,
@@ -34,9 +64,18 @@ pub struct CharacterControllerConfig {
     /// Valid range: 0.1-20.0 meters/second
     pub jump_strength: f32,
 
+    /// Control mode: "auto" (input system driven) or "manual" (script driven)
+    pub control_mode: String,
+
+    /// Input mapping for auto-control mode (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_mapping: Option<InputMapping>,
+
     /// Maximum speed change per frame (for smooth acceleration)
     /// Valid range: 1.0-100.0 meters/second²
-    pub acceleration: f32,
+    /// NOTE: Internal tuning parameter, not part of Contract v2.0
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub acceleration: Option<f32>,
 
     /// Maximum speed for auto-snapping to ground
     /// Valid range: 0.1-20.0 meters/second
@@ -53,53 +92,70 @@ pub struct CharacterControllerConfig {
     /// Maximum mass of objects that can be pushed (0 = unlimited)
     /// Valid range: 0.0-1000.0 kg
     pub max_push_mass: f32,
+
+    /// Whether the character is currently grounded (runtime state)
+    /// NOTE: Transient field, not serialized to scene files
+    #[serde(skip_serializing)]
+    pub is_grounded: bool,
 }
 
 impl Default for CharacterControllerConfig {
     fn default() -> Self {
         Self {
+            enabled: true,
             slope_limit: 45.0,
             step_offset: 0.3,
             skin_width: 0.08,
             gravity_scale: 1.0,
             max_speed: 6.0,
             jump_strength: 6.5,
-            acceleration: 20.0,
+            control_mode: "auto".to_string(),
+            input_mapping: Some(InputMapping::default()),
+            acceleration: Some(20.0),
             snap_max_speed: 5.0,
             max_depenetration_per_frame: 0.5,
             push_strength: 1.0,
             max_push_mass: 0.0, // 0 = unlimited
+            is_grounded: false,
         }
     }
 }
 
 impl CharacterControllerConfig {
     /// Create a new config with validated parameters
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        enabled: bool,
         slope_limit: f32,
         step_offset: f32,
         skin_width: f32,
         gravity_scale: f32,
         max_speed: f32,
         jump_strength: f32,
-        acceleration: f32,
+        control_mode: String,
+        input_mapping: Option<InputMapping>,
+        acceleration: Option<f32>,
         snap_max_speed: f32,
         max_depenetration_per_frame: f32,
         push_strength: f32,
         max_push_mass: f32,
     ) -> Result<Self> {
         let config = Self {
+            enabled,
             slope_limit,
             step_offset,
             skin_width,
             gravity_scale,
             max_speed,
             jump_strength,
+            control_mode,
+            input_mapping,
             acceleration,
             snap_max_speed,
             max_depenetration_per_frame,
             push_strength,
             max_push_mass,
+            is_grounded: false,
         };
 
         config.validate()
@@ -158,12 +214,22 @@ impl CharacterControllerConfig {
             );
         }
 
-        // Acceleration: smooth but responsive
-        if !(1.0..=100.0).contains(&self.acceleration) {
+        // Control mode: must be "auto" or "manual"
+        if self.control_mode != "auto" && self.control_mode != "manual" {
             anyhow::bail!(
-                "Invalid acceleration: {}. Must be between 1.0 and 100.0 m/s²",
-                self.acceleration
+                "Invalid control_mode: '{}'. Must be 'auto' or 'manual'",
+                self.control_mode
             );
+        }
+
+        // Acceleration: smooth but responsive (optional, internal tuning)
+        if let Some(accel) = self.acceleration {
+            if !(1.0..=100.0).contains(&accel) {
+                anyhow::bail!(
+                    "Invalid acceleration: {}. Must be between 1.0 and 100.0 m/s²",
+                    accel
+                );
+            }
         }
 
         // Snap max speed: should be less than or equal to max speed
@@ -237,18 +303,35 @@ impl CharacterControllerConfig {
 
     /// Create from a JSON component (for scene loading)
     pub fn from_component(component: &serde_json::Value) -> Result<Self> {
+        // Parse input mapping if present
+        let input_mapping = if let Some(mapping) = component.get("inputMapping") {
+            Some(InputMapping {
+                forward: mapping["forward"].as_str().unwrap_or("w").to_string(),
+                backward: mapping["backward"].as_str().unwrap_or("s").to_string(),
+                left: mapping["left"].as_str().unwrap_or("a").to_string(),
+                right: mapping["right"].as_str().unwrap_or("d").to_string(),
+                jump: mapping["jump"].as_str().unwrap_or("space").to_string(),
+            })
+        } else {
+            None
+        };
+
         let config = Self {
+            enabled: component["enabled"].as_bool().unwrap_or(true),
             slope_limit: component["slopeLimit"].as_f64().unwrap_or(45.0) as f32,
             step_offset: component["stepOffset"].as_f64().unwrap_or(0.3) as f32,
             skin_width: component["skinWidth"].as_f64().unwrap_or(0.08) as f32,
             gravity_scale: component["gravityScale"].as_f64().unwrap_or(1.0) as f32,
             max_speed: component["maxSpeed"].as_f64().unwrap_or(6.0) as f32,
             jump_strength: component["jumpStrength"].as_f64().unwrap_or(6.5) as f32,
-            acceleration: component["acceleration"].as_f64().unwrap_or(20.0) as f32,
+            control_mode: component["controlMode"].as_str().unwrap_or("auto").to_string(),
+            input_mapping,
+            acceleration: component["acceleration"].as_f64().map(|v| v as f32),
             snap_max_speed: component["snapMaxSpeed"].as_f64().unwrap_or(5.0) as f32,
             max_depenetration_per_frame: component["maxDepenetrationPerFrame"].as_f64().unwrap_or(0.5) as f32,
             push_strength: component["pushStrength"].as_f64().unwrap_or(1.0) as f32,
             max_push_mass: component["maxPushMass"].as_f64().unwrap_or(0.0) as f32,
+            is_grounded: component["isGrounded"].as_bool().unwrap_or(false),
         };
 
         config.validate()
@@ -259,29 +342,39 @@ impl CharacterControllerConfig {
 
     /// Convert to JSON component format (for scene saving)
     pub fn to_component(&self) -> serde_json::Value {
-        serde_json::json!({
-            "enabled": true,
+        let mut json = serde_json::json!({
+            "enabled": self.enabled,
             "slopeLimit": self.slope_limit,
             "stepOffset": self.step_offset,
             "skinWidth": self.skin_width,
             "gravityScale": self.gravity_scale,
             "maxSpeed": self.max_speed,
             "jumpStrength": self.jump_strength,
-            "acceleration": self.acceleration,
+            "controlMode": self.control_mode,
             "snapMaxSpeed": self.snap_max_speed,
             "maxDepenetrationPerFrame": self.max_depenetration_per_frame,
             "pushStrength": self.push_strength,
             "maxPushMass": self.max_push_mass,
-            "controlMode": "auto",
-            "inputMapping": {
-                "forward": "w",
-                "backward": "s",
-                "left": "a",
-                "right": "d",
-                "jump": "space"
-            },
-            "isGrounded": false
-        })
+            "isGrounded": self.is_grounded
+        });
+
+        // Add input mapping if present
+        if let Some(ref mapping) = self.input_mapping {
+            json["inputMapping"] = serde_json::json!({
+                "forward": mapping.forward,
+                "backward": mapping.backward,
+                "left": mapping.left,
+                "right": mapping.right,
+                "jump": mapping.jump
+            });
+        }
+
+        // Add acceleration if present (internal tuning parameter)
+        if let Some(accel) = self.acceleration {
+            json["acceleration"] = serde_json::json!(accel);
+        }
+
+        json
     }
 
     /// Apply preset configurations for different character types
@@ -294,7 +387,7 @@ impl CharacterControllerConfig {
                 self.gravity_scale = 1.0;
                 self.max_speed = 6.0;
                 self.jump_strength = 6.5;
-                self.acceleration = 20.0;
+                self.acceleration = Some(20.0);
                 self.snap_max_speed = 5.0;
             }
             CharacterControllerPreset::SmallCreature => {
@@ -304,7 +397,7 @@ impl CharacterControllerConfig {
                 self.gravity_scale = 0.8;
                 self.max_speed = 4.0;
                 self.jump_strength = 4.0;
-                self.acceleration = 30.0;
+                self.acceleration = Some(30.0);
                 self.snap_max_speed = 3.0;
             }
             CharacterControllerPreset::HeavyCharacter => {
@@ -314,7 +407,7 @@ impl CharacterControllerConfig {
                 self.gravity_scale = 1.2;
                 self.max_speed = 4.0;
                 self.jump_strength = 3.0;
-                self.acceleration = 10.0;
+                self.acceleration = Some(10.0);
                 self.snap_max_speed = 2.0;
                 self.push_strength = 5.0;
                 self.max_push_mass = 100.0;
@@ -326,7 +419,7 @@ impl CharacterControllerConfig {
                 self.gravity_scale = 0.3;
                 self.max_speed = 8.0;
                 self.jump_strength = 10.0;
-                self.acceleration = 15.0;
+                self.acceleration = Some(15.0);
                 self.snap_max_speed = 2.0;
             }
         }
@@ -479,19 +572,30 @@ mod tests {
     fn test_character_controller_config_validation() {
         // Test valid config
         let config = CharacterControllerConfig::new(
-            45.0, 0.3, 0.08, 1.0, 6.0, 6.5, 20.0, 5.0, 0.5, 1.0, 0.0
+            true, 45.0, 0.3, 0.08, 1.0, 6.0, 6.5,
+            "auto".to_string(), Some(InputMapping::default()),
+            Some(20.0), 5.0, 0.5, 1.0, 0.0
         ).unwrap();
         assert!(config.validate().is_ok());
 
         // Test invalid slope limit
         let result = CharacterControllerConfig::new(
-            100.0, 0.3, 0.08, 1.0, 6.0, 6.5, 20.0, 5.0, 0.5, 1.0, 0.0
+            true, 100.0, 0.3, 0.08, 1.0, 6.0, 6.5,
+            "auto".to_string(), None, Some(20.0), 5.0, 0.5, 1.0, 0.0
         );
         assert!(result.is_err());
 
         // Test skin width >= step offset
         let result = CharacterControllerConfig::new(
-            45.0, 0.1, 0.15, 1.0, 6.0, 6.5, 20.0, 5.0, 0.5, 1.0, 0.0
+            true, 45.0, 0.1, 0.15, 1.0, 6.0, 6.5,
+            "auto".to_string(), None, Some(20.0), 5.0, 0.5, 1.0, 0.0
+        );
+        assert!(result.is_err());
+
+        // Test invalid control mode
+        let result = CharacterControllerConfig::new(
+            true, 45.0, 0.3, 0.08, 1.0, 6.0, 6.5,
+            "invalid".to_string(), None, Some(20.0), 5.0, 0.5, 1.0, 0.0
         );
         assert!(result.is_err());
     }

@@ -1,4 +1,5 @@
 import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
+import { Logger } from '@/core/lib/logger';
 
 export interface ITerrainWorkerMessage {
   type: 'GENERATE_TERRAIN';
@@ -26,6 +27,7 @@ class TerrainWorkerManager {
   private worker: Worker | null = null;
   private pendingRequests = new Map<string, (data: ITerrainGeometryData) => void>();
   private isSupported = typeof Worker !== 'undefined';
+  private logger = Logger.create('TerrainWorker');
 
   constructor() {
     if (this.isSupported) {

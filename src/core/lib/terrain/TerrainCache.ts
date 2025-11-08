@@ -1,5 +1,6 @@
 import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
 import type { ITerrainGeometryData } from './TerrainWorker';
+import { Logger } from '@/core/lib/logger';
 
 interface ICachedTerrain {
   data: ITerrainGeometryData;
@@ -23,6 +24,7 @@ class TerrainCacheManager {
   private maxEntries = 20; // Max number of cached terrains
   private hitCount = 0;
   private missCount = 0;
+  private logger = Logger.create('TerrainCache');
 
   // Generate cache key from terrain parameters
   private generateCacheKey(props: TerrainData): string {
@@ -88,7 +90,11 @@ class TerrainCacheManager {
       this.cache.delete(key);
       freedSpace += entry.size;
 
-      // Evicted terrain cache entry for memory management
+      this.logger.debug('Evicted terrain cache entry', {
+        key,
+        size: entry.size,
+        freedSpace,
+      });
     }
   }
 
@@ -99,9 +105,9 @@ class TerrainCacheManager {
 
     // Don't cache extremely large terrains (> 10MB)
     if (size > 10 * 1024 * 1024) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('🚫 Skipping cache: terrain too large', size / 1024 / 1024, 'MB');
-      }
+      this.logger.warn('Skipping cache: terrain too large', {
+        sizeMB: size / 1024 / 1024,
+      });
       return;
     }
 
@@ -121,7 +127,12 @@ class TerrainCacheManager {
       size,
     });
 
-    // Terrain cached successfully
+    this.logger.debug('Terrain cached', {
+      key,
+      sizeMB: size / 1024 / 1024,
+      totalEntries: this.cache.size,
+      totalMemoryMB: this.getTotalMemoryUsage() / 1024 / 1024,
+    });
   }
 
   // Retrieve terrain data from cache
@@ -189,13 +200,15 @@ class TerrainCacheManager {
       .slice(0, limit);
   }
 
-  // Log cache statistics to console
+  // Log cache statistics
   logStats() {
-    if (process.env.NODE_ENV !== 'development') return;
-
-    // Statistics available via this.getStats();
-
-    // Terrain cache statistics tracked internally
+    const stats = this.getStats();
+    this.logger.debug('Terrain cache stats', {
+      entries: stats.totalEntries,
+      memoryMB: stats.totalMemoryUsage / 1024 / 1024,
+      hitRate: stats.hitRate,
+      missRate: stats.missRate,
+    });
   }
 
   // Configure cache settings
@@ -224,14 +237,14 @@ class TerrainCacheManager {
           const data = await generateFunc(preset);
           this.set(preset, data);
         } catch (error) {
-          console.error('Failed to preload terrain preset:', error);
+          this.logger.error('Failed to preload terrain preset', error);
         }
       }
     });
 
     await Promise.all(promises);
 
-    // Preload completed
+    this.logger.debug('Preload completed', { count: presets.length });
   }
 }
 

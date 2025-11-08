@@ -61,11 +61,10 @@ export const EngineConfigSchema = z.object({
       showGrid: z.boolean().default(false),
       showPhysics: z.boolean().default(false),
       logRendererInfo: z.boolean().default(false),
-      // Character controller simple physics fallback (for diagnostics/graceful degradation)
-      // When false (production), missing colliders will prevent movement until ready
-      // When true (dev/current), uses simple transform-based physics as fallback
-      // TODO: Change default to false in Phase 3 after adding retry mechanism
-      enableSimplePhysicsFallback: z.boolean().default(true),
+      // Character controller simple physics fallback (for diagnostics only)
+      // When false (production default), uses deferred registration with retry mechanism
+      // When true (dev/debug), uses simple transform-based physics as fallback
+      enableSimplePhysicsFallback: z.boolean().default(false),
     })
     .default({}),
 });
@@ -115,8 +114,7 @@ export const defaultEngineConfig: IEngineConfig = {
     showGrid: false,
     showPhysics: false,
     logRendererInfo: false,
-    // TODO: Change to false in Phase 3 after adding retry mechanism
-    enableSimplePhysicsFallback: true,
+    enableSimplePhysicsFallback: false,
   },
 };
 
