@@ -204,7 +204,6 @@ export const TerrainSection: React.FC<ITerrainSectionProps> = ({ terrain, onUpda
 
   const handleClearCache = useCallback(() => {
     terrainCache.clear();
-
   }, []);
 
   return (
@@ -268,11 +267,14 @@ export const TerrainSection: React.FC<ITerrainSectionProps> = ({ terrain, onUpda
             label="Segments (X,Z)"
             value={[terrain.segments[0], terrain.segments[1]]}
             min={2}
-            max={1024}
+            max={257}
             step={1}
             onChange={([sx, sz]) =>
               onUpdate({
-                segments: [Math.max(2, Math.floor(sx)), Math.max(2, Math.floor(sz))],
+                segments: [
+                  Math.min(257, Math.max(2, Math.floor(sx))),
+                  Math.min(257, Math.max(2, Math.floor(sz))),
+                ],
               })
             }
           />
@@ -361,6 +363,7 @@ export const TerrainSection: React.FC<ITerrainSectionProps> = ({ terrain, onUpda
           <div className="text-xs text-gray-500 dark:text-gray-400">
             <div>💡 Tip: Higher segment counts provide more detail but impact performance</div>
             <div>🎯 Sweet spot: 65-129 segments for most use cases</div>
+            <div>⚠️ Max segments clamped to 257x257 for performance safety</div>
             <div>⚡ Use presets for instant professional results</div>
             <div>🚀 Web worker keeps UI responsive during generation</div>
             <div>📊 Cache system speeds up repeated terrain loading</div>

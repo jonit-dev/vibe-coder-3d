@@ -259,10 +259,10 @@ class TerrainWorkerManager {
 
       this.worker.onmessage = this.handleWorkerMessage.bind(this);
       this.worker.onerror = (error) => {
-        console.error('TerrainWorker error:', error);
+        this.logger.error('Worker error', error);
       };
     } catch (error) {
-      console.warn('Failed to create terrain worker:', error);
+      this.logger.warn('Failed to create terrain worker, using sync fallback', error);
       this.isSupported = false;
     }
   }

@@ -51,6 +51,8 @@ interface IEditorStore {
   setIsMaterialsExpanded: (expanded: boolean) => void;
   isLODExpanded: boolean;
   setIsLODExpanded: (expanded: boolean) => void;
+  isTerrainProfilerExpanded: boolean;
+  setIsTerrainProfilerExpanded: (expanded: boolean) => void;
 
   // Performance monitoring
   performanceMetrics: IPerformanceMetrics;
@@ -148,6 +150,8 @@ export const useEditorStore = create<IEditorStore>((set, get) => ({
   setIsLeftPanelCollapsed: (collapsed) => set({ isLeftPanelCollapsed: collapsed }),
   isMaterialsExpanded: false,
   setIsMaterialsExpanded: (expanded) => set({ isMaterialsExpanded: expanded }),
+  isTerrainProfilerExpanded: false,
+  setIsTerrainProfilerExpanded: (expanded) => set({ isTerrainProfilerExpanded: expanded }),
 
   // Performance monitoring
   performanceMetrics: { averageFPS: 60, frameTime: 0, renderCount: 0 },

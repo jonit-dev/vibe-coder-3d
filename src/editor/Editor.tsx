@@ -23,6 +23,7 @@ import { usePrefabs } from './components/prefabs/hooks/usePrefabs';
 import { PrefabCreateModal } from './components/prefabs/PrefabCreateModal';
 import { PrefabBrowserModal } from './components/prefabs/PrefabBrowserModal';
 import { LODPanel } from './components/panels/LODPanel';
+import { TerrainProfilerOverlay } from './components/debug/TerrainProfilerOverlay';
 import { usePrefabsStore } from './store/prefabsStore';
 import { useAutoSelection } from './hooks/useAutoSelection';
 import { useEditorHandlers } from './hooks/useEditorHandlers';
@@ -341,6 +342,9 @@ const Editor: React.FC = () => {
           <LODPanel isExpanded={true} />
         </div>
       )}
+
+      {/* Terrain Profiler Overlay - Dev tool (Ctrl+Shift+T) */}
+      {process.env.NODE_ENV === 'development' && <TerrainProfilerOverlay />}
     </div>
   );
 };

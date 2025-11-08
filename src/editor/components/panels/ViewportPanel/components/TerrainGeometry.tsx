@@ -75,21 +75,15 @@ function valueNoise2D(
 // Enhanced TerrainGeometry with Web Worker and Memory Management
 export const TerrainGeometry: React.FC<ITerrainGeometryProps> = React.memo((props) => {
   const logger = Logger.create('TerrainGeometry');
-  const {
-    size,
-    segments,
-    heightScale,
-    noiseEnabled,
-    noiseSeed,
-    noiseFrequency,
-    noiseOctaves,
-    noisePersistence,
-    noiseLacunarity,
-  } = props;
+  const { size, segments } = props;
 
   const geometryRef = useRef<THREE.BufferGeometry | undefined>(undefined);
   const [isGenerating, setIsGenerating] = useState(false);
   const [geometryData, setGeometryData] = useState<ITerrainGeometryData | null>(null);
+  const requestIdRef = useRef(0);
+
+  // Debounce delay in milliseconds (PRD recommendation: 50-75ms)
+  const DEBOUNCE_MS = 60;
 
   // Memory management: dispose geometry on unmount or when regenerating
   useEffect(() => {
@@ -102,6 +96,9 @@ export const TerrainGeometry: React.FC<ITerrainGeometryProps> = React.memo((prop
 
   // Generate terrain using web worker with cache
   const generateTerrain = useCallback(async () => {
+    // Increment request ID to cancel any stale requests
+    const requestId = ++requestIdRef.current;
+
     terrainProfiler.startProfile('terrain_generation');
     setIsGenerating(true);
 
@@ -125,6 +122,15 @@ export const TerrainGeometry: React.FC<ITerrainGeometryProps> = React.memo((prop
         terrainProfiler.endProfile('terrain_generation');
       }
 
+      // Ignore stale results - only apply if this is still the latest request
+      if (requestId !== requestIdRef.current) {
+        logger.debug('Ignoring stale terrain generation result', {
+          requestId,
+          currentId: requestIdRef.current,
+        });
+        return;
+      }
+
       // Record performance metrics
       const [sx, sz] = segments;
       terrainProfiler.setMetric('vertex_count', sx * sz);
@@ -135,24 +141,21 @@ export const TerrainGeometry: React.FC<ITerrainGeometryProps> = React.memo((prop
       logger.error('Terrain generation failed:', error);
       terrainProfiler.endProfile('terrain_generation');
     } finally {
-      setIsGenerating(false);
+      // Only set isGenerating to false if this is the latest request
+      if (requestId === requestIdRef.current) {
+        setIsGenerating(false);
+      }
     }
-  }, [
-    size,
-    segments,
-    heightScale,
-    noiseEnabled,
-    noiseSeed,
-    noiseFrequency,
-    noiseOctaves,
-    noisePersistence,
-    noiseLacunarity,
-  ]);
+  }, [props, segments, logger]);
 
-  // Trigger generation when props change
+  // Trigger debounced generation when props change
   useEffect(() => {
-    generateTerrain();
-  }, [generateTerrain]);
+    const timeout = setTimeout(() => {
+      generateTerrain();
+    }, DEBOUNCE_MS);
+
+    return () => clearTimeout(timeout);
+  }, [generateTerrain, DEBOUNCE_MS]);
 
   // Create THREE.js geometry from worker data
   const geometry = useMemo(() => {

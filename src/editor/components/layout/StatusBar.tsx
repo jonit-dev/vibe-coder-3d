@@ -1,6 +1,6 @@
 import React from 'react';
 import { FiActivity, FiHardDrive, FiWifi, FiZap, FiCode } from 'react-icons/fi';
-import { TbBoxMultiple } from 'react-icons/tb';
+import { TbBoxMultiple, TbMountain } from 'react-icons/tb';
 
 import { useFPS } from '@/editor/hooks/useFPS';
 import { StatusIndicator } from '../shared/StatusIndicator';
@@ -52,6 +52,10 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
   const rendererLabel = 'WebGL';
   const isLODExpanded = useEditorStore((state) => state.isLODExpanded);
   const setIsLODExpanded = useEditorStore((state) => state.setIsLODExpanded);
+  const isTerrainProfilerExpanded = useEditorStore((state) => state.isTerrainProfilerExpanded);
+  const setIsTerrainProfilerExpanded = useEditorStore(
+    (state) => state.setIsTerrainProfilerExpanded,
+  );
 
   // Get LOD quality from store
   const lodQuality = useLODStore((state) => state.quality);
@@ -249,6 +253,24 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
             <TbBoxMultiple className="w-4 h-4" />
             <span className="text-xs font-mono">{qualityLabel}</span>
           </button>
+
+          {/* Terrain Monitor Button */}
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              onClick={() => {
+                setIsTerrainProfilerExpanded(!isTerrainProfilerExpanded);
+              }}
+              className={`flex items-center space-x-2 px-3 py-1 rounded transition-colors ${
+                isTerrainProfilerExpanded
+                  ? 'bg-purple-600/20 text-purple-400 border border-purple-600/50'
+                  : 'hover:bg-gray-800/50 text-gray-400 hover:text-purple-400'
+              }`}
+              title="Toggle Terrain Profiler (Dev Only)"
+            >
+              <TbMountain className="w-4 h-4" />
+              <span className="text-xs font-mono">TERRAIN</span>
+            </button>
+          )}
 
           {/* Collapsed LOD Panel - renders inline when not expanded */}
           {lodPanelCollapsed}
