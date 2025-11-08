@@ -42,67 +42,32 @@ impl VisibilityCuller {
     /// Returns 6 planes in the order: left, right, bottom, top, near, far
     /// Each plane is represented as [a, b, c, d] where ax + by + cz + d = 0
     fn extract_frustum_planes(&self, view_projection: Mat4) -> [[f32; 4]; 6] {
+        // NOTE: glam::Mat4 is column-major. Rows must be constructed explicitly.
         let m = view_projection;
+        let r0 = [m.x_axis.x, m.y_axis.x, m.z_axis.x, m.w_axis.x];
+        let r1 = [m.x_axis.y, m.y_axis.y, m.z_axis.y, m.w_axis.y];
+        let r2 = [m.x_axis.z, m.y_axis.z, m.z_axis.z, m.w_axis.z];
+        let r3 = [m.x_axis.w, m.y_axis.w, m.z_axis.w, m.w_axis.w];
 
-        // Left plane: row4 + row1
-        let left = [
-            m.w_axis.x + m.x_axis.x,
-            m.w_axis.y + m.x_axis.y,
-            m.w_axis.z + m.x_axis.z,
-            m.w_axis.w + m.x_axis.w,
-        ];
-        let left_length = (left[0].powi(2) + left[1].powi(2) + left[2].powi(2)).sqrt();
-        let left = [left[0] / left_length, left[1] / left_length, left[2] / left_length, left[3] / left_length];
+        // Helper to normalize plane by the xyz length
+        fn normalize(mut p: [f32; 4]) -> [f32; 4] {
+            let len = (p[0].powi(2) + p[1].powi(2) + p[2].powi(2)).sqrt();
+            if len > 0.0 {
+                p[0] /= len;
+                p[1] /= len;
+                p[2] /= len;
+                p[3] /= len;
+            }
+            p
+        }
 
-        // Right plane: row4 - row1
-        let right = [
-            m.w_axis.x - m.x_axis.x,
-            m.w_axis.y - m.x_axis.y,
-            m.w_axis.z - m.x_axis.z,
-            m.w_axis.w - m.x_axis.w,
-        ];
-        let right_length = (right[0].powi(2) + right[1].powi(2) + right[2].powi(2)).sqrt();
-        let right = [right[0] / right_length, right[1] / right_length, right[2] / right_length, right[3] / right_length];
-
-        // Bottom plane: row4 + row2
-        let bottom = [
-            m.w_axis.x + m.y_axis.x,
-            m.w_axis.y + m.y_axis.y,
-            m.w_axis.z + m.y_axis.z,
-            m.w_axis.w + m.y_axis.w,
-        ];
-        let bottom_length = (bottom[0].powi(2) + bottom[1].powi(2) + bottom[2].powi(2)).sqrt();
-        let bottom = [bottom[0] / bottom_length, bottom[1] / bottom_length, bottom[2] / bottom_length, bottom[3] / bottom_length];
-
-        // Top plane: row4 - row2
-        let top = [
-            m.w_axis.x - m.y_axis.x,
-            m.w_axis.y - m.y_axis.y,
-            m.w_axis.z - m.y_axis.z,
-            m.w_axis.w - m.y_axis.w,
-        ];
-        let top_length = (top[0].powi(2) + top[1].powi(2) + top[2].powi(2)).sqrt();
-        let top = [top[0] / top_length, top[1] / top_length, top[2] / top_length, top[3] / top_length];
-
-        // Near plane: row3
-        let near = [
-            m.z_axis.x,
-            m.z_axis.y,
-            m.z_axis.z,
-            m.z_axis.w,
-        ];
-        let near_length = (near[0].powi(2) + near[1].powi(2) + near[2].powi(2)).sqrt();
-        let near = [near[0] / near_length, near[1] / near_length, near[2] / near_length, near[3] / near_length];
-
-        // Far plane: row4 - row3
-        let far = [
-            m.w_axis.x - m.z_axis.x,
-            m.w_axis.y - m.z_axis.y,
-            m.w_axis.z - m.z_axis.z,
-            m.w_axis.w - m.z_axis.w,
-        ];
-        let far_length = (far[0].powi(2) + far[1].powi(2) + far[2].powi(2)).sqrt();
-        let far = [far[0] / far_length, far[1] / far_length, far[2] / far_length, far[3] / far_length];
+        // Planes from rows: r3 ± rN
+        let left  = normalize([r3[0] + r0[0], r3[1] + r0[1], r3[2] + r0[2], r3[3] + r0[3]]);
+        let right = normalize([r3[0] - r0[0], r3[1] - r0[1], r3[2] - r0[2], r3[3] - r0[3]]);
+        let bottom = normalize([r3[0] + r1[0], r3[1] + r1[1], r3[2] + r1[2], r3[3] + r1[3]]);
+        let top    = normalize([r3[0] - r1[0], r3[1] - r1[1], r3[2] - r1[2], r3[3] - r1[3]]);
+        let near   = normalize([r3[0] + r2[0], r3[1] + r2[1], r3[2] + r2[2], r3[3] + r2[3]]);
+        let far    = normalize([r3[0] - r2[0], r3[1] - r2[1], r3[2] - r2[2], r3[3] - r2[3]]);
 
         [left, right, bottom, top, near, far]
     }

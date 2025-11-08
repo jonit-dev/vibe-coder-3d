@@ -237,9 +237,14 @@ impl ThreeDRenderer {
         // Collect data for screenshot rendering
         let context = self.context_state.context();
         let lights = self.light_manager.collect_lights(context);
+        // Use camera frustum culling for screenshots as well for consistency
         let visible_indices = self
             .mesh_manager
-            .get_visible_mesh_indices(render_state.map(|s| &s.visibility));
+            .get_visible_mesh_indices_with_camera(
+                self.camera_manager.camera(),
+                render_state.map(|s| &s.visibility),
+                false,
+            );
         let visible_meshes: Vec<_> = visible_indices
             .iter()
             .filter_map(|&idx| self.mesh_manager.meshes().get(idx))
