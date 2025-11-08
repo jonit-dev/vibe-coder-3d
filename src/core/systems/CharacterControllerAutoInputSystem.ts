@@ -1,5 +1,15 @@
 /**
  * Character Controller Auto Input System
+ *
+ * @deprecated This system is deprecated and will be removed in a future version.
+ * Use CharacterControllerSystem instead, which provides the same functionality
+ * with better architecture (CharacterMotor + KinematicBodyController).
+ *
+ * This file is kept only for backward compatibility in tests and will be removed
+ * after migration is complete. See docs/PRDs/editor/character-controller-gap-closure-prd.md
+ * Phase 1: System De-duplication.
+ *
+ * Legacy description:
  * Provides Unity-like auto-input handling for character controllers in Play mode
  * Handles WASD + Space movement with physics-based collision detection and response
  */
@@ -214,6 +224,8 @@ function calculateMovementDirection(
 /**
  * Main update function for Character Controller auto input
  * Called every frame during Play mode
+ *
+ * @deprecated Use updateCharacterControllerSystem from CharacterControllerSystem instead
  */
 export function updateCharacterControllerAutoInputSystem(
   inputManager: InputManager,
@@ -487,6 +499,8 @@ function applySimplePhysics(
 
 /**
  * Cleanup function to clear caches and destroy Rapier controllers
+ *
+ * @deprecated Use cleanupCharacterControllerSystem from CharacterControllerSystem instead
  */
 export function cleanupCharacterControllerAutoInputSystem(world: World | null = null): void {
   // Destroy all Rapier controllers

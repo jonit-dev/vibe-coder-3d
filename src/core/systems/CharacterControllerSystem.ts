@@ -21,8 +21,12 @@ import {
   calculateMovementDirection,
   validateEntityPhysics,
   logEntityPhysicsDiagnostics,
+  consumeIntents,
 } from './CharacterControllerHelpers';
-import { validateGoldenSignals, logComprehensiveHealthReport } from './CharacterControllerGoldenSignals';
+import {
+  validateGoldenSignals,
+  logComprehensiveHealthReport,
+} from './CharacterControllerGoldenSignals';
 
 const logger = Logger.create('CharacterControllerSystem');
 
@@ -48,6 +52,21 @@ const loggedEntities = new Set<number>();
  */
 let lastValidationTime = 0;
 const VALIDATION_INTERVAL_MS = 5000; // Validate every 5 seconds
+
+/**
+ * Deferred registration tracking for entities missing physics handles
+ * Implements one-frame retry mechanism before giving up or falling back
+ */
+interface IDeferredEntityInfo {
+  firstSeen: number; // Timestamp when entity was first seen without physics
+  retryCount: number; // Number of retry attempts
+  maxRetries: number; // Maximum retries before giving up
+  lastValidationTime: number; // Last time we checked for physics
+}
+
+const deferredEntities = new Map<number, IDeferredEntityInfo>();
+const DEFERRED_MAX_RETRIES = 3; // Try for 3 frames (~50ms at 60fps)
+const DEFERRED_RETRY_INTERVAL_MS = 100; // Check every 100ms
 
 /**
  * Create motor config from character controller component data
@@ -156,20 +175,73 @@ export function updateCharacterControllerSystem(
       continue;
     }
 
-    // Only process auto mode controllers
-    if (controllerData.controlMode !== 'auto') {
-      continue;
-    }
-
-    // BASELINE REFACTOR: Validate physics registration before processing
+    // PHASE 3: Pre-flight check with deferred registration retry
     const physicsValidation = validateEntityPhysics(entityId);
     if (!physicsValidation.isValid) {
-      // Log diagnostics once per entity
-      if (!loggedEntities.has(entityId)) {
-        logEntityPhysicsDiagnostics(entityId, 'CharacterControllerSystem update');
-        loggedEntities.add(entityId);
+      const currentTime = Date.now();
+      let deferredInfo = deferredEntities.get(entityId);
+
+      if (!deferredInfo) {
+        // First time seeing this entity without physics - start tracking it
+        deferredInfo = {
+          firstSeen: currentTime,
+          retryCount: 0,
+          maxRetries: DEFERRED_MAX_RETRIES,
+          lastValidationTime: currentTime,
+        };
+        deferredEntities.set(entityId, deferredInfo);
+
+        logger.debug('Entity deferred: waiting for physics registration', {
+          entityId,
+          maxRetries: DEFERRED_MAX_RETRIES,
+        });
       }
-      // Controller will fall back to simple physics in move() method
+
+      // Check if enough time has passed for another retry
+      if (currentTime - deferredInfo.lastValidationTime >= DEFERRED_RETRY_INTERVAL_MS) {
+        deferredInfo.retryCount++;
+        deferredInfo.lastValidationTime = currentTime;
+
+        if (deferredInfo.retryCount >= deferredInfo.maxRetries) {
+          // Exhausted retries - log warning once and let controller fall back to simple physics
+          if (!loggedEntities.has(entityId)) {
+            logger.warn('Entity physics registration timeout', {
+              entityId,
+              retries: deferredInfo.retryCount,
+              timeElapsed: currentTime - deferredInfo.firstSeen,
+              diagnosticMessage: physicsValidation.diagnosticMessage,
+              suggestion: 'Entity will use simple physics fallback if enabled',
+            });
+            logEntityPhysicsDiagnostics(entityId, 'CharacterControllerSystem deferred timeout');
+            loggedEntities.add(entityId);
+          }
+          // Continue processing with fallback - don't skip
+        } else {
+          logger.debug('Entity physics retry', {
+            entityId,
+            retryCount: deferredInfo.retryCount,
+            maxRetries: deferredInfo.maxRetries,
+          });
+          // Still retrying - skip this entity for now
+          continue;
+        }
+      } else {
+        // Not enough time has passed for retry - skip this entity
+        continue;
+      }
+
+      // If we reach here, retries are exhausted - continue processing with fallback
+    } else {
+      // Physics is valid - remove from deferred tracking if present
+      if (deferredEntities.has(entityId)) {
+        const deferredInfo = deferredEntities.get(entityId)!;
+        logger.debug('Entity physics registration succeeded after retry', {
+          entityId,
+          retries: deferredInfo.retryCount,
+          timeElapsed: Date.now() - deferredInfo.firstSeen,
+        });
+        deferredEntities.delete(entityId);
+      }
     }
 
     // Get or create motor for this entity
@@ -178,21 +250,43 @@ export function updateCharacterControllerSystem(
     // Create controller with this entity's motor
     const controller = new KinematicBodyController(world, motor);
 
-    // Get normalized input mapping (handles legacy fixes)
-    const inputMapping = getNormalizedInputMapping(controllerData);
+    // Process based on control mode
+    if (controllerData.controlMode === 'auto') {
+      // AUTO MODE: Process keyboard input
+      // Get normalized input mapping (handles legacy fixes)
+      const inputMapping = getNormalizedInputMapping(controllerData);
 
-    // Read input state
-    const inputState = readInputState(inputManager, inputMapping);
+      // Read input state
+      const inputState = readInputState(inputManager, inputMapping);
 
-    // Calculate movement direction
-    const [moveX, moveZ] = calculateMovementDirection(inputState);
+      // Calculate movement direction
+      const [moveX, moveZ] = calculateMovementDirection(inputState);
 
-    // Apply movement via kinematic controller
-    controller.move(entityId, [moveX, moveZ], deltaTime);
+      // Apply movement via kinematic controller
+      controller.move(entityId, [moveX, moveZ], deltaTime);
 
-    // Handle jump input
-    if (inputState.jump) {
-      controller.jump(entityId);
+      // Handle jump input
+      if (inputState.jump) {
+        controller.jump(entityId);
+      }
+    } else {
+      // MANUAL MODE: Process script intents
+      const intents = consumeIntents(entityId);
+
+      for (const intent of intents) {
+        if (intent.type === 'move' && intent.data?.inputXZ && intent.data?.speed !== undefined) {
+          // Apply movement with script-provided speed
+          const scriptSpeed = intent.data.speed;
+          const normalizedInput = intent.data.inputXZ;
+
+          // Pass speedOverride to controller (motor will use it instead of component maxSpeed)
+          controller.move(entityId, normalizedInput, deltaTime, scriptSpeed);
+        } else if (intent.type === 'jump' && intent.data?.strength !== undefined) {
+          // Apply jump (jump strength is already stored in motor config)
+          // TODO: Support custom jump strength from scripts
+          controller.jump(entityId);
+        }
+      }
     }
 
     // Update isGrounded state in component
@@ -234,8 +328,45 @@ export function cleanupCharacterControllerSystem(world: World | null): void {
   motorCache.clear();
   loggedEntities.clear();
 
+  // PHASE 3: Clear deferred registration tracking
+  if (deferredEntities.size > 0) {
+    logger.debug('Clearing deferred entity tracking', {
+      count: deferredEntities.size,
+      entityIds: Array.from(deferredEntities.keys()),
+    });
+    deferredEntities.clear();
+  }
+
   // Reset validation timer
   lastValidationTime = 0;
 
   logger.info('CharacterControllerSystem cleaned up');
+}
+
+/**
+ * Cleanup function for a specific entity when it's destroyed
+ * PHASE 3: Entity removal hook
+ */
+export function cleanupEntityController(entityId: number, world: World | null): void {
+  // Cleanup motor cache
+  const hadMotor = motorCache.delete(entityId);
+
+  // Cleanup logged entities
+  loggedEntities.delete(entityId);
+
+  // Cleanup deferred tracking
+  const hadDeferred = deferredEntities.delete(entityId);
+
+  // Cleanup kinematic controller for this entity
+  if (world && kinematicController) {
+    kinematicController.cleanup(entityId);
+  }
+
+  if (hadMotor || hadDeferred) {
+    logger.debug('Cleaned up entity controller', {
+      entityId,
+      hadMotor,
+      hadDeferred,
+    });
+  }
 }

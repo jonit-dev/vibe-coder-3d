@@ -47,12 +47,7 @@ export const CharacterControllerPhysicsSystem: React.FC<ICharacterControllerPhys
 
     // Update character controller system with physics world
     try {
-      updateCharacterControllerSystem(
-        inputManager,
-        isPlaying,
-        delta,
-        world,
-      );
+      updateCharacterControllerSystem(inputManager, isPlaying, delta, world);
     } catch (error) {
       logger.error('Error updating character controller system', {
         error: String(error),
@@ -65,10 +60,17 @@ export const CharacterControllerPhysicsSystem: React.FC<ICharacterControllerPhys
     if (isPlaying) {
       // Start physics lifecycle logging
       startPhysicsLifecycleLogging();
+
+      // PHASE 3: Log ColliderRegistry diagnostics on Play start
       logger.info('Play mode started - physics lifecycle logging enabled');
+      colliderRegistry.logHealthReport();
     } else {
       // Stop physics lifecycle logging
       stopPhysicsLifecycleLogging();
+
+      // PHASE 3: Log ColliderRegistry diagnostics before cleanup
+      logger.info('Play mode stopping - final ColliderRegistry health report:');
+      colliderRegistry.logHealthReport();
 
       // Clear registries and history
       colliderRegistry.clear();

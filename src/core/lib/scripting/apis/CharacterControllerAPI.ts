@@ -1,11 +1,17 @@
 /**
  * CharacterControllerAPI - Simple character controller for gameplay scripts
  * Provides movement, jump, and grounded detection for character entities
+ *
+ * REFACTORED (Phase 2): Routes movement/jump through CharacterControllerSystem
+ * instead of directly manipulating RigidBody. See character-controller-gap-closure-prd.md
  */
 
 import { Logger } from '@/core/lib/logger';
 import type { EntityId } from '@/core/lib/ecs/types';
-import { getRigidBody } from '../adapters/physics-binding';
+import { enqueueIntent } from '@/core/systems/CharacterControllerHelpers';
+import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import type { ICharacterControllerData } from '@/core/lib/ecs/components/accessors/types';
 
 const logger = Logger.create('CharacterControllerAPI');
 
@@ -46,25 +52,26 @@ function getState(entityId: EntityId): ICharacterControllerState {
 }
 
 /**
- * Check if character is grounded using raycasting
- * Returns true if there's ground beneath the character
+ * Check if character is grounded by reading from CharacterController component
+ * Delegates to the unified CharacterControllerSystem instead of using velocity heuristic
  */
 function checkGrounded(entityId: EntityId): boolean {
-  const state = getState(entityId);
-  const rigidBody = getRigidBody(entityId);
+  const controllerData = componentRegistry.getComponentData<ICharacterControllerData>(
+    entityId,
+    KnownComponentTypes.CHARACTER_CONTROLLER,
+  );
 
-  if (!rigidBody) {
+  if (!controllerData) {
+    // No CharacterController component - entity can't use this API
+    logger.warn('Entity does not have CharacterController component', { entityId });
     return false;
   }
 
-  // Simple ground check: ray down from feet
-  // This is a simplified version - a full implementation would use character capsule shape
-  // For now, we assume the character is grounded if velocity.y is near zero and not moving up
-  const velocity = rigidBody.linvel();
+  // Delegate to controller's computed state (set by CharacterControllerSystem)
+  const isGrounded = controllerData.isGrounded || false;
 
-  // Character is grounded if vertical velocity is small and downward or zero
-  const isGrounded = velocity.y <= 0.1 && velocity.y >= -0.1;
-
+  // Update state for coyote time tracking
+  const state = getState(entityId);
   state.isGrounded = isGrounded;
   if (isGrounded) {
     state.lastGroundedTime = performance.now();
@@ -119,9 +126,14 @@ export function createCharacterControllerAPI(entityId: EntityId): ICharacterCont
     },
 
     move(inputXZ: [number, number], speed: number): void {
-      const rigidBody = getRigidBody(entityId);
-      if (!rigidBody) {
-        logger.warn(`No rigid body found for entity ${entityId}`);
+      // Verify entity has CharacterController component
+      const controllerData = componentRegistry.getComponentData<ICharacterControllerData>(
+        entityId,
+        KnownComponentTypes.CHARACTER_CONTROLLER,
+      );
+
+      if (!controllerData) {
+        logger.warn('Entity does not have CharacterController component', { entityId });
         return;
       }
 
@@ -130,25 +142,30 @@ export function createCharacterControllerAPI(entityId: EntityId): ICharacterCont
       const normalizedX = length > 0 ? inputXZ[0] / length : 0;
       const normalizedZ = length > 0 ? inputXZ[1] / length : 0;
 
-      // Calculate target velocity
-      const targetVelX = normalizedX * speed;
-      const targetVelZ = normalizedZ * speed;
-
-      // Get current velocity
-      const currentVel = rigidBody.linvel();
-
-      // Set horizontal velocity while preserving vertical velocity
-      rigidBody.setLinvel(
-        {
-          x: targetVelX,
-          y: currentVel.y,
-          z: targetVelZ,
+      // Route movement through CharacterControllerSystem via intent queue
+      // This ensures movement goes through the kinematic controller, not direct RigidBody manipulation
+      enqueueIntent({
+        entityId,
+        type: 'move',
+        data: {
+          inputXZ: [normalizedX, normalizedZ],
+          speed,
         },
-        true,
-      );
+      });
     },
 
     jump(strength: number): void {
+      // Verify entity has CharacterController component
+      const controllerData = componentRegistry.getComponentData<ICharacterControllerData>(
+        entityId,
+        KnownComponentTypes.CHARACTER_CONTROLLER,
+      );
+
+      if (!controllerData) {
+        logger.warn('Entity does not have CharacterController component', { entityId });
+        return;
+      }
+
       const state = getState(entityId);
 
       // Check current grounded state
@@ -163,16 +180,17 @@ export function createCharacterControllerAPI(entityId: EntityId): ICharacterCont
         return; // Can't jump while airborne
       }
 
-      const rigidBody = getRigidBody(entityId);
-      if (!rigidBody) {
-        logger.warn(`No rigid body found for entity ${entityId}`);
-        return;
-      }
+      // Route jump through CharacterControllerSystem via intent queue
+      // This ensures jump goes through the kinematic controller, not direct RigidBody manipulation
+      enqueueIntent({
+        entityId,
+        type: 'jump',
+        data: {
+          strength,
+        },
+      });
 
-      // Apply upward impulse
-      rigidBody.applyImpulse({ x: 0, y: strength, z: 0 }, true);
-
-      // Mark as no longer grounded
+      // Mark as no longer grounded (jump initiated)
       state.isGrounded = false;
     },
 

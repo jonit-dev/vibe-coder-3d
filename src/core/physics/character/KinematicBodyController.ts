@@ -4,18 +4,12 @@
  * Handles collision-aware movement and body synchronization
  */
 
-import type {
-  World,
-  KinematicCharacterController as RapierKCC,
-} from '@dimforge/rapier3d-compat';
+import type { World, KinematicCharacterController as RapierKCC } from '@dimforge/rapier3d-compat';
 import { Logger } from '@core/lib/logger';
 import { CharacterMotor } from './CharacterMotor';
 import { colliderRegistry } from './ColliderRegistry';
 import type { IVector3 } from './types';
-import {
-  getCharacterCollisionFilter,
-  characterCollisionPredicate,
-} from './Layers';
+import { getCharacterCollisionFilter, characterCollisionPredicate } from './Layers';
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
 import type { ITransformData } from '@core/lib/ecs/components/TransformComponent';
@@ -33,6 +27,23 @@ const controllerCache = new Map<number, RapierKCC>();
 const velocityCache = new Map<number, IVector3>();
 
 /**
+ * Simple physics fallback configuration
+ * TODO: Wire this up to EngineConfig.debug.enableSimplePhysicsFallback
+ * For now, default to true for graceful degradation during collider registration
+ * Will be changed to false in Phase 3 after adding retry mechanism
+ */
+let enableSimplePhysicsFallback = true;
+
+/**
+ * Configure simple physics fallback (for testing/configuration)
+ * @param enabled - Whether to enable simple physics fallback when colliders are missing
+ */
+export function setSimplePhysicsFallback(enabled: boolean): void {
+  enableSimplePhysicsFallback = enabled;
+  logger.info('Simple physics fallback configured', { enabled });
+}
+
+/**
  * Kinematic Body Controller
  * Manages character movement through Rapier's kinematic character controller
  */
@@ -47,8 +58,14 @@ export class KinematicBodyController {
    * @param entityId - Entity to move
    * @param desiredXZ - Desired horizontal input [-1 to 1, -1 to 1]
    * @param deltaTime - Frame time in seconds
+   * @param speedOverride - Optional speed to use instead of motor config (for script API)
    */
-  move(entityId: number, desiredXZ: [number, number], deltaTime: number): void {
+  move(
+    entityId: number,
+    desiredXZ: [number, number],
+    deltaTime: number,
+    speedOverride?: number,
+  ): void {
     // Get or create velocity state
     let velocity = velocityCache.get(entityId);
     if (!velocity) {
@@ -61,10 +78,19 @@ export class KinematicBodyController {
     // EntityPhysicsBody registers immediately with 0 colliders, then updates when ready
     const collider = colliderRegistry.getCollider(entityId, false);
     if (!collider) {
-      // Silently fall back to simple physics until colliders are ready
-      // This is expected during the first few frames after entity creation
-      this.moveSimplePhysics(entityId, desiredXZ, velocity, deltaTime);
-      return;
+      if (enableSimplePhysicsFallback) {
+        // Gracefully fall back to simple physics until colliders are ready
+        // This is expected during the first few frames after entity creation
+        this.moveSimplePhysics(entityId, desiredXZ, velocity, deltaTime, speedOverride);
+        return;
+      } else {
+        // Production mode: no fallback, wait for colliders to be ready
+        logger.warn('Character controller missing collider, movement blocked', {
+          entityId,
+          hint: 'Collider registration may be delayed. Check EntityPhysicsBody lifecycle.',
+        });
+        return;
+      }
     }
 
     // Get or create Rapier controller
@@ -74,8 +100,8 @@ export class KinematicBodyController {
       return;
     }
 
-    // Compute desired horizontal velocity from input
-    const desiredVelocity = this.motor.computeDesiredVelocity(desiredXZ);
+    // Compute desired horizontal velocity from input (with optional speed override for scripts)
+    const desiredVelocity = this.motor.computeDesiredVelocity(desiredXZ, speedOverride);
 
     // Update horizontal velocity (instant response for snappy feel)
     velocity.x = desiredVelocity.x;
@@ -251,9 +277,10 @@ export class KinematicBodyController {
     desiredXZ: [number, number],
     velocity: IVector3,
     deltaTime: number,
+    speedOverride?: number,
   ): void {
-    // Compute desired horizontal velocity
-    const desiredVelocity = this.motor.computeDesiredVelocity(desiredXZ);
+    // Compute desired horizontal velocity (with optional speed override for scripts)
+    const desiredVelocity = this.motor.computeDesiredVelocity(desiredXZ, speedOverride);
     velocity.x = desiredVelocity.x;
     velocity.z = desiredVelocity.z;
 

@@ -54,6 +54,27 @@ export interface ICameraComponent {
   };
   smoothingSpeed?: number;
   rotationSmoothing?: number;
+  // Skybox properties
+  skyboxScale?: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  skyboxRotation?: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  skyboxRepeat?: {
+    u: number;
+    v: number;
+  };
+  skyboxOffset?: {
+    u: number;
+    v: number;
+  };
+  skyboxIntensity?: number;
+  skyboxBlur?: number;
 }
 
 /**
@@ -116,6 +137,7 @@ export interface IMeshRendererComponent {
   enabled?: boolean;
   castShadows?: boolean;
   receiveShadows?: boolean;
+  modelPath?: string;
   material?: IMaterialData;
 }
 
@@ -265,6 +287,21 @@ export interface ICharacterControllerComponent {
 }
 
 /**
+ * Terrain Component - Terrain generation and rendering
+ */
+export interface ITerrainComponent {
+  size: [number, number];
+  segments: [number, number];
+  heightScale?: number;
+  noiseEnabled?: boolean;
+  noiseSeed?: number;
+  noiseFrequency?: number;
+  noiseOctaves?: number;
+  noisePersistence?: number;
+  noiseLacunarity?: number;
+}
+
+/**
  * Component map - Maps component names to their types
  * This provides autocomplete and type checking for component data
  *
@@ -282,6 +319,7 @@ export interface IComponentMap {
   Script: IScriptComponent;
   GeometryAsset: IGeometryAssetComponent;
   CharacterController: ICharacterControllerComponent;
+  Terrain: ITerrainComponent;
 }
 
 /**

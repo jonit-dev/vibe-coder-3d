@@ -2,16 +2,16 @@ import { defineScene } from './defineScene';
 
 /**
  * testcharactercontroller
- * Scene with 6 entities
- * Generated: 2025-11-07T02:55:37.738Z
+ * Scene with 8 entities
+ * Generated: 2025-11-08T06:47:40.528Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
     name: 'testcharactercontroller',
     version: 1,
-    timestamp: '2025-11-07T02:55:37.738Z',
-    description: 'Scene with 6 entities',
+    timestamp: '2025-11-08T06:47:40.528Z',
+    description: 'Scene with 8 entities',
   },
   entities: [
     {
@@ -63,6 +63,26 @@ export default defineScene({
           },
           smoothingSpeed: 2,
           rotationSmoothing: 1.5,
+          skyboxScale: {
+            x: 1,
+            y: 1,
+            z: 1,
+          },
+          skyboxRotation: {
+            x: 0,
+            y: 0,
+            z: 0,
+          },
+          skyboxRepeat: {
+            u: 1,
+            v: 1,
+          },
+          skyboxOffset: {
+            u: 0,
+            v: 0,
+          },
+          skyboxIntensity: 1,
+          skyboxBlur: 0,
         },
       },
     },
@@ -152,6 +172,7 @@ export default defineScene({
           enabled: true,
           castShadows: true,
           receiveShadows: true,
+          modelPath: '',
           meshId: 'cube',
           materialId: 'default',
         },
@@ -205,6 +226,7 @@ export default defineScene({
           enabled: true,
           castShadows: true,
           receiveShadows: true,
+          modelPath: '',
           meshId: 'plane',
           materialId: 'default',
         },
@@ -258,6 +280,7 @@ export default defineScene({
           enabled: true,
           castShadows: true,
           receiveShadows: true,
+          modelPath: '',
           meshId: 'capsule',
           materialId: 'default',
         },
@@ -313,13 +336,133 @@ export default defineScene({
           maxDepenetrationPerFrame: 0.5,
           pushStrength: 1,
           maxPushMass: 0,
-          isGrounded: false,
+          isGrounded: true,
+        },
+      },
+    },
+    {
+      id: 7,
+      name: 'Wall 0',
+      components: {
+        PersistentId: {
+          id: '86d5643d-e3a3-482c-a0fe-6b0b834541c5',
+        },
+        Transform: {
+          position: [-0.25, 0.5, -1.75],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        MeshRenderer: {
+          enabled: true,
+          castShadows: true,
+          receiveShadows: true,
+          modelPath: '',
+          meshId: 'Wall',
+          materialId: 'default',
+        },
+        RigidBody: {
+          enabled: true,
+          bodyType: 'fixed',
+          mass: 1,
+          gravityScale: 1,
+          canSleep: true,
+          material: {
+            friction: 0.7,
+            restitution: 0.3,
+            density: 1,
+          },
+          type: 'fixed',
+        },
+        MeshCollider: {
+          enabled: true,
+          isTrigger: false,
+          colliderType: 'box',
+          center: [0, 0, 0],
+          size: {
+            width: 2,
+            height: 1,
+            depth: 0.1,
+            radius: 0.5,
+            capsuleRadius: 0.5,
+            capsuleHeight: 2,
+          },
+          physicsMaterial: {
+            friction: 0.7,
+            restitution: 0.3,
+            density: 1,
+          },
+        },
+      },
+    },
+    {
+      id: 8,
+      name: 'Terrain 0',
+      components: {
+        PersistentId: {
+          id: '9ce9ff26-6b88-48e9-b567-0e2b5c7713ae',
+        },
+        Transform: {
+          position: [0, -2, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        MeshRenderer: {
+          enabled: true,
+          castShadows: true,
+          receiveShadows: true,
+          modelPath: '',
+          meshId: 'terrain',
+          materialId: 'mat_37ade631',
+        },
+        Terrain: {
+          size: [100, 100],
+          segments: [129, 129],
+          heightScale: 20,
+          noiseEnabled: true,
+          noiseSeed: 42,
+          noiseFrequency: 2.5,
+          noiseOctaves: 4,
+          noisePersistence: 0.5,
+          noiseLacunarity: 2,
+        },
+        RigidBody: {
+          enabled: true,
+          bodyType: 'fixed',
+          mass: 1,
+          gravityScale: 1,
+          canSleep: true,
+          material: {
+            friction: 0.9,
+            restitution: 0,
+            density: 1,
+          },
+          type: 'fixed',
+        },
+        MeshCollider: {
+          enabled: true,
+          isTrigger: false,
+          colliderType: 'heightfield',
+          center: [0, 0, 0],
+          size: {
+            width: 20,
+            height: 1,
+            depth: 20,
+            radius: 0.5,
+            capsuleRadius: 0.5,
+            capsuleHeight: 2,
+          },
+          physicsMaterial: {
+            friction: 0.9,
+            restitution: 0.3,
+            density: 1,
+          },
         },
       },
     },
   ],
   assetReferences: {
     materials: [
+      '@/materials/mat_37ade631',
       '@/materials/default',
       '@/materials/bark',
       '@/materials/dss',

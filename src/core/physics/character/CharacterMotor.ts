@@ -20,18 +20,22 @@ export class CharacterMotor {
   /**
    * Compute desired horizontal velocity from input
    * @param inputXZ - Normalized input direction [x, z] (-1 to 1 range)
+   * @param speedOverride - Optional speed to use instead of config.maxSpeed (for script API)
    * @returns Desired velocity vector (y component is 0)
    */
-  computeDesiredVelocity(inputXZ: [number, number]): IVector3 {
+  computeDesiredVelocity(inputXZ: [number, number], speedOverride?: number): IVector3 {
     const [x, z] = inputXZ;
 
     // Clamp and normalize input
     const clampedX = Math.max(-1, Math.min(1, x));
     const clampedZ = Math.max(-1, Math.min(1, z));
 
-    // Apply max speed
-    const desiredX = clampedX * this.config.maxSpeed;
-    const desiredZ = clampedZ * this.config.maxSpeed;
+    // Use override speed if provided, otherwise use config maxSpeed
+    const speed = speedOverride !== undefined ? speedOverride : this.config.maxSpeed;
+
+    // Apply speed
+    const desiredX = clampedX * speed;
+    const desiredZ = clampedZ * speed;
 
     return {
       x: desiredX,
@@ -105,9 +109,7 @@ export class CharacterMotor {
       });
 
       // Clamp to max and preserve sign
-      return (
-        Math.sign(depenetration) * this.config.maxDepenetrationPerFrame
-      );
+      return Math.sign(depenetration) * this.config.maxDepenetrationPerFrame;
     }
 
     return depenetration;
