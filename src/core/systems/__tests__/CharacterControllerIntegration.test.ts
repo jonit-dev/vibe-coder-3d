@@ -3,7 +3,7 @@
  * End-to-end tests for unified character controller system
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
 import {
   updateCharacterControllerSystem,
   cleanupCharacterControllerSystem,
@@ -35,7 +35,7 @@ import type {
 } from '@dimforge/rapier3d-compat';
 
 // Mock dependencies
-vi.mock('../../lib/logger', () => ({
+vi.mock('@core/lib/logger', () => ({
   Logger: {
     create: vi.fn(() => ({
       debug: vi.fn(),
@@ -45,10 +45,10 @@ vi.mock('../../lib/logger', () => ({
     })),
   },
 }));
-vi.mock('../../lib/ecs/ComponentRegistry');
-vi.mock('../../physics/character/ColliderRegistry');
-vi.mock('../../physics/character/CharacterMotor');
-vi.mock('../../physics/character/KinematicBodyController');
+vi.mock('@core/lib/ecs/ComponentRegistry');
+vi.mock('@core/physics/character/ColliderRegistry');
+vi.mock('@core/physics/character/CharacterMotor');
+vi.mock('@core/physics/character/KinematicBodyController');
 
 describe('Character Controller Integration Tests', () => {
   let mockWorld: World;
@@ -58,7 +58,7 @@ describe('Character Controller Integration Tests', () => {
   let mockCollider: Collider;
   let mockRigidBody: RigidBody;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     clearSignalHistory();
 
@@ -122,18 +122,19 @@ describe('Character Controller Integration Tests', () => {
     vi.mocked(componentRegistry.updateComponent).mockImplementation(() => {});
 
     // Mock collider registry
-    const { colliderRegistry } = require('../../physics/character/ColliderRegistry');
-    colliderRegistry.hasPhysics = vi.fn().mockReturnValue(true);
-    colliderRegistry.getColliders = vi.fn().mockReturnValue([mockCollider]);
-    colliderRegistry.getRigidBody = vi.fn().mockReturnValue(mockRigidBody);
-    colliderRegistry.getRegisteredEntityIds = vi.fn().mockReturnValue([entityId]);
-    colliderRegistry.getDiagnostics = vi.fn().mockReturnValue({
+    const ColliderRegistryModule = await import('@core/physics/character/ColliderRegistry');
+    const colliderRegistry = ColliderRegistryModule.colliderRegistry;
+    vi.spyOn(colliderRegistry, 'hasPhysics').mockReturnValue(true);
+    vi.spyOn(colliderRegistry, 'getColliders').mockReturnValue([mockCollider]);
+    vi.spyOn(colliderRegistry, 'getRigidBody').mockReturnValue(mockRigidBody);
+    vi.spyOn(colliderRegistry, 'getRegisteredEntityIds').mockReturnValue([entityId]);
+    vi.spyOn(colliderRegistry, 'getDiagnostics').mockReturnValue({
       totalRegistrations: 10,
       totalUnregistrations: 5,
       dropouts: 1,
     });
-    colliderRegistry.size = vi.fn().mockReturnValue(5);
-    colliderRegistry.logHealthReport = vi.fn();
+    vi.spyOn(colliderRegistry, 'size').mockReturnValue(5);
+    vi.spyOn(colliderRegistry, 'logHealthReport').mockImplementation(() => {});
 
     // Mock Rapier character controller
     const mockRapierController: KinematicCharacterController = {
@@ -244,13 +245,14 @@ describe('Character Controller Integration Tests', () => {
   });
 
   describe('Physics Integration', () => {
-    it('should validate physics registration before processing', () => {
+    it('should validate physics registration before processing', async () => {
       const isValid = validateEntityPhysics(entityId);
       expect(isValid).toBe(true);
 
       // Test with missing physics
-      const { colliderRegistry } = require('../../physics/character/ColliderRegistry');
-      colliderRegistry.hasPhysics = vi.fn().mockReturnValue(false);
+      const ColliderRegistryModule = await import('@core/physics/character/ColliderRegistry');
+      const colliderRegistry = ColliderRegistryModule.colliderRegistry;
+      vi.spyOn(colliderRegistry, 'hasPhysics').mockReturnValue(false);
 
       const isInvalid = validateEntityPhysics(entityId);
       expect(isInvalid).toBe(false);
@@ -288,13 +290,14 @@ describe('Character Controller Integration Tests', () => {
       expect(componentRegistry.getComponentData).toHaveBeenCalled();
     });
 
-    it('should handle deferred registration when physics not immediately ready', () => {
+    it('should handle deferred registration when physics not immediately ready', async () => {
       // Setup entity without physics initially
-      const { colliderRegistry } = require('../../physics/character/ColliderRegistry');
-      colliderRegistry.hasPhysics = vi.fn().mockReturnValueOnce(false).mockReturnValue(true);
+      const ColliderRegistryModule = await import('@core/physics/character/ColliderRegistry');
+      const colliderRegistry = ColliderRegistryModule.colliderRegistry;
+      vi.spyOn(colliderRegistry, 'hasPhysics').mockReturnValueOnce(false).mockReturnValue(true);
 
       // First frame - should defer
-      updateCharacterControllerSystem(mockInputManager, true, 1 / 60, mockWorld);
+      updateCharacterControllerSystem(mockInputManager, 1 / 60, mockWorld);
 
       // Second frame - should process
       updateCharacterControllerSystem(mockInputManager, true, 1 / 60, mockWorld);

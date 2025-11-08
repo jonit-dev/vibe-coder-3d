@@ -3,14 +3,14 @@ import { defineScene } from './defineScene';
 /**
  * testcharactercontroller
  * Scene with 8 entities
- * Generated: 2025-11-08T06:47:40.528Z
+ * Generated: 2025-11-08T07:03:48.568Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
     name: 'testcharactercontroller',
     version: 1,
-    timestamp: '2025-11-08T06:47:40.528Z',
+    timestamp: '2025-11-08T07:03:48.568Z',
     description: 'Scene with 8 entities',
   },
   entities: [
@@ -341,7 +341,7 @@ export default defineScene({
       },
     },
     {
-      id: 7,
+      id: 6,
       name: 'Wall 0',
       components: {
         PersistentId: {
@@ -395,7 +395,7 @@ export default defineScene({
       },
     },
     {
-      id: 8,
+      id: 7,
       name: 'Terrain 0',
       components: {
         PersistentId: {
@@ -462,8 +462,8 @@ export default defineScene({
   ],
   assetReferences: {
     materials: [
-      '@/materials/mat_37ade631',
       '@/materials/default',
+      '@/materials/mat_37ade631',
       '@/materials/bark',
       '@/materials/dss',
       '@/materials/farm-grass',
