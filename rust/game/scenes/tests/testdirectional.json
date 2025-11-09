@@ -59,7 +59,7 @@
             "g": 1,
             "b": 1
           },
-          "intensity": 0.8,
+          "intensity": 1.5,
           "enabled": true,
           "castShadow": false,
           "directionX": -0.5,
@@ -107,7 +107,7 @@
         },
         "MeshRenderer": {
           "meshId": "plane",
-          "materialId": "ground",
+          "materialId": "green",
           "enabled": true,
           "castShadows": false,
           "receiveShadows": true
@@ -128,7 +128,7 @@
         },
         "MeshRenderer": {
           "meshId": "cube",
-          "materialId": "white",
+          "materialId": "re",
           "enabled": true,
           "castShadows": true,
           "receiveShadows": true
@@ -149,7 +149,7 @@
         },
         "MeshRenderer": {
           "meshId": "sphere",
-          "materialId": "white",
+          "materialId": "mat_17149756",
           "enabled": true,
           "castShadows": true,
           "receiveShadows": true
@@ -170,7 +170,7 @@
         },
         "MeshRenderer": {
           "meshId": "sphere",
-          "materialId": "white",
+          "materialId": "mat_475d2e07",
           "enabled": true,
           "castShadows": true,
           "receiveShadows": true
@@ -180,11 +180,24 @@
   ],
   "materials": [
     {
-      "id": "white",
-      "name": "White Diffuse",
+      "id": "green",
+      "name": "Green Material",
       "shader": "standard",
       "materialType": "solid",
-      "color": "#cccccc",
+      "color": "#246123",
+      "metalness": 0,
+      "roughness": 0.9,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "re",
+      "name": "Red Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ff0000",
       "metalness": 0,
       "roughness": 0.8,
       "emissive": "#000000",
@@ -193,13 +206,26 @@
       "occlusionStrength": 1
     },
     {
-      "id": "ground",
-      "name": "Ground Material",
+      "id": "mat_475d2e07",
+      "name": "Blue Material",
       "shader": "standard",
       "materialType": "solid",
-      "color": "#444444",
+      "color": "#004cff",
       "metalness": 0,
-      "roughness": 0.9,
+      "roughness": 0.8,
+      "emissive": "#000000",
+      "emissiveIntensity": 0,
+      "normalScale": 1,
+      "occlusionStrength": 1
+    },
+    {
+      "id": "mat_17149756",
+      "name": "White Material",
+      "shader": "standard",
+      "materialType": "solid",
+      "color": "#ffffff",
+      "metalness": 0,
+      "roughness": 0.8,
       "emissive": "#000000",
       "emissiveIntensity": 0,
       "normalScale": 1,

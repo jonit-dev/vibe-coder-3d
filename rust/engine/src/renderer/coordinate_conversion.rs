@@ -15,7 +15,9 @@ pub fn threejs_to_threed_position(pos: GlamVec3) -> Vec3 {
 /// Convert a Three.js direction vector to three-d direction.
 #[inline]
 pub fn threejs_to_threed_direction(dir_x: f32, dir_y: f32, dir_z: f32) -> Vec3 {
-    Vec3::new(dir_x, dir_y, dir_z)
+    // Three.js and three-d have different X-axis conventions for light direction.
+    // Invert X only to fix mirrored highlights/shadows (Y and Z remain unchanged).
+    Vec3::new(-dir_x, dir_y, dir_z)
 }
 
 /// Convert glam Vec3 to three-d Vec3 (no coordinate conversion, just type conversion)

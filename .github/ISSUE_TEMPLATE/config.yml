@@ -3,6 +3,12 @@ contact_links:
   - name: Question or Discussion
     url: https://github.com/jonit-dev/vibe-coder-3d/discussions
     about: Ask questions or discuss ideas with the community
+  - name: Contributing Guidelines
+    url: https://github.com/jonit-dev/vibe-coder-3d/blob/master/CONTRIBUTING.md
+    about: Learn how to contribute to the project
+  - name: Development Workflow
+    url: https://github.com/jonit-dev/vibe-coder-3d/blob/master/WORKFLOW.md
+    about: Git Flow branching model and PR process
   - name: Documentation
     url: https://github.com/jonit-dev/vibe-coder-3d/tree/master/docs
     about: Check our comprehensive documentation

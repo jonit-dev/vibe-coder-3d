@@ -6,7 +6,7 @@ use three_d::{radians, vec3, AmbientLight, Attenuation, Context, PointLight, Srg
 use vibe_ecs_bridge::decoders::{Light as LightComponent, Transform};
 use vibe_ecs_bridge::position_to_vec3_opt;
 
-use super::coordinate_conversion::threejs_to_threed_direction;
+use super::coordinate_conversion::{threejs_to_threed_direction, threejs_to_threed_position};
 use super::enhanced_lights::{EnhancedDirectionalLight, EnhancedSpotLight};
 use super::lighting::AmbientLightMetadata;
 
@@ -134,10 +134,11 @@ fn create_point_light(
     transform: Option<&Transform>,
     color: Srgba,
 ) -> PointLight {
-    // Extract position from transform
+    // Extract position from transform and convert coordinates
     let position = if let Some(t) = transform {
         let pos = position_to_vec3_opt(t.position.as_ref());
-        vec3(pos.x, pos.y, pos.z)
+        let converted_pos = threejs_to_threed_position(pos);
+        vec3(converted_pos.x, converted_pos.y, converted_pos.z)
     } else {
         vec3(0.0, 0.0, 0.0)
     };
@@ -166,10 +167,11 @@ fn create_spot_light(
     transform: Option<&Transform>,
     color: Srgba,
 ) -> EnhancedSpotLight {
-    // Extract position and direction from transform
+    // Extract position and direction from transform and convert coordinates
     let position = if let Some(t) = transform {
         let pos = position_to_vec3_opt(t.position.as_ref());
-        vec3(pos.x, pos.y, pos.z)
+        let converted_pos = threejs_to_threed_position(pos);
+        vec3(converted_pos.x, converted_pos.y, converted_pos.z)
     } else {
         vec3(0.0, 0.0, 0.0)
     };

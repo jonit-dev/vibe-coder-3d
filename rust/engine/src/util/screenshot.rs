@@ -79,10 +79,28 @@ pub fn render_to_screenshot(
         depth_texture.as_depth_target(),
     );
 
-    // Clear the render target using camera's background color
-    let clear_color = camera_config
-        .and_then(|c| c.background_color)
-        .unwrap_or((0.0, 0.0, 0.0, 1.0));
+    // Determine clear color based on clearFlags (match Three.js behavior)
+    let clear_color = if let Some(config) = camera_config {
+        match config.clear_flags.as_deref() {
+            Some("skybox") => {
+                // If clearFlags is "skybox" but no skybox texture loaded, use neutral gray (#404040)
+                // This matches Three.js behavior in useCameraBackground.ts line 161
+                if config.skybox_texture.is_none() || config.skybox_texture.as_ref().map_or(true, |s| s.is_empty()) {
+                    (64.0 / 255.0, 64.0 / 255.0, 64.0 / 255.0, 1.0) // #404040 neutral gray
+                } else {
+                    // Skybox will be rendered, use black or transparent
+                    (0.0, 0.0, 0.0, 1.0)
+                }
+            }
+            Some("solidColor") | Some("color") => {
+                // Use camera's backgroundColor
+                config.background_color.unwrap_or((0.0, 0.0, 0.0, 1.0))
+            }
+            _ => config.background_color.unwrap_or((0.0, 0.0, 0.0, 1.0))
+        }
+    } else {
+        (0.0, 0.0, 0.0, 1.0)
+    };
 
     render_target.clear(ClearState::color_and_depth(
         clear_color.0,

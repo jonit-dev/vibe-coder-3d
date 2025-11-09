@@ -70,6 +70,7 @@ pub fn prepare_render_settings_for(config: &CameraConfig, skybox_loaded: bool) -
                 render_skybox = true;
                 Some(ClearState::depth(1.0))
             } else {
+                // No skybox texture - use neutral gray (#404040) to match Three.js
                 Some(gray_clear)
             }
         }

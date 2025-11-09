@@ -26,6 +26,13 @@ impl EnhancedDirectionalLight {
         shadow_map_size: u32,
         cast_shadow: bool,
     ) -> Self {
+        // IMPORTANT: Three.js vs three-d intensity parity
+        // After empirical testing, applying intensity directly (no scaling) provides the best match
+        // The previous brightness difference was primarily due to:
+        // 1. Skybox environmental lighting in Rust (light blue background adds ambient light)
+        // 2. Potential differences in ambient light contribution
+        // Using intensity directly matches Three.js when accounting for these environmental factors
+
         Self {
             inner: DirectionalLight::new(context, intensity, color, direction),
             shadow_bias,

@@ -248,3 +248,4 @@ This plan replaces temporary logic with a principled kinematic controller integr
 - ECS-bridge decoding infrastructure supports new component and field renames.
 - Input manager provides normalized, case-insensitive key states.
 
+
