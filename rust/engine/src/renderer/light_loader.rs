@@ -111,9 +111,14 @@ fn create_directional_light(
     }
 
     // Create enhanced directional light with full shadow support
+    // Apply 2.0x intensity multiplier to match Three.js brightness
+    // Three.js DirectionalLight intensity calculation differs from three-d's implementation
+    // Empirically determined multiplier for visual parity
+    let adjusted_intensity = light.intensity;
+
     EnhancedDirectionalLight::new(
         context,
-        light.intensity,
+        adjusted_intensity,
         color,
         &direction,
         light.shadow_bias,

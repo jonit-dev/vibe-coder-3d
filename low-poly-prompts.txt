@@ -1,4 +1,0 @@
-yarn convert-low-poly ./farmer.fbx ./LOW_POLY_FARMER.glb --ratio 0.15 --texture-format jpeg --texture-quality 80 --texture-size 256 --webp
-
-
- yarn convert-low-poly shaded.fbx shaded-lowpoly.glb --apply-texture shaded.png --ratio 0.05 --webp

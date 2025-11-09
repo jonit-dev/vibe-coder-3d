@@ -16,6 +16,12 @@ Thank you for your interest in contributing to Vibe Coder 3D! We welcome contrib
 - [Reporting Bugs](#reporting-bugs)
 - [Requesting Features](#requesting-features)
 
+## Quick Links
+
+- **[WORKFLOW.md](WORKFLOW.md)** - Detailed Git Flow branching model and PR process
+- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
+- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
+
 ## Code of Conduct
 
 This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to the project maintainers.
@@ -100,6 +106,10 @@ vibe-coder-3d/
 - **`docs/`**: Comprehensive documentation (50+ files)
 
 ## Development Workflow
+
+> **📚 For detailed Git Flow workflow documentation, see [WORKFLOW.md](WORKFLOW.md)**
+>
+> This section provides a quick overview. For comprehensive guides on feature development, releases, hotfixes, and common scenarios, refer to the WORKFLOW.md document.
 
 ### 1. Keep Your Fork Updated
 

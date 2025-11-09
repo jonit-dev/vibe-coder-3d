@@ -208,9 +208,13 @@ vibe-coder-3d/
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please see our documentation:
 
-### Development Workflow
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines, coding standards, and testing requirements
+- **[WORKFLOW.md](./WORKFLOW.md)** - Git Flow branching model, PR process, and release workflow
+- **[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)** - Community standards and expectations
+
+### Quick Start
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -219,6 +223,8 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 5. Commit with conventional commits (`feat: add amazing feature`)
 6. Push to your fork
 7. Open a Pull Request
+
+For detailed workflow instructions, including release and hotfix processes, see [WORKFLOW.md](./WORKFLOW.md).
 
 ## Community
 
