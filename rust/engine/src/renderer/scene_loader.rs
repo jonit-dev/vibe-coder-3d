@@ -2,7 +2,6 @@
 ///
 /// Handles scene graph building, prefab instantiation, and entity processing orchestration.
 /// The actual entity component loading (meshes, lights, cameras) is delegated to entity_loader.
-
 use anyhow::Result;
 use std::collections::HashSet;
 use vibe_ecs_bridge::ComponentRegistry;

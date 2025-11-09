@@ -5,8 +5,8 @@ use serde_json::Value;
 use std::any::Any;
 use vibe_scene::ComponentKindId;
 
-use crate::{ComponentCapabilities, IComponentDecoder};
 use super::common::LODComponent;
+use crate::{ComponentCapabilities, IComponentDecoder};
 
 /// Decoder for LOD components
 pub struct LODDecoder;
@@ -30,7 +30,10 @@ impl IComponentDecoder for LODDecoder {
     }
 
     fn component_kinds(&self) -> Vec<ComponentKindId> {
-        vec![ComponentKindId::new("LOD"), ComponentKindId::new("LodComponent")]
+        vec![
+            ComponentKindId::new("LOD"),
+            ComponentKindId::new("LodComponent"),
+        ]
     }
 }
 
@@ -56,8 +59,14 @@ mod tests {
         let decoded = decoder.decode(&json).unwrap();
         let lod = decoded.downcast_ref::<LODComponent>().unwrap();
         assert_eq!(lod.original_path, "/models/tree.glb");
-        assert_eq!(lod.high_fidelity_path.as_deref(), Some("/models/tree_high.glb"));
-        assert_eq!(lod.low_fidelity_path.as_deref(), Some("/models/tree_low.glb"));
+        assert_eq!(
+            lod.high_fidelity_path.as_deref(),
+            Some("/models/tree_high.glb")
+        );
+        assert_eq!(
+            lod.low_fidelity_path.as_deref(),
+            Some("/models/tree_low.glb")
+        );
         assert_eq!(lod.distance_thresholds, Some([10.0, 50.0]));
         assert!(lod.override_quality.is_some());
     }

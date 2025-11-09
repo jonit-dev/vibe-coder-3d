@@ -5,7 +5,6 @@
 /// - Distance-based automatic switching with configurable thresholds
 /// - Path resolution utilities for LOD variant files
 /// - Global quality configuration with per-entity override support
-
 use std::sync::{Arc, Mutex};
 
 // Re-export LODQuality from vibe_scene
@@ -430,18 +429,9 @@ mod tests {
         manager.set_distance_thresholds(50.0, 100.0);
 
         // distance < high: Original
-        assert_eq!(
-            manager.get_quality_for_distance(0.0),
-            LODQuality::Original
-        );
-        assert_eq!(
-            manager.get_quality_for_distance(25.0),
-            LODQuality::Original
-        );
-        assert_eq!(
-            manager.get_quality_for_distance(49.9),
-            LODQuality::Original
-        );
+        assert_eq!(manager.get_quality_for_distance(0.0), LODQuality::Original);
+        assert_eq!(manager.get_quality_for_distance(25.0), LODQuality::Original);
+        assert_eq!(manager.get_quality_for_distance(49.9), LODQuality::Original);
 
         // high <= distance < low: HighFidelity
         assert_eq!(
@@ -471,10 +461,7 @@ mod tests {
     #[test]
     fn test_get_lod_path_original_quality() {
         let path = "/assets/models/Robot/glb/Robot.glb";
-        assert_eq!(
-            get_lod_path_internal(path, LODQuality::Original),
-            path
-        );
+        assert_eq!(get_lod_path_internal(path, LODQuality::Original), path);
     }
 
     #[test]

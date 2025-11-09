@@ -48,38 +48,50 @@ impl BvhDebugLogger {
         let metrics = &stats.metrics;
 
         info!("=== BVH System Statistics ===");
-        info!("Mesh BVHs: {} | Total Triangles: {} | Scene Refs: {}",
-              stats.mesh_bvh_count, stats.total_triangles, stats.metrics.total_scene_refs);
+        info!(
+            "Mesh BVHs: {} | Total Triangles: {} | Scene Refs: {}",
+            stats.mesh_bvh_count, stats.total_triangles, stats.metrics.total_scene_refs
+        );
 
         if metrics.mesh_build_time_ms > 0.0 || metrics.scene_build_time_ms > 0.0 {
-            info!("Build Times - Mesh: {:.3}ms | Scene: {:.3}ms | Refit: {:.3}ms",
-                  metrics.mesh_build_time_ms, metrics.scene_build_time_ms, metrics.refit_time_ms);
+            info!(
+                "Build Times - Mesh: {:.3}ms | Scene: {:.3}ms | Refit: {:.3}ms",
+                metrics.mesh_build_time_ms, metrics.scene_build_time_ms, metrics.refit_time_ms
+            );
         }
 
         if metrics.visible_meshes_last_frame > 0 || metrics.culled_meshes_last_frame > 0 {
             let efficiency = if stats.metrics.total_scene_refs > 0 {
-                (metrics.visible_meshes_last_frame as f32 / stats.metrics.total_scene_refs as f32) * 100.0
+                (metrics.visible_meshes_last_frame as f32 / stats.metrics.total_scene_refs as f32)
+                    * 100.0
             } else {
                 0.0
             };
-            info!("Last Frame - Visible: {} | Culled: {} | Efficiency: {:.1}%",
-                  metrics.visible_meshes_last_frame, metrics.culled_meshes_last_frame, efficiency);
+            info!(
+                "Last Frame - Visible: {} | Culled: {} | Efficiency: {:.1}%",
+                metrics.visible_meshes_last_frame, metrics.culled_meshes_last_frame, efficiency
+            );
         }
 
         if metrics.raycasts_last_frame > 0 {
-            info!("Raycasts: {} | Ray-Triangle Tests: {}",
-                  metrics.raycasts_last_frame, metrics.ray_triangle_tests_last_frame);
+            info!(
+                "Raycasts: {} | Ray-Triangle Tests: {}",
+                metrics.raycasts_last_frame, metrics.ray_triangle_tests_last_frame
+            );
         }
 
-        info!("Scene BVH - Nodes: {} | Internal: {} | Leaves: {} | Max Depth: {}",
-              stats.scene_bvh_stats.node_count,
-              stats.scene_bvh_stats.internal_node_count,
-              stats.scene_bvh_stats.leaf_node_count,
-              stats.scene_bvh_stats.max_depth);
+        info!(
+            "Scene BVH - Nodes: {} | Internal: {} | Leaves: {} | Max Depth: {}",
+            stats.scene_bvh_stats.node_count,
+            stats.scene_bvh_stats.internal_node_count,
+            stats.scene_bvh_stats.leaf_node_count,
+            stats.scene_bvh_stats.max_depth
+        );
 
-        info!("Scene BVH - Refs per Leaf: {} to {}",
-              stats.scene_bvh_stats.min_refs_per_leaf,
-              stats.scene_bvh_stats.max_refs_per_leaf);
+        info!(
+            "Scene BVH - Refs per Leaf: {} to {}",
+            stats.scene_bvh_stats.min_refs_per_leaf, stats.scene_bvh_stats.max_refs_per_leaf
+        );
 
         info!("==============================");
     }
@@ -93,7 +105,10 @@ impl BvhDebugLogger {
         info!("  - Max Leaf Triangles: {}", config.max_leaf_triangles);
         info!("  - Max Leaf Refs: {}", config.max_leaf_refs);
         info!("  - Mesh Split Strategy: {:?}", config.mesh_split_strategy);
-        info!("  - Incremental Updates: {}", config.enable_incremental_updates);
+        info!(
+            "  - Incremental Updates: {}",
+            config.enable_incremental_updates
+        );
     }
 
     /// Force immediate logging of statistics

@@ -14,9 +14,7 @@ pub struct ThreeDSceneLoaderState {
 
 impl ThreeDSceneLoaderState {
     pub fn new() -> Self {
-        Self {
-            scene_graph: None,
-        }
+        Self { scene_graph: None }
     }
 
     /// Get reference to scene graph

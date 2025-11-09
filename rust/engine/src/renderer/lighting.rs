@@ -83,7 +83,10 @@ pub fn recompute_combined_ambient(
     let mut total_intensity = 0.0f32;
     let mut any_enabled = false;
 
-    log::debug!("recompute_combined_ambient: processing {} ambient lights", metadata.len());
+    log::debug!(
+        "recompute_combined_ambient: processing {} ambient lights",
+        metadata.len()
+    );
 
     // First pass: calculate total intensity
     for m in metadata {
@@ -106,8 +109,15 @@ pub fn recompute_combined_ambient(
     let mut acc_b = 0.0f32;
 
     for (i, m) in metadata.iter().enumerate() {
-        log::debug!("  Ambient light {}: enabled={}, intensity={}, color=({},{},{})",
-                   i, m.enabled, m.intensity, m.color.r, m.color.g, m.color.b);
+        log::debug!(
+            "  Ambient light {}: enabled={}, intensity={}, color=({},{},{})",
+            i,
+            m.enabled,
+            m.intensity,
+            m.color.r,
+            m.color.g,
+            m.color.b
+        );
         if !m.enabled {
             continue;
         }
@@ -123,9 +133,15 @@ pub fn recompute_combined_ambient(
         acc_g += g_norm * m.intensity;
         acc_b += b_norm * m.intensity;
 
-        log::debug!("    Normalized color: ({:.3},{:.3},{:.3}), contribution: ({:.3},{:.3},{:.3})",
-                   r_norm, g_norm, b_norm,
-                   r_norm * m.intensity, g_norm * m.intensity, b_norm * m.intensity);
+        log::debug!(
+            "    Normalized color: ({:.3},{:.3},{:.3}), contribution: ({:.3},{:.3},{:.3})",
+            r_norm,
+            g_norm,
+            b_norm,
+            r_norm * m.intensity,
+            g_norm * m.intensity,
+            b_norm * m.intensity
+        );
     }
 
     let max_intensity = if cfg.max_intensity > 0.0 {
@@ -147,7 +163,7 @@ pub fn recompute_combined_ambient(
     // But wait - we want the final ambientColor to be sum(color_i * intensity_i)
     // So we should set: intensity = 1.0, color = sum(color_i * intensity_i)
     // OR: intensity = sum(intensity_i), color = sum(color_i * intensity_i) / sum(intensity_i)
-    // 
+    //
     // Actually, looking at the shader, ambientColor is multiplied by surface_color,
     // so we want ambientColor to represent the total contribution.
     // Let's use: intensity = sum(intensity_i), color = average weighted by intensity
@@ -178,32 +194,57 @@ pub fn recompute_combined_ambient(
     let final_g = (final_g_norm * 255.0).min(255.0).max(0.0);
     let final_b = (final_b_norm * 255.0).min(255.0).max(0.0);
 
-    log::debug!("  Accumulated color contributions (0-1): r={:.3}, g={:.3}, b={:.3}", acc_r, acc_g, acc_b);
-    log::debug!("  Average color (normalized by intensity): r={:.3}, g={:.3}, b={:.3}", avg_r, avg_g, avg_b);
+    log::debug!(
+        "  Accumulated color contributions (0-1): r={:.3}, g={:.3}, b={:.3}",
+        acc_r,
+        acc_g,
+        acc_b
+    );
+    log::debug!(
+        "  Average color (normalized by intensity): r={:.3}, g={:.3}, b={:.3}",
+        avg_r,
+        avg_g,
+        avg_b
+    );
     log::debug!("  Final total intensity: {}", total_intensity);
     log::debug!("  Final clamped intensity: {}", clamped_intensity);
-    log::debug!("  Final color (0-255): r={:.1}, g={:.1}, b={:.1}", final_r, final_g, final_b);
-    log::debug!("  Expected ambientColor in shader: r={:.3}, g={:.3}, b={:.3} (color * intensity)",
-               final_r_norm * clamped_intensity, final_g_norm * clamped_intensity, final_b_norm * clamped_intensity);
-
-    let color = Srgba::new(
-        final_r as u8,
-        final_g as u8,
-        final_b as u8,
-        255,
+    log::debug!(
+        "  Final color (0-255): r={:.1}, g={:.1}, b={:.1}",
+        final_r,
+        final_g,
+        final_b
     );
+    log::debug!(
+        "  Expected ambientColor in shader: r={:.3}, g={:.3}, b={:.3} (color * intensity)",
+        final_r_norm * clamped_intensity,
+        final_g_norm * clamped_intensity,
+        final_b_norm * clamped_intensity
+    );
+
+    let color = Srgba::new(final_r as u8, final_g as u8, final_b as u8, 255);
 
     log::info!("============ CREATING COMBINED AMBIENT LIGHT ============");
     log::info!("  Total intensity: {}", total_intensity);
     log::info!("  Clamped intensity: {}", clamped_intensity);
-    log::info!("  Final color: RGB({}, {}, {}) in 0-255 range", color.r, color.g, color.b);
-    log::info!("  Final color normalized: ({:.3}, {:.3}, {:.3}) in 0-1 range",
-               color.r as f32 / 255.0, color.g as f32 / 255.0, color.b as f32 / 255.0);
+    log::info!(
+        "  Final color: RGB({}, {}, {}) in 0-255 range",
+        color.r,
+        color.g,
+        color.b
+    );
+    log::info!(
+        "  Final color normalized: ({:.3}, {:.3}, {:.3}) in 0-1 range",
+        color.r as f32 / 255.0,
+        color.g as f32 / 255.0,
+        color.b as f32 / 255.0
+    );
     log::info!("  Expected shader ambientColor = color_norm * intensity:");
-    log::info!("    RGB({:.3}, {:.3}, {:.3})",
-               (color.r as f32 / 255.0) * clamped_intensity,
-               (color.g as f32 / 255.0) * clamped_intensity,
-               (color.b as f32 / 255.0) * clamped_intensity);
+    log::info!(
+        "    RGB({:.3}, {:.3}, {:.3})",
+        (color.r as f32 / 255.0) * clamped_intensity,
+        (color.g as f32 / 255.0) * clamped_intensity,
+        (color.b as f32 / 255.0) * clamped_intensity
+    );
     log::info!("========================================================");
 
     Some(AmbientLight::new(context, clamped_intensity, color))

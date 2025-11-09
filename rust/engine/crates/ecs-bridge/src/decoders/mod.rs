@@ -4,40 +4,40 @@
 //! component type. Each module defines both the component data structure and its
 //! corresponding decoder implementation.
 
-pub mod common;
-pub mod transform;
 pub mod camera;
-pub mod light;
-pub mod mesh_renderer;
-pub mod material;
-pub mod rigid_body;
-pub mod mesh_collider;
+pub mod common;
 pub mod custom_shape;
 pub mod geometry_asset;
-pub mod prefab_instance;
 pub mod instanced;
-pub mod terrain;
-pub mod sound;
-pub mod script;
+pub mod light;
 pub mod lod;
+pub mod material;
+pub mod mesh_collider;
+pub mod mesh_renderer;
+pub mod prefab_instance;
+pub mod rigid_body;
+pub mod script;
+pub mod sound;
+pub mod terrain;
+pub mod transform;
 
 // Re-export common types and utilities
-pub use common::*;
-pub use transform::*;
 pub use camera::*;
-pub use light::*;
-pub use mesh_renderer::*;
-pub use material::*;
-pub use rigid_body::*;
-pub use mesh_collider::*;
+pub use common::*;
 pub use custom_shape::*;
 pub use geometry_asset::*;
-pub use prefab_instance::*;
 pub use instanced::*;
-pub use terrain::*;
-pub use sound::*;
-pub use script::*;
+pub use light::*;
 pub use lod::*;
+pub use material::*;
+pub use mesh_collider::*;
+pub use mesh_renderer::*;
+pub use prefab_instance::*;
+pub use rigid_body::*;
+pub use script::*;
+pub use sound::*;
+pub use terrain::*;
+pub use transform::*;
 
 use crate::ComponentRegistry;
 

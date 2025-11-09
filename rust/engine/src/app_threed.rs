@@ -6,10 +6,10 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use vibe_ecs_bridge::create_default_registry;
 use vibe_ecs_manager::SceneManager;
-use vibe_physics::{populate_physics_world, PhysicsWorld};
 use vibe_physics::character_controller::{
     CharacterControllerComponent, CharacterControllerConfig, CharacterControllerSystem,
 };
+use vibe_physics::{populate_physics_world, PhysicsWorld};
 use vibe_scene::Scene as SceneData;
 use vibe_scripting::ScriptSystem;
 use winit::{
@@ -38,7 +38,9 @@ pub struct AppThreeD {
 impl AppThreeD {
     /// Apply auto-input to character controllers (WASD + jump) before updating the system
     fn apply_character_controller_auto_input(&mut self) {
-        let Some(ref mut cc_system) = self.character_controller_system else { return; };
+        let Some(ref mut cc_system) = self.character_controller_system else {
+            return;
+        };
         let entity_ids = cc_system.get_all_entity_ids();
         for entity_id in entity_ids {
             if let Some(controller) = cc_system.get_controller_mut(entity_id) {
@@ -47,11 +49,10 @@ impl AppThreeD {
                     continue;
                 }
                 // Resolve mapping (defaults if missing)
-                let mapping = controller
-                    .config
-                    .input_mapping
-                    .clone()
-                    .unwrap_or_else(|| vibe_physics::character_controller::InputMapping::default());
+                let mapping =
+                    controller.config.input_mapping.clone().unwrap_or_else(|| {
+                        vibe_physics::character_controller::InputMapping::default()
+                    });
 
                 // Horizontal input
                 let mut x = 0.0f32;
@@ -404,21 +405,20 @@ impl AppThreeD {
         }
 
         // Extract mesh rendering state for screenshot
-        let render_state =
-            if let Some(ref scene_manager) = self.scene_manager {
-                if let Ok(mgr) = scene_manager.lock() {
-                    let scene_state = mgr.scene_state();
-                    Some(scene_state.with_scene(|scene| {
-                        crate::threed::threed_renderer::MeshRenderState::from_scene(scene)
-                    }))
-                } else {
-                    None
-                }
+        let render_state = if let Some(ref scene_manager) = self.scene_manager {
+            if let Ok(mgr) = scene_manager.lock() {
+                let scene_state = mgr.scene_state();
+                Some(scene_state.with_scene(|scene| {
+                    crate::threed::threed_renderer::MeshRenderState::from_scene(scene)
+                }))
             } else {
-                self.scene
-                    .as_ref()
-                    .map(|scene| crate::threed::threed_renderer::MeshRenderState::from_scene(scene))
-            };
+                None
+            }
+        } else {
+            self.scene
+                .as_ref()
+                .map(|scene| crate::threed::threed_renderer::MeshRenderState::from_scene(scene))
+        };
 
         // Capture screenshot after warmup
         log::info!("Capturing screenshot...");
@@ -496,20 +496,20 @@ impl AppThreeD {
         // Physics simulation (if enabled)
         // Feed auto input into controllers BEFORE physics step (avoids borrow conflicts)
         self.apply_character_controller_auto_input();
-        
+
         if let Some(ref mut physics_world) = self.physics_world {
-                // Run CharacterControllerSystem before stepping physics (preferred)
-                if let Some(ref mut cc_system) = self.character_controller_system {
-                    cc_system.update(physics_world, delta_time);
-                } else {
-                    // Fallback: simple input-driven movement (legacy)
-                    Self::apply_character_controller_inputs(
-                        delta_time,
-                        self.scene.as_ref(),
-                        &self.input_manager,
-                        physics_world,
-                    );
-                }
+            // Run CharacterControllerSystem before stepping physics (preferred)
+            if let Some(ref mut cc_system) = self.character_controller_system {
+                cc_system.update(physics_world, delta_time);
+            } else {
+                // Fallback: simple input-driven movement (legacy)
+                Self::apply_character_controller_inputs(
+                    delta_time,
+                    self.scene.as_ref(),
+                    &self.input_manager,
+                    physics_world,
+                );
+            }
 
             // Fixed timestep physics update (60 Hz)
             const PHYSICS_TIMESTEP: f32 = 1.0 / 60.0;
@@ -680,7 +680,11 @@ impl AppThreeD {
         };
 
         // Helper to read a float field from component JSON
-        fn read_number(map: &serde_json::Map<String, serde_json::Value>, key: &str, default_v: f32) -> f32 {
+        fn read_number(
+            map: &serde_json::Map<String, serde_json::Value>,
+            key: &str,
+            default_v: f32,
+        ) -> f32 {
             map.get(key)
                 .and_then(|v| v.as_f64())
                 .map(|v| v as f32)
@@ -714,24 +718,62 @@ impl AppThreeD {
             }
 
             // Read optional settings
-            let (max_speed, _jump_strength, input_forward, input_backward, input_left, input_right, input_jump) = {
-                if let Some(cc) = entity.components.get("CharacterController").and_then(|v| v.as_object()) {
+            let (
+                max_speed,
+                _jump_strength,
+                input_forward,
+                input_backward,
+                input_left,
+                input_right,
+                input_jump,
+            ) = {
+                if let Some(cc) = entity
+                    .components
+                    .get("CharacterController")
+                    .and_then(|v| v.as_object())
+                {
                     let speed = read_number(cc, "maxSpeed", 6.0);
                     let jump = read_number(cc, "jumpStrength", 6.5);
 
                     // Input mapping defaults
                     let (mut f, mut b, mut l, mut r, mut j) = ("w", "s", "a", "d", "space");
                     if let Some(mapping) = cc.get("inputMapping").and_then(|m| m.as_object()) {
-                        if let Some(s) = mapping.get("forward").and_then(|v| v.as_str()) { f = s; }
-                        if let Some(s) = mapping.get("backward").and_then(|v| v.as_str()) { b = s; }
-                        if let Some(s) = mapping.get("left").and_then(|v| v.as_str()) { l = s; }
-                        if let Some(s) = mapping.get("right").and_then(|v| v.as_str()) { r = s; }
-                        if let Some(s) = mapping.get("jump").and_then(|v| v.as_str()) { j = if s == " " { "space" } else { s }; }
+                        if let Some(s) = mapping.get("forward").and_then(|v| v.as_str()) {
+                            f = s;
+                        }
+                        if let Some(s) = mapping.get("backward").and_then(|v| v.as_str()) {
+                            b = s;
+                        }
+                        if let Some(s) = mapping.get("left").and_then(|v| v.as_str()) {
+                            l = s;
+                        }
+                        if let Some(s) = mapping.get("right").and_then(|v| v.as_str()) {
+                            r = s;
+                        }
+                        if let Some(s) = mapping.get("jump").and_then(|v| v.as_str()) {
+                            j = if s == " " { "space" } else { s };
+                        }
                     }
 
-                    (speed, jump, f.to_string(), b.to_string(), l.to_string(), r.to_string(), j.to_string())
+                    (
+                        speed,
+                        jump,
+                        f.to_string(),
+                        b.to_string(),
+                        l.to_string(),
+                        r.to_string(),
+                        j.to_string(),
+                    )
                 } else {
-                    (6.0, 6.5, "w".to_string(), "s".to_string(), "a".to_string(), "d".to_string(), "space".to_string())
+                    (
+                        6.0,
+                        6.5,
+                        "w".to_string(),
+                        "s".to_string(),
+                        "a".to_string(),
+                        "d".to_string(),
+                        "space".to_string(),
+                    )
                 }
             };
 
@@ -745,10 +787,18 @@ impl AppThreeD {
             let mut move_x = 0.0_f32;
             let mut move_z = 0.0_f32;
             // Match TypeScript calculateMovementDirection: forward=+Z, backward=-Z, left=+X, right=-X
-            if forward { move_z += 1.0; }
-            if backward { move_z -= 1.0; }
-            if left { move_x += 1.0; }
-            if right { move_x -= 1.0; }
+            if forward {
+                move_z += 1.0;
+            }
+            if backward {
+                move_z -= 1.0;
+            }
+            if left {
+                move_x += 1.0;
+            }
+            if right {
+                move_x -= 1.0;
+            }
 
             if move_x != 0.0 || move_z != 0.0 || jump {
                 let (mut position, rotation) = physics_world
@@ -757,7 +807,11 @@ impl AppThreeD {
 
                 // Normalize horizontal direction and scale by speed and delta.
                 let dir = glam::Vec3::new(move_x, 0.0, move_z);
-                let dir = if dir.length_squared() > 0.0 { dir.normalize() } else { dir };
+                let dir = if dir.length_squared() > 0.0 {
+                    dir.normalize()
+                } else {
+                    dir
+                };
                 position += dir * max_speed * delta_time;
 
                 // Simple jump impulse (no gravity integration here; kinematic body)
@@ -881,22 +935,21 @@ impl AppThreeD {
 
         // Get current scene state for runtime ECS sync
         // Extract mesh rendering state without holding a borrow on the scene
-        let render_state =
-            if let Some(ref scene_manager) = self.scene_manager {
-                if let Ok(mgr) = scene_manager.lock() {
-                    let scene_state = mgr.scene_state();
-                    Some(scene_state.with_scene(|scene| {
-                        crate::threed::threed_renderer::MeshRenderState::from_scene(scene)
-                    }))
-                } else {
-                    None
-                }
+        let render_state = if let Some(ref scene_manager) = self.scene_manager {
+            if let Ok(mgr) = scene_manager.lock() {
+                let scene_state = mgr.scene_state();
+                Some(scene_state.with_scene(|scene| {
+                    crate::threed::threed_renderer::MeshRenderState::from_scene(scene)
+                }))
             } else {
-                // Fallback to static scene
-                self.scene
-                    .as_ref()
-                    .map(|scene| crate::threed::threed_renderer::MeshRenderState::from_scene(scene))
-            };
+                None
+            }
+        } else {
+            // Fallback to static scene
+            self.scene
+                .as_ref()
+                .map(|scene| crate::threed::threed_renderer::MeshRenderState::from_scene(scene))
+        };
 
         // Render with extracted state (no borrow conflicts)
         self.renderer.render(

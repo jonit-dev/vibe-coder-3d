@@ -7,7 +7,6 @@
 /// - Terrain (heightmap-based terrain generation)
 /// - Light (directional, point, spot, ambient)
 /// - Camera (perspective, orthographic, skybox)
-
 use anyhow::{Context as _, Result};
 use glam::Vec3 as GlamVec3;
 use std::path::PathBuf;
@@ -22,8 +21,12 @@ use vibe_scene::{Entity, EntityId};
 use super::{
     camera_loader::{create_camera, load_camera, CameraConfig},
     coordinate_conversion::threejs_to_threed_position,
-    generate_terrain, instanced_loader::load_instanced, light_loader::{load_light, LoadedLight},
-    lod_manager::LODManager, material_manager::MaterialManager, mesh_loader::load_mesh_renderer,
+    generate_terrain,
+    instanced_loader::load_instanced,
+    light_loader::{load_light, LoadedLight},
+    lod_manager::LODManager,
+    material_manager::MaterialManager,
+    mesh_loader::load_mesh_renderer,
     skybox::SkyboxRenderer,
 };
 
@@ -156,10 +159,8 @@ pub async fn handle_geometry_asset(
 
     log::info!("    Resolved path: {}", resolved_path.display());
 
-    let geometry_meta =
-        vibe_assets::GeometryMeta::from_file(&resolved_path).with_context(|| {
-            format!("Failed to load geometry metadata: {}", geometry_asset.path)
-        })?;
+    let geometry_meta = vibe_assets::GeometryMeta::from_file(&resolved_path)
+        .with_context(|| format!("Failed to load geometry metadata: {}", geometry_asset.path))?;
 
     log::info!(
         "    Loaded metadata: {} vertices, {} indices",
@@ -358,10 +359,7 @@ fn parse_tone_mapping(mode: Option<&str>) -> ToneMapping {
         "cineon" | "filmic" => ToneMapping::Filmic,
         "aces" => ToneMapping::Aces,
         other => {
-            log::warn!(
-                "Unknown tone mapping mode '{}', defaulting to ACES",
-                other
-            );
+            log::warn!("Unknown tone mapping mode '{}', defaulting to ACES", other);
             ToneMapping::Aces
         }
     }

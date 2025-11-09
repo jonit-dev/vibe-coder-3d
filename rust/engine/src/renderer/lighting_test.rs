@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use super::*;
-    use three_d::*;
     use crate::renderer::lighting::{AmbientCombineConfig, AmbientLightMetadata};
+    use three_d::*;
 
     fn create_test_context() -> Context {
         // Note: In actual tests, you would need to create a proper context

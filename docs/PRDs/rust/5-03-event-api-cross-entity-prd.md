@@ -347,3 +347,4 @@ Implementing a unified Rust event bus aligns engine runtime with the editor’s 
 - `crossbeam_channel` available for MPSC queues; `RwLock` acceptable for handler maps.
 - `serde_json` for payload interoperability across Rust/Lua/WASM boundaries.
 - `SceneManager` is the orchestration point for per‑frame `pump_events()`.
+

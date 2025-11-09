@@ -17,7 +17,11 @@ pub type PrefabManagerRef = Arc<dyn PrefabManagerProvider + Send + Sync>;
 /// Engine implements this with real prefab loading capabilities
 pub trait PrefabManagerProvider {
     /// Instantiate a prefab from a scene file
-    fn instantiate_prefab(&self, prefab_path: &str, position: Option<[f32; 3]>) -> Result<EntityId, String>;
+    fn instantiate_prefab(
+        &self,
+        prefab_path: &str,
+        position: Option<[f32; 3]>,
+    ) -> Result<EntityId, String>;
 
     /// Destroy a prefab instance
     fn destroy_prefab_instance(&self, entity_id: EntityId) -> Result<(), String>;
@@ -103,36 +107,48 @@ pub fn register_prefab_api(lua: &Lua, prefab_manager: Option<PrefabManagerRef>) 
         let mgr = prefab_manager.clone();
         prefab.set(
             "instantiate",
-            lua.create_function(move |lua, (prefab_path, position): (String, Option<LuaTable>)| {
-                log::debug!("Prefab API: Instantiating prefab '{}'", prefab_path);
+            lua.create_function(
+                move |lua, (prefab_path, position): (String, Option<LuaTable>)| {
+                    log::debug!("Prefab API: Instantiating prefab '{}'", prefab_path);
 
-                // Parse position table if provided
-                let pos_array = if let Some(pos_table) = position {
-                    let x: f32 = pos_table.get("x").unwrap_or(0.0);
-                    let y: f32 = pos_table.get("y").unwrap_or(0.0);
-                    let z: f32 = pos_table.get("z").unwrap_or(0.0);
-                    Some([x, y, z])
-                } else {
-                    None
-                };
+                    // Parse position table if provided
+                    let pos_array = if let Some(pos_table) = position {
+                        let x: f32 = pos_table.get("x").unwrap_or(0.0);
+                        let y: f32 = pos_table.get("y").unwrap_or(0.0);
+                        let z: f32 = pos_table.get("z").unwrap_or(0.0);
+                        Some([x, y, z])
+                    } else {
+                        None
+                    };
 
-                if let Some(ref mgr) = mgr {
-                    match mgr.instantiate_prefab(&prefab_path, pos_array) {
-                        Ok(entity_id) => {
-                            log::info!("Prefab '{}' instantiated as entity {}", prefab_path, entity_id.as_u64());
-                            Ok(Some(entity_id.as_u64()))
+                    if let Some(ref mgr) = mgr {
+                        match mgr.instantiate_prefab(&prefab_path, pos_array) {
+                            Ok(entity_id) => {
+                                log::info!(
+                                    "Prefab '{}' instantiated as entity {}",
+                                    prefab_path,
+                                    entity_id.as_u64()
+                                );
+                                Ok(Some(entity_id.as_u64()))
+                            }
+                            Err(e) => {
+                                log::error!(
+                                    "Failed to instantiate prefab '{}': {}",
+                                    prefab_path,
+                                    e
+                                );
+                                Ok(None)
+                            }
                         }
-                        Err(e) => {
-                            log::error!("Failed to instantiate prefab '{}': {}", prefab_path, e);
-                            Ok(None)
-                        }
+                    } else {
+                        // Stub mode - return nil
+                        log::warn!(
+                            "Prefab API: instantiate() called in stub mode (no prefab manager)"
+                        );
+                        Ok(None)
                     }
-                } else {
-                    // Stub mode - return nil
-                    log::warn!("Prefab API: instantiate() called in stub mode (no prefab manager)");
-                    Ok(None)
-                }
-            })?,
+                },
+            )?,
         )?;
     }
 
@@ -143,16 +159,26 @@ pub fn register_prefab_api(lua: &Lua, prefab_manager: Option<PrefabManagerRef>) 
             "destroy",
             lua.create_function(move |_, entity_id: u64| {
                 let entity_id = EntityId::new(entity_id);
-                log::debug!("Prefab API: Destroying prefab instance {}", entity_id.as_u64());
+                log::debug!(
+                    "Prefab API: Destroying prefab instance {}",
+                    entity_id.as_u64()
+                );
 
                 if let Some(ref mgr) = mgr {
                     match mgr.destroy_prefab_instance(entity_id) {
                         Ok(()) => {
-                            log::info!("Prefab instance {} destroyed successfully", entity_id.as_u64());
+                            log::info!(
+                                "Prefab instance {} destroyed successfully",
+                                entity_id.as_u64()
+                            );
                             Ok(true)
                         }
                         Err(e) => {
-                            log::error!("Failed to destroy prefab instance {}: {}", entity_id.as_u64(), e);
+                            log::error!(
+                                "Failed to destroy prefab instance {}: {}",
+                                entity_id.as_u64(),
+                                e
+                            );
                             Ok(false)
                         }
                     }
@@ -175,7 +201,11 @@ pub fn register_prefab_api(lua: &Lua, prefab_manager: Option<PrefabManagerRef>) 
 
                 if let Some(ref mgr) = mgr {
                     let instances = mgr.get_prefab_instances(&prefab_path);
-                    log::debug!("Found {} instances of prefab '{}'", instances.len(), prefab_path);
+                    log::debug!(
+                        "Found {} instances of prefab '{}'",
+                        instances.len(),
+                        prefab_path
+                    );
 
                     // Convert to Lua table (1-indexed)
                     let result = lua.create_table()?;
@@ -185,7 +215,9 @@ pub fn register_prefab_api(lua: &Lua, prefab_manager: Option<PrefabManagerRef>) 
                     Ok(result)
                 } else {
                     // Stub mode - return empty array
-                    log::warn!("Prefab API: getInstances() called in stub mode (no prefab manager)");
+                    log::warn!(
+                        "Prefab API: getInstances() called in stub mode (no prefab manager)"
+                    );
                     lua.create_table()
                 }
             })?,
@@ -199,11 +231,18 @@ pub fn register_prefab_api(lua: &Lua, prefab_manager: Option<PrefabManagerRef>) 
             "isInstance",
             lua.create_function(move |_, entity_id: u64| {
                 let entity_id = EntityId::new(entity_id);
-                log::debug!("Prefab API: Checking if entity {} is prefab instance", entity_id.as_u64());
+                log::debug!(
+                    "Prefab API: Checking if entity {} is prefab instance",
+                    entity_id.as_u64()
+                );
 
                 if let Some(ref mgr) = mgr {
                     let is_instance = mgr.is_prefab_instance(entity_id);
-                    log::debug!("Entity {} is prefab instance: {}", entity_id.as_u64(), is_instance);
+                    log::debug!(
+                        "Entity {} is prefab instance: {}",
+                        entity_id.as_u64(),
+                        is_instance
+                    );
                     Ok(is_instance)
                 } else {
                     // Stub mode - always return false
@@ -221,7 +260,10 @@ pub fn register_prefab_api(lua: &Lua, prefab_manager: Option<PrefabManagerRef>) 
             "getPath",
             lua.create_function(move |_, entity_id: u64| {
                 let entity_id = EntityId::new(entity_id);
-                log::debug!("Prefab API: Getting prefab path for entity {}", entity_id.as_u64());
+                log::debug!(
+                    "Prefab API: Getting prefab path for entity {}",
+                    entity_id.as_u64()
+                );
 
                 if let Some(ref mgr) = mgr {
                     if let Some(path) = mgr.get_prefab_path(entity_id) {
@@ -288,7 +330,10 @@ mod tests {
 
         fn add_instance(&self, prefab_path: &str, entity_id: u64) {
             let mut instances = self.instances.lock().unwrap();
-            instances.entry(prefab_path.to_string()).or_insert_with(Vec::new).push(EntityId::new(entity_id));
+            instances
+                .entry(prefab_path.to_string())
+                .or_insert_with(Vec::new)
+                .push(EntityId::new(entity_id));
 
             let mut entity_to_prefab = self.entity_to_prefab.lock().unwrap();
             entity_to_prefab.insert(entity_id, prefab_path.to_string());
@@ -312,7 +357,11 @@ mod tests {
     }
 
     impl PrefabManagerProvider for MockPrefabManager {
-        fn instantiate_prefab(&self, prefab_path: &str, _position: Option<[f32; 3]>) -> Result<EntityId, String> {
+        fn instantiate_prefab(
+            &self,
+            prefab_path: &str,
+            _position: Option<[f32; 3]>,
+        ) -> Result<EntityId, String> {
             if *self.should_fail_instantiate.lock().unwrap() {
                 Err("Mock instantiate failure".to_string())
             } else {
@@ -393,10 +442,7 @@ mod tests {
         register_prefab_api(&lua, None).unwrap();
 
         // Should return false in stub mode
-        let result: bool = lua
-            .load(r#"return prefab.destroy(1234)"#)
-            .eval()
-            .unwrap();
+        let result: bool = lua.load(r#"return prefab.destroy(1234)"#).eval().unwrap();
         assert!(!result);
     }
 
@@ -435,9 +481,7 @@ mod tests {
         register_prefab_api(&lua, None).unwrap();
 
         // Should return nil in stub mode
-        let result: LuaResult<Option<String>> = lua
-            .load(r#"return prefab.getPath(1234)"#)
-            .eval();
+        let result: LuaResult<Option<String>> = lua.load(r#"return prefab.getPath(1234)"#).eval();
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), None);
     }
@@ -499,10 +543,7 @@ mod tests {
         mock_manager.add_instance("enemy.json", 1001);
 
         // Destroy it
-        let result: bool = lua
-            .load(r#"return prefab.destroy(1001)"#)
-            .eval()
-            .unwrap();
+        let result: bool = lua.load(r#"return prefab.destroy(1001)"#).eval().unwrap();
         assert!(result); // Should succeed
 
         // Verify it's no longer an instance
@@ -521,10 +562,7 @@ mod tests {
         register_prefab_api(&lua, Some(mock_manager)).unwrap();
 
         // Should fail when mock manager is set to fail
-        let result: bool = lua
-            .load(r#"return prefab.destroy(1001)"#)
-            .eval()
-            .unwrap();
+        let result: bool = lua.load(r#"return prefab.destroy(1001)"#).eval().unwrap();
         assert!(!result); // Should return false on failure
     }
 

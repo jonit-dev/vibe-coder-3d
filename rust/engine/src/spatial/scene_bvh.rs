@@ -1,5 +1,5 @@
-use crate::spatial::primitives::{Aabb, Ray};
 use crate::spatial::intersect::ray_intersects_aabb;
+use crate::spatial::primitives::{Aabb, Ray};
 use glam::Vec3;
 use std::cmp::Ordering;
 
@@ -14,15 +14,9 @@ pub struct SceneRef {
 #[derive(Debug, Clone, Copy)]
 pub enum SceneBvhNodeType {
     /// Internal node with left and right children
-    Internal {
-        left: u32,
-        right: u32,
-    },
+    Internal { left: u32, right: u32 },
     /// Leaf node containing scene references
-    Leaf {
-        ref_start: u32,
-        ref_count: u32,
-    },
+    Leaf { ref_start: u32, ref_count: u32 },
 }
 
 /// Scene BVH node
@@ -85,10 +79,11 @@ impl Plane {
 impl Frustum {
     /// Create a frustum from 6 plane equations (a, b, c, d) for each plane
     pub fn from_planes(planes: [[f32; 4]; 6]) -> Self {
-        let frustum_planes = planes.map(|plane| {
-            Plane::new(Vec3::new(plane[0], plane[1], plane[2]), plane[3])
-        });
-        Self { planes: frustum_planes }
+        let frustum_planes =
+            planes.map(|plane| Plane::new(Vec3::new(plane[0], plane[1], plane[2]), plane[3]));
+        Self {
+            planes: frustum_planes,
+        }
     }
 
     /// Test if an AABB is inside or intersects the frustum
@@ -97,9 +92,21 @@ impl Frustum {
         for plane in &self.planes {
             // Find the most positive vertex (furthest in the plane's normal direction)
             let positive_vertex = Vec3::new(
-                if plane.normal.x >= 0.0 { aabb.max.x } else { aabb.min.x },
-                if plane.normal.y >= 0.0 { aabb.max.y } else { aabb.min.y },
-                if plane.normal.z >= 0.0 { aabb.max.z } else { aabb.min.z },
+                if plane.normal.x >= 0.0 {
+                    aabb.max.x
+                } else {
+                    aabb.min.x
+                },
+                if plane.normal.y >= 0.0 {
+                    aabb.max.y
+                } else {
+                    aabb.min.y
+                },
+                if plane.normal.z >= 0.0 {
+                    aabb.max.z
+                } else {
+                    aabb.min.z
+                },
             );
 
             // If the most positive vertex is behind the plane, the AABB is outside
@@ -166,7 +173,13 @@ impl SceneBvh {
 
     /// Refit a node and its children
     fn refit_node(&mut self, node_index: usize, refs: &[SceneRef]) -> Aabb {
-        let node_type = std::mem::replace(&mut self.nodes[node_index].node_type, SceneBvhNodeType::Leaf { ref_start: 0, ref_count: 0 });
+        let node_type = std::mem::replace(
+            &mut self.nodes[node_index].node_type,
+            SceneBvhNodeType::Leaf {
+                ref_start: 0,
+                ref_count: 0,
+            },
+        );
 
         let aabb = match node_type {
             SceneBvhNodeType::Internal { left, right } => {
@@ -176,7 +189,10 @@ impl SceneBvh {
                 self.nodes[node_index].node_type = SceneBvhNodeType::Internal { left, right };
                 merged_aabb
             }
-            SceneBvhNodeType::Leaf { ref_start, ref_count } => {
+            SceneBvhNodeType::Leaf {
+                ref_start,
+                ref_count,
+            } => {
                 let start = ref_start as usize;
                 let end = start + ref_count as usize;
 
@@ -184,7 +200,10 @@ impl SceneBvh {
                 for scene_ref in &refs[start..end] {
                     aabb = aabb.merge(&scene_ref.aabb);
                 }
-                self.nodes[node_index].node_type = SceneBvhNodeType::Leaf { ref_start, ref_count };
+                self.nodes[node_index].node_type = SceneBvhNodeType::Leaf {
+                    ref_start,
+                    ref_count,
+                };
                 aabb
             }
         };
@@ -225,9 +244,7 @@ impl SceneBvh {
             self.refs[start..end].sort_by(|a, b| {
                 let a_val = Self::axis_value(&a.aabb, axis);
                 let b_val = Self::axis_value(&b.aabb, axis);
-                a_val
-                    .partial_cmp(&b_val)
-                    .unwrap_or(Ordering::Equal)
+                a_val.partial_cmp(&b_val).unwrap_or(Ordering::Equal)
             });
             let mid = start + count / 2;
 
@@ -289,7 +306,10 @@ impl SceneBvh {
                 self.query_frustum_recursive(frustum, *left as usize, out);
                 self.query_frustum_recursive(frustum, *right as usize, out);
             }
-            SceneBvhNodeType::Leaf { ref_start, ref_count } => {
+            SceneBvhNodeType::Leaf {
+                ref_start,
+                ref_count,
+            } => {
                 let start = *ref_start as usize;
                 let end = start + *ref_count as usize;
 
@@ -311,7 +331,13 @@ impl SceneBvh {
     }
 
     /// Recursive ray query
-    fn query_ray_recursive(&self, ray: &Ray, max_distance: f32, node_index: usize, out: &mut Vec<u64>) {
+    fn query_ray_recursive(
+        &self,
+        ray: &Ray,
+        max_distance: f32,
+        node_index: usize,
+        out: &mut Vec<u64>,
+    ) {
         let node = &self.nodes[node_index];
 
         // Check if ray intersects this node's AABB
@@ -324,7 +350,10 @@ impl SceneBvh {
                 self.query_ray_recursive(ray, max_distance, *left as usize, out);
                 self.query_ray_recursive(ray, max_distance, *right as usize, out);
             }
-            SceneBvhNodeType::Leaf { ref_start, ref_count } => {
+            SceneBvhNodeType::Leaf {
+                ref_start,
+                ref_count,
+            } => {
                 let start = *ref_start as usize;
                 let end = start + *ref_count as usize;
 

@@ -62,18 +62,22 @@ impl VisibilityCuller {
         }
 
         // Planes from rows: r3 ± rN
-        let left  = normalize([r3[0] + r0[0], r3[1] + r0[1], r3[2] + r0[2], r3[3] + r0[3]]);
+        let left = normalize([r3[0] + r0[0], r3[1] + r0[1], r3[2] + r0[2], r3[3] + r0[3]]);
         let right = normalize([r3[0] - r0[0], r3[1] - r0[1], r3[2] - r0[2], r3[3] - r0[3]]);
         let bottom = normalize([r3[0] + r1[0], r3[1] + r1[1], r3[2] + r1[2], r3[3] + r1[3]]);
-        let top    = normalize([r3[0] - r1[0], r3[1] - r1[1], r3[2] - r1[2], r3[3] - r1[3]]);
-        let near   = normalize([r3[0] + r2[0], r3[1] + r2[1], r3[2] + r2[2], r3[3] + r2[3]]);
-        let far    = normalize([r3[0] - r2[0], r3[1] - r2[1], r3[2] - r2[2], r3[3] - r2[3]]);
+        let top = normalize([r3[0] - r1[0], r3[1] - r1[1], r3[2] - r1[2], r3[3] - r1[3]]);
+        let near = normalize([r3[0] + r2[0], r3[1] + r2[1], r3[2] + r2[2], r3[3] + r2[3]]);
+        let far = normalize([r3[0] - r2[0], r3[1] - r2[1], r3[2] - r2[2], r3[3] - r2[3]]);
 
         [left, right, bottom, top, near, far]
     }
 
     /// Convert entity IDs to indices in the renderer's entity list
-    fn entity_ids_to_indices(&self, visible_entity_ids: &[u64], all_entity_ids: &[u64]) -> Vec<usize> {
+    fn entity_ids_to_indices(
+        &self,
+        visible_entity_ids: &[u64],
+        all_entity_ids: &[u64],
+    ) -> Vec<usize> {
         let mut indices = Vec::with_capacity(visible_entity_ids.len());
 
         // Create a map from entity_id to index for fast lookup
@@ -115,7 +119,11 @@ impl FallbackVisibilityCuller {
     }
 
     /// Get all entity IDs as visible (no culling performed)
-    pub fn get_visible_entities(&self, _view_projection_matrix: Mat4, all_entity_ids: &[u64]) -> Vec<usize> {
+    pub fn get_visible_entities(
+        &self,
+        _view_projection_matrix: Mat4,
+        all_entity_ids: &[u64],
+    ) -> Vec<usize> {
         (0..all_entity_ids.len()).collect()
     }
 }
@@ -123,13 +131,15 @@ impl FallbackVisibilityCuller {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::spatial::bvh_manager::{BvhManager, BvhConfig};
+    use crate::spatial::bvh_manager::{BvhConfig, BvhManager};
     use crate::spatial::primitives::Aabb;
     use glam::{Mat4, Vec3};
 
     #[test]
     fn test_frustum_plane_extraction() {
-        let culler = VisibilityCuller::new(std::sync::Arc::new(std::sync::Mutex::new(BvhManager::new())));
+        let culler = VisibilityCuller::new(std::sync::Arc::new(std::sync::Mutex::new(
+            BvhManager::new(),
+        )));
 
         // Simple perspective projection matrix
         let aspect = 16.0 / 9.0;
@@ -153,7 +163,9 @@ mod tests {
 
     #[test]
     fn test_entity_ids_to_indices() {
-        let culler = VisibilityCuller::new(std::sync::Arc::new(std::sync::Mutex::new(BvhManager::new())));
+        let culler = VisibilityCuller::new(std::sync::Arc::new(std::sync::Mutex::new(
+            BvhManager::new(),
+        )));
 
         let all_entity_ids = vec![100, 200, 300, 400, 500];
         let visible_entity_ids = vec![200, 400];
@@ -164,7 +176,9 @@ mod tests {
 
     #[test]
     fn test_entity_ids_to_indices_empty_visible() {
-        let culler = VisibilityCuller::new(std::sync::Arc::new(std::sync::Mutex::new(BvhManager::new())));
+        let culler = VisibilityCuller::new(std::sync::Arc::new(std::sync::Mutex::new(
+            BvhManager::new(),
+        )));
 
         let all_entity_ids = vec![100, 200, 300];
         let visible_entity_ids = vec![];
@@ -175,7 +189,9 @@ mod tests {
 
     #[test]
     fn test_entity_ids_to_indices_missing_entities() {
-        let culler = VisibilityCuller::new(std::sync::Arc::new(std::sync::Mutex::new(BvhManager::new())));
+        let culler = VisibilityCuller::new(std::sync::Arc::new(std::sync::Mutex::new(
+            BvhManager::new(),
+        )));
 
         let all_entity_ids = vec![100, 200, 300];
         let visible_entity_ids = vec![200, 400]; // 400 doesn't exist in all_entity_ids
@@ -201,11 +217,7 @@ mod tests {
         // Register a test mesh
         {
             let mut manager = bvh_manager.lock().unwrap();
-            let positions = vec![
-                [0.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0],
-                [0.5, 1.0, 0.0],
-            ];
+            let positions = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, 1.0, 0.0]];
             let indices = vec![[0, 1, 2]];
             let local_aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 0.0));
 

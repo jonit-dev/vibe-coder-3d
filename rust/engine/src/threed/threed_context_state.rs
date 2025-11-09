@@ -2,11 +2,13 @@ use anyhow::{Context as AnyhowContext, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use three_d::*;
+use vibe_ecs_bridge::ComponentRegistry;
 use winit::dpi::PhysicalSize;
 use winit::window::Window as WinitWindow;
-use vibe_ecs_bridge::ComponentRegistry;
 
-use crate::renderer::{DebugLineRenderer, MaterialManager, SkyboxRenderer, LODManager, LODSelector};
+use crate::renderer::{
+    DebugLineRenderer, LODManager, LODSelector, MaterialManager, SkyboxRenderer,
+};
 
 /// Manages core three-d context, window, and shared resources
 ///
@@ -187,13 +189,21 @@ impl ThreeDContextState {
 
     /// Get mutable references to both HDR color and depth textures at once
     /// This is needed for rendering to avoid borrow checker issues
-    pub fn hdr_textures_mut(&mut self) -> (&mut Option<Texture2D>, &mut Option<three_d::DepthTexture2D>) {
+    pub fn hdr_textures_mut(
+        &mut self,
+    ) -> (&mut Option<Texture2D>, &mut Option<three_d::DepthTexture2D>) {
         (&mut self.hdr_color_texture, &mut self.hdr_depth_texture)
     }
 
     /// Get skybox renderer and mutable HDR textures at once
     /// This is needed for rendering to avoid borrow checker issues
-    pub fn skybox_and_hdr_textures_mut(&mut self) -> (&SkyboxRenderer, &mut Option<Texture2D>, &mut Option<three_d::DepthTexture2D>) {
+    pub fn skybox_and_hdr_textures_mut(
+        &mut self,
+    ) -> (
+        &SkyboxRenderer,
+        &mut Option<Texture2D>,
+        &mut Option<three_d::DepthTexture2D>,
+    ) {
         (
             &self.skybox_renderer,
             &mut self.hdr_color_texture,
@@ -215,7 +225,9 @@ impl ThreeDContextState {
 
     /// Get context, LOD manager, and material manager at once
     /// This is needed for mesh rendering to avoid borrow checker issues
-    pub fn context_lod_and_material_manager_mut(&mut self) -> (&Context, &Arc<LODManager>, &mut MaterialManager) {
+    pub fn context_lod_and_material_manager_mut(
+        &mut self,
+    ) -> (&Context, &Arc<LODManager>, &mut MaterialManager) {
         (&self.context, &self.lod_manager, &mut self.material_manager)
     }
 
@@ -225,7 +237,6 @@ impl ThreeDContextState {
         (self.context.clone(), self.window_size)
     }
 
-    
     /// Get HDR color texture (immutable)
     pub fn hdr_color_texture(&self) -> Option<&Texture2D> {
         self.hdr_color_texture.as_ref()

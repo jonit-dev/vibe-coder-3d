@@ -1,7 +1,6 @@
 /// EntityBuilder - Fluent API for entity creation
 ///
 /// Provides a builder pattern for creating entities with components.
-
 use std::sync::Arc;
 use vibe_scene::{ComponentKindId, EntityCommand, EntityCommandBuffer, EntityId, SceneState};
 
@@ -16,10 +15,7 @@ pub struct EntityBuilder<'a> {
 
 impl<'a> EntityBuilder<'a> {
     /// Create a new EntityBuilder
-    pub fn new(
-        command_buffer: &'a mut EntityCommandBuffer,
-        scene_state: Arc<SceneState>,
-    ) -> Self {
+    pub fn new(command_buffer: &'a mut EntityCommandBuffer, scene_state: Arc<SceneState>) -> Self {
         Self {
             command_buffer,
             scene_state,
@@ -129,12 +125,7 @@ impl<'a> EntityBuilder<'a> {
     }
 
     /// Add RigidBody component
-    pub fn with_rigidbody(
-        self,
-        body_type: &str,
-        mass: f32,
-        gravity_scale: f32,
-    ) -> Self {
+    pub fn with_rigidbody(self, body_type: &str, mass: f32, gravity_scale: f32) -> Self {
         self.with_component(
             "RigidBody",
             serde_json::json!({

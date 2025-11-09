@@ -9,8 +9,8 @@ pub mod types;
 
 // Re-export main types for convenience
 pub use bus::SceneEventBus;
-pub use types::{EventEnvelope, EventKey, SubscriberId};
 pub use targeted::EventTargeter;
+pub use types::{EventEnvelope, EventKey, SubscriberId};
 
 // Re-export key constants
 pub use types::keys;

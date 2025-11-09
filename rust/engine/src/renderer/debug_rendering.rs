@@ -1,7 +1,6 @@
 /// Debug overlay rendering utilities
 ///
 /// Provides debug visualization including grid, colliders, and other debug geometry.
-
 use anyhow::Result;
 use three_d::*;
 

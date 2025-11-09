@@ -6,8 +6,8 @@
 //! - Additive scene loading (load without unloading current)
 
 use mlua::prelude::*;
-use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use vibe_scene::Scene;
 
 /// Scene manager reference for scene operations
@@ -45,7 +45,10 @@ pub struct SimpleSceneManager {
 impl SimpleSceneManager {
     /// Create a new simple scene manager
     pub fn new(initial_scene_path: Option<String>, base_path: PathBuf) -> Self {
-        log::info!("Creating SimpleSceneManager with initial scene: {:?}", initial_scene_path);
+        log::info!(
+            "Creating SimpleSceneManager with initial scene: {:?}",
+            initial_scene_path
+        );
         Self {
             current_scene_path: Arc::new(Mutex::new(initial_scene_path)),
             base_path,
@@ -65,27 +68,44 @@ impl SceneManagerProvider for SimpleSceneManager {
     fn get_current_scene(&self) -> Option<Arc<Scene>> {
         // For now, we don't have access to the loaded Scene at runtime
         // This would require the app to expose the current scene
-        log::debug!("get_current_scene() called - returning None (scene not accessible at script level)");
+        log::debug!(
+            "get_current_scene() called - returning None (scene not accessible at script level)"
+        );
         None
     }
 
     fn load_scene(&self, scene_path: &str) -> Result<(), String> {
         // Runtime scene loading is not currently supported
         // This would require significant engine architecture changes
-        log::warn!("Scene API: load_scene('{}') called - runtime scene loading not implemented", scene_path);
-        Err("Runtime scene loading not supported - scenes must be loaded at application level".to_string())
+        log::warn!(
+            "Scene API: load_scene('{}') called - runtime scene loading not implemented",
+            scene_path
+        );
+        Err(
+            "Runtime scene loading not supported - scenes must be loaded at application level"
+                .to_string(),
+        )
     }
 
     fn load_scene_additive(&self, scene_path: &str) -> Result<(), String> {
         // Additive scene loading is not currently supported
-        log::warn!("Scene API: load_scene_additive('{}') called - additive loading not implemented", scene_path);
-        Err("Additive scene loading not supported - scenes must be loaded at application level".to_string())
+        log::warn!(
+            "Scene API: load_scene_additive('{}') called - additive loading not implemented",
+            scene_path
+        );
+        Err(
+            "Additive scene loading not supported - scenes must be loaded at application level"
+                .to_string(),
+        )
     }
 
     fn unload_scene(&self) -> Result<(), String> {
         // Scene unloading is not currently supported
         log::warn!("Scene API: unload_scene() called - runtime scene unloading not implemented");
-        Err("Runtime scene unloading not supported - scenes must be managed at application level".to_string())
+        Err(
+            "Runtime scene unloading not supported - scenes must be managed at application level"
+                .to_string(),
+        )
     }
 
     fn get_current_scene_path(&self) -> Option<String> {
@@ -99,7 +119,9 @@ impl SceneManagerProvider for SimpleSceneManager {
 
 /// Create a simple scene manager for basic Scene API functionality
 /// This provides real scene path tracking even if loading/unloading isn't supported
-pub fn create_simple_scene_manager(initial_scene_path: Option<String>) -> Arc<dyn SceneManagerProvider + Send + Sync> {
+pub fn create_simple_scene_manager(
+    initial_scene_path: Option<String>,
+) -> Arc<dyn SceneManagerProvider + Send + Sync> {
     let base_path = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     Arc::new(SimpleSceneManager::new(initial_scene_path, base_path))
 }

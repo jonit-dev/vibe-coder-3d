@@ -1,6 +1,6 @@
-use vibe_scene::EntityId;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use vibe_scene::EntityId;
 
 /// Physics event types
 #[derive(Debug, Clone)]
@@ -126,20 +126,27 @@ impl PhysicsEventBridge {
             event_type: event_type.to_string(),
         };
 
-        let json_payload = serde_json::to_value(&payload)
-            .unwrap_or_else(|e| {
-                log::error!("Failed to serialize collision event payload: {}", e);
-                serde_json::json!({
-                    "error": "serialization_failed",
-                    "entity_a": entity_a.as_u64(),
-                    "entity_b": entity_b.as_u64(),
-                    "event_type": event_type
-                })
-            });
+        let json_payload = serde_json::to_value(&payload).unwrap_or_else(|e| {
+            log::error!("Failed to serialize collision event payload: {}", e);
+            serde_json::json!({
+                "error": "serialization_failed",
+                "entity_a": entity_a.as_u64(),
+                "entity_b": entity_b.as_u64(),
+                "event_type": event_type
+            })
+        });
 
         // Emit to both entities involved
-        event_bus.emit_to(*entity_a, vibe_events::keys::PHYSICS_COLLISION, json_payload.clone());
-        event_bus.emit_to(*entity_b, vibe_events::keys::PHYSICS_COLLISION, json_payload);
+        event_bus.emit_to(
+            *entity_a,
+            vibe_events::keys::PHYSICS_COLLISION,
+            json_payload.clone(),
+        );
+        event_bus.emit_to(
+            *entity_b,
+            vibe_events::keys::PHYSICS_COLLISION,
+            json_payload,
+        );
 
         log::debug!(
             "[Physics Bridge] Published {} event between entities {} and {}",

@@ -1,10 +1,10 @@
-use crate::spatial::mesh_bvh::{MeshBvh, SplitStrategy};
-use crate::spatial::scene_bvh::{SceneBvh, SceneRef, Frustum};
-use crate::spatial::primitives::{Aabb, Ray};
 use crate::spatial::intersect::{ray_intersect_triangle, RayHit};
+use crate::spatial::mesh_bvh::{MeshBvh, SplitStrategy};
+use crate::spatial::primitives::{Aabb, Ray};
+use crate::spatial::scene_bvh::{Frustum, SceneBvh, SceneRef};
 use glam::{Mat4, Vec3};
-use std::collections::{HashMap, HashSet};
 use log::{debug, info, warn};
+use std::collections::{HashMap, HashSet};
 
 /// Configuration for BVH system
 #[derive(Debug, Clone)]
@@ -223,13 +223,17 @@ impl BvhManager {
         let start_time = std::time::Instant::now();
 
         // Collect scene references
-        let scene_refs: Vec<SceneRef> = self.world_aabbs
+        let scene_refs: Vec<SceneRef> = self
+            .world_aabbs
             .iter()
             .map(|(&entity_id, &aabb)| SceneRef { entity_id, aabb })
             .collect();
 
         // Build or refit SceneBVH
-        if self.config.enable_incremental_updates && !scene_refs.is_empty() && self.scene_bvh.nodes.len() > 0 {
+        if self.config.enable_incremental_updates
+            && !scene_refs.is_empty()
+            && self.scene_bvh.nodes.len() > 0
+        {
             // Try refit first
             self.scene_bvh.refit(&scene_refs);
             self.metrics.refit_time_ms = start_time.elapsed().as_secs_f32() * 1000.0;
@@ -244,9 +248,7 @@ impl BvhManager {
 
         // Update metrics
         self.metrics.total_mesh_bvhs = self.mesh_bvhs.len();
-        self.metrics.total_triangles = self.mesh_bvhs.values()
-            .map(|bvh| bvh.triangles.len())
-            .sum();
+        self.metrics.total_triangles = self.mesh_bvhs.values().map(|bvh| bvh.triangles.len()).sum();
         self.metrics.total_scene_refs = scene_refs.len();
 
         debug!(
@@ -269,7 +271,8 @@ impl BvhManager {
 
         let frustum = Frustum::from_planes(frustum_planes);
         let mut visible_entities = Vec::new();
-        self.scene_bvh.query_frustum(&frustum, &mut visible_entities);
+        self.scene_bvh
+            .query_frustum(&frustum, &mut visible_entities);
 
         let total_entities = self.world_aabbs.len();
         let current_visible_set: HashSet<u64> = visible_entities.iter().copied().collect();
@@ -293,11 +296,18 @@ impl BvhManager {
             // Log summary
             let culled_count = total_entities.saturating_sub(visible_entities.len());
             if culled_count > 0 {
-                info!("🔄 BVH STATUS: {}/{} visible, {} culled (changed)",
-                    visible_entities.len(), total_entities, culled_count);
+                info!(
+                    "🔄 BVH STATUS: {}/{} visible, {} culled (changed)",
+                    visible_entities.len(),
+                    total_entities,
+                    culled_count
+                );
             } else {
-                info!("🔄 BVH STATUS: All {}/{} entities visible (changed)",
-                    visible_entities.len(), total_entities);
+                info!(
+                    "🔄 BVH STATUS: All {}/{} entities visible (changed)",
+                    visible_entities.len(),
+                    total_entities
+                );
             }
         }
 
@@ -306,13 +316,21 @@ impl BvhManager {
 
         // Update metrics
         self.metrics.visible_meshes_last_frame = visible_entities.len();
-        self.metrics.culled_meshes_last_frame = self.world_aabbs.len().saturating_sub(visible_entities.len());
+        self.metrics.culled_meshes_last_frame = self
+            .world_aabbs
+            .len()
+            .saturating_sub(visible_entities.len());
 
         visible_entities
     }
 
     /// Perform raycast and return the closest hit
-    pub fn raycast_first(&mut self, origin: Vec3, dir: Vec3, max_distance: f32) -> Option<RaycastHit> {
+    pub fn raycast_first(
+        &mut self,
+        origin: Vec3,
+        dir: Vec3,
+        max_distance: f32,
+    ) -> Option<RaycastHit> {
         if !self.config.enable_bvh_raycasts {
             return None;
         }
@@ -325,14 +343,16 @@ impl BvhManager {
 
         // Coarse phase: get candidate entities using SceneBVH
         let mut candidates = Vec::new();
-        self.scene_bvh.query_ray(&ray, max_distance, &mut candidates);
+        self.scene_bvh
+            .query_ray(&ray, max_distance, &mut candidates);
 
         // Fine phase: test against triangles in candidate mesh BVHs
         let mut closest_hit: Option<RaycastHit> = None;
 
         for &entity_id in &candidates {
             if let Some(mesh_bvh) = self.mesh_bvhs.get(&entity_id) {
-                if let Some((distance, triangle_index)) = mesh_bvh.raycast_first(&ray, max_distance) {
+                if let Some((distance, triangle_index)) = mesh_bvh.raycast_first(&ray, max_distance)
+                {
                     self.metrics.ray_triangle_tests_last_frame += 1;
 
                     match &closest_hit {
@@ -380,7 +400,8 @@ impl BvhManager {
 
         // Coarse phase: get candidate entities using SceneBVH
         let mut candidates = Vec::new();
-        self.scene_bvh.query_ray(&ray, max_distance, &mut candidates);
+        self.scene_bvh
+            .query_ray(&ray, max_distance, &mut candidates);
 
         // Fine phase: test against triangles in candidate mesh BVHs
         let mut hits = Vec::new();
@@ -422,9 +443,7 @@ impl BvhManager {
             metrics: self.metrics.clone(),
             scene_bvh_stats: self.scene_bvh.get_stats(),
             mesh_bvh_count: self.mesh_bvhs.len(),
-            total_triangles: self.mesh_bvhs.values()
-                .map(|bvh| bvh.triangles.len())
-                .sum(),
+            total_triangles: self.mesh_bvhs.values().map(|bvh| bvh.triangles.len()).sum(),
         }
     }
 
@@ -480,10 +499,7 @@ mod tests {
     }
 
     fn create_test_indices() -> Vec<[u32; 3]> {
-        vec![
-            [0, 1, 2],
-            [0, 2, 3],
-        ]
+        vec![[0, 1, 2], [0, 2, 3]]
     }
 
     #[test]
@@ -532,11 +548,7 @@ mod tests {
         manager.register_mesh(42, &positions, &indices, local_aabb);
 
         // Raycast towards the triangle
-        let hit = manager.raycast_first(
-            Vec3::new(0.5, 0.5, -1.0),
-            Vec3::Z,
-            10.0
-        );
+        let hit = manager.raycast_first(Vec3::new(0.5, 0.5, -1.0), Vec3::Z, 10.0);
 
         assert!(hit.is_some());
         let hit = hit.unwrap();
@@ -555,11 +567,7 @@ mod tests {
         manager.register_mesh(42, &positions, &indices, local_aabb);
 
         // Raycast away from the triangle
-        let hit = manager.raycast_first(
-            Vec3::new(10.0, 10.0, -1.0),
-            Vec3::Z,
-            10.0
-        );
+        let hit = manager.raycast_first(Vec3::new(10.0, 10.0, -1.0), Vec3::Z, 10.0);
 
         assert!(hit.is_none());
     }
@@ -577,12 +585,12 @@ mod tests {
 
         // Frustum that should include the entity
         let frustum_planes = [
-            [1.0, 0.0, 0.0, 5.0],    // x >= -5
-            [-1.0, 0.0, 0.0, 5.0],   // x <= 5
-            [0.0, 1.0, 0.0, 5.0],    // y >= -5
-            [0.0, -1.0, 0.0, 5.0],   // y <= 5
-            [0.0, 0.0, 1.0, 5.0],    // z >= -5
-            [0.0, 0.0, -1.0, 5.0],   // z <= 5
+            [1.0, 0.0, 0.0, 5.0],  // x >= -5
+            [-1.0, 0.0, 0.0, 5.0], // x <= 5
+            [0.0, 1.0, 0.0, 5.0],  // y >= -5
+            [0.0, -1.0, 0.0, 5.0], // y <= 5
+            [0.0, 0.0, 1.0, 5.0],  // z >= -5
+            [0.0, 0.0, -1.0, 5.0], // z <= 5
         ];
 
         let visible = manager.cull_frustum(frustum_planes, false);

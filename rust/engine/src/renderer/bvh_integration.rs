@@ -1,16 +1,15 @@
 /// BVH system integration for mesh culling and raycasting
 ///
 /// Provides initialization, registration, and update logic for the BVH spatial acceleration structure.
-
 use glam::Vec3 as GlamVec3;
 use std::sync::{Arc, Mutex};
 use three_d::*;
 use vibe_scene::EntityId;
 
+use crate::renderer::visibility::VisibilityCuller;
 use crate::spatial::bvh_manager::{BvhConfig, BvhManager};
 use crate::spatial::mesh_bvh::SplitStrategy;
 use crate::spatial::primitives::Aabb;
-use crate::renderer::visibility::VisibilityCuller;
 
 /// Initialize BVH system with default configuration
 pub fn initialize_bvh_system() -> (Arc<Mutex<BvhManager>>, VisibilityCuller) {

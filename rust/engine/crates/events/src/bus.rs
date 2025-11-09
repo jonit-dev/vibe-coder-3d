@@ -1,7 +1,7 @@
+use crate::types::{EventEnvelope, EventKey, SubscriberId};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use crossbeam_channel::{unbounded, Receiver, Sender};
-use crate::types::{EventEnvelope, EventKey, SubscriberId};
 
 type HandlerFn = Arc<dyn Fn(&EventEnvelope) + Send + Sync + 'static>;
 
@@ -40,7 +40,12 @@ impl SceneEventBus {
     }
 
     /// Subscribe to events with optional entity ownership for auto-cleanup
-    pub fn on<F>(&self, key: impl Into<EventKey>, owner: Option<vibe_scene::EntityId>, handler: F) -> SubscriberId
+    pub fn on<F>(
+        &self,
+        key: impl Into<EventKey>,
+        owner: Option<vibe_scene::EntityId>,
+        handler: F,
+    ) -> SubscriberId
     where
         F: Fn(&EventEnvelope) + Send + Sync + 'static,
     {
@@ -68,7 +73,12 @@ impl SceneEventBus {
     }
 
     /// Subscribe to events for a specific entity
-    pub fn on_entity<F>(&self, entity_id: vibe_scene::EntityId, key: impl Into<EventKey>, handler: F) -> SubscriberId
+    pub fn on_entity<F>(
+        &self,
+        entity_id: vibe_scene::EntityId,
+        key: impl Into<EventKey>,
+        handler: F,
+    ) -> SubscriberId
     where
         F: Fn(&EventEnvelope) + Send + Sync + 'static,
     {
@@ -92,7 +102,12 @@ impl SceneEventBus {
     }
 
     /// Emit an event targeted to a specific entity
-    pub fn emit_to(&self, target: vibe_scene::EntityId, key: impl Into<EventKey>, payload: serde_json::Value) {
+    pub fn emit_to(
+        &self,
+        target: vibe_scene::EntityId,
+        key: impl Into<EventKey>,
+        payload: serde_json::Value,
+    ) {
         let envelope = EventEnvelope::targeted(target, key, payload);
         let _ = self.tx.send(envelope);
     }
@@ -114,8 +129,11 @@ impl SceneEventBus {
                     let per_entity = self.per_entity.read().unwrap();
                     for (id, h) in handlers.iter() {
                         // Check if this handler is global (not in per_entity) or owned by target entity
-                        let is_global = !per_entity.values().any(|entity_ids| entity_ids.contains(id));
-                        let is_owned_by_target = per_entity.get(&target_id)
+                        let is_global = !per_entity
+                            .values()
+                            .any(|entity_ids| entity_ids.contains(id));
+                        let is_owned_by_target = per_entity
+                            .get(&target_id)
                             .map(|entity_ids| entity_ids.contains(id))
                             .unwrap_or(false);
 
@@ -138,7 +156,12 @@ impl SceneEventBus {
 
     /// Clean up all subscriptions for a specific entity
     pub fn cleanup_entity(&self, entity: vibe_scene::EntityId) {
-        let ids = self.per_entity.write().unwrap().remove(&entity).unwrap_or_default();
+        let ids = self
+            .per_entity
+            .write()
+            .unwrap()
+            .remove(&entity)
+            .unwrap_or_default();
         for id in ids {
             self.off(id);
         }

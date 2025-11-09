@@ -1,7 +1,6 @@
 /// Mesh visibility filtering utilities
 ///
 /// Handles filtering meshes based on visibility state and entity IDs.
-
 use std::collections::HashMap;
 use three_d::*;
 use vibe_scene::EntityId;
@@ -56,11 +55,7 @@ mod tests {
 
     #[test]
     fn test_filters_disabled_entities() {
-        let entity_ids = vec![
-            EntityId::new(1),
-            EntityId::new(2),
-            EntityId::new(3),
-        ];
+        let entity_ids = vec![EntityId::new(1), EntityId::new(2), EntityId::new(3)];
 
         let mut visibility = HashMap::new();
         visibility.insert(EntityId::new(2), false); // Hide entity 2

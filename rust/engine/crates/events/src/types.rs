@@ -33,7 +33,11 @@ impl EventEnvelope {
         }
     }
 
-    pub fn targeted(target: vibe_scene::EntityId, key: impl Into<EventKey>, payload: serde_json::Value) -> Self {
+    pub fn targeted(
+        target: vibe_scene::EntityId,
+        key: impl Into<EventKey>,
+        payload: serde_json::Value,
+    ) -> Self {
         Self {
             key: key.into(),
             target: Some(target),

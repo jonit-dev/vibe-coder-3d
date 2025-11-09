@@ -18,7 +18,6 @@
 ///     end
 /// end
 /// ```
-
 use mlua::prelude::*;
 use std::sync::{Arc, Mutex, Weak};
 use vibe_ecs_manager::SceneManager;
@@ -65,8 +64,8 @@ impl MeshAPI {
 
                 if let Some(mesh_renderer) = entity.components.get_mut("MeshRenderer") {
                     // Parse current component data
-                    let mut data: serde_json::Value =
-                        serde_json::from_value(mesh_renderer.clone()).map_err(|e| {
+                    let mut data: serde_json::Value = serde_json::from_value(mesh_renderer.clone())
+                        .map_err(|e| {
                             LuaError::runtime(format!("Failed to parse MeshRenderer: {}", e))
                         })?;
 
@@ -81,9 +80,7 @@ impl MeshAPI {
                             visible
                         );
                     } else {
-                        return Err(LuaError::runtime(
-                            "MeshRenderer component is not an object",
-                        ));
+                        return Err(LuaError::runtime("MeshRenderer component is not an object"));
                     }
                 } else {
                     return Err(LuaError::runtime("Entity has no MeshRenderer component"));
@@ -120,8 +117,8 @@ impl MeshAPI {
                     })?;
 
                 if let Some(mesh_renderer) = entity.components.get_mut("MeshRenderer") {
-                    let mut data: serde_json::Value =
-                        serde_json::from_value(mesh_renderer.clone()).map_err(|e| {
+                    let mut data: serde_json::Value = serde_json::from_value(mesh_renderer.clone())
+                        .map_err(|e| {
                             LuaError::runtime(format!("Failed to parse MeshRenderer: {}", e))
                         })?;
 
@@ -137,9 +134,7 @@ impl MeshAPI {
                             cast_shadows
                         );
                     } else {
-                        return Err(LuaError::runtime(
-                            "MeshRenderer component is not an object",
-                        ));
+                        return Err(LuaError::runtime("MeshRenderer component is not an object"));
                     }
                 } else {
                     return Err(LuaError::runtime("Entity has no MeshRenderer component"));
@@ -176,8 +171,8 @@ impl MeshAPI {
                     })?;
 
                 if let Some(mesh_renderer) = entity.components.get_mut("MeshRenderer") {
-                    let mut data: serde_json::Value =
-                        serde_json::from_value(mesh_renderer.clone()).map_err(|e| {
+                    let mut data: serde_json::Value = serde_json::from_value(mesh_renderer.clone())
+                        .map_err(|e| {
                             LuaError::runtime(format!("Failed to parse MeshRenderer: {}", e))
                         })?;
 
@@ -193,9 +188,7 @@ impl MeshAPI {
                             receive_shadows
                         );
                     } else {
-                        return Err(LuaError::runtime(
-                            "MeshRenderer component is not an object",
-                        ));
+                        return Err(LuaError::runtime("MeshRenderer component is not an object"));
                     }
                 } else {
                     return Err(LuaError::runtime("Entity has no MeshRenderer component"));

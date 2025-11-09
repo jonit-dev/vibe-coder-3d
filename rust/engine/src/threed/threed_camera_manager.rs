@@ -3,8 +3,8 @@ use three_d::*;
 use vibe_scene_graph::SceneGraph;
 
 use crate::renderer::camera_renderer::AdditionalCamera;
-use crate::renderer::CameraConfig;
 use crate::renderer::constants::*;
+use crate::renderer::CameraConfig;
 
 /// Manages all camera-related state for the renderer
 ///
@@ -36,20 +36,44 @@ impl ThreeDCameraManager {
         let viewport = Viewport::new_at_origo(window_size.0, window_size.1);
         let camera = Camera::new_perspective(
             viewport,
-            vec3(DEFAULT_CAMERA_POS_X, DEFAULT_CAMERA_POS_Y, DEFAULT_CAMERA_POS_Z),
-            vec3(DEFAULT_CAMERA_TARGET_X, DEFAULT_CAMERA_TARGET_Y, DEFAULT_CAMERA_TARGET_Z),
-            vec3(DEFAULT_CAMERA_UP_X, DEFAULT_CAMERA_UP_Y, DEFAULT_CAMERA_UP_Z),
+            vec3(
+                DEFAULT_CAMERA_POS_X,
+                DEFAULT_CAMERA_POS_Y,
+                DEFAULT_CAMERA_POS_Z,
+            ),
+            vec3(
+                DEFAULT_CAMERA_TARGET_X,
+                DEFAULT_CAMERA_TARGET_Y,
+                DEFAULT_CAMERA_TARGET_Z,
+            ),
+            vec3(
+                DEFAULT_CAMERA_UP_X,
+                DEFAULT_CAMERA_UP_Y,
+                DEFAULT_CAMERA_UP_Z,
+            ),
             degrees(DEFAULT_FOV_DEGREES),
             DEFAULT_NEAR_PLANE,
             DEFAULT_FAR_PLANE,
         );
 
         log::info!("  Viewport: {}x{}", window_size.0, window_size.1);
-        log::info!("  Camera FOV: {}°, Near: {}, Far: {}",
-                 DEFAULT_FOV_DEGREES, DEFAULT_NEAR_PLANE, DEFAULT_FAR_PLANE);
+        log::info!(
+            "  Camera FOV: {}°, Near: {}, Far: {}",
+            DEFAULT_FOV_DEGREES,
+            DEFAULT_NEAR_PLANE,
+            DEFAULT_FAR_PLANE
+        );
 
-        let initial_pos = vec3(DEFAULT_CAMERA_POS_X, DEFAULT_CAMERA_POS_Y, DEFAULT_CAMERA_POS_Z);
-        let initial_target = vec3(DEFAULT_CAMERA_TARGET_X, DEFAULT_CAMERA_TARGET_Y, DEFAULT_CAMERA_TARGET_Z);
+        let initial_pos = vec3(
+            DEFAULT_CAMERA_POS_X,
+            DEFAULT_CAMERA_POS_Y,
+            DEFAULT_CAMERA_POS_Z,
+        );
+        let initial_target = vec3(
+            DEFAULT_CAMERA_TARGET_X,
+            DEFAULT_CAMERA_TARGET_Y,
+            DEFAULT_CAMERA_TARGET_Z,
+        );
 
         Self {
             camera,
@@ -103,11 +127,7 @@ impl ThreeDCameraManager {
     }
 
     /// Update camera based on follow system
-    pub fn update_camera_follow(
-        &mut self,
-        scene_graph: &mut Option<SceneGraph>,
-        delta_time: f32,
-    ) {
+    pub fn update_camera_follow(&mut self, scene_graph: &mut Option<SceneGraph>, delta_time: f32) {
         // Update main camera
         if let Some(ref config) = self.camera_config.clone() {
             crate::renderer::update_camera_follow(
@@ -145,7 +165,8 @@ impl ThreeDCameraManager {
     /// Handle window resize - update camera viewports
     pub fn resize(&mut self, window_size: (u32, u32)) {
         if let Some(ref config) = self.camera_config {
-            let viewport = crate::renderer::render_settings::viewport_from_config(config, window_size);
+            let viewport =
+                crate::renderer::render_settings::viewport_from_config(config, window_size);
             self.camera.set_viewport(viewport);
         } else {
             self.camera
@@ -153,7 +174,8 @@ impl ThreeDCameraManager {
         }
 
         for cam in &mut self.additional_cameras {
-            let viewport = crate::renderer::render_settings::viewport_from_config(&cam.config, window_size);
+            let viewport =
+                crate::renderer::render_settings::viewport_from_config(&cam.config, window_size);
             cam.camera.set_viewport(viewport);
         }
     }

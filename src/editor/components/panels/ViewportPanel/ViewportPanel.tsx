@@ -143,7 +143,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
 
         <div className="w-full h-full">
           <Canvas
-            camera={{ position: [0, 5, 10], fov: 50 }}
+            camera={{ position: [-10, 12, -10], fov: 50 }}
             shadows="percentage"
             gl={{
               powerPreference: 'high-performance',

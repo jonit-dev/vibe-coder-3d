@@ -2,7 +2,6 @@
 ///
 /// Handles offscreen rendering to textures and saving to image files.
 /// Supports JPEG and PNG formats with configurable quality and resolution scaling.
-
 use anyhow::{Context as AnyhowContext, Result};
 use std::path::Path;
 use three_d::*;

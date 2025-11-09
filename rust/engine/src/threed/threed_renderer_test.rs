@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::renderer::material_manager::parse_hex_color;
     use crate::renderer::camera_loader::CameraConfig;
+    use crate::renderer::material_manager::parse_hex_color;
     use rapier3d::na::{vector, UnitQuaternion};
     use rapier3d::prelude::*;
     use three_d::vec3;

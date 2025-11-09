@@ -11,17 +11,17 @@
 //! ```
 
 use anyhow::{Context, Result};
-use glam::{Mat4, Vec3, Quat};
-use log::{info, warn, error, debug};
+use glam::{Mat4, Quat, Vec3};
+use log::{debug, error, info, warn};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use crate::spatial::bvh_manager::{BvhManager, BvhConfig, RaycastHit, BvhMetrics};
+use crate::renderer::visibility::VisibilityCuller;
+use crate::spatial::bvh_manager::{BvhConfig, BvhManager, BvhMetrics, RaycastHit};
 use crate::spatial::primitives::Aabb;
 use crate::spatial::scene_bvh::Frustum;
-use crate::renderer::visibility::VisibilityCuller;
 use vibe_scripting::apis::query_api::BvhRaycaster;
 
 /// BVH Integration Test Configuration
@@ -155,7 +155,8 @@ impl BvhIntegrationTester {
         };
 
         // Test 1: Setup test scene
-        self.setup_test_scene().context("Failed to setup test scene")?;
+        self.setup_test_scene()
+            .context("Failed to setup test scene")?;
 
         // Test 2: Raycasting tests
         let raycast_results = self.test_raycasting().context("Raycasting tests failed")?;
@@ -164,17 +165,23 @@ impl BvhIntegrationTester {
         results.errors.extend(raycast_results.errors);
 
         // Test 3: Frustum culling tests
-        let frustum_results = self.test_frustum_culling().context("Frustum culling tests failed")?;
+        let frustum_results = self
+            .test_frustum_culling()
+            .context("Frustum culling tests failed")?;
         results.frustum_tests_passed = frustum_results.passed;
         results.frustum_tests_failed = frustum_results.failed;
         results.errors.extend(frustum_results.errors);
 
         // Test 4: Performance tests
-        let performance_results = self.test_performance().context("Performance tests failed")?;
+        let performance_results = self
+            .test_performance()
+            .context("Performance tests failed")?;
         results.performance_metrics = performance_results;
 
         // Test 5: Lua scripting integration
-        let lua_results = self.test_lua_scripting().context("Lua scripting tests failed")?;
+        let lua_results = self
+            .test_lua_scripting()
+            .context("Lua scripting tests failed")?;
         results.lua_script_tests_passed = lua_results.passed;
         results.lua_script_tests_failed = lua_results.failed;
         results.errors.extend(lua_results.errors);
@@ -244,23 +251,18 @@ impl BvhIntegrationTester {
         for mesh in test_meshes {
             let (positions, indices, local_aabb) = create_test_mesh_data(&mesh);
 
-            bvh_manager.register_mesh(
-                mesh.entity_id,
-                &positions,
-                &indices,
-                local_aabb
-            );
+            bvh_manager.register_mesh(mesh.entity_id, &positions, &indices, local_aabb);
 
             // Update world transform
-            let world_matrix = Mat4::from_scale_rotation_translation(
-                mesh.scale,
-                Quat::IDENTITY,
-                mesh.position
-            );
+            let world_matrix =
+                Mat4::from_scale_rotation_translation(mesh.scale, Quat::IDENTITY, mesh.position);
             bvh_manager.update_transform(mesh.entity_id, world_matrix);
 
             if self.config.verbose_logging {
-                debug!("Registered test mesh: {} (ID: {})", mesh.name, mesh.entity_id);
+                debug!(
+                    "Registered test mesh: {} (ID: {})",
+                    mesh.name, mesh.entity_id
+                );
             }
         }
 
@@ -268,7 +270,10 @@ impl BvhIntegrationTester {
         bvh_manager.force_rebuild();
 
         let setup_time = start_time.elapsed();
-        info!("Test scene setup completed in {:.3}ms", setup_time.as_millis());
+        info!(
+            "Test scene setup completed in {:.3}ms",
+            setup_time.as_millis()
+        );
 
         Ok(())
     }
@@ -294,20 +299,26 @@ impl BvhIntegrationTester {
                         if distance_error <= expected.tolerance {
                             results.passed += 1;
                             if self.config.verbose_logging {
-                                debug!("✓ Raycast test '{}' passed: hit entity {} at distance {:.3}",
-                                       case.name, actual.entity_id, actual.distance);
+                                debug!(
+                                    "✓ Raycast test '{}' passed: hit entity {} at distance {:.3}",
+                                    case.name, actual.entity_id, actual.distance
+                                );
                             }
                         } else {
                             results.failed += 1;
-                            let error = format!("Raycast test '{}' failed: distance error {:.3} > tolerance {:.3}",
-                                              case.name, distance_error, expected.tolerance);
+                            let error = format!(
+                                "Raycast test '{}' failed: distance error {:.3} > tolerance {:.3}",
+                                case.name, distance_error, expected.tolerance
+                            );
                             results.errors.push(error.clone());
                             warn!("{}", error);
                         }
                     } else {
                         results.failed += 1;
-                        let error = format!("Raycast test '{}' failed: hit entity {} but expected {}",
-                                          case.name, actual.entity_id, expected.entity_id);
+                        let error = format!(
+                            "Raycast test '{}' failed: hit entity {} but expected {}",
+                            case.name, actual.entity_id, expected.entity_id
+                        );
                         results.errors.push(error.clone());
                         warn!("{}", error);
                     }
@@ -320,22 +331,29 @@ impl BvhIntegrationTester {
                 }
                 (Some(expected), None) => {
                     results.failed += 1;
-                    let error = format!("Raycast test '{}' failed: expected hit on entity {} but got none",
-                                      case.name, expected.entity_id);
+                    let error = format!(
+                        "Raycast test '{}' failed: expected hit on entity {} but got none",
+                        case.name, expected.entity_id
+                    );
                     results.errors.push(error.clone());
                     warn!("{}", error);
                 }
                 (None, Some(actual)) => {
                     results.failed += 1;
-                    let error = format!("Raycast test '{}' failed: unexpected hit on entity {}",
-                                      case.name, actual.entity_id);
+                    let error = format!(
+                        "Raycast test '{}' failed: unexpected hit on entity {}",
+                        case.name, actual.entity_id
+                    );
                     results.errors.push(error.clone());
                     warn!("{}", error);
                 }
             }
         }
 
-        info!("Raycasting tests: {} passed, {} failed", results.passed, results.failed);
+        info!(
+            "Raycasting tests: {} passed, {} failed",
+            results.passed, results.failed
+        );
         Ok(results)
     }
 
@@ -350,8 +368,13 @@ impl BvhIntegrationTester {
             let view_projection = case.projection_matrix * case.view_matrix;
             let all_entity_ids = vec![1, 2, 3, 4, 5]; // All test entities
 
-            let visible_indices = self.visibility_culler.get_visible_entities(view_projection, &all_entity_ids, false);
-            let visible_entity_ids: Vec<u64> = visible_indices.iter()
+            let visible_indices = self.visibility_culler.get_visible_entities(
+                view_projection,
+                &all_entity_ids,
+                false,
+            );
+            let visible_entity_ids: Vec<u64> = visible_indices
+                .iter()
                 .map(|&index| all_entity_ids[index])
                 .collect();
 
@@ -381,8 +404,12 @@ impl BvhIntegrationTester {
             if visible_correct {
                 results.passed += 1;
                 if self.config.verbose_logging {
-                    debug!("✓ Frustum test '{}' passed: {}/{} entities visible",
-                           case.name, visible_entity_ids.len(), all_entity_ids.len());
+                    debug!(
+                        "✓ Frustum test '{}' passed: {}/{} entities visible",
+                        case.name,
+                        visible_entity_ids.len(),
+                        all_entity_ids.len()
+                    );
                 }
             } else {
                 results.failed += 1;
@@ -390,7 +417,10 @@ impl BvhIntegrationTester {
             }
         }
 
-        info!("Frustum culling tests: {} passed, {} failed", results.passed, results.failed);
+        info!(
+            "Frustum culling tests: {} passed, {} failed",
+            results.passed, results.failed
+        );
         Ok(results)
     }
 
@@ -412,7 +442,8 @@ impl BvhIntegrationTester {
         {
             let bvh_manager = self.bvh_manager.lock().unwrap();
             let stats = bvh_manager.get_statistics();
-            metrics.bvh_build_time_ms = stats.metrics.scene_build_time_ms + stats.metrics.mesh_build_time_ms;
+            metrics.bvh_build_time_ms =
+                stats.metrics.scene_build_time_ms + stats.metrics.mesh_build_time_ms;
             metrics.triangle_count = stats.total_triangles;
             metrics.entity_count = stats.mesh_bvh_count;
         }
@@ -423,14 +454,14 @@ impl BvhIntegrationTester {
 
         for i in 0..self.config.performance_raycast_count {
             // Generate random ray directions
-            let theta = (i as f32 / self.config.performance_raycast_count as f32) * 2.0 * std::f32::consts::PI;
-            let phi = (i as f32 / self.config.performance_raycast_count as f32) * std::f32::consts::PI;
+            let theta = (i as f32 / self.config.performance_raycast_count as f32)
+                * 2.0
+                * std::f32::consts::PI;
+            let phi =
+                (i as f32 / self.config.performance_raycast_count as f32) * std::f32::consts::PI;
 
-            let direction = Vec3::new(
-                phi.sin() * theta.cos(),
-                phi.sin() * theta.sin(),
-                phi.cos()
-            ).normalize();
+            let direction =
+                Vec3::new(phi.sin() * theta.cos(), phi.sin() * theta.sin(), phi.cos()).normalize();
 
             let mut bvh_manager = self.bvh_manager.lock().unwrap();
             let _hit = bvh_manager.raycast_first(ray_origin, direction, 100.0);
@@ -438,40 +469,54 @@ impl BvhIntegrationTester {
 
         let raycast_duration = raycast_start.elapsed();
         metrics.raycast_time_ms = raycast_duration.as_millis() as f32;
-        metrics.raycasts_per_second = self.config.performance_raycast_count as f32 / raycast_duration.as_secs_f32();
+        metrics.raycasts_per_second =
+            self.config.performance_raycast_count as f32 / raycast_duration.as_secs_f32();
 
         // Test frustum culling performance
         let frustum_start = Instant::now();
-        let view_matrix = Mat4::look_at_rh(
-            Vec3::new(0.0, 5.0, 15.0),
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::Y
-        );
+        let view_matrix =
+            Mat4::look_at_rh(Vec3::new(0.0, 5.0, 15.0), Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
         let projection_matrix = Mat4::perspective_rh(
             std::f32::consts::PI / 3.0, // 60 degrees
             16.0 / 9.0,
             0.1,
-            100.0
+            100.0,
         );
 
-        for _ in 0..1000 { // Test frustum culling 1000 times
+        for _ in 0..1000 {
+            // Test frustum culling 1000 times
             let view_projection = projection_matrix * view_matrix;
             let all_entity_ids = vec![1, 2, 3, 4, 5];
-            let _visible_indices = self.visibility_culler.get_visible_entities(view_projection, &all_entity_ids, false);
+            let _visible_indices = self.visibility_culler.get_visible_entities(
+                view_projection,
+                &all_entity_ids,
+                false,
+            );
         }
 
         let frustum_duration = frustum_start.elapsed();
         metrics.frustum_cull_time_ms = frustum_duration.as_millis() as f32;
 
         // Estimate memory usage (rough approximation)
-        metrics.memory_usage_mb = (metrics.triangle_count * 36 + metrics.entity_count * 64) as f32 / (1024.0 * 1024.0);
+        metrics.memory_usage_mb =
+            (metrics.triangle_count * 36 + metrics.entity_count * 64) as f32 / (1024.0 * 1024.0);
 
         info!("Performance results:");
-        info!("  Raycast: {} raycasts in {:.3}ms ({:.0} rays/sec)",
-              self.config.performance_raycast_count, metrics.raycast_time_ms, metrics.raycasts_per_second);
-        info!("  Frustum culling: 1000 iterations in {:.3}ms", metrics.frustum_cull_time_ms);
+        info!(
+            "  Raycast: {} raycasts in {:.3}ms ({:.0} rays/sec)",
+            self.config.performance_raycast_count,
+            metrics.raycast_time_ms,
+            metrics.raycasts_per_second
+        );
+        info!(
+            "  Frustum culling: 1000 iterations in {:.3}ms",
+            metrics.frustum_cull_time_ms
+        );
         info!("  BVH build time: {:.3}ms", metrics.bvh_build_time_ms);
-        info!("  Memory usage: {:.2}MB (estimated)", metrics.memory_usage_mb);
+        info!(
+            "  Memory usage: {:.2}MB (estimated)",
+            metrics.memory_usage_mb
+        );
         info!("  Triangle count: {}", metrics.triangle_count);
         info!("  Entity count: {}", metrics.entity_count);
 
@@ -486,12 +531,17 @@ impl BvhIntegrationTester {
 
         // This would test the Lua scripting integration
         // For now, we'll validate that the BVH manager can be used by the scripting adapter
-        let adapter = crate::spatial::scripting_adapter::BvhScriptingAdapter::new(self.bvh_manager.clone());
+        let adapter =
+            crate::spatial::scripting_adapter::BvhScriptingAdapter::new(self.bvh_manager.clone());
 
         // Test raycasting through scripting adapter
         let hit = {
             let mut adapter = adapter;
-            adapter.raycast_first(Vec3::new(0.0, 5.0, 15.0), Vec3::new(0.0, -0.3, -1.0).normalize(), 100.0)
+            adapter.raycast_first(
+                Vec3::new(0.0, 5.0, 15.0),
+                Vec3::new(0.0, -0.3, -1.0).normalize(),
+                100.0,
+            )
         };
 
         if hit.is_some() {
@@ -499,13 +549,18 @@ impl BvhIntegrationTester {
             info!("✓ Lua scripting adapter test passed");
         } else {
             results.failed += 1;
-            results.errors.push("Lua scripting adapter test failed: no hit returned".to_string());
+            results
+                .errors
+                .push("Lua scripting adapter test failed: no hit returned".to_string());
             warn!("Lua scripting adapter test failed");
         }
 
         // Note: Full Lua script testing would require the scripting system to be initialized
         // This is a placeholder for that functionality
-        info!("Lua scripting tests: {} passed, {} failed", results.passed, results.failed);
+        info!(
+            "Lua scripting tests: {} passed, {} failed",
+            results.passed, results.failed
+        );
         info!("Note: Full Lua testing requires script system initialization");
 
         Ok(results)
@@ -513,7 +568,10 @@ impl BvhIntegrationTester {
 
     /// Take verification screenshots
     fn take_verification_screenshots(&self, screenshot_dir: &str) -> Result<()> {
-        info!("Taking verification screenshots in directory: {}", screenshot_dir);
+        info!(
+            "Taking verification screenshots in directory: {}",
+            screenshot_dir
+        );
 
         // Create screenshot directory
         std::fs::create_dir_all(screenshot_dir)?;
@@ -576,40 +634,56 @@ impl BvhIntegrationTester {
 
     /// Create frustum test cases
     fn create_frustum_test_cases(&self) -> Vec<FrustumTestCase> {
-        let view_matrix = Mat4::look_at_rh(
-            Vec3::new(0.0, 5.0, 15.0),
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::Y
-        );
+        let view_matrix =
+            Mat4::look_at_rh(Vec3::new(0.0, 5.0, 15.0), Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
         let projection_matrix = Mat4::perspective_rh(
             std::f32::consts::PI / 3.0, // 60 degrees
             16.0 / 9.0,
             0.1,
-            100.0
+            100.0,
         );
 
-        vec![
-            FrustumTestCase {
-                name: "Normal View".to_string(),
-                view_matrix,
-                projection_matrix,
-                expected_visible_entities: vec![1, 2, 5], // Ground, near cube, center sphere
-                expected_culled_entities: vec![3, 4], // Far sphere, left cylinder
-            },
-        ]
+        vec![FrustumTestCase {
+            name: "Normal View".to_string(),
+            view_matrix,
+            projection_matrix,
+            expected_visible_entities: vec![1, 2, 5], // Ground, near cube, center sphere
+            expected_culled_entities: vec![3, 4],     // Far sphere, left cylinder
+        }]
     }
 
     /// Print comprehensive test summary
     fn print_test_summary(&self, results: &BvhTestResults) {
         info!("=== BVH Integration Test Summary ===");
-        info!("Raycasting Tests: {} passed, {} failed", results.raycast_tests_passed, results.raycast_tests_failed);
-        info!("Frustum Culling Tests: {} passed, {} failed", results.frustum_tests_passed, results.frustum_tests_failed);
-        info!("Lua Scripting Tests: {} passed, {} failed", results.lua_script_tests_passed, results.lua_script_tests_failed);
+        info!(
+            "Raycasting Tests: {} passed, {} failed",
+            results.raycast_tests_passed, results.raycast_tests_failed
+        );
+        info!(
+            "Frustum Culling Tests: {} passed, {} failed",
+            results.frustum_tests_passed, results.frustum_tests_failed
+        );
+        info!(
+            "Lua Scripting Tests: {} passed, {} failed",
+            results.lua_script_tests_passed, results.lua_script_tests_failed
+        );
         info!("Performance:");
-        info!("  Raycast: {} rays/sec", results.performance_metrics.raycasts_per_second);
-        info!("  Frustum Culling: {:.3}ms for 1000 iterations", results.performance_metrics.frustum_cull_time_ms);
-        info!("  BVH Build Time: {:.3}ms", results.performance_metrics.bvh_build_time_ms);
-        info!("  Memory Usage: {:.2}MB", results.performance_metrics.memory_usage_mb);
+        info!(
+            "  Raycast: {} rays/sec",
+            results.performance_metrics.raycasts_per_second
+        );
+        info!(
+            "  Frustum Culling: {:.3}ms for 1000 iterations",
+            results.performance_metrics.frustum_cull_time_ms
+        );
+        info!(
+            "  BVH Build Time: {:.3}ms",
+            results.performance_metrics.bvh_build_time_ms
+        );
+        info!(
+            "  Memory Usage: {:.2}MB",
+            results.performance_metrics.memory_usage_mb
+        );
 
         if results.errors.is_empty() {
             info!("🎉 All BVH integration tests passed!");
@@ -671,17 +745,29 @@ fn create_test_mesh_data(mesh: &TestMesh) -> (Vec<[f32; 3]>, Vec<[u32; 3]>, Aabb
 fn create_cube_data(scale: Vec3) -> (Vec<[f32; 3]>, Vec<[u32; 3]>, Aabb) {
     let s = scale * 0.5;
     let positions = vec![
-        [-s.x, -s.y, -s.z], [s.x, -s.y, -s.z], [s.x, s.y, -s.z], [-s.x, s.y, -s.z], // Back
-        [-s.x, -s.y, s.z], [s.x, -s.y, s.z], [s.x, s.y, s.z], [-s.x, s.y, s.z], // Front
+        [-s.x, -s.y, -s.z],
+        [s.x, -s.y, -s.z],
+        [s.x, s.y, -s.z],
+        [-s.x, s.y, -s.z], // Back
+        [-s.x, -s.y, s.z],
+        [s.x, -s.y, s.z],
+        [s.x, s.y, s.z],
+        [-s.x, s.y, s.z], // Front
     ];
 
     let indices = vec![
-        [0, 1, 2], [0, 2, 3], // Back
-        [4, 6, 5], [4, 7, 6], // Front
-        [0, 4, 5], [0, 5, 1], // Bottom
-        [2, 6, 7], [2, 7, 3], // Top
-        [0, 3, 7], [0, 7, 4], // Left
-        [1, 5, 6], [1, 6, 2], // Right
+        [0, 1, 2],
+        [0, 2, 3], // Back
+        [4, 6, 5],
+        [4, 7, 6], // Front
+        [0, 4, 5],
+        [0, 5, 1], // Bottom
+        [2, 6, 7],
+        [2, 7, 3], // Top
+        [0, 3, 7],
+        [0, 7, 4], // Left
+        [1, 5, 6],
+        [1, 6, 2], // Right
     ];
 
     let aabb = Aabb::new(Vec3::new(-s.x, -s.y, -s.z), Vec3::new(s.x, s.y, s.z));
@@ -693,17 +779,23 @@ fn create_sphere_data(scale: Vec3) -> (Vec<[f32; 3]>, Vec<[u32; 3]>, Aabb) {
     // Simple octahedron as sphere approximation
     let r = scale.x * 0.5;
     let positions = vec![
-        [0.0, r, 0.0],    // Top
-        [r, 0.0, 0.0],    // Right
-        [0.0, 0.0, r],    // Front
-        [-r, 0.0, 0.0],   // Left
-        [0.0, 0.0, -r],   // Back
-        [0.0, -r, 0.0],   // Bottom
+        [0.0, r, 0.0],  // Top
+        [r, 0.0, 0.0],  // Right
+        [0.0, 0.0, r],  // Front
+        [-r, 0.0, 0.0], // Left
+        [0.0, 0.0, -r], // Back
+        [0.0, -r, 0.0], // Bottom
     ];
 
     let indices = vec![
-        [0, 1, 2], [0, 2, 3], [0, 3, 4], [0, 4, 1], // Top pyramid
-        [5, 2, 1], [5, 3, 2], [5, 4, 3], [5, 1, 4], // Bottom pyramid
+        [0, 1, 2],
+        [0, 2, 3],
+        [0, 3, 4],
+        [0, 4, 1], // Top pyramid
+        [5, 2, 1],
+        [5, 3, 2],
+        [5, 4, 3],
+        [5, 1, 4], // Bottom pyramid
     ];
 
     let aabb = Aabb::new(Vec3::new(-r, -r, -r), Vec3::new(r, r, r));
@@ -715,17 +807,29 @@ fn create_cylinder_data(scale: Vec3) -> (Vec<[f32; 3]>, Vec<[u32; 3]>, Aabb) {
     let r = scale.x * 0.5;
     let h = scale.y * 0.5;
     let positions = vec![
-        [-r, -h, -r], [r, -h, -r], [r, -h, r], [-r, -h, r], // Bottom
-        [-r, h, -r], [r, h, -r], [r, h, r], [-r, h, r], // Top
+        [-r, -h, -r],
+        [r, -h, -r],
+        [r, -h, r],
+        [-r, -h, r], // Bottom
+        [-r, h, -r],
+        [r, h, -r],
+        [r, h, r],
+        [-r, h, r], // Top
     ];
 
     let indices = vec![
-        [0, 1, 2], [0, 2, 3], // Bottom
-        [4, 6, 5], [4, 7, 6], // Top
-        [0, 4, 1], [1, 4, 5], // Front
-        [1, 5, 2], [2, 5, 6], // Right
-        [2, 6, 3], [3, 6, 7], // Back
-        [3, 7, 0], [0, 7, 4], // Left
+        [0, 1, 2],
+        [0, 2, 3], // Bottom
+        [4, 6, 5],
+        [4, 7, 6], // Top
+        [0, 4, 1],
+        [1, 4, 5], // Front
+        [1, 5, 2],
+        [2, 5, 6], // Right
+        [2, 6, 3],
+        [3, 6, 7], // Back
+        [3, 7, 0],
+        [0, 7, 4], // Left
     ];
 
     let aabb = Aabb::new(Vec3::new(-r, -h, -r), Vec3::new(r, h, r));
@@ -737,12 +841,13 @@ fn create_plane_data(scale: Vec3) -> (Vec<[f32; 3]>, Vec<[u32; 3]>, Aabb) {
     let sx = scale.x * 0.5;
     let sz = scale.z * 0.5;
     let positions = vec![
-        [-sx, 0.0, -sz], [sx, 0.0, -sz], [sx, 0.0, sz], [-sx, 0.0, sz],
+        [-sx, 0.0, -sz],
+        [sx, 0.0, -sz],
+        [sx, 0.0, sz],
+        [-sx, 0.0, sz],
     ];
 
-    let indices = vec![
-        [0, 1, 2], [0, 2, 3],
-    ];
+    let indices = vec![[0, 1, 2], [0, 2, 3]];
 
     let aabb = Aabb::new(Vec3::new(-sx, 0.0, -sz), Vec3::new(sx, 0.0, sz));
 
@@ -803,7 +908,10 @@ mod tests {
 
         for case in test_cases {
             assert!(!case.name.is_empty());
-            assert!(!case.expected_visible_entities.is_empty() || !case.expected_culled_entities.is_empty());
+            assert!(
+                !case.expected_visible_entities.is_empty()
+                    || !case.expected_culled_entities.is_empty()
+            );
         }
     }
 }

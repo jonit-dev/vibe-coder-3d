@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
     use mlua::Lua;
+    use serde_json::json;
     use std::sync::Arc;
     use vibe_events::SceneEventBus;
     use vibe_scripting::apis::register_event_api;
-    use serde_json::json;
 
     #[test]
     fn test_scene_event_bus_integration() {

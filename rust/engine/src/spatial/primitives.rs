@@ -1,4 +1,4 @@
-use glam::{Vec3, Mat4};
+use glam::{Mat4, Vec3};
 
 /// Ray with origin and direction (direction should be normalized)
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -81,9 +81,12 @@ impl Aabb {
 
     /// Check if a point is inside the AABB
     pub fn contains(&self, point: Vec3) -> bool {
-        point.x >= self.min.x && point.x <= self.max.x &&
-        point.y >= self.min.y && point.y <= self.max.y &&
-        point.z >= self.min.z && point.z <= self.max.z
+        point.x >= self.min.x
+            && point.x <= self.max.x
+            && point.y >= self.min.y
+            && point.y <= self.max.y
+            && point.z >= self.min.z
+            && point.z <= self.max.z
     }
 
     /// Transform the AABB by a matrix and return a new AABB that encloses the transformed box

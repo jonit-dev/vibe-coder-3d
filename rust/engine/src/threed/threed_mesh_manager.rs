@@ -84,7 +84,8 @@ impl ThreeDMeshManager {
 
         // Register mesh with BVH system for culling and raycasting
         self.ensure_bvh_initialized();
-        if let (Some(ref bvh_manager), Some(mesh)) = (&self.bvh_manager, self.meshes.get(mesh_idx)) {
+        if let (Some(ref bvh_manager), Some(mesh)) = (&self.bvh_manager, self.meshes.get(mesh_idx))
+        {
             crate::renderer::bvh_integration::register_mesh_with_bvh(
                 bvh_manager,
                 mesh,
@@ -195,8 +196,12 @@ impl ThreeDMeshManager {
         );
 
         // Update BVH debug logging
-        if let (Some(bvh_manager), Some(ref mut debug_logger)) = (&self.bvh_manager, &mut self.bvh_debug_logger) {
-            let manager = bvh_manager.lock().map_err(|_| anyhow::anyhow!("BVH manager mutex poisoned"))?;
+        if let (Some(bvh_manager), Some(ref mut debug_logger)) =
+            (&self.bvh_manager, &mut self.bvh_debug_logger)
+        {
+            let manager = bvh_manager
+                .lock()
+                .map_err(|_| anyhow::anyhow!("BVH manager mutex poisoned"))?;
             debug_logger.update(delta_time, &manager);
         }
 
@@ -254,10 +259,30 @@ impl ThreeDMeshManager {
 
         // Convert three_d::Matrix4 to glam::Mat4
         let view_projection = glam::Mat4::from_cols_array_2d(&[
-            [view_projection_threed.x.x, view_projection_threed.x.y, view_projection_threed.x.z, view_projection_threed.x.w],
-            [view_projection_threed.y.x, view_projection_threed.y.y, view_projection_threed.y.z, view_projection_threed.y.w],
-            [view_projection_threed.z.x, view_projection_threed.z.y, view_projection_threed.z.z, view_projection_threed.z.w],
-            [view_projection_threed.w.x, view_projection_threed.w.y, view_projection_threed.w.z, view_projection_threed.w.w],
+            [
+                view_projection_threed.x.x,
+                view_projection_threed.x.y,
+                view_projection_threed.x.z,
+                view_projection_threed.x.w,
+            ],
+            [
+                view_projection_threed.y.x,
+                view_projection_threed.y.y,
+                view_projection_threed.y.z,
+                view_projection_threed.y.w,
+            ],
+            [
+                view_projection_threed.z.x,
+                view_projection_threed.z.y,
+                view_projection_threed.z.z,
+                view_projection_threed.z.w,
+            ],
+            [
+                view_projection_threed.w.x,
+                view_projection_threed.w.y,
+                view_projection_threed.w.z,
+                view_projection_threed.w.w,
+            ],
         ]);
 
         let all_entity_ids: Vec<u64> = self.mesh_entity_ids.iter().map(|id| id.as_u64()).collect();
@@ -277,7 +302,8 @@ impl ThreeDMeshManager {
         // Log culling results only when visibility changes
         let total = self.meshes.len();
         let culled_count = total - final_indices.len();
-        let current_visible_set: std::collections::HashSet<usize> = final_indices.iter().copied().collect();
+        let current_visible_set: std::collections::HashSet<usize> =
+            final_indices.iter().copied().collect();
 
         if current_visible_set != self.previous_visible_indices && debug_mode {
             if culled_count > 0 {
@@ -297,13 +323,21 @@ impl ThreeDMeshManager {
                         .unwrap_or(false);
 
                     if !in_frustum && in_render_state {
-                        log::info!("  ❌ CULLED OUT: Entity {} (mesh {}) - outside frustum", entity_id, idx);
+                        log::info!(
+                            "  ❌ CULLED OUT: Entity {} (mesh {}) - outside frustum",
+                            entity_id,
+                            idx
+                        );
                     } else if in_frustum && in_render_state {
                         log::info!("  ✅ VISIBLE: Entity {} (mesh {})", entity_id, idx);
                     }
                 }
             } else {
-                log::info!("🔍 BVH Culling: All {}/{} meshes visible (changed)", final_indices.len(), total);
+                log::info!(
+                    "🔍 BVH Culling: All {}/{} meshes visible (changed)",
+                    final_indices.len(),
+                    total
+                );
             }
         }
 
@@ -335,11 +369,7 @@ impl ThreeDMeshManager {
     }
 
     /// Update entity material from script mutation
-    pub fn update_entity_material(
-        &mut self,
-        entity_id: EntityId,
-        data: &serde_json::Value,
-    ) {
+    pub fn update_entity_material(&mut self, entity_id: EntityId, data: &serde_json::Value) {
         crate::renderer::material_update::update_entity_material(
             &mut self.meshes,
             &self.mesh_entity_ids,

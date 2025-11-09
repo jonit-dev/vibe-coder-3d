@@ -1,7 +1,6 @@
 /// Post-processing render target management
 ///
 /// Handles HDR color and depth texture creation/recreation for post-processing pipeline.
-
 use three_d::*;
 
 /// Ensure HDR color texture exists and matches window size

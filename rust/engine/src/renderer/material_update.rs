@@ -2,7 +2,6 @@
 ///
 /// Handles updating material properties (color, metalness, roughness, emissive)
 /// for entities at runtime, typically driven by script API calls.
-
 use three_d::*;
 use vibe_scene::EntityId;
 
@@ -84,7 +83,8 @@ pub fn update_entity_material(
                 {
                     let intensity = intensity.max(0.0) as f32;
                     let emissive = material.emissive;
-                    let scale = |channel: u8| ((channel as f32 * intensity).clamp(0.0, 255.0)) as u8;
+                    let scale =
+                        |channel: u8| ((channel as f32 * intensity).clamp(0.0, 255.0)) as u8;
                     material.emissive = Srgba::new(
                         scale(emissive.r),
                         scale(emissive.g),

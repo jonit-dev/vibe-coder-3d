@@ -24,7 +24,6 @@
 ///     end)
 /// end
 /// ```
-
 use mlua::{Function, Lua, Result as LuaResult, Table};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -72,50 +71,44 @@ pub fn create_collision_api(lua: &Lua, entity_id: EntityId) -> LuaResult<Table> 
     let entity_id_u64 = entity_id.as_u64();
 
     // collision:onEnter(handler) -> handlerId
-    let on_enter_fn = lua.create_function(
-        move |lua, (_self, handler): (Table, Function)| {
-            let handler_id = register_collision_handler(
-                lua,
-                entity_id_u64,
-                PhysicsEventType::CollisionEnter,
-                handler,
-            )?;
-            Ok(handler_id)
-        },
-    )?;
+    let on_enter_fn = lua.create_function(move |lua, (_self, handler): (Table, Function)| {
+        let handler_id = register_collision_handler(
+            lua,
+            entity_id_u64,
+            PhysicsEventType::CollisionEnter,
+            handler,
+        )?;
+        Ok(handler_id)
+    })?;
     collision_table.set("onEnter", on_enter_fn)?;
 
     // collision:onExit(handler) -> handlerId
-    let on_exit_fn = lua.create_function(
-        move |lua, (_self, handler): (Table, Function)| {
-            let handler_id = register_collision_handler(
-                lua,
-                entity_id_u64,
-                PhysicsEventType::CollisionExit,
-                handler,
-            )?;
-            Ok(handler_id)
-        },
-    )?;
+    let on_exit_fn = lua.create_function(move |lua, (_self, handler): (Table, Function)| {
+        let handler_id = register_collision_handler(
+            lua,
+            entity_id_u64,
+            PhysicsEventType::CollisionExit,
+            handler,
+        )?;
+        Ok(handler_id)
+    })?;
     collision_table.set("onExit", on_exit_fn)?;
 
     // collision:onStay(handler) -> handlerId
-    let on_stay_fn = lua.create_function(
-        move |lua, (_self, handler): (Table, Function)| {
-            let handler_id = register_collision_handler(
-                lua,
-                entity_id_u64,
-                PhysicsEventType::CollisionStay,
-                handler,
-            )?;
-            Ok(handler_id)
-        },
-    )?;
+    let on_stay_fn = lua.create_function(move |lua, (_self, handler): (Table, Function)| {
+        let handler_id = register_collision_handler(
+            lua,
+            entity_id_u64,
+            PhysicsEventType::CollisionStay,
+            handler,
+        )?;
+        Ok(handler_id)
+    })?;
     collision_table.set("onStay", on_stay_fn)?;
 
     // collision:onTriggerEnter(handler) -> handlerId
-    let on_trigger_enter_fn = lua.create_function(
-        move |lua, (_self, handler): (Table, Function)| {
+    let on_trigger_enter_fn =
+        lua.create_function(move |lua, (_self, handler): (Table, Function)| {
             let handler_id = register_collision_handler(
                 lua,
                 entity_id_u64,
@@ -123,13 +116,12 @@ pub fn create_collision_api(lua: &Lua, entity_id: EntityId) -> LuaResult<Table> 
                 handler,
             )?;
             Ok(handler_id)
-        },
-    )?;
+        })?;
     collision_table.set("onTriggerEnter", on_trigger_enter_fn)?;
 
     // collision:onTriggerExit(handler) -> handlerId
-    let on_trigger_exit_fn = lua.create_function(
-        move |lua, (_self, handler): (Table, Function)| {
+    let on_trigger_exit_fn =
+        lua.create_function(move |lua, (_self, handler): (Table, Function)| {
             let handler_id = register_collision_handler(
                 lua,
                 entity_id_u64,
@@ -137,8 +129,7 @@ pub fn create_collision_api(lua: &Lua, entity_id: EntityId) -> LuaResult<Table> 
                 handler,
             )?;
             Ok(handler_id)
-        },
-    )?;
+        })?;
     collision_table.set("onTriggerExit", on_trigger_exit_fn)?;
 
     Ok(collision_table)
@@ -328,7 +319,9 @@ mod tests {
         let lua = Lua::new();
         let entity_id = EntityId::new(42);
 
-        lua.globals().set("collision", create_collision_api(&lua, entity_id).unwrap()).unwrap();
+        lua.globals()
+            .set("collision", create_collision_api(&lua, entity_id).unwrap())
+            .unwrap();
 
         // Create a counter to track callback invocations
         lua.globals().set("collision_count", 0).unwrap();
@@ -348,7 +341,9 @@ mod tests {
         // Verify callback was registered
         let event_bus = COLLISION_EVENT_BUS.lock().unwrap();
         let entity_events = event_bus.get(&entity_id.as_u64()).unwrap();
-        let handlers = entity_events.get(&PhysicsEventType::CollisionEnter).unwrap();
+        let handlers = entity_events
+            .get(&PhysicsEventType::CollisionEnter)
+            .unwrap();
         assert_eq!(handlers.len(), 1);
     }
 
@@ -358,7 +353,9 @@ mod tests {
         let entity_id = EntityId::new(1);
         let other_entity_id = EntityId::new(2);
 
-        lua.globals().set("collision", create_collision_api(&lua, entity_id).unwrap()).unwrap();
+        lua.globals()
+            .set("collision", create_collision_api(&lua, entity_id).unwrap())
+            .unwrap();
 
         // Create a counter to track callback invocations
         lua.globals().set("collision_count", 0).unwrap();
@@ -395,7 +392,9 @@ mod tests {
         // Add some handlers first (we'll use the internal API for testing)
         {
             let mut event_bus = COLLISION_EVENT_BUS.lock().unwrap();
-            let entity_events = event_bus.entry(entity_id.as_u64()).or_insert_with(HashMap::new);
+            let entity_events = event_bus
+                .entry(entity_id.as_u64())
+                .or_insert_with(HashMap::new);
             entity_events
                 .entry(PhysicsEventType::CollisionEnter)
                 .or_insert_with(Vec::new)
@@ -428,7 +427,10 @@ mod tests {
 
     #[test]
     fn test_physics_event_type_display() {
-        assert_eq!(PhysicsEventType::CollisionEnter.to_string(), "collisionEnter");
+        assert_eq!(
+            PhysicsEventType::CollisionEnter.to_string(),
+            "collisionEnter"
+        );
         assert_eq!(PhysicsEventType::CollisionExit.to_string(), "collisionExit");
         assert_eq!(PhysicsEventType::CollisionStay.to_string(), "collisionStay");
         assert_eq!(PhysicsEventType::TriggerEnter.to_string(), "triggerEnter");

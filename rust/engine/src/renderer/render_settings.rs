@@ -2,7 +2,6 @@
 ///
 /// Handles camera viewport calculation and render settings preparation
 /// (clear states, skybox, post-processing).
-
 use three_d::*;
 
 use super::camera_loader::CameraConfig;
@@ -35,12 +34,8 @@ pub fn viewport_from_config(config: &CameraConfig, window_size: (u32, u32)) -> V
 }
 
 /// Prepare render settings (clear state, skybox, post-processing) from camera config
-pub fn prepare_render_settings_for(
-    config: &CameraConfig,
-    skybox_loaded: bool,
-) -> RenderSettings {
-    const NEUTRAL_GRAY: (f32, f32, f32, f32) =
-        (64.0 / 255.0, 64.0 / 255.0, 64.0 / 255.0, 1.0);
+pub fn prepare_render_settings_for(config: &CameraConfig, skybox_loaded: bool) -> RenderSettings {
+    const NEUTRAL_GRAY: (f32, f32, f32, f32) = (64.0 / 255.0, 64.0 / 255.0, 64.0 / 255.0, 1.0);
 
     let solid_color = config
         .background_color

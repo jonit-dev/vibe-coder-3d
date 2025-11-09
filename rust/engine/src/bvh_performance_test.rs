@@ -9,9 +9,9 @@ use log::{info, warn};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use crate::spatial::bvh_manager::{BvhManager, BvhConfig};
+use crate::renderer::visibility::{FallbackVisibilityCuller, VisibilityCuller};
+use crate::spatial::bvh_manager::{BvhConfig, BvhManager};
 use crate::spatial::primitives::Aabb;
-use crate::renderer::visibility::{VisibilityCuller, FallbackVisibilityCuller};
 
 /// Performance test configuration
 #[derive(Debug, Clone)]
@@ -33,7 +33,11 @@ pub enum EntityPattern {
     /// Entities randomly distributed
     Random { range: f32 },
     /// Entities clustered in groups
-    Clustered { cluster_count: usize, entities_per_cluster: usize, cluster_radius: f32 },
+    Clustered {
+        cluster_count: usize,
+        entities_per_cluster: usize,
+        cluster_radius: f32,
+    },
 }
 
 /// Performance test results
@@ -161,33 +165,32 @@ impl BvhPerformanceTester {
                     });
                 }
             }
-            EntityPattern::Clustered { cluster_count, entities_per_cluster, cluster_radius } => {
+            EntityPattern::Clustered {
+                cluster_count,
+                entities_per_cluster,
+                cluster_radius,
+            } => {
                 use rand::Rng;
                 let mut rng = rand::thread_rng();
                 let mut entity_counter = 0;
 
                 for cluster_id in 0..*cluster_count {
-                    let cluster_center = Vec3::new(
-                        rng.gen_range(-50.0..50.0),
-                        1.0,
-                        rng.gen_range(-50.0..50.0),
-                    );
+                    let cluster_center =
+                        Vec3::new(rng.gen_range(-50.0..50.0), 1.0, rng.gen_range(-50.0..50.0));
 
                     for i in 0..*entities_per_cluster {
                         if entity_counter >= self.config.entity_count {
                             break;
                         }
 
-                        let angle = (i as f32 / *entities_per_cluster as f32) * 2.0 * std::f32::consts::PI;
+                        let angle =
+                            (i as f32 / *entities_per_cluster as f32) * 2.0 * std::f32::consts::PI;
                         let radius = rng.gen_range(0.0..*cluster_radius);
 
                         entities.push(TestEntity {
                             entity_id: (entity_counter + 1) as u64,
-                            position: cluster_center + Vec3::new(
-                                radius * angle.cos(),
-                                0.0,
-                                radius * angle.sin(),
-                            ),
+                            position: cluster_center
+                                + Vec3::new(radius * angle.cos(), 0.0, radius * angle.sin()),
                             scale: Vec3::new(1.0, 2.0, 1.0),
                             mesh_type: MeshType::Cube,
                         });
@@ -233,7 +236,7 @@ impl BvhPerformanceTester {
                 let world_matrix = Mat4::from_scale_rotation_translation(
                     entity.scale,
                     glam::Quat::IDENTITY,
-                    entity.position
+                    entity.position,
                 );
                 manager.update_transform(entity.entity_id, world_matrix);
             }
@@ -251,11 +254,8 @@ impl BvhPerformanceTester {
             let theta = (i as f32 / self.config.raycast_count as f32) * 2.0 * std::f32::consts::PI;
             let phi = (i as f32 / self.config.raycast_count as f32) * std::f32::consts::PI;
 
-            let direction = Vec3::new(
-                phi.sin() * theta.cos(),
-                phi.cos(),
-                phi.sin() * theta.sin(),
-            ).normalize();
+            let direction =
+                Vec3::new(phi.sin() * theta.cos(), phi.cos(), phi.sin() * theta.sin()).normalize();
 
             let mut manager = bvh_manager.lock().unwrap();
             let _hit = manager.raycast_first(ray_origin, direction, 100.0);
@@ -268,26 +268,24 @@ impl BvhPerformanceTester {
         let view_matrix = Mat4::look_at_rh(
             Vec3::new(0.0, 10.0, 20.0),
             Vec3::new(0.0, 0.0, 0.0),
-            Vec3::Y
+            Vec3::Y,
         );
-        let projection_matrix = Mat4::perspective_rh(
-            std::f32::consts::PI / 3.0,
-            16.0 / 9.0,
-            0.1,
-            100.0
-        );
+        let projection_matrix =
+            Mat4::perspective_rh(std::f32::consts::PI / 3.0, 16.0 / 9.0, 0.1, 100.0);
 
         let entity_ids: Vec<u64> = entities.iter().map(|e| e.entity_id).collect();
 
         for _ in 0..self.config.frustum_test_count {
             let view_projection = projection_matrix * view_matrix;
-            let _visible_indices = visibility_culler.get_visible_entities(view_projection, &entity_ids, false);
+            let _visible_indices =
+                visibility_culler.get_visible_entities(view_projection, &entity_ids, false);
         }
 
         let frustum_time = frustum_start.elapsed().as_millis() as f32;
 
         // Estimate memory usage
-        let memory_usage_mb = (total_triangles * 36 + entities.len() * 64) as f32 / (1024.0 * 1024.0);
+        let memory_usage_mb =
+            (total_triangles * 36 + entities.len() * 64) as f32 / (1024.0 * 1024.0);
 
         Ok(BvhTestResults {
             raycast_time_ms: raycast_time,
@@ -310,11 +308,8 @@ impl BvhPerformanceTester {
             let theta = (i as f32 / self.config.raycast_count as f32) * 2.0 * std::f32::consts::PI;
             let phi = (i as f32 / self.config.raycast_count as f32) * std::f32::consts::PI;
 
-            let direction = Vec3::new(
-                phi.sin() * theta.cos(),
-                phi.cos(),
-                phi.sin() * theta.sin(),
-            ).normalize();
+            let direction =
+                Vec3::new(phi.sin() * theta.cos(), phi.cos(), phi.sin() * theta.sin()).normalize();
 
             // Simulate brute force raycast (checking all entities)
             let _hit = self.brute_force_raycast(ray_origin, direction, entities);
@@ -328,20 +323,17 @@ impl BvhPerformanceTester {
         let view_matrix = Mat4::look_at_rh(
             Vec3::new(0.0, 10.0, 20.0),
             Vec3::new(0.0, 0.0, 0.0),
-            Vec3::Y
+            Vec3::Y,
         );
-        let projection_matrix = Mat4::perspective_rh(
-            std::f32::consts::PI / 3.0,
-            16.0 / 9.0,
-            0.1,
-            100.0
-        );
+        let projection_matrix =
+            Mat4::perspective_rh(std::f32::consts::PI / 3.0, 16.0 / 9.0, 0.1, 100.0);
 
         let entity_ids: Vec<u64> = entities.iter().map(|e| e.entity_id).collect();
 
         for _ in 0..self.config.frustum_test_count {
             let view_projection = projection_matrix * view_matrix;
-            let _visible_indices = fallback_culler.get_visible_entities(view_projection, &entity_ids);
+            let _visible_indices =
+                fallback_culler.get_visible_entities(view_projection, &entity_ids);
         }
 
         let frustum_time = frustum_start.elapsed().as_millis() as f32;
@@ -349,14 +341,19 @@ impl BvhPerformanceTester {
         Ok(BvhTestResults {
             raycast_time_ms: raycast_time,
             frustum_time_ms: frustum_time,
-            build_time_ms: 0.0, // No build time for brute force
-            memory_usage_mb: 0.0, // Minimal memory overhead
+            build_time_ms: 0.0,                  // No build time for brute force
+            memory_usage_mb: 0.0,                // Minimal memory overhead
             triangle_count: entities.len() * 12, // Approximate
         })
     }
 
     /// Simulate brute force raycasting
-    fn brute_force_raycast(&self, origin: Vec3, direction: Vec3, entities: &[TestEntity]) -> Option<u64> {
+    fn brute_force_raycast(
+        &self,
+        origin: Vec3,
+        direction: Vec3,
+        entities: &[TestEntity],
+    ) -> Option<u64> {
         // Simplified brute force raycast - just check if ray hits entity bounding box
         let mut closest_hit: Option<(f32, u64)> = None;
 
@@ -388,8 +385,14 @@ impl BvhPerformanceTester {
         let t_min = (min - origin) / direction;
         let t_max = (max - origin) / direction;
 
-        let t1 = t_min.x.min(t_max.x).min(t_min.y.min(t_max.y).min(t_min.z.min(t_max.z)));
-        let t2 = t_min.x.max(t_max.x).max(t_min.y.max(t_max.y).max(t_min.z.max(t_max.z)));
+        let t1 = t_min
+            .x
+            .min(t_max.x)
+            .min(t_min.y.min(t_max.y).min(t_min.z.min(t_max.z)));
+        let t2 = t_min
+            .x
+            .max(t_max.x)
+            .max(t_min.y.max(t_max.y).max(t_min.z.max(t_max.z)));
 
         if t1 <= t2 && t2 >= 0.0 {
             Some(t1.max(0.0))
@@ -404,13 +407,25 @@ impl BvhPerformanceTester {
         info!("Entity Count: {}", results.entity_count);
         info!("Triangle Count: {}", results.triangle_count);
         info!("With BVH:");
-        info!("  Raycast Time: {:.3}ms ({} rays)", results.bvh_raycast_time_ms, self.config.raycast_count);
-        info!("  Frustum Cull Time: {:.3}ms ({} tests)", results.bvh_frustum_time_ms, self.config.frustum_test_count);
+        info!(
+            "  Raycast Time: {:.3}ms ({} rays)",
+            results.bvh_raycast_time_ms, self.config.raycast_count
+        );
+        info!(
+            "  Frustum Cull Time: {:.3}ms ({} tests)",
+            results.bvh_frustum_time_ms, self.config.frustum_test_count
+        );
         info!("  BVH Build Time: {:.3}ms", results.bvh_build_time_ms);
         info!("  Memory Usage: {:.2}MB", results.bvh_memory_usage_mb);
         info!("Without BVH (Brute Force):");
-        info!("  Raycast Time: {:.3}ms ({} rays)", results.no_bvh_raycast_time_ms, self.config.raycast_count);
-        info!("  Frustum Cull Time: {:.3}ms ({} tests)", results.no_bvh_frustum_time_ms, self.config.frustum_test_count);
+        info!(
+            "  Raycast Time: {:.3}ms ({} rays)",
+            results.no_bvh_raycast_time_ms, self.config.raycast_count
+        );
+        info!(
+            "  Frustum Cull Time: {:.3}ms ({} tests)",
+            results.no_bvh_frustum_time_ms, self.config.frustum_test_count
+        );
         info!("Performance Improvements:");
         info!("  Raycast Speedup: {:.2}x", results.raycast_speedup);
         info!("  Frustum Culling Speedup: {:.2}x", results.frustum_speedup);
@@ -462,17 +477,29 @@ fn create_test_mesh_data(entity: &TestEntity) -> (Vec<[f32; 3]>, Vec<[u32; 3]>, 
     // Create a simple cube mesh
     let s = entity.scale * 0.5;
     let positions = vec![
-        [-s.x, -s.y, -s.z], [s.x, -s.y, -s.z], [s.x, s.y, -s.z], [-s.x, s.y, -s.z], // Back
-        [-s.x, -s.y, s.z], [s.x, -s.y, s.z], [s.x, s.y, s.z], [-s.x, s.y, s.z], // Front
+        [-s.x, -s.y, -s.z],
+        [s.x, -s.y, -s.z],
+        [s.x, s.y, -s.z],
+        [-s.x, s.y, -s.z], // Back
+        [-s.x, -s.y, s.z],
+        [s.x, -s.y, s.z],
+        [s.x, s.y, s.z],
+        [-s.x, s.y, s.z], // Front
     ];
 
     let indices = vec![
-        [0, 1, 2], [0, 2, 3], // Back
-        [4, 6, 5], [4, 7, 6], // Front
-        [0, 4, 5], [0, 5, 1], // Bottom
-        [2, 6, 7], [2, 7, 3], // Top
-        [0, 3, 7], [0, 7, 4], // Left
-        [1, 5, 6], [1, 6, 2], // Right
+        [0, 1, 2],
+        [0, 2, 3], // Back
+        [4, 6, 5],
+        [4, 7, 6], // Front
+        [0, 4, 5],
+        [0, 5, 1], // Bottom
+        [2, 6, 7],
+        [2, 7, 3], // Top
+        [0, 3, 7],
+        [0, 7, 4], // Left
+        [1, 5, 6],
+        [1, 6, 2], // Right
     ];
 
     let aabb = Aabb::new(Vec3::new(-s.x, -s.y, -s.z), Vec3::new(s.x, s.y, s.z));
@@ -490,7 +517,10 @@ mod tests {
             entity_count: 100,
             raycast_count: 1000,
             frustum_test_count: 100,
-            entity_pattern: EntityPattern::Grid { size: 10, spacing: 5.0 },
+            entity_pattern: EntityPattern::Grid {
+                size: 10,
+                spacing: 5.0,
+            },
         };
 
         let tester = BvhPerformanceTester::new(config);
@@ -504,7 +534,10 @@ mod tests {
             entity_count: 25,
             raycast_count: 100,
             frustum_test_count: 10,
-            entity_pattern: EntityPattern::Grid { size: 5, spacing: 10.0 },
+            entity_pattern: EntityPattern::Grid {
+                size: 5,
+                spacing: 10.0,
+            },
         };
 
         let tester = BvhPerformanceTester::new(config);

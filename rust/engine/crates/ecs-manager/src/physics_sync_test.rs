@@ -283,7 +283,8 @@ mod tests {
         // Verify cleanup
         assert!(!manager.scene_state().has_entity(entity_id));
         assert_eq!(
-            manager.physics_world().stats().rigid_body_count, 0,
+            manager.physics_world().stats().rigid_body_count,
+            0,
             "Physics body should be removed"
         );
     }

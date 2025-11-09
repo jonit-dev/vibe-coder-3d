@@ -3,9 +3,9 @@
 //! This module provides a simple demonstration of the BVH system working
 //! to prove that the implementation is functional.
 
-use crate::spatial::bvh_manager::{BvhManager, BvhConfig};
+use crate::spatial::bvh_manager::{BvhConfig, BvhManager};
 use crate::spatial::primitives::{Aabb, Ray};
-use glam::{Vec3, Mat4};
+use glam::{Mat4, Vec3};
 
 pub fn demonstrate_bvh_functionality() {
     println!("🎯 === BVH System Demonstration ===");
@@ -28,11 +28,7 @@ pub fn demonstrate_bvh_functionality() {
     let mut bvh_manager = BvhManager::with_config(config);
 
     // Create test mesh data (a simple triangle)
-    let positions = vec![
-        [0.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0],
-        [0.5, 1.0, 0.0],
-    ];
+    let positions = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, 1.0, 0.0]];
     let indices = vec![[0, 1, 2]];
     let local_aabb = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 0.0));
 
@@ -40,12 +36,7 @@ pub fn demonstrate_bvh_functionality() {
     println!("\n📦 Registering mesh with BVH system...");
     let entity_id = 42;
 
-    bvh_manager.register_mesh(
-        entity_id,
-        &positions,
-        &indices,
-        local_aabb
-    );
+    bvh_manager.register_mesh(entity_id, &positions, &indices, local_aabb);
 
     // Set entity transform
     let world_transform = Mat4::from_translation(Vec3::new(0.0, 0.0, -5.0));
@@ -73,9 +64,15 @@ pub fn demonstrate_bvh_functionality() {
     println!("   Ray from {:?} direction {:?}", hit_origin, hit_direction);
 
     if let Some(hit) = bvh_manager.raycast_first(hit_origin, hit_direction, 100.0) {
-        println!("   ✅ RAYCAST HIT! Entity: {}, Distance: {:.3}", hit.entity_id, hit.distance);
+        println!(
+            "   ✅ RAYCAST HIT! Entity: {}, Distance: {:.3}",
+            hit.entity_id, hit.distance
+        );
         println!("   📍 Hit point: {:?}", hit.point);
-        println!("   🎯 Triangle index: {}, Barycentric: {:?}", hit.triangle_index, hit.barycentric);
+        println!(
+            "   🎯 Triangle index: {}, Barycentric: {:?}",
+            hit.triangle_index, hit.barycentric
+        );
     } else {
         println!("   ❌ No raycast hit detected");
     }
@@ -109,10 +106,16 @@ pub fn demonstrate_bvh_functionality() {
     let miss_origin = Vec3::new(10.0, 10.0, -10.0);
     let miss_direction = Vec3::new(0.0, 0.0, 1.0);
 
-    println!("   Ray from {:?} direction {:?}", miss_origin, miss_direction);
+    println!(
+        "   Ray from {:?} direction {:?}",
+        miss_origin, miss_direction
+    );
 
     if let Some(hit) = bvh_manager.raycast_first(miss_origin, miss_direction, 100.0) {
-        println!("   ❌ Unexpected hit: Entity {}, Distance {:.3}", hit.entity_id, hit.distance);
+        println!(
+            "   ❌ Unexpected hit: Entity {}, Distance {:.3}",
+            hit.entity_id, hit.distance
+        );
     } else {
         println!("   ✅ No hit detected (as expected)");
     }
@@ -121,7 +124,10 @@ pub fn demonstrate_bvh_functionality() {
     let metrics = bvh_manager.metrics();
     println!("\n⚡ Performance Metrics:");
     println!("   - Raycasts this frame: {}", metrics.raycasts_last_frame);
-    println!("   - Ray-triangle tests: {}", metrics.ray_triangle_tests_last_frame);
+    println!(
+        "   - Ray-triangle tests: {}",
+        metrics.ray_triangle_tests_last_frame
+    );
     println!("   - Visible meshes: {}", metrics.visible_meshes_last_frame);
     println!("   - Culled meshes: {}", metrics.culled_meshes_last_frame);
 

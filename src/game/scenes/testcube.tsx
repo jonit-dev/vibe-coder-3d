@@ -1,0 +1,188 @@
+import { defineScene } from './defineScene';
+
+/**
+ * testcube
+ * Scene with 3 entities
+ * Generated: 2025-11-08T09:05:36.813Z
+ * Version: 1
+ */
+export default defineScene({
+  metadata: {
+  "name": "testcube",
+  "version": 1,
+  "timestamp": "2025-11-08T09:05:36.813Z",
+  "description": "Scene with 3 entities"
+},
+  entities: [
+  {
+    "id": 7,
+    "name": "Camera",
+    "components": {
+      "PersistentId": {
+        "id": "596c513c-9d00-4b96-8200-5166cbcfedfb"
+      },
+      "Transform": {
+        "position": [
+          0,
+          2,
+          -5
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "Camera": {
+        "fov": 60,
+        "near": 0.1,
+        "far": 100,
+        "projectionType": "perspective",
+        "orthographicSize": 10,
+        "depth": 0,
+        "isMain": true,
+        "clearFlags": "skybox",
+        "skyboxTexture": "",
+        "backgroundColor": {
+          "r": 0.5,
+          "g": 0.7,
+          "b": 0.9,
+          "a": 1
+        },
+        "controlMode": "free",
+        "viewportRect": {
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        "hdr": false,
+        "toneMapping": "none",
+        "toneMappingExposure": 1,
+        "enablePostProcessing": false,
+        "postProcessingPreset": "none",
+        "enableSmoothing": false,
+        "followTarget": 0,
+        "followOffset": {
+          "x": 0,
+          "y": 5,
+          "z": -10
+        },
+        "smoothingSpeed": 2,
+        "rotationSmoothing": 1.5,
+        "skyboxScale": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "skyboxRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "skyboxRepeat": {
+          "u": 1,
+          "v": 1
+        },
+        "skyboxOffset": {
+          "u": 0,
+          "v": 0
+        },
+        "skyboxIntensity": 1,
+        "skyboxBlur": 0
+      }
+    }
+  },
+  {
+    "id": 8,
+    "name": "DirectionalLight",
+    "components": {
+      "PersistentId": {
+        "id": "ac4456cf-f49b-4901-97a2-db0bd3ff2e86"
+      },
+      "Transform": {
+        "position": [
+          10,
+          -18.75,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "Light": {
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
+        },
+        "intensity": 0.9,
+        "enabled": true,
+        "castShadow": false,
+        "directionX": -0.5,
+        "directionY": -1,
+        "directionZ": 0,
+        "range": 10,
+        "decay": 1,
+        "angle": 0.5235987755982988,
+        "penumbra": 0.1,
+        "shadowMapSize": 4096,
+        "shadowBias": -0.0005,
+        "shadowRadius": 0.2,
+        "lightType": "directional"
+      }
+    }
+  },
+  {
+    "id": 9,
+    "name": "Cube",
+    "components": {
+      "PersistentId": {
+        "id": "bb26c4b9-482e-408b-9e23-068f00375c40"
+      },
+      "Transform": {
+        "position": [
+          0,
+          1,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "MeshRenderer": {
+        "enabled": true,
+        "castShadows": true,
+        "receiveShadows": true,
+        "modelPath": "",
+        "meshId": "Cube",
+        "materialId": "red"
+      }
+    }
+  }
+],
+  assetReferences: {
+    materials: ["@/materials/default","@/materials/red"],
+    inputs: ["@/inputs/defaultInput"],
+    prefabs: ["@/prefabs/trees"]
+  }
+});

@@ -6,8 +6,8 @@ use serde_json::Value;
 use std::any::Any;
 use vibe_scene::ComponentKindId;
 
-use crate::{ComponentCapabilities, IComponentDecoder};
 use super::common::default_enabled;
+use crate::{ComponentCapabilities, IComponentDecoder};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct MeshRenderer {

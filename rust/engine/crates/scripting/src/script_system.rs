@@ -10,13 +10,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use vibe_ecs_bridge::{ScriptComponent, Transform};
-use vibe_scene::{Entity, Scene};
 use vibe_ecs_manager::SceneManager;
+use vibe_scene::{Entity, Scene};
 
 use crate::apis::entity_api::{register_entity_api, EntityTransformState};
+use crate::apis::scene_api::create_simple_scene_manager;
 use crate::apis::{EntityMutationBuffer, InputManagerRef};
 use crate::lua_runtime::{LuaScript, LuaScriptRuntime};
-use crate::apis::scene_api::create_simple_scene_manager;
 use crate::script_prefab_manager::create_script_prefab_manager;
 
 /// Per-entity script instance
@@ -51,7 +51,7 @@ pub struct ScriptSystem {
     script_prefab_manager: Option<crate::apis::prefab_api::PrefabManagerRef>,
     /// Concrete prefab manager for loading scene prefabs
     concrete_prefab_manager: Option<crate::script_prefab_manager::ScriptPrefabManager>,
-    }
+}
 
 impl ScriptSystem {
     /// Create a new ScriptSystem
@@ -89,19 +89,20 @@ impl ScriptSystem {
     }
 
     /// Get the scene manager reference for API registration
-    pub fn scene_manager_ref(&self) -> Option<std::sync::Weak<std::sync::Mutex<vibe_ecs_manager::SceneManager>>> {
+    pub fn scene_manager_ref(
+        &self,
+    ) -> Option<std::sync::Weak<std::sync::Mutex<vibe_ecs_manager::SceneManager>>> {
         self.scene_manager.clone()
     }
 
-  /// Set the scene manager for Scene API integration
+    /// Set the scene manager for Scene API integration
     pub fn set_script_scene_manager(&mut self, scene_path: Option<String>) {
         log::info!("Setting up Scene API with scene path: {:?}", scene_path);
         self.script_scene_manager = Some(create_simple_scene_manager(scene_path));
     }
 
-    
-  /// Update the current scene path (call this when loading a new scene)
-  pub fn update_scene_path(&self, scene_path: Option<String>) {
+    /// Update the current scene path (call this when loading a new scene)
+    pub fn update_scene_path(&self, scene_path: Option<String>) {
         if let Some(ref manager) = self.script_scene_manager {
             // We need to add set_scene_path method to the trait
             log::info!("Scene path updated to: {:?}", scene_path);
@@ -109,8 +110,8 @@ impl ScriptSystem {
         }
     }
 
-  /// Set up the prefab manager for Prefab API integration
-  pub fn setup_prefab_manager(&mut self) {
+    /// Set up the prefab manager for Prefab API integration
+    pub fn setup_prefab_manager(&mut self) {
         log::info!("Setting up Prefab API with script prefab manager");
         let manager = crate::script_prefab_manager::create_script_prefab_manager();
         self.script_prefab_manager = Some(manager.clone());
@@ -135,7 +136,9 @@ impl ScriptSystem {
         self.scene = Some(Arc::new(scene.clone()));
 
         // Load scene prefabs into prefab manager if available
-        if let (Some(prefab_manager), Some(prefabs_value)) = (&self.script_prefab_manager, &scene.prefabs) {
+        if let (Some(prefab_manager), Some(prefabs_value)) =
+            (&self.script_prefab_manager, &scene.prefabs)
+        {
             log::info!("Loading scene prefabs into script prefab manager...");
             if let Err(e) = prefab_manager.load_prefabs_from_scene(prefabs_value) {
                 log::warn!("Failed to load scene prefabs: {}", e);
@@ -369,29 +372,33 @@ impl ScriptSystem {
             } else {
                 log::warn!(
                     "SceneManager has been dropped for entity '{}' (ID {}), event API disabled",
-                    entity_name, entity_id
+                    entity_name,
+                    entity_id
                 );
                 None
             }
         } else {
             log::warn!(
                 "No SceneManager available for entity '{}' (ID {}), event API disabled",
-                entity_name, entity_id
+                entity_name,
+                entity_id
             );
             None
         };
 
         if let Some(event_bus) = event_bus {
-            crate::apis::register_event_api(runtime.lua(), entity_id as u32, event_bus).with_context(|| {
-                format!(
-                    "Failed to register event API for entity '{}' (ID {})",
-                    entity_name, entity_id
-                )
-            })?;
+            crate::apis::register_event_api(runtime.lua(), entity_id as u32, event_bus)
+                .with_context(|| {
+                    format!(
+                        "Failed to register event API for entity '{}' (ID {})",
+                        entity_name, entity_id
+                    )
+                })?;
         } else {
             log::warn!(
                 "Event API not registered for entity '{}' (ID {}) due to missing SceneManager",
-                entity_name, entity_id
+                entity_name,
+                entity_id
             );
         }
 
@@ -517,43 +524,51 @@ impl ScriptSystem {
             .context("Scene not initialized for CollisionAPI")?;
 
         // Check if entity has physics components (RigidBody or MeshCollider)
-        let has_physics = entity.components.contains_key("RigidBody") || entity.components.contains_key("MeshCollider");
+        let has_physics = entity.components.contains_key("RigidBody")
+            || entity.components.contains_key("MeshCollider");
         if has_physics {
-            let collision_api = crate::apis::create_collision_api(runtime.lua(), vibe_scene::EntityId::new(entity_id))
-                .with_context(|| {
-                    format!(
-                        "Failed to create Collision API for entity '{}' (ID {})",
-                        entity_name, entity_id
-                    )
-                })?;
-
-            // Set collision API on entity
-            let entity_table: mlua::Table = runtime.lua().globals().get("entity")?;
-            entity_table.set("collision", collision_api).with_context(|| {
+            let collision_api = crate::apis::create_collision_api(
+                runtime.lua(),
+                vibe_scene::EntityId::new(entity_id),
+            )
+            .with_context(|| {
                 format!(
-                    "Failed to set collision API on entity for '{}' (ID {})",
+                    "Failed to create Collision API for entity '{}' (ID {})",
                     entity_name, entity_id
                 )
             })?;
+
+            // Set collision API on entity
+            let entity_table: mlua::Table = runtime.lua().globals().get("entity")?;
+            entity_table
+                .set("collision", collision_api)
+                .with_context(|| {
+                    format!(
+                        "Failed to set collision API on entity for '{}' (ID {})",
+                        entity_name, entity_id
+                    )
+                })?;
         }
 
-      // Register Scene API (global)
+        // Register Scene API (global)
         // Register Scene API with real scene manager (if available)
-        crate::apis::register_scene_api(runtime.lua(), self.script_scene_manager.clone()).with_context(|| {
-            format!(
-                "Failed to register Scene API for entity '{}' (ID {})",
-                entity_name, entity_id
-            )
-        })?;
+        crate::apis::register_scene_api(runtime.lua(), self.script_scene_manager.clone())
+            .with_context(|| {
+                format!(
+                    "Failed to register Scene API for entity '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            })?;
 
         // Register Prefab API (global)
         // Register Prefab API with real prefab manager (if available)
-        crate::apis::register_prefab_api(runtime.lua(), self.script_prefab_manager.clone()).with_context(|| {
-            format!(
-                "Failed to register Prefab API for entity '{}' (ID {})",
-                entity_name, entity_id
-            )
-        })?;
+        crate::apis::register_prefab_api(runtime.lua(), self.script_prefab_manager.clone())
+            .with_context(|| {
+                format!(
+                    "Failed to register Prefab API for entity '{}' (ID {})",
+                    entity_name, entity_id
+                )
+            })?;
 
         // Register Save/Load API (global) - persistent key-value storage
         let save_manager = crate::apis::create_file_save_manager(None); // Uses default path: ./saves/savegame.json
@@ -715,7 +730,10 @@ impl ScriptSystem {
         }
 
         if !all_mutations.is_empty() {
-            log::info!("Total mutations drained from all scripts: {}", all_mutations.len());
+            log::info!(
+                "Total mutations drained from all scripts: {}",
+                all_mutations.len()
+            );
         }
 
         all_mutations

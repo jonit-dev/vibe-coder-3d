@@ -27,10 +27,7 @@ mod integration_tests {
         let mut manager = SceneManager::new(scene);
 
         // Initially empty
-        assert_eq!(
-            manager.scene_state().with_scene(|s| s.entities.len()),
-            0
-        );
+        assert_eq!(manager.scene_state().with_scene(|s| s.entities.len()), 0);
 
         // Create an entity
         let entity_id = manager
@@ -41,20 +38,14 @@ mod integration_tests {
 
         // Command queued but not applied yet
         assert_eq!(manager.pending_command_count(), 1);
-        assert_eq!(
-            manager.scene_state().with_scene(|s| s.entities.len()),
-            0
-        );
+        assert_eq!(manager.scene_state().with_scene(|s| s.entities.len()), 0);
 
         // Apply commands
         manager.apply_pending_commands().unwrap();
 
         // Entity should now exist
         assert_eq!(manager.pending_command_count(), 0);
-        assert_eq!(
-            manager.scene_state().with_scene(|s| s.entities.len()),
-            1
-        );
+        assert_eq!(manager.scene_state().with_scene(|s| s.entities.len()), 1);
         assert!(manager.scene_state().has_entity(entity_id));
     }
 
@@ -80,10 +71,7 @@ mod integration_tests {
 
         // Entity should be gone
         assert!(!manager.scene_state().has_entity(entity_id));
-        assert_eq!(
-            manager.scene_state().with_scene(|s| s.entities.len()),
-            0
-        );
+        assert_eq!(manager.scene_state().with_scene(|s| s.entities.len()), 0);
     }
 
     #[test]
@@ -101,10 +89,7 @@ mod integration_tests {
         manager.apply_pending_commands().unwrap();
 
         // All entities should exist
-        assert_eq!(
-            manager.scene_state().with_scene(|s| s.entities.len()),
-            3
-        );
+        assert_eq!(manager.scene_state().with_scene(|s| s.entities.len()), 3);
         assert!(manager.scene_state().has_entity(id1));
         assert!(manager.scene_state().has_entity(id2));
         assert!(manager.scene_state().has_entity(id3));
@@ -214,10 +199,7 @@ mod integration_tests {
         manager.apply_pending_commands().unwrap();
 
         // Both entities should exist
-        assert_eq!(
-            manager.scene_state().with_scene(|s| s.entities.len()),
-            2
-        );
+        assert_eq!(manager.scene_state().with_scene(|s| s.entities.len()), 2);
         assert!(manager.scene_state().has_entity(id1));
         assert!(manager.scene_state().has_entity(id2));
     }
@@ -240,9 +222,6 @@ mod integration_tests {
 
         // Entity should not exist (created then destroyed)
         assert!(!manager.scene_state().has_entity(entity_id));
-        assert_eq!(
-            manager.scene_state().with_scene(|s| s.entities.len()),
-            0
-        );
+        assert_eq!(manager.scene_state().with_scene(|s| s.entities.len()), 0);
     }
 }

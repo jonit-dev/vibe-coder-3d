@@ -48,7 +48,9 @@ mod event_api_test;
 // Re-export for convenience
 pub use audio_api::register_audio_api;
 pub use camera_api::register_camera_api;
-pub use collision_api::{cleanup_collision_api, create_collision_api, dispatch_physics_event, PhysicsEventType};
+pub use collision_api::{
+    cleanup_collision_api, create_collision_api, dispatch_physics_event, PhysicsEventType,
+};
 pub use console_api::register_console_api;
 pub use entities_api::register_entities_api;
 pub use entity_api::register_entity_api;
@@ -63,7 +65,9 @@ pub use mesh_api::MeshAPI;
 pub use physics_api::register_physics_api;
 pub use prefab_api::{register_prefab_api, PrefabManagerProvider, PrefabManagerRef};
 pub use query_api::register_query_api;
-pub use save_api::{register_save_api, create_file_save_manager, SaveManagerProvider, SaveManagerRef};
+pub use save_api::{
+    create_file_save_manager, register_save_api, SaveManagerProvider, SaveManagerRef,
+};
 pub use scene_api::{register_scene_api, SceneManagerProvider, SceneManagerRef};
 pub use time_api::{register_time_api, update_time_api, TimeInfo};
 pub use timer_api::register_timer_api;

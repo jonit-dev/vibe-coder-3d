@@ -1,7 +1,6 @@
 /// Scene management utilities
 ///
 /// Handles scene clearing and logging for scene load operations.
-
 use three_d::*;
 use vibe_scene::Scene as SceneData;
 

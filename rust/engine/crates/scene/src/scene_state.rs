@@ -2,7 +2,6 @@
 ///
 /// Provides controlled mutation APIs for runtime entity operations
 /// while maintaining thread-safety through Mutex.
-
 use super::{Entity, EntityId, Scene};
 use std::sync::Mutex;
 
@@ -246,7 +245,12 @@ mod tests {
         ];
 
         for expected_id in expected_ids {
-            assert!(ids.contains(&expected_id), "Expected to find {:?} in {:?}", expected_id, ids);
+            assert!(
+                ids.contains(&expected_id),
+                "Expected to find {:?} in {:?}",
+                expected_id,
+                ids
+            );
         }
     }
 

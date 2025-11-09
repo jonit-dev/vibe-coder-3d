@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use vibe_ecs_bridge::decoders::create_default_registry;
 use vibe_scene::Scene as SceneData;
 

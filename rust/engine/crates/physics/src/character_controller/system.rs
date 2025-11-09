@@ -292,8 +292,8 @@ impl CharacterControllerSystem {
             if ray_len > 0.0 {
                 let dir = Vector::new(0.0, 1.0, 0.0);
                 let origins_y = [
-                    0.0,                            // center
-                    top_offset * 0.45_f32,          // near top
+                    0.0,                   // center
+                    top_offset * 0.45_f32, // near top
                 ];
                 let mut min_toi = ray_len;
                 for oy in origins_y {
@@ -307,7 +307,11 @@ impl CharacterControllerSystem {
                         if handle == collider_handle || other.is_sensor() {
                             continue;
                         }
-                        if let Some(toi) = other.shape().cast_ray(other.position(), &ray, ray_len, true) {
+                        if let Some(toi) =
+                            other
+                                .shape()
+                                .cast_ray(other.position(), &ray, ray_len, true)
+                        {
                             if toi < min_toi {
                                 min_toi = toi;
                             }
@@ -326,8 +330,8 @@ impl CharacterControllerSystem {
             let ray_len = dx.abs() + config.skin_width;
             let dir = Vector::new(dx.signum(), 0.0, 0.0);
             let origins_y = [
-                0.0,                             // center
-                -bottom_offset * 0.45_f32,       // near bottom
+                0.0,                       // center
+                -bottom_offset * 0.45_f32, // near bottom
             ];
             let mut min_toi = ray_len;
             for oy in origins_y {
@@ -341,7 +345,10 @@ impl CharacterControllerSystem {
                     if handle == collider_handle || other.is_sensor() {
                         continue;
                     }
-                    if let Some(toi) = other.shape().cast_ray(other.position(), &ray, ray_len, true) {
+                    if let Some(toi) = other
+                        .shape()
+                        .cast_ray(other.position(), &ray, ray_len, true)
+                    {
                         if toi < min_toi {
                             min_toi = toi;
                         }
@@ -359,8 +366,8 @@ impl CharacterControllerSystem {
             let ray_len = dz.abs() + config.skin_width;
             let dir = Vector::new(0.0, 0.0, dz.signum());
             let origins_y = [
-                0.0,                             // center
-                -bottom_offset * 0.45_f32,       // near bottom
+                0.0,                       // center
+                -bottom_offset * 0.45_f32, // near bottom
             ];
             let mut min_toi = ray_len;
             for oy in origins_y {
@@ -374,7 +381,10 @@ impl CharacterControllerSystem {
                     if handle == collider_handle || other.is_sensor() {
                         continue;
                     }
-                    if let Some(toi) = other.shape().cast_ray(other.position(), &ray, ray_len, true) {
+                    if let Some(toi) = other
+                        .shape()
+                        .cast_ray(other.position(), &ray, ray_len, true)
+                    {
                         if toi < min_toi {
                             min_toi = toi;
                         }

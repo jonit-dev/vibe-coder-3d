@@ -2,7 +2,6 @@
 ///!
 ///! This module provides low-level validation that works with any serde-deserializable type.
 ///! It detects properties in the JSON that don't match the expected Rust struct schema.
-
 use serde_json::Value;
 use std::collections::HashSet;
 
@@ -25,15 +24,8 @@ pub fn validate_fields(
     for (key, value) in obj.iter() {
         if !expected_fields.contains(key.as_str()) {
             unknown_count += 1;
-            log::warn!(
-                "⚠️  {}: Unknown property '{}' = {:?}",
-                context,
-                key,
-                value
-            );
-            log::warn!(
-                "   This property will be ignored. Check for typos or schema mismatch."
-            );
+            log::warn!("⚠️  {}: Unknown property '{}' = {:?}", context, key, value);
+            log::warn!("   This property will be ignored. Check for typos or schema mismatch.");
         }
     }
 
@@ -51,10 +43,7 @@ pub fn validate_fields(
 ///
 /// # Returns
 /// * Result of deserialization (Ok even if there were unknown fields with defaults)
-pub fn deserialize_with_warnings<T>(
-    json_value: &Value,
-    context: &str,
-) -> Result<T, String>
+pub fn deserialize_with_warnings<T>(json_value: &Value, context: &str) -> Result<T, String>
 where
     T: serde::de::DeserializeOwned,
 {
@@ -66,22 +55,14 @@ where
             // Check for unknown field errors
             if error_msg.contains("unknown field") {
                 if let Some(field_name) = extract_unknown_field(&error_msg) {
-                    log::warn!(
-                        "⚠️  {}: Unknown field '{}' in JSON",
-                        context,
-                        field_name
-                    );
+                    log::warn!("⚠️  {}: Unknown field '{}' in JSON", context, field_name);
                 }
             }
 
             // Check for missing required fields
             if error_msg.contains("missing field") {
                 if let Some(field_name) = extract_missing_field(&error_msg) {
-                    log::warn!(
-                        "⚠️  {}: Missing required field '{}'",
-                        context,
-                        field_name
-                    );
+                    log::warn!("⚠️  {}: Missing required field '{}'", context, field_name);
                 }
             }
 

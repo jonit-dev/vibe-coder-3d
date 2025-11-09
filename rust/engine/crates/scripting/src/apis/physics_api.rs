@@ -110,11 +110,11 @@
 use mlua::prelude::*;
 use serde_json::Value;
 use std::sync::Arc;
-use vibe_scene::Scene;
 use vibe_ecs_manager::SceneManager;
+use vibe_scene::Scene;
 
 use super::{
-    collision_api::{dispatch_physics_event, cleanup_collision_api},
+    collision_api::{cleanup_collision_api, dispatch_physics_event},
     entity_mutations::{EntityMutation, EntityMutationBuffer},
 };
 

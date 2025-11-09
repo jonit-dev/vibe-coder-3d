@@ -1,5 +1,5 @@
-use crate::spatial::primitives::{Aabb, Triangle, Ray};
 use crate::spatial::intersect::{ray_intersect_triangle, RayHit};
+use crate::spatial::primitives::{Aabb, Ray, Triangle};
 use glam::Vec3;
 
 /// Split strategy for BVH construction
@@ -17,10 +17,7 @@ pub enum SplitStrategy {
 #[derive(Debug, Clone, Copy)]
 pub enum MeshBvhNodeType {
     /// Internal node with left and right children
-    Internal {
-        left: u32,
-        right: u32,
-    },
+    Internal { left: u32, right: u32 },
     /// Leaf node containing triangles
     Leaf {
         triangle_start: u32,
@@ -72,9 +69,10 @@ impl MeshBvh {
         // Convert vertex/index data to triangles
         let mut triangles = Vec::with_capacity(indices.len());
         for (i, &tri_indices) in indices.iter().enumerate() {
-            if tri_indices[0] < positions.len() as u32 &&
-               tri_indices[1] < positions.len() as u32 &&
-               tri_indices[2] < positions.len() as u32 {
+            if tri_indices[0] < positions.len() as u32
+                && tri_indices[1] < positions.len() as u32
+                && tri_indices[2] < positions.len() as u32
+            {
                 let triangle = Triangle::new(
                     Vec3::from_array(positions[tri_indices[0] as usize]),
                     Vec3::from_array(positions[tri_indices[1] as usize]),
@@ -105,13 +103,16 @@ impl MeshBvh {
         }
 
         // Create triangle data for building
-        let triangle_data: Vec<TriangleData> = bvh.triangles.iter().enumerate().map(|(i, &tri)| {
-            TriangleData {
+        let triangle_data: Vec<TriangleData> = bvh
+            .triangles
+            .iter()
+            .enumerate()
+            .map(|(i, &tri)| TriangleData {
                 triangle: tri,
                 centroid: tri.centroid(),
                 index: i,
-            }
-        }).collect();
+            })
+            .collect();
 
         // Build the tree
         let root_index = bvh.build_node(&triangle_data);
@@ -198,7 +199,10 @@ impl MeshBvh {
     }
 
     /// Split triangles into two groups based on strategy
-    fn split_triangles(&self, triangles: &[TriangleData]) -> (Vec<TriangleData>, Vec<TriangleData>) {
+    fn split_triangles(
+        &self,
+        triangles: &[TriangleData],
+    ) -> (Vec<TriangleData>, Vec<TriangleData>) {
         if triangles.len() <= 1 {
             return (triangles.to_vec(), Vec::new());
         }
@@ -226,13 +230,25 @@ impl MeshBvh {
         };
 
         // Split at center
-        let center = if axis == 0 { aabb.center().x } else if axis == 1 { aabb.center().y } else { aabb.center().z };
+        let center = if axis == 0 {
+            aabb.center().x
+        } else if axis == 1 {
+            aabb.center().y
+        } else {
+            aabb.center().z
+        };
 
         let mut left = Vec::new();
         let mut right = Vec::new();
 
         for tri_data in triangles {
-            let centroid_coord = if axis == 0 { tri_data.centroid.x } else if axis == 1 { tri_data.centroid.y } else { tri_data.centroid.z };
+            let centroid_coord = if axis == 0 {
+                tri_data.centroid.x
+            } else if axis == 1 {
+                tri_data.centroid.y
+            } else {
+                tri_data.centroid.z
+            };
             if centroid_coord < center {
                 left.push(*tri_data);
             } else {
@@ -264,8 +280,20 @@ impl MeshBvh {
         for axis in 0..3 {
             let mut variance = 0.0;
             for tri_data in triangles {
-                let coord = if axis == 0 { tri_data.centroid.x } else if axis == 1 { tri_data.centroid.y } else { tri_data.centroid.z };
-                let avg = if axis == 0 { avg_centroid.x } else if axis == 1 { avg_centroid.y } else { avg_centroid.z };
+                let coord = if axis == 0 {
+                    tri_data.centroid.x
+                } else if axis == 1 {
+                    tri_data.centroid.y
+                } else {
+                    tri_data.centroid.z
+                };
+                let avg = if axis == 0 {
+                    avg_centroid.x
+                } else if axis == 1 {
+                    avg_centroid.y
+                } else {
+                    avg_centroid.z
+                };
                 variance += (coord - avg).powi(2);
             }
             variance /= triangles.len() as f32;
@@ -276,13 +304,25 @@ impl MeshBvh {
             }
         }
 
-        let split_value = if split_axis == 0 { avg_centroid.x } else if split_axis == 1 { avg_centroid.y } else { avg_centroid.z };
+        let split_value = if split_axis == 0 {
+            avg_centroid.x
+        } else if split_axis == 1 {
+            avg_centroid.y
+        } else {
+            avg_centroid.z
+        };
 
         let mut left = Vec::new();
         let mut right = Vec::new();
 
         for tri_data in triangles {
-            let coord = if split_axis == 0 { tri_data.centroid.x } else if split_axis == 1 { tri_data.centroid.y } else { tri_data.centroid.z };
+            let coord = if split_axis == 0 {
+                tri_data.centroid.x
+            } else if split_axis == 1 {
+                tri_data.centroid.y
+            } else {
+                tri_data.centroid.z
+            };
             if coord < split_value {
                 left.push(*tri_data);
             } else {
@@ -337,7 +377,10 @@ impl MeshBvh {
                 self.raycast_first_recursive(ray, max_distance, *left as usize, closest_hit);
                 self.raycast_first_recursive(ray, max_distance, *right as usize, closest_hit);
             }
-            MeshBvhNodeType::Leaf { triangle_start, triangle_count } => {
+            MeshBvhNodeType::Leaf {
+                triangle_start,
+                triangle_count,
+            } => {
                 let start = *triangle_start as usize;
                 let end = start + *triangle_count as usize;
 
@@ -390,7 +433,10 @@ impl MeshBvh {
                 self.raycast_all_recursive(ray, max_distance, *left as usize, hits);
                 self.raycast_all_recursive(ray, max_distance, *right as usize, hits);
             }
-            MeshBvhNodeType::Leaf { triangle_start, triangle_count } => {
+            MeshBvhNodeType::Leaf {
+                triangle_start,
+                triangle_count,
+            } => {
                 let start = *triangle_start as usize;
                 let end = start + *triangle_count as usize;
 
@@ -459,23 +505,35 @@ mod tests {
 
     fn create_test_cube() -> (Vec<[f32; 3]>, Vec<[u32; 3]>) {
         let positions = vec![
-            [-1.0, -1.0, -1.0], [1.0, -1.0, -1.0], [1.0, 1.0, -1.0], [-1.0, 1.0, -1.0], // Front
-            [-1.0, -1.0, 1.0], [1.0, -1.0, 1.0], [1.0, 1.0, 1.0], [-1.0, 1.0, 1.0],   // Back
+            [-1.0, -1.0, -1.0],
+            [1.0, -1.0, -1.0],
+            [1.0, 1.0, -1.0],
+            [-1.0, 1.0, -1.0], // Front
+            [-1.0, -1.0, 1.0],
+            [1.0, -1.0, 1.0],
+            [1.0, 1.0, 1.0],
+            [-1.0, 1.0, 1.0], // Back
         ];
 
         let indices = vec![
-            [0, 1, 2], [0, 2, 3], // Front
-            [4, 6, 5], [4, 7, 6], // Back
-            [0, 4, 5], [0, 5, 1], // Bottom
-            [2, 6, 7], [2, 7, 3], // Top
-            [0, 3, 7], [0, 7, 4], // Left
-            [1, 5, 6], [1, 6, 2], // Right
+            [0, 1, 2],
+            [0, 2, 3], // Front
+            [4, 6, 5],
+            [4, 7, 6], // Back
+            [0, 4, 5],
+            [0, 5, 1], // Bottom
+            [2, 6, 7],
+            [2, 7, 3], // Top
+            [0, 3, 7],
+            [0, 7, 4], // Left
+            [1, 5, 6],
+            [1, 6, 2], // Right
         ];
 
         (positions, indices)
     }
 
-#[test]
+    #[test]
     #[ignore] // TODO: Fix stack overflow in BVH build
     fn test_mesh_bvh_build() {
         let (positions, indices) = create_test_cube();
@@ -485,7 +543,7 @@ mod tests {
         assert_eq!(bvh.triangles.len(), 12); // 12 triangles for a cube
     }
 
-#[test]
+    #[test]
     #[ignore] // TODO: Fix stack overflow in BVH build
     fn test_mesh_bvh_raycast_hit() {
         let (positions, indices) = create_test_cube();
@@ -500,7 +558,7 @@ mod tests {
         assert!(triangle_index < 12);
     }
 
-#[test]
+    #[test]
     #[ignore] // TODO: Fix stack overflow in BVH build
     fn test_mesh_bvh_raycast_miss() {
         let (positions, indices) = create_test_cube();
@@ -512,7 +570,7 @@ mod tests {
         assert!(hit.is_none());
     }
 
-#[test]
+    #[test]
     #[ignore] // TODO: Fix stack overflow in BVH build
     fn test_mesh_bvh_raycast_all() {
         let (positions, indices) = create_test_cube();
@@ -526,7 +584,7 @@ mod tests {
         assert!(hits[0].0 > 0.0);
     }
 
-#[test]
+    #[test]
     fn test_mesh_bvh_stats() {
         let (positions, indices) = create_test_cube();
         let bvh = MeshBvh::build(&positions, &indices, 4, SplitStrategy::Center);
@@ -537,7 +595,7 @@ mod tests {
         assert!(stats.leaf_node_count > 0);
     }
 
-#[test]
+    #[test]
     #[ignore] // TODO: Fix stack overflow in BVH build
     fn test_mesh_bvh_empty() {
         let bvh = MeshBvh::build(&[], &[], 4, SplitStrategy::Center);

@@ -22,7 +22,9 @@ pub fn parse_vec3_from_table(table: &LuaTable) -> LuaResult<Vec3> {
         return Ok(Vec3::new(x, y, z));
     }
 
-    Err(LuaError::runtime("Invalid Vec3 table format. Expected {x, y, z} or {x=0, y=1, z=2}"))
+    Err(LuaError::runtime(
+        "Invalid Vec3 table format. Expected {x, y, z} or {x=0, y=1, z=2}",
+    ))
 }
 
 /// Create a Lua table representing a raycast hit result

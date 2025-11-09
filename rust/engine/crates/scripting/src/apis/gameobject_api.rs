@@ -1,7 +1,6 @@
 /// GameObject API for Lua scripts
 ///
 /// Provides runtime entity creation and destruction APIs.
-
 use mlua::prelude::*;
 use std::sync::{Mutex, Weak};
 use vibe_ecs_manager::SceneManager;
@@ -15,7 +14,10 @@ pub type SceneManagerRef = Weak<Mutex<SceneManager>>;
 /// - GameObject.createPrimitive(kind, options?) -> entityId
 /// - GameObject.destroy(entityRef?) -> void
 pub fn register_gameobject_api(lua: &Lua, scene_manager: Option<SceneManagerRef>) -> LuaResult<()> {
-    log::info!("Registering GameObject API (scene_manager present: {})", scene_manager.is_some());
+    log::info!(
+        "Registering GameObject API (scene_manager present: {})",
+        scene_manager.is_some()
+    );
     let gameobject = lua.create_table()?;
 
     // GameObject.create(name?, parent?)
@@ -69,7 +71,9 @@ pub fn register_gameobject_api(lua: &Lua, scene_manager: Option<SceneManagerRef>
                     .lock()
                     .map_err(|_| LuaError::runtime("SceneManager lock poisoned"))?;
 
-                let mut builder = mgr.create_entity().with_name(&format!("{} Primitive", kind));
+                let mut builder = mgr
+                    .create_entity()
+                    .with_name(&format!("{} Primitive", kind));
 
                 // Parse options if provided
                 if let Some(opts) = options {
@@ -82,17 +86,25 @@ pub fn register_gameobject_api(lua: &Lua, scene_manager: Option<SceneManagerRef>
                     if let Ok(transform) = opts.get::<LuaTable>("transform") {
                         // Handle position as Lua table
                         if let Ok(pos_table) = transform.get::<LuaTable>("position") {
-                            if let Ok(pos_vec) = pos_table.sequence_values::<f32>().collect::<LuaResult<Vec<_>>>() {
+                            if let Ok(pos_vec) = pos_table
+                                .sequence_values::<f32>()
+                                .collect::<LuaResult<Vec<_>>>()
+                            {
                                 if pos_vec.len() == 3 {
-                                    builder = builder.with_position([pos_vec[0], pos_vec[1], pos_vec[2]]);
+                                    builder =
+                                        builder.with_position([pos_vec[0], pos_vec[1], pos_vec[2]]);
                                 }
                             }
                         }
                         // Handle rotation as Lua table
                         if let Ok(rot_table) = transform.get::<LuaTable>("rotation") {
-                            if let Ok(rot_vec) = rot_table.sequence_values::<f32>().collect::<LuaResult<Vec<_>>>() {
+                            if let Ok(rot_vec) = rot_table
+                                .sequence_values::<f32>()
+                                .collect::<LuaResult<Vec<_>>>()
+                            {
                                 if rot_vec.len() == 3 {
-                                    builder = builder.with_rotation([rot_vec[0], rot_vec[1], rot_vec[2]]);
+                                    builder =
+                                        builder.with_rotation([rot_vec[0], rot_vec[1], rot_vec[2]]);
                                 }
                             }
                         }
@@ -103,9 +115,15 @@ pub fn register_gameobject_api(lua: &Lua, scene_manager: Option<SceneManagerRef>
                                     builder = builder.with_scale([s, s, s]);
                                 }
                                 LuaValue::Table(t) => {
-                                    if let Ok(scale_vec) = t.sequence_values::<f32>().collect::<LuaResult<Vec<_>>>() {
+                                    if let Ok(scale_vec) =
+                                        t.sequence_values::<f32>().collect::<LuaResult<Vec<_>>>()
+                                    {
                                         if scale_vec.len() == 3 {
-                                            builder = builder.with_scale([scale_vec[0], scale_vec[1], scale_vec[2]]);
+                                            builder = builder.with_scale([
+                                                scale_vec[0],
+                                                scale_vec[1],
+                                                scale_vec[2],
+                                            ]);
                                         }
                                     }
                                 }
@@ -116,7 +134,9 @@ pub fn register_gameobject_api(lua: &Lua, scene_manager: Option<SceneManagerRef>
 
                     // Extract material
                     if let Ok(material) = opts.get::<LuaTable>("material") {
-                        let color = material.get::<String>("color").unwrap_or_else(|_| "#888888".to_string());
+                        let color = material
+                            .get::<String>("color")
+                            .unwrap_or_else(|_| "#888888".to_string());
                         let metalness = material.get::<f32>("metalness").unwrap_or(0.0);
                         let roughness = material.get::<f32>("roughness").unwrap_or(0.5);
                         builder = builder.with_material(&color, metalness, roughness);
@@ -146,7 +166,9 @@ pub fn register_gameobject_api(lua: &Lua, scene_manager: Option<SceneManagerRef>
         gameobject.set(
             "createPrimitive",
             lua.create_function(|_, _: (String, Option<LuaTable>)| -> LuaResult<f64> {
-                Err(LuaError::runtime("GameObject.createPrimitive not available"))
+                Err(LuaError::runtime(
+                    "GameObject.createPrimitive not available",
+                ))
             })?,
         )?;
     }

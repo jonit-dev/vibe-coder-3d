@@ -5,7 +5,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::{SceneEventBus, EventEnvelope, EventKey, keys};
+    use crate::{keys, EventEnvelope, EventKey, SceneEventBus};
     use std::sync::{Arc, Mutex};
 
     #[test]
@@ -193,7 +193,11 @@ mod tests {
         });
 
         // Emit targeted event
-        event_bus.emit_to(vibe_scene::EntityId::new(1), "test:multiple", serde_json::json!({}));
+        event_bus.emit_to(
+            vibe_scene::EntityId::new(1),
+            "test:multiple",
+            serde_json::json!({}),
+        );
 
         // Process events
         event_bus.pump_events(|_| {});

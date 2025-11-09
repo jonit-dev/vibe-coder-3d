@@ -114,7 +114,8 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
 
         for primitive in gltf_mesh.primitives() {
             // Check if this primitive uses Draco compression
-            let draco_ext = primitive.extensions()
+            let draco_ext = primitive
+                .extensions()
                 .and_then(|ext| ext.get("KHR_draco_mesh_compression"));
 
             if draco_ext.is_some() {

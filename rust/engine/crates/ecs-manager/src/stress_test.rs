@@ -53,7 +53,9 @@ mod tests {
         }
 
         // Final verification - scene should be empty
-        let entity_count = manager.scene_state().with_scene(|scene| scene.entities.len());
+        let entity_count = manager
+            .scene_state()
+            .with_scene(|scene| scene.entities.len());
         assert_eq!(entity_count, 0, "Scene should be empty after stress test");
     }
 
@@ -249,7 +251,8 @@ mod tests {
             let stats = manager.physics_world().stats();
             assert_eq!(
                 stats.rigid_body_count, 0,
-                "Physics world should be empty after cycle {}", cycle
+                "Physics world should be empty after cycle {}",
+                cycle
             );
         }
     }
@@ -274,10 +277,7 @@ mod tests {
             manager.scene_state().find_entity_mut(entity_id, |entity| {
                 if let Some(transform) = entity.components.get_mut("Transform") {
                     if let Some(obj) = transform.as_object_mut() {
-                        obj.insert(
-                            "position".to_string(),
-                            json!([i as f32, 0.0, 0.0])
-                        );
+                        obj.insert("position".to_string(), json!([i as f32, 0.0, 0.0]));
                     }
                 }
             });
@@ -309,7 +309,9 @@ mod tests {
         manager.apply_pending_commands().unwrap();
 
         // Verify all entities exist
-        let entity_count = manager.scene_state().with_scene(|scene| scene.entities.len());
+        let entity_count = manager
+            .scene_state()
+            .with_scene(|scene| scene.entities.len());
         assert_eq!(entity_count, 100);
     }
 
@@ -358,10 +360,13 @@ mod tests {
             manager.apply_pending_commands().unwrap();
 
             // Verify scene is empty
-            let entity_count = manager.scene_state().with_scene(|scene| scene.entities.len());
+            let entity_count = manager
+                .scene_state()
+                .with_scene(|scene| scene.entities.len());
             assert_eq!(
                 entity_count, 0,
-                "Scene should be empty after batch {}", batch
+                "Scene should be empty after batch {}",
+                batch
             );
         }
     }

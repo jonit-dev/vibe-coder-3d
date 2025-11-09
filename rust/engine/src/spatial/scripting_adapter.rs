@@ -1,5 +1,7 @@
 #[cfg(feature = "scripting-support")]
-use vibe_scripting::apis::query_api::{BvhRaycaster as ScriptingBvhRaycaster, RaycastHit as ScriptingRaycastHit};
+use vibe_scripting::apis::query_api::{
+    BvhRaycaster as ScriptingBvhRaycaster, RaycastHit as ScriptingRaycastHit,
+};
 
 use crate::spatial::bvh_manager::{BvhManager, RaycastHit};
 use glam::Vec3;
@@ -20,15 +22,27 @@ impl BvhScriptingAdapter {
 
 #[cfg(feature = "scripting-support")]
 impl ScriptingBvhRaycaster for BvhScriptingAdapter {
-    fn raycast_first(&mut self, origin: Vec3, dir: Vec3, max_distance: f32) -> Option<ScriptingRaycastHit> {
+    fn raycast_first(
+        &mut self,
+        origin: Vec3,
+        dir: Vec3,
+        max_distance: f32,
+    ) -> Option<ScriptingRaycastHit> {
         let mut manager = self.bvh_manager.lock().unwrap();
-        manager.raycast_first(origin, dir, max_distance)
+        manager
+            .raycast_first(origin, dir, max_distance)
             .map(convert_raycast_hit)
     }
 
-    fn raycast_all(&mut self, origin: Vec3, dir: Vec3, max_distance: f32) -> Vec<ScriptingRaycastHit> {
+    fn raycast_all(
+        &mut self,
+        origin: Vec3,
+        dir: Vec3,
+        max_distance: f32,
+    ) -> Vec<ScriptingRaycastHit> {
         let mut manager = self.bvh_manager.lock().unwrap();
-        manager.raycast_all(origin, dir, max_distance)
+        manager
+            .raycast_all(origin, dir, max_distance)
             .into_iter()
             .map(convert_raycast_hit)
             .collect()

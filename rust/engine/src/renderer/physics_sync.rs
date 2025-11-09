@@ -2,7 +2,6 @@
 ///
 /// Handles syncing physics body transforms and script-driven transforms
 /// back to renderer meshes, supporting multi-submesh entities (e.g., GLTF models).
-
 use glam::Vec3 as GlamVec3;
 use three_d::*;
 use vibe_scene::EntityId;
@@ -25,10 +24,7 @@ pub fn sync_physics_transforms(
             for (mesh_idx, &mesh_entity_id) in mesh_entity_ids.iter().enumerate() {
                 if mesh_entity_id == *entity_id {
                     if let Some(mesh) = meshes.get_mut(mesh_idx) {
-                        let scale = mesh_scales
-                            .get(mesh_idx)
-                            .copied()
-                            .unwrap_or(GlamVec3::ONE);
+                        let scale = mesh_scales.get(mesh_idx).copied().unwrap_or(GlamVec3::ONE);
                         let translation = body.translation();
                         // No logging for physics sync - too noisy
                         update_mesh_from_physics(mesh, body, scale);

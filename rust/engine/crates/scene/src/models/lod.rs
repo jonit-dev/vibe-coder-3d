@@ -4,7 +4,6 @@
 /// - Original and variant paths
 /// - Per-entity distance thresholds
 /// - Per-entity quality overrides
-
 use serde::{Deserialize, Serialize};
 
 /// LOD quality variants (re-exported from renderer for convenience in scene models)
@@ -143,7 +142,8 @@ impl LODComponent {
 
     /// Check if quality has changed
     pub fn has_quality_changed(&self, new_quality: LODQuality) -> bool {
-        self.current_quality.map_or(true, |current| current != new_quality)
+        self.current_quality
+            .map_or(true, |current| current != new_quality)
     }
 }
 
@@ -160,7 +160,10 @@ mod tests {
     #[test]
     fn test_lod_component_creation() {
         let component = LODComponent::new("/assets/models/Robot/glb/Robot.glb".to_string());
-        assert_eq!(component.original_path, "/assets/models/Robot/glb/Robot.glb");
+        assert_eq!(
+            component.original_path,
+            "/assets/models/Robot/glb/Robot.glb"
+        );
         assert!(component.high_fidelity_path.is_none());
         assert!(component.low_fidelity_path.is_none());
         assert!(component.distance_thresholds.is_none());
@@ -174,7 +177,10 @@ mod tests {
             "/assets/models/Robot/lod/Robot.high_fidelity.glb".to_string(),
             "/assets/models/Robot/lod/Robot.low_fidelity.glb".to_string(),
         );
-        assert_eq!(component.original_path, "/assets/models/Robot/glb/Robot.glb");
+        assert_eq!(
+            component.original_path,
+            "/assets/models/Robot/glb/Robot.glb"
+        );
         assert_eq!(
             component.high_fidelity_path.as_deref(),
             Some("/assets/models/Robot/lod/Robot.high_fidelity.glb")

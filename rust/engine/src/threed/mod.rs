@@ -3,7 +3,6 @@
 /// This module contains the main orchestration components for the three-d renderer.
 /// These modules handle the high-level coordination of rendering, camera management,
 /// lighting, meshes, and context state for the native Rust engine.
-
 pub mod threed_camera_manager;
 pub mod threed_context_state;
 pub mod threed_light_manager;

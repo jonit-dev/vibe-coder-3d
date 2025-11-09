@@ -5,12 +5,12 @@
 //! - Find entities by tag
 //! - Raycast operations (TODO: requires physics integration)
 
+use glam::Vec3;
 use mlua::prelude::*;
 use std::sync::Arc;
 use vibe_scene::Scene;
-use glam::Vec3;
 
-use crate::apis::query_helpers::{parse_vec3_from_table, create_hit_table};
+use crate::apis::query_helpers::{create_hit_table, parse_vec3_from_table};
 
 /// Trait for BVH raycasting functionality
 pub trait BvhRaycaster: Send + Sync {
@@ -157,26 +157,28 @@ pub fn register_query_api_with_bvh(
         let bvh_clone = bvh_raycasters.clone();
         query.set(
             "raycastFirst",
-            lua.create_function(move |lua, (origin, dir, max_distance): (LuaTable, LuaTable, Option<f32>)| {
-                log::debug!("Query: raycastFirst called");
+            lua.create_function(
+                move |lua, (origin, dir, max_distance): (LuaTable, LuaTable, Option<f32>)| {
+                    log::debug!("Query: raycastFirst called");
 
-                // Parse origin and direction from Lua tables
-                let origin_vec = parse_vec3_from_table(&origin)?;
-                let dir_vec = parse_vec3_from_table(&dir)?;
-                let max_dist = max_distance.unwrap_or(1000.0);
+                    // Parse origin and direction from Lua tables
+                    let origin_vec = parse_vec3_from_table(&origin)?;
+                    let dir_vec = parse_vec3_from_table(&dir)?;
+                    let max_dist = max_distance.unwrap_or(1000.0);
 
-                // Use BVH accelerated raycasting if available
-                if let Some(bvh_raycasters) = &bvh_clone {
-                    let mut raycaster = bvh_raycasters.lock().unwrap();
-                    if let Some(hit) = raycaster.raycast_first(origin_vec, dir_vec, max_dist) {
-                        return create_hit_table(lua, &hit);
+                    // Use BVH accelerated raycasting if available
+                    if let Some(bvh_raycasters) = &bvh_clone {
+                        let mut raycaster = bvh_raycasters.lock().unwrap();
+                        if let Some(hit) = raycaster.raycast_first(origin_vec, dir_vec, max_dist) {
+                            return create_hit_table(lua, &hit);
+                        }
                     }
-                }
 
-                // Fallback: simple scene-based raycasting (stub)
-                log::warn!("BVH raycasting not available, using stub implementation");
-                Ok(lua.create_table()?) // Return empty table instead of nil
-            })?,
+                    // Fallback: simple scene-based raycasting (stub)
+                    log::warn!("BVH raycasting not available, using stub implementation");
+                    Ok(lua.create_table()?) // Return empty table instead of nil
+                },
+            )?,
         )?;
     }
 
@@ -186,31 +188,33 @@ pub fn register_query_api_with_bvh(
         let bvh_clone = bvh_raycasters.clone();
         query.set(
             "raycastAll",
-            lua.create_function(move |lua, (origin, dir, max_distance): (LuaTable, LuaTable, Option<f32>)| {
-                log::debug!("Query: raycastAll called");
+            lua.create_function(
+                move |lua, (origin, dir, max_distance): (LuaTable, LuaTable, Option<f32>)| {
+                    log::debug!("Query: raycastAll called");
 
-                // Parse origin and direction from Lua tables
-                let origin_vec = parse_vec3_from_table(&origin)?;
-                let dir_vec = parse_vec3_from_table(&dir)?;
-                let max_dist = max_distance.unwrap_or(1000.0);
+                    // Parse origin and direction from Lua tables
+                    let origin_vec = parse_vec3_from_table(&origin)?;
+                    let dir_vec = parse_vec3_from_table(&dir)?;
+                    let max_dist = max_distance.unwrap_or(1000.0);
 
-                // Use BVH accelerated raycasting if available
-                if let Some(bvh_raycasters) = &bvh_clone {
-                    let mut raycaster = bvh_raycasters.lock().unwrap();
-                    let hits = raycaster.raycast_all(origin_vec, dir_vec, max_dist);
+                    // Use BVH accelerated raycasting if available
+                    if let Some(bvh_raycasters) = &bvh_clone {
+                        let mut raycaster = bvh_raycasters.lock().unwrap();
+                        let hits = raycaster.raycast_all(origin_vec, dir_vec, max_dist);
 
-                    let result = lua.create_table()?;
-                    for (i, hit) in hits.iter().enumerate() {
-                        let hit_table = create_hit_table(lua, &hit)?;
-                        result.set(i + 1, hit_table)?; // Lua arrays are 1-indexed
+                        let result = lua.create_table()?;
+                        for (i, hit) in hits.iter().enumerate() {
+                            let hit_table = create_hit_table(lua, &hit)?;
+                            result.set(i + 1, hit_table)?; // Lua arrays are 1-indexed
+                        }
+                        return Ok(result);
                     }
-                    return Ok(result);
-                }
 
-                // Fallback: simple scene-based raycasting (stub)
-                log::warn!("BVH raycasting not available, using stub implementation");
-                lua.create_table()
-            })?,
+                    // Fallback: simple scene-based raycasting (stub)
+                    log::warn!("BVH raycasting not available, using stub implementation");
+                    lua.create_table()
+                },
+            )?,
         )?;
     }
 

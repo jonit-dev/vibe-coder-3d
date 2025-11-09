@@ -6,8 +6,8 @@ use serde_json::Value;
 use std::any::Any;
 use vibe_scene::ComponentKindId;
 
+use super::common::{default_alpha, deserialize_optional_vec2, deserialize_optional_vec3};
 use crate::{ComponentCapabilities, IComponentDecoder};
-use super::common::{deserialize_optional_vec3, deserialize_optional_vec2, default_alpha};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CameraColor {

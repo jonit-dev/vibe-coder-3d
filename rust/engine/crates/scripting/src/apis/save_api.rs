@@ -235,8 +235,8 @@ impl SaveManagerProvider for FileSaveManager {
         let json = fs::read_to_string(&self.save_path)
             .map_err(|e| format!("Failed to read save file: {}", e))?;
 
-        let loaded_data: HashMap<String, JsonValue> = serde_json::from_str(&json)
-            .map_err(|e| format!("Failed to parse save file: {}", e))?;
+        let loaded_data: HashMap<String, JsonValue> =
+            serde_json::from_str(&json).map_err(|e| format!("Failed to parse save file: {}", e))?;
 
         if let Ok(mut data) = self.data.lock() {
             *data = loaded_data;

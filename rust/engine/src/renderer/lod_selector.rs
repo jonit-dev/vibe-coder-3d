@@ -2,7 +2,6 @@
 ///
 /// Handles distance-based LOD quality computation and entity LOD updates.
 /// Integrates with LODManager for global config and path resolution.
-
 use super::lod_manager::{get_lod_path_internal, LODManager, LODQuality};
 use glam::Vec3 as GlamVec3;
 use std::sync::Arc;
@@ -94,16 +93,18 @@ impl LODSelector {
         entities
             .iter()
             .enumerate()
-            .map(|(idx, (entity_pos, base_path, override_quality, override_thresholds))| {
-                let (quality, path) = self.update_entity_quality(
-                    camera_pos,
-                    *entity_pos,
-                    base_path,
-                    *override_quality,
-                    *override_thresholds,
-                );
-                (idx, quality, path)
-            })
+            .map(
+                |(idx, (entity_pos, base_path, override_quality, override_thresholds))| {
+                    let (quality, path) = self.update_entity_quality(
+                        camera_pos,
+                        *entity_pos,
+                        base_path,
+                        *override_quality,
+                        *override_thresholds,
+                    );
+                    (idx, quality, path)
+                },
+            )
             .collect()
     }
 

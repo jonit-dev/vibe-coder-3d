@@ -3,10 +3,10 @@
 ///! Provides an event bus for inter-entity communication using SceneEventBus.
 ///! Scripts can emit events and listen for events from other entities.
 use mlua::{Function, Lua, Result as LuaResult, Table, Value};
+use once_cell::sync::Lazy;
 use std::sync::{Arc, Mutex};
 use vibe_events::{EventEnvelope, EventKey, SceneEventBus, SubscriberId};
 use vibe_scene::EntityId;
-use once_cell::sync::Lazy;
 
 /// Per-entity subscriptions for cleanup
 /// Maps entity ID to subscriber IDs that need cleanup
@@ -73,10 +73,7 @@ pub fn register_event_api(
                 let lua_payload = match json_to_lua(&lua_for_handler, &envelope.payload) {
                     Ok(value) => value,
                     Err(e) => {
-                        log::error!(
-                            "[Event API] Failed to convert event payload to Lua: {}",
-                            e
-                        );
+                        log::error!("[Event API] Failed to convert event payload to Lua: {}", e);
                         return;
                     }
                 };
@@ -127,32 +124,30 @@ pub fn register_event_api(
     // events:off(handlerId)
     let entity_id_off = entity_id;
     let event_bus_off = event_bus.clone();
-    let off_fn = lua.create_function(
-        move |lua, (_self, handler_id): (Table, SubscriberId)| {
-            // Unsubscribe from event bus
-            event_bus_off.off(handler_id);
+    let off_fn = lua.create_function(move |lua, (_self, handler_id): (Table, SubscriberId)| {
+        // Unsubscribe from event bus
+        event_bus_off.off(handler_id);
 
-            // Remove from entity subscriptions
-            {
-                let mut subscriptions = ENTITY_SUBSCRIPTIONS.lock().unwrap();
-                if let Some(handlers) = subscriptions.get_mut(&entity_id_off) {
-                    handlers.retain(|&id| id != handler_id);
-                }
+        // Remove from entity subscriptions
+        {
+            let mut subscriptions = ENTITY_SUBSCRIPTIONS.lock().unwrap();
+            if let Some(handlers) = subscriptions.get_mut(&entity_id_off) {
+                handlers.retain(|&id| id != handler_id);
             }
+        }
 
-            // Remove handler from registry
-            let handler_registry_key = format!("event_handler_{}_{}", entity_id_off, handler_id);
-            lua.unset_named_registry_value(&handler_registry_key)?;
+        // Remove handler from registry
+        let handler_registry_key = format!("event_handler_{}_{}", entity_id_off, handler_id);
+        lua.unset_named_registry_value(&handler_registry_key)?;
 
-            log::debug!(
-                "[Event API] Entity {} unregistered handler {}",
-                entity_id_off,
-                handler_id
-            );
+        log::debug!(
+            "[Event API] Entity {} unregistered handler {}",
+            entity_id_off,
+            handler_id
+        );
 
-            Ok(())
-        },
-    )?;
+        Ok(())
+    })?;
 
     events_table.set("off", off_fn)?;
 
@@ -294,7 +289,9 @@ fn lua_to_json(lua: &Lua, value: mlua::Value) -> LuaResult<serde_json::Value> {
         mlua::Value::Function(_) => Ok(serde_json::Value::String("[function]".to_string())),
         mlua::Value::Thread(_) => Ok(serde_json::Value::String("[thread]".to_string())),
         mlua::Value::UserData(_) => Ok(serde_json::Value::String("[userdata]".to_string())),
-        mlua::Value::LightUserData(_) => Ok(serde_json::Value::String("[lightuserdata]".to_string())),
+        mlua::Value::LightUserData(_) => {
+            Ok(serde_json::Value::String("[lightuserdata]".to_string()))
+        }
         mlua::Value::Error(_) => Ok(serde_json::Value::String("[error]".to_string())),
         mlua::Value::Other(_) => Ok(serde_json::Value::String("[other]".to_string())),
     }
@@ -420,7 +417,11 @@ mod tests {
         assert_eq!(result, json!(42));
 
         // Test string
-        let result = lua_to_json(&lua, mlua::Value::String(lua.create_string("hello").unwrap())).unwrap();
+        let result = lua_to_json(
+            &lua,
+            mlua::Value::String(lua.create_string("hello").unwrap()),
+        )
+        .unwrap();
         assert_eq!(result, json!("hello"));
     }
 }

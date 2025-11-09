@@ -1,4 +1,4 @@
-use crate::spatial::primitives::{Ray, Aabb, Triangle};
+use crate::spatial::primitives::{Aabb, Ray, Triangle};
 use glam::Vec3;
 
 /// Small epsilon to avoid numerical precision issues
@@ -20,9 +20,21 @@ pub struct RayHit {
 pub fn ray_intersects_aabb(ray: &Ray, aabb: &Aabb, max_distance: f32) -> bool {
     // Ray direction component-wise reciprocal
     let inv_dir = Vec3::new(
-        if ray.dir.x.abs() < EPSILON { f32::INFINITY } else { 1.0 / ray.dir.x },
-        if ray.dir.y.abs() < EPSILON { f32::INFINITY } else { 1.0 / ray.dir.y },
-        if ray.dir.z.abs() < EPSILON { f32::INFINITY } else { 1.0 / ray.dir.z },
+        if ray.dir.x.abs() < EPSILON {
+            f32::INFINITY
+        } else {
+            1.0 / ray.dir.x
+        },
+        if ray.dir.y.abs() < EPSILON {
+            f32::INFINITY
+        } else {
+            1.0 / ray.dir.y
+        },
+        if ray.dir.z.abs() < EPSILON {
+            f32::INFINITY
+        } else {
+            1.0 / ray.dir.z
+        },
     );
 
     let mut t_min: f32 = 0.0;
@@ -58,9 +70,21 @@ pub fn ray_intersects_aabb(ray: &Ray, aabb: &Aabb, max_distance: f32) -> bool {
 /// Returns Some((t_min, t_max)) if intersecting, None otherwise
 pub fn ray_aabb_intersection_range(ray: &Ray, aabb: &Aabb) -> Option<(f32, f32)> {
     let inv_dir = Vec3::new(
-        if ray.dir.x.abs() < EPSILON { f32::INFINITY } else { 1.0 / ray.dir.x },
-        if ray.dir.y.abs() < EPSILON { f32::INFINITY } else { 1.0 / ray.dir.y },
-        if ray.dir.z.abs() < EPSILON { f32::INFINITY } else { 1.0 / ray.dir.z },
+        if ray.dir.x.abs() < EPSILON {
+            f32::INFINITY
+        } else {
+            1.0 / ray.dir.x
+        },
+        if ray.dir.y.abs() < EPSILON {
+            f32::INFINITY
+        } else {
+            1.0 / ray.dir.y
+        },
+        if ray.dir.z.abs() < EPSILON {
+            f32::INFINITY
+        } else {
+            1.0 / ray.dir.z
+        },
     );
 
     let mut t_min = f32::NEG_INFINITY;
@@ -185,9 +209,12 @@ pub fn ray_intersect_all_triangles(
 
 /// Test if two AABBs intersect
 pub fn aabb_intersects_aabb(a: &Aabb, b: &Aabb) -> bool {
-    a.min.x <= b.max.x && a.max.x >= b.min.x &&
-    a.min.y <= b.max.y && a.max.y >= b.min.y &&
-    a.min.z <= b.max.z && a.max.z >= b.min.z
+    a.min.x <= b.max.x
+        && a.max.x >= b.min.x
+        && a.min.y <= b.max.y
+        && a.max.y >= b.min.y
+        && a.min.z <= b.max.z
+        && a.max.z >= b.min.z
 }
 
 /// Test if a point is inside an AABB
@@ -207,9 +234,12 @@ pub fn point_distance_to_aabb(point: Vec3, aabb: &Aabb) -> f32 {
         let dz_min = point.z - aabb.min.z;
         let dz_max = aabb.max.z - point.z;
 
-        let min_dist = dx_min.min(dx_max)
-            .min(dy_min).min(dy_max)
-            .min(dz_min).min(dz_max);
+        let min_dist = dx_min
+            .min(dx_max)
+            .min(dy_min)
+            .min(dy_max)
+            .min(dz_min)
+            .min(dz_max);
 
         -min_dist
     } else {
@@ -226,30 +256,21 @@ mod tests {
     #[test]
     fn test_ray_aabb_intersection_simple() {
         let ray = Ray::new(Vec3::new(-5.0, 0.0, 0.0), Vec3::X);
-        let aabb = Aabb::new(
-            Vec3::new(-1.0, -1.0, -1.0),
-            Vec3::new(1.0, 1.0, 1.0),
-        );
+        let aabb = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
         assert!(ray_intersects_aabb(&ray, &aabb, 100.0));
     }
 
     #[test]
     fn test_ray_aabb_intersection_miss() {
         let ray = Ray::new(Vec3::new(-5.0, 5.0, 0.0), Vec3::X);
-        let aabb = Aabb::new(
-            Vec3::new(-1.0, -1.0, -1.0),
-            Vec3::new(1.0, 1.0, 1.0),
-        );
+        let aabb = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
         assert!(!ray_intersects_aabb(&ray, &aabb, 100.0));
     }
 
     #[test]
     fn test_ray_aabb_intersection_range() {
         let ray = Ray::new(Vec3::new(-5.0, 0.0, 0.0), Vec3::X);
-        let aabb = Aabb::new(
-            Vec3::new(-1.0, -1.0, -1.0),
-            Vec3::new(1.0, 1.0, 1.0),
-        );
+        let aabb = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
         let range = ray_aabb_intersection_range(&ray, &aabb);
         assert!(range.is_some());
         let (t_min, t_max) = range.unwrap();
@@ -319,29 +340,17 @@ mod tests {
 
     #[test]
     fn test_aabb_intersects_aabb() {
-        let aabb1 = Aabb::new(
-            Vec3::new(-1.0, -1.0, -1.0),
-            Vec3::new(1.0, 1.0, 1.0),
-        );
-        let aabb2 = Aabb::new(
-            Vec3::new(0.0, 0.0, 0.0),
-            Vec3::new(2.0, 2.0, 2.0),
-        );
+        let aabb1 = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
+        let aabb2 = Aabb::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(2.0, 2.0, 2.0));
         assert!(aabb_intersects_aabb(&aabb1, &aabb2));
 
-        let aabb3 = Aabb::new(
-            Vec3::new(2.0, 2.0, 2.0),
-            Vec3::new(3.0, 3.0, 3.0),
-        );
+        let aabb3 = Aabb::new(Vec3::new(2.0, 2.0, 2.0), Vec3::new(3.0, 3.0, 3.0));
         assert!(!aabb_intersects_aabb(&aabb1, &aabb3));
     }
 
     #[test]
     fn test_point_distance_to_aabb() {
-        let aabb = Aabb::new(
-            Vec3::new(-1.0, -1.0, -1.0),
-            Vec3::new(1.0, 1.0, 1.0),
-        );
+        let aabb = Aabb::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
 
         // Point inside
         let distance = point_distance_to_aabb(Vec3::new(0.0, 0.0, 0.0), &aabb);

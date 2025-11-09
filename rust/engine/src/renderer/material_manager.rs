@@ -259,23 +259,44 @@ impl MaterialManager {
     fn validate_material_schema(material_json: &serde_json::Value, idx: usize) {
         if let Some(obj) = material_json.as_object() {
             let default_id = format!("material_{}", idx);
-            let mat_id = obj.get("id")
+            let mat_id = obj
+                .get("id")
                 .and_then(|v| v.as_str())
                 .unwrap_or(&default_id);
 
             // Define expected Material fields (from vibe_assets::Material)
             let expected_fields: HashSet<&str> = [
-                "id", "name", "color", "roughness", "emissive", "shader", "materialType",
-                "metalness", "emissiveIntensity",
+                "id",
+                "name",
+                "color",
+                "roughness",
+                "emissive",
+                "shader",
+                "materialType",
+                "metalness",
+                "emissiveIntensity",
                 // Texture maps
-                "albedoTexture", "normalTexture", "metallicTexture", "roughnessTexture",
-                "emissiveTexture", "occlusionTexture",
+                "albedoTexture",
+                "normalTexture",
+                "metallicTexture",
+                "roughnessTexture",
+                "emissiveTexture",
+                "occlusionTexture",
                 // Texture transform
-                "normalScale", "occlusionStrength",
-                "textureOffsetX", "textureOffsetY", "textureRepeatX", "textureRepeatY",
+                "normalScale",
+                "occlusionStrength",
+                "textureOffsetX",
+                "textureOffsetY",
+                "textureRepeatX",
+                "textureRepeatY",
                 // Transparency
-                "transparent", "alphaMode", "alphaCutoff",
-            ].iter().copied().collect();
+                "transparent",
+                "alphaMode",
+                "alphaCutoff",
+            ]
+            .iter()
+            .copied()
+            .collect();
 
             // Use generic schema validator
             let context = format!("Material '{}'", mat_id);
@@ -287,13 +308,17 @@ impl MaterialManager {
                     log::warn!("   💡 Hint: Use 'color' with hex string (\"#ff0000\") instead of 'albedoColor' array");
                 }
                 if obj.contains_key("metallic") {
-                    log::warn!("   💡 Hint: Use 'metalness' (Three.js naming) instead of 'metallic'");
+                    log::warn!(
+                        "   💡 Hint: Use 'metalness' (Three.js naming) instead of 'metallic'"
+                    );
                 }
                 if obj.contains_key("emissiveColor") {
                     log::warn!("   💡 Hint: Use 'emissive' with hex string (\"#00ff00\") instead of 'emissiveColor' array");
                 }
                 if obj.contains_key("type") {
-                    log::warn!("   💡 Hint: Use 'shader' + 'materialType' fields instead of 'type'");
+                    log::warn!(
+                        "   💡 Hint: Use 'shader' + 'materialType' fields instead of 'type'"
+                    );
                 }
             }
 

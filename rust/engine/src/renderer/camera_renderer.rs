@@ -1,12 +1,11 @@
+use crate::renderer::post_processing::{apply_post_processing, ColorGradingEffect};
+use crate::renderer::render_settings::RenderSettings;
+use crate::renderer::{CameraConfig, SkyboxRenderer};
 /// Camera rendering orchestration
 ///
 /// Handles multi-camera rendering with depth-based ordering, post-processing, and viewport management.
-
 use anyhow::Result;
 use three_d::*;
-use crate::renderer::{CameraConfig, SkyboxRenderer};
-use crate::renderer::post_processing::{apply_post_processing, ColorGradingEffect};
-use crate::renderer::render_settings::RenderSettings;
 
 /// Camera entry for depth-based sorting
 #[derive(Debug, Clone)]

@@ -2,13 +2,14 @@
 ///
 /// Owns SceneState, PhysicsWorld, and EntityCommandBuffer.
 /// Provides APIs for runtime entity creation, modification, and destruction.
-
 use anyhow::{Context, Result};
 use std::sync::Arc;
 use vibe_ecs_bridge::ComponentRegistry;
 use vibe_events::SceneEventBus;
 use vibe_physics::PhysicsWorld;
-use vibe_scene::{ComponentKindId, EntityCommand, EntityCommandBuffer, EntityId, Scene, SceneState};
+use vibe_scene::{
+    ComponentKindId, EntityCommand, EntityCommandBuffer, EntityId, Scene, SceneState,
+};
 
 use crate::entity_builder::EntityBuilder;
 
@@ -56,10 +57,7 @@ impl SceneManager {
             return Ok(());
         }
 
-        log::debug!(
-            "Applying {} pending commands",
-            self.command_buffer.len()
-        );
+        log::debug!("Applying {} pending commands", self.command_buffer.len());
 
         // Collect commands to avoid borrow checker issues
         let commands: Vec<_> = self.command_buffer.drain().collect();
@@ -199,7 +197,9 @@ impl SceneManager {
             if key == "Transform" {
                 if let Some(existing) = entity.components.get_mut(&key) {
                     // Merge the new Transform fields into the existing one
-                    if let (Some(existing_obj), Some(new_obj)) = (existing.as_object_mut(), data.as_object()) {
+                    if let (Some(existing_obj), Some(new_obj)) =
+                        (existing.as_object_mut(), data.as_object())
+                    {
                         for (field_name, field_value) in new_obj {
                             existing_obj.insert(field_name.clone(), field_value.clone());
                         }
@@ -219,10 +219,14 @@ impl SceneManager {
         debug_assert_eq!(added_id, entity_id, "Entity ID mismatch after creation");
 
         // Emit entity spawned event
-        self.events.emit_to(entity_id, vibe_events::keys::ENTITY_SPAWNED, serde_json::json!({
-            "entityId": entity_id.as_u64(),
-            "name": name
-        }));
+        self.events.emit_to(
+            entity_id,
+            vibe_events::keys::ENTITY_SPAWNED,
+            serde_json::json!({
+                "entityId": entity_id.as_u64(),
+                "name": name
+            }),
+        );
 
         // Lifecycle hook: on_entity_created
         self.on_entity_created(entity_id)?;
@@ -240,9 +244,13 @@ impl SceneManager {
         }
 
         // Emit entity destroyed event
-        self.events.emit_to(entity_id, vibe_events::keys::ENTITY_DESTROYED, serde_json::json!({
-            "entityId": entity_id.as_u64()
-        }));
+        self.events.emit_to(
+            entity_id,
+            vibe_events::keys::ENTITY_DESTROYED,
+            serde_json::json!({
+                "entityId": entity_id.as_u64()
+            }),
+        );
 
         // Lifecycle hook: on_entity_destroyed (before removal)
         self.on_entity_destroyed(entity_id)?;
@@ -367,16 +375,20 @@ impl SceneManager {
     /// Sync a single entity to the physics world
     /// Called when an entity with physics components is created
     fn sync_entity_to_physics(&mut self, entity_id: EntityId) -> Result<()> {
-        use vibe_ecs_bridge::{position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt,  MeshCollider, RigidBody, Transform};
+        use vibe_ecs_bridge::{
+            position_to_vec3_opt, rotation_to_quat_opt, scale_to_vec3_opt, MeshCollider, RigidBody,
+            Transform,
+        };
         use vibe_physics::{
             builder::{ColliderBuilder, ColliderSize, RigidBodyBuilder as PhysicsRigidBodyBuilder},
             components::{ColliderType, PhysicsMaterial, RigidBodyType},
         };
 
         // Get entity from scene
-        let entity = self.state.with_scene(|scene| {
-            scene.find_entity(entity_id).cloned()
-        }).context("Entity not found in scene")?;
+        let entity = self
+            .state
+            .with_scene(|scene| scene.find_entity(entity_id).cloned())
+            .context("Entity not found in scene")?;
 
         // Get components
         let rigid_body_opt = self.get_component::<RigidBody>(&entity, "RigidBody");
@@ -471,7 +483,8 @@ impl SceneManager {
         }
 
         // Add to physics world
-        self.physics_world.add_entity(entity_id, rapier_body, colliders)?;
+        self.physics_world
+            .add_entity(entity_id, rapier_body, colliders)?;
 
         log::info!(
             "Synced entity {} ({:?}) to physics world",
@@ -483,7 +496,11 @@ impl SceneManager {
     }
 
     /// Helper to get a component from an entity
-    fn get_component<T: 'static>(&self, entity: &vibe_scene::Entity, component_name: &str) -> Option<T> {
+    fn get_component<T: 'static>(
+        &self,
+        entity: &vibe_scene::Entity,
+        component_name: &str,
+    ) -> Option<T> {
         entity
             .components
             .get(component_name)

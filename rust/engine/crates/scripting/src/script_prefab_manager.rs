@@ -94,7 +94,11 @@ impl ScriptPrefabManager {
     }
 
     /// Convert a PrefabDefinition to a scene Entity
-    fn prefab_entity_to_scene_entity(&self, prefab_entity: &vibe_ecs_bridge::PrefabEntity, entity_id: u64) -> Entity {
+    fn prefab_entity_to_scene_entity(
+        &self,
+        prefab_entity: &vibe_ecs_bridge::PrefabEntity,
+        entity_id: u64,
+    ) -> Entity {
         let entity = Entity {
             id: Some(entity_id.try_into().unwrap()),
             persistent_id: None,
@@ -120,26 +124,45 @@ impl ScriptPrefabManager {
     fn register_instance(&self, entity_id: EntityId, prefab_path: &str) {
         let mut instances = self.instances.lock().unwrap();
         instances.insert(entity_id.as_u64(), prefab_path.to_string());
-        log::debug!("Registered prefab instance: {} from prefab '{}'", entity_id.as_u64(), prefab_path);
+        log::debug!(
+            "Registered prefab instance: {} from prefab '{}'",
+            entity_id.as_u64(),
+            prefab_path
+        );
     }
 
     /// Unregister a prefab instance
     fn unregister_instance(&self, entity_id: EntityId) -> Option<String> {
         let mut instances = self.instances.lock().unwrap();
         let prefab_path = instances.remove(&entity_id.as_u64());
-        log::debug!("Unregistered prefab instance: {} (was from prefab: {:?})", entity_id.as_u64(), prefab_path);
+        log::debug!(
+            "Unregistered prefab instance: {} (was from prefab: {:?})",
+            entity_id.as_u64(),
+            prefab_path
+        );
         prefab_path
     }
 
     /// Load prefabs from scene data (for script system integration)
-    pub fn load_prefabs_from_scene_data(&self, prefabs_value: &serde_json::Value) -> Result<(), String> {
+    pub fn load_prefabs_from_scene_data(
+        &self,
+        prefabs_value: &serde_json::Value,
+    ) -> Result<(), String> {
         load_prefabs_from_scene_value(self, prefabs_value).map_err(|e| e.to_string())
     }
 }
 
 impl crate::apis::prefab_api::PrefabManagerProvider for ScriptPrefabManager {
-    fn instantiate_prefab(&self, prefab_path: &str, position: Option<[f32; 3]>) -> Result<EntityId, String> {
-        log::info!("Instantiating prefab '{}' at position: {:?}", prefab_path, position);
+    fn instantiate_prefab(
+        &self,
+        prefab_path: &str,
+        position: Option<[f32; 3]>,
+    ) -> Result<EntityId, String> {
+        log::info!(
+            "Instantiating prefab '{}' at position: {:?}",
+            prefab_path,
+            position
+        );
 
         // Try to load prefabs from the path if not already loaded
         if let Err(e) = self.load_prefabs_from_path(prefab_path) {
@@ -167,24 +190,40 @@ impl crate::apis::prefab_api::PrefabManagerProvider for ScriptPrefabManager {
             if let Some(pos) = position {
                 if let Some(transform_value) = scene_entity.components.get_mut("Transform") {
                     if let Some(transform_obj) = transform_value.as_object_mut() {
-                        transform_obj.insert("position".to_string(), serde_json::Value::Array(
-                            pos.iter().map(|&v| serde_json::Value::Number(serde_json::Number::from_f64(v as f64).unwrap())).collect()
-                        ));
+                        transform_obj.insert(
+                            "position".to_string(),
+                            serde_json::Value::Array(
+                                pos.iter()
+                                    .map(|&v| {
+                                        serde_json::Value::Number(
+                                            serde_json::Number::from_f64(v as f64).unwrap(),
+                                        )
+                                    })
+                                    .collect(),
+                            ),
+                        );
                     }
                 } else {
                     // Add Transform component if it doesn't exist
-                    scene_entity.components.insert("Transform".to_string(), serde_json::json!({
-                        "position": pos,
-                        "rotation": [0.0, 0.0, 0.0],
-                        "scale": [1.0, 1.0, 1.0]
-                    }));
+                    scene_entity.components.insert(
+                        "Transform".to_string(),
+                        serde_json::json!({
+                            "position": pos,
+                            "rotation": [0.0, 0.0, 0.0],
+                            "scale": [1.0, 1.0, 1.0]
+                        }),
+                    );
                 }
             }
 
             // Register the instance
             self.register_instance(entity_id_obj, prefab_path);
 
-            log::info!("Successfully instantiated prefab '{}' as entity {}", prefab_id, entity_id);
+            log::info!(
+                "Successfully instantiated prefab '{}' as entity {}",
+                prefab_id,
+                entity_id
+            );
             Ok(entity_id_obj)
         } else {
             let error = format!("Prefab '{}' not found in registry", prefab_id);
@@ -198,7 +237,11 @@ impl crate::apis::prefab_api::PrefabManagerProvider for ScriptPrefabManager {
 
         // Check if this is a prefab instance
         if let Some(prefab_path) = self.unregister_instance(entity_id) {
-            log::info!("Destroyed prefab instance {} from prefab '{}'", entity_id.as_u64(), prefab_path);
+            log::info!(
+                "Destroyed prefab instance {} from prefab '{}'",
+                entity_id.as_u64(),
+                prefab_path
+            );
             Ok(())
         } else {
             let error = format!("Entity {} is not a prefab instance", entity_id.as_u64());
@@ -215,21 +258,33 @@ impl crate::apis::prefab_api::PrefabManagerProvider for ScriptPrefabManager {
             .map(|(&id, _)| EntityId::new(id))
             .collect();
 
-        log::debug!("Found {} instances of prefab '{}'", matching_instances.len(), prefab_path);
+        log::debug!(
+            "Found {} instances of prefab '{}'",
+            matching_instances.len(),
+            prefab_path
+        );
         matching_instances
     }
 
     fn is_prefab_instance(&self, entity_id: EntityId) -> bool {
         let instances = self.instances.lock().unwrap();
         let is_instance = instances.contains_key(&entity_id.as_u64());
-        log::debug!("Entity {} is prefab instance: {}", entity_id.as_u64(), is_instance);
+        log::debug!(
+            "Entity {} is prefab instance: {}",
+            entity_id.as_u64(),
+            is_instance
+        );
         is_instance
     }
 
     fn get_prefab_path(&self, entity_id: EntityId) -> Option<String> {
         let instances = self.instances.lock().unwrap();
         let prefab_path = instances.get(&entity_id.as_u64()).cloned();
-        log::debug!("Entity {} prefab path: {:?}", entity_id.as_u64(), prefab_path);
+        log::debug!(
+            "Entity {} prefab path: {:?}",
+            entity_id.as_u64(),
+            prefab_path
+        );
         prefab_path
     }
 
@@ -239,7 +294,8 @@ impl crate::apis::prefab_api::PrefabManagerProvider for ScriptPrefabManager {
 }
 
 /// Create a script prefab manager with default configuration
-pub fn create_script_prefab_manager() -> Arc<dyn crate::apis::prefab_api::PrefabManagerProvider + Send + Sync> {
+pub fn create_script_prefab_manager(
+) -> Arc<dyn crate::apis::prefab_api::PrefabManagerProvider + Send + Sync> {
     let base_path = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let manager = ScriptPrefabManager::new(base_path.clone());
 
@@ -347,12 +403,17 @@ mod tests {
         manager.load_prefabs_from_scene(&scene_path).unwrap();
 
         // Instantiate prefab
-        let entity_id = manager.instantiate_prefab("test_cube", Some([1.0, 2.0, 3.0])).unwrap();
+        let entity_id = manager
+            .instantiate_prefab("test_cube", Some([1.0, 2.0, 3.0]))
+            .unwrap();
         assert!(entity_id.as_u64() >= 10000);
 
         // Check that instance is registered
         assert!(manager.is_prefab_instance(entity_id));
-        assert_eq!(manager.get_prefab_path(entity_id), Some("test_cube".to_string()));
+        assert_eq!(
+            manager.get_prefab_path(entity_id),
+            Some("test_cube".to_string())
+        );
 
         let instances = manager.get_prefab_instances("test_cube");
         assert_eq!(instances.len(), 1);
@@ -412,9 +473,15 @@ mod tests {
         manager.load_prefabs_from_scene(&scene_path).unwrap();
 
         // Create multiple instances
-        let id1 = manager.instantiate_prefab("test_cube", Some([0.0, 0.0, 0.0])).unwrap();
-        let id2 = manager.instantiate_prefab("test_cube", Some([1.0, 0.0, 0.0])).unwrap();
-        let id3 = manager.instantiate_prefab("test_cube", Some([2.0, 0.0, 0.0])).unwrap();
+        let id1 = manager
+            .instantiate_prefab("test_cube", Some([0.0, 0.0, 0.0]))
+            .unwrap();
+        let id2 = manager
+            .instantiate_prefab("test_cube", Some([1.0, 0.0, 0.0]))
+            .unwrap();
+        let id3 = manager
+            .instantiate_prefab("test_cube", Some([2.0, 0.0, 0.0]))
+            .unwrap();
 
         // Should have 3 instances
         let instances = manager.get_prefab_instances("test_cube");

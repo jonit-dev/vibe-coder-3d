@@ -2,7 +2,6 @@
 ///
 /// Commands are queued during gameplay/script execution and applied
 /// atomically at the end of each frame to maintain consistency.
-
 use super::{ComponentKindId, EntityId};
 use serde_json::Value;
 

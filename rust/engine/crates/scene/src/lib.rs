@@ -207,7 +207,9 @@ impl Scene {
                     if self.version == 0 && metadata.version != 0 {
                         self.version = metadata.version;
                     }
-                    if (self.name.is_empty() || self.name == default_scene_name()) && !metadata.name.is_empty() {
+                    if (self.name.is_empty() || self.name == default_scene_name())
+                        && !metadata.name.is_empty()
+                    {
                         self.name = metadata.name;
                     }
                 }

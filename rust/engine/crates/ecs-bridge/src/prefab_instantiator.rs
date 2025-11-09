@@ -199,7 +199,7 @@ mod tests {
     fn test_apply_override_patch_simple() {
         let mut entity = PrefabEntity {
             name: "TestEntity".to_string(),
-                tags: vec![],
+            tags: vec![],
             components: {
                 let mut map = HashMap::new();
                 map.insert(
@@ -235,7 +235,7 @@ mod tests {
     fn test_apply_override_patch_add_component() {
         let mut entity = PrefabEntity {
             name: "TestEntity".to_string(),
-                tags: vec![],
+            tags: vec![],
             components: {
                 let mut map = HashMap::new();
                 map.insert("Transform".to_string(), json!({ "position": [0, 0, 0] }));
@@ -400,7 +400,7 @@ mod tests {
                 },
                 children: vec![PrefabEntity {
                     name: "Leaves".to_string(),
-                tags: vec![],
+                    tags: vec![],
                     components: {
                         let mut map = HashMap::new();
                         map.insert(
@@ -438,7 +438,10 @@ mod tests {
 
         // First entity (trunk)
         assert_eq!(entities[0].name, Some("Trunk".to_string()));
-        assert_eq!(entities[0].parent_persistent_id, Some("parent-1".to_string()));
+        assert_eq!(
+            entities[0].parent_persistent_id,
+            Some("parent-1".to_string())
+        );
 
         // Second entity (leaves) should be child of trunk
         assert_eq!(entities[1].name, Some("Leaves".to_string()));
@@ -457,11 +460,11 @@ mod tests {
                 components: HashMap::new(),
                 children: vec![PrefabEntity {
                     name: "Level2".to_string(),
-                tags: vec![],
+                    tags: vec![],
                     components: HashMap::new(),
                     children: vec![PrefabEntity {
                         name: "Level3".to_string(),
-                tags: vec![],
+                        tags: vec![],
                         components: HashMap::new(),
                         children: Vec::new(),
                     }],
@@ -486,7 +489,8 @@ mod tests {
         // Check hierarchy
         assert!(entities[0].parent_persistent_id.is_none()); // Level1 has no parent
         assert_eq!(entities[1].parent_persistent_id, entities[0].persistent_id); // Level2 parent is Level1
-        assert_eq!(entities[2].parent_persistent_id, entities[1].persistent_id); // Level3 parent is Level2
+        assert_eq!(entities[2].parent_persistent_id, entities[1].persistent_id);
+        // Level3 parent is Level2
     }
 
     #[test]
@@ -674,7 +678,7 @@ mod tests {
                 },
                 children: vec![PrefabEntity {
                     name: "Leaves".to_string(),
-                tags: vec![],
+                    tags: vec![],
                     components: {
                         let mut map = HashMap::new();
                         map.insert("Transform".to_string(), json!({ "position": [0, 2.5, 0] }));

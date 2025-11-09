@@ -2,7 +2,6 @@
 ///
 /// Provides functionality for cameras to follow entities in the scene with
 /// configurable smoothing, offsets, and control modes (locked/free).
-
 use three_d::*;
 use vibe_scene::EntityId;
 use vibe_scene_graph::SceneGraph;

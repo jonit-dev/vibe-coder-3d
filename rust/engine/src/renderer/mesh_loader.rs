@@ -37,9 +37,8 @@ pub async fn load_mesh_renderer(
     // Resolve LOD path if LOD component is present
     let effective_model_path = if let Some(lod) = lod_component {
         // Calculate entity position
-        let entity_pos = vibe_ecs_bridge::position_to_vec3_opt(
-            transform.and_then(|t| t.position.as_ref())
-        );
+        let entity_pos =
+            vibe_ecs_bridge::position_to_vec3_opt(transform.and_then(|t| t.position.as_ref()));
 
         // Calculate distance from camera
         let distance = camera_position.distance(entity_pos);
@@ -47,7 +46,11 @@ pub async fn load_mesh_renderer(
         // Get target quality based on distance or override
         let lod_path = if let Some(override_q) = lod.override_quality {
             let path = lod_manager.get_lod_path(&lod.original_path, Some(override_q));
-            log::info!("    LOD: Using quality {:?} (override) for distance {:.2}", override_q, distance);
+            log::info!(
+                "    LOD: Using quality {:?} (override) for distance {:.2}",
+                override_q,
+                distance
+            );
             path
         } else {
             // Get custom thresholds from LOD component or use global defaults
@@ -57,7 +60,11 @@ pub async fn load_mesh_renderer(
                 lod_manager.get_quality_for_distance(distance)
             };
             let path = lod_manager.get_lod_path(&lod.original_path, Some(quality));
-            log::info!("    LOD: Using quality {:?} for distance {:.2}", quality, distance);
+            log::info!(
+                "    LOD: Using quality {:?} for distance {:.2}",
+                quality,
+                distance
+            );
             path
         };
 
@@ -68,57 +75,57 @@ pub async fn load_mesh_renderer(
 
     // Check if we should load a GLTF model (filter out empty strings)
     #[cfg(feature = "gltf-support")]
-    let (cpu_meshes, gltf_textures, _gltf_images) =
-        if let Some(model_path) = &effective_model_path {
-            if !model_path.is_empty() {
-                let gltf_result = load_gltf_meshes_with_textures(model_path)?;
+    let (cpu_meshes, gltf_textures, _gltf_images) = if let Some(model_path) = &effective_model_path
+    {
+        if !model_path.is_empty() {
+            let gltf_result = load_gltf_meshes_with_textures(model_path)?;
 
-                // Load GLTF embedded images into texture cache
-                for (idx, gltf_image) in gltf_result.images.iter().enumerate() {
-                    if let Some(ref texture_id) = gltf_image.name {
-                        log::info!("      Loading embedded texture '{}' into cache", texture_id);
-                        material_manager.texture_cache_mut().load_gltf_image(
-                            texture_id,
-                            &gltf_image.data,
-                            gltf_image.width,
-                            gltf_image.height,
-                        )?;
-                    } else {
-                        log::warn!("      Skipping unnamed GLTF image {}", idx);
-                    }
+            // Load GLTF embedded images into texture cache
+            for (idx, gltf_image) in gltf_result.images.iter().enumerate() {
+                if let Some(ref texture_id) = gltf_image.name {
+                    log::info!("      Loading embedded texture '{}' into cache", texture_id);
+                    material_manager.texture_cache_mut().load_gltf_image(
+                        texture_id,
+                        &gltf_image.data,
+                        gltf_image.width,
+                        gltf_image.height,
+                    )?;
+                } else {
+                    log::warn!("      Skipping unnamed GLTF image {}", idx);
                 }
-
-                (
-                    gltf_result.cpu_meshes,
-                    Some(gltf_result.texture_ids),
-                    Some(gltf_result.images),
-                )
-            } else {
-                // Empty string - treat as no model path, use primitive
-                let mesh_id_lower = mesh_renderer
-                    .mesh_id
-                    .as_ref()
-                    .map(|id| id.to_ascii_lowercase());
-                (
-                    vec![create_primitive_mesh(mesh_id_lower.as_deref())],
-                    None,
-                    None,
-                )
             }
+
+            (
+                gltf_result.cpu_meshes,
+                Some(gltf_result.texture_ids),
+                Some(gltf_result.images),
+            )
         } else {
-            // Normalize mesh identifier for comparisons
+            // Empty string - treat as no model path, use primitive
             let mesh_id_lower = mesh_renderer
                 .mesh_id
                 .as_ref()
                 .map(|id| id.to_ascii_lowercase());
-
-            // Create primitive mesh based on mesh_id hints
             (
                 vec![create_primitive_mesh(mesh_id_lower.as_deref())],
                 None,
                 None,
             )
-        };
+        }
+    } else {
+        // Normalize mesh identifier for comparisons
+        let mesh_id_lower = mesh_renderer
+            .mesh_id
+            .as_ref()
+            .map(|id| id.to_ascii_lowercase());
+
+        // Create primitive mesh based on mesh_id hints
+        (
+            vec![create_primitive_mesh(mesh_id_lower.as_deref())],
+            None,
+            None,
+        )
+    };
 
     #[cfg(not(feature = "gltf-support"))]
     let (cpu_meshes, gltf_textures, gltf_images): (

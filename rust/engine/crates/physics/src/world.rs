@@ -94,7 +94,11 @@ impl PhysicsWorld {
         // Note: Rapier 3D doesn't expose velocity/position solver iterations directly
         // These are controlled internally for stability
 
-        let gravity_vec = vector![config.gravity[0] as Real, config.gravity[1] as Real, config.gravity[2] as Real];
+        let gravity_vec = vector![
+            config.gravity[0] as Real,
+            config.gravity[1] as Real,
+            config.gravity[2] as Real
+        ];
 
         Self {
             config,
@@ -230,7 +234,7 @@ impl PhysicsWorld {
             &mut self.ccd_solver,
             None, // query pipeline (not needed for basic sim)
             &(),
-            &(),  // We'll handle events manually after the step
+            &(), // We'll handle events manually after the step
         );
 
         // Process collision events before updating previous frame tracking
@@ -447,7 +451,7 @@ impl PhysicsWorld {
             // Find entity IDs for both colliders
             if let (Some(entity1), Some(entity2)) = (
                 self.find_entity_by_collider(handle1),
-                self.find_entity_by_collider(handle2)
+                self.find_entity_by_collider(handle2),
             ) {
                 if entity1 != entity2 {
                     // Store in sorted order to avoid duplicates
@@ -485,29 +489,36 @@ impl PhysicsWorld {
     }
 
     /// Process collision events by comparing current and previous frame contacts/triggers
-    fn process_collision_events(&mut self, current_contacts: &HashSet<(EntityId, EntityId)>, current_triggers: &HashSet<(EntityId, EntityId)>) {
+    fn process_collision_events(
+        &mut self,
+        current_contacts: &HashSet<(EntityId, EntityId)>,
+        current_triggers: &HashSet<(EntityId, EntityId)>,
+    ) {
         // Find new contacts (collision enter)
         for &(entity_a, entity_b) in current_contacts.difference(&self.previous_contacts) {
-            self.event_queue.push(CollisionEvent::ContactStarted { entity_a, entity_b });
+            self.event_queue
+                .push(CollisionEvent::ContactStarted { entity_a, entity_b });
         }
 
         // Find ended contacts (collision exit)
         for &(entity_a, entity_b) in self.previous_contacts.difference(current_contacts) {
-            self.event_queue.push(CollisionEvent::ContactEnded { entity_a, entity_b });
+            self.event_queue
+                .push(CollisionEvent::ContactEnded { entity_a, entity_b });
         }
 
         // Find new triggers (trigger enter)
         for &(entity_a, entity_b) in current_triggers.difference(&self.previous_triggers) {
-            self.event_queue.push(CollisionEvent::TriggerStarted { entity_a, entity_b });
+            self.event_queue
+                .push(CollisionEvent::TriggerStarted { entity_a, entity_b });
         }
 
         // Find ended triggers (trigger exit)
         for &(entity_a, entity_b) in self.previous_triggers.difference(current_triggers) {
-            self.event_queue.push(CollisionEvent::TriggerEnded { entity_a, entity_b });
+            self.event_queue
+                .push(CollisionEvent::TriggerEnded { entity_a, entity_b });
         }
     }
 }
-
 
 impl Default for PhysicsWorld {
     fn default() -> Self {
