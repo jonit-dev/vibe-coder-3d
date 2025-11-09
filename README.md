@@ -1,6 +1,7 @@
-# Vibe Coder 3D
+<p align="center">
+  <img src="./public/vibe-coder-3d-logo.png" alt="Vibe Coder 3D Logo" width="300"/>
+</p>
 
-[![CI](https://github.com/jonit-dev/vibe-coder-3d/workflows/CI/badge.svg)](https://github.com/jonit-dev/vibe-coder-3d/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://www.rust-lang.org/)
