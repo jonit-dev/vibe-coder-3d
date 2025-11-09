@@ -1,8 +1,27 @@
 {
   "name": "vibe-coder-3d",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jonit-dev/vibe-coder-3d.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jonit-dev/vibe-coder-3d/issues"
+  },
+  "homepage": "https://github.com/jonit-dev/vibe-coder-3d#readme",
+  "keywords": [
+    "game-engine",
+    "3d",
+    "react-three-fiber",
+    "rust",
+    "ecs",
+    "physics",
+    "ai-first",
+    "webgl",
+    "three.js"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },

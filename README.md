@@ -1,90 +1,254 @@
-# Vibe Coder 3D - AI-First Game Engine
+# Vibe Coder 3D
 
-🚀 **The future of game development is conversational.**
+[![CI](https://github.com/jonit-dev/vibe-coder-3d/workflows/CI/badge.svg)](https://github.com/jonit-dev/vibe-coder-3d/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 
-Vibe Coder 3D is the first AI-native game engine where you can build 3D games by simply describing what you want. Powered by React Three Fiber and enhanced by sophisticated AI, it transforms natural language into fully functional game experiences.
+> **The future of game development is conversational.**
 
-**"Create a bouncing ball" → Complete physics simulation**  
-**"Add a medieval castle" → 3D model sourced and placed**  
-**"Make the player jump on spacebar" → Controller script generated**
+Vibe Coder 3D is an ambitious **AI-first game engine** that combines modern 3D rendering with conversational AI to revolutionize game development. Build 3D games by simply describing what you want in natural language, powered by React Three Fiber and a high-performance Rust native engine.
 
-[📖 Read the Full Vision](./docs/project-overview.md) | [🎯 Implementation Plan](./docs/ai-first-engine-implementation-plan.md) | [🏗️ Architecture](./docs/architecture/)
+**"Create a bouncing ball"** → Complete physics simulation
+**"Add a medieval castle"** → 3D model sourced and placed
+**"Make the player jump on spacebar"** → Controller script generated
 
-## Setup
+## Features
 
-1. Install dependencies:
+### Core Engine
 
-```
-yarn
-```
+- **Dual Architecture**: TypeScript/React editor + Rust native engine for best of both worlds
+- **Entity Component System (ECS)**: Data-oriented design with bitECS for high performance
+- **Physics Simulation**: Full Rapier3D integration with collision detection and rigid bodies
+- **Scripting System**: TypeScript-based with 14 global APIs and full lifecycle support
+- **Material System**: PBR materials with texture support and live preview
+- **Prefab System**: Unity-like prefabs with nesting and override capabilities
+- **Input Management**: Action-based input mapping for keyboard, mouse, and gamepad
+- **Asset Pipeline**: Automatic optimization with LOD generation and compression
 
-2. Start the development server:
+### Editor (Web-Based)
 
-```
+- **Visual Scene Editor**: Drag-and-drop 3D scene creation
+- **Component Inspector**: Real-time property editing
+- **Material Editor**: Visual material creation with PBR support
+- **Prefab Browser**: Asset management and instantiation
+- **Debug Tools**: Performance monitoring, FPS counter, entity inspector
+- **Scene Serialization**: Dual format (.tsx + .json) for editor and engine
+
+### Rust Engine (Native)
+
+- **High-Performance Rendering**: PBR rendering with three-d library
+- **Cross-Platform**: Windows, Linux, and macOS support
+- **Lua Scripting**: Full mlua runtime integration
+- **Debug Mode**: Orbital camera, collider visualization, GPU profiling
+- **Screenshot System**: Visual regression testing support
+- **Modular Architecture**: Workspace crates for maintainability
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js** >= 20.0.0
+- **Yarn** 1.22+
+- **Rust** 1.75+ (for native engine)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/jonit-dev/vibe-coder-3d.git
+cd vibe-coder-3d
+
+# Install dependencies
+yarn install
+
+# Start the development server
 yarn dev
 ```
 
-3. Build for production:
+The editor will be available at `http://localhost:5173`
 
+### Running the Rust Engine
+
+```bash
+# Run a test scene
+yarn rust:engine --scene testphysics
+
+# Run with debug mode (colliders, FPS, grid)
+yarn rust:engine --scene testphysics --debug
+
+# Custom window size
+yarn rust:engine --scene testphysics --width 1920 --height 1080
 ```
-yarn build
-```
+
+### Creating Your First Scene
+
+1. Start the editor: `yarn dev`
+2. Use the **Add Object** menu (Ctrl+N) to create entities
+3. Configure components in the **Inspector** panel
+4. Save your scene with **Ctrl+S**
+5. Test in Rust engine: `yarn rust:engine --scene yourscene`
+
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[Documentation Navigation](./docs/0-navigation.md)** - Complete documentation map and reading guide
+- **[Core Abstractions](./docs/architecture/2-1-core-abstractions.md)** - Engine foundation and architecture
+- **[ECS System](./docs/architecture/2-4-ecs-system.md)** - Entity Component System details
+- **[Physics System](./docs/architecture/2-10-physics-system.md)** - Physics integration guide
+- **[Scripting System](./docs/architecture/2-13-script-system.md)** - Script APIs and lifecycle
+- **[Material System](./docs/architecture/2-24-materials-system.md)** - Material creation and management
+- **[Prefabs System](./docs/architecture/2-25-prefabs-system.md)** - Prefab workflow and patterns
+- **[Rust Engine README](./rust/engine/README.md)** - Native engine documentation
+
+For a complete list of 50+ documentation files, see [docs/0-navigation.md](./docs/0-navigation.md).
 
 ## Development
 
-### Linting & Formatting
+### Available Scripts
 
-This project uses ESLint and Prettier for code quality. Linting and formatting is automatically run on commit using Husky and lint-staged.
+```bash
+# Development
+yarn dev              # Start TypeScript editor
+yarn dev:nosync       # Start without asset sync
 
-- Run linting manually: `yarn lint`
-- Fix linting issues: `yarn lint:fix`
-- Format code: `yarn format`
+# Testing
+yarn test             # Run tests
+yarn test:coverage    # Generate coverage report
+yarn typecheck        # Type checking
+yarn lint             # Lint code
+yarn lint:fix         # Fix linting issues
 
-### Continuous Integration
+# Rust Engine
+yarn rust:engine --scene <name>  # Run native engine
+yarn rust:build                  # Build Rust engine
+yarn rust:test                   # Run Rust tests
+yarn rust:screenshot             # Capture screenshot
 
-GitHub Actions workflows are set up to run on pull requests and pushes to main/master branches:
+# Build
+yarn build            # Production build
+yarn preview          # Preview production build
+```
 
-- TypeScript type checking
-- ESLint
-- Build verification
+### Debug Tools
 
-## AI-Enhanced Technical Stack
+**TypeScript Editor:**
 
-**🤖 AI & Intelligence:**
+- Status bar with FPS, memory, entity count
+- Inspector panel for component details
+- Browser DevTools for full logging
 
-- Large Language Models (OpenAI GPT-4, Claude) for natural language understanding
-- Context-aware code generation and asset management
-- Intelligent scene analysis and optimization suggestions
+**Rust Engine Debug Mode:**
 
-**🎮 Game Engine Core:**
+```bash
+yarn rust:engine --scene testphysics --debug
+```
 
-- React Three Fiber (R3F) for modern 3D rendering
-- bitecs Entity Component System for scalable game architecture
-- Rapier physics engine via WebAssembly
-- Zustand for reactive state management
+- **F1**: Toggle HUD (FPS, frame time, physics stats)
+- **F2**: Toggle collider gizmos
+- **F3**: Toggle debug camera (orbital controller)
+- **F4**: Toggle GPU profiler
 
-**⚡ Development Tools:**
+## Technology Stack
 
-- TypeScript for type-safe AI code generation
-- Vite for lightning-fast development
-- TailwindCSS for responsive UI design
-- Comprehensive testing and validation pipelines
+### Frontend/Editor
 
-## 🎯 Current Status
+- **React 19** - UI framework
+- **React Three Fiber** - Declarative 3D rendering
+- **Three.js** - WebGL 3D library
+- **TypeScript** - Type-safe development
+- **Vite** - Ultra-fast build tool
+- **TailwindCSS** - Utility-first styling
+
+### Game Engine
+
+- **bitECS** - High-performance ECS
+- **Rapier** - Physics engine (WebAssembly)
+- **Zustand** - State management
+- **Zod** - Runtime type validation
+- **Howler.js** - Audio system
+
+### Native Engine
+
+- **Rust** - Systems programming language
+- **three-d** - 3D rendering library
+- **rapier3d** - Physics simulation
+- **mlua** - Lua scripting integration
+- **winit** - Window management
+
+## Project Structure
+
+```
+vibe-coder-3d/
+├── src/
+│   ├── core/          # Core engine (ECS, systems, components)
+│   ├── editor/        # Editor UI and tools
+│   └── game/          # Game-specific code (scenes, scripts, assets)
+├── rust/
+│   ├── engine/        # Rust native engine
+│   └── game/          # Rust game runtime (scenes, scripts)
+├── docs/              # Comprehensive documentation
+├── scripts/           # Build and utility scripts
+└── public/            # Public web assets
+```
+
+## Current Status
 
 **Phase: Foundation Complete** → **Next: AI Integration**
 
 - ✅ Core engine infrastructure established
 - ✅ Editor with scene manipulation capabilities
 - ✅ ECS system with physics integration
+- ✅ TypeScript scripting with 14 APIs
+- ✅ Material and prefab systems
+- ✅ Rust native engine with feature parity
 - 🚧 AI Copilot system development beginning
 - ⏳ Natural language command processing
 
-## 📚 Documentation
+## Contributing
 
-Explore the comprehensive documentation in the `docs/` directory:
+We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
-- **[Project Overview](./docs/project-overview.md)** - Vision and goals for the AI-first engine
-- **[Implementation Plan](./docs/ai-first-engine-implementation-plan.md)** - Detailed roadmap for AI integration
-- **[Architecture](./docs/architecture/)** - Technical specifications and system design
-- **[Core Abstractions](./docs/core-abstractions.md)** - Engine framework and patterns
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests and linting (`yarn verify`)
+5. Commit with conventional commits (`feat: add amazing feature`)
+6. Push to your fork
+7. Open a Pull Request
+
+## Community
+
+- **GitHub Issues**: [Report bugs or request features](https://github.com/jonit-dev/vibe-coder-3d/issues)
+- **GitHub Discussions**: [Ask questions and share ideas](https://github.com/jonit-dev/vibe-coder-3d/discussions)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+Built with amazing open source technologies:
+
+- [React Three Fiber](https://github.com/pmndrs/react-three-fiber) - React renderer for Three.js
+- [bitECS](https://github.com/NateTheGreatt/bitECS) - High-performance ECS
+- [Rapier](https://rapier.rs/) - Fast 2D and 3D physics engine
+- [three-d](https://github.com/asny/three-d) - Rust 3D rendering library
+
+## Roadmap
+
+- [ ] AI-assisted scene building with natural language
+- [ ] Visual scripting system (node-based)
+- [ ] Advanced post-processing effects
+- [ ] Particle system
+- [ ] Animation system improvements
+- [ ] Multiplayer/networking support
+- [ ] Script debugger with breakpoints
+- [ ] Terrain generation system
+
+---
+
+**Made with ❤️ by the Vibe Coder 3D community**

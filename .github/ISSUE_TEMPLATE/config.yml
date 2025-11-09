@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/jonit-dev/vibe-coder-3d/discussions
+    about: Ask questions or discuss ideas with the community
+  - name: Documentation
+    url: https://github.com/jonit-dev/vibe-coder-3d/tree/master/docs
+    about: Check our comprehensive documentation
+  - name: Security Vulnerability
+    url: https://github.com/jonit-dev/vibe-coder-3d/security/policy
+    about: Report a security vulnerability (do not use public issues!)
