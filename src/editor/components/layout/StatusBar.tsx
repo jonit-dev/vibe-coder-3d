@@ -72,7 +72,9 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
 
   // Triangle counting and budget calculation
   const [triangleCount, setTriangleCount] = React.useState(0);
+  const [selectedTriangleCount, setSelectedTriangleCount] = React.useState(0);
   const [isMobile, setIsMobile] = React.useState(false);
+  const selectedIds = useEditorStore((state) => state.selectedIds);
 
   React.useEffect(() => {
     // Detect if mobile
@@ -84,32 +86,46 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
     const countTriangles = () => {
       try {
         const scene = (window as any).__r3fScene;
-        if (!scene) return 0;
+        if (!scene) return { total: 0, selected: 0 };
 
-        let count = 0;
+        let totalCount = 0;
+        let selectedCount = 0;
+        const selectedIdsSet = new Set(selectedIds);
+
         scene.traverse((obj: any) => {
           if (obj.geometry) {
             const geometry = obj.geometry;
+            let triangles = 0;
+
             if (geometry.index) {
-              count += geometry.index.count / 3;
+              triangles = geometry.index.count / 3;
             } else if (geometry.attributes?.position) {
-              count += geometry.attributes.position.count / 3;
+              triangles = geometry.attributes.position.count / 3;
+            }
+
+            totalCount += triangles;
+
+            // Count triangles for selected entities
+            if (obj.userData?.entityId && selectedIdsSet.has(obj.userData.entityId)) {
+              selectedCount += triangles;
             }
           }
         });
-        return Math.floor(count);
+
+        return { total: Math.floor(totalCount), selected: Math.floor(selectedCount) };
       } catch {
-        return 0;
+        return { total: 0, selected: 0 };
       }
     };
 
     const interval = setInterval(() => {
-      const count = countTriangles();
-      setTriangleCount(count);
+      const { total, selected } = countTriangles();
+      setTriangleCount(total);
+      setSelectedTriangleCount(selected);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedIds]);
 
   // Calculate budget status
   const mobileBudget = 500000; // 500k triangles for mobile
@@ -134,6 +150,12 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
     budgetColor = 'text-yellow-400';
     budgetStatus = 'Moderate';
     budgetTooltip = `Scene is at ${Math.round(budgetPercentage)}% of ${isMobile ? 'mobile' : 'desktop'} budget. Performance is good.`;
+  }
+
+  // Add selected entity info to tooltip if applicable
+  if (selectedTriangleCount > 0) {
+    const percentage = ((selectedTriangleCount / triangleCount) * 100).toFixed(1);
+    budgetTooltip += `\n\nSelected: ${selectedTriangleCount.toLocaleString()} triangles (${percentage}% of scene)`;
   }
 
   return (
@@ -280,6 +302,14 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
           {/* Triangle Budget Display */}
           <div className="flex items-center space-x-2 text-xs cursor-help" title={budgetTooltip}>
             <span className="text-gray-500">Triangles:</span>
+            {selectedTriangleCount > 0 && (
+              <>
+                <span className="font-mono font-bold text-cyan-400">
+                  {selectedTriangleCount.toLocaleString()}
+                </span>
+                <span className="text-gray-600">/</span>
+              </>
+            )}
             <span className={`font-mono font-bold ${budgetColor}`}>
               {triangleCount.toLocaleString()}
             </span>

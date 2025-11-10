@@ -25,6 +25,8 @@ import {
 import draco3d from 'draco3dgltf';
 import { MeshoptSimplifier, MeshoptEncoder } from 'meshoptimizer';
 import sharp from 'sharp';
+import { findMinimalViableRatio } from './lib/autoTriangleBudget.js';
+import { analyzeModel } from './lib/modelAnalyzer.js';
 
 // Load environment variables
 config();
@@ -104,7 +106,17 @@ async function loadConfig() {
 
   // Build config from environment variables, with file overrides
   const config = {
-    pipelineVersion: fileConfig.pipelineVersion || 4,
+    pipelineVersion: fileConfig.pipelineVersion || 5,
+    autoTriangles: fileConfig.autoTriangles || {
+      enabled: false,
+      minRatio: 0.05,
+      maxRatio: 1.0,
+      targetClassificationBudgets: {
+        hero: { minTriangles: 20000 },
+        prop: { minTriangles: 5000 },
+        background: { minTriangles: 1500 },
+      },
+    },
     geometry: {
       quantize: fileConfig.geometry?.quantize || {
         position: 14,
@@ -428,6 +440,25 @@ async function optimizeModel(filePath, config, configHash, silent = false) {
       joinMeshes({ keepNamed: true, keepMeshes: false }),
     );
 
+    // Auto-select minimal viable triangle budget
+    let autoSelectedRatio = 1.0;
+    if (config.autoTriangles.enabled) {
+      const analysis = analyzeModel(lodSourceDoc);
+      const minTriangles = config.autoTriangles.targetClassificationBudgets[analysis.classification]?.minTriangles || 1000;
+
+      const { ratio, triangles } = await findMinimalViableRatio(lodSourceDoc, {
+        minRatio: config.autoTriangles.minRatio,
+        maxRatio: config.autoTriangles.maxRatio,
+        minTriangles,
+      });
+
+      autoSelectedRatio = ratio;
+
+      if (!silent) {
+        console.log(`   Auto-selected: ratio=${ratio.toFixed(3)}, triangles=${triangles} (${analysis.classification})`);
+      }
+    }
+
     // Apply texture processing
     await processTextures(document, config);
 
@@ -438,6 +469,29 @@ async function optimizeModel(filePath, config, configHash, silent = false) {
       weld(),
       center({ pivot: 'center' }), // Center model at origin for proper gizmo alignment
       joinMeshes({ keepNamed: true, keepMeshes: false }), // Merge compatible meshes (fewer draw calls)
+    );
+
+    // Apply auto-selected simplification OR manual simplification
+    if (config.autoTriangles.enabled && autoSelectedRatio < 1.0) {
+      await document.transform(
+        simplify({
+          simplifier: MeshoptSimplifier,
+          ratio: autoSelectedRatio,
+          error: 0.01,
+        }),
+      );
+    } else if (config.geometry.simplify.enabled) {
+      await document.transform(
+        simplify({
+          simplifier: MeshoptSimplifier,
+          ratio: config.geometry.simplify.ratio,
+          error: config.geometry.simplify.error,
+        }),
+      );
+    }
+
+    // Continue with quantization and reordering
+    await document.transform(
       reorder({ encoder: MeshoptEncoder }), // Optimize vertex cache locality (GPU performance)
       quantize({
         quantizePosition: config.geometry.quantize.position,
@@ -447,17 +501,6 @@ async function optimizeModel(filePath, config, configHash, silent = false) {
         quantizeGeneric: config.geometry.quantize.generic,
       }),
     );
-
-    // Apply simplification if enabled (for base LOD0)
-    if (config.geometry.simplify.enabled) {
-      await document.transform(
-        simplify({
-          simplifier: MeshoptSimplifier,
-          ratio: config.geometry.simplify.ratio,
-          error: config.geometry.simplify.error,
-        }),
-      );
-    }
 
     // Optimize animations if present
     const root = document.getRoot();

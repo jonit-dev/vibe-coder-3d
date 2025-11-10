@@ -16,6 +16,6 @@
       "@game/*": ["src/game/*"]
     }
   },
-  "include": ["vite.config.ts"],
+  "include": ["vite.config.ts", "src/plugins/**/*.ts"],
   "exclude": ["**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"]
 }

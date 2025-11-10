@@ -206,6 +206,9 @@ const CustomModelMesh: React.FC<{
       // Get the center of the bounding box
       const center = new Vector3();
       box.getCenter(center);
+      // Also compute size so selection outline can fit custom models
+      const size = new Vector3();
+      box.getSize(size);
 
       // On first load, store the center offset for future use
       // On subsequent LOD switches, reuse the same offset to prevent model shift
@@ -224,6 +227,13 @@ const CustomModelMesh: React.FC<{
       clonedScene.rotation.set(0, 0, 0);
       clonedScene.scale.set(1, 1, 1);
       clonedScene.matrixAutoUpdate = true;
+      // Persist bounds size on the container group so helpers can size to fit
+      if (containerGroupRef.current) {
+        containerGroupRef.current.userData = {
+          ...containerGroupRef.current.userData,
+          boundsSize: [Math.max(size.x, 1e-6), Math.max(size.y, 1e-6), Math.max(size.z, 1e-6)],
+        };
+      }
 
       // Ensure all children respect parent transforms and enable frustum culling
       clonedScene.traverse((child) => {

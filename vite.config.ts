@@ -5,6 +5,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
 import { sceneApiMiddleware } from './src/plugins/vite-plugin-scene-api';
 import { vitePluginScriptAPI } from './src/plugins/vite-plugin-script-api';
+import { vitePluginModelIngest } from './src/plugins/vite-plugin-model-ingest';
 import { createAssetsApi } from './src/plugins/assets-api/createAssetsApi';
 
 // https://vitejs.dev/config/
@@ -15,6 +16,7 @@ export default defineConfig({
     tsconfigPaths(),
     sceneApiMiddleware(),
     vitePluginScriptAPI(),
+    vitePluginModelIngest(),
     createAssetsApi({
       libraryRoot: 'src/game/assets',
       scenesRoot: 'src/game/scenes',
@@ -44,6 +46,7 @@ export default defineConfig({
         '**/assets/**/*.prefab.tsx',
         '**/assets/**/*.input.tsx',
         '**/assets/**/*.script.tsx',
+        '**/public/assets/models/**',
         '**/rust/**',
       ],
     },

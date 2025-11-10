@@ -202,6 +202,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
           outlineGroupRef={outlineGroupRef}
           outlineMeshRef={outlineMeshRef}
           isPlaying={isPlaying}
+          targetRef={meshRef as React.RefObject<THREE.Group | THREE.Object3D | THREE.Mesh>}
           entityComponents={entityComponents}
         />
 

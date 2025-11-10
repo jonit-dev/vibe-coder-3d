@@ -1,5 +1,5 @@
 import { Edges } from '@react-three/drei';
-import React, { useMemo } from 'react';
+import React, { useLayoutEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 
 interface IEntityOutlineProps {
@@ -8,11 +8,20 @@ interface IEntityOutlineProps {
   outlineGroupRef: React.RefObject<THREE.Group | null>;
   outlineMeshRef: React.RefObject<THREE.Mesh | null>;
   isPlaying: boolean;
+  targetRef?: React.RefObject<THREE.Group | THREE.Mesh | THREE.Object3D | null>;
   entityComponents?: Array<{ type: string; data: unknown }>;
 }
 
 export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
-  ({ selected, meshType, outlineGroupRef, outlineMeshRef, isPlaying, entityComponents = [] }) => {
+  ({
+    selected,
+    meshType,
+    outlineGroupRef,
+    outlineMeshRef,
+    isPlaying,
+    targetRef,
+    entityComponents = [],
+  }) => {
     // Note: entityComponents is available for future use but currently unused
     void entityComponents;
 
@@ -26,6 +35,31 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
     if (meshType === 'Camera') {
       return null; // Cameras don't need selection outlines
     }
+
+    // Compute custom model bounds when available
+    const [customSize, setCustomSize] = useState<[number, number, number] | null>(null);
+    useLayoutEffect(() => {
+      if (!targetRef?.current) return;
+      const obj = targetRef.current as THREE.Object3D;
+      // Prefer precomputed bounds from userData, else compute on the fly
+      const preset = (obj.userData && obj.userData.boundsSize) as
+        | [number, number, number]
+        | undefined;
+      if (preset && Array.isArray(preset) && preset.length === 3) {
+        setCustomSize([
+          Math.max(preset[0], 1e-6),
+          Math.max(preset[1], 1e-6),
+          Math.max(preset[2], 1e-6),
+        ]);
+        return;
+      }
+      const box = new THREE.Box3().setFromObject(obj);
+      const v = new THREE.Vector3();
+      box.getSize(v);
+      if (Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z)) {
+        setCustomSize([Math.max(v.x, 1e-6), Math.max(v.y, 1e-6), Math.max(v.z, 1e-6)]);
+      }
+    }, [targetRef, meshType, selected]);
 
     // Memoized geometry for outline
     const geometry = useMemo(() => {
@@ -42,10 +76,13 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
           return <planeGeometry args={[1, 1]} />;
         case 'Camera':
           return null; // Special case - uses CameraGeometry component
-        default:
+        case 'custom':
+          // Fit to the target mesh's bounding box
+          return <boxGeometry args={customSize ?? [1, 1, 1]} />;
+        default: // Fallback for unknown types
           return <boxGeometry args={[1, 1, 1]} />;
       }
-    }, [meshType]);
+    }, [meshType, customSize]);
 
     return (
       <group ref={outlineGroupRef}>

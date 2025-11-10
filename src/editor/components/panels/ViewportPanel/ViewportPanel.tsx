@@ -31,6 +31,7 @@ import { AxesIndicator } from './components/AxesIndicator';
 import { CameraPerformanceController } from './components/CameraPerformanceController';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
 import { GizmoModeSelector } from './components/GizmoModeSelector';
+import { ModelDropZone } from './components/ModelDropZone';
 import { PhysicsBindingManager } from './components/PhysicsBindingManager';
 import { ViewportHeader } from './components/ViewportHeader';
 import { EntityRenderer } from './EntityRenderer';
@@ -141,7 +142,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
         {/* Axes indicator */}
         <AxesIndicator />
 
-        <div className="w-full h-full">
+        <div className="w-full h-full relative">
+          {/* Drag-and-drop model ingestion overlay */}
+          <ModelDropZone />
           <Canvas
             camera={{ position: [-10, 12, -10], fov: 50 }}
             shadows="percentage"

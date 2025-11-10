@@ -1,5 +1,15 @@
 {
-  "pipelineVersion": 4,
+  "pipelineVersion": 5,
+  "autoTriangles": {
+    "enabled": true,
+    "minRatio": 0.05,
+    "maxRatio": 1.0,
+    "targetClassificationBudgets": {
+      "hero": { "minTriangles": 20000 },
+      "prop": { "minTriangles": 5000 },
+      "background": { "minTriangles": 1500 }
+    }
+  },
   "geometry": {
     "quantize": {
       "position": 14,
