@@ -14,13 +14,26 @@ export const screenshotFeedbackTool: Tool = {
   name: 'screenshot_feedback',
   description: `Capture a screenshot of the current 3D scene to get visual feedback on your changes.
 
-Use this tool to:
-- Verify that your changes appear correctly in the scene
-- Compare before/after states when making modifications
-- Debug visual issues or unexpected rendering
-- Iterate on geometry, materials, or positioning based on what you see
+Use this tool ONLY when changes have VISIBLE impact on the scene.
 
-IMPORTANT: After making changes to entities, geometry, or scene properties, you SHOULD use this tool to verify the results visually before considering the task complete. This allows you to self-correct if something doesn't look right.
+WHEN TO USE (visual changes):
+✓ After adding/removing entities
+✓ After moving/rotating/scaling objects
+✓ After material/color changes
+✓ After creating/instantiating prefabs
+✓ After geometry modifications
+✓ When verifying scene composition
+
+WHEN NOT TO USE (non-visual operations):
+✗ After scene queries (get_entity, list_entities)
+✗ After getting schemas/metadata
+✗ After planning operations
+✗ After reading scene info
+✗ After script creation (unless testing visual effects)
+
+VERIFICATION MODES:
+- 'quick': Lightweight check - just verify objects exist and are positioned correctly
+- 'detailed': Full analysis with counts, materials, composition suggestions (default)
 
 The screenshot analysis method is controlled by VITE_USE_OPENROUTER_FOR_SCREENSHOTS environment variable:
 - If enabled: Uses OpenRouter with custom vision model (e.g., Gemini 2.5 Flash) for analysis
@@ -34,6 +47,13 @@ You can override the env setting by explicitly setting use_openrouter parameter.
         type: 'string',
         description:
           'Brief explanation of why you are taking this screenshot (e.g., "Verify cube position after moving to x:5", "Check material changes on sphere")',
+      },
+      verification_mode: {
+        type: 'string',
+        enum: ['quick', 'detailed'],
+        description:
+          'Verification depth: "quick" for basic existence/position checks, "detailed" for full analysis with suggestions (default)',
+        default: 'detailed',
       },
       wait_ms: {
         type: 'number',
@@ -58,6 +78,7 @@ You can override the env setting by explicitly setting use_openrouter parameter.
 
 export async function executeScreenshotFeedback(params: {
   reason: string;
+  verification_mode?: 'quick' | 'detailed';
   wait_ms?: number;
   use_openrouter?: boolean;
   analysis_prompt?: string;
@@ -112,8 +133,23 @@ export async function executeScreenshotFeedback(params: {
           openRouter.initialize();
         }
 
-        // Build analysis prompt
-        const defaultPrompt = `Analyze this 3D scene screenshot and verify:
+        // Build analysis prompt based on verification mode
+        const verificationMode = params.verification_mode || 'detailed';
+
+        const quickPrompt = `Quick verification of 3D scene:
+
+Scene Context:
+- Expected entities: ${sceneInfo.entity_count}
+- Reason: ${params.reason}
+
+Verify:
+1. Are the expected objects visible?
+2. Are they in the correct positions?
+3. Any obvious issues?
+
+Be concise.`;
+
+        const detailedPrompt = `Analyze this 3D scene screenshot and verify:
 
 Scene Context:
 - Entities: ${sceneInfo.entity_count}
@@ -129,6 +165,8 @@ Please provide:
 4. Whether the scene matches the expected state based on the reason
 
 Be specific about counts, positions, and visual details.`;
+
+        const defaultPrompt = verificationMode === 'quick' ? quickPrompt : detailedPrompt;
 
         const prompt = params.analysis_prompt || defaultPrompt;
 
