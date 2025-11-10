@@ -17,6 +17,7 @@ import {
   executeGetAvailableMaterials,
 } from './GetAvailableMaterialsTool';
 import { planningTool, executePlanning } from './PlanningTool';
+import { scriptManagementTool, executeScriptManagement } from './ScriptManagementTool';
 
 export const AVAILABLE_TOOLS = [
   planningTool,
@@ -30,6 +31,7 @@ export const AVAILABLE_TOOLS = [
   getShapeSchemaTool,
   getSceneInfoTool,
   getAvailableMaterialsTool,
+  scriptManagementTool,
 ];
 
 export async function executeTool(toolName: string, params: any): Promise<string> {
@@ -56,6 +58,8 @@ export async function executeTool(toolName: string, params: any): Promise<string
       return executeGetSceneInfo(params);
     case 'get_available_materials':
       return executeGetAvailableMaterials(params);
+    case 'script_management':
+      return executeScriptManagement(params);
     default:
       return `Unknown tool: ${toolName}`;
   }

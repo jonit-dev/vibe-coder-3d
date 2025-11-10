@@ -90,22 +90,41 @@ export class PrefabManager {
       return -1;
     }
 
-    const options: IInstantiateOptions = {
-      parentEntityId: parentId,
-      applyOverrides: overrides,
-    };
+    // Extract transform overrides and separate from entity overrides
+    let entityOverrides: Record<string, unknown> | undefined;
+    let transformPosition: [number, number, number] | undefined;
+    let transformRotation: [number, number, number] | undefined;
+    let transformScale: [number, number, number] | undefined;
 
-    // Extract transform overrides
     if (overrides) {
       const overridesTyped = overrides as {
         position?: [number, number, number];
         rotation?: [number, number, number];
         scale?: [number, number, number];
       };
-      if (overridesTyped.position) options.position = overridesTyped.position;
-      if (overridesTyped.rotation) options.rotation = overridesTyped.rotation;
-      if (overridesTyped.scale) options.scale = overridesTyped.scale;
+
+      // Extract transform properties
+      const { position, rotation, scale, ...restOverrides } = overridesTyped as Record<
+        string,
+        unknown
+      >;
+
+      // Only pass non-transform overrides to applyOverrides
+      entityOverrides = Object.keys(restOverrides).length > 0 ? restOverrides : undefined;
+
+      // Store transform overrides
+      transformPosition = position as [number, number, number] | undefined;
+      transformRotation = rotation as [number, number, number] | undefined;
+      transformScale = scale as [number, number, number] | undefined;
     }
+
+    const options: IInstantiateOptions = {
+      parentEntityId: parentId,
+      applyOverrides: entityOverrides,
+      position: transformPosition,
+      rotation: transformRotation,
+      scale: transformScale,
+    };
 
     try {
       return this.applier.instantiate(prefab, options);

@@ -150,8 +150,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
             shadows="percentage"
             gl={{
               powerPreference: 'high-performance',
-              // Preserve drawing buffer to help with context recovery
-              preserveDrawingBuffer: false,
+              // Preserve drawing buffer so screenshots can read pixels from the current frame
+              preserveDrawingBuffer: true,
               // Enable fail if major performance caveat
               failIfMajorPerformanceCaveat: false,
             }}
@@ -165,6 +165,14 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
 
               // Add WebGL context loss/restore handlers
               const canvas = gl.domElement;
+
+              // Expose canvas/renderer for tooling (e.g., screenshot feedback tool)
+              const globalWindow = window as Window & {
+                __editorCanvas?: HTMLCanvasElement;
+                __editorRenderer?: THREE.WebGLRenderer;
+              };
+              globalWindow.__editorCanvas = canvas;
+              globalWindow.__editorRenderer = gl;
 
               canvas.addEventListener(
                 'webglcontextlost',

@@ -22,6 +22,7 @@ export interface IScreenshotMessage extends IDisplayBaseMessage {
   kind: 'screenshot';
   content: string;
   imageData: string;
+  thumbnailData?: string;
   sceneInfo?: {
     entity_count: number;
     camera_position: string;

@@ -16,6 +16,7 @@ export function toDisplayMessages(messages: IAgentMessage[]): IDisplayChatMessag
         content: msg.content,
         timestamp: msg.timestamp,
         imageData: (msg.metadata as any).imageData as string,
+        thumbnailData: (msg.metadata as any).thumbnailData as string | undefined,
         sceneInfo: (msg.metadata as any).sceneInfo,
       };
     }

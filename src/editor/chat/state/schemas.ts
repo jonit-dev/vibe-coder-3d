@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 export const ScreenshotEventSchema = z.object({
   imageData: z.string(),
+  thumbnailData: z.string().optional(),
   sceneInfo: z.object({
     entity_count: z.number(),
     camera_position: z.string(),

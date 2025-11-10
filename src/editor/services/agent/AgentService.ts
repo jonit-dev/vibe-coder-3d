@@ -284,7 +284,50 @@ export class AgentService {
                   },
                   {
                     type: 'text',
-                    text: `${result}\n\nIMPORTANT: You MUST now analyze this screenshot and provide a detailed visual analysis. Describe what you see, verify if it matches your expectations, and identify any issues. Your analysis will be logged for validation.`,
+                    text: `${result}
+
+CRITICAL VERIFICATION REQUIRED - Your analysis will be logged and validated:
+
+You MUST perform an UNBIASED, CRITICAL analysis of this screenshot. Do NOT assume your changes worked correctly.
+
+VERIFICATION CHECKLIST (Answer each explicitly):
+
+1. ENTITY COUNT: The scene info reports ${this.pendingScreenshot.sceneInfo.entity_count} entities. Count the ACTUAL visible objects in the screenshot. Do the numbers match?
+
+2. POSITIONS: For each entity you intended to create/modify:
+   - Where did you expect it to be? (specific X, Y, Z coordinates)
+   - Where is it ACTUALLY located in the screenshot?
+   - Are there any entities missing or in wrong positions?
+
+3. VISUAL APPEARANCE:
+   - Do all entities have the correct shapes (Cube, Sphere, Cylinder, etc.)?
+   - Are materials/colors correct?
+   - Are sizes/scales as expected?
+
+4. SCENE CORRECTNESS:
+   - Is anything visible that SHOULDN'T be there?
+   - Is anything MISSING that SHOULD be there?
+   - Are entities overlapping incorrectly?
+
+5. CRITICAL ASSESSMENT:
+   - If this was a request for "5 trees", do you see EXACTLY 5 trees?
+   - If you placed something at X=10, is it ACTUALLY at X=10 or somewhere else?
+   - Be honest: Does this screenshot show EXACTLY what the user requested?
+
+6. IMPROVEMENT SUGGESTIONS:
+   - Are positions optimal or could they be better arranged?
+   - Is the composition aesthetically pleasing?
+   - Are there spacing/alignment issues that should be fixed?
+   - Would different positions/rotations improve the scene?
+
+FORMAT YOUR RESPONSE:
+✓ What's CORRECT (be specific with counts and positions)
+✗ What's WRONG or MISSING (be specific with what's expected vs actual)
+⚠ What needs FIXING (concrete action items with exact coordinates)
+💡 SUGGESTIONS (optional improvements for better composition)
+
+Remember: Tool execution success ≠ Visual correctness. The screenshot is GROUND TRUTH.
+If anything is wrong or missing, you MUST fix it immediately before responding to the user.`,
                   },
                 ];
 

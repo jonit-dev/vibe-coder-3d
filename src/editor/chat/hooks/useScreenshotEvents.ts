@@ -21,7 +21,7 @@ export const useScreenshotEvents = () => {
         return;
       }
 
-      const { imageData, sceneInfo, reason } = parsed.data;
+      const { imageData, thumbnailData, sceneInfo, reason } = parsed.data;
       const session = useChatStore.getState().getActiveSession();
 
       if (!session) {
@@ -33,6 +33,7 @@ export const useScreenshotEvents = () => {
         sessionId: session.id,
         entityCount: sceneInfo.entity_count,
         reason,
+        hasThumbnail: !!thumbnailData,
       });
 
       useChatStore.getState().addMessage(session.id, {
@@ -40,7 +41,7 @@ export const useScreenshotEvents = () => {
         type: 'tool',
         content: `📸 Screenshot captured: ${reason}`,
         timestamp: new Date(),
-        metadata: { imageData, sceneInfo, reason, isScreenshot: true },
+        metadata: { imageData, thumbnailData, sceneInfo, reason, isScreenshot: true },
       });
     };
 

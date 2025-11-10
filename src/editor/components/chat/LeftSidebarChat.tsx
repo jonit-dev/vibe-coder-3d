@@ -13,6 +13,7 @@ import { useChatMessages } from '@editor/chat/hooks/useChatMessages';
 import { useChatInput } from '@editor/chat/hooks/useChatInput';
 import { useChatScroll } from '@editor/chat/hooks/useChatScroll';
 import { useChatStreaming } from '@editor/chat/hooks/useChatStreaming';
+import { useScreenshotEvents } from '@editor/chat/hooks/useScreenshotEvents';
 import { useChatError } from '@editor/chat/state/selectors';
 
 export interface ILeftSidebarChatProps {
@@ -21,6 +22,8 @@ export interface ILeftSidebarChatProps {
 }
 
 export const LeftSidebarChat: React.FC<ILeftSidebarChatProps> = ({ isExpanded, onToggle }) => {
+  useScreenshotEvents();
+
   const { sendMessage } = useChatAgent();
   const { displayMessages } = useChatMessages();
   const { initialized, isTyping } = useChatStreaming();

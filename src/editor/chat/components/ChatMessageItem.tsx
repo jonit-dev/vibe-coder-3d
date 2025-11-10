@@ -25,31 +25,39 @@ export const ChatMessageItem: React.FC<IChatMessageItemProps> = ({ message, size
   // Screenshot message
   if (message.kind === 'screenshot') {
     return (
-      <div className="flex justify-center">
-        <div className="w-full max-w-full">
-          <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/30 rounded-lg p-3 space-y-2">
-            <div className="flex items-center space-x-2 text-purple-300">
-              <FiImage className="w-4 h-4" />
-              <span className="text-xs font-medium">{message.content}</span>
-              <span className="text-xs text-gray-400">• {formatTime(message.timestamp)}</span>
+      <div className="flex justify-start">
+        <div className="max-w-[85%]">
+          <div className="flex items-center space-x-1.5 mb-1">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center">
+              <FiImage className="w-3 h-3 text-white" />
             </div>
+            <span className="text-xs text-gray-300 font-medium">
+              Screenshot • {formatTime(message.timestamp)}
+            </span>
+          </div>
+          <div className="bg-gradient-to-r from-gray-700 to-gray-800 border border-cyan-500/20 rounded-lg p-3 space-y-2 mr-8">
+            <div className="text-xs text-gray-300 font-medium">{message.content}</div>
             <div className="relative group">
               <img
-                src={`data:image/png;base64,${message.imageData}`}
+                src={
+                  message.thumbnailData
+                    ? `data:image/jpeg;base64,${message.thumbnailData}`
+                    : `data:image/png;base64,${message.imageData}`
+                }
                 alt="Scene screenshot"
-                className="w-full rounded border border-purple-500/30 cursor-pointer transition-all duration-200 hover:border-purple-400/60"
+                className="w-full rounded border border-cyan-500/20 cursor-pointer transition-all duration-200 hover:border-cyan-400/50"
                 onClick={() => {
                   const win = window.open();
                   if (win) {
                     win.document.write(
-                      `<img src="data:image/png;base64,${message.imageData}" style="max-width:100%;height:auto;"/>`
+                      `<img src="data:image/png;base64,${message.imageData}" style="max-width:100%;height:auto;"/>`,
                     );
                   }
                 }}
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 rounded flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <span className="text-white text-xs bg-black/50 px-2 py-1 rounded">
-                  Click to enlarge
+                  Click to view full size
                 </span>
               </div>
             </div>

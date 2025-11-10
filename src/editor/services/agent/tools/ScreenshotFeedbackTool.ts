@@ -53,7 +53,7 @@ export async function executeScreenshotFeedback(params: {
     await new Promise((resolve) => setTimeout(resolve, waitMs));
 
     // Get the canvas element from the Three.js renderer
-    const canvas = document.querySelector('canvas');
+    const canvas = getViewportCanvas();
     if (!canvas) {
       throw new Error('No canvas element found - is the scene renderer active?');
     }
@@ -64,11 +64,15 @@ export async function executeScreenshotFeedback(params: {
     // Extract base64 data (remove the data:image/png;base64, prefix)
     const base64Data = dataUrl.split(',')[1];
 
+    // Generate thumbnail (smaller version for chat preview)
+    const thumbnailData = await generateThumbnail(canvas, 200);
+
     // Get scene context for annotations
     const sceneInfo = getSceneInfo();
 
     logger.info('SCREENSHOT STEP 1: Dispatching screenshot-captured event', {
       imageDataLength: base64Data.length,
+      thumbnailDataLength: thumbnailData.length,
       entityCount: sceneInfo.entity_count,
       reason: params.reason,
     });
@@ -79,6 +83,7 @@ export async function executeScreenshotFeedback(params: {
       new CustomEvent('agent:screenshot-captured', {
         detail: {
           imageData: base64Data,
+          thumbnailData,
           sceneInfo,
           reason: params.reason,
         },
@@ -104,6 +109,59 @@ The screenshot has been added to the conversation. Please analyze the image to v
     logger.error('Failed to capture screenshot', { error });
     return `Failed to capture screenshot: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
+}
+
+/**
+ * Generate a thumbnail from a canvas element
+ * @param canvas Source canvas to thumbnail
+ * @param maxWidth Maximum width of thumbnail (maintains aspect ratio)
+ * @returns Base64-encoded JPEG thumbnail data
+ */
+async function generateThumbnail(canvas: HTMLCanvasElement, maxWidth: number): Promise<string> {
+  try {
+    // Create offscreen canvas for thumbnail
+    const thumbCanvas = document.createElement('canvas');
+    const ctx = thumbCanvas.getContext('2d');
+
+    if (!ctx) {
+      throw new Error('Failed to get 2D context for thumbnail');
+    }
+
+    // Calculate dimensions maintaining aspect ratio
+    const aspectRatio = canvas.height / canvas.width;
+    thumbCanvas.width = maxWidth;
+    thumbCanvas.height = Math.round(maxWidth * aspectRatio);
+
+    // Draw scaled image
+    ctx.drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+
+    // Convert to JPEG with quality compression
+    const thumbDataUrl = thumbCanvas.toDataURL('image/jpeg', 0.7);
+
+    // Extract base64 data
+    return thumbDataUrl.split(',')[1];
+  } catch (error) {
+    logger.warn('Failed to generate thumbnail, using full image', { error });
+    return canvas.toDataURL('image/png').split(',')[1];
+  }
+}
+
+function getViewportCanvas(): HTMLCanvasElement | null {
+  try {
+    const globalWindow = window as Window & { __editorCanvas?: HTMLCanvasElement };
+    if (globalWindow.__editorCanvas instanceof HTMLCanvasElement) {
+      return globalWindow.__editorCanvas;
+    }
+
+    const fallbackCanvas = document.querySelector('canvas');
+    if (fallbackCanvas instanceof HTMLCanvasElement) {
+      logger.debug('Using fallback canvas selector for screenshot capture');
+      return fallbackCanvas;
+    }
+  } catch (error) {
+    logger.warn('Failed to get viewport canvas', { error });
+  }
+  return null;
 }
 
 function getSceneInfo(): {
