@@ -121,7 +121,6 @@ export const useEntitySelection = ({
       outline.position.copy(mesh.position);
       outline.rotation.copy(mesh.rotation);
       outline.scale.copy(mesh.scale);
-      outline.scale.addScalar(0.05);
     }
   }, [selected, meshRef]);
 
@@ -141,7 +140,6 @@ export const useEntitySelection = ({
           outline.position.copy(mesh.position);
           outline.rotation.copy(mesh.rotation);
           outline.scale.copy(mesh.scale);
-          outline.scale.addScalar(0.05);
         }
         animationId = requestAnimationFrame(updateOutline);
       };

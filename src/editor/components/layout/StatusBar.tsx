@@ -76,13 +76,16 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
   const [isMobile, setIsMobile] = React.useState(false);
   const selectedIds = useEditorStore((state) => state.selectedIds);
 
+  // Detect if mobile (only once on mount)
   React.useEffect(() => {
-    // Detect if mobile
     const checkMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent,
     );
     setIsMobile(checkMobile);
+  }, []);
 
+  // Triangle counting with startup delay (only once on mount)
+  React.useEffect(() => {
     const countTriangles = () => {
       try {
         const scene = (window as any).__r3fScene;
@@ -90,7 +93,10 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
 
         let totalCount = 0;
         let selectedCount = 0;
-        const selectedIdsSet = new Set(selectedIds);
+
+        // Get latest selectedIds from store
+        const currentSelectedIds = useEditorStore.getState().selectedIds;
+        const selectedIdsSet = new Set(currentSelectedIds);
 
         scene.traverse((obj: any) => {
           if (obj.geometry) {
@@ -106,7 +112,17 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
             totalCount += triangles;
 
             // Count triangles for selected entities
-            if (obj.userData?.entityId && selectedIdsSet.has(obj.userData.entityId)) {
+            // Check this object and traverse up parent hierarchy for entityId
+            let entityId = obj.userData?.entityId;
+            if (!entityId) {
+              let parent = obj.parent;
+              while (parent && !entityId) {
+                entityId = parent.userData?.entityId;
+                parent = parent.parent;
+              }
+            }
+
+            if (entityId && selectedIdsSet.has(entityId)) {
               selectedCount += triangles;
             }
           }
@@ -118,14 +134,29 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
       }
     };
 
-    const interval = setInterval(() => {
+    // Wait 500ms for initial geometry to stabilize (terrain async loading, etc.)
+    const startupDelay = setTimeout(() => {
+      // Do initial count
       const { total, selected } = countTriangles();
       setTriangleCount(total);
       setSelectedTriangleCount(selected);
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [selectedIds]);
+      // Then start interval - reads latest selectedIds on each tick
+      const interval = setInterval(() => {
+        const { total, selected } = countTriangles();
+        setTriangleCount(total);
+        setSelectedTriangleCount(selected);
+      }, 1000);
+
+      // Cleanup function returned from timeout
+      return () => clearInterval(interval);
+    }, 500);
+
+    // Cleanup: clear the timeout and its returned interval cleanup
+    return () => {
+      clearTimeout(startupDelay);
+    };
+  }, []); // Only run once on mount
 
   // Calculate budget status
   const mobileBudget = 500000; // 500k triangles for mobile
