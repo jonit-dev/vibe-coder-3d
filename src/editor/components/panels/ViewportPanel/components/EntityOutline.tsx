@@ -1,5 +1,6 @@
 import { Edges } from '@react-three/drei';
-import React, { useLayoutEffect, useMemo, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
+import React, { useLayoutEffect, useMemo, useState, useRef } from 'react';
 import * as THREE from 'three';
 
 interface IEntityOutlineProps {
@@ -22,8 +23,14 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
     targetRef,
     entityComponents = [],
   }) => {
-    // Note: entityComponents is available for future use but currently unused
-    void entityComponents;
+    // Extract modelPath from entityComponents to detect when models finish loading
+    const meshRendererComponent = entityComponents.find((c) => c.type === 'MeshRenderer');
+    const modelPath =
+      meshRendererComponent?.data &&
+      typeof meshRendererComponent.data === 'object' &&
+      'modelPath' in meshRendererComponent.data
+        ? (meshRendererComponent.data.modelPath as string)
+        : undefined;
 
     // Don't render at all when not selected or no mesh type
     if (!selected || !meshType) return null;
@@ -38,9 +45,14 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
 
     // Compute custom model bounds when available
     const [customSize, setCustomSize] = useState<[number, number, number] | null>(null);
+    const lastModelPathRef = useRef<string | undefined>(undefined);
+    const boundsUpdateScheduledRef = useRef(false);
+
+    // Main effect to calculate bounds when dependencies change
     useLayoutEffect(() => {
       if (!targetRef?.current) return;
       const obj = targetRef.current as THREE.Object3D;
+
       // Prefer precomputed bounds from userData, else compute on the fly
       const preset = (obj.userData && obj.userData.boundsSize) as
         | [number, number, number]
@@ -53,13 +65,47 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
         ]);
         return;
       }
+
       const box = new THREE.Box3().setFromObject(obj);
       const v = new THREE.Vector3();
       box.getSize(v);
       if (Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z)) {
         setCustomSize([Math.max(v.x, 1e-6), Math.max(v.y, 1e-6), Math.max(v.z, 1e-6)]);
       }
-    }, [targetRef, meshType, selected]);
+    }, [targetRef, meshType, selected, modelPath]);
+
+    // Schedule a bounds update on the next frame when modelPath changes (for async model loading)
+    useLayoutEffect(() => {
+      // Check if modelPath changed from a loading placeholder to a real path
+      const isLoadingPlaceholder = lastModelPathRef.current?.startsWith('__loading__:');
+      const isRealModel = modelPath && !modelPath.startsWith('__loading__:');
+
+      if (isLoadingPlaceholder && isRealModel && !boundsUpdateScheduledRef.current) {
+        boundsUpdateScheduledRef.current = true;
+      }
+
+      lastModelPathRef.current = modelPath;
+    }, [modelPath]);
+
+    // Use frame callback to retry bounds calculation after model has loaded
+    useFrame(() => {
+      if (!boundsUpdateScheduledRef.current || !targetRef?.current) return;
+
+      const obj = targetRef.current as THREE.Object3D;
+      const preset = (obj.userData && obj.userData.boundsSize) as
+        | [number, number, number]
+        | undefined;
+
+      // If userData.boundsSize is now available, update and clear the schedule
+      if (preset && Array.isArray(preset) && preset.length === 3) {
+        setCustomSize([
+          Math.max(preset[0], 1e-6),
+          Math.max(preset[1], 1e-6),
+          Math.max(preset[2], 1e-6),
+        ]);
+        boundsUpdateScheduledRef.current = false;
+      }
+    });
 
     // Memoized geometry for outline
     const geometry = useMemo(() => {
