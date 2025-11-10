@@ -16,7 +16,7 @@
 
 Hey everyone!
 
-I'm incredibly excited to share a project I've been developing for the past 2 months: **Vibe Coder 3D**. It's an AI-first, open-source game engine designed to make 3D game creation more accessible and intuitive through natural language.
+I'm Joao and I'm incredibly excited to share a project I've been developing for the past 2 months: **Vibe Coder 3D**. It's an AI-first, open-source game engine designed to make 3D game creation more accessible and intuitive through natural language.
 
 - **Check out the GitHub Repo**: [https://github.com/jonit-dev/vibe-coder-3d](https://github.com/jonit-dev/vibe-coder-3d)
 - **Star the project!** It helps a ton with visibility.
@@ -25,7 +25,7 @@ I'm incredibly excited to share a project I've been developing for the past 2 mo
 
 => CHECK OUT THE [PROJECT README.MD](https://github.com/jonit-dev/vibe-coder-3d/blob/master/README.md) FOR MORE INFO! <=
 
-The core idea is simple: describe what you want, and let the engine handle the rest.
+The core idea is simple: describe what you want, and let the engine handle the rest (PS. THIS IS WORK IN PROGRESS!)
 
 - **"Create a bouncing ball"** → A sphere with a rigid body and physics material is spawned.
 - **"Add a medieval castle"** → A 3D model is sourced from an asset library and placed in the scene.

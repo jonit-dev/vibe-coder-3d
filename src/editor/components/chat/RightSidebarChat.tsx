@@ -6,7 +6,10 @@ import {
   FiMessageSquare,
   FiSend,
   FiUser,
+  FiAlertCircle,
 } from 'react-icons/fi';
+import { useChatAgent } from './hooks/useChatAgent';
+import { useActiveSession, useChatError } from '@editor/store/chatStore';
 
 export interface IChatMessage {
   id: string;
@@ -21,19 +24,15 @@ export interface IRightSidebarChatProps {
 }
 
 export const RightSidebarChat: React.FC<IRightSidebarChatProps> = ({ isExpanded, onToggle }) => {
-  const [messages, setMessages] = useState<IChatMessage[]>([
-    {
-      id: '1',
-      type: 'ai',
-      content:
-        "Hello! I'm your AI assistant. I can help you with scene editing, object manipulation, and answer questions about the editor. What would you like to do?",
-      timestamp: new Date(),
-    },
-  ]);
+  const activeSession = useActiveSession();
+  const chatError = useChatError();
+  const { sendMessage, isTyping, currentStream, initialized } = useChatAgent();
+
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const messages = activeSession?.messages || [];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,30 +49,16 @@ export const RightSidebarChat: React.FC<IRightSidebarChatProps> = ({ isExpanded,
   }, [isExpanded]);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isTyping || !initialized) return;
 
-    const userMessage: IChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: inputValue.trim(),
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    const content = inputValue.trim();
     setInputValue('');
-    setIsTyping(true);
 
-    // Mock AI response after a delay
-    setTimeout(() => {
-      const aiMessage: IChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: `I understand you want to: "${userMessage.content}". This is a mock response. In the future, I'll provide actual assistance with scene editing, object manipulation, and other editor features.`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1500);
+    try {
+      await sendMessage(content);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -152,6 +137,13 @@ export const RightSidebarChat: React.FC<IRightSidebarChatProps> = ({ isExpanded,
       {isExpanded && (
         <>
           <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-track-gray-800/50 scrollbar-thumb-gray-600/50 hover:scrollbar-thumb-gray-500/50">
+            {chatError && (
+              <div className="flex items-start space-x-2 p-2 bg-red-900/20 border border-red-500/30 rounded-lg">
+                <FiAlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-red-200">{chatError}</p>
+              </div>
+            )}
+
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -199,20 +191,26 @@ export const RightSidebarChat: React.FC<IRightSidebarChatProps> = ({ isExpanded,
                     <div className="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center">
                       <FiCpu className="w-2.5 h-2.5 text-white" />
                     </div>
-                    <span className="text-[10px] text-gray-400">AI • typing...</span>
+                    <span className="text-[10px] text-gray-400">
+                      AI • {currentStream ? 'responding' : 'thinking'}...
+                    </span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-gradient-to-r from-gray-700 to-gray-800 border border-cyan-500/20 mr-6">
-                    <div className="flex space-x-1">
-                      <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"></div>
-                      <div
-                        className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '0.1s' }}
-                      ></div>
-                      <div
-                        className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"
-                        style={{ animationDelay: '0.2s' }}
-                      ></div>
-                    </div>
+                    {currentStream ? (
+                      <p className="text-xs text-gray-100 whitespace-pre-wrap">{currentStream}</p>
+                    ) : (
+                      <div className="flex space-x-1">
+                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"></div>
+                        <div
+                          className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"
+                          style={{ animationDelay: '0.1s' }}
+                        ></div>
+                        <div
+                          className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"
+                          style={{ animationDelay: '0.2s' }}
+                        ></div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -231,14 +229,14 @@ export const RightSidebarChat: React.FC<IRightSidebarChatProps> = ({ isExpanded,
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type message..."
+                  placeholder={!initialized ? 'Initializing...' : 'Type message...'}
                   className="w-full bg-black/30 border border-gray-600/30 rounded-md px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-cyan-500/50 focus:bg-black/50 transition-all duration-200"
-                  disabled={isTyping}
+                  disabled={isTyping || !initialized}
                 />
               </div>
               <button
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isTyping}
+                disabled={!inputValue.trim() || isTyping || !initialized}
                 className="p-1.5 bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded-md transition-all duration-200 flex items-center justify-center"
                 title="Send Message"
               >

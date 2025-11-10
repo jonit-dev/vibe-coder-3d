@@ -247,5 +247,3 @@ This plan replaces temporary logic with a principled kinematic controller integr
 - Rapier3D is available and configured; engine exposes necessary collider/body registries.
 - ECS-bridge decoding infrastructure supports new component and field renames.
 - Input manager provides normalized, case-insensitive key states.
-
-

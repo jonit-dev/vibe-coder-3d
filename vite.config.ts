@@ -7,6 +7,7 @@ import { sceneApiMiddleware } from './src/plugins/vite-plugin-scene-api';
 import { vitePluginScriptAPI } from './src/plugins/vite-plugin-script-api';
 import { vitePluginModelIngest } from './src/plugins/vite-plugin-model-ingest';
 import { createAssetsApi } from './src/plugins/assets-api/createAssetsApi';
+import { aiApiPlugin } from './src/plugins/vite-plugin-ai-api';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -21,6 +22,7 @@ export default defineConfig({
       libraryRoot: 'src/game/assets',
       scenesRoot: 'src/game/scenes',
     }),
+    aiApiPlugin(),
   ],
   resolve: {
     alias: {
@@ -35,6 +37,15 @@ export default defineConfig({
     include: ['three', '@react-three/fiber', '@react-three/drei'],
   },
   server: {
+    proxy: {
+      // Proxy Z.AI API requests to avoid CORS issues in development
+      '/api/z-ai': {
+        target: 'https://api.z.ai',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/z-ai/, '/api/anthropic'),
+        secure: true,
+      },
+    },
     watch: {
       // Ignore scenes, scripts, and assets since they have their own hot-reload mechanisms
       ignored: [

@@ -3,8 +3,11 @@ import { FsSceneStore } from '../core/lib/serialization/common/FsSceneStore';
 import { createSceneApi } from './scene-api/createSceneApi';
 import { JsonFormatHandler } from './scene-api/formats/JsonFormatHandler';
 import { TsxFormatHandler } from './scene-api/formats/TsxFormatHandler';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const SCENES_DIR = './src/game/scenes';
+const GEOMETRY_DIR = './src/game/geometry';
 
 /**
  * Vite plugin to handle scene persistence via HTTP API
@@ -76,6 +79,52 @@ export function sceneApiMiddleware(): Plugin {
       } else if (apiPlugin.configureServer?.handler) {
         apiPlugin.configureServer.handler(server);
       }
+
+      // ADD: Geometry save endpoint
+      server.middlewares.use('/api/save-geometry', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('Method Not Allowed');
+          return;
+        }
+
+        try {
+          // Read request body
+          let body = '';
+          req.on('data', (chunk) => {
+            body += chunk;
+          });
+          req.on('end', () => {
+            const { filepath, content } = JSON.parse(body);
+
+            // Normalize path - remove leading slash and ensure it's in geometry dir
+            const normalizedPath = filepath.startsWith('/src/game/geometry/')
+              ? filepath.slice(1) // Remove leading /
+              : filepath.startsWith('src/game/geometry/')
+                ? filepath
+                : `src/game/geometry/${filepath}`;
+
+            const fullPath = path.join(process.cwd(), normalizedPath);
+
+            // Ensure directory exists
+            const dir = path.dirname(fullPath);
+            if (!fs.existsSync(dir)) {
+              fs.mkdirSync(dir, { recursive: true });
+            }
+
+            // Write file
+            fs.writeFileSync(fullPath, content, 'utf-8');
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: true, path: fullPath }));
+          });
+        } catch (error) {
+          console.error('Geometry save error:', error);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: 'Failed to save geometry' }));
+        }
+      });
     },
   };
 }

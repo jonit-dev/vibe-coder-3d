@@ -1,0 +1,225 @@
+/**
+ * Entity Edit Tool
+ * Allows the AI to modify entity properties, components, and transforms
+ */
+
+import { Logger } from '@core/lib/logger';
+
+const logger = Logger.create('EntityEditTool');
+
+export const entityEditTool = {
+  name: 'entity_edit',
+  description: 'Modify entity properties including transform, components, and other attributes',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      entity_id: {
+        type: 'number',
+        description: 'ID of the entity to modify',
+      },
+      action: {
+        type: 'string',
+        enum: [
+          'set_position',
+          'set_rotation',
+          'set_scale',
+          'rename',
+          'delete',
+          'add_component',
+          'remove_component',
+          'set_component_property',
+        ],
+        description: 'Action to perform on the entity',
+      },
+      position: {
+        type: 'object',
+        properties: {
+          x: { type: 'number' },
+          y: { type: 'number' },
+          z: { type: 'number' },
+        },
+        description: 'New position (for set_position)',
+      },
+      rotation: {
+        type: 'object',
+        properties: {
+          x: { type: 'number' },
+          y: { type: 'number' },
+          z: { type: 'number' },
+        },
+        description: 'New rotation in degrees (for set_rotation)',
+      },
+      scale: {
+        type: 'object',
+        properties: {
+          x: { type: 'number' },
+          y: { type: 'number' },
+          z: { type: 'number' },
+        },
+        description: 'New scale (for set_scale)',
+      },
+      name: {
+        type: 'string',
+        description: 'New name (for rename)',
+      },
+      component_type: {
+        type: 'string',
+        description: 'Component type (for add_component, remove_component, set_component_property)',
+      },
+      property_name: {
+        type: 'string',
+        description: 'Property name (for set_component_property)',
+      },
+      property_value: {
+        description: 'Property value (for set_component_property)',
+      },
+    },
+    required: ['entity_id', 'action'],
+  },
+};
+
+/**
+ * Execute entity edit tool
+ */
+export async function executeEntityEdit(params: any): Promise<string> {
+  logger.info('Executing entity edit', { params });
+
+  const {
+    entity_id,
+    action,
+    position,
+    rotation,
+    scale,
+    name,
+    component_type,
+    property_name,
+    property_value,
+  } = params;
+
+  switch (action) {
+    case 'set_position':
+      if (!position) {
+        return 'Error: position is required for set_position';
+      }
+      return setPosition(entity_id, position);
+
+    case 'set_rotation':
+      if (!rotation) {
+        return 'Error: rotation is required for set_rotation';
+      }
+      return setRotation(entity_id, rotation);
+
+    case 'set_scale':
+      if (!scale) {
+        return 'Error: scale is required for set_scale';
+      }
+      return setScale(entity_id, scale);
+
+    case 'rename':
+      if (!name) {
+        return 'Error: name is required for rename';
+      }
+      return renameEntity(entity_id, name);
+
+    case 'delete':
+      return deleteEntity(entity_id);
+
+    case 'add_component':
+      if (!component_type) {
+        return 'Error: component_type is required for add_component';
+      }
+      return addComponent(entity_id, component_type);
+
+    case 'remove_component':
+      if (!component_type) {
+        return 'Error: component_type is required for remove_component';
+      }
+      return removeComponent(entity_id, component_type);
+
+    case 'set_component_property':
+      if (!component_type || !property_name || property_value === undefined) {
+        return 'Error: component_type, property_name, and property_value are required';
+      }
+      return setComponentProperty(entity_id, component_type, property_name, property_value);
+
+    default:
+      return `Unknown action: ${action}`;
+  }
+}
+
+function setPosition(entityId: number, position: { x: number; y: number; z: number }): string {
+  const event = new CustomEvent('agent:set-position', {
+    detail: { entityId, position },
+  });
+  window.dispatchEvent(event);
+
+  return `Set position of entity ${entityId} to (${position.x}, ${position.y}, ${position.z})`;
+}
+
+function setRotation(entityId: number, rotation: { x: number; y: number; z: number }): string {
+  const event = new CustomEvent('agent:set-rotation', {
+    detail: { entityId, rotation },
+  });
+  window.dispatchEvent(event);
+
+  return `Set rotation of entity ${entityId} to (${rotation.x}°, ${rotation.y}°, ${rotation.z}°)`;
+}
+
+function setScale(entityId: number, scale: { x: number; y: number; z: number }): string {
+  const event = new CustomEvent('agent:set-scale', {
+    detail: { entityId, scale },
+  });
+  window.dispatchEvent(event);
+
+  return `Set scale of entity ${entityId} to (${scale.x}, ${scale.y}, ${scale.z})`;
+}
+
+function renameEntity(entityId: number, name: string): string {
+  const event = new CustomEvent('agent:rename-entity', {
+    detail: { entityId, name },
+  });
+  window.dispatchEvent(event);
+
+  return `Renamed entity ${entityId} to "${name}"`;
+}
+
+function deleteEntity(entityId: number): string {
+  const event = new CustomEvent('agent:delete-entity', {
+    detail: { entityId },
+  });
+  window.dispatchEvent(event);
+
+  return `Deleted entity ${entityId}`;
+}
+
+function addComponent(entityId: number, componentType: string): string {
+  const event = new CustomEvent('agent:add-component', {
+    detail: { entityId, componentType },
+  });
+  window.dispatchEvent(event);
+
+  return `Added ${componentType} component to entity ${entityId}`;
+}
+
+function removeComponent(entityId: number, componentType: string): string {
+  const event = new CustomEvent('agent:remove-component', {
+    detail: { entityId, componentType },
+  });
+  window.dispatchEvent(event);
+
+  return `Removed ${componentType} component from entity ${entityId}`;
+}
+
+function setComponentProperty(
+  entityId: number,
+  componentType: string,
+  propertyName: string,
+  propertyValue: any,
+): string {
+  const event = new CustomEvent('agent:set-component-property', {
+    detail: { entityId, componentType, propertyName, propertyValue },
+  });
+  window.dispatchEvent(event);
+
+  return `Set ${componentType}.${propertyName} = ${JSON.stringify(propertyValue)} on entity ${entityId}`;
+}

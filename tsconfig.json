@@ -29,6 +29,7 @@
   "include": ["src", "src/types", "src/game/scripts/script-api.d.ts"],
   "exclude": [
     "src/game/scripts/**/*.ts",
+    "src/plugins/**/*.ts",
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/__tests__/**"

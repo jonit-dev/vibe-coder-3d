@@ -34,6 +34,7 @@ import { useEntitySynchronization } from './hooks/useEntitySynchronization';
 import { useStreamingSceneActions } from './hooks/useStreamingSceneActions';
 import { useSceneInitialization } from './hooks/useSceneInitialization';
 import { useInputAssetSync } from './hooks/useInputAssetSync';
+import { useAgentActions } from './hooks/useAgentActions';
 
 // Import types from centralized types file
 export type { ISceneObject, ITransform, ShapeType } from './types/shapes';
@@ -96,6 +97,9 @@ const Editor: React.FC = () => {
 
   // Sync input assets from editor store to InputManager
   useInputAssetSync();
+
+  // Agent actions - listen for AI agent tool calls
+  useAgentActions();
 
   // Streaming scene actions with progress feedback
   const {
