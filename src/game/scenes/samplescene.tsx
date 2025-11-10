@@ -3,14 +3,14 @@ import { defineScene } from './defineScene';
 /**
  * samplescene
  * Scene with 5 entities
- * Generated: 2025-11-10T00:49:51.460Z
+ * Generated: 2025-11-10T00:50:49.629Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
   "name": "samplescene",
   "version": 1,
-  "timestamp": "2025-11-10T00:49:51.460Z",
+  "timestamp": "2025-11-10T00:50:49.629Z",
   "description": "Scene with 5 entities"
 },
   entities: [
@@ -46,13 +46,13 @@ export default defineScene({
         "orthographicSize": 10,
         "depth": 0,
         "isMain": true,
-        "clearFlags": "skybox",
+        "clearFlags": "solidColor",
         "skyboxTexture": "",
         "backgroundColor": {
           "r": 0,
           "g": 0,
           "b": 0,
-          "a": 0
+          "a": 1
         },
         "controlMode": "free",
         "viewportRect": {
