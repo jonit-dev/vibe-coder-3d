@@ -2,6 +2,9 @@
   <img src="./public/vibe-coder-3d-logo.png" alt="Vibe Coder 3D Logo" width="300"/>
 </p>
 
+> **⚠️ UNDER ACTIVE DEVELOPMENT**
+> This project is currently in early development and is **not yet functional**. Features are incomplete, APIs will change, and many systems are still being implemented. Please check the [ROADMAP.md](./ROADMAP.md) for current progress.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://www.rust-lang.org/)
@@ -17,8 +20,9 @@ Vibe Coder 3D is an **AI-first game engine** that combines modern 3D rendering w
 ## Screenshots
 
 <p align="center">
-  <img src="./public/screenshots/scene.png" alt="Vibe Coder 3D Scene" width="49%"/>
-  <img src="./public/screenshots/LOD-wireframe.png" alt="LOD Wireframe View" width="49%"/>
+  <img src="./public/screenshots/scene.png" alt="Vibe Coder 3D Scene" width="32%"/>
+  <img src="./public/screenshots/LOD-wireframe.png" alt="LOD Wireframe View" width="32%"/>
+  <img src="./public/screenshots/alien.png" alt="Alien Character" width="32%"/>
 </p>
 
 ## Features

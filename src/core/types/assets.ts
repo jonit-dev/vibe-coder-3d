@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 // Core asset metadata interfaces
 export enum AssetKeys {
-  NightStalkerModel = 'NightStalkerModel',
-  // Add other asset keys as needed
+  // Add asset keys here as needed
+  // Note: Custom models imported via drag-and-drop don't use this enum
 }
 
 export const AssetTypeSchema = z.enum(['gltf', 'fbx', 'obj', 'dae', 'texture', 'audio']);

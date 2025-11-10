@@ -131,9 +131,17 @@ export function vitePluginModelIngest(): Plugin {
           // Run optimization
           await runOptimizeForModel(modelDirName);
 
-          // Verify outputs
+          // Verify all outputs exist before returning
           const glbPath = join(targetDir, 'glb', `${baseNoExt}.glb`);
-          await stat(glbPath); // throws if missing
+          const highPath = join(targetDir, 'lod', `${baseNoExt}.high_fidelity.glb`);
+          const lowPath = join(targetDir, 'lod', `${baseNoExt}.low_fidelity.glb`);
+
+          await stat(glbPath);
+          await stat(highPath);
+          await stat(lowPath);
+
+          // Small delay to ensure Vite dev server has picked up the new files
+          await new Promise(resolve => setTimeout(resolve, 100));
 
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/json');

@@ -399,6 +399,29 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
     const meshRendererData = meshRendererComponent?.data;
     const modelPath = isMeshRendererData(meshRendererData) ? meshRendererData.modelPath : undefined;
 
+    // Check if this is a loading placeholder
+    const isLoadingPlaceholder = modelPath?.startsWith('__loading__:');
+    const loadingModelName = isLoadingPlaceholder
+      ? modelPath?.replace('__loading__:', '')
+      : undefined;
+
+    // Render loading placeholder while model is being ingested
+    if (meshType === 'custom' && isLoadingPlaceholder) {
+      // Dynamic import to avoid circular dependencies
+      const ModelLoadingPlaceholder = React.lazy(
+        () =>
+          import('@/editor/components/shared/ModelLoadingPlaceholder').then((m) => ({
+            default: m.ModelLoadingPlaceholder,
+          })),
+      );
+
+      return (
+        <React.Suspense fallback={null}>
+          <ModelLoadingPlaceholder entityId={entityId} modelName={loadingModelName} />
+        </React.Suspense>
+      );
+    }
+
     // If it's a custom model with a valid path, render the custom model
     if (meshType === 'custom' && modelPath) {
       return (

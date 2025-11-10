@@ -1,9 +1,9 @@
 import { AssetKeys, AssetManifest } from '@/core';
 
-import { nightStalkerModelMetadata } from './nightStalkerAssetsMetadata';
-
+// Asset metadata for pre-configured game assets
+// Note: Custom models imported via drag-and-drop don't use this system
 export const assets: AssetManifest = {
-  [AssetKeys.NightStalkerModel]: nightStalkerModelMetadata,
+  // Add asset metadata here as needed
 };
 
 export function getAssetMetadata(key: AssetKeys) {

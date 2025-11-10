@@ -1,6 +1,8 @@
 import { useToastStore } from '@/core/stores/toastStore';
 import { useEntityCreation } from '@/editor/hooks/useEntityCreation';
 import { useModelIngestion } from '@/editor/hooks/useModelIngestion';
+import { useComponentRegistry } from '@/core/hooks/useComponentRegistry';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { Logger } from '@core/lib/logger';
 import React from 'react';
 
@@ -10,6 +12,7 @@ export const ModelDropZone: React.FC = () => {
   const [isDragging, setIsDragging] = React.useState(false);
   const { ingest } = useModelIngestion();
   const { createCustomModel } = useEntityCreation();
+  const { updateComponent } = useComponentRegistry();
   const toast = useToastStore();
 
   React.useEffect(() => {
@@ -50,17 +53,35 @@ export const ModelDropZone: React.FC = () => {
         files.find((f) => f.name.toLowerCase().endsWith('.obj')) ||
         files[0];
 
-      const loadingToastId = toast.showLoading('Importing Model...', 'Optimizing and generating LODs');
+      const filename = file.name.split('.')[0];
+
+      // Create entity with loading placeholder using special prefix
+      const loadingEntity = createCustomModel(`__loading__:${filename}`, filename);
+      logger.info('Created loading placeholder entity', { entityId: loadingEntity.id, filename });
+
+      const loadingToastId = toast.showLoading(
+        'Importing Model...',
+        `Optimizing ${filename} and generating LODs`
+      );
+
       try {
+        // Ingest and optimize (backend waits for all LOD files)
         const result = await ingest(file);
-        const entity = createCustomModel(result.basePath);
+
+        logger.info('Model ready, updating entity', {
+          entityId: loadingEntity.id,
+          basePath: result.basePath,
+        });
+
+        // Update the mesh renderer with the real model path
+        updateComponent(loadingEntity.id, KnownComponentTypes.MESH_RENDERER, {
+          modelPath: result.basePath,
+        });
 
         toast.removeToast(loadingToastId);
-        toast.showSuccess(
-          'Import Complete',
-          `Created entity ${entity.id} from ${result.name}`,
-          { duration: 3000 }
-        );
+        toast.showSuccess('Import Complete', `Loaded ${result.name} with LOD variants`, {
+          duration: 3000,
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         logger.error('Model ingestion failed', { error: msg });
@@ -81,7 +102,7 @@ export const ModelDropZone: React.FC = () => {
       document.removeEventListener('dragleave', handleDragLeave);
       document.removeEventListener('drop', handleDrop);
     };
-  }, [ingest, createCustomModel, toast]);
+  }, [ingest, createCustomModel, updateComponent, toast]);
 
   if (!isDragging) return null;
 
