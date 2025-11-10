@@ -6,13 +6,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 
-> **The future of game development is conversational.**
-
-Vibe Coder 3D is an ambitious **AI-first game engine** that combines modern 3D rendering with conversational AI to revolutionize game development. Build 3D games by simply describing what you want in natural language, powered by React Three Fiber and a high-performance Rust native engine.
+Vibe Coder 3D is an **AI-first game engine** that combines modern 3D rendering with conversational AI. Build 3D games by describing what you want in natural language, powered by React Three Fiber and a high-performance Rust native engine.
 
 **"Create a bouncing ball"** → Complete physics simulation
 **"Add a medieval castle"** → 3D model sourced and placed
 **"Make the player jump on spacebar"** → Controller script generated
+
+> **📍 [View Full Roadmap](./ROADMAP.md)** - Feature roadmap, implementation status, and detailed progress tracking
 
 ## Features
 
@@ -105,6 +105,15 @@ Comprehensive documentation is available in the `docs/` directory:
 
 For a complete list of 50+ documentation files, see [docs/0-navigation.md](./docs/0-navigation.md).
 
+### Quick Guides
+
+Practical guides for common tasks:
+
+- **[Script API Quick Reference](./docs/guides/script-api-quick-reference.md)** - Most commonly used script APIs
+- **[Input Actions Quick Start](./docs/guides/input-actions-quick-start.md)** - Setting up player controls
+- **[Adding Components](./docs/guides/adding-components.md)** - Creating custom components
+- **[3D Asset Optimization](./docs/3D-ASSET-OPTIMIZATION-GUIDE.md)** - Optimizing models for performance
+
 ## Development
 
 ### Available Scripts
@@ -180,7 +189,7 @@ yarn rust:engine --scene testphysics --debug
 
 ## Project Structure
 
-```
+```text
 vibe-coder-3d/
 ├── src/
 │   ├── core/          # Core engine (ECS, systems, components)
@@ -207,15 +216,20 @@ vibe-coder-3d/
 - 🚧 AI Copilot system development beginning
 - ⏳ Natural language command processing
 
+**For detailed feature roadmap and progress tracking, see [ROADMAP.md](./ROADMAP.md)**
+
 ## Contributing
 
-We welcome contributions! Please see our documentation:
+We welcome contributions! **Start with [CONTRIBUTING.md](./CONTRIBUTING.md)** for complete guidelines.
+
+Quick links:
 
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines, coding standards, and testing requirements
+- **[ROADMAP.md](./ROADMAP.md)** - Feature roadmap, implementation status, and sprint planning
 - **[WORKFLOW.md](./WORKFLOW.md)** - Git Flow branching model, PR process, and release workflow
 - **[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)** - Community standards and expectations
 
-### Quick Start
+### Contribution Workflow
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -245,17 +259,4 @@ Built with amazing open source technologies:
 - [Rapier](https://rapier.rs/) - Fast 2D and 3D physics engine
 - [three-d](https://github.com/asny/three-d) - Rust 3D rendering library
 
-## Roadmap
-
-- [ ] AI-assisted scene building with natural language
-- [ ] Visual scripting system (node-based)
-- [ ] Advanced post-processing effects
-- [ ] Particle system
-- [ ] Animation system improvements
-- [ ] Multiplayer/networking support
-- [ ] Script debugger with breakpoints
-- [ ] Terrain generation system
-
 ---
-
-**Made with ❤️ by the Vibe Coder 3D community**

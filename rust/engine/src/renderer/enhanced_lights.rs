@@ -50,6 +50,11 @@ impl EnhancedDirectionalLight {
         &mut self.inner
     }
 
+    /// Get light direction for gizmo rendering
+    pub fn direction(&self) -> Vec3 {
+        self.inner.direction
+    }
+
     /// Generate shadow map with custom bias applied
     pub fn generate_shadow_map(
         &mut self,

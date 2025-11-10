@@ -7,7 +7,7 @@ use winit::dpi::PhysicalSize;
 use winit::window::Window as WinitWindow;
 
 use crate::renderer::{
-    DebugLineRenderer, LODManager, LODSelector, MaterialManager, SkyboxRenderer,
+    DebugLineRenderer, LODManager, LODSelector, MaterialManager, ScreenOverlay, SkyboxRenderer,
 };
 
 /// Manages core three-d context, window, and shared resources
@@ -44,6 +44,9 @@ pub struct ThreeDContextState {
 
     /// Debug line renderer (grid, colliders, etc.)
     debug_line_renderer: DebugLineRenderer,
+
+    /// Screen overlay for 2D UI
+    screen_overlay: ScreenOverlay,
 
     /// HDR color texture for post-processing
     hdr_color_texture: Option<Texture2D>,
@@ -84,6 +87,7 @@ impl ThreeDContextState {
         let component_registry = vibe_ecs_bridge::decoders::create_default_registry();
 
         let debug_line_renderer = DebugLineRenderer::new(&context);
+        let screen_overlay = ScreenOverlay::new(&context);
 
         // Initialize LOD system with default configuration
         let lod_manager = LODManager::new();
@@ -100,6 +104,7 @@ impl ThreeDContextState {
             component_registry,
             skybox_renderer: SkyboxRenderer::new(),
             debug_line_renderer,
+            screen_overlay,
             hdr_color_texture: None,
             hdr_depth_texture: None,
             lod_manager,
@@ -165,6 +170,11 @@ impl ThreeDContextState {
     /// Get reference to debug line renderer
     pub fn debug_line_renderer(&self) -> &DebugLineRenderer {
         &self.debug_line_renderer
+    }
+
+    /// Get reference to screen overlay
+    pub fn screen_overlay(&self) -> &ScreenOverlay {
+        &self.screen_overlay
     }
 
     /// Get reference to LOD manager

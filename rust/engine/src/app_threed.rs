@@ -1,4 +1,5 @@
 use crate::input::InputManager;
+use crate::renderer::OrbitalCamera;
 use crate::threed::threed_renderer::ThreeDRenderer;
 use crate::util::FrameTimer;
 use anyhow::Context;
@@ -33,6 +34,10 @@ pub struct AppThreeD {
     debug_mode: bool,
     /// Optional character controller system (enabled when scene contains CharacterController)
     character_controller_system: Option<CharacterControllerSystem>,
+    /// Debug orbital camera for free navigation (F3 toggle)
+    debug_camera: Option<OrbitalCamera>,
+    /// Whether to use the debug camera instead of scene camera
+    use_debug_camera: bool,
 }
 
 impl AppThreeD {
@@ -151,6 +156,8 @@ impl AppThreeD {
             scene_manager: None,
             debug_mode,
             character_controller_system: None,
+            debug_camera: None,
+            use_debug_camera: false,
         })
     }
 
@@ -298,6 +305,19 @@ impl AppThreeD {
             }
         }
 
+        // Enable orbital camera by default in debug mode
+        let use_debug_camera = debug_mode;
+        if use_debug_camera {
+            log::info!("╔════════════════════════════════════════════════════════════╗");
+            log::info!("║          DEBUG MODE - ORBITAL CAMERA ENABLED               ║");
+            log::info!("╠════════════════════════════════════════════════════════════╣");
+            log::info!("║  LEFT MOUSE + DRAG   : Rotate camera around target        ║");
+            log::info!("║  RIGHT MOUSE + DRAG  : Pan camera                          ║");
+            log::info!("║  MOUSE WHEEL         : Zoom in/out                         ║");
+            log::info!("║  F3                  : Toggle orbital camera on/off        ║");
+            log::info!("╚════════════════════════════════════════════════════════════╝");
+        }
+
         Ok(Self {
             window,
             renderer,
@@ -310,6 +330,8 @@ impl AppThreeD {
             scene_manager: Some(scene_manager),
             debug_mode,
             character_controller_system,
+            debug_camera: None,
+            use_debug_camera,
         })
     }
 
@@ -342,6 +364,83 @@ impl AppThreeD {
                         } => {
                             log::info!("Exit requested (Escape key)");
                             *control_flow = ControlFlow::Exit;
+                        }
+                        WindowEvent::KeyboardInput {
+                            input:
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::F3),
+                                    ..
+                                },
+                            ..
+                        } => {
+                            // Toggle debug camera only in debug mode
+                            if self.debug_mode {
+                                self.use_debug_camera = !self.use_debug_camera;
+
+                                if self.use_debug_camera {
+                                    // Initialize debug camera from current scene camera if needed
+                                    if self.debug_camera.is_none() {
+                                        if let Some(scene_camera) = self.renderer.get_main_camera() {
+                                            self.debug_camera = Some(OrbitalCamera::from_camera(&scene_camera));
+                                        }
+                                    }
+                                    log::info!("✓ Orbital camera ENABLED (Left-click + drag to rotate)");
+                                } else {
+                                    // Reset orbital camera state when switching back
+                                    if let Some(ref mut debug_cam) = self.debug_camera {
+                                        debug_cam.reset();
+                                    }
+                                    log::info!("✗ Orbital camera DISABLED (using scene camera)");
+                                }
+                            }
+                        }
+                        WindowEvent::MouseInput { state, button, .. } => {
+                            // Forward mouse events to orbital camera when active
+                            if self.use_debug_camera && self.debug_mode {
+                                log::debug!("Mouse button event: {:?} {:?}, debug_camera active", button, state);
+                                if let Some(ref mut debug_cam) = self.debug_camera {
+                                    let mouse_pos = self.input_manager.mouse_position();
+                                    match state {
+                                        ElementState::Pressed => {
+                                            debug_cam.on_mouse_down(*button, mouse_pos);
+                                        }
+                                        ElementState::Released => {
+                                            debug_cam.on_mouse_up(*button);
+                                        }
+                                    }
+                                } else {
+                                    log::warn!("Debug camera is None!");
+                                }
+                            } else {
+                                log::debug!("Mouse button ignored: use_debug_camera={}, debug_mode={}",
+                                    self.use_debug_camera, self.debug_mode);
+                            }
+                        }
+                        WindowEvent::CursorMoved { position, .. } => {
+                            // Forward mouse movement to orbital camera when active
+                            if self.use_debug_camera && self.debug_mode {
+                                if let Some(ref mut debug_cam) = self.debug_camera {
+                                    debug_cam.on_mouse_move((position.x, position.y));
+                                }
+                            }
+                        }
+                        WindowEvent::MouseWheel { delta, .. } => {
+                            // Forward mouse wheel to orbital camera when active
+                            if self.use_debug_camera && self.debug_mode {
+                                log::debug!("Mouse wheel event: {:?}, debug_camera active", delta);
+                                if let Some(ref mut debug_cam) = self.debug_camera {
+                                    let wheel_delta = match delta {
+                                        MouseScrollDelta::LineDelta(_x, y) => *y,
+                                        MouseScrollDelta::PixelDelta(pos) => (pos.y as f32) / 100.0,
+                                    };
+                                    log::debug!("Forwarding wheel delta: {}", wheel_delta);
+                                    debug_cam.on_mouse_wheel(wheel_delta);
+                                }
+                            } else {
+                                log::debug!("Mouse wheel ignored: use_debug_camera={}, debug_mode={}",
+                                    self.use_debug_camera, self.debug_mode);
+                            }
                         }
                         WindowEvent::Resized(physical_size) => {
                             self.resize(*physical_size);
@@ -932,6 +1031,25 @@ impl AppThreeD {
 
     fn render(&mut self) -> anyhow::Result<()> {
         let delta_time = self.timer.delta_seconds();
+
+        // Initialize debug camera on first frame if in debug mode
+        if self.use_debug_camera && self.debug_mode && self.debug_camera.is_none() {
+            if let Some(scene_camera) = self.renderer.get_main_camera() {
+                self.debug_camera = Some(OrbitalCamera::from_camera(&scene_camera));
+                log::info!("Orbital camera initialized from scene camera");
+            }
+        }
+
+        // Update main camera from debug orbital camera if active
+        if self.use_debug_camera && self.debug_mode {
+            if let Some(ref debug_cam) = self.debug_camera {
+                // Get current main camera and update it with orbital camera state
+                if let Some(mut camera) = self.renderer.get_main_camera() {
+                    debug_cam.update_camera(&mut camera);
+                    self.renderer.set_main_camera(camera);
+                }
+            }
+        }
 
         // Get current scene state for runtime ECS sync
         // Extract mesh rendering state without holding a borrow on the scene

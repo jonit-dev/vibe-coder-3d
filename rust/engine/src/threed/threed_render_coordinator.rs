@@ -579,18 +579,26 @@ impl ThreeDRenderCoordinator {
         )
     }
 
-    /// Render debug overlay (grid, colliders, etc.)
+    /// Render debug overlay (grid, colliders, gizmos, etc.)
     pub fn render_debug_overlay(
         debug_line_renderer: &crate::renderer::DebugLineRenderer,
+        screen_overlay: &crate::renderer::ScreenOverlay,
         camera: &Camera,
         target: &RenderTarget,
         physics_world: Option<&vibe_physics::PhysicsWorld>,
+        camera_configs: &[(crate::renderer::CameraConfig, bool)],
+        directional_lights: &[crate::renderer::EnhancedDirectionalLight],
+        ambient_light_intensity: Option<f32>,
     ) -> Result<()> {
         crate::renderer::debug_rendering::render_debug_overlay(
             debug_line_renderer,
+            screen_overlay,
             camera,
             target,
             physics_world,
+            camera_configs,
+            directional_lights,
+            ambient_light_intensity,
         )
     }
 }

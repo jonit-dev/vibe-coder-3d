@@ -78,6 +78,17 @@ impl ThreeDRenderer {
         })
     }
 
+    /// Get reference to main camera for debug camera initialization
+    pub fn get_main_camera(&self) -> Option<Camera> {
+        // Return a copy of the main camera
+        Some(self.camera_manager.camera().clone())
+    }
+
+    /// Update main camera from external source (e.g., debug orbital camera)
+    pub fn set_main_camera(&mut self, camera: Camera) {
+        *self.camera_manager.camera_mut() = camera;
+    }
+
     /// Create a simple test scene with primitives
     pub fn create_test_scene(&mut self) -> Result<()> {
         log::info!("Creating test scene with primitives...");
@@ -173,11 +184,30 @@ impl ThreeDRenderer {
                 self.context_state.window_size().0,
                 self.context_state.window_size().1,
             );
+
+            // Gather camera configs for gizmo rendering
+            let mut camera_configs = Vec::new();
+            if let Some(config) = self.camera_manager.camera_config() {
+                camera_configs.push((config.clone(), true)); // Main camera is always active
+            }
+
+            // Gather light data for gizmos
+            let directional_lights = self.light_manager.directional_lights();
+            let ambient_intensity = if self.light_manager.has_ambient_light() {
+                Some(1.0) // Default intensity; could be made configurable
+            } else {
+                None
+            };
+
             ThreeDRenderCoordinator::render_debug_overlay(
                 self.context_state.debug_line_renderer(),
+                self.context_state.screen_overlay(),
                 self.camera_manager.camera(),
                 &screen,
                 physics_world,
+                &camera_configs,
+                directional_lights,
+                ambient_intensity,
             )?;
         }
 
