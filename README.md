@@ -14,6 +14,13 @@ Vibe Coder 3D is an **AI-first game engine** that combines modern 3D rendering w
 
 > **📍 [View Full Roadmap](./ROADMAP.md)** - Feature roadmap, implementation status, and detailed progress tracking
 
+## Screenshots
+
+<p align="center">
+  <img src="./public/screenshots/scene.png" alt="Vibe Coder 3D Scene" width="49%"/>
+  <img src="./public/screenshots/LOD-wireframe.png" alt="LOD Wireframe View" width="49%"/>
+</p>
+
 ## Features
 
 ### Core Engine
