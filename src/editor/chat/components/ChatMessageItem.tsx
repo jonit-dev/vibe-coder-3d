@@ -3,10 +3,11 @@
  * Renders individual chat messages (user/ai/screenshot/analysis)
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FiCpu, FiUser, FiImage } from 'react-icons/fi';
 import type { IDisplayChatMessage } from '@editor/chat/types/display';
 import { formatTime } from '@editor/chat/utils/formatters';
+import { Modal } from '@editor/components/shared/Modal';
 
 export interface IChatMessageItemProps {
   message: IDisplayChatMessage;
@@ -14,6 +15,8 @@ export interface IChatMessageItemProps {
 }
 
 export const ChatMessageItem: React.FC<IChatMessageItemProps> = ({ message, size = 'md' }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Size-based styling
   const avatarSize = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
   const iconSize = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3';
@@ -37,7 +40,7 @@ export const ChatMessageItem: React.FC<IChatMessageItemProps> = ({ message, size
           </div>
           <div className="bg-gradient-to-r from-gray-700 to-gray-800 border border-cyan-500/20 rounded-lg p-3 space-y-2 mr-8">
             <div className="text-xs text-gray-300 font-medium">{message.content}</div>
-            <div className="relative group">
+            <div className="relative group cursor-pointer" onClick={() => setIsModalOpen(true)}>
               <img
                 src={
                   message.thumbnailData
@@ -45,17 +48,9 @@ export const ChatMessageItem: React.FC<IChatMessageItemProps> = ({ message, size
                     : `data:image/png;base64,${message.imageData}`
                 }
                 alt="Scene screenshot"
-                className="w-full rounded border border-cyan-500/20 cursor-pointer transition-all duration-200 hover:border-cyan-400/50"
-                onClick={() => {
-                  const win = window.open();
-                  if (win) {
-                    win.document.write(
-                      `<img src="data:image/png;base64,${message.imageData}" style="max-width:100%;height:auto;"/>`,
-                    );
-                  }
-                }}
+                className="w-full rounded border border-cyan-500/20 transition-all duration-200 group-hover:border-cyan-400/50"
               />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 rounded flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
                 <span className="text-white text-xs bg-black/50 px-2 py-1 rounded">
                   Click to view full size
                 </span>
@@ -71,6 +66,24 @@ export const ChatMessageItem: React.FC<IChatMessageItemProps> = ({ message, size
               </div>
             )}
           </div>
+
+          {/* Full-size screenshot modal */}
+          <Modal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            title="Screenshot"
+            size="full"
+            backdropOpacity="bg-black/80"
+            scrollBody={true}
+          >
+            <div className="p-4 flex items-center justify-center">
+              <img
+                src={`data:image/png;base64,${message.imageData}`}
+                alt="Scene screenshot - full size"
+                className="max-w-full max-h-[80vh] object-contain"
+              />
+            </div>
+          </Modal>
         </div>
       </div>
     );
