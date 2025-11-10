@@ -493,6 +493,38 @@ CHOOSING THE RIGHT TOOL:
 2. Instantiate multiple times using instantiate action
 3. ❌ NEVER add primitives individually to the scene first
 
+SETTING MATERIALS AND COLORS:
+
+**To change an entity's color or material, you MUST use entity_edit tool:**
+
+1. **Parse the entity ID** from scene_manipulation response (e.g., "Entity ID: 42")
+2. **Use entity_edit with set_component_property**:
+   - component_type: "MeshRenderer"
+   - property_name: "material"
+   - property_value: { "color": "#ff0000" } (nested object!)
+
+**Example - Creating a red cube:**
+Step 1: scene_manipulation({ action: "add_entity", entity_type: "Cube", position: {x:0,y:0,z:0} })
+Response: "Added Cube to the scene at position (0, 0, 0). Entity ID: 42"
+
+Step 2: entity_edit({
+  entity_id: 42,
+  action: "set_component_property",
+  component_type: "MeshRenderer",
+  property_name: "material",
+  property_value: { "color": "#ff0000" }
+})
+
+**Available color formats:**
+- Hex: "#ff0000" (red), "#00ff00" (green), "#0000ff" (blue)
+- Named: "red", "green", "blue", "yellow", "orange", "purple", etc.
+
+**To use a specific material asset:**
+- property_name: "materialId"
+- property_value: "mat_name_here" (use get_available_materials tool first)
+
+**CRITICAL:** You MUST call entity_edit to set colors. scene_manipulation only creates entities with default materials.
+
 MANDATORY SELF-CORRECTION WORKFLOW:
 
 **YOU MUST ALWAYS VERIFY YOUR WORK VISUALLY - THIS IS NOT OPTIONAL**

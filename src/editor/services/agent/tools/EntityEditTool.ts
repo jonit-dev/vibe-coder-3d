@@ -216,10 +216,21 @@ function setComponentProperty(
   propertyName: string,
   propertyValue: any,
 ): string {
+  // Parse JSON strings to objects if needed
+  let parsedValue = propertyValue;
+  if (typeof propertyValue === 'string') {
+    try {
+      parsedValue = JSON.parse(propertyValue);
+    } catch {
+      // If parsing fails, use the string as-is
+      parsedValue = propertyValue;
+    }
+  }
+
   const event = new CustomEvent('agent:set-component-property', {
-    detail: { entityId, componentType, propertyName, propertyValue },
+    detail: { entityId, componentType, propertyName, propertyValue: parsedValue },
   });
   window.dispatchEvent(event);
 
-  return `Set ${componentType}.${propertyName} = ${JSON.stringify(propertyValue)} on entity ${entityId}`;
+  return `Set ${componentType}.${propertyName} = ${JSON.stringify(parsedValue)} on entity ${entityId}`;
 }
