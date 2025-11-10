@@ -8,6 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://www.rust-lang.org/)
+[![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289da.svg)](https://discord.gg/K6fXy5gjEx)
 
 Vibe Coder 3D is an **AI-first game engine** that combines modern 3D rendering with conversational AI. Build 3D games by describing what you want in natural language, powered by React Three Fiber and a high-performance Rust native engine.
 
@@ -254,6 +255,7 @@ For detailed workflow instructions, including release and hotfix processes, see 
 
 ## Community
 
+- **Join the Discussion**: [Discord](https://discord.gg/K6fXy5gjEx)
 - **GitHub Issues**: [Report bugs or request features](https://github.com/jonit-dev/vibe-coder-3d/issues)
 - **GitHub Discussions**: [Ask questions and share ideas](https://github.com/jonit-dev/vibe-coder-3d/discussions)
 
