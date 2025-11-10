@@ -41,10 +41,10 @@ export const useChatAgent = (): IUseChatAgentReturn => {
       contextProviderRef.current = new CodebaseContextProvider();
 
       // Check if API key is configured
-      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      const apiKey = import.meta.env.VITE_CLAUDE_CODE_SDK_API_KEY;
       if (!apiKey) {
         const errorMsg =
-          'AI Assistant requires OPENROUTER_API_KEY. Please configure in .env file. Get your key at: https://openrouter.ai/keys';
+          'AI Assistant requires VITE_CLAUDE_CODE_SDK_API_KEY. Please configure in .env file.';
         useChatStore.getState().setError(errorMsg);
         logger.error(errorMsg);
         return;

@@ -6,6 +6,7 @@
 
 import type { Tool } from '@anthropic-ai/sdk/resources';
 import { Logger } from '@core/lib/logger';
+import { OpenRouterService } from '@editor/services/openrouter';
 
 const logger = Logger.create('ScreenshotFeedbackTool');
 
@@ -21,7 +22,11 @@ Use this tool to:
 
 IMPORTANT: After making changes to entities, geometry, or scene properties, you SHOULD use this tool to verify the results visually before considering the task complete. This allows you to self-correct if something doesn't look right.
 
-The screenshot will be returned as a base64-encoded PNG image with annotations about the current scene state.`,
+The screenshot analysis method is controlled by VITE_USE_OPENROUTER_FOR_SCREENSHOTS environment variable:
+- If enabled: Uses OpenRouter with custom vision model (e.g., Gemini 2.5 Flash) for analysis
+- If disabled: Sends screenshot to the main agent for analysis
+
+You can override the env setting by explicitly setting use_openrouter parameter.`,
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -35,6 +40,17 @@ The screenshot will be returned as a base64-encoded PNG image with annotations a
         description: 'Milliseconds to wait before capturing (default: 500, allows scene to render)',
         default: 500,
       },
+      use_openrouter: {
+        type: 'boolean',
+        description:
+          'Use OpenRouter for advanced screenshot analysis with custom vision models (requires VITE_OPENROUTER_VISION_API_KEY). If true, analysis will be returned directly instead of being sent to the main agent.',
+        default: false,
+      },
+      analysis_prompt: {
+        type: 'string',
+        description:
+          'Custom prompt for OpenRouter analysis (only used if use_openrouter is true). If not provided, a default verification prompt will be used.',
+      },
     },
     required: ['reason'],
   },
@@ -43,11 +59,25 @@ The screenshot will be returned as a base64-encoded PNG image with annotations a
 export async function executeScreenshotFeedback(params: {
   reason: string;
   wait_ms?: number;
+  use_openrouter?: boolean;
+  analysis_prompt?: string;
 }): Promise<string> {
   try {
     logger.info('Capturing screenshot for feedback', { reason: params.reason });
 
     const waitMs = params.wait_ms || 500;
+
+    // Determine if we should use OpenRouter based on env variable or explicit parameter
+    const useOpenRouterFromEnv =
+      import.meta.env.VITE_USE_OPENROUTER_FOR_SCREENSHOTS === 'true' ||
+      import.meta.env.VITE_USE_OPENROUTER_FOR_SCREENSHOTS === true;
+    const shouldUseOpenRouter = params.use_openrouter ?? useOpenRouterFromEnv;
+
+    logger.info('Screenshot mode selection', {
+      explicitParam: params.use_openrouter,
+      envSetting: useOpenRouterFromEnv,
+      willUseOpenRouter: shouldUseOpenRouter,
+    });
 
     // Wait for scene to render
     await new Promise((resolve) => setTimeout(resolve, waitMs));
@@ -69,6 +99,86 @@ export async function executeScreenshotFeedback(params: {
 
     // Get scene context for annotations
     const sceneInfo = getSceneInfo();
+
+    // If OpenRouter is enabled (via env or explicit param), analyze directly instead of dispatching to agent
+    if (shouldUseOpenRouter) {
+      logger.info('Using OpenRouter for screenshot analysis', { reason: params.reason });
+
+      try {
+        const openRouter = OpenRouterService.getInstance();
+
+        // Initialize if not already done
+        if (!openRouter.isInitialized()) {
+          openRouter.initialize();
+        }
+
+        // Build analysis prompt
+        const defaultPrompt = `Analyze this 3D scene screenshot and verify:
+
+Scene Context:
+- Entities: ${sceneInfo.entity_count}
+- Selected: ${sceneInfo.selected_entities.join(', ') || 'none'}
+- Scene: ${sceneInfo.scene_name || 'unnamed'}
+
+Reason for screenshot: ${params.reason}
+
+Please provide:
+1. What entities/objects are visible in the scene
+2. Their positions, orientations, and appearances
+3. Any issues or inconsistencies you notice
+4. Whether the scene matches the expected state based on the reason
+
+Be specific about counts, positions, and visual details.`;
+
+        const prompt = params.analysis_prompt || defaultPrompt;
+
+        const systemPrompt = `You are an expert 3D scene analyst for a game engine. Your job is to carefully examine screenshots and provide detailed, accurate observations about the scene contents, entity positions, materials, and any potential issues.`;
+
+        // Get thinking effort from environment
+        const thinkingEffort = import.meta.env.VITE_OPENROUTER_THINKING_EFFORT as
+          | 'low'
+          | 'medium'
+          | 'high'
+          | undefined;
+
+        const analysis = await openRouter.analyzeScreenshot({
+          imageData: base64Data,
+          prompt,
+          systemPrompt,
+          thinkingEffort: thinkingEffort || undefined,
+        });
+
+        // Still dispatch event for UI to show thumbnail
+        window.dispatchEvent(
+          new CustomEvent('agent:screenshot-captured', {
+            detail: {
+              imageData: base64Data,
+              thumbnailData,
+              sceneInfo,
+              reason: params.reason,
+              openRouterAnalysis: analysis,
+            },
+          }),
+        );
+
+        return `Screenshot analyzed with OpenRouter (${openRouter.getModel()})
+
+Reason: ${params.reason}
+Timestamp: ${new Date().toISOString()}
+
+Scene State:
+- Entities: ${sceneInfo.entity_count}
+- Selected: ${sceneInfo.selected_entities.join(', ') || 'none'}
+- Scene: ${sceneInfo.scene_name || 'unnamed'}
+- Camera: ${sceneInfo.camera_position}
+
+Analysis Result:
+${analysis}`;
+      } catch (error) {
+        logger.error('OpenRouter analysis failed, falling back to standard mode', { error });
+        // Fall through to standard screenshot dispatch
+      }
+    }
 
     logger.info('SCREENSHOT STEP 1: Dispatching screenshot-captured event', {
       imageDataLength: base64Data.length,

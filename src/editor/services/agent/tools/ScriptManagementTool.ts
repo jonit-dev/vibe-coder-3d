@@ -10,37 +10,41 @@ const logger = Logger.create('ScriptManagementTool');
 
 export const scriptManagementTool = {
   name: 'script_management',
-  description: `Create, edit, and manage Lua scripts for entity behavior.
+  description: `Create and manage TypeScript scripts for entity behavior.
 
-Scripts are written in TypeScript and auto-transpiled to Lua for the Rust engine.
-Available built-in templates: rotating-cube, moving-sphere, pulsing-scale.
+CRITICAL SCRIPT WRITING RULES:
+- DO NOT use export/import statements (they cause "exports is not defined" errors)
+- Write plain TypeScript functions: function onStart() {}, function onUpdate(deltaTime: number) {}
+- Scripts execute directly in the engine's sandbox
+- The transpiler will remove any export/import keywords, but avoid them
 
-Common workflows:
-- Create from template: Quick setup for common behaviors (rotating, moving, pulsing)
-- Create custom script: AI generates custom behavior logic
-- Attach to entity: Hook script to entity via Script component
-- Configure parameters: Set script variables (speed, distance, color, etc.)
-- List available: Discover existing scripts to reuse
+Script lifecycle methods (write as plain functions):
+- function onStart(): void - Called once when entity/script loads
+- function onUpdate(deltaTime: number): void - Called every frame during play mode
+- function onDestroy(): void - Called when entity/script is destroyed
 
-Script lifecycle methods:
-- onStart(): Called once when entity/script loads
-- onUpdate(deltaTime): Called every frame during play mode
-- onDestroy(): Called when entity/script is destroyed
-
-Available APIs in scripts:
+Available global APIs (already in scope, no imports needed):
 - entity: Transform, components, hierarchy (entity.transform.rotate(), entity.transform.setPosition())
 - time: Time tracking (time.time, time.deltaTime, time.frameCount)
 - input: Keyboard/mouse input (input.isKeyDown('w'), input.getMousePosition())
 - math: Math utilities (math.lerp(), math.clamp(), math.distance())
 - console: Logging (console.log(), console.warn(), console.error())
-- parameters: Script parameters from editor (parameters.speed, parameters.color)`,
+- parameters: Script parameters from editor (parameters.speed, parameters.color)
+
+Example script (CORRECT - no exports):
+function onStart(): void {
+  console.log('Entity started!');
+}
+
+function onUpdate(deltaTime: number): void {
+  entity.transform.rotate(0, deltaTime * 0.5, 0);
+}`,
   input_schema: {
     type: 'object' as const,
     properties: {
       action: {
         type: 'string',
         enum: [
-          'create_from_template',
           'create_custom',
           'attach_to_entity',
           'detach_from_entity',
@@ -52,12 +56,8 @@ Available APIs in scripts:
       },
       entity_id: {
         type: 'number',
-        description: 'Entity ID (for attach_to_entity, detach_from_entity, set_parameters)',
-      },
-      template: {
-        type: 'string',
-        enum: ['rotating-cube', 'moving-sphere', 'pulsing-scale'],
-        description: 'Built-in template name (for create_from_template)',
+        description:
+          'Entity ID (for create_custom, attach_to_entity, detach_from_entity, set_parameters)',
       },
       script_name: {
         type: 'string',
@@ -88,15 +88,9 @@ Available APIs in scripts:
 export async function executeScriptManagement(params: any): Promise<string> {
   logger.info('Executing script management', { params });
 
-  const { action, entity_id, template, script_name, script_id, code, parameters } = params;
+  const { action, entity_id, script_name, script_id, code, parameters } = params;
 
   switch (action) {
-    case 'create_from_template':
-      if (!entity_id || !template) {
-        return 'Error: entity_id and template are required for create_from_template';
-      }
-      return createFromTemplate(entity_id, template, parameters);
-
     case 'create_custom':
       if (!entity_id || !code) {
         return 'Error: entity_id and code are required for create_custom';
@@ -132,65 +126,6 @@ export async function executeScriptManagement(params: any): Promise<string> {
 
     default:
       return `Unknown action: ${action}`;
-  }
-}
-
-/**
- * Create script from built-in template
- */
-async function createFromTemplate(
-  entityId: number,
-  template: string,
-  parameters?: Record<string, any>,
-): Promise<string> {
-  try {
-    // Load template code from existing script file
-    const response = await fetch(`/api/script/load?id=${template}`);
-    const data = await response.json();
-
-    if (!data.success) {
-      return `Error: Template "${template}" not found. Available templates: rotating-cube, moving-sphere, pulsing-scale`;
-    }
-
-    // Create new script for entity with template code
-    const scriptId = `entity-${entityId}.${template}`;
-    const saveResponse = await fetch('/api/script/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: scriptId,
-        code: data.code,
-        description: `${template} script for entity ${entityId}`,
-      }),
-    });
-
-    const saveData = await saveResponse.json();
-    if (!saveData.success) {
-      return `Error saving script: ${saveData.error}`;
-    }
-
-    // Add Script component to entity
-    componentRegistry.addComponent(entityId, 'Script', {
-      scriptName: template,
-      scriptPath: `${template}.lua`,
-      scriptRef: {
-        scriptId,
-        source: 'external',
-        path: saveData.path,
-        codeHash: saveData.hash,
-        lastModified: Date.now(),
-      },
-      enabled: true,
-      parameters: parameters || {},
-    });
-
-    logger.info('Script created from template', { entityId, template, scriptId });
-
-    const paramInfo = parameters ? ` with parameters ${JSON.stringify(parameters)}` : '';
-    return `✅ Created "${template}" script for entity ${entityId}${paramInfo}. Script ID: "${scriptId}". The entity will now execute this behavior during play mode.`;
-  } catch (error) {
-    logger.error('Failed to create script from template', { error, entityId, template });
-    return `Error creating script: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 }
 
@@ -347,32 +282,13 @@ async function listScripts(): Promise<string> {
     }>;
 
     if (scripts.length === 0) {
-      return 'No scripts available. Create scripts using create_from_template or create_custom actions.';
+      return 'No scripts available. Create scripts using create_custom action.';
     }
 
     let result = `📜 Available Scripts (${scripts.length}):\n\n`;
 
-    // Built-in templates
-    const templates = scripts.filter((s) =>
-      ['rotating-cube', 'moving-sphere', 'pulsing-scale'].includes(s.id),
-    );
-    if (templates.length > 0) {
-      result += '**Built-in Templates:**\n';
-      for (const script of templates) {
-        result += `- ${script.id} (${script.filename}, ${(script.size / 1024).toFixed(1)}KB)\n`;
-      }
-      result += '\n';
-    }
-
-    // Custom scripts
-    const custom = scripts.filter(
-      (s) => !['rotating-cube', 'moving-sphere', 'pulsing-scale'].includes(s.id),
-    );
-    if (custom.length > 0) {
-      result += '**Custom Scripts:**\n';
-      for (const script of custom) {
-        result += `- ${script.id} (${script.filename}, ${(script.size / 1024).toFixed(1)}KB)\n`;
-      }
+    for (const script of scripts) {
+      result += `- ${script.id} (${script.filename}, ${(script.size / 1024).toFixed(1)}KB)\n`;
     }
 
     result += '\n**Usage:**\n';

@@ -63,10 +63,10 @@ export class AgentService {
       return;
     }
 
-    const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+    const apiKey = import.meta.env.VITE_CLAUDE_CODE_SDK_API_KEY;
 
     if (!apiKey) {
-      throw new Error('VITE_OPENROUTER_API_KEY is required');
+      throw new Error('VITE_CLAUDE_CODE_SDK_API_KEY is required');
     }
 
     // Use Vite plugin API proxy to avoid CORS
@@ -132,7 +132,7 @@ export class AgentService {
       }));
 
       // Get model and settings
-      const model = import.meta.env.VITE_OPENROUTER_MODEL || 'glm-4.6';
+      const model = import.meta.env.VITE_CLAUDE_CODE_SDK_MODEL || 'glm-4.6';
       const maxTokens = parseInt(import.meta.env.VITE_AGENT_MAX_CONTEXT_TOKENS || '4096', 10);
 
       let fullResponse = '';
@@ -626,7 +626,7 @@ Tool success messages don't guarantee visual correctness. Screenshot is your gro
 
     try {
       const response = await this.client.messages.create({
-        model: import.meta.env.VITE_OPENROUTER_MODEL || 'glm-4.6',
+        model: import.meta.env.VITE_CLAUDE_CODE_SDK_MODEL || 'glm-4.6',
         max_tokens: 10,
         messages: [{ role: 'user', content: 'Hi' }],
       });

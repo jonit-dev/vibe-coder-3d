@@ -26,19 +26,35 @@ interface ITranspileResponse {
 
 /**
  * Transpile TypeScript code to JavaScript using the official TypeScript compiler
+ * IMPORTANT: Scripts should NOT use export/import statements
  */
 function transpileTypeScript(code: string): string {
-  const result = ts.transpileModule(code, {
+  // Strip any export keywords that might have been added by the AI
+  // This prevents "exports is not defined" errors
+  const cleanedCode = code
+    .replace(/^\s*export\s+/gm, '') // Remove "export " at start of lines
+    .replace(/^\s*import\s+.*?;?\s*$/gm, ''); // Remove import statements
+
+  const result = ts.transpileModule(cleanedCode, {
     compilerOptions: {
       target: ts.ScriptTarget.ES2020,
-      module: ts.ModuleKind.None,
+      module: ts.ModuleKind.ES2015, // Use ES2015 modules, then strip imports/exports
       removeComments: false,
       inlineSourceMap: false,
       inlineSources: false,
       declaration: false,
     },
   });
-  return result.outputText;
+
+  // Strip any remaining export/import statements from transpiled output
+  const cleanedOutput = result.outputText
+    .replace(/^\s*export\s+/gm, '')
+    .replace(/^\s*import\s+.*?;?\s*$/gm, '')
+    .replace(/Object\.defineProperty\(exports,.*?\n/g, '') // Remove Object.defineProperty(exports, ...)
+    .replace(/exports\.__esModule\s*=\s*true;?\s*\n?/g, '') // Remove exports.__esModule = true
+    .replace(/exports\.\w+\s*=\s*/g, ''); // Remove exports.xxx =
+
+  return cleanedOutput;
 }
 
 // Worker message handler
