@@ -23,13 +23,13 @@ I'm incredibly excited to share a project I've been developing for the past 2 mo
 - **Read the Contribution Guide**: I've set up a `CONTRIBUTING.md` and `WORKFLOW.md` to make getting started as smooth as possible.
 - **Join the Discussion**: [Discord](https://discord.gg/K6fXy5gjEx)
 
+=> CHECK OUT THE [PROJECT README.MD](https://github.com/jonit-dev/vibe-coder-3d/blob/master/README.md) FOR MORE INFO! <=
+
 The core idea is simple: describe what you want, and let the engine handle the rest.
 
 - **"Create a bouncing ball"** → A sphere with a rigid body and physics material is spawned.
 - **"Add a medieval castle"** → A 3D model is sourced from an asset library and placed in the scene.
 - **"Make the player jump on spacebar"** → A controller script is generated and attached.
-
-**(I highly recommend including a short screen recording or GIF here showing the editor in action! Visuals get much more engagement.)**
 
 ### Key Features:
 
