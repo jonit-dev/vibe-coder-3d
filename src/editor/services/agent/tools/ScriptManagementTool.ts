@@ -5,6 +5,7 @@
 
 import { Logger } from '@core/lib/logger';
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { getAvailableAPIs, getAPIDetails } from './scriptApiParser';
 
 const logger = Logger.create('ScriptManagementTool');
 
@@ -13,32 +14,52 @@ export const scriptManagementTool = {
   description: `Create and manage TypeScript scripts for entity behavior.
 
 CRITICAL SCRIPT WRITING RULES:
-- DO NOT use export/import statements (they cause "exports is not defined" errors)
-- Write plain TypeScript functions: function onStart() {}, function onUpdate(deltaTime: number) {}
-- Scripts execute directly in the engine's sandbox
-- The transpiler will remove any export/import keywords, but avoid them
+❌ DO NOT use export/import statements (causes "exports is not defined" errors)
+✅ Write plain TypeScript functions: function onStart() {}, function onUpdate(deltaTime: number) {}
+✅ All APIs are globally available - no imports needed
+✅ Use parameters object to access configurable values from editor
 
 Script lifecycle methods (write as plain functions):
 - function onStart(): void - Called once when entity/script loads
 - function onUpdate(deltaTime: number): void - Called every frame during play mode
 - function onDestroy(): void - Called when entity/script is destroyed
 
-Available global APIs (already in scope, no imports needed):
-- entity: Transform, components, hierarchy (entity.transform.rotate(), entity.transform.setPosition())
+Available global APIs (complete reference at src/game/scripts/script-api.d.ts):
+- entity: Transform, components, hierarchy, physics
 - time: Time tracking (time.time, time.deltaTime, time.frameCount)
-- input: Keyboard/mouse input (input.isKeyDown('w'), input.getMousePosition())
-- math: Math utilities (math.lerp(), math.clamp(), math.distance())
-- console: Logging (console.log(), console.warn(), console.error())
-- parameters: Script parameters from editor (parameters.speed, parameters.color)
+- input: Keyboard, mouse, gamepad, action system
+- math: Math utilities (lerp, clamp, distance, trig functions)
+- console: Logging (log, warn, error, info)
+- parameters: Script parameters from editor (access via parameters.yourParamName)
+- events: Event bus for inter-entity communication
+- audio: Sound playback (2D and 3D spatial audio)
+- timer: setTimeout, setInterval, nextTick
+- query: Scene queries, raycasting
+- prefab: Entity spawning
+- entities: Cross-entity operations
+- gameObject: Runtime entity creation/destruction
 
-Example script (CORRECT - no exports):
+COMMON MISTAKES TO AVOID:
+1. ❌ Using export: "export function onStart()" → ✅ "function onStart()"
+2. ❌ Hardcoding values: "rotate(0, deltaTime * 0.5, 0)" → ✅ "rotate(0, deltaTime * (parameters.speed || 0.5), 0)"
+3. ❌ Forgetting to use parameters: User sets speed=10 but script uses 0.5 hardcoded
+4. ❌ Not providing defaults: "parameters.speed" → ✅ "parameters.speed || 0.5"
+
+Example script with parameters (CORRECT):
 function onStart(): void {
-  console.log('Entity started!');
+  console.log('Entity started with speed:', parameters.speed);
 }
 
 function onUpdate(deltaTime: number): void {
-  entity.transform.rotate(0, deltaTime * 0.5, 0);
-}`,
+  // Use parameters with fallback defaults
+  const rotationSpeed = (parameters.speed as number) || 0.5;
+  entity.transform.rotate(0, deltaTime * rotationSpeed, 0);
+}
+
+For detailed API reference:
+- Use 'list_available_apis' to see all 20+ available APIs organized by category
+- Use 'get_api_details' with specific API names to get detailed documentation and examples
+- Use 'get_api_reference' to get the complete TypeScript definitions file`,
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -51,8 +72,17 @@ function onUpdate(deltaTime: number): void {
           'set_parameters',
           'list_scripts',
           'get_script_code',
+          'list_available_apis',
+          'get_api_details',
+          'get_api_reference',
         ],
         description: 'Script management action to perform',
+      },
+      api_names: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'Array of API names to fetch details for (e.g., ["transform", "parameters", "rigidBody"]) - for get_api_details action',
       },
       entity_id: {
         type: 'number',
@@ -88,7 +118,7 @@ function onUpdate(deltaTime: number): void {
 export async function executeScriptManagement(params: any): Promise<string> {
   logger.info('Executing script management', { params });
 
-  const { action, entity_id, script_name, script_id, code, parameters } = params;
+  const { action, entity_id, script_name, script_id, code, parameters, api_names } = params;
 
   switch (action) {
     case 'create_custom':
@@ -123,6 +153,18 @@ export async function executeScriptManagement(params: any): Promise<string> {
         return 'Error: script_id is required for get_script_code';
       }
       return getScriptCode(script_id);
+
+    case 'list_available_apis':
+      return await listAvailableAPIs();
+
+    case 'get_api_details':
+      if (!api_names || !Array.isArray(api_names) || api_names.length === 0) {
+        return 'Error: api_names array is required for get_api_details (e.g., ["transform", "parameters"])';
+      }
+      return getAPIDetails(api_names);
+
+    case 'get_api_reference':
+      return getAPIReference();
 
     default:
       return `Unknown action: ${action}`;
@@ -319,5 +361,157 @@ async function getScriptCode(scriptId: string): Promise<string> {
   } catch (error) {
     logger.error('Failed to get script code', { error, scriptId });
     return `Error getting script code: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
+}
+
+/**
+ * List all available script APIs organized by category
+ */
+async function listAvailableAPIs(): Promise<string> {
+  try {
+    const apis = await getAvailableAPIs();
+
+    if (apis.length === 0) {
+      return 'Error: Could not load script APIs. Please check that script-api.d.ts exists.';
+    }
+
+    // Group by category
+    const byCategory = apis.reduce(
+      (acc, api) => {
+        if (!acc[api.category]) {
+          acc[api.category] = [];
+        }
+        acc[api.category].push(api);
+        return acc;
+      },
+      {} as Record<string, typeof apis>,
+    );
+
+    let result = `📚 Available Script APIs (${apis.length} total)\n\n`;
+    result += `All these APIs are globally available in scripts - no imports needed!\n\n`;
+
+    // Output by category
+    const categories = Object.keys(byCategory).sort();
+    for (const category of categories) {
+      const categoryAPIs = byCategory[category];
+      result += `## ${category} (${categoryAPIs.length} APIs)\n\n`;
+
+      for (const api of categoryAPIs) {
+        result += `- **${api.name}** (${api.type}): ${api.description}\n`;
+        if (api.methods && api.methods.length > 0) {
+          result += `  Methods: ${api.methods.slice(0, 5).join(', ')}${api.methods.length > 5 ? ` + ${api.methods.length - 5} more` : ''}\n`;
+        }
+        if (
+          api.properties &&
+          api.properties.length > 0 &&
+          api.properties[0] !== '(dynamic - defined by user)'
+        ) {
+          result += `  Properties: ${api.properties.slice(0, 5).join(', ')}${api.properties.length > 5 ? ` + ${api.properties.length - 5} more` : ''}\n`;
+        }
+      }
+      result += '\n';
+    }
+
+    result += `\n**Next Steps:**\n`;
+    result += `- Use \`get_api_details\` with api_names array to get detailed info and examples\n`;
+    result += `  Example: { "action": "get_api_details", "api_names": ["transform", "parameters", "rigidBody"] }\n`;
+    result += `- Use \`get_api_reference\` to see the complete TypeScript definitions\n`;
+
+    logger.info('Listed available APIs', { count: apis.length });
+    return result;
+  } catch (error) {
+    logger.error('Failed to list available APIs', { error });
+    return `Error listing APIs: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
+}
+
+/**
+ * Get API reference documentation
+ * Reads the script-api.d.ts file to provide complete API documentation
+ */
+async function getAPIReference(): Promise<string> {
+  try {
+    // Load the script API type definitions
+    const response = await fetch('/src/game/scripts/script-api.d.ts');
+
+    if (!response.ok) {
+      return `Error: Could not load API reference (status: ${response.status})`;
+    }
+
+    const apiDefs = await response.text();
+
+    logger.info('Retrieved API reference');
+
+    return `📚 Script API Reference
+
+This is the complete TypeScript API available in all scripts. All these APIs are globally available - no imports needed.
+
+**Key Points:**
+- Access parameters via \`parameters.yourParamName\`
+- Always provide fallback defaults: \`parameters.speed || 0.5\`
+- All APIs are in global scope (entity, time, input, math, console, etc.)
+- NO export/import statements
+
+**Full Type Definitions:**
+
+\`\`\`typescript
+${apiDefs}
+\`\`\`
+
+**Common Usage Patterns:**
+
+1. **Using Parameters:**
+\`\`\`typescript
+function onUpdate(deltaTime: number): void {
+  const speed = (parameters.speed as number) || 1.0;
+  const direction = (parameters.direction as string) || 'forward';
+  entity.transform.rotate(0, deltaTime * speed, 0);
+}
+\`\`\`
+
+2. **Physics & Collisions:**
+\`\`\`typescript
+function onStart(): void {
+  if (entity.rigidBody) {
+    entity.rigidBody.setMass(2.0);
+    entity.rigidBody.setGravityScale(1.0);
+  }
+
+  entity.physicsEvents?.onCollisionEnter((otherEntityId) => {
+    console.log('Collided with entity:', otherEntityId);
+  });
+}
+\`\`\`
+
+3. **Input Handling:**
+\`\`\`typescript
+function onUpdate(deltaTime: number): void {
+  const speed = 5.0;
+  if (input.isKeyDown('w')) {
+    entity.transform.translate(0, 0, -speed * deltaTime);
+  }
+  if (input.isKeyDown('s')) {
+    entity.transform.translate(0, 0, speed * deltaTime);
+  }
+}
+\`\`\`
+
+4. **Creating Entities at Runtime:**
+\`\`\`typescript
+function onStart(): void {
+  // Create a red cube
+  const cubeId = gameObject.createPrimitive('cube', {
+    name: 'DynamicCube',
+    transform: { position: [0, 5, 0] },
+    material: { color: '#ff0000' },
+    physics: { body: 'dynamic', mass: 2 }
+  });
+
+  console.log('Created cube:', cubeId);
+}
+\`\`\``;
+  } catch (error) {
+    logger.error('Failed to get API reference', { error });
+    return `Error getting API reference: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 }
