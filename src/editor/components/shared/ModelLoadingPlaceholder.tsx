@@ -1,10 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
-import type { Mesh } from 'three';
+import type { Mesh, Group } from 'three';
+import { Logger } from '@core/lib/logger';
+
+const logger = Logger.create('ModelLoadingPlaceholder');
 
 interface IModelLoadingPlaceholderProps {
   entityId: number;
   modelName?: string;
+  meshInstanceRef?: React.Ref<Group | Mesh | null>;
 }
 
 /**
@@ -14,21 +18,44 @@ interface IModelLoadingPlaceholderProps {
 export const ModelLoadingPlaceholder: React.FC<IModelLoadingPlaceholderProps> = ({
   entityId,
   modelName,
+  meshInstanceRef,
 }) => {
-  const meshRef = useRef<Mesh>(null);
+  const localMeshRef = useRef<Mesh>(null);
+  const groupRef = useRef<Group | null>(null);
+
+  // Combined ref callback to handle both local and external refs
+  const groupRefCallback = useCallback(
+    (node: Group | null) => {
+      logger.debug('Ref callback called', {
+        entityId,
+        hasNode: !!node,
+        hasParent: node?.parent ? true : false,
+        nodeType: node?.type,
+      });
+
+      groupRef.current = node;
+
+      if (typeof meshInstanceRef === 'function') {
+        meshInstanceRef(node);
+      } else if (meshInstanceRef && 'current' in meshInstanceRef) {
+        (meshInstanceRef as React.MutableRefObject<Group | Mesh | null>).current = node;
+      }
+    },
+    [meshInstanceRef, entityId],
+  );
 
   // Rotate the box on all axes for a nice loading effect
   useFrame((_, delta) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.x += delta * 1.5;
-      meshRef.current.rotation.y += delta * 2.0;
-      meshRef.current.rotation.z += delta * 0.5;
+    if (localMeshRef.current) {
+      localMeshRef.current.rotation.x += delta * 1.5;
+      localMeshRef.current.rotation.y += delta * 2.0;
+      localMeshRef.current.rotation.z += delta * 0.5;
     }
   });
 
   return (
-    <group userData={{ entityId }}>
-      <mesh ref={meshRef} castShadow={false} receiveShadow={false}>
+    <group userData={{ entityId }} ref={groupRefCallback}>
+      <mesh ref={localMeshRef} castShadow={false} receiveShadow={false}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial
           color="#4a9eff"

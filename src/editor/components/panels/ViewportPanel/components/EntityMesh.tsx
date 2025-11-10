@@ -1,5 +1,6 @@
 import { ModelErrorBoundary } from '@/editor/components/shared/ModelErrorBoundary';
 import { ModelLoadingMesh } from '@/editor/components/shared/ModelLoadingMesh';
+import { ModelLoadingPlaceholder } from '@/editor/components/shared/ModelLoadingPlaceholder';
 import { useGLTF } from '@react-three/drei';
 import { invalidate, ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import React, { Suspense, useCallback, useEffect } from 'react';
@@ -407,18 +408,12 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
 
     // Render loading placeholder while model is being ingested
     if (meshType === 'custom' && isLoadingPlaceholder) {
-      // Dynamic import to avoid circular dependencies
-      const ModelLoadingPlaceholder = React.lazy(
-        () =>
-          import('@/editor/components/shared/ModelLoadingPlaceholder').then((m) => ({
-            default: m.ModelLoadingPlaceholder,
-          })),
-      );
-
       return (
-        <React.Suspense fallback={null}>
-          <ModelLoadingPlaceholder entityId={entityId} modelName={loadingModelName} />
-        </React.Suspense>
+        <ModelLoadingPlaceholder
+          entityId={entityId}
+          modelName={loadingModelName}
+          meshInstanceRef={meshInstanceRef}
+        />
       );
     }
 

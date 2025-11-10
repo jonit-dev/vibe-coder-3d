@@ -1,6 +1,6 @@
 import { Edges } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import React, { useLayoutEffect, useMemo, useState, useRef } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 interface IEntityOutlineProps {
@@ -27,8 +27,8 @@ export const EntityOutline: React.FC<IEntityOutlineProps> = React.memo(
     const meshRendererComponent = entityComponents.find((c) => c.type === 'MeshRenderer');
     const modelPath =
       meshRendererComponent?.data &&
-      typeof meshRendererComponent.data === 'object' &&
-      'modelPath' in meshRendererComponent.data
+        typeof meshRendererComponent.data === 'object' &&
+        'modelPath' in meshRendererComponent.data
         ? (meshRendererComponent.data.modelPath as string)
         : undefined;
 
