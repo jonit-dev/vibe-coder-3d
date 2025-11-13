@@ -1,15 +1,55 @@
-# Faster linker for development builds
-[target.x86_64-unknown-linux-gnu]
-linker = "gcc"
+# Build cache and optimization
+[env]
+# Use sccache for faster rebuilds if available
+# Install with: cargo install sccache
+# Fallback to regular cargo if not installed
+RUSTC_WRAPPER = { value = "sccache", relative = true, force = false }
 
 # Parallel frontend for faster compilation
 [build]
 jobs = 8  # Adjust based on your CPU cores
 
-# Enable incremental compilation (should be on by default but explicit is good)
+# Faster linker for development builds
+# Prefer mold > lld > gcc (will use first available)
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+# Uncomment if you have mold installed: rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+# Uncomment if you have lld installed: rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "symbol-mangling-version=v0"]
+
+# Dev profile optimized for iteration speed (like Bevy)
+# This is what `cargo build` uses by default
 [profile.dev]
 incremental = true
+opt-level = 1  # Basic optimizations for decent runtime perf
+debug = 0  # Minimal debug info for smaller binaries
+codegen-units = 256  # Parallel codegen for faster builds
+split-debuginfo = "packed"  # Extract debug info to separate .dwp file (Linux only)
 
-# Faster debug builds with less optimization
-opt-level = 0
-debug = true
+# Optimize dependencies heavily (like Bevy does)
+[profile.dev.package."*"]
+opt-level = 3
+
+# Full debug profile - only use when you need gdb/lldb
+[profile.dev-debug]
+inherits = "dev"
+opt-level = 0  # No optimizations
+debug = 2  # Full DWARF debug info
+codegen-units = 256
+
+# Standard release profile (unchanged)
+[profile.release]
+opt-level = 3
+debug = false
+lto = false
+codegen-units = 16
+
+# Distribution profile - maximum optimization and minimum size
+[profile.dist]
+inherits = "release"
+opt-level = "s"  # Optimize for size
+lto = "thin"  # Link-time optimization (thin is faster than full)
+codegen-units = 1  # Single unit for better optimization
+panic = "abort"  # No unwinding (smaller binary)
+strip = "symbols"  # Strip symbols (not debuginfo, that's already gone)
+debug = false

@@ -73,12 +73,20 @@ impl OrbitalCamera {
             MouseButton::Left => {
                 self.is_rotating = true;
                 self.last_mouse_pos = Some(position);
-                log::info!("Orbital camera: rotation enabled at ({:.1}, {:.1})", position.0, position.1);
+                log::info!(
+                    "Orbital camera: rotation enabled at ({:.1}, {:.1})",
+                    position.0,
+                    position.1
+                );
             }
             MouseButton::Right => {
                 self.is_panning = true;
                 self.last_mouse_pos = Some(position);
-                log::info!("Orbital camera: panning enabled at ({:.1}, {:.1})", position.0, position.1);
+                log::info!(
+                    "Orbital camera: panning enabled at ({:.1}, {:.1})",
+                    position.0,
+                    position.1
+                );
             }
             _ => {}
         }
@@ -114,8 +122,13 @@ impl OrbitalCamera {
                 self.pitch = self.pitch.clamp(self.min_pitch, self.max_pitch);
 
                 if delta_x.abs() > 0.1 || delta_y.abs() > 0.1 {
-                    log::debug!("Orbital camera rotating: delta=({:.1}, {:.1}), yaw={:.2}, pitch={:.2}",
-                        delta_x, delta_y, self.yaw, self.pitch);
+                    log::debug!(
+                        "Orbital camera rotating: delta=({:.1}, {:.1}), yaw={:.2}, pitch={:.2}",
+                        delta_x,
+                        delta_y,
+                        self.yaw,
+                        self.pitch
+                    );
                 }
             } else if self.is_panning {
                 // Pan the target point
@@ -141,7 +154,11 @@ impl OrbitalCamera {
         self.distance = self.distance.clamp(self.min_distance, self.max_distance);
 
         if (old_distance - self.distance).abs() > 0.01 {
-            log::debug!("Orbital camera zoom: distance {:.2} -> {:.2}", old_distance, self.distance);
+            log::debug!(
+                "Orbital camera zoom: distance {:.2} -> {:.2}",
+                old_distance,
+                self.distance
+            );
         }
     }
 

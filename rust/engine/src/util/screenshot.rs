@@ -85,7 +85,12 @@ pub fn render_to_screenshot(
             Some("skybox") => {
                 // If clearFlags is "skybox" but no skybox texture loaded, use neutral gray (#404040)
                 // This matches Three.js behavior in useCameraBackground.ts line 161
-                if config.skybox_texture.is_none() || config.skybox_texture.as_ref().map_or(true, |s| s.is_empty()) {
+                if config.skybox_texture.is_none()
+                    || config
+                        .skybox_texture
+                        .as_ref()
+                        .map_or(true, |s| s.is_empty())
+                {
                     (64.0 / 255.0, 64.0 / 255.0, 64.0 / 255.0, 1.0) // #404040 neutral gray
                 } else {
                     // Skybox will be rendered, use black or transparent
@@ -96,7 +101,7 @@ pub fn render_to_screenshot(
                 // Use camera's backgroundColor
                 config.background_color.unwrap_or((0.0, 0.0, 0.0, 1.0))
             }
-            _ => config.background_color.unwrap_or((0.0, 0.0, 0.0, 1.0))
+            _ => config.background_color.unwrap_or((0.0, 0.0, 0.0, 1.0)),
         }
     } else {
         (0.0, 0.0, 0.0, 1.0)

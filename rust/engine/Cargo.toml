@@ -11,6 +11,7 @@ members = [
     "crates/audio",
     "crates/scripting",
     "crates/events",
+    "xtask",
 ]
 
 [package]
@@ -19,26 +20,28 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Internal workspace dependencies
+# Internal workspace dependencies - always included
 vibe-scene = { path = "crates/scene" }
 vibe-ecs-bridge = { path = "crates/ecs-bridge" }
 vibe-ecs-manager = { path = "crates/ecs-manager" }
 vibe-scene-graph = { path = "crates/scene-graph" }
 vibe-assets = { path = "crates/assets" }
 vibe-wasm-bridge = { path = "crates/wasm-bridge" }
-vibe-physics = { path = "crates/physics" }
-vibe-audio = { path = "crates/audio", optional = true }
-vibe-scripting = { path = "crates/scripting", optional = true }
 vibe-events = { path = "crates/events" }
 
-# Physics (for debug collider visualization)
-rapier3d = { version = "0.17", features = ["dim3"] }
-parry3d = "0.13"
+# Optional feature-gated dependencies
+vibe-physics = { path = "crates/physics", optional = true }
+vibe-audio = { path = "crates/audio", optional = true }
+vibe-scripting = { path = "crates/scripting", optional = true }
 
-# Core rendering (three-d)
-winit = "0.28"
-three-d = "0.17"
-three-d-asset = { version = "0.7", features = ["http"] }  # http feature enables meshopt support
+# Physics dependencies - only when physics feature enabled
+rapier3d = { version = "0.17", features = ["dim3"], optional = true }
+parry3d = { version = "0.13", optional = true }
+
+# Core rendering (three-d) - renderer feature
+winit = { version = "0.28", optional = true }
+three-d = { version = "0.17", optional = true }
+three-d-asset = { version = "0.7", default-features = false, optional = true }
 
 # Math
 glam = { version = "0.27", features = ["serde"] }
@@ -75,12 +78,24 @@ image = "0.25"
 xcap = "0.0.12"
 
 [features]
-default = ["gltf-support", "scripting-support"]
-gltf-support = ["gltf"]
+# Default: Full-featured build
+default = ["renderer", "physics", "gltf-support", "scripting-support"]
+
+# Core features
+renderer = ["winit", "three-d", "three-d-asset"]
+physics = ["vibe-physics", "rapier3d", "parry3d"]
 audio-support = ["vibe-audio"]
 scripting-support = ["vibe-scripting"]
 scripting-hot-reload = ["scripting-support", "vibe-scripting/hot-reload"]
+
+# Asset loading
+gltf-support = ["gltf", "three-d-asset/http"]  # http enables meshopt
+
+# Experimental
 bvh-acceleration = []
+
+# Screenshot support always included (lightweight)
+screenshot = []
 
 [lib]
 name = "vibe_coder_engine"

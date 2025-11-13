@@ -66,18 +66,62 @@ yarn rust:test
 cd rust/engine && cargo check
 ```
 
-## Build Times Explained
+## Build Times & Optimization
 
-**Why is the first build so slow?**
+**Clean build times:**
 
-- Compiles 100+ dependencies (wgpu, winit, serde, etc.)
-- Only happens once (or after `cargo clean`)
-- ~5-10 minutes depending on your machine
+- Dev (default): ~2 minutes - **Optimized for iteration** ⚡
+- Dev-debug: ~1 minute - Full debug symbols (for gdb/lldb)
+- Release: ~1.6 minutes - Performance optimized
+- Dist: ~2+ minutes - Size optimized with LTO
 
-**After the first build:**
+**Incremental builds:**
 
 - Only changed files recompile
-- Usually 1-5 seconds
+- Usually 1-15 seconds depending on changes
+
+**Build profiles:**
+
+- `dev` (default) - **Fast runtime + small binary (30 MB)** - Use this 90% of the time
+- `dev-debug` - Full debug info (325 MB) - Only when debugging with gdb/lldb
+- `release` - Standard release build (22 MB)
+- `dist` - Optimized for distribution (smallest size + LTO)
+
+**Why is dev optimized?**
+Following [Bevy's recommended setup](https://bevy.org/learn/quick-start/getting-started/setup/), the default `dev` profile uses `opt-level = 1` for your code and `opt-level = 3` for dependencies. This gives you:
+- ✅ Fast compilation (2 min clean, <15s incremental)
+- ✅ Good runtime performance (not sluggish like opt-level=0)
+- ✅ Small binaries (30 MB vs 325 MB)
+- ✅ Fast startup times
+
+**Feature presets:**
+
+```bash
+# See all features and presets
+cargo run -p xtask -- feature-matrix
+
+# Build with minimal features (renderer only)
+cargo build --no-default-features --features renderer
+
+# Build for distribution
+cargo build --profile dist
+
+# Full debug build (only when you need gdb/lldb)
+cargo build --profile dev-debug
+```
+
+**Build metrics:**
+
+```bash
+# Capture detailed build metrics
+cargo run -p xtask -- build-metrics --profile dev-fast
+
+# Generate size report
+cargo run -p xtask -- size-report
+
+# CI-optimized build with caching
+./scripts/ci/rust-build-metrics.sh
+```
 - Rust uses incremental compilation automatically
 
 **Tips to speed up builds:**

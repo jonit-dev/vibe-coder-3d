@@ -381,11 +381,15 @@ impl AppThreeD {
                                 if self.use_debug_camera {
                                     // Initialize debug camera from current scene camera if needed
                                     if self.debug_camera.is_none() {
-                                        if let Some(scene_camera) = self.renderer.get_main_camera() {
-                                            self.debug_camera = Some(OrbitalCamera::from_camera(&scene_camera));
+                                        if let Some(scene_camera) = self.renderer.get_main_camera()
+                                        {
+                                            self.debug_camera =
+                                                Some(OrbitalCamera::from_camera(&scene_camera));
                                         }
                                     }
-                                    log::info!("✓ Orbital camera ENABLED (Left-click + drag to rotate)");
+                                    log::info!(
+                                        "✓ Orbital camera ENABLED (Left-click + drag to rotate)"
+                                    );
                                 } else {
                                     // Reset orbital camera state when switching back
                                     if let Some(ref mut debug_cam) = self.debug_camera {
@@ -398,7 +402,11 @@ impl AppThreeD {
                         WindowEvent::MouseInput { state, button, .. } => {
                             // Forward mouse events to orbital camera when active
                             if self.use_debug_camera && self.debug_mode {
-                                log::debug!("Mouse button event: {:?} {:?}, debug_camera active", button, state);
+                                log::debug!(
+                                    "Mouse button event: {:?} {:?}, debug_camera active",
+                                    button,
+                                    state
+                                );
                                 if let Some(ref mut debug_cam) = self.debug_camera {
                                     let mouse_pos = self.input_manager.mouse_position();
                                     match state {
@@ -413,8 +421,11 @@ impl AppThreeD {
                                     log::warn!("Debug camera is None!");
                                 }
                             } else {
-                                log::debug!("Mouse button ignored: use_debug_camera={}, debug_mode={}",
-                                    self.use_debug_camera, self.debug_mode);
+                                log::debug!(
+                                    "Mouse button ignored: use_debug_camera={}, debug_mode={}",
+                                    self.use_debug_camera,
+                                    self.debug_mode
+                                );
                             }
                         }
                         WindowEvent::CursorMoved { position, .. } => {
@@ -438,8 +449,11 @@ impl AppThreeD {
                                     debug_cam.on_mouse_wheel(wheel_delta);
                                 }
                             } else {
-                                log::debug!("Mouse wheel ignored: use_debug_camera={}, debug_mode={}",
-                                    self.use_debug_camera, self.debug_mode);
+                                log::debug!(
+                                    "Mouse wheel ignored: use_debug_camera={}, debug_mode={}",
+                                    self.use_debug_camera,
+                                    self.debug_mode
+                                );
                             }
                         }
                         WindowEvent::Resized(physical_size) => {

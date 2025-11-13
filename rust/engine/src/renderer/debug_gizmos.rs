@@ -8,11 +8,7 @@ use glam::Vec3;
 /// Add camera gizmo to line batch
 ///
 /// Draws a camera frustum visualization
-pub fn append_camera_gizmo(
-    batch: &mut LineBatch,
-    config: &CameraConfig,
-    is_active: bool,
-) {
+pub fn append_camera_gizmo(batch: &mut LineBatch, config: &CameraConfig, is_active: bool) {
     let color = if is_active {
         [0.0, 1.0, 1.0] // Cyan for active camera
     } else {
@@ -91,10 +87,7 @@ pub fn append_camera_gizmo(
 /// Add directional light gizmo to line batch
 ///
 /// Draws a sun icon with arrows pointing in the light direction
-pub fn append_directional_light_gizmo(
-    batch: &mut LineBatch,
-    light: &EnhancedDirectionalLight,
-) {
+pub fn append_directional_light_gizmo(batch: &mut LineBatch, light: &EnhancedDirectionalLight) {
     let color = [1.0, 1.0, 0.3]; // Yellow for directional lights
 
     // Position the gizmo at a visible location
