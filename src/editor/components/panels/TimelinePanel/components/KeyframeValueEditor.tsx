@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { IKeyframe } from '@core/components/animation/tracks/TrackTypes';
 import { TrackType } from '@core/components/animation/tracks/TrackTypes';
 
@@ -37,10 +38,7 @@ export const KeyframeValueEditor: React.FC<IKeyframeValueEditorProps> = ({
 
   const renderValueInputs = () => {
     // Vector3 (Position, Scale)
-    if (
-      trackType === TrackType.TRANSFORM_POSITION ||
-      trackType === TrackType.TRANSFORM_SCALE
-    ) {
+    if (trackType === TrackType.TRANSFORM_POSITION || trackType === TrackType.TRANSFORM_SCALE) {
       const vec = Array.isArray(value) ? value : [0, 0, 0];
       return (
         <div className="space-y-2">
@@ -97,7 +95,9 @@ export const KeyframeValueEditor: React.FC<IKeyframeValueEditorProps> = ({
             <input
               type="number"
               value={quat[0]}
-              onChange={(e) => setValue([parseFloat(e.target.value) || 0, quat[1], quat[2], quat[3]])}
+              onChange={(e) =>
+                setValue([parseFloat(e.target.value) || 0, quat[1], quat[2], quat[3]])
+              }
               onKeyDown={handleKeyDown}
               step="0.01"
               className="w-full px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
@@ -109,7 +109,9 @@ export const KeyframeValueEditor: React.FC<IKeyframeValueEditorProps> = ({
             <input
               type="number"
               value={quat[1]}
-              onChange={(e) => setValue([quat[0], parseFloat(e.target.value) || 0, quat[2], quat[3]])}
+              onChange={(e) =>
+                setValue([quat[0], parseFloat(e.target.value) || 0, quat[2], quat[3]])
+              }
               onKeyDown={handleKeyDown}
               step="0.01"
               className="w-full px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
@@ -120,7 +122,9 @@ export const KeyframeValueEditor: React.FC<IKeyframeValueEditorProps> = ({
             <input
               type="number"
               value={quat[2]}
-              onChange={(e) => setValue([quat[0], quat[1], parseFloat(e.target.value) || 0, quat[3]])}
+              onChange={(e) =>
+                setValue([quat[0], quat[1], parseFloat(e.target.value) || 0, quat[3]])
+              }
               onKeyDown={handleKeyDown}
               step="0.01"
               className="w-full px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
@@ -131,7 +135,9 @@ export const KeyframeValueEditor: React.FC<IKeyframeValueEditorProps> = ({
             <input
               type="number"
               value={quat[3]}
-              onChange={(e) => setValue([quat[0], quat[1], quat[2], parseFloat(e.target.value) || 1])}
+              onChange={(e) =>
+                setValue([quat[0], quat[1], quat[2], parseFloat(e.target.value) || 1])
+              }
               onKeyDown={handleKeyDown}
               step="0.01"
               className="w-full px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
@@ -192,7 +198,7 @@ export const KeyframeValueEditor: React.FC<IKeyframeValueEditorProps> = ({
     return <div className="text-xs text-red-400">Unknown value type</div>;
   };
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-70">
       <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-96 max-h-[80vh] overflow-auto">
         <div className="px-4 py-3 border-b border-gray-700">
@@ -221,4 +227,6 @@ export const KeyframeValueEditor: React.FC<IKeyframeValueEditorProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
