@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { AnimationAdapter } from '@/editor/components/inspector/adapters/AnimationAdapter';
 import { ScriptAdapter } from '@/editor/components/inspector/adapters/ScriptAdapter';
 import { SoundAdapter } from '@/editor/components/inspector/adapters/SoundAdapter';
 import { TerrainAdapter } from '@/editor/components/inspector/adapters/TerrainAdapter';
@@ -93,6 +94,19 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
             terrainComponent={terrainComp as any}
             updateComponent={updateComponent as any}
             removeComponent={removeComponent}
+          />
+        ) : null;
+      })()}
+
+      {/* Animation (rendered outside ComponentList to minimize type churn) */}
+      {(() => {
+        const animationComp = components.find((c) => c.type === 'Animation') as any;
+        return animationComp ? (
+          <AnimationAdapter
+            animationComponent={animationComp as any}
+            updateComponent={updateComponent as any}
+            removeComponent={removeComponent}
+            entityId={selectedEntity}
           />
         ) : null;
       })()}

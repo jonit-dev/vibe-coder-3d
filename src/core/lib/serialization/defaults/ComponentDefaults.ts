@@ -244,6 +244,21 @@ export const PREFAB_INSTANCE_DEFAULTS = {
 } as const;
 
 /**
+ * Animation Component Defaults
+ * Based on AnimationComponent.ts schema defaults
+ */
+export const ANIMATION_DEFAULTS = {
+  blendIn: 0.2,
+  blendOut: 0.2,
+  layer: 0,
+  weight: 1,
+  playing: false,
+  time: 0,
+  clips: [],
+  version: 1,
+} as const;
+
+/**
  * Component Defaults Registry
  * Maps component type to its default values
  */
@@ -260,6 +275,7 @@ export const COMPONENT_DEFAULTS = {
   CustomShape: CUSTOM_SHAPE_DEFAULTS,
   GeometryAsset: GEOMETRY_ASSET_DEFAULTS,
   PrefabInstance: PREFAB_INSTANCE_DEFAULTS,
+  Animation: ANIMATION_DEFAULTS,
 } as const;
 
 /**

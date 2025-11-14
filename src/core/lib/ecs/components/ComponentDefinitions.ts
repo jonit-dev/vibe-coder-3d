@@ -10,6 +10,7 @@ import { ComponentCategory, ComponentFactory, componentRegistry } from '../Compo
 
 // Import all core component definitions from individual files
 import {
+  animationComponent,
   cameraComponent,
   characterControllerComponent,
   customShapeComponent,
@@ -25,6 +26,7 @@ import {
   soundComponent,
   terrainComponent,
   transformComponent,
+  type AnimationData,
   type CameraData,
   type CustomShapeData,
   type ICharacterControllerData,
@@ -57,6 +59,7 @@ export function registerCoreComponents(registry = componentRegistry): void {
   registry.register(scriptComponent);
   registry.register(soundComponent);
   registry.register(characterControllerComponent);
+  registry.register(animationComponent);
   registry.register(PrefabInstanceComponent);
 }
 
@@ -132,6 +135,7 @@ export function registerExampleComponents(): void {
 
 // Export type definitions for TypeScript support
 export type {
+  AnimationData,
   CameraData,
   CustomShapeData,
   ICharacterControllerData,

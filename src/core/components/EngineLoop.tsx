@@ -1,11 +1,13 @@
 // EngineLoop component - Manages the core game loop and systems
 import { useFrame, useThree } from '@react-three/fiber';
 import { ReactNode, useEffect, useRef } from 'react';
+import * as THREE from 'three';
 
 import { useEngineContext } from '@core/context/EngineProvider';
 import { runRegisteredSystems } from '../lib/extension/GameExtensionPoints';
 import { materialSystem } from '../systems/MaterialSystem';
 import { updateScriptSystem } from '../systems/ScriptSystem';
+import { animationSystem } from '../systems/AnimationSystem';
 import { cameraSystem } from '../systems/cameraSystem';
 import { lightSystem } from '../systems/lightSystem';
 import { soundSystem } from '../systems/soundSystem';
@@ -188,7 +190,7 @@ export const EngineLoop = ({
       // Run systems with fixed timestep
       while (accumulatedTimeRef.current >= fixedTimeStep) {
         // Run ECS systems with fixed timestep
-        runECSSystems(fixedTimeStep, isPlaying);
+        runECSSystems(fixedTimeStep, isPlaying, frameState.scene);
 
         // Subtract the fixed time step from accumulated time
         accumulatedTimeRef.current -= fixedTimeStep;
@@ -198,7 +200,7 @@ export const EngineLoop = ({
       state.setInterpolationAlpha(accumulatedTimeRef.current / fixedTimeStep);
     } else {
       // Run systems with variable timestep
-      runECSSystems(deltaTime, isPlaying);
+      runECSSystems(deltaTime, isPlaying, frameState.scene);
     }
 
     // Update BVH system (runs outside fixed timestep for smooth culling)
@@ -237,7 +239,7 @@ export const EngineLoop = ({
  * Function to run all ECS systems
  * This would be expanded as more systems are added
  */
-function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
+function runECSSystems(deltaTime: number, isPlaying: boolean = false, scene?: THREE.Scene) {
   // Update input state BEFORE any systems run
   const inputManager = InputManager.getInstance();
   inputManager.update();
@@ -259,6 +261,11 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false) {
 
   // Run light system - processes light component updates
   lightSystem(deltaTime);
+
+  // Run animation system - updates animation playback and applies keyframes
+  if (scene) {
+    animationSystem(scene, deltaTime);
+  }
 
   // Run script system - executes user scripts with entity context
   // Note: updateScriptSystem is async but we fire-and-forget here to avoid blocking the render loop

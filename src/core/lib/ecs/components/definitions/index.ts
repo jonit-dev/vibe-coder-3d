@@ -3,6 +3,7 @@
  * Exports all component definitions from individual files
  */
 
+export { animationComponent, type AnimationData } from './animationComponent';
 export { cameraComponent, type CameraData } from './CameraComponent';
 export {
   characterControllerComponent,

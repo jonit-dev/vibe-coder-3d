@@ -13,6 +13,7 @@ export const KnownComponentTypes = {
   PERSISTENT_ID: 'PersistentId',
   GEOMETRY_ASSET: 'GeometryAsset',
   CHARACTER_CONTROLLER: 'CharacterController',
+  ANIMATION: 'Animation',
 } as const;
 
 export type KnownComponentType = (typeof KnownComponentTypes)[keyof typeof KnownComponentTypes];

@@ -4,6 +4,7 @@ import {
   FiCamera,
   FiCode,
   FiEye,
+  FiFilm,
   FiMove,
   FiPackage,
   FiSearch,
@@ -155,6 +156,13 @@ const COMPONENT_DEFINITIONS: IComponentDefinition[] = [
     description: '3D spatial audio with playback controls',
     icon: <FiVolume2 className="w-4 h-4" />,
     category: 'Audio',
+  },
+  {
+    id: KnownComponentTypes.ANIMATION,
+    name: 'Animation',
+    description: 'Animation playback with timeline and keyframe support',
+    icon: <FiFilm className="w-4 h-4" />,
+    category: 'Rendering',
   },
   {
     id: KnownComponentTypes.CHARACTER_CONTROLLER,

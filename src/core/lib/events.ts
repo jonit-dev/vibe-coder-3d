@@ -24,6 +24,14 @@ export type CoreEvents = {
   'component:added': { entityId: number; componentId: string; data: any };
   'component:removed': { entityId: number; componentId: string };
   'component:updated': { entityId: number; componentId: string; data: any };
+
+  // Animation events
+  'animation:play': { entityId: number; clipId: string; fade?: number; loop?: boolean };
+  'animation:pause': { entityId: number };
+  'animation:stop': { entityId: number; fade?: number };
+  'animation:ended': { entityId: number; clipId: string };
+  'animation:loop': { entityId: number; clipId: string; loopCount: number };
+  'animation:marker': { entityId: number; markerName: string; time: number; params?: Record<string, unknown> };
 };
 
 // Legacy mitt-based emitter for backward compatibility
