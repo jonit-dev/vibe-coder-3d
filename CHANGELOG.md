@@ -9,21 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Open source preparation with comprehensive documentation
-- MIT License
-- Contributing guidelines (CONTRIBUTING.md)
-- Code of Conduct (Contributor Covenant v2.1)
-- Security policy (SECURITY.md)
-- GitHub issue templates (bug report, feature request)
-- GitHub pull request template
-- Enhanced README with badges, features list, and quick start
+- **Script API Documentation** - Complete API reference for scripting system with real-world examples
+  - Entity, Input, Math, Time, Timer APIs
+  - Audio, Events, Prefab, Query, UI APIs
+  - GameObject pattern for high-level entity management
+  - Console API with proper sandboxing
+- **Rust Build Optimization Tools**
+  - `xtask` build automation with metrics tracking
+  - Build metrics script for CI/CD integration
+  - Feature matrix analysis tool
+- **New PRDs**
+  - UI Script API implementation plan
+  - Script system refactor roadmap
+  - Rust build optimization strategy with full metrics
 
 ### Changed
 
-- Updated package.json for open source publication
-- Removed private flag from package.json
-- Added repository, bugs, and homepage URLs
-- Added npm keywords for discoverability
+- **Monaco Editor Performance** - Added 500ms debounce to script editor saves
+  - No more lag on every keystroke
+  - Only saves after user stops typing
+  - Proper cleanup to prevent memory leaks
+- **Rust Build Performance** - 91% size reduction and 9x faster incremental builds
+  - Binary size: 114MB → 10MB (debug), 122MB → 6MB (release with LTO)
+  - Incremental compile: 45s → 5s
+  - Smart feature flags and dependency optimization
+
+### Fixed
+
+- Removed excessive logging in physics/character controller systems
+- Fixed ViewportPanel milestone spam
+- Better test mocking for CharacterController
+- Minor cleanups (unused imports, regex escaping)
 
 ## [0.1.0] - 2025-11-09
 
