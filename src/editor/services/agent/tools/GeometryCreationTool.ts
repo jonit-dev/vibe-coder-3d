@@ -4,8 +4,6 @@
  */
 
 import { Logger } from '@core/lib/logger';
-import * as fs from 'fs';
-import * as path from 'path';
 
 const logger = Logger.create('GeometryCreationTool');
 

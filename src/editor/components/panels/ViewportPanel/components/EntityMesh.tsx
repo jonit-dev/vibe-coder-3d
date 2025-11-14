@@ -4,7 +4,7 @@ import { ModelLoadingPlaceholder } from '@/editor/components/shared/ModelLoading
 import { useGLTF } from '@react-three/drei';
 import { invalidate, ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import React, { Suspense, useCallback, useEffect } from 'react';
-import type { Group, Mesh, Object3D } from 'three';
+import type { Group, Mesh } from 'three';
 import { Box3, OrthographicCamera, Vector3 } from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
@@ -26,7 +26,7 @@ const logger = Logger.create('EntityMesh');
 // Custom Model Mesh Component - FIXED VERSION
 const CustomModelMesh: React.FC<{
   modelPath: string;
-  meshInstanceRef: React.Ref<Group | Mesh | Object3D | null>;
+  meshInstanceRef: React.Ref<Group | Mesh | null>;
   renderingContributions: IRenderingContributions;
   entityId: number;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
@@ -306,14 +306,12 @@ const CustomModelMesh: React.FC<{
           if (typeof meshInstanceRef === 'function') {
             meshInstanceRef(node);
           } else if (meshInstanceRef && 'current' in meshInstanceRef) {
-            (meshInstanceRef as React.MutableRefObject<Group | Mesh | Object3D | null>).current =
-              node;
+            (meshInstanceRef as React.MutableRefObject<Group | Mesh | null>).current = node;
           }
         } else if (typeof meshInstanceRef === 'function') {
           meshInstanceRef(null);
         } else if (meshInstanceRef && 'current' in meshInstanceRef) {
-          (meshInstanceRef as React.MutableRefObject<Group | Mesh | Object3D | null>).current =
-            null;
+          (meshInstanceRef as React.MutableRefObject<Group | Mesh | null>).current = null;
         }
         // Clear local ref when unmounted
         if (!node) {

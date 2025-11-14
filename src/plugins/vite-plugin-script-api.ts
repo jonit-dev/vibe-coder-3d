@@ -103,7 +103,7 @@ function getScriptPathCandidates(id: string): string[] {
 async function ensureScriptsDir(): Promise<void> {
   try {
     await fs.mkdir(SCRIPTS_DIR, { recursive: true });
-  } catch (error) {
+  } catch {
     // Ignore if already exists
   }
 }
@@ -530,7 +530,7 @@ export function vitePluginScriptAPI(): Plugin {
               req.on('end', () => {
                 try {
                   resolve(JSON.parse(body));
-                } catch (error) {
+                } catch {
                   reject(new Error('Invalid JSON'));
                 }
               });

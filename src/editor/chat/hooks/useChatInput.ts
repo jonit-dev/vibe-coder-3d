@@ -19,13 +19,7 @@ export const useChatInput = ({ onSend, disabled = false }: IUseChatInputOptions)
     const content = inputValue.trim();
     setInputValue('');
 
-    try {
-      await onSend(content);
-    } catch (error) {
-      // Error is handled by the agent service/hook
-      // Re-throw to allow caller to handle if needed
-      throw error;
-    }
+    await onSend(content);
   }, [inputValue, disabled, onSend]);
 
   const handleKeyPress = useCallback(
@@ -35,7 +29,7 @@ export const useChatInput = ({ onSend, disabled = false }: IUseChatInputOptions)
         handleSend();
       }
     },
-    [handleSend]
+    [handleSend],
   );
 
   return {

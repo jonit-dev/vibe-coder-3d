@@ -74,7 +74,6 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
   const [triangleCount, setTriangleCount] = React.useState(0);
   const [selectedTriangleCount, setSelectedTriangleCount] = React.useState(0);
   const [isMobile, setIsMobile] = React.useState(false);
-  const selectedIds = useEditorStore((state) => state.selectedIds);
 
   // Detect if mobile (only once on mount)
   React.useEffect(() => {

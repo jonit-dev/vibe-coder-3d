@@ -151,7 +151,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     // Create the mesh content (but hide it if being followed)
     const meshContent = !shouldHideMesh ? (
       <EntityMesh
-        meshRef={meshRef as React.RefObject<THREE.Group | THREE.Object3D | THREE.Mesh>}
+        meshRef={meshRef as React.RefObject<THREE.Group | THREE.Mesh>}
         meshInstanceRef={meshInstanceRef}
         meshType={meshType}
         renderingContributions={renderingContributions}
@@ -184,7 +184,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
         {/* Gizmo controls (disabled during physics) - only show on primary selection */}
         {shouldShowGizmo && (
           <GizmoControls
-            meshRef={meshRef as React.RefObject<THREE.Group | THREE.Object3D | THREE.Mesh>}
+            meshRef={meshRef as React.RefObject<THREE.Group | THREE.Mesh>}
             mode={mode}
             entityId={entityId}
             onTransformChange={onTransformChange}

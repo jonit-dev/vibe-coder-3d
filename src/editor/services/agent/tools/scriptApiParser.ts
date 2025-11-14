@@ -178,11 +178,13 @@ export async function getAvailableAPIs(): Promise<IAPIInfo[]> {
  * Get detailed information about specific APIs
  */
 export async function getAPIDetails(apiNames: string[]): Promise<string> {
-  const availableAPIs = getAvailableAPIs();
+  const availableAPIs = await getAvailableAPIs();
   const requestedAPIs = apiNames.map((name) => name.toLowerCase());
 
   // Filter to requested APIs
-  const matchedAPIs = availableAPIs.filter((api) => requestedAPIs.includes(api.name.toLowerCase()));
+  const matchedAPIs = availableAPIs.filter((api: IAPIInfo) =>
+    requestedAPIs.includes(api.name.toLowerCase()),
+  );
 
   if (matchedAPIs.length === 0) {
     return `No APIs found matching: ${apiNames.join(', ')}. Use list_available_apis to see all available APIs.`;

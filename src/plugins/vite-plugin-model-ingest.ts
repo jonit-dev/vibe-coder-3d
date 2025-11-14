@@ -11,7 +11,10 @@ import type { Plugin } from 'vite';
 const MODELS_DIR = join(process.cwd(), 'public/assets/models');
 
 function sanitizeModelName(name: string): string {
-  return name.replace(/[^\w\-\.]+/g, '_').replace(/_{2,}/g, '_').replace(/^_+|_+$/g, '');
+  return name
+    .replace(/[^\w-.]+/g, '_')
+    .replace(/_{2,}/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
 async function ensureDir(dir: string): Promise<void> {
@@ -31,7 +34,7 @@ function runOptimizeForModel(modelDir: string): Promise<void> {
         cwd: process.cwd(),
         env: { ...process.env, MODELS_DIR: join('public', 'assets', 'models', modelDir) },
         stdio: 'inherit',
-      }
+      },
     );
 
     child.on('error', (err) => reject(err));
@@ -45,7 +48,9 @@ function runOptimizeForModel(modelDir: string): Promise<void> {
 /**
  * Parse multipart/form-data (simple version for single file)
  */
-async function parseMultipart(req: any): Promise<{ file?: Buffer; modelName?: string; filename?: string }> {
+async function parseMultipart(
+  req: any,
+): Promise<{ file?: Buffer; modelName?: string; filename?: string }> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
 
@@ -141,25 +146,29 @@ export function vitePluginModelIngest(): Plugin {
           await stat(lowPath);
 
           // Small delay to ensure Vite dev server has picked up the new files
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
 
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({
-            name: modelDirName,
-            basePath: `/assets/models/${modelDirName}/glb/${baseNoExt}.glb`,
-            lod: {
-              high_fidelity: `/assets/models/${modelDirName}/lod/${baseNoExt}.high_fidelity.glb`,
-              low_fidelity: `/assets/models/${modelDirName}/lod/${baseNoExt}.low_fidelity.glb`,
-            },
-          }));
+          res.end(
+            JSON.stringify({
+              name: modelDirName,
+              basePath: `/assets/models/${modelDirName}/glb/${baseNoExt}.glb`,
+              lod: {
+                high_fidelity: `/assets/models/${modelDirName}/lod/${baseNoExt}.high_fidelity.glb`,
+                low_fidelity: `/assets/models/${modelDirName}/lod/${baseNoExt}.low_fidelity.glb`,
+              },
+            }),
+          );
         } catch (err) {
           console.error('[vite-plugin-model-ingest] Error:', err);
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({
-            error: err instanceof Error ? err.message : 'Ingest failed',
-          }));
+          res.end(
+            JSON.stringify({
+              error: err instanceof Error ? err.message : 'Ingest failed',
+            }),
+          );
         }
       });
     },

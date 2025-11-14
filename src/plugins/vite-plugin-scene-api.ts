@@ -7,7 +7,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const SCENES_DIR = './src/game/scenes';
-const GEOMETRY_DIR = './src/game/geometry';
 
 /**
  * Vite plugin to handle scene persistence via HTTP API

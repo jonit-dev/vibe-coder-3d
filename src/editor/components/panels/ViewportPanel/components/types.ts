@@ -1,5 +1,5 @@
 import type { ThreeEvent } from '@react-three/fiber';
-import type { Group, Mesh, Object3D } from 'three';
+import type { Group, Mesh } from 'three';
 import type {
   IEntityComponent,
   IRenderingContributions,
@@ -13,7 +13,7 @@ export type { IMeshRendererData, ICameraData, ILightData };
 
 // Enhanced props interface with proper typing
 export interface IEntityMeshProps {
-  meshRef: React.RefObject<Group | Mesh | Object3D>;
+  meshRef: React.RefObject<Group | Mesh>;
   meshType: string | null;
   renderingContributions: IRenderingContributions;
   entityColor: string;
@@ -22,5 +22,5 @@ export interface IEntityMeshProps {
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
   isPlaying?: boolean;
   entityComponents?: IEntityComponent[];
-  meshInstanceRef: React.Ref<Group | Mesh | Object3D | null>;
+  meshInstanceRef: React.Ref<Group | Mesh | null>;
 }

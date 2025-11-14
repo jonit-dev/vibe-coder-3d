@@ -2,16 +2,16 @@ import { defineScene } from './defineScene';
 
 /**
  * testchat
- * Scene with 3 entities
- * Generated: 2025-11-10T06:34:47.237Z
+ * Scene with 4 entities
+ * Generated: 2025-11-14T01:18:21.796Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
     name: 'testchat',
     version: 1,
-    timestamp: '2025-11-10T06:34:47.237Z',
-    description: 'Scene with 3 entities',
+    timestamp: '2025-11-14T01:18:21.796Z',
+    description: 'Scene with 4 entities',
   },
   entities: [
     {
@@ -156,6 +156,53 @@ export default defineScene({
         },
       },
     },
+    {
+      id: 3,
+      name: 'Cube 0',
+      components: {
+        PersistentId: {
+          id: 'ed6d1152-49eb-4310-a18f-476cf3bf4e3c',
+        },
+        Transform: {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        MeshRenderer: {
+          enabled: true,
+          castShadows: true,
+          receiveShadows: true,
+          modelPath: '',
+          meshId: 'cube',
+          materialId: 'default',
+        },
+        Script: {
+          code: '',
+          enabled: true,
+          scriptName: 'Script',
+          description: '',
+          executeInUpdate: true,
+          executeOnStart: true,
+          executeOnEnable: false,
+          maxExecutionTime: 16,
+          hasErrors: false,
+          lastErrorMessage: '',
+          lastExecutionTime: 0,
+          executionCount: 0,
+          parameters: {},
+          lastModified: 1763083101037,
+          compiledCode: '',
+          scriptRef: {
+            scriptId: 'entity-3.script',
+            source: 'external',
+            path: '/home/joao/projects/vibe-coder-3d/src/game/scripts/entity-3.script.ts',
+            codeHash: 'ad0d9a3570efaebc6dfd07a9e3337d198c1697c5c80f98f87e7f1984c004d93f',
+            lastModified: 1763083101037,
+          },
+          scriptPath: 'entity-3.script.lua',
+        },
+      },
+    },
   ],
   assetReferences: {
     materials: [
@@ -183,5 +230,6 @@ export default defineScene({
     ],
     inputs: ['@/inputs/defaultInput'],
     prefabs: ['@/prefabs/trees'],
+    scripts: ['@/scripts/entity-3.script'],
   },
 });
