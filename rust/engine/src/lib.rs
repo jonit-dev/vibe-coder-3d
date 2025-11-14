@@ -6,6 +6,7 @@ pub mod debug;
 pub mod io;
 pub mod renderer;
 pub mod spatial;
+pub mod terrain;
 pub use renderer::{load_light, EnhancedDirectionalLight, EnhancedSpotLight, LoadedLight};
 
 // BVH testing module (integration tests)

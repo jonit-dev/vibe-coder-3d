@@ -10,6 +10,23 @@ use vibe_scene::Entity;
 use super::material_manager::MaterialManager;
 use super::transform_utils::{convert_transform_to_matrix, create_base_scale_matrix};
 
+use crate::terrain::{
+    align_ground_level, calculate_smooth_normals, terrain_height_parity, NoiseParams,
+};
+
+/// Terrain generation configuration
+#[derive(Debug, Clone)]
+pub struct TerrainParityConfig {
+    /// Use Three.js parity mode (normalized UV sampling, shaping, ground alignment)
+    pub parity_mode: bool,
+}
+
+impl Default for TerrainParityConfig {
+    fn default() -> Self {
+        Self { parity_mode: true } // Default to parity mode for correctness
+    }
+}
+
 /// Generate terrain mesh from Terrain component
 /// Returns a single Gm mesh with optional height variations from noise
 pub async fn generate_terrain(
@@ -18,6 +35,7 @@ pub async fn generate_terrain(
     terrain: &Terrain,
     transform: Option<&Transform>,
     material_manager: &mut MaterialManager,
+    material_id: Option<&str>,
 ) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3, GlamVec3)>> {
     log::info!("  Terrain:");
     log::info!("    Size:         {:?}", terrain.size);
@@ -32,11 +50,23 @@ pub async fn generate_terrain(
         log::info!("      Lacunar:    {}", terrain.noiseLacunarity);
     }
 
-    // Generate mesh geometry
-    let cpu_mesh = create_terrain_mesh(terrain)?;
+    // Generate mesh geometry with parity mode enabled
+    let parity_config = TerrainParityConfig::default();
+    let cpu_mesh = create_terrain_mesh(terrain, &parity_config)?;
 
-    // Get material
-    let material = material_manager.create_default_material(context);
+    // Get material - use specified material_id or fallback to default
+    let material = if let Some(mat_id) = material_id {
+        if let Some(vibe_material) = material_manager.get_material(mat_id).cloned() {
+            material_manager
+                .create_physical_material(context, &vibe_material)
+                .await?
+        } else {
+            log::warn!("Material '{}' not found, using default", mat_id);
+            material_manager.create_default_material(context)
+        }
+    } else {
+        material_manager.create_default_material(context)
+    };
 
     // Create mesh and apply transform
     let mut mesh = Mesh::new(context, &cpu_mesh);
@@ -55,7 +85,7 @@ pub async fn generate_terrain(
 }
 
 /// Create terrain mesh with optional noise
-fn create_terrain_mesh(terrain: &Terrain) -> Result<CpuMesh> {
+fn create_terrain_mesh(terrain: &Terrain, config: &TerrainParityConfig) -> Result<CpuMesh> {
     let width = terrain.size[0];
     let depth = terrain.size[1];
     let segments_x = terrain.segments[0].max(2);
@@ -63,8 +93,8 @@ fn create_terrain_mesh(terrain: &Terrain) -> Result<CpuMesh> {
 
     log::info!("    Generating {} x {} grid", segments_x, segments_z);
 
-    // Calculate vertex count
-    let vertex_count = (segments_x + 1) * (segments_z + 1);
+    // Calculate vertex count - MATCH THREE.JS: segments × segments (not (segments+1)²)
+    let vertex_count = segments_x * segments_z;
     let mut positions = Vec::with_capacity(vertex_count as usize);
     let mut normals = Vec::with_capacity(vertex_count as usize);
     let mut uvs = Vec::with_capacity(vertex_count as usize);
@@ -73,11 +103,21 @@ fn create_terrain_mesh(terrain: &Terrain) -> Result<CpuMesh> {
     let half_width = width * 0.5;
     let half_depth = depth * 0.5;
 
-    for z in 0..=segments_z {
-        for x in 0..=segments_x {
-            // Position in [0, 1] range
-            let u = x as f32 / segments_x as f32;
-            let v = z as f32 / segments_z as f32;
+    // Prepare noise parameters for parity mode
+    let noise_params = NoiseParams {
+        seed: terrain.noiseSeed,
+        frequency: terrain.noiseFrequency as f64,
+        octaves: terrain.noiseOctaves,
+        persistence: terrain.noisePersistence as f64,
+        lacunarity: terrain.noiseLacunarity as f64,
+    };
+
+    // MATCH THREE.JS: Iterate 0..segments (not 0..=segments)
+    for z in 0..segments_z {
+        for x in 0..segments_x {
+            // Position in [0, 1] range - MATCH THREE.JS: divide by (segments-1)
+            let u = x as f32 / (segments_x - 1) as f32;
+            let v = z as f32 / (segments_z - 1) as f32;
 
             // World position
             let world_x = u * width - half_width;
@@ -85,15 +125,21 @@ fn create_terrain_mesh(terrain: &Terrain) -> Result<CpuMesh> {
 
             // Calculate height
             let height = if terrain.noiseEnabled {
-                sample_noise(
-                    world_x,
-                    world_z,
-                    terrain.noiseSeed,
-                    terrain.noiseFrequency,
-                    terrain.noiseOctaves,
-                    terrain.noisePersistence,
-                    terrain.noiseLacunarity,
-                ) * terrain.height_scale
+                if config.parity_mode {
+                    // PARITY MODE: Use Three.js-compatible pipeline (normalized UV space)
+                    terrain_height_parity(u, v, terrain.height_scale, &noise_params)
+                } else {
+                    // CLASSIC MODE: Use original world-space sampling (for A/B testing)
+                    sample_noise(
+                        world_x,
+                        world_z,
+                        terrain.noiseSeed,
+                        terrain.noiseFrequency,
+                        terrain.noiseOctaves,
+                        terrain.noisePersistence,
+                        terrain.noiseLacunarity,
+                    ) * terrain.height_scale
+                }
             } else {
                 0.0
             };
@@ -105,15 +151,16 @@ fn create_terrain_mesh(terrain: &Terrain) -> Result<CpuMesh> {
         }
     }
 
-    // Generate indices
-    let triangle_count = segments_x * segments_z * 2;
+    // Generate indices - MATCH THREE.JS: (segments-1) × (segments-1) × 2 triangles
+    let triangle_count = (segments_x - 1) * (segments_z - 1) * 2;
     let mut indices = Vec::with_capacity((triangle_count * 3) as usize);
 
-    for z in 0..segments_z {
-        for x in 0..segments_x {
-            let i0 = z * (segments_x + 1) + x;
+    // MATCH THREE.JS: Iterate to segments-1
+    for z in 0..(segments_z - 1) {
+        for x in 0..(segments_x - 1) {
+            let i0 = z * segments_x + x;
             let i1 = i0 + 1;
-            let i2 = i0 + segments_x + 1;
+            let i2 = i0 + segments_x;
             let i3 = i2 + 1;
 
             // First triangle (counter-clockwise)
@@ -134,8 +181,20 @@ fn create_terrain_mesh(terrain: &Terrain) -> Result<CpuMesh> {
         triangle_count
     );
 
-    // Calculate smooth normals
-    let normals = calculate_normals(&positions, &indices, segments_x, segments_z);
+    // Ground alignment (Three.js parity): subtract minY to align baseline
+    if config.parity_mode {
+        let min_y = align_ground_level(&mut positions);
+        if min_y != 0.0 {
+            log::info!("    Ground aligned: minY={:.3} subtracted", min_y);
+        }
+    }
+
+    // Calculate smooth normals (use parity implementation)
+    let normals = if config.parity_mode {
+        calculate_smooth_normals(&positions, &indices)
+    } else {
+        calculate_normals(&positions, &indices, segments_x, segments_z)
+    };
 
     Ok(CpuMesh {
         positions: Positions::F32(positions),
@@ -312,17 +371,18 @@ mod tests {
             noiseLacunarity: 2.0,
         };
 
-        let mesh = create_terrain_mesh(&terrain).expect("Failed to create terrain mesh");
+        let config = TerrainParityConfig { parity_mode: true };
+        let mesh = create_terrain_mesh(&terrain, &config).expect("Failed to create terrain mesh");
 
-        // Verify vertex count: (segments + 1)^2
-        let expected_vertices = (10 + 1) * (10 + 1);
+        // Verify vertex count: segments^2 (matching Three.js)
+        let expected_vertices = 10 * 10;
         match &mesh.positions {
             Positions::F32(positions) => assert_eq!(positions.len(), expected_vertices),
             _ => panic!("Unexpected position format"),
         }
 
-        // Verify triangle count: segments^2 * 2
-        let expected_triangles = 10 * 10 * 2;
+        // Verify triangle count: (segments-1)^2 * 2 (matching Three.js)
+        let expected_triangles = 9 * 9 * 2;
         match &mesh.indices {
             Indices::U32(indices) => {
                 assert_eq!(indices.len(), (expected_triangles * 3) as usize)
@@ -345,7 +405,8 @@ mod tests {
             noiseLacunarity: 2.0,
         };
 
-        let mesh = create_terrain_mesh(&terrain).expect("Failed to create terrain mesh");
+        let config = TerrainParityConfig { parity_mode: true };
+        let mesh = create_terrain_mesh(&terrain, &config).expect("Failed to create terrain mesh");
 
         // Should have positions
         match &mesh.positions {
@@ -419,11 +480,12 @@ mod tests {
             noiseLacunarity: 2.0,
         };
 
-        let mesh = create_terrain_mesh(&terrain).expect("Failed to create terrain mesh");
+        let config = TerrainParityConfig { parity_mode: true };
+        let mesh = create_terrain_mesh(&terrain, &config).expect("Failed to create terrain mesh");
 
-        // Should create at least a 2x2 grid
+        // Should create at least a 2x2 grid (matching Three.js: segments^2 = 2*2 = 4 vertices)
         match &mesh.positions {
-            Positions::F32(positions) => assert!(positions.len() >= 9), // 3x3 vertices
+            Positions::F32(positions) => assert!(positions.len() >= 4), // 2x2 vertices
             _ => panic!("Unexpected position format"),
         }
     }

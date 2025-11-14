@@ -42,8 +42,10 @@ pub fn load_gltf_full(path: &str) -> Result<GltfData> {
     log::info!("Loading GLTF model from: {}", path);
 
     // Resolve path relative to engine's working directory
-    // If path starts with "assets/", prepend "../game/" to make it relative to rust/engine/
-    let resolved_path = if path.starts_with("assets/") {
+    // If path starts with "/assets/" or "assets/", prepend "../game/" to make it relative to rust/engine/
+    let resolved_path = if path.starts_with("/assets/") {
+        format!("../game{}", path) // path already has leading /
+    } else if path.starts_with("assets/") {
         format!("../game/{}", path)
     } else {
         path.to_string()

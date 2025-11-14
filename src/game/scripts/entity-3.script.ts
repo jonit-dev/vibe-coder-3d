@@ -2,11 +2,7 @@
 
 // Hello World TypeScript Script
 function onStart(): void {
-  const meshRenderer = entity.getComponent('MeshRenderer');
-  if (meshRenderer) {
-    console.log('Entity has a MeshRenderer component!');
-    console.log('Hello world!');
-  }
+  console.log('Hello world! Script started on entity:', entity.id);
 }
 
 function onUpdate(deltaTime: number): void {

@@ -3,19 +3,19 @@ import { defineScene } from './defineScene';
 /**
  * samplescene
  * Scene with 5 entities
- * Generated: 2025-11-10T00:50:49.629Z
+ * Generated: 2025-11-14T03:26:34.079Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
   "name": "samplescene",
   "version": 1,
-  "timestamp": "2025-11-10T00:50:49.629Z",
+  "timestamp": "2025-11-14T03:26:34.079Z",
   "description": "Scene with 5 entities"
 },
   entities: [
   {
-    "id": 7,
+    "id": 8,
     "name": "Main Camera",
     "components": {
       "PersistentId": {
@@ -99,7 +99,7 @@ export default defineScene({
     }
   },
   {
-    "id": 8,
+    "id": 9,
     "name": "Directional Light",
     "components": {
       "PersistentId": {
@@ -146,7 +146,7 @@ export default defineScene({
     }
   },
   {
-    "id": 9,
+    "id": 10,
     "name": "Ambient Light",
     "components": {
       "PersistentId": {
@@ -193,7 +193,7 @@ export default defineScene({
     }
   },
   {
-    "id": 10,
+    "id": 11,
     "name": "Terrain 0",
     "components": {
       "PersistentId": {
@@ -280,7 +280,7 @@ export default defineScene({
     }
   },
   {
-    "id": 11,
+    "id": 12,
     "name": "farm_house_basic_shaded 0",
     "components": {
       "PersistentId": {
@@ -290,7 +290,7 @@ export default defineScene({
         "position": [
           2.5,
           0.5,
-          -0.5
+          0.5
         ],
         "rotation": [
           0,
@@ -315,11 +315,11 @@ export default defineScene({
   }
 ],
   assetReferences: {
-    materials: ["@/materials/mat_37ade631","@/materials/default"],
+    materials: ["@/materials/default","@/materials/mat_37ade631"],
     inputs: ["@/inputs/defaultInput"],
     prefabs: ["@/prefabs/trees"]
   },
   lockedEntityIds: [
-  10
+  11
 ]
 });

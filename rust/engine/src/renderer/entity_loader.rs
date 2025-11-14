@@ -266,8 +266,17 @@ pub async fn handle_terrain(
     terrain: &Terrain,
     transform: Option<&Transform>,
     material_manager: &mut MaterialManager,
+    material_id: Option<&str>,
 ) -> Result<Vec<(Gm<Mesh, PhysicalMaterial>, GlamVec3, GlamVec3)>> {
-    let meshes = generate_terrain(context, entity, terrain, transform, material_manager).await?;
+    let meshes = generate_terrain(
+        context,
+        entity,
+        terrain,
+        transform,
+        material_manager,
+        material_id,
+    )
+    .await?;
 
     for (_, final_scale, _) in &meshes {
         log::info!(

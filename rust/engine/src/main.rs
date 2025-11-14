@@ -8,6 +8,7 @@ mod input;
 mod io;
 mod renderer;
 mod spatial;
+mod terrain;
 mod threed;
 mod util;
 

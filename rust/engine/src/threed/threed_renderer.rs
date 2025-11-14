@@ -448,15 +448,19 @@ impl ThreeDRenderer {
         // Check for LOD component
         let lod_component = self.get_component::<vibe_ecs_bridge::LODComponent>(entity, "LOD");
 
-        // Check for MeshRenderer
+        // Check for MeshRenderer (skip if entity has Terrain component)
         if let Some(mesh_renderer) = self.get_component::<MeshRenderer>(entity, "MeshRenderer") {
-            self.handle_mesh_renderer(
-                entity,
-                &mesh_renderer,
-                transform.as_ref(),
-                lod_component.as_ref(),
-            )
-            .await?;
+            // Skip MeshRenderer if entity also has Terrain - Terrain component takes precedence
+            let has_terrain = self.get_component::<Terrain>(entity, "Terrain").is_some();
+            if !has_terrain {
+                self.handle_mesh_renderer(
+                    entity,
+                    &mesh_renderer,
+                    transform.as_ref(),
+                    lod_component.as_ref(),
+                )
+                .await?;
+            }
         }
 
         // Check for GeometryAsset
@@ -637,6 +641,11 @@ impl ThreeDRenderer {
         terrain: &Terrain,
         transform: Option<&Transform>,
     ) -> Result<()> {
+        // Get material ID from MeshRenderer component if present
+        let material_id = self
+            .get_component::<MeshRenderer>(entity, "MeshRenderer")
+            .and_then(|mr| mr.material_id.clone());
+
         // Extract needed values from context_state to avoid multiple borrows
         let (context, material_manager) = self.context_state.context_and_material_manager_mut();
 
@@ -646,6 +655,7 @@ impl ThreeDRenderer {
             terrain,
             transform,
             material_manager,
+            material_id.as_deref(),
         )
         .await?;
 
