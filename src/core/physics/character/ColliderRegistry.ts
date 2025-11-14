@@ -201,7 +201,7 @@ class ColliderRegistry {
     const registeredIds = this.getRegisteredEntityIds();
     const now = Date.now();
 
-    logger.info('ColliderRegistry Health Report', {
+    logger.debug('ColliderRegistry Health Report', {
       currentlyRegistered: registeredIds.length,
       registeredEntityIds: registeredIds,
       totalRegistrations: this.diagnostics.totalRegistrations,

@@ -263,17 +263,7 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
                 const isSelected = selectedIdsSet.has(id);
                 const isPrimary = primarySelectionId === id;
 
-                // Debug camera entities
-                const isCamera = hasComponent(id, KnownComponentTypes.CAMERA);
-                if (isCamera) {
-                  console.log('Rendering camera entity:', {
-                    id,
-                    isSelected,
-                    isPrimary,
-                    hasMultipleSelected,
-                    willShowGizmo: isPrimary && !hasMultipleSelected && !isPlaying,
-                  });
-                }
+                // Check if entity is camera for gizmo logic
 
                 return (
                   <EntityRenderer

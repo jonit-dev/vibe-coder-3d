@@ -282,11 +282,6 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
     if (!isValidEntityId(entityId)) return [];
     const existingTypes = entityComponents.map((c) => c.type);
 
-    // Debug: Log existing components
-    if (existingTypes.length > 0) {
-      console.log('[AddComponentMenu] Entity components:', { entityId, existingTypes });
-    }
-
     return COMPONENT_DEFINITIONS.filter((comp) => {
       // Don't show if already exists
       if (existingTypes.includes(comp.id)) return false;
@@ -295,14 +290,12 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
       const hasIncompatibleComponent = existingTypes.some((existingType) => {
         // Check if this component is incompatible with any existing component
         if (comp.incompatibleComponents?.includes(existingType)) {
-          console.log(`[AddComponentMenu] ${comp.name} incompatible with existing ${existingType}`);
           return true;
         }
 
         // Check if any existing component is incompatible with this component
         const existingCompDef = COMPONENT_DEFINITIONS.find((c) => c.id === existingType);
         if (existingCompDef?.incompatibleComponents?.includes(comp.id)) {
-          console.log(`[AddComponentMenu] Existing ${existingType} incompatible with ${comp.name}`);
           return true;
         }
 

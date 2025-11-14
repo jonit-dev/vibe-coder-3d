@@ -44,12 +44,8 @@ export function captureGoldenSignals(): IGoldenSignalSnapshot {
   const registeredEntities = colliderRegistry.getRegisteredEntityIds();
 
   // Find mismatches
-  const missingFromRegistry = expectedEntities.filter(
-    (id) => !registeredEntities.includes(id),
-  );
-  const unexpectedInRegistry = registeredEntities.filter(
-    (id) => !expectedEntities.includes(id),
-  );
+  const missingFromRegistry = expectedEntities.filter((id) => !registeredEntities.includes(id));
+  const unexpectedInRegistry = registeredEntities.filter((id) => !expectedEntities.includes(id));
 
   // Count enabled and auto-mode controllers
   let enabledControllers = 0;
@@ -219,7 +215,7 @@ export function analyzeSignalTrends(): ISignalTrendAnalysis {
 export function logTrendAnalysis(): void {
   const analysis = analyzeSignalTrends();
 
-  logger.info('Golden signals trend analysis', analysis);
+  logger.debug('Golden signals trend analysis', analysis);
 
   if (analysis.consistentlyMissingEntities.length > 0) {
     logger.warn('Entities consistently missing from physics registry', {
@@ -249,11 +245,11 @@ export function clearSignalHistory(): void {
  * Log comprehensive health report combining multiple diagnostic sources
  */
 export function logComprehensiveHealthReport(): void {
-  logger.info('=== Character Controller System Health Report ===');
+  logger.debug('=== Character Controller System Health Report ===');
 
   // Golden signals
   const snapshot = captureGoldenSignals();
-  logger.info('Current State', {
+  logger.debug('Current State', {
     expectedEntities: snapshot.expectedEntities.length,
     registeredEntities: snapshot.registeredEntities.length,
     missingFromRegistry: snapshot.missingFromRegistry.length,
@@ -267,5 +263,5 @@ export function logComprehensiveHealthReport(): void {
   // Registry diagnostics
   colliderRegistry.logHealthReport();
 
-  logger.info('=== End Health Report ===');
+  logger.debug('=== End Health Report ===');
 }
