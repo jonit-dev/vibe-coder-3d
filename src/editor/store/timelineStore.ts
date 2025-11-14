@@ -1,6 +1,14 @@
 import { create } from 'zustand';
-import type { IClip } from '@core/components/animation/AnimationComponent';
-import type { IKeyframe } from '@core/components/animation/tracks/TrackTypes';
+import * as THREE from 'three';
+import type { IClip, IAnimationComponent } from '@core/components/animation/AnimationComponent';
+import type { IKeyframe, KeyframeValue } from '@core/components/animation/tracks/TrackTypes';
+import {
+  TrackType,
+  getDefaultKeyframeValueForTrackType,
+} from '@core/components/animation/tracks/TrackTypes';
+import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
+import type { ITransformData } from '@core/lib/ecs/components/TransformComponent';
 
 export interface ITimelineSelection {
   clipId: string | null;
@@ -33,6 +41,7 @@ export interface ITimelineState {
   // Undo/Redo history
   history: IClip[];
   historyIndex: number;
+  initialClip: IClip | null; // Store initial state for undo
 
   // Actions - Playback
   setCurrentTime: (time: number) => void;
@@ -76,6 +85,82 @@ export interface ITimelineState {
   pushHistory: (clip: IClip) => void;
 }
 
+function getEntityTransform(entityId: number | null): ITransformData | null {
+  if (entityId == null) return null;
+  return (
+    componentRegistry.getComponentData<ITransformData>(entityId, KnownComponentTypes.TRANSFORM) ||
+    null
+  );
+}
+
+function toQuaternion(rotation: [number, number, number]): [number, number, number, number] {
+  const euler = new THREE.Euler(
+    THREE.MathUtils.degToRad(rotation[0] || 0),
+    THREE.MathUtils.degToRad(rotation[1] || 0),
+    THREE.MathUtils.degToRad(rotation[2] || 0),
+    'XYZ',
+  );
+  const quat = new THREE.Quaternion().setFromEuler(euler);
+  return [quat.x, quat.y, quat.z, quat.w];
+}
+
+function sampleValueForTrackType(
+  trackType: string,
+  entityId: number | null,
+  fallback: KeyframeValue,
+): KeyframeValue {
+  if (!entityId) {
+    return fallback ?? getDefaultKeyframeValueForTrackType(trackType);
+  }
+
+  const transform = getEntityTransform(entityId);
+  if (!transform) {
+    return fallback ?? getDefaultKeyframeValueForTrackType(trackType);
+  }
+
+  if (trackType === TrackType.TRANSFORM_POSITION && transform.position) {
+    return [...transform.position] as [number, number, number];
+  }
+
+  if (trackType === TrackType.TRANSFORM_SCALE && transform.scale) {
+    return [...transform.scale] as [number, number, number];
+  }
+
+  if (trackType === TrackType.TRANSFORM_ROTATION && transform.rotation) {
+    return toQuaternion(transform.rotation as [number, number, number]);
+  }
+
+  return fallback ?? getDefaultKeyframeValueForTrackType(trackType);
+}
+
+function cloneClip(clip: IClip): IClip {
+  return JSON.parse(JSON.stringify(clip)) as IClip;
+}
+
+function syncClipToAnimationComponent(entityId: number | null, clip: IClip | null): void {
+  if (entityId == null || !clip) return;
+
+  const component =
+    componentRegistry.getComponentData<IAnimationComponent>(
+      entityId,
+      KnownComponentTypes.ANIMATION,
+    ) || null;
+  if (!component) return;
+
+  const clipIndex = component.clips.findIndex((c) => c.id === clip.id);
+  if (clipIndex === -1) return;
+
+  const updatedClips = component.clips.map((existing) =>
+    existing.id === clip.id ? JSON.parse(JSON.stringify(clip)) : existing,
+  );
+
+  componentRegistry.updateComponent(entityId, KnownComponentTypes.ANIMATION, {
+    ...component,
+    activeClipId: component.activeClipId ?? clip.id,
+    clips: updatedClips,
+  });
+}
+
 export const useTimelineStore = create<ITimelineState>((set, get) => ({
   // Initial state
   currentTime: 0,
@@ -95,6 +180,7 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
   clipboard: null,
   history: [],
   historyIndex: -1,
+  initialClip: null,
 
   // Playback actions
   setCurrentTime: (time) => set({ currentTime: Math.max(0, time) }),
@@ -159,32 +245,54 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
 
   // Editing actions
   setActiveEntity: (entityId, clip) => {
+    const clipClone = clip ? cloneClip(clip) : null;
     set({
       activeEntityId: entityId,
-      activeClip: clip,
+      activeClip: clipClone,
       currentTime: 0,
       playing: false,
+      // Reset history state when setting a new entity
+      history: [],
+      historyIndex: -1,
+      initialClip: null,
     });
 
-    if (clip) {
-      get().pushHistory(clip);
-    }
+    // Don't automatically push to history - let updateClip handle that
   },
 
   updateClip: (clip) => {
+    const { activeClip, initialClip } = get();
+
+    // Store initial clip if not already stored and push it to history
+    if (!initialClip && activeClip) {
+      set({ initialClip: cloneClip(activeClip) });
+      // Push the initial state to history as the first entry
+      get().pushHistory(activeClip);
+    }
+
+    // Push new state to history if it's different from the current state
+    if (activeClip && JSON.stringify(activeClip) !== JSON.stringify(clip)) {
+      get().pushHistory(clip);
+    }
+
     set({ activeClip: clip });
-    get().pushHistory(clip);
+    syncClipToAnimationComponent(get().activeEntityId, clip);
   },
 
   addKeyframe: (trackId, keyframe) => {
-    const { activeClip } = get();
+    const { activeClip, activeEntityId } = get();
     if (!activeClip) return;
 
-    const newClip = { ...activeClip };
+    const newClip = cloneClip(activeClip);
     const track = newClip.tracks.find((t) => t.id === trackId);
 
     if (track) {
-      track.keyframes = [...track.keyframes, keyframe].sort((a, b) => a.time - b.time);
+      const sampledValue = sampleValueForTrackType(track.type, activeEntityId, keyframe.value);
+      const nextKeyframe: IKeyframe = {
+        ...keyframe,
+        value: sampledValue,
+      };
+      track.keyframes = [...track.keyframes, nextKeyframe].sort((a, b) => a.time - b.time);
       get().updateClip(newClip);
     }
   },
@@ -193,7 +301,7 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
     const { activeClip } = get();
     if (!activeClip) return;
 
-    const newClip = { ...activeClip };
+    const newClip = cloneClip(activeClip);
     const track = newClip.tracks.find((t) => t.id === trackId);
 
     if (track) {
@@ -212,7 +320,7 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
       finalTime = Math.round(newTime / snapInterval) * snapInterval;
     }
 
-    const newClip = { ...activeClip };
+    const newClip = cloneClip(activeClip);
     const track = newClip.tracks.find((t) => t.id === trackId);
 
     if (track && track.keyframes[index]) {
@@ -229,13 +337,17 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
     const { activeClip } = get();
     if (!activeClip) return;
 
-    const newClip = { ...activeClip };
+    const newClip = cloneClip(activeClip);
     const track = newClip.tracks.find((t) => t.id === trackId);
 
     if (track && track.keyframes[index]) {
       track.keyframes[index] = {
         ...track.keyframes[index],
-        value: value as number | [number, number, number] | [number, number, number, number] | Record<string, number>,
+        value: value as
+          | number
+          | [number, number, number]
+          | [number, number, number, number]
+          | Record<string, number>,
       };
       get().updateClip(newClip);
     }
@@ -277,7 +389,9 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
     const newClip = { ...activeClip };
     const newTrack = newClip.tracks.find((t) => t.id === selection.trackId);
     if (newTrack) {
-      newTrack.keyframes = [...newTrack.keyframes, ...pastedKeyframes].sort((a, b) => a.time - b.time);
+      newTrack.keyframes = [...newTrack.keyframes, ...pastedKeyframes].sort(
+        (a, b) => a.time - b.time,
+      );
       get().updateClip(newClip);
     }
   },
@@ -286,7 +400,7 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
   pushHistory: (clip) =>
     set((state) => {
       const newHistory = state.history.slice(0, state.historyIndex + 1);
-      newHistory.push(JSON.parse(JSON.stringify(clip))); // Deep clone
+      newHistory.push(cloneClip(clip)); // Deep clone
 
       // Keep last 50 states
       if (newHistory.length > 50) {
@@ -300,13 +414,28 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
     }),
 
   undo: () => {
-    const { history, historyIndex } = get();
-    if (historyIndex > 0) {
+    const { history, historyIndex, initialClip, activeClip } = get();
+
+    // If we have a current state that's not in history, push it to history first
+    if (historyIndex >= 0 && activeClip) {
+      get().pushHistory(activeClip);
+    }
+
+    if (historyIndex >= 0) {
       const newIndex = historyIndex - 1;
-      set({
-        activeClip: JSON.parse(JSON.stringify(history[newIndex])),
-        historyIndex: newIndex,
-      });
+      if (newIndex >= 0) {
+        // Restore from history
+        set({
+          activeClip: cloneClip(history[newIndex]),
+          historyIndex: newIndex,
+        });
+      } else {
+        // No more history, restore from initial clip
+        set({
+          activeClip: initialClip ? cloneClip(initialClip) : null,
+          historyIndex: -1,
+        });
+      }
     }
   },
 
@@ -315,7 +444,7 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
       set({
-        activeClip: JSON.parse(JSON.stringify(history[newIndex])),
+        activeClip: cloneClip(history[newIndex]),
         historyIndex: newIndex,
       });
     }
@@ -323,7 +452,7 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
 
   canUndo: () => {
     const { historyIndex } = get();
-    return historyIndex > 0;
+    return historyIndex >= 0;
   },
 
   canRedo: () => {

@@ -71,10 +71,10 @@ export const animationComponent = ComponentFactory.create({
     component.clipsHash[eid] =
       data.clips && data.clips.length > 0 ? storeString(JSON.stringify(data.clips)) : 0;
   },
-  onAdd: (_eid: EntityId, _data: unknown) => {
+  onAdd: () => {
     // Empty callback - initialization handled in deserialize
   },
-  onRemove: (_eid: EntityId) => {
+  onRemove: () => {
     // Empty callback - cleanup if needed
   },
   metadata: {

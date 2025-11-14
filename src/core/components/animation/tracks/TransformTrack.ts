@@ -10,7 +10,7 @@ import { lerpVec3, slerpQuat } from '../curves/Interpolators';
 export function evaluatePositionTrack(
   track: ITrack,
   time: number,
-  target: THREE.Vector3 = new THREE.Vector3()
+  target: THREE.Vector3 = new THREE.Vector3(),
 ): THREE.Vector3 {
   const { prev, next } = findKeyframeRange(track.keyframes, time);
 
@@ -47,7 +47,7 @@ export function evaluatePositionTrack(
 export function evaluateRotationTrack(
   track: ITrack,
   time: number,
-  target: THREE.Quaternion = new THREE.Quaternion()
+  target: THREE.Quaternion = new THREE.Quaternion(),
 ): THREE.Quaternion {
   const { prev, next } = findKeyframeRange(track.keyframes, time);
 
@@ -57,12 +57,12 @@ export function evaluateRotationTrack(
 
   if (!next || prev === next) {
     const value = prev!.value as [number, number, number, number];
-    return target.set(value[0], value[1], value[2], value[3]);
+    return target.set(value[0], value[1], value[2], value[3]).normalize();
   }
 
   if (!prev) {
     const value = next.value as [number, number, number, number];
-    return target.set(value[0], value[1], value[2], value[3]);
+    return target.set(value[0], value[1], value[2], value[3]).normalize();
   }
 
   const t = getNormalizedTime(prev, next, time);
@@ -76,14 +76,14 @@ export function evaluateRotationTrack(
     prevValue[0],
     prevValue[1],
     prevValue[2],
-    prevValue[3]
-  );
+    prevValue[3],
+  ).normalize();
   const nextQuat = new THREE.Quaternion(
     nextValue[0],
     nextValue[1],
     nextValue[2],
-    nextValue[3]
-  );
+    nextValue[3],
+  ).normalize();
 
   return slerpQuat(prevQuat, nextQuat, easedT, target);
 }
@@ -94,7 +94,7 @@ export function evaluateRotationTrack(
 export function evaluateScaleTrack(
   track: ITrack,
   time: number,
-  target: THREE.Vector3 = new THREE.Vector3()
+  target: THREE.Vector3 = new THREE.Vector3(),
 ): THREE.Vector3 {
   const { prev, next } = findKeyframeRange(track.keyframes, time);
 

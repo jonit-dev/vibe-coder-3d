@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useTimelineStore } from '@editor/store/timelineStore';
+import { getDefaultKeyframeValueForTrackType } from '@core/components/animation/tracks/TrackTypes';
 
 export function useTimelineKeyboard() {
   const {
@@ -19,10 +20,7 @@ export function useTimelineKeyboard() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in input
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
 
@@ -55,7 +53,12 @@ export function useTimelineKeyboard() {
       }
 
       // Ctrl/Cmd + C: Copy keyframes
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selection.trackId && selection.keyframeIndices.length > 0) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key === 'c' &&
+        selection.trackId &&
+        selection.keyframeIndices.length > 0
+      ) {
         e.preventDefault();
         copyKeyframes();
         return;
@@ -71,7 +74,9 @@ export function useTimelineKeyboard() {
       // Delete/Backspace: Remove selected keyframes
       if ((e.key === 'Delete' || e.key === 'Backspace') && selection.trackId) {
         e.preventDefault();
-        selection.keyframeIndices.forEach((index) => {
+        // Sort indices in descending order to avoid index shifting issues
+        const sortedIndices = [...selection.keyframeIndices].sort((a, b) => b - a);
+        sortedIndices.forEach((index) => {
           removeKeyframe(selection.trackId!, index);
         });
         return;
@@ -82,17 +87,9 @@ export function useTimelineKeyboard() {
         e.preventDefault();
         const track = activeClip.tracks.find((t) => t.id === selection.trackId);
         if (track) {
-          // Get default value based on track type
-          let defaultValue: number | [number, number, number] | [number, number, number, number] | Record<string, number> = 0;
-          if (track.type.includes('position') || track.type.includes('scale')) {
-            defaultValue = [0, 0, 0] as [number, number, number];
-          } else if (track.type.includes('rotation')) {
-            defaultValue = [0, 0, 0, 1] as [number, number, number, number]; // Identity quaternion
-          }
-
           addKeyframe(selection.trackId, {
             time: currentTime,
-            value: defaultValue,
+            value: getDefaultKeyframeValueForTrackType(track.type),
             easing: 'linear',
           });
         }

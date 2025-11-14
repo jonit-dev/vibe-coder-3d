@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
 import { useTimelineStore } from '@editor/store/timelineStore';
+import React, { useMemo } from 'react';
 
 export const Ruler: React.FC = () => {
   const { zoom, pan, activeClip, setCurrentTime } = useTimelineStore();
@@ -13,9 +13,12 @@ export const Ruler: React.FC = () => {
 
     // Determine tick interval based on zoom level
     let interval = 1; // Default: 1 second
-    if (pixelsPerSecond > 200) interval = 0.1; // 100ms
-    else if (pixelsPerSecond > 100) interval = 0.25; // 250ms
-    else if (pixelsPerSecond > 50) interval = 0.5; // 500ms
+    if (pixelsPerSecond > 200)
+      interval = 0.1; // 100ms
+    else if (pixelsPerSecond > 100)
+      interval = 0.25; // 250ms
+    else if (pixelsPerSecond > 50)
+      interval = 0.5; // 500ms
     else if (pixelsPerSecond < 20) interval = 5; // 5 seconds
 
     const majorInterval = interval * 5;
@@ -41,27 +44,19 @@ export const Ruler: React.FC = () => {
 
   return (
     <div
-      className="h-8 bg-gray-800 border-b border-gray-700 relative cursor-pointer overflow-hidden"
+      className="h-10 bg-[#2D2F34] border-b border-cyan-900/20 relative cursor-pointer overflow-hidden"
       onClick={handleClick}
     >
       <div className="absolute inset-0" style={{ transform: `translateX(-${pan}px)` }}>
         {ticks.map((tick, i) => {
           const x = tick.time * zoom;
           return (
-            <div
-              key={i}
-              className="absolute top-0"
-              style={{ left: `${x}px` }}
-            >
+            <div key={i} className="absolute top-0" style={{ left: `${x}px` }}>
               {/* Tick mark */}
-              <div
-                className={`${
-                  tick.major ? 'h-4 bg-gray-400' : 'h-2 bg-gray-600'
-                } w-px`}
-              />
+              <div className={`${tick.major ? 'h-5 bg-cyan-400/70' : 'h-2 bg-gray-500/50'} w-px`} />
               {/* Label */}
               {tick.label && (
-                <div className="absolute top-4 -translate-x-1/2 text-xs text-gray-400">
+                <div className="absolute top-5 -translate-x-1/2 text-xs text-cyan-400 font-medium font-mono">
                   {tick.label}s
                 </div>
               )}

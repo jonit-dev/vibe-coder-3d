@@ -137,7 +137,7 @@ export function getTriggerCollisionFilter(): number {
  * @param _colliderHandle - Handle of collider being tested (unused for now)
  * @returns True if character should collide with this collider
  */
-export function characterCollisionPredicate(_colliderHandle: unknown): boolean {
+export function characterCollisionPredicate(): boolean {
   // For now, accept all collisions that pass group/mask filter
   // Can be extended to add dynamic filtering logic:
   // - Ignore specific entity types

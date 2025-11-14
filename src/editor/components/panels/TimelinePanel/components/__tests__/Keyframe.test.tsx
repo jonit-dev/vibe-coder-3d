@@ -5,6 +5,7 @@ import { vi, beforeEach, afterEach } from 'vitest';
 import { useTimelineStore } from '@editor/store/timelineStore';
 import { Keyframe } from '../Keyframe';
 import type { IKeyframe } from '@core/components/animation/tracks/TrackTypes';
+import { TrackType } from '@core/components/animation/tracks/TrackTypes';
 
 // Mock the timeline store
 vi.mock('@editor/store/timelineStore');
@@ -19,6 +20,7 @@ const mockKeyframe: IKeyframe = {
 
 const defaultProps = {
   trackId: 'test-track',
+  trackType: TrackType.Position,
   keyframe: mockKeyframe,
   index: 0,
 };
@@ -32,48 +34,48 @@ describe('Keyframe', () => {
         trackId: null,
         keyframeIndices: [],
       },
-      selectKeyframes: jest.fn(),
-      moveKeyframe: jest.fn(),
-      removeKeyframe: jest.fn(),
+      selectKeyframes: vi.fn(),
+      moveKeyframe: vi.fn(),
+      removeKeyframe: vi.fn(),
       snapEnabled: true,
       snapInterval: 0.1,
       currentTime: 0,
       playing: false,
       loop: false,
       pan: 0,
-      clearSelection: jest.fn(),
-      selectTrack: jest.fn(),
+      clearSelection: vi.fn(),
+      selectTrack: vi.fn(),
       activeEntityId: null,
       activeClip: null,
       history: [],
       historyIndex: -1,
-      setCurrentTime: jest.fn(),
-      play: jest.fn(),
-      pause: jest.fn(),
-      stop: jest.fn(),
-      togglePlay: jest.fn(),
-      setLoop: jest.fn(),
-      setZoom: jest.fn(),
-      setPan: jest.fn(),
-      zoomIn: jest.fn(),
-      zoomOut: jest.fn(),
-      toggleSnap: jest.fn(),
-      setSnapInterval: jest.fn(),
-      frameView: jest.fn(),
-      setActiveEntity: jest.fn(),
-      updateClip: jest.fn(),
-      addKeyframe: jest.fn(),
-      updateKeyframeValue: jest.fn(),
-      undo: jest.fn(),
-      redo: jest.fn(),
-      canUndo: jest.fn(),
-      canRedo: jest.fn(),
-      pushHistory: jest.fn(),
+      setCurrentTime: vi.fn(),
+      play: vi.fn(),
+      pause: vi.fn(),
+      stop: vi.fn(),
+      togglePlay: vi.fn(),
+      setLoop: vi.fn(),
+      setZoom: vi.fn(),
+      setPan: vi.fn(),
+      zoomIn: vi.fn(),
+      zoomOut: vi.fn(),
+      toggleSnap: vi.fn(),
+      setSnapInterval: vi.fn(),
+      frameView: vi.fn(),
+      setActiveEntity: vi.fn(),
+      updateClip: vi.fn(),
+      addKeyframe: vi.fn(),
+      updateKeyframeValue: vi.fn(),
+      undo: vi.fn(),
+      redo: vi.fn(),
+      canUndo: vi.fn(),
+      canRedo: vi.fn(),
+      pushHistory: vi.fn(),
     });
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render keyframe at correct position', () => {
@@ -97,7 +99,7 @@ describe('Keyframe', () => {
     render(<Keyframe {...defaultProps} />);
 
     const keyframe = screen.getByRole('button');
-    expect(keyframe).toHaveClass('ring-2', 'ring-blue-400');
+    expect(keyframe).toHaveClass('ring-2', 'ring-cyan-400');
   });
 
   it('should not apply selected styling when not selected', () => {
@@ -108,7 +110,7 @@ describe('Keyframe', () => {
   });
 
   it('should select keyframe on single click', () => {
-    const mockSelectKeyframes = jest.fn();
+    const mockSelectKeyframes = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       selectKeyframes: mockSelectKeyframes,
@@ -123,7 +125,7 @@ describe('Keyframe', () => {
   });
 
   it('should add to selection on shift-click when already selected', () => {
-    const mockSelectKeyframes = jest.fn();
+    const mockSelectKeyframes = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       selection: {
@@ -144,7 +146,7 @@ describe('Keyframe', () => {
   });
 
   it('should add to selection on shift-click when not selected', () => {
-    const mockSelectKeyframes = jest.fn();
+    const mockSelectKeyframes = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       selection: {
@@ -180,7 +182,7 @@ describe('Keyframe', () => {
     render(<Keyframe {...defaultProps} />);
 
     const keyframe = screen.getByRole('button');
-    const mockMoveKeyframe = jest.fn();
+    const mockMoveKeyframe = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       moveKeyframe: mockMoveKeyframe,
@@ -213,16 +215,16 @@ describe('Keyframe', () => {
   });
 
   it('should handle drag without snapping', () => {
+    const mockMoveKeyframe = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       snapEnabled: false,
-      moveKeyframe: jest.fn(),
+      moveKeyframe: mockMoveKeyframe,
     } as any);
 
     render(<Keyframe {...defaultProps} />);
 
     const keyframe = screen.getByRole('button');
-    const mockMoveKeyframe = mockUseTimelineStore.mock.results[0].value.moveKeyframe;
 
     // Start drag
     fireEvent.mouseDown(keyframe, { clientX: 150, clientY: 50 });
@@ -235,16 +237,16 @@ describe('Keyframe', () => {
   });
 
   it('should handle drag with custom snap interval', () => {
+    const mockMoveKeyframe = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       snapInterval: 0.25, // 250ms snap interval
-      moveKeyframe: jest.fn(),
+      moveKeyframe: mockMoveKeyframe,
     } as any);
 
     render(<Keyframe {...defaultProps} />);
 
     const keyframe = screen.getByRole('button');
-    const mockMoveKeyframe = mockUseTimelineStore.mock.results[0].value.moveKeyframe;
 
     // Start drag
     fireEvent.mouseDown(keyframe, { clientX: 150, clientY: 50 });
@@ -257,15 +259,15 @@ describe('Keyframe', () => {
   });
 
   it('should prevent negative times on drag', () => {
+    const mockMoveKeyframe = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
-      moveKeyframe: jest.fn(),
+      moveKeyframe: mockMoveKeyframe,
     } as any);
 
     render(<Keyframe {...defaultProps} />);
 
     const keyframe = screen.getByRole('button');
-    const mockMoveKeyframe = mockUseTimelineStore.mock.results[0].value.moveKeyframe;
 
     // Start drag and move far left
     fireEvent.mouseDown(keyframe, { clientX: 150, clientY: 50 });
@@ -276,7 +278,7 @@ describe('Keyframe', () => {
   });
 
   it('should handle delete key when selected', () => {
-    const mockRemoveKeyframe = jest.fn();
+    const mockRemoveKeyframe = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       selection: {
@@ -299,7 +301,7 @@ describe('Keyframe', () => {
   });
 
   it('should handle backspace key when selected', () => {
-    const mockRemoveKeyframe = jest.fn();
+    const mockRemoveKeyframe = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       selection: {
@@ -322,7 +324,7 @@ describe('Keyframe', () => {
   });
 
   it('should not delete when not selected', () => {
-    const mockRemoveKeyframe = jest.fn();
+    const mockRemoveKeyframe = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       removeKeyframe: mockRemoveKeyframe,
@@ -381,9 +383,12 @@ describe('Keyframe', () => {
 
   it('should clean up event listeners on unmount', () => {
     const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener');
-    const removeEventListenerBodySpy = vi.spyOn(document.body, 'removeEventListener');
 
     const { unmount } = render(<Keyframe {...defaultProps} />);
+
+    // Start drag to trigger event listener setup
+    const keyframe = screen.getByRole('button');
+    fireEvent.mouseDown(keyframe, { clientX: 150, clientY: 50 });
 
     unmount();
 
@@ -392,7 +397,6 @@ describe('Keyframe', () => {
     expect(removeEventListenerSpy).toHaveBeenCalledWith('mouseup', expect.any(Function));
 
     removeEventListenerSpy.mockRestore();
-    removeEventListenerBodySpy.mockRestore();
   });
 
   it('should handle right-click context menu', () => {

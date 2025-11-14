@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
-import type { IAnimationComponent, IAnimationApi, IClip, IAnimationPlaybackState } from '@core/components/animation/AnimationComponent';
+import type {
+  IAnimationComponent,
+  IAnimationApi,
+  IClip,
+  IAnimationPlaybackState,
+} from '@core/components/animation/AnimationComponent';
 import { TimelineEvaluator, type ITimelineEvaluation } from '@core/lib/animation/TimelineEvaluator';
 import { emit } from '@core/lib/events';
 import { Logger } from '@core/lib/logger';
@@ -16,7 +21,7 @@ interface IEntityAnimationState {
   playing: boolean;
   time: number;
   timeScale: number;
-  loop: boolean;
+  loop?: boolean; // Optional - if not set, uses clip.loop
   fadingIn: boolean;
   fadingOut: boolean;
   fadeTime: number;
@@ -57,7 +62,10 @@ class AnimationSystemImpl implements IAnimationApi {
    * Update a single entity's animation
    */
   private updateEntity(entityId: number, deltaTime: number): void {
-    const component = componentRegistry.getComponentData<IAnimationComponent>(entityId, 'Animation');
+    const component = componentRegistry.getComponentData<IAnimationComponent>(
+      entityId,
+      'Animation',
+    );
     if (!component) return;
 
     const state = this.getOrCreateState(entityId, component);
@@ -69,11 +77,13 @@ class AnimationSystemImpl implements IAnimationApi {
     // Update time
     state.time += deltaTime * state.timeScale * clip.timeScale;
 
-    // Handle looping
+    // Handle looping (use state.loop if set explicitly, otherwise use clip.loop)
     if (state.time >= clip.duration) {
-      if (state.loop) {
+      const loopCount = Math.floor(state.time / clip.duration);
+      const shouldLoop = state.loop !== undefined ? state.loop : clip.loop;
+      if (shouldLoop) {
         state.time = state.time % clip.duration;
-        emit('animation:loop', { entityId, clipId: clip.id, loopCount: Math.floor(state.time / clip.duration) });
+        emit('animation:loop', { entityId, clipId: clip.id, loopCount });
       } else {
         state.time = clip.duration;
         state.playing = false;
@@ -86,8 +96,27 @@ class AnimationSystemImpl implements IAnimationApi {
       state.fadeTime += deltaTime;
       if (state.fadeTime >= state.fadeDuration) {
         state.fadingIn = false;
-        state.fadingOut = false;
+        if (state.fadingOut) {
+          state.fadingOut = false;
+          state.playing = false;
+          state.time = 0;
+          state.activeClipId = null;
+          state.fadeTime = 0;
+          state.fadeDuration = 0;
+        } else {
+          state.fadingOut = false;
+        }
       }
+    }
+
+    if (!state.playing || !state.activeClipId) {
+      componentRegistry.updateComponent(entityId, 'Animation', {
+        ...component,
+        time: state.time,
+        playing: state.playing,
+        activeClipId: state.activeClipId,
+      });
+      return;
     }
 
     // Evaluate and apply animation
@@ -104,21 +133,19 @@ class AnimationSystemImpl implements IAnimationApi {
       });
     }
 
-    // Update component time
+    // Update component with full state
     componentRegistry.updateComponent(entityId, 'Animation', {
       ...component,
       time: state.time,
       playing: state.playing,
+      activeClipId: state.activeClipId,
     });
   }
 
   /**
    * Apply evaluated animation to Three.js objects
    */
-  private applyEvaluation(
-    entityId: number,
-    evaluation: ITimelineEvaluation
-  ): void {
+  private applyEvaluation(entityId: number, evaluation: ITimelineEvaluation): void {
     if (!this.scene) return;
 
     // Find the entity's Three.js object
@@ -167,7 +194,10 @@ class AnimationSystemImpl implements IAnimationApi {
           material[name] = value;
         }
       }
-      material.needsUpdate = true;
+      // Only set needsUpdate if the material has this property
+      if ('needsUpdate' in material) {
+        material.needsUpdate = true;
+      }
     }
   }
 
@@ -188,7 +218,10 @@ class AnimationSystemImpl implements IAnimationApi {
   /**
    * Get or create animation state for entity
    */
-  private getOrCreateState(entityId: number, component: IAnimationComponent): IEntityAnimationState {
+  private getOrCreateState(
+    entityId: number,
+    component: IAnimationComponent,
+  ): IEntityAnimationState {
     let state = this.states.get(entityId);
     if (!state) {
       state = {
@@ -197,13 +230,18 @@ class AnimationSystemImpl implements IAnimationApi {
         playing: component.playing,
         time: component.time,
         timeScale: 1,
-        loop: true,
+        loop: undefined, // Will use clip.loop if not set
         fadingIn: false,
         fadingOut: false,
         fadeTime: 0,
         fadeDuration: 0,
       };
       this.states.set(entityId, state);
+    } else {
+      // Sync state with component if needed
+      state.activeClipId = component.activeClipId || state.activeClipId;
+      state.playing = component.playing;
+      state.time = component.time;
     }
     return state;
   }
@@ -212,22 +250,36 @@ class AnimationSystemImpl implements IAnimationApi {
    * Play an animation clip
    */
   play(entityId: number, clipId: string, opts?: { fade?: number; loop?: boolean }): void {
-    const state = this.states.get(entityId);
-    if (!state) {
-      logger.warn('Cannot play animation: entity state not found', { entityId, clipId });
+    const component = componentRegistry.getComponentData<IAnimationComponent>(
+      entityId,
+      'Animation',
+    );
+    if (!component) {
+      logger.warn('Cannot play animation: component not found', { entityId, clipId });
       return;
     }
 
+    const state = this.getOrCreateState(entityId, component);
+
+    // Update state
     state.activeClipId = clipId;
     state.playing = true;
     state.time = 0;
-    state.loop = opts?.loop ?? true;
+    state.loop = opts?.loop; // Leave undefined if not specified - will use clip.loop
 
     if (opts?.fade && opts.fade > 0) {
       state.fadingIn = true;
       state.fadeTime = 0;
       state.fadeDuration = opts.fade;
     }
+
+    // Update component to reflect new state
+    componentRegistry.updateComponent(entityId, 'Animation', {
+      ...component,
+      activeClipId: clipId,
+      playing: true,
+      time: 0,
+    });
 
     emit('animation:play', { entityId, clipId, fade: opts?.fade, loop: opts?.loop });
   }
@@ -236,19 +288,35 @@ class AnimationSystemImpl implements IAnimationApi {
    * Pause animation
    */
   pause(entityId: number): void {
-    const state = this.states.get(entityId);
-    if (state) {
-      state.playing = false;
-      emit('animation:pause', { entityId });
-    }
+    const component = componentRegistry.getComponentData<IAnimationComponent>(
+      entityId,
+      'Animation',
+    );
+    if (!component) return;
+
+    const state = this.getOrCreateState(entityId, component);
+    state.playing = false;
+
+    // Update component to reflect pause state
+    componentRegistry.updateComponent(entityId, 'Animation', {
+      ...component,
+      playing: false,
+    });
+
+    emit('animation:pause', { entityId });
   }
 
   /**
    * Stop animation
    */
   stop(entityId: number, opts?: { fade?: number }): void {
-    const state = this.states.get(entityId);
-    if (!state) return;
+    const component = componentRegistry.getComponentData<IAnimationComponent>(
+      entityId,
+      'Animation',
+    );
+    if (!component) return;
+
+    const state = this.getOrCreateState(entityId, component);
 
     if (opts?.fade && opts.fade > 0) {
       state.fadingOut = true;
@@ -258,6 +326,14 @@ class AnimationSystemImpl implements IAnimationApi {
       state.playing = false;
       state.time = 0;
       state.activeClipId = null;
+
+      // Update component to reflect stop state
+      componentRegistry.updateComponent(entityId, 'Animation', {
+        ...component,
+        playing: false,
+        time: 0,
+        activeClipId: null,
+      });
     }
 
     emit('animation:stop', { entityId, fade: opts?.fade });
@@ -267,24 +343,76 @@ class AnimationSystemImpl implements IAnimationApi {
    * Set playback time
    */
   setTime(entityId: number, time: number): void {
-    const state = this.states.get(entityId);
-    if (state) {
-      state.time = Math.max(0, time);
+    const component = componentRegistry.getComponentData<IAnimationComponent>(
+      entityId,
+      'Animation',
+    );
+    if (!component) {
+      // Unknown entity – nothing to do, but don't throw (editor may probe freely)
+      return;
     }
+
+    const state = this.getOrCreateState(entityId, component);
+
+    // Clamp time to [0, clip.duration]
+    state.time = Math.max(0, time);
+
+    // Ensure there is an active clip to evaluate. Prefer existing state,
+    // then component's active clip, then fall back to the first clip.
+    if (!state.activeClipId) {
+      const fallbackClipId = component.activeClipId ?? component.clips[0]?.id ?? null;
+      state.activeClipId = fallbackClipId;
+    }
+
+    if (!state.activeClipId) {
+      return;
+    }
+
+    const clip = component.clips.find((c) => c.id === state.activeClipId);
+    if (!clip) {
+      return;
+    }
+
+    if (state.time > clip.duration) {
+      state.time = clip.duration;
+    }
+
+    // Evaluate and apply immediately so editor scrubbing updates the viewport
+    const evaluation = this.evaluator.evaluate(clip, state.time);
+    this.applyEvaluation(entityId, evaluation);
+
+    // Keep ECS component in sync with the runtime state
+    componentRegistry.updateComponent(entityId, 'Animation', {
+      ...component,
+      time: state.time,
+      activeClipId: state.activeClipId,
+      playing: state.playing,
+    });
   }
 
   /**
    * Get animation playback state
    */
   getState(entityId: number): IAnimationPlaybackState | null {
+    const component = componentRegistry.getComponentData<IAnimationComponent>(
+      entityId,
+      'Animation',
+    );
+    if (!component) return null;
+
     const state = this.states.get(entityId);
     if (!state) return null;
+
+    const clip = state.activeClipId
+      ? component.clips.find((c) => c.id === state.activeClipId)
+      : undefined;
+    const loop = state.loop ?? clip?.loop ?? true;
 
     return {
       time: state.time,
       playing: state.playing,
       clipId: state.activeClipId,
-      loop: state.loop,
+      loop,
       timeScale: state.timeScale,
     };
   }
@@ -292,17 +420,27 @@ class AnimationSystemImpl implements IAnimationApi {
   /**
    * Get animation clip
    */
-  getClip(_entityId: number, _clipId: string): IClip | null {
-    // This requires component registry access - should be passed in
-    return null;
+  getClip(entityId: number, clipId: string): IClip | null {
+    const component = componentRegistry.getComponentData<IAnimationComponent>(
+      entityId,
+      'Animation',
+    );
+    if (!component) return null;
+
+    return component.clips.find((clip) => clip.id === clipId) || null;
   }
 
   /**
    * Get all clips for entity
    */
-  getAllClips(_entityId: number): IClip[] {
-    // This requires component registry access - should be passed in
-    return [];
+  getAllClips(entityId: number): IClip[] {
+    const component = componentRegistry.getComponentData<IAnimationComponent>(
+      entityId,
+      'Animation',
+    );
+    if (!component) return [];
+
+    return [...component.clips];
   }
 
   /**

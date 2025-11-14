@@ -33,12 +33,7 @@ export const KeyframeSchema = z.object({
     z.record(z.string(), z.number()), // morph map or material props
   ]),
   easing: z
-    .union([
-      z.literal('linear'),
-      z.literal('step'),
-      z.literal('bezier'),
-      z.literal('custom'),
-    ])
+    .union([z.literal('linear'), z.literal('step'), z.literal('bezier'), z.literal('custom')])
     .default('linear'),
   easingArgs: z.array(z.number()).optional(), // bezier control points or custom id
 });
@@ -66,6 +61,7 @@ export type ITrack = z.infer<typeof TrackSchema>;
 
 /**
  * Helper to sort keyframes by time
+ * When times are equal, keeps the original order of the keyframes
  */
 export function sortKeyframes(keyframes: IKeyframe[]): IKeyframe[] {
   return [...keyframes].sort((a, b) => a.time - b.time);
@@ -76,7 +72,7 @@ export function sortKeyframes(keyframes: IKeyframe[]): IKeyframe[] {
  */
 export function findKeyframeRange(
   keyframes: IKeyframe[],
-  time: number
+  time: number,
 ): { prev: IKeyframe | null; next: IKeyframe | null; index: number } {
   const sorted = sortKeyframes(keyframes);
 
@@ -85,18 +81,23 @@ export function findKeyframeRange(
   }
 
   // Before first keyframe
-  if (time <= sorted[0].time) {
+  if (time < sorted[0].time) {
     return { prev: null, next: sorted[0], index: 0 };
   }
 
   // After last keyframe
-  if (time >= sorted[sorted.length - 1].time) {
+  if (time > sorted[sorted.length - 1].time) {
     return { prev: sorted[sorted.length - 1], next: null, index: sorted.length - 1 };
   }
 
-  // Between keyframes
-  for (let i = 0; i < sorted.length - 1; i++) {
-    if (time >= sorted[i].time && time <= sorted[i + 1].time) {
+  // Find exact match or range
+  for (let i = 0; i < sorted.length; i++) {
+    // Exact match
+    if (time === sorted[i].time) {
+      return { prev: sorted[i], next: sorted[i], index: i };
+    }
+    // Between keyframes
+    if (i < sorted.length - 1 && time > sorted[i].time && time < sorted[i + 1].time) {
       return { prev: sorted[i], next: sorted[i + 1], index: i };
     }
   }
@@ -110,9 +111,28 @@ export function findKeyframeRange(
 export function getNormalizedTime(
   prevKeyframe: IKeyframe,
   nextKeyframe: IKeyframe,
-  time: number
+  time: number,
 ): number {
   const duration = nextKeyframe.time - prevKeyframe.time;
-  if (duration === 0) return 0;
+  if (duration <= 0) return 0; // Handle zero or negative duration
   return Math.max(0, Math.min(1, (time - prevKeyframe.time) / duration));
+}
+
+/**
+ * Default keyframe value to use when creating a new keyframe for a given
+ * track type. This mirrors how DCC tools like Unity/Unreal seed values when
+ * you key a transform track.
+ */
+export function getDefaultKeyframeValueForTrackType(trackType: string): KeyframeValue {
+  if (trackType.includes('position') || trackType.includes('scale')) {
+    return [0, 0, 0];
+  }
+
+  if (trackType.includes('rotation')) {
+    // Identity quaternion
+    return [0, 0, 0, 1];
+  }
+
+  // Material / morph / event tracks start from scalar 0 by default
+  return 0;
 }

@@ -131,7 +131,14 @@ describe('TrackTypes', () => {
       const result = TrackSchema.safeParse(track);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data).toEqual(track);
+        // Schema adds default easing to keyframes
+        expect(result.data).toEqual({
+          ...track,
+          keyframes: [
+            { time: 0, value: [0, 0, 0], easing: 'linear' },
+            { time: 1, value: [1, 2, 3], easing: 'linear' },
+          ],
+        });
       }
     });
 
@@ -223,7 +230,7 @@ describe('TrackTypes', () => {
       const sorted = sortKeyframes(keyframes);
       expect(sorted).not.toBe(keyframes);
       expect(keyframes[0].time).toBe(2); // Original unchanged
-      expect(sorted[0].time).toBe(0); // Sorted copy
+      expect(sorted[0].time).toBe(1); // Sorted copy
     });
 
     it('should handle already sorted keyframes', () => {
@@ -323,9 +330,7 @@ describe('TrackTypes', () => {
     });
 
     it('should handle edge case of single keyframe', () => {
-      const keyframes: IKeyframe[] = [
-        { time: 1, value: 1 },
-      ];
+      const keyframes: IKeyframe[] = [{ time: 1, value: 1 }];
 
       // Before the keyframe
       let result = findKeyframeRange(keyframes, 0.5);

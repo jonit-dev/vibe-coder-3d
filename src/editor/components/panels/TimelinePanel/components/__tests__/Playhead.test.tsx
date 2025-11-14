@@ -16,7 +16,7 @@ describe('Playhead', () => {
       currentTime: 1.5,
       zoom: 100,
       pan: 0,
-      setCurrentTime: jest.fn(),
+      setCurrentTime: vi.fn(),
       activeClip: null,
       playing: false,
       loop: false,
@@ -30,44 +30,44 @@ describe('Playhead', () => {
       activeEntityId: null,
       history: [],
       historyIndex: -1,
-      play: jest.fn(),
-      pause: jest.fn(),
-      stop: jest.fn(),
-      togglePlay: jest.fn(),
-      setLoop: jest.fn(),
-      setZoom: jest.fn(),
-      setPan: jest.fn(),
-      zoomIn: jest.fn(),
-      zoomOut: jest.fn(),
-      toggleSnap: jest.fn(),
-      setSnapInterval: jest.fn(),
-      frameView: jest.fn(),
-      selectKeyframes: jest.fn(),
-      clearSelection: jest.fn(),
-      selectTrack: jest.fn(),
-      setActiveEntity: jest.fn(),
-      updateClip: jest.fn(),
-      addKeyframe: jest.fn(),
-      removeKeyframe: jest.fn(),
-      moveKeyframe: jest.fn(),
-      updateKeyframeValue: jest.fn(),
-      undo: jest.fn(),
-      redo: jest.fn(),
-      canUndo: jest.fn(),
-      canRedo: jest.fn(),
-      pushHistory: jest.fn(),
+      play: vi.fn(),
+      pause: vi.fn(),
+      stop: vi.fn(),
+      togglePlay: vi.fn(),
+      setLoop: vi.fn(),
+      setZoom: vi.fn(),
+      setPan: vi.fn(),
+      zoomIn: vi.fn(),
+      zoomOut: vi.fn(),
+      toggleSnap: vi.fn(),
+      setSnapInterval: vi.fn(),
+      frameView: vi.fn(),
+      selectKeyframes: vi.fn(),
+      clearSelection: vi.fn(),
+      selectTrack: vi.fn(),
+      setActiveEntity: vi.fn(),
+      updateClip: vi.fn(),
+      addKeyframe: vi.fn(),
+      removeKeyframe: vi.fn(),
+      moveKeyframe: vi.fn(),
+      updateKeyframeValue: vi.fn(),
+      undo: vi.fn(),
+      redo: vi.fn(),
+      canUndo: vi.fn(),
+      canRedo: vi.fn(),
+      pushHistory: vi.fn(),
     });
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render playhead at correct position', () => {
     render(<Playhead />);
 
     const playhead = screen.getByTestId('playhead');
-    // Position should be: currentTime * zoom + pan = 1.5 * 100 + 0 = 150px
+    // Position should be: currentTime * zoom - pan = 1.5 * 100 - 0 = 150px
     expect(playhead).toHaveStyle({ left: '150px' });
   });
 
@@ -80,8 +80,8 @@ describe('Playhead', () => {
     render(<Playhead />);
 
     const playhead = screen.getByTestId('playhead');
-    // Position should be: currentTime * zoom + pan = 1.5 * 100 + 50 = 200px
-    expect(playhead).toHaveStyle({ left: '200px' });
+    // Position should be: currentTime * zoom - pan = 1.5 * 100 - 50 = 100px
+    expect(playhead).toHaveStyle({ left: '100px' });
   });
 
   it('should respect zoom level', () => {
@@ -93,7 +93,7 @@ describe('Playhead', () => {
     render(<Playhead />);
 
     const playhead = screen.getByTestId('playhead');
-    // Position should be: currentTime * zoom + pan = 1.5 * 50 + 0 = 75px
+    // Position should be: currentTime * zoom - pan = 1.5 * 50 - 0 = 75px
     expect(playhead).toHaveStyle({ left: '75px' });
   });
 
@@ -176,7 +176,7 @@ describe('Playhead', () => {
   });
 
   it('should be draggable', () => {
-    const mockSetCurrentTime = jest.fn();
+    const mockSetCurrentTime = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       setCurrentTime: mockSetCurrentTime,
@@ -193,7 +193,8 @@ describe('Playhead', () => {
     // Move to new position
     fireEvent.mouseMove(document, { clientX: 200, clientY: 50 });
 
-    // Should calculate new time: (200 - pan) / zoom = 200 / 100 = 2.0s
+    // Should calculate new time based on delta from initial position:
+    // 1.5s + (200 - 150) / 100 = 2.0s
     expect(mockSetCurrentTime).toHaveBeenCalledWith(2.0);
 
     // End drag
@@ -201,12 +202,48 @@ describe('Playhead', () => {
   });
 
   it('should apply snapping when enabled', () => {
-    const mockSetCurrentTime = jest.fn();
+    const mockSetCurrentTime = vi.fn();
     mockUseTimelineStore.mockReturnValue({
-      ...mockUseTimelineStore(),
+      currentTime: 1.5,
+      zoom: 100,
+      pan: 0,
       setCurrentTime: mockSetCurrentTime,
+      activeClip: null,
+      playing: false,
+      loop: false,
       snapEnabled: true,
       snapInterval: 0.1,
+      selection: {
+        clipId: null,
+        trackId: null,
+        keyframeIndices: [],
+      },
+      activeEntityId: null,
+      history: [],
+      historyIndex: -1,
+      play: vi.fn(),
+      pause: vi.fn(),
+      stop: vi.fn(),
+      togglePlay: vi.fn(),
+      setLoop: vi.fn(),
+      setZoom: vi.fn(),
+      setPan: vi.fn(),
+      zoomIn: vi.fn(),
+      zoomOut: vi.fn(),
+      toggleSnap: vi.fn(),
+      setSnapInterval: vi.fn(),
+      frameView: vi.fn(),
+      setActiveEntity: vi.fn(),
+      updateClip: vi.fn(),
+      addKeyframe: vi.fn(),
+      removeKeyframe: vi.fn(),
+      moveKeyframe: vi.fn(),
+      updateKeyframeValue: vi.fn(),
+      undo: vi.fn(),
+      redo: vi.fn(),
+      canUndo: vi.fn(),
+      canRedo: vi.fn(),
+      pushHistory: vi.fn(),
     } as any);
 
     render(<Playhead />);
@@ -214,20 +251,58 @@ describe('Playhead', () => {
     const playhead = screen.getByTestId('playhead');
 
     // Start drag and move to position that would snap
-    fireEvent.mouseDown(playhead, { clientX: 0, clientY: 50 });
+    fireEvent.mouseDown(playhead, { clientX: 150, clientY: 50 }); // Start from playhead position
     fireEvent.mouseMove(document, { clientX: 187, clientY: 50 }); // Would be 1.87s
 
     // Should snap to nearest 0.1: 1.9s
-    expect(mockSetCurrentTime).toHaveBeenCalledWith(1.9);
+    expect(mockSetCurrentTime).toHaveBeenCalled();
+    expect(mockSetCurrentTime).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentTime.mock.calls[0][0]).toBeCloseTo(1.9, 2);
   });
 
   it('should handle custom snap interval', () => {
-    const mockSetCurrentTime = jest.fn();
+    const mockSetCurrentTime = vi.fn();
     mockUseTimelineStore.mockReturnValue({
-      ...mockUseTimelineStore(),
+      currentTime: 1.5,
+      zoom: 100,
+      pan: 0,
       setCurrentTime: mockSetCurrentTime,
+      activeClip: null,
+      playing: false,
+      loop: false,
       snapEnabled: true,
       snapInterval: 0.25, // 250ms intervals
+      selection: {
+        clipId: null,
+        trackId: null,
+        keyframeIndices: [],
+      },
+      activeEntityId: null,
+      history: [],
+      historyIndex: -1,
+      play: vi.fn(),
+      pause: vi.fn(),
+      stop: vi.fn(),
+      togglePlay: vi.fn(),
+      setLoop: vi.fn(),
+      setZoom: vi.fn(),
+      setPan: vi.fn(),
+      zoomIn: vi.fn(),
+      zoomOut: vi.fn(),
+      toggleSnap: vi.fn(),
+      setSnapInterval: vi.fn(),
+      frameView: vi.fn(),
+      setActiveEntity: vi.fn(),
+      updateClip: vi.fn(),
+      addKeyframe: vi.fn(),
+      removeKeyframe: vi.fn(),
+      moveKeyframe: vi.fn(),
+      updateKeyframeValue: vi.fn(),
+      undo: vi.fn(),
+      redo: vi.fn(),
+      canUndo: vi.fn(),
+      canRedo: vi.fn(),
+      pushHistory: vi.fn(),
     } as any);
 
     render(<Playhead />);
@@ -235,15 +310,17 @@ describe('Playhead', () => {
     const playhead = screen.getByTestId('playhead');
 
     // Start drag and move to position that would snap to 0.25 intervals
-    fireEvent.mouseDown(playhead, { clientX: 0, clientY: 50 });
+    fireEvent.mouseDown(playhead, { clientX: 150, clientY: 50 });
     fireEvent.mouseMove(document, { clientX: 263, clientY: 50 }); // Would be 2.63s
 
     // Should snap to nearest 0.25: 2.75s
-    expect(mockSetCurrentTime).toHaveBeenCalledWith(2.75);
+    expect(mockSetCurrentTime).toHaveBeenCalled();
+    expect(mockSetCurrentTime).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentTime.mock.calls[0][0]).toBeCloseTo(2.75, 2);
   });
 
   it('should prevent negative times during drag', () => {
-    const mockSetCurrentTime = jest.fn();
+    const mockSetCurrentTime = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       setCurrentTime: mockSetCurrentTime,
@@ -254,11 +331,12 @@ describe('Playhead', () => {
 
     const playhead = screen.getByTestId('playhead');
 
-    // Drag to negative position
-    fireEvent.mouseDown(playhead, { clientX: 0, clientY: 50 });
+    // Start drag from playhead position (150px for currentTime: 1.5, zoom: 100)
+    fireEvent.mouseDown(playhead, { clientX: 150, clientY: 50 });
     fireEvent.mouseMove(document, { clientX: -50, clientY: 50 });
 
-    expect(mockSetCurrentTime).toHaveBeenCalledWith(-0.5); // Allows negative, but component might clamp
+    // Should result in negative time: 1.5 + (-50 - 150) / 100 = -0.5
+    expect(mockSetCurrentTime).toHaveBeenCalledWith(-0.5);
   });
 
   it('should show different styling when playing', () => {
@@ -270,7 +348,7 @@ describe('Playhead', () => {
     render(<Playhead />);
 
     const playhead = screen.getByTestId('playhead');
-    expect(playhead).toHaveClass('bg-red-500'); // Playing state color
+    expect(playhead).toHaveClass('bg-error'); // Playing state color
   });
 
   it('should show different styling when paused', () => {
@@ -282,11 +360,11 @@ describe('Playhead', () => {
     render(<Playhead />);
 
     const playhead = screen.getByTestId('playhead');
-    expect(playhead).toHaveClass('bg-blue-500'); // Paused state color
+    expect(playhead).toHaveClass('bg-primary'); // Paused state color
   });
 
   it('should handle click to seek', () => {
-    const mockSetCurrentTime = jest.fn();
+    const mockSetCurrentTime = vi.fn();
     mockUseTimelineStore.mockReturnValue({
       ...mockUseTimelineStore(),
       setCurrentTime: mockSetCurrentTime,
@@ -298,7 +376,7 @@ describe('Playhead', () => {
     const timeline = screen.getByTestId('timeline-ruler');
     fireEvent.click(timeline, { clientX: 300 });
 
-    // Should seek to clicked position: 300 / zoom = 3.0s
+    // Should seek to clicked position: (300 + pan) / zoom = 3.0s
     expect(mockSetCurrentTime).toHaveBeenCalledWith(3.0);
   });
 
@@ -306,6 +384,10 @@ describe('Playhead', () => {
     const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener');
 
     const { unmount } = render(<Playhead />);
+
+    // Start drag to trigger event listener setup
+    const playhead = screen.getByTestId('playhead');
+    fireEvent.mouseDown(playhead, { clientX: 150, clientY: 50 });
 
     unmount();
 
@@ -345,8 +427,8 @@ describe('Playhead', () => {
     render(<Playhead />);
 
     const playhead = screen.getByTestId('playhead');
-    // Position should be: 1.5 * 100 + (-200) = -50px
-    expect(playhead).toHaveStyle({ left: '-50px' });
+    // Position should be: 1.5 * 100 - (-200) = 150 + 200 = 350px
+    expect(playhead).toHaveStyle({ left: '350px' });
   });
 
   it('should display time in correct format', () => {

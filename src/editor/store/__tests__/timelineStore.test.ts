@@ -1,7 +1,20 @@
 import { renderHook, act } from '@testing-library/react';
+import { vi } from 'vitest';
 import { useTimelineStore } from '@editor/store/timelineStore';
-import type { IClip } from '@core/components/animation/AnimationComponent';
+import type { IClip, IAnimationComponent } from '@core/components/animation/AnimationComponent';
 import type { ITrack, IKeyframe } from '@core/components/animation/tracks/TrackTypes';
+import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
+import type { ITransformData } from '@core/lib/ecs/components/TransformComponent';
+
+vi.mock('@core/lib/ecs/ComponentRegistry', () => ({
+  componentRegistry: {
+    getComponentData: vi.fn(),
+    updateComponent: vi.fn(),
+  },
+}));
+
+const mockComponentRegistry = vi.mocked(componentRegistry);
 
 // Mock animation clip for testing
 const mockClip: IClip = {
@@ -33,7 +46,30 @@ const mockClip: IClip = {
   ],
 };
 
+const defaultTransform: ITransformData = {
+  position: [1, 2, 3],
+  rotation: [10, 20, 30],
+  scale: [1, 1, 1],
+};
+
+const createAnimationComponent = (): IAnimationComponent => ({
+  activeClipId: mockClip.id,
+  blendIn: 0.2,
+  blendOut: 0.2,
+  layer: 0,
+  weight: 1,
+  playing: false,
+  time: 0,
+  clips: [JSON.parse(JSON.stringify(mockClip))],
+  version: 1,
+});
+
 describe('useTimelineStore', () => {
+  beforeEach(() => {
+    mockComponentRegistry.getComponentData.mockReset();
+    mockComponentRegistry.updateComponent.mockReset();
+    mockComponentRegistry.getComponentData.mockImplementation(() => null);
+  });
   beforeEach(() => {
     // Reset store before each test
     useTimelineStore.setState({
@@ -295,10 +331,22 @@ describe('useTimelineStore', () => {
 
   describe('Editing Operations', () => {
     beforeEach(() => {
-      // Set up active clip for editing tests
+      mockComponentRegistry.getComponentData.mockImplementation((entityId, type) => {
+        if (type === KnownComponentTypes.TRANSFORM) {
+          return defaultTransform;
+        }
+        if (type === KnownComponentTypes.ANIMATION) {
+          return createAnimationComponent();
+        }
+        return null;
+      });
+      mockComponentRegistry.updateComponent.mockImplementation(() => {});
+
       useTimelineStore.setState({
         activeEntityId: 1,
         activeClip: JSON.parse(JSON.stringify(mockClip)), // Deep clone
+        history: [],
+        historyIndex: -1,
       });
     });
 
@@ -309,12 +357,12 @@ describe('useTimelineStore', () => {
       expect(result.current.activeClip?.id).toBe('test-clip');
     });
 
-    it('should add keyframe to track', () => {
+    it('should add keyframe to track using current transform', () => {
       const { result } = renderHook(() => useTimelineStore());
 
       const newKeyframe: IKeyframe = {
         time: 0.5,
-        value: 5,
+        value: [0, 0, 0],
         easing: 'linear',
       };
 
@@ -322,9 +370,34 @@ describe('useTimelineStore', () => {
         result.current.addKeyframe('position-track', newKeyframe);
       });
 
-      const track = result.current.activeClip?.tracks.find(t => t.id === 'position-track');
+      const track = result.current.activeClip?.tracks.find((t) => t.id === 'position-track');
       expect(track?.keyframes).toHaveLength(4);
-      expect(track?.keyframes[1]).toEqual(newKeyframe);
+      expect(track?.keyframes[1].value).toEqual(defaultTransform.position);
+      expect(mockComponentRegistry.updateComponent).toHaveBeenCalled();
+    });
+
+    it('should sync clip mutations to the animation component', () => {
+      const { result } = renderHook(() => useTimelineStore());
+
+      act(() => {
+        result.current.addKeyframe('position-track', {
+          time: 0.25,
+          value: [0, 0, 0],
+          easing: 'linear',
+        });
+      });
+
+      expect(mockComponentRegistry.updateComponent).toHaveBeenCalledWith(
+        1,
+        KnownComponentTypes.ANIMATION,
+        expect.objectContaining({
+          clips: expect.arrayContaining([
+            expect.objectContaining({
+              id: mockClip.id,
+            }),
+          ]),
+        }),
+      );
     });
 
     it('should remove keyframe from track', () => {
@@ -334,7 +407,7 @@ describe('useTimelineStore', () => {
         result.current.removeKeyframe('position-track', 1); // Remove keyframe at index 1
       });
 
-      const track = result.current.activeClip?.tracks.find(t => t.id === 'position-track');
+      const track = result.current.activeClip?.tracks.find((t) => t.id === 'position-track');
       expect(track?.keyframes).toHaveLength(2);
       expect(track?.keyframes[1].time).toBe(2); // Keyframe at index 2 should now be at index 1
     });
@@ -347,7 +420,7 @@ describe('useTimelineStore', () => {
         result.current.moveKeyframe('position-track', 1, 1.23);
       });
 
-      const track = result.current.activeClip?.tracks.find(t => t.id === 'position-track');
+      const track = result.current.activeClip?.tracks.find((t) => t.id === 'position-track');
       expect(track?.keyframes[1].time).toBeCloseTo(1.2, 1); // Should snap to nearest 0.1
     });
 
@@ -359,7 +432,7 @@ describe('useTimelineStore', () => {
         result.current.moveKeyframe('position-track', 1, 1.23);
       });
 
-      const track = result.current.activeClip?.tracks.find(t => t.id === 'position-track');
+      const track = result.current.activeClip?.tracks.find((t) => t.id === 'position-track');
       expect(track?.keyframes[1].time).toBe(1.23); // Should remain exact value
     });
 
@@ -371,7 +444,7 @@ describe('useTimelineStore', () => {
         result.current.updateKeyframeValue('rotation-track', 0, newValue);
       });
 
-      const track = result.current.activeClip?.tracks.find(t => t.id === 'rotation-track');
+      const track = result.current.activeClip?.tracks.find((t) => t.id === 'rotation-track');
       expect(track?.keyframes[0].value).toEqual(newValue);
     });
 
@@ -405,26 +478,35 @@ describe('useTimelineStore', () => {
 
       expect(result.current.history).toHaveLength(0);
 
+      // Set initial clip
+      act(() => {
+        result.current.setActiveEntity(1, mockClip);
+      });
+
       const updatedClip = { ...mockClip, name: 'Updated Clip' };
       act(() => {
         result.current.updateClip(updatedClip);
       });
 
-      expect(result.current.history).toHaveLength(1);
-      expect(result.current.historyIndex).toBe(0);
+      expect(result.current.history).toHaveLength(2); // Initial clip + updated clip
+      expect(result.current.historyIndex).toBe(1);
     });
 
     it('should undo changes', () => {
       const { result } = renderHook(() => useTimelineStore());
 
-      // Create history
+      // Set initial clip and create history
+      act(() => {
+        result.current.setActiveEntity(1, mockClip);
+      });
+
       const updatedClip = { ...mockClip, name: 'Updated Clip' };
       act(() => {
         result.current.updateClip(updatedClip);
       });
 
       expect(result.current.activeClip?.name).toBe('Updated Clip');
-      expect(result.current.canUndo()).toBe(false); // Initial state has no history to undo from
+      expect(result.current.canUndo()).toBe(true); // Should be able to undo after first update
 
       // Undo
       act(() => {
@@ -432,20 +514,24 @@ describe('useTimelineStore', () => {
       });
 
       expect(result.current.activeClip?.name).toBe('Test Clip');
-      expect(result.current.historyIndex).toBe(0); // Should be at index 0 after undo
+      expect(result.current.historyIndex).toBe(0); // Should be at 0 after undo (back to initial)
     });
 
     it('should redo changes', () => {
       const { result } = renderHook(() => useTimelineStore());
 
       // Create history and undo
+      act(() => {
+        result.current.setActiveEntity(1, mockClip);
+      });
+
       const updatedClip = { ...mockClip, name: 'Updated Clip' };
       act(() => {
         result.current.updateClip(updatedClip);
         result.current.undo();
       });
 
-      expect(result.current.canRedo()).toBe(false); // After undo, at end of history
+      expect(result.current.canRedo()).toBe(true); // After undo, should be able to redo
 
       // Redo
       act(() => {
@@ -453,7 +539,7 @@ describe('useTimelineStore', () => {
       });
 
       expect(result.current.activeClip?.name).toBe('Updated Clip');
-      expect(result.current.historyIndex).toBe(0);
+      expect(result.current.historyIndex).toBe(1);
     });
 
     it('should limit history size', () => {
