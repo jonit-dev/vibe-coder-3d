@@ -11,6 +11,9 @@ use vibe_scene::Entity;
 
 use super::lod_manager::LODManager;
 use super::material_manager::MaterialManager;
+use super::pivot_centering::{
+    apply_pivot_offset, compute_bounds_from_positions, pivot_offset_for_mode, PivotOriginMode,
+};
 use super::primitive_mesh::create_primitive_mesh;
 use super::transform_utils::{convert_transform_to_matrix, create_base_scale_matrix};
 
@@ -144,6 +147,40 @@ pub async fn load_mesh_renderer(
         )
     };
 
+    // Apply pivot centering if needed
+    let pivot_mode = infer_pivot_mode(mesh_renderer);
+    let mut cpu_meshes = cpu_meshes; // Make mutable for pivot offset application
+
+    if !matches!(pivot_mode, PivotOriginMode::Raw) {
+        log::info!("    Applying pivot centering: {:?}", pivot_mode);
+
+        // Collect all positions from all submeshes to compute unified bounds
+        let mut all_positions = Vec::new();
+        for cpu_mesh in &cpu_meshes {
+            if let Positions::F32(ref verts) = cpu_mesh.positions {
+                all_positions.extend_from_slice(verts);
+            }
+        }
+
+        // Compute bounds and offset
+        if let Some(pivot_info) = compute_bounds_from_positions(&all_positions) {
+            let offset = pivot_offset_for_mode(&pivot_info, pivot_mode);
+            log::info!(
+                "    Pivot centering: center={:?}, offset={:?}, bounds_size={:?}",
+                pivot_info.center,
+                offset,
+                pivot_info.bounds_size
+            );
+
+            // Apply offset to all submeshes
+            for cpu_mesh in &mut cpu_meshes {
+                apply_pivot_offset(cpu_mesh, offset);
+            }
+        } else {
+            log::warn!("    Could not compute bounds for pivot centering (empty mesh?)");
+        }
+    }
+
     // Build result vector for all submeshes
     let mut result = Vec::new();
 
@@ -271,6 +308,31 @@ pub async fn load_mesh_renderer(
     }
 
     Ok(result)
+}
+
+/// Determine the appropriate pivot origin mode for a mesh renderer.
+/// Returns BboxCenter for custom GLB models (meshId="custom" with modelPath),
+/// Raw for primitives and other cases.
+fn infer_pivot_mode(mesh_renderer: &MeshRenderer) -> PivotOriginMode {
+    // Check if this is a custom GLB model
+    let is_custom_glb = mesh_renderer
+        .mesh_id
+        .as_ref()
+        .map(|id| id.to_ascii_lowercase() == "custom")
+        .unwrap_or(false)
+        && mesh_renderer
+            .model_path
+            .as_ref()
+            .map(|p| !p.is_empty())
+            .unwrap_or(false);
+
+    if is_custom_glb {
+        log::debug!("    Pivot mode: BboxCenter (custom GLB)");
+        PivotOriginMode::BboxCenter
+    } else {
+        log::debug!("    Pivot mode: Raw (primitive or non-custom mesh)");
+        PivotOriginMode::Raw
+    }
 }
 
 async fn get_material_by_id(

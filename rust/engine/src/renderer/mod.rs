@@ -33,6 +33,7 @@ pub mod mesh_filtering;
 pub mod mesh_loader;
 pub mod orbital_camera;
 pub mod physics_sync;
+pub mod pivot_centering;
 pub mod post_process_targets;
 pub mod post_processing;
 pub mod primitive_mesh;
