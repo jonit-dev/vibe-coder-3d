@@ -338,7 +338,7 @@ const SceneReadinessTracker: React.FC<{ entityCount: number; lightCount: number 
     if (entityCount > 0 || lightCount > 0) {
       // Use a timeout to ensure all React Three Fiber objects are created
       const timer = setTimeout(() => {
-        logger.milestone('Scene Fully Rendered', {
+        logger.debug('Scene Fully Rendered', {
           entitiesRendered: entityCount,
           lightsRendered: lightCount,
           totalObjects: entityCount + lightCount,
