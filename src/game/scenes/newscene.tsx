@@ -2,16 +2,16 @@ import { defineScene } from './defineScene';
 
 /**
  * newscene
- * Scene with 3 entities
- * Generated: 2025-11-10T04:36:44.091Z
+ * Scene with 4 entities
+ * Generated: 2025-11-14T01:09:46.538Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
     name: 'newscene',
     version: 1,
-    timestamp: '2025-11-10T04:36:44.091Z',
-    description: 'Scene with 3 entities',
+    timestamp: '2025-11-14T01:09:46.538Z',
+    description: 'Scene with 4 entities',
   },
   entities: [
     {
@@ -153,6 +153,28 @@ export default defineScene({
           shadowBias: -0.0005,
           shadowRadius: 0.2,
           lightType: 'ambient',
+        },
+      },
+    },
+    {
+      id: 3,
+      name: 'Cube 0',
+      components: {
+        PersistentId: {
+          id: 'f87c696c-2c2d-476d-bf32-fa35cdde9106',
+        },
+        Transform: {
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: [1, 1, 1],
+        },
+        MeshRenderer: {
+          enabled: true,
+          castShadows: true,
+          receiveShadows: true,
+          modelPath: '',
+          meshId: 'cube',
+          materialId: 'default',
         },
       },
     },

@@ -413,7 +413,8 @@ const enemies = entities.findByTag('enemy');
 Scripts implement lifecycle methods that are automatically called by the Script System:
 
 ```typescript
-// Called once when entity is created or script is added
+// Called once when entering play mode or when script is added during play
+// NOTE: onStart() only runs during play mode, not in edit mode
 function onStart(): void {
   console.log('Script started!');
 
@@ -421,7 +422,8 @@ function onStart(): void {
   three.material.setColor('#00ff00');
 }
 
-// Called every frame when in play mode
+// Called every frame while in play mode
+// NOTE: onUpdate() only runs during play mode, not in edit mode
 function onUpdate(deltaTime: number): void {
   // deltaTime is in seconds
   entity.transform.rotate(0, deltaTime * 0.5, 0);
@@ -435,21 +437,41 @@ function onUpdate(deltaTime: number): void {
 }
 
 // Called when script or entity is destroyed
+// Runs in both edit and play modes
 function onDestroy(): void {
   console.log('Cleaning up...');
   // Cleanup resources
 }
 
 // Called when component is enabled
+// Runs in both edit and play modes
 function onEnable(): void {
   console.log('Script enabled');
 }
 
 // Called when component is disabled
+// Runs in both edit and play modes
 function onDisable(): void {
   console.log('Script disabled');
 }
 ```
+
+### Lifecycle Execution Modes
+
+The Script System has two execution modes:
+
+- **Edit Mode** (default):
+
+  - Scripts are **compiled** to detect errors early
+  - `onEnable` and `onDisable` run when components are added/removed or toggled
+  - `onDestroy` runs when entities are deleted
+  - **`onStart` and `onUpdate` do NOT run**
+
+- **Play Mode** (when editor play button is pressed):
+  - All lifecycle methods run normally
+  - `onStart` runs once per play session (or when script is added mid-play)
+  - `onUpdate` runs every frame
+  - `startedEntities` is cleared when entering play mode to ensure fresh execution
 
 ## Script Parameters
 

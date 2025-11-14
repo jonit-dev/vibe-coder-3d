@@ -36,9 +36,9 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
     'idle',
   );
   const [missingFile, setMissingFile] = useState(false);
+  const [externalCodeBuffer, setExternalCodeBuffer] = useState<string | undefined>(undefined);
   const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastCodeRef = useRef<string>(scriptData.code);
 
   /**
    * Compute SHA-256 hash
@@ -296,18 +296,26 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
           newCodeLength: result.code?.length || 0,
         });
 
-        // Update code
-        onUpdate({
-          code: result.code,
-          scriptRef: {
-            ...scriptData.scriptRef,
-            codeHash: serverHash,
-            lastModified: Date.now(),
-          },
-        });
+        // Only auto-apply external updates if there are no unsaved changes
+        if (!hasUnsavedChanges) {
+          // Update code and push to Monaco via externalCodeBuffer
+          onUpdate({
+            code: result.code,
+            scriptRef: {
+              ...scriptData.scriptRef,
+              codeHash: serverHash,
+              lastModified: Date.now(),
+            },
+          });
 
-        lastCodeRef.current = result.code;
-        setLastSyncTime(Date.now());
+          setExternalCodeBuffer(result.code);
+          setLastSyncTime(Date.now());
+        } else {
+          // User has unsaved changes - don't auto-apply, just log
+          logger.warn(
+            `External script changed but has unsaved local changes - skipping auto-update`,
+          );
+        }
       } else {
         logger.debug(`External script unchanged (hash match):`, {
           scriptId: scriptData.scriptRef.scriptId,
@@ -319,7 +327,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
     } finally {
       setIsSyncing(false);
     }
-  }, [scriptData.scriptRef, onUpdate, computeHash, missingFile]);
+  }, [scriptData.scriptRef, onUpdate, computeHash, missingFile, hasUnsavedChanges]);
 
   /**
    * Auto-sync timer
@@ -364,7 +372,6 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
         lastModified: Date.now(),
       });
       setHasUnsavedChanges(true);
-      lastCodeRef.current = code;
 
       // Auto-save to external file after typing stops
       if (scriptData.scriptRef?.source === 'external') {
@@ -601,7 +608,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
           <div className="flex-1 min-h-0">
             <ScriptEditor
               code={scriptData.code}
-              externalCode={lastCodeRef.current}
+              externalCode={externalCodeBuffer}
               onChange={handleCodeChange}
               hasErrors={scriptData.hasErrors}
               errorMessage={scriptData.lastErrorMessage}

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 
 import { ShapeType } from '../types/shapes';
 
+import { useEditorFocusGuard } from './useEditorFocusGuard';
 import { useEntityCreation } from './useEntityCreation';
 import { useGroupSelection } from './useGroupSelection';
 
@@ -33,11 +34,14 @@ export const useEditorKeyboard = ({
 }: IUseEditorKeyboardProps) => {
   const { deleteEntity } = useEntityCreation();
   const groupSelection = useGroupSelection();
+  const focusGuard = useEditorFocusGuard();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't handle shortcuts when typing in input fields
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Don't handle shortcuts when typing in text inputs (including Monaco editor)
+      if (!focusGuard.shouldHandleGlobalShortcut(e)) {
+        return;
+      }
 
       // Ctrl+N: Add new cube
       if (e.ctrlKey && e.key === 'n') {
@@ -132,5 +136,6 @@ export const useEditorKeyboard = ({
     setGizmoMode,
     gizmoMode,
     groupSelection,
+    focusGuard,
   ]);
 };

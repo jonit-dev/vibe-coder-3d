@@ -485,24 +485,29 @@ export async function updateScriptSystem(
   // Update timer scheduler
   scheduler.update();
 
-  // When entering play mode, ensure all scripts are marked for compilation
-  if (isPlaying) {
-    // Reset started set on entering play so onStart runs again
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((updateScriptSystem as any)._lastIsPlaying !== true) {
-      startedEntities.clear();
-    }
-    ensureAllScriptsCompiled();
-  }
-
-  // Handle new/removed script entities
+  // Handle new/removed script entities (runs in both edit and play mode)
   await handleNewScriptEntities();
 
-  // Compile scripts that need compilation
+  // Compile scripts that need compilation (runs in both edit and play mode)
+  // This allows errors to surface in edit mode even when not playing
   await compileScripts();
 
-  // Execute scripts
-  await executeScripts(deltaTime);
+  // Only execute scripts when in play mode
+  if (isPlaying) {
+    // Detect rising edge (entering play mode)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lastIsPlaying = (updateScriptSystem as any)._lastIsPlaying as boolean | undefined;
+
+    if (!lastIsPlaying) {
+      // Clear started entities so onStart runs fresh when entering play
+      startedEntities.clear();
+      // Ensure all enabled scripts are compiled before play begins
+      ensureAllScriptsCompiled();
+    }
+
+    // Execute scripts (onStart/onUpdate only run during play)
+    await executeScripts(deltaTime);
+  }
 
   // Flush all batched component mutations to ECS
   // This applies all entity.meshRenderer.material.setColor(...) style updates
