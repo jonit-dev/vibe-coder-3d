@@ -69,13 +69,12 @@ local function __TS__SourceMapTraceBack(fileName, sourceMap)
     end
 end
 -- End of Lua Library inline imports
-__TS__SourceMapTraceBack(debug.getinfo(1).short_src, {["73"] = 4,["74"] = 5,["75"] = 6,["76"] = 7,["77"] = 8,["78"] = 9,["80"] = 4,["81"] = 13,["82"] = 14,["83"] = 13});
+__TS__SourceMapTraceBack(debug.getinfo(1).short_src, {["73"] = 4,["74"] = 5,["75"] = 6,["76"] = 7,["77"] = 8,["79"] = 4,["80"] = 13,["81"] = 14,["82"] = 13});
 function onStart()
     local meshRenderer = entity.getComponent("MeshRenderer")
     if meshRenderer then
         console:log("Entity has a MeshRenderer component!")
         console:log("Hello world!")
-        console:log("This is another thing here")
     end
 end
 function onUpdate(deltaTime)

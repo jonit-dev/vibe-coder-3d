@@ -49,6 +49,15 @@ vi.mock('@core/lib/ecs/ComponentRegistry');
 vi.mock('@core/physics/character/ColliderRegistry');
 vi.mock('@core/physics/character/CharacterMotor');
 vi.mock('@core/physics/character/KinematicBodyController');
+vi.mock('../CharacterControllerHelpers', () => ({
+  getNormalizedInputMapping: vi.fn(),
+  readInputState: vi.fn(),
+  calculateMovementDirection: vi.fn(),
+  validateEntityPhysics: vi.fn(),
+  enqueueIntent: vi.fn(),
+  consumeIntents: vi.fn(),
+  clearAllIntents: vi.fn(),
+}));
 
 describe('Character Controller Integration Tests', () => {
   let mockWorld: World;
@@ -325,7 +334,6 @@ describe('Character Controller Integration Tests', () => {
       updateCharacterControllerSystem(mockInputManager, true, 1 / 60, mockWorld);
 
       // System should skip manual mode entities
-      const { readInputState } = require('../CharacterControllerHelpers');
       expect(readInputState).not.toHaveBeenCalled();
     });
 

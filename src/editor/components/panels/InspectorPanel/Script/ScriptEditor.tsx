@@ -1,6 +1,6 @@
 import Editor from '@monaco-editor/react';
 import type * as Monaco from 'monaco-editor';
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 
 // Import the type definitions content
 const SCRIPT_API_TYPES = `/**
@@ -624,6 +624,7 @@ export const ScriptEditor: React.FC<IScriptEditorProps> = ({
   externalCode,
 }) => {
   const editorRef = useRef<any>(null);
+  const debounceTimerRef = useRef<number | null>(null);
 
   const handleEditorDidMount = (editor: any, monaco: typeof Monaco) => {
     editorRef.current = editor;
@@ -661,9 +662,31 @@ export const ScriptEditor: React.FC<IScriptEditorProps> = ({
     }
   };
 
-  const handleEditorChange = (newValue: string | undefined) => {
-    onChange(newValue || '');
-  };
+  // Debounced onChange handler - waits 500ms after user stops typing
+  const handleEditorChange = useCallback(
+    (newValue: string | undefined) => {
+      // Clear previous timer
+      if (debounceTimerRef.current !== null) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+
+      // Set new timer
+      debounceTimerRef.current = window.setTimeout(() => {
+        onChange(newValue || '');
+        debounceTimerRef.current = null;
+      }, 500);
+    },
+    [onChange],
+  );
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current !== null) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // When externalCode is provided (e.g., disk sync), push into the existing model
   useEffect(() => {

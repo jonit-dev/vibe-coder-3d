@@ -6,7 +6,6 @@ function onStart(): void {
   if (meshRenderer) {
     console.log('Entity has a MeshRenderer component!');
     console.log('Hello world!');
-    console.log('This is another thing here');
   }
 }
 

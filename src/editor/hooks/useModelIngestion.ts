@@ -15,7 +15,7 @@ export interface IIngestResult {
 function sanitizeModelName(name: string): string {
   // Keep original casing for directories, but strip unsafe chars
   return name
-    .replace(/[^\w\-\.]+/g, '_')
+    .replace(/[^\w-.]+/g, '_')
     .replace(/_{2,}/g, '_')
     .replace(/^_+|_+$/g, '');
 }
