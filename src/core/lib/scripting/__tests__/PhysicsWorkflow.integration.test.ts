@@ -29,6 +29,12 @@ import {
   createCharacterControllerAPI,
   cleanupCharacterControllerAPI,
 } from '../apis/CharacterControllerAPI';
+import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
+import { enqueueIntent } from '@/core/systems/CharacterControllerHelpers';
+
+// Mock componentRegistry and CharacterControllerHelpers
+vi.mock('@/core/lib/ecs/ComponentRegistry');
+vi.mock('@/core/systems/CharacterControllerHelpers');
 
 // Mock Rapier rigid body
 interface IMockRigidBody {
@@ -64,6 +70,26 @@ describe('Physics Workflow Integration', () => {
     };
 
     registerRigidBody(entityId, mockRigidBody as any);
+
+    // Mock CharacterController component data
+    vi.mocked(componentRegistry.getComponentData).mockReturnValue({
+      enabled: true,
+      controlMode: 'manual',
+      maxSpeed: 6.0,
+      jumpStrength: 6.5,
+      gravityScale: 1.0,
+      slopeLimit: 45.0,
+      stepOffset: 0.3,
+      skinWidth: 0.08,
+      isGrounded: true, // Default to grounded
+      inputMapping: {
+        forward: 'w',
+        backward: 's',
+        left: 'a',
+        right: 'd',
+        jump: 'space',
+      },
+    });
   });
 
   afterEach(() => {
@@ -71,6 +97,7 @@ describe('Physics Workflow Integration', () => {
     cleanupPhysicsEventsAPI(entityId);
     cleanupCharacterControllerAPI(entityId);
     buffer.clear();
+    vi.clearAllMocks();
   });
 
   describe('Complete Force Application Workflow', () => {
@@ -206,45 +233,69 @@ describe('Physics Workflow Integration', () => {
 
   describe('Character Controller Workflow', () => {
     it('should integrate character movement with rigid body', () => {
-      mockRigidBody.linvel.mockReturnValue({ x: 0, y: 0, z: 0 });
-
       const controller = createCharacterControllerAPI(entityId);
 
-      // Check grounded
+      // Check grounded (should read from component)
       expect(controller.isGrounded()).toBe(true);
 
       // Move character
-      controller.move([1, 0], 5, 0.016);
+      controller.move([1, 0], 5);
 
-      // Verify setLinvel was called
-      expect(mockRigidBody.setLinvel).toHaveBeenCalled();
-      const setVelCall = mockRigidBody.setLinvel.mock.calls[0][0];
-      expect(setVelCall.x).toBeCloseTo(5, 1);
-      expect(setVelCall.z).toBeCloseTo(0, 1);
+      // Verify intent was enqueued (actual rigid body manipulation happens in CharacterControllerSystem)
+      expect(vi.mocked(enqueueIntent)).toHaveBeenCalledWith({
+        entityId,
+        type: 'move',
+        data: {
+          inputXZ: [1, 0],
+          speed: 5,
+        },
+      });
     });
 
     it('should allow jumping when grounded', () => {
-      mockRigidBody.linvel.mockReturnValue({ x: 0, y: 0, z: 0 });
-
       const controller = createCharacterControllerAPI(entityId);
 
       // Jump
       controller.jump(10);
 
-      // Verify impulse was applied
-      expect(mockRigidBody.applyImpulse).toHaveBeenCalledWith({ x: 0, y: 10, z: 0 }, true);
+      // Verify intent was enqueued (actual impulse application happens in CharacterControllerSystem)
+      expect(vi.mocked(enqueueIntent)).toHaveBeenCalledWith({
+        entityId,
+        type: 'jump',
+        data: {
+          strength: 10,
+        },
+      });
     });
 
     it('should prevent jumping when airborne', () => {
-      mockRigidBody.linvel.mockReturnValue({ x: 0, y: 5, z: 0 });
+      // Set character to not grounded
+      vi.mocked(componentRegistry.getComponentData).mockReturnValue({
+        enabled: true,
+        controlMode: 'manual',
+        maxSpeed: 6.0,
+        jumpStrength: 6.5,
+        gravityScale: 1.0,
+        slopeLimit: 45.0,
+        stepOffset: 0.3,
+        skinWidth: 0.08,
+        isGrounded: false, // Not grounded
+        inputMapping: {
+          forward: 'w',
+          backward: 's',
+          left: 'a',
+          right: 'd',
+          jump: 'space',
+        },
+      });
 
       const controller = createCharacterControllerAPI(entityId);
 
       // Attempt jump
       controller.jump(10);
 
-      // Verify impulse was NOT applied
-      expect(mockRigidBody.applyImpulse).not.toHaveBeenCalled();
+      // Verify intent was NOT enqueued (jump should be blocked)
+      expect(vi.mocked(enqueueIntent)).not.toHaveBeenCalled();
     });
   });
 

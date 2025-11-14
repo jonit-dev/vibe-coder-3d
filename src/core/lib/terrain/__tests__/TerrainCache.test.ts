@@ -117,7 +117,7 @@ describe('TerrainCache', () => {
       expect(statsAfter.totalMemoryUsage).toBeLessThan(200000);
     });
 
-    it('should track access time on get', () => {
+    it('should track access time on get', async () => {
       const props = createMockTerrainData([32, 32]);
       const data = createMockGeometryData(100);
 
@@ -129,14 +129,13 @@ describe('TerrainCache', () => {
       const time1 = entry1?.lastAccessed || 0;
 
       // Wait a bit and access again
-      setTimeout(() => {
-        cache.get(props);
-        const entry2 = cache['cache'].get(key);
-        const time2 = entry2?.lastAccessed || 0;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      cache.get(props);
+      const entry2 = cache['cache'].get(key);
+      const time2 = entry2?.lastAccessed || 0;
 
-        // lastAccessed should be updated
-        expect(time2).toBeGreaterThan(time1);
-      }, 10);
+      // lastAccessed should be updated
+      expect(time2).toBeGreaterThan(time1);
     });
   });
 
