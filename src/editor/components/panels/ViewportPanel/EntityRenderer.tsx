@@ -173,7 +173,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
           position={position}
           rotationRadians={rotationRadians}
           scale={scale}
-          enhancedColliderConfig={enhancedColliderConfig as unknown}
+          enhancedColliderConfig={enhancedColliderConfig}
           hasCustomColliders={hasCustomColliders}
           hasEffectiveCustomColliders={hasEffectiveCustomColliders}
           colliderType={colliderType}
@@ -212,7 +212,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
           position={position}
           rotationRadians={rotationRadians}
           scale={scale}
-          enhancedColliderConfig={enhancedColliderConfig as unknown}
+          enhancedColliderConfig={enhancedColliderConfig}
           meshCollider={
             meshCollider && Object.keys(meshCollider.data || {}).length > 0
               ? (meshCollider as { data: IMeshColliderData })

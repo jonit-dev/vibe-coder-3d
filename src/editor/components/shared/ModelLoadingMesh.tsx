@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Mesh, Object3D, Group } from 'three';
+import type { ThreeEvent } from '@react-three/fiber';
 
 interface IModelLoadingMeshProps {
   meshRef?: React.RefObject<Group | Mesh | Object3D | null>;
@@ -11,8 +12,8 @@ interface IModelLoadingMeshProps {
     receiveShadow?: boolean;
     visible?: boolean;
   };
-  onMeshClick?: (e: React.MouseEvent) => void;
-  onMeshDoubleClick?: (e: React.MouseEvent) => void;
+  onMeshClick?: (e: ThreeEvent<MouseEvent>) => void;
+  onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
 }
 
 export const ModelLoadingMesh: React.FC<IModelLoadingMeshProps> = React.memo(

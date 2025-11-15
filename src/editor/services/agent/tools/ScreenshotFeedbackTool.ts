@@ -333,12 +333,15 @@ function getSceneInfo(): {
       };
     }
 
-    const state = editorStore.getState();
+    const state = (editorStore as { getState: () => Record<string, unknown> }).getState();
+
+    const entityIds = state.entityIds as unknown as number[] | undefined;
+    const selectedIds = state.selectedIds as unknown as number[] | undefined;
 
     return {
-      entity_count: state.entityIds?.length || 0,
+      entity_count: entityIds?.length || 0,
       camera_position: 'from viewport', // Will be enhanced with actual camera data
-      selected_entities: state.selectedIds || [],
+      selected_entities: selectedIds || [],
       scene_name: localStorage.getItem('lastLoadedScene') || null,
     };
   } catch (error) {

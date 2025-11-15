@@ -195,7 +195,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
       setIsSaving(true);
       setSyncStatus('syncing');
 
-      const hash = await computeHash(scriptData.code);
+      const hash = await computeHash(scriptData.code ?? '');
 
       logger.info(`Recreating external script: ${scriptData.scriptRef.scriptId}`);
 
@@ -292,8 +292,8 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
           scriptId: scriptData.scriptRef.scriptId,
           oldHash: scriptData.scriptRef.codeHash?.substring(0, 8),
           newHash: serverHash.substring(0, 8),
-          oldCodeLength: scriptData.code?.length || 0,
-          newCodeLength: result.code?.length || 0,
+          oldCodeLength: scriptData.code?.length  || 0,
+          newCodeLength: result.code?.length  || 0,
         });
 
         // Only auto-apply external updates if there are no unsaved changes
@@ -344,7 +344,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
 
     logger.info('ScriptCodeModal opened - initiating sync from external file:', {
       scriptId: scriptData.scriptRef.scriptId,
-      currentCodeLength: scriptData.code?.length || 0,
+      currentCodeLength: scriptData.code?.length  || 0,
     });
 
     // Initial sync
@@ -456,7 +456,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
 
     // If external script, save to file
     if (scriptData.scriptRef?.source === 'external') {
-      await saveToExternal(scriptData.code);
+      await saveToExternal(scriptData.code || '');
     }
 
     // Force recompilation
@@ -601,13 +601,13 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
               <span>TypeScript</span>
             </div>
             <div className="text-xs text-gray-500">
-              {scriptData.code?.split('\n').length || 0} lines
+              {scriptData.code?.split('\n').length  || 0} lines
             </div>
           </div>
 
           <div className="flex-1 min-h-0">
             <ScriptEditor
-              code={scriptData.code}
+              code={scriptData.code || ''}
               externalCode={externalCodeBuffer}
               onChange={handleCodeChange}
               hasErrors={scriptData.hasErrors}
@@ -649,7 +649,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
                     Description
                   </label>
                   <textarea
-                    value={scriptData.description}
+                    value={scriptData.description || ''}
                     onChange={(e) => onUpdate({ description: e.target.value })}
                     className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none"
                     rows={2}
@@ -669,7 +669,7 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
 
                 <SingleAxisField
                   label="Max Execution Time (ms)"
-                  value={scriptData.maxExecutionTime}
+                  value={scriptData.maxExecutionTime ?? 10}
                   onChange={(maxExecutionTime) => onUpdate({ maxExecutionTime })}
                   min={1}
                   max={100}
@@ -681,23 +681,23 @@ export const ScriptCodeModal: React.FC<IScriptCodeModalProps> = ({
             {/* Script Parameters */}
             <CollapsibleSection title="Parameters" defaultExpanded={false}>
               <ScriptParameters
-                parameters={scriptData.parameters}
+                parameters={scriptData.parameters || {}}
                 onChange={handleParametersChange}
               />
             </CollapsibleSection>
 
             {/* Performance Stats */}
-            {scriptData.executionCount > 0 && (
+            {(scriptData.executionCount ?? 0) > 0 && (
               <CollapsibleSection title="Performance" defaultExpanded={false}>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Executions:</span>
-                    <span className="text-white">{scriptData.executionCount}</span>
+                    <span className="text-white">{scriptData.executionCount ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Last Execution:</span>
                     <span className="text-white">
-                      {formatExecutionTime(scriptData.lastExecutionTime)}
+                      {formatExecutionTime(scriptData.lastExecutionTime || 0)}
                     </span>
                   </div>
                 </div>

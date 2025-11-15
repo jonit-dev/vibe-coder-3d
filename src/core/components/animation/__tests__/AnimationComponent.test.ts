@@ -121,8 +121,10 @@ describe('AnimationComponent', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should accept component with default values', () => {
+    it('should accept component with required values', () => {
       const minimalComponent = {
+        playing: false,
+        time: 0,
         clipBindings: [],
       };
 

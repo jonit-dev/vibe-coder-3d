@@ -47,12 +47,12 @@ export type IScriptRef = z.infer<typeof ScriptRefSchema>;
 
 // Script Schema
 const ScriptSchema = z.object({
-  code: z.string().describe('User script code'),
-  enabled: z.boolean().describe('Enable/disable script execution'),
+  code: z.string().optional().describe('User script code'),
+  enabled: z.boolean().optional().describe('Enable/disable script execution'),
 
   // Script metadata
-  scriptName: z.string().describe('Display name for the script'),
-  description: z.string().describe('Script description'),
+  scriptName: z.string().optional().describe('Display name for the script'),
+  description: z.string().optional().describe('Script description'),
 
   // External script reference
   scriptRef: ScriptRefSchema.optional().describe('Reference to external script file'),
@@ -61,11 +61,11 @@ const ScriptSchema = z.object({
   scriptPath: z.string().optional().describe('Path to compiled .lua file for runtime execution'),
 
   // Execution control (simplified - scripts auto-run onStart/onUpdate during play mode)
-  executeInUpdate: z.boolean().describe('[Internal] Execute script in update loop'),
-  executeOnStart: z.boolean().describe('[Internal] Execute script when play starts'),
+  executeInUpdate: z.boolean().optional().describe('[Internal] Execute script in update loop'),
+  executeOnStart: z.boolean().optional().describe('[Internal] Execute script when play starts'),
   executeOnEnable: z
     .boolean()
-    
+    .optional()
     .describe('[Internal] Execute script when component is enabled'),
 
   // Performance monitoring
@@ -73,25 +73,27 @@ const ScriptSchema = z.object({
     .number()
     .min(1)
     .max(100)
-    
+    .optional()
     .describe('Max execution time per frame (ms)'),
 
   // Runtime state (managed by system)
-  hasErrors: z.boolean().describe('Script has compilation or runtime errors'),
-  lastErrorMessage: z.string().describe('Last error message'),
-  lastExecutionTime: z.number().describe('Last execution time in ms'),
-  executionCount: z.number().describe('Number of times script has executed'),
+  hasErrors: z.boolean().optional().describe('Script has compilation or runtime errors'),
+  lastErrorMessage: z.string().optional().describe('Last error message'),
+  lastExecutionTime: z.number().optional().describe('Last execution time in ms'),
+  executionCount: z.number().optional().describe('Number of times script has executed'),
 
   // Parameters that can be configured in editor
   parameters: z
     .record(z.unknown())
-    
+    .optional()
     .describe('Script parameters configurable from editor'),
 
   // Hot reload support
-  lastModified: z.number().describe('Timestamp of last modification'),
-  compiledCode: z.string().describe('Cached compiled version of the script'),
+  lastModified: z.number().optional().describe('Timestamp of last modification'),
+  compiledCode: z.string().optional().describe('Cached compiled version of the script'),
 });
+
+export type ScriptData = z.infer<typeof ScriptSchema>;
 
 const logger = Logger.create('ScriptComponent');
 
@@ -354,5 +356,3 @@ function onUpdate(deltaTime: number): void {
     tags: ['scripting', 'typescript', 'gameplay'],
   },
 });
-
-export type ScriptData = z.infer<typeof ScriptSchema>;

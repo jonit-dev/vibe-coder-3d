@@ -40,9 +40,9 @@ export type IClipBinding = z.infer<typeof ClipBindingSchema>;
  */
 export const AnimationComponentSchema = z.object({
   activeBindingId: z.string().optional(),
-  playing: z.boolean().default(false),
-  time: z.number().nonnegative().default(0),
-  clipBindings: z.array(ClipBindingSchema).default([]),
+  playing: z.boolean(),
+  time: z.number().nonnegative(),
+  clipBindings: z.array(ClipBindingSchema),
 });
 
 export type IAnimationComponent = z.infer<typeof AnimationComponentSchema>;

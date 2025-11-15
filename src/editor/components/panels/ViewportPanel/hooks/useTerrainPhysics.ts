@@ -2,6 +2,7 @@ import type { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainC
 import { Logger } from '@/core/lib/logger';
 import { generateTerrainHeights } from '@/core/lib/terrain/heightfieldGenerator';
 import React from 'react';
+import type { IEnhancedColliderConfig } from './useColliderConfiguration';
 
 interface IUseTerrainPhysicsProps {
   entityId: number;
@@ -50,7 +51,7 @@ export function useTerrainPhysics({
   }, [terrainComponent?.data, entityId, physicsGeneration]);
 
   const createTerrainColliderConfig = React.useCallback(
-    (terrainData: TerrainData) => {
+    (terrainData: TerrainData): IEnhancedColliderConfig | null => {
       try {
         logger.debug('Auto-creating heightfield collider for terrain without MeshCollider');
 
@@ -105,7 +106,7 @@ export function useTerrainPhysics({
   );
 
   const enhanceColliderWithTerrain = React.useCallback(
-    (colliderConfig: Record<string, unknown>, terrainData: TerrainData) => {
+    (colliderConfig: Record<string, unknown>, terrainData: TerrainData): IEnhancedColliderConfig | null => {
       try {
         logger.debug('Processing heightfield collider for terrain');
 
@@ -115,11 +116,11 @@ export function useTerrainPhysics({
         // Validate terrain data
         if (!Array.isArray(terrainData.size) || terrainData.size.length !== 2) {
           logger.error('Invalid terrain size format for enhancement:', terrainData.size);
-          return colliderConfig;
+          return null;
         }
         if (!Array.isArray(terrainData.segments) || terrainData.segments.length !== 2) {
           logger.error('Invalid terrain segments format for enhancement:', terrainData.segments);
-          return colliderConfig;
+          return null;
         }
 
         const { heights, positions } = generateTerrainHeights(terrainData);
@@ -132,13 +133,18 @@ export function useTerrainPhysics({
             actual: Array.isArray(heights) ? heights.length : 'non-array',
             segments: [sx, sz],
           });
-          return colliderConfig;
+          return null;
         }
 
         // Use heights directly without column-major conversion
 
         return {
-          ...colliderConfig,
+          type: (typeof colliderConfig.type === 'string' ? colliderConfig.type : 'heightfield'),
+          center: (Array.isArray(colliderConfig.center) && colliderConfig.center.length === 3
+            ? colliderConfig.center as [number, number, number]
+            : [0, 0, 0]),
+          isTrigger: Boolean(colliderConfig.isTrigger),
+          size: colliderConfig.size || { width: w, height: 1, depth: d },
           terrain: {
             widthSegments: sx - 1,
             depthSegments: sz - 1,
@@ -149,7 +155,7 @@ export function useTerrainPhysics({
         };
       } catch (error) {
         logger.error('Failed to enhance collider with terrain data:', error);
-        return colliderConfig;
+        return null;
       }
     },
     [logger],

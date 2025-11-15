@@ -118,7 +118,7 @@ export function useExternalScript(
         setIsSyncing(true);
         setSyncError(null);
 
-        const hash = await computeHash(scriptData.code);
+        const hash = await computeHash(scriptData.code || '');
 
         logger.debug(`Saving to external script: ${scriptData.scriptRef.scriptId}`);
 

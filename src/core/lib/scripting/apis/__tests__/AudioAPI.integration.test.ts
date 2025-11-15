@@ -76,6 +76,11 @@ vi.mock('@/core/lib/ecs/EntityManager', () => ({
 
 // Mock event bus
 vi.mock('@/core/lib/events', () => ({
+  emitter: {
+    emit: vi.fn(),
+    on: vi.fn(() => vi.fn()),
+    off: vi.fn(),
+  },
   eventBus: {
     emit: vi.fn(),
     on: vi.fn(() => vi.fn()),

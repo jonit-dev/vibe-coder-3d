@@ -22,14 +22,14 @@ interface IWizardStep {
   title: string;
   description: string;
   icon: React.ReactNode;
-  component: React.ComponentType<{ config: TerrainConfig; updateConfig: (config: TerrainConfig) => void }>;
+  component: React.ComponentType<{ config: Partial<TerrainData>; updateConfig: (config: Partial<TerrainData>) => void }>;
 }
 
 // Step 1: Size & Resolution Configuration
 const SizeStep: React.FC<{
   config: Partial<TerrainData>;
-  onChange: (updates: Partial<TerrainData>) => void;
-}> = ({ config, onChange }) => {
+  updateConfig: (updates: Partial<TerrainData>) => void;
+}> = ({ config, updateConfig }) => {
   const size = config.size || [100, 100];
   const segments = config.segments || [129, 129];
 
@@ -60,7 +60,7 @@ const SizeStep: React.FC<{
             min={1}
             max={1000}
             step={1}
-            onChange={(newSize) => onChange({ size: newSize as [number, number] })}
+            onChange={(newSize) => updateConfig({ size: newSize as [number, number] })}
           />
           <p className="text-xs text-gray-500 mt-1">
             Physical dimensions of your terrain in world units
@@ -74,7 +74,7 @@ const SizeStep: React.FC<{
             min={2}
             max={513}
             step={1}
-            onChange={(newSegments) => onChange({ segments: newSegments as [number, number] })}
+            onChange={(newSegments) => updateConfig({ segments: newSegments as [number, number] })}
           />
           <p className="text-xs text-gray-500 mt-1">
             Number of subdivisions - higher = more detail but slower performance
@@ -106,7 +106,7 @@ const SizeStep: React.FC<{
             <button
               key={preset.label}
               onClick={() =>
-                onChange({
+                updateConfig({
                   size: preset.size as [number, number],
                   segments: preset.segments as [number, number],
                 })
@@ -125,8 +125,8 @@ const SizeStep: React.FC<{
 // Step 2: Height Generation
 const HeightStep: React.FC<{
   config: Partial<TerrainData>;
-  onChange: (updates: Partial<TerrainData>) => void;
-}> = ({ config, onChange }) => {
+  updateConfig: (updates: Partial<TerrainData>) => void;
+}> = ({ config, updateConfig }) => {
   const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [presetCategory, setPresetCategory] = useState<string>('landscapes');
 
@@ -135,7 +135,7 @@ const HeightStep: React.FC<{
   const handlePresetSelect = useCallback(
     (preset: ITerrainPreset) => {
       setSelectedPreset(preset.id);
-      onChange({
+      updateConfig({
         heightScale: preset.config.heightScale,
         noiseEnabled: preset.config.noiseEnabled,
         noiseSeed: preset.config.noiseSeed,
@@ -145,7 +145,7 @@ const HeightStep: React.FC<{
         noiseLacunarity: preset.config.noiseLacunarity,
       });
     },
-    [onChange],
+    [updateConfig],
   );
 
   const terrainProps = {
@@ -219,7 +219,7 @@ const HeightStep: React.FC<{
           <CheckboxField
             label="Enable Noise"
             value={config.noiseEnabled ?? true}
-            onChange={(v) => onChange({ noiseEnabled: v })}
+            onChange={(v) => updateConfig({ noiseEnabled: v })}
           />
           <SingleAxisField
             label="Height Scale"
@@ -227,7 +227,7 @@ const HeightStep: React.FC<{
             min={0}
             max={200}
             step={1}
-            onChange={(v) => onChange({ heightScale: v })}
+            onChange={(v) => updateConfig({ heightScale: v })}
           />
           <SingleAxisField
             label="Frequency"
@@ -235,7 +235,7 @@ const HeightStep: React.FC<{
             min={0.1}
             max={10}
             step={0.1}
-            onChange={(v) => onChange({ noiseFrequency: v })}
+            onChange={(v) => updateConfig({ noiseFrequency: v })}
           />
           <SingleAxisField
             label="Octaves"
@@ -243,7 +243,7 @@ const HeightStep: React.FC<{
             min={1}
             max={8}
             step={1}
-            onChange={(v) => onChange({ noiseOctaves: v })}
+            onChange={(v) => updateConfig({ noiseOctaves: v })}
           />
         </div>
       </details>
@@ -434,7 +434,7 @@ export const TerrainWizard: React.FC<ITerrainWizardProps> = ({
 
       {/* Step Content */}
       <div className="p-6">
-        <StepComponent config={terrainConfig} onChange={handleConfigChange} />
+        <StepComponent config={terrainConfig} updateConfig={handleConfigChange} />
       </div>
 
       {/* Footer */}

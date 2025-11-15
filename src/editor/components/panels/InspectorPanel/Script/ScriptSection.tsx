@@ -159,7 +159,7 @@ export const ScriptSection: React.FC<IScriptSectionProps> = ({
           <CheckboxField
             label="Enabled"
             description="Run script when play mode starts (onStart + onUpdate)"
-            value={scriptData.enabled}
+            value={scriptData.enabled || true}
             onChange={(enabled) => updateScript({ enabled })}
           />
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { IMeshColliderData } from '@/editor/components/panels/InspectorPanel/MeshCollider/MeshColliderSection';
+import type { IEnhancedColliderConfig } from '../hooks/useColliderConfiguration';
 import { ColliderVisualization } from '../ColliderVisualization';
 
 interface IEntityColliderVisualizationProps {
@@ -7,7 +8,7 @@ interface IEntityColliderVisualizationProps {
   position: [number, number, number];
   rotationRadians: [number, number, number];
   scale: [number, number, number];
-  enhancedColliderConfig: Record<string, unknown> | null;
+  enhancedColliderConfig: IEnhancedColliderConfig | null;
   meshCollider?: { data: IMeshColliderData } | null;
 }
 
@@ -20,7 +21,7 @@ export const EntityColliderVisualization: React.FC<IEntityColliderVisualizationP
     const colliderData = enhancedColliderConfig
       ? {
           enabled: true,
-          colliderType: enhancedColliderConfig.colliderType,
+          colliderType: enhancedColliderConfig.type,
           isTrigger: enhancedColliderConfig.isTrigger,
           center: enhancedColliderConfig.center,
           size: enhancedColliderConfig.size,
@@ -29,21 +30,21 @@ export const EntityColliderVisualization: React.FC<IEntityColliderVisualizationP
       : meshCollider?.data || null;
 
     const terrainHeights =
-      enhancedColliderConfig?.colliderType === 'heightfield' && enhancedColliderConfig.terrain
-        ? (enhancedColliderConfig.terrain as { heights?: number[] }).heights
+      enhancedColliderConfig?.type === 'heightfield' && enhancedColliderConfig.terrain
+        ? enhancedColliderConfig.terrain.heights
         : undefined;
 
     const terrainSegments =
-      enhancedColliderConfig?.colliderType === 'heightfield' && enhancedColliderConfig.terrain
+      enhancedColliderConfig?.type === 'heightfield' && enhancedColliderConfig.terrain
         ? [
-            ((enhancedColliderConfig.terrain as { widthSegments?: number }).widthSegments ?? 0) + 1,
-            ((enhancedColliderConfig.terrain as { depthSegments?: number }).depthSegments ?? 0) + 1,
+            enhancedColliderConfig.terrain.widthSegments + 1,
+            enhancedColliderConfig.terrain.depthSegments + 1,
           ] as [number, number]
         : undefined;
 
     const terrainPositions =
-      enhancedColliderConfig?.colliderType === 'heightfield' && enhancedColliderConfig.terrain
-        ? (enhancedColliderConfig.terrain as { positions?: Float32Array }).positions
+      enhancedColliderConfig?.type === 'heightfield' && enhancedColliderConfig.terrain
+        ? enhancedColliderConfig.terrain.positions
         : undefined;
 
     return (

@@ -95,6 +95,7 @@ describe('TimelinePanel', () => {
       canUndo: vi.fn(),
       canRedo: vi.fn(),
       pushHistory: vi.fn(),
+      setIsOpen: vi.fn(),
     });
   });
 

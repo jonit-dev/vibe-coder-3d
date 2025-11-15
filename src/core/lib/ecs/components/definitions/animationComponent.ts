@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { Types } from 'bitecs';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
@@ -27,7 +28,7 @@ export const animationComponent = ComponentFactory.create({
   id: 'Animation',
   name: 'Animation',
   category: ComponentCategory.Rendering,
-  schema: AnimationComponentSchema,
+  schema: AnimationComponentSchema as z.ZodType<IAnimationComponent>,
   fields: {
     playing: Types.ui8,
     time: Types.f32,

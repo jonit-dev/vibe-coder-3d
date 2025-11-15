@@ -7,19 +7,11 @@ import { colliderRegistry } from '@/core/physics/character/ColliderRegistry';
 import type { IEntityPhysicsRefs } from '@/core/physics/character/types';
 import type { Collider as RapierCollider } from '@dimforge/rapier3d-compat';
 import { useFrame } from '@react-three/fiber';
-import { RapierRigidBody, RigidBody } from '@react-three/rapier';
+import { RapierRigidBody, RigidBody, type RigidBodyAutoCollider } from '@react-three/rapier';
 import React, { useEffect, useRef } from 'react';
 import type { IPhysicsContributions } from '../hooks/useEntityMesh';
+import type { IEnhancedColliderConfig } from '../hooks/useColliderConfiguration';
 import { EntityColliders } from './EntityColliders';
-
-interface IColliderSize {
-  width?: number;
-  height?: number;
-  depth?: number;
-  radius?: number;
-  capsuleRadius?: number;
-  capsuleHeight?: number;
-}
 
 interface IEntityPhysicsBodyProps {
   entityId: number;
@@ -28,19 +20,7 @@ interface IEntityPhysicsBodyProps {
   position: [number, number, number];
   rotationRadians: [number, number, number];
   scale: [number, number, number];
-  enhancedColliderConfig: {
-    type: string;
-    center: [number, number, number];
-    isTrigger: boolean;
-    size: IColliderSize;
-    terrain?: {
-      widthSegments: number;
-      depthSegments: number;
-      heights: number[];
-      positions?: Float32Array;
-      scale: { x: number; y: number; z: number };
-    };
-  } | null;
+  enhancedColliderConfig: IEnhancedColliderConfig | null;
   hasCustomColliders: boolean;
   hasEffectiveCustomColliders: boolean;
   colliderType: string;
@@ -197,7 +177,7 @@ export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
               ? false
               : hasCustomColliders || hasEffectiveCustomColliders
                 ? false
-                : (colliderType as 'cuboid' | 'ball' | 'trimesh' | 'capsule' | 'heightfield' | false | undefined)
+                : (colliderType as RigidBodyAutoCollider | undefined)
           }
           {...additionalRapierProps}
         >

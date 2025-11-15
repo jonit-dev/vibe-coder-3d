@@ -6,7 +6,7 @@ import { CameraGeometry } from './CameraGeometry';
 import { isCameraData } from './utils';
 
 interface ICameraEntityProps {
-  meshInstanceRef: React.RefObject<THREE.Object3D>;
+  meshInstanceRef: React.Ref<THREE.Object3D | THREE.Group | THREE.Mesh | null>;
   entityId: number;
   entityComponents: Array<{ type: string; data: unknown }>;
   isPlaying: boolean;
