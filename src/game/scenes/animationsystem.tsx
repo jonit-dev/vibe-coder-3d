@@ -1,16 +1,16 @@
 import { defineScene } from './defineScene';
 
 /**
- * animation-system
+ * animationsystem
  * Scene with 5 entities
- * Generated: 2025-11-14T20:15:33.690Z
+ * Generated: 2025-11-14T22:31:57.351Z
  * Version: 1
  */
 export default defineScene({
   metadata: {
-    name: 'animation-system',
+    name: 'animationsystem',
     version: 1,
-    timestamp: '2025-11-14T20:15:33.690Z',
+    timestamp: '2025-11-14T22:31:57.351Z',
     description: 'Scene with 5 entities',
   },
   entities: [
@@ -177,18 +177,37 @@ export default defineScene({
           materialId: 'default',
         },
         Animation: {
-          blendIn: 0.2,
-          blendOut: 0.2,
-          layer: 0,
-          weight: 1,
           playing: false,
-          time: 2,
+          time: 0,
           clips: [
             {
               id: 'clip_1763151163889',
               name: 'Float',
               duration: 2,
-              tracks: [],
+              tracks: [
+                {
+                  id: 'track_1763159205482',
+                  type: 'transform.position',
+                  targetPath: 'root',
+                  keyframes: [
+                    {
+                      time: 0,
+                      value: [0, 0.6, 0],
+                      easing: 'linear',
+                    },
+                    {
+                      time: 1,
+                      value: [0, 1.1, 0],
+                      easing: 'linear',
+                    },
+                    {
+                      time: 2,
+                      value: [0, 0.6, 0],
+                      easing: 'linear',
+                    },
+                  ],
+                },
+              ],
               timeScale: 1,
               loop: true,
             },
@@ -224,9 +243,9 @@ export default defineScene({
   assetReferences: {
     materials: [
       '@/materials/default',
+      '@/materials/farm-grass',
       '@/materials/bark',
       '@/materials/dss',
-      '@/materials/farm-grass',
       '@/materials/forestground',
       '@/materials/grass',
       '@/materials/green',
@@ -248,4 +267,5 @@ export default defineScene({
     inputs: ['@/inputs/defaultInput'],
     prefabs: ['@/prefabs/trees'],
   },
+  lockedEntityIds: [4],
 });

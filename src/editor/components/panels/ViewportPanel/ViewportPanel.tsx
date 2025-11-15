@@ -27,6 +27,7 @@ import { useEditorStore } from '../../../store/editorStore';
 
 import { CharacterControllerPhysicsSystem } from '@/core/components/physics/CharacterControllerPhysicsSystem';
 import { lodManager } from '@/core/lib/rendering/LODManager';
+import { AnimationFocusEffect } from '@editor/components/panels/TimelinePanel/components/AnimationFocusEffect';
 import { AxesIndicator } from './components/AxesIndicator';
 import { CameraPerformanceController } from './components/CameraPerformanceController';
 import { CameraSystemConnector } from './components/CameraSystemConnector';
@@ -37,6 +38,7 @@ import { ViewportHeader } from './components/ViewportHeader';
 import { EntityRenderer } from './EntityRenderer';
 import { GroupGizmoControls } from './GroupGizmoControls';
 import { LightRenderer } from './LightRenderer';
+import { useTimelineStore } from '@editor/store/timelineStore';
 
 export interface IViewportPanelProps {
   entityId: number | null; // selected entity - can be null
@@ -65,6 +67,9 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
     const selectedIds = useEditorStore((state) => state.selectedIds);
     const groupSelection = useGroupSelection();
     const { getEntitiesWithComponent, hasComponent } = useComponentRegistry();
+
+    // Timeline state for animation focus effects
+    const isTimelineOpen = useTimelineStore((state) => state.isOpen);
 
     // Subscribe to component changes only (entities are managed by Editor)
     useEffect(() => {
@@ -207,6 +212,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
             <SelectionFramer />
             {/* Scene stats exporter: exposes scene to window for LOD demo */}
             <SceneStatsExporter />
+            {/* Animation focus effect: fades out non-focused entities when timeline is open */}
+            <AnimationFocusEffect isTimelineOpen={isTimelineOpen} />
             {/* Adaptive quality: DPR + shadow updates throttling while moving */}
             <CameraPerformanceController />
             {/* Camera System Connector - connects editor camera to camera system */}

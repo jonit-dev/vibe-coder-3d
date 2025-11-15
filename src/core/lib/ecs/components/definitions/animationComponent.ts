@@ -13,7 +13,6 @@ import {
  * Provides animation playback control for entities with support for:
  * - Multiple animation clips
  * - Keyframe animation tracks (transform, morph, material)
- * - Blending and crossfade
  * - Timeline-based sequencing
  */
 export const animationComponent = ComponentFactory.create({
@@ -22,10 +21,6 @@ export const animationComponent = ComponentFactory.create({
   category: ComponentCategory.Rendering,
   schema: AnimationComponentSchema,
   fields: {
-    blendIn: Types.f32,
-    blendOut: Types.f32,
-    layer: Types.ui8,
-    weight: Types.f32,
     playing: Types.ui8,
     time: Types.f32,
     version: Types.ui8,
@@ -36,10 +31,6 @@ export const animationComponent = ComponentFactory.create({
   },
   serialize: (eid: EntityId, component: any) => ({
     activeClipId: getStringFromHash(component.activeClipIdHash[eid]) || undefined,
-    blendIn: component.blendIn[eid],
-    blendOut: component.blendOut[eid],
-    layer: component.layer[eid],
-    weight: component.weight[eid],
     playing: Boolean(component.playing[eid]),
     time: component.time[eid],
     clips: (() => {
@@ -56,10 +47,6 @@ export const animationComponent = ComponentFactory.create({
     version: component.version[eid],
   }),
   deserialize: (eid: EntityId, data: any, component: any) => {
-    component.blendIn[eid] = data.blendIn ?? 0.2;
-    component.blendOut[eid] = data.blendOut ?? 0.2;
-    component.layer[eid] = data.layer ?? 0;
-    component.weight[eid] = data.weight ?? 1;
     component.playing[eid] = (data.playing ?? false) ? 1 : 0;
     component.time[eid] = data.time ?? 0;
     component.version[eid] = data.version ?? 1;

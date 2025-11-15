@@ -7,6 +7,8 @@ import { Toolbar } from './components/Toolbar';
 import { TrackList } from './components/TrackList';
 import { useTimelineKeyboard } from './hooks/useTimelineKeyboard';
 import { useTimelinePlayback } from './hooks/useTimelinePlayback';
+import { useAnimationFocus } from './hooks/useAnimationFocus';
+import { useCameraFocus } from './hooks/useCameraFocus';
 
 export interface ITimelinePanelProps {
   isOpen: boolean;
@@ -20,7 +22,12 @@ const DEFAULT_HEIGHT = 350;
 
 export const TimelinePanel: React.FC<ITimelinePanelProps> = ({ isOpen, onClose, onSave }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { activeClip, currentTime, playing } = useTimelineStore();
+  const { activeClip, currentTime, playing, setIsOpen } = useTimelineStore();
+
+  // Sync local isOpen prop with store
+  React.useEffect(() => {
+    setIsOpen(isOpen);
+  }, [isOpen, setIsOpen]);
 
   // Resize state
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
@@ -81,6 +88,12 @@ export const TimelinePanel: React.FC<ITimelinePanelProps> = ({ isOpen, onClose, 
 
   // Handle playback updates
   useTimelinePlayback();
+
+  // Animation focus mode - manages focus state
+  const { focusedEntityId, isFocusMode } = useAnimationFocus(isOpen);
+
+  // Auto-frame camera on focused entity when timeline opens
+  useCameraFocus({ focusedEntityId, isFocusMode });
 
   if (!isOpen) return null;
 
@@ -192,7 +205,7 @@ export const TimelinePanel: React.FC<ITimelinePanelProps> = ({ isOpen, onClose, 
               <div className="flex items-center gap-2">
                 <span className="text-gray-500 font-medium">Frame:</span>
                 <span className="text-success font-mono font-semibold">
-                  {Math.floor(currentTime * 30)}
+                  {Math.floor(currentTime * 30)} / {Math.ceil(activeClip.duration * 30)}
                 </span>
               </div>
             )}

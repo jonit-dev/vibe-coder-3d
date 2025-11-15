@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FiPlay,
   FiPause,
@@ -8,8 +8,13 @@ import {
   FiGrid,
   FiRotateCcw,
   FiRotateCw,
+  FiRepeat,
+  FiFastForward,
 } from 'react-icons/fi';
 import { useTimelineStore } from '@editor/store/timelineStore';
+
+const PLAYBACK_SPEEDS = [0.25, 0.5, 1, 2, 4];
+const FRAME_RATES = [24, 30, 60];
 
 export const Toolbar: React.FC = () => {
   const {
@@ -27,7 +32,17 @@ export const Toolbar: React.FC = () => {
     redo,
     canUndo,
     canRedo,
+    activeClip,
   } = useTimelineStore();
+
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [frameRate, setFrameRate] = useState(30);
+
+  const cyclePlaybackSpeed = () => {
+    const currentIndex = PLAYBACK_SPEEDS.indexOf(playbackSpeed);
+    const nextIndex = (currentIndex + 1) % PLAYBACK_SPEEDS.length;
+    setPlaybackSpeed(PLAYBACK_SPEEDS[nextIndex]);
+  };
 
   return (
     <div className="flex items-center gap-2 px-4 py-2 bg-[#23272E] border-b border-cyan-900/20 text-gray-300">
@@ -47,16 +62,58 @@ export const Toolbar: React.FC = () => {
         >
           <FiSquare className="w-4 h-4" />
         </button>
-        <label className="flex items-center gap-2 px-2 text-sm cursor-pointer hover:text-primary transition-colors">
-          <input
-            type="checkbox"
-            checked={loop}
-            onChange={(e) => setLoop(e.target.checked)}
-            className="w-4 h-4 accent-primary"
-          />
-          Loop
-        </label>
+        <button
+          onClick={() => setLoop(!loop)}
+          className={`p-2 rounded transition-colors ${
+            loop
+              ? 'bg-primary/20 text-primary border border-primary/50'
+              : 'hover:bg-[#2D2F34] hover:text-primary'
+          }`}
+          title="Toggle Loop"
+        >
+          <FiRepeat className="w-4 h-4" />
+        </button>
       </div>
+
+      {/* Playback Speed */}
+      <div className="flex items-center gap-1 px-2 border-r border-cyan-900/20">
+        <button
+          onClick={cyclePlaybackSpeed}
+          className="flex items-center gap-1 p-2 hover:bg-[#2D2F34] hover:text-primary rounded transition-colors"
+          title="Cycle playback speed"
+        >
+          <FiFastForward className="w-4 h-4" />
+          <span className="text-xs font-mono min-w-[3ch] text-cyan-400">{playbackSpeed}x</span>
+        </button>
+      </div>
+
+      {/* Frame Rate */}
+      <div className="flex items-center gap-1 px-2 border-r border-cyan-900/20">
+        <span className="text-xs text-gray-500">FPS:</span>
+        <select
+          value={frameRate}
+          onChange={(e) => setFrameRate(parseInt(e.target.value))}
+          className="px-2 py-1 text-xs bg-[#2D2F34] border border-cyan-900/30 rounded focus:border-primary focus:outline-none cursor-pointer hover:bg-[#1B1C1F] transition-colors"
+        >
+          {FRAME_RATES.map((fps) => (
+            <option key={fps} value={fps}>
+              {fps}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Clip Info */}
+      {activeClip && (
+        <div className="flex items-center gap-2 px-2 border-r border-cyan-900/20">
+          <span className="text-xs text-gray-500">Duration:</span>
+          <span className="text-xs font-mono text-cyan-400">{activeClip.duration.toFixed(2)}s</span>
+          <span className="text-xs text-gray-600">•</span>
+          <span className="text-xs font-mono text-cyan-400">
+            {Math.ceil(activeClip.duration * frameRate)} frames
+          </span>
+        </div>
+      )}
 
       {/* Zoom Controls */}
       <div className="flex items-center gap-1 px-2 border-r border-cyan-900/20">

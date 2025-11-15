@@ -165,7 +165,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
     ) : null;
 
     return (
-      <group>
+      <group userData={{ entityId }}>
         <EntityPhysicsBody
           entityId={entityId}
           terrainColliderKey={terrainColliderKey}

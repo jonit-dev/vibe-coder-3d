@@ -17,6 +17,9 @@ export interface ITimelineSelection {
 }
 
 export interface ITimelineState {
+  // UI State
+  isOpen: boolean;
+
   // Playback
   currentTime: number;
   playing: boolean;
@@ -42,6 +45,9 @@ export interface ITimelineState {
   history: IClip[];
   historyIndex: number;
   initialClip: IClip | null; // Store initial state for undo
+
+  // Actions - UI
+  setIsOpen: (isOpen: boolean) => void;
 
   // Actions - Playback
   setCurrentTime: (time: number) => void;
@@ -163,6 +169,7 @@ function syncClipToAnimationComponent(entityId: number | null, clip: IClip | nul
 
 export const useTimelineStore = create<ITimelineState>((set, get) => ({
   // Initial state
+  isOpen: false,
   currentTime: 0,
   playing: false,
   loop: false,
@@ -181,6 +188,16 @@ export const useTimelineStore = create<ITimelineState>((set, get) => ({
   history: [],
   historyIndex: -1,
   initialClip: null,
+
+  // UI actions
+  setIsOpen: (isOpen) => {
+    // When closing the timeline, clear the active entity to properly cleanup focus effects
+    if (!isOpen) {
+      set({ isOpen, activeEntityId: null, activeClip: null, playing: false });
+    } else {
+      set({ isOpen });
+    }
+  },
 
   // Playback actions
   setCurrentTime: (time) => set({ currentTime: Math.max(0, time) }),

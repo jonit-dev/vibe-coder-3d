@@ -20,10 +20,6 @@ export type IClip = z.infer<typeof ClipSchema>;
  */
 export const AnimationComponentSchema = z.object({
   activeClipId: z.string().optional(),
-  blendIn: z.number().nonnegative().default(0.2),
-  blendOut: z.number().nonnegative().default(0.2),
-  layer: z.number().int().nonnegative().default(0),
-  weight: z.number().min(0).max(1).default(1),
   playing: z.boolean().default(false),
   time: z.number().nonnegative().default(0),
   clips: z.array(ClipSchema).default([]),
@@ -37,10 +33,6 @@ export type IAnimationComponent = z.infer<typeof AnimationComponentSchema>;
  */
 export const DEFAULT_ANIMATION_COMPONENT: IAnimationComponent = {
   activeClipId: undefined,
-  blendIn: 0.2,
-  blendOut: 0.2,
-  layer: 0,
-  weight: 1,
   playing: false,
   time: 0,
   clips: [],

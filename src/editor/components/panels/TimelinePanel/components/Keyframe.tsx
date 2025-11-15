@@ -17,7 +17,6 @@ export const Keyframe: React.FC<IKeyframeProps> = ({ trackId, trackType, keyfram
     selection,
     selectKeyframes,
     moveKeyframe,
-    updateKeyframeValue,
     removeKeyframe,
     snapEnabled,
     snapInterval,
@@ -174,8 +173,23 @@ Shift+click to multi-select`}
         <KeyframeValueEditor
           keyframe={keyframe}
           trackType={trackType}
-          onSave={(newValue) => {
-            updateKeyframeValue(trackId, index, newValue);
+          onSave={(newValue, newEasing, newEasingArgs) => {
+            const { activeClip } = useTimelineStore.getState();
+            if (!activeClip) return;
+
+            const track = activeClip.tracks.find((t) => t.id === trackId);
+            if (!track || !track.keyframes[index]) return;
+
+            // Update both value and easing
+            track.keyframes[index] = {
+              ...track.keyframes[index],
+              value: newValue,
+              easing: newEasing || keyframe.easing,
+              easingArgs: newEasingArgs,
+            };
+
+            // Push the updated clip to store
+            useTimelineStore.getState().updateClip(activeClip);
             setEditing(false);
           }}
           onCancel={() => setEditing(false)}

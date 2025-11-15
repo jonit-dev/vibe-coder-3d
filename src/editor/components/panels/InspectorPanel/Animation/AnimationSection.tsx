@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { FiFilm, FiPlus, FiTrash2 } from 'react-icons/fi';
 import type { IAnimationComponent, IClip } from '@core/components/animation/AnimationComponent';
 import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
-import { animationApi } from '@core/systems/AnimationSystem';
 import { useTimelineStore } from '@editor/store/timelineStore';
 import { TimelinePanel } from '@editor/components/panels/TimelinePanel/TimelinePanel';
 import { GenericComponentSection } from '@editor/components/shared/GenericComponentSection';
@@ -23,44 +22,10 @@ export const AnimationSection: React.FC<IAnimationSectionProps> = ({
   entityId,
   onRemove,
 }) => {
-  const [timelineOpen, setTimelineOpen] = useState(false);
   const [showCreateClip, setShowCreateClip] = useState(false);
   const [newClipName, setNewClipName] = useState('');
   const [newClipDuration, setNewClipDuration] = useState(1.0);
-  const { setActiveEntity } = useTimelineStore();
-
-  const handlePlayPause = () => {
-    if (!animation.activeClipId) {
-      logger.warn('No active clip selected');
-      return;
-    }
-
-    if (animation.playing) {
-      animationApi.pause(entityId);
-      setAnimation({
-        ...animation,
-        playing: false,
-      });
-    } else {
-      animationApi.play(entityId, animation.activeClipId, {
-        fade: animation.blendIn,
-        loop: true,
-      });
-      setAnimation({
-        ...animation,
-        playing: true,
-      });
-    }
-  };
-
-  const handleStop = () => {
-    animationApi.stop(entityId, { fade: animation.blendOut });
-    setAnimation({
-      ...animation,
-      playing: false,
-      time: 0,
-    });
-  };
+  const { setActiveEntity, setIsOpen, isOpen: timelineOpen } = useTimelineStore();
 
   const handleClipSelect = (clipId: string) => {
     setAnimation({
@@ -69,23 +34,16 @@ export const AnimationSection: React.FC<IAnimationSectionProps> = ({
     });
   };
 
-  const handlePropertyChange = (property: keyof IAnimationComponent, value: any) => {
-    setAnimation({
-      ...animation,
-      [property]: value,
-    });
-  };
-
   const handleOpenTimeline = () => {
     if (animation.activeClipId) {
       const activeClip = animation.clips.find((c) => c.id === animation.activeClipId);
       if (activeClip) {
         setActiveEntity(entityId, activeClip);
-        setTimelineOpen(true);
+        setIsOpen(true);
       }
     } else if (animation.clips.length > 0) {
       setActiveEntity(entityId, animation.clips[0]);
-      setTimelineOpen(true);
+      setIsOpen(true);
     } else {
       logger.warn('No clips available to edit');
     }
@@ -201,7 +159,9 @@ export const AnimationSection: React.FC<IAnimationSectionProps> = ({
                 <div
                   key={clip.id}
                   className={`flex items-center justify-between p-2 rounded ${
-                    animation.activeClipId === clip.id ? 'bg-blue-900/30 border border-blue-700' : 'bg-gray-800'
+                    animation.activeClipId === clip.id
+                      ? 'bg-blue-900/30 border border-blue-700'
+                      : 'bg-gray-800'
                   }`}
                 >
                   <button
@@ -230,109 +190,32 @@ export const AnimationSection: React.FC<IAnimationSectionProps> = ({
           )}
         </div>
 
-        {/* Playback Controls */}
+        {/* Timeline Editor Button */}
         {animation.clips.length > 0 && (
-          <>
-            <div className="pt-2 border-t border-gray-700">
-              <div className="flex gap-2 mb-2">
-                <button
-                  onClick={handlePlayPause}
-                  disabled={!animation.activeClipId}
-                  className="flex-1 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 rounded transition-colors"
-                >
-                  {animation.playing ? 'Pause' : 'Play'}
-                </button>
-                <button
-                  onClick={handleStop}
-                  disabled={!animation.playing}
-                  className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 rounded transition-colors"
-                >
-                  Stop
-                </button>
-              </div>
-
-              {animation.playing && (
-                <div className="text-xs text-gray-400 px-1">
-                  Time: {animation.time.toFixed(2)}s
-                </div>
-              )}
-            </div>
-
-            {/* Blend Settings */}
-            <div className="pt-2 border-t border-gray-700 space-y-2">
-              <label className="block text-xs text-gray-400">Playback Settings</label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Blend In</label>
-                  <input
-                    type="number"
-                    value={animation.blendIn}
-                    onChange={(e) => handlePropertyChange('blendIn', parseFloat(e.target.value))}
-                    min="0"
-                    step="0.1"
-                    className="w-full px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Blend Out</label>
-                  <input
-                    type="number"
-                    value={animation.blendOut}
-                    onChange={(e) => handlePropertyChange('blendOut', parseFloat(e.target.value))}
-                    min="0"
-                    step="0.1"
-                    className="w-full px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Weight</label>
-                  <input
-                    type="number"
-                    value={animation.weight}
-                    onChange={(e) => handlePropertyChange('weight', parseFloat(e.target.value))}
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    className="w-full px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Layer</label>
-                  <input
-                    type="number"
-                    value={animation.layer}
-                    onChange={(e) => handlePropertyChange('layer', parseInt(e.target.value))}
-                    min="0"
-                    className="w-full px-2 py-1 text-sm bg-gray-800 border border-gray-700 rounded focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Timeline Editor Button */}
-            <div className="pt-2 border-t border-gray-700">
-              <button
-                onClick={handleOpenTimeline}
-                disabled={!animation.activeClipId}
-                className="w-full px-3 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 rounded transition-colors font-medium"
-              >
-                Open Timeline Editor
-              </button>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Select a clip above to edit keyframes
-              </p>
-            </div>
-          </>
+          <div className="pt-2 border-t border-gray-700">
+            <button
+              onClick={handleOpenTimeline}
+              disabled={!animation.activeClipId}
+              className="w-full px-3 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 rounded transition-colors font-medium"
+            >
+              Open Timeline Editor
+            </button>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              {animation.activeClipId
+                ? 'Edit keyframes, easing, and playback in Timeline'
+                : 'Select a clip above to edit'}
+            </p>
+          </div>
         )}
       </GenericComponentSection>
 
       {/* Timeline Panel Modal */}
       <TimelinePanel
         isOpen={timelineOpen}
-        onClose={() => setTimelineOpen(false)}
+        onClose={() => setIsOpen(false)}
         onSave={(updatedClip) => {
           const updatedClips = animation.clips.map((c) =>
-            c.id === updatedClip.id ? updatedClip : c
+            c.id === updatedClip.id ? updatedClip : c,
           );
           setAnimation({
             ...animation,

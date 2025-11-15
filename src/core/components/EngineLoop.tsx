@@ -5,28 +5,28 @@ import * as THREE from 'three';
 
 import { useEngineContext } from '@core/context/EngineProvider';
 import { runRegisteredSystems } from '../lib/extension/GameExtensionPoints';
-import { materialSystem } from '../systems/MaterialSystem';
-import { updateScriptSystem } from '../systems/ScriptSystem';
-import { animationSystem } from '../systems/AnimationSystem';
-import { cameraSystem } from '../systems/cameraSystem';
-import { lightSystem } from '../systems/lightSystem';
-import { soundSystem } from '../systems/soundSystem';
-import { transformSystem } from '../systems/transformSystem';
-import { InputManager } from '../lib/input/InputManager';
+import { materialSystem } from '@core/systems/MaterialSystem';
+import { updateScriptSystem } from '@core/systems/ScriptSystem';
+import { AnimationSystem, animationSystem } from '@core/systems/AnimationSystem';
+import { cameraSystem } from '@core/systems/cameraSystem';
+import { lightSystem } from '@core/systems/lightSystem';
+import { soundSystem } from '@core/systems/soundSystem';
+import { transformSystem } from '@core/systems/transformSystem';
+import { InputManager } from '@core/lib/input/InputManager';
 import {
   initBVHSystem,
   updateBVHSystem,
   disposeBVHSystem,
   setBVHSystemEnabled,
-} from '../systems/bvhSystem';
+} from '@core/systems/bvhSystem';
 import {
   initInstanceSystem,
   updateInstanceSystem,
   cleanupInstanceSystem,
-} from '../systems/InstanceSystem';
+} from '@core/systems/InstanceSystem';
 // Character Controller system now handled by CharacterControllerPhysicsSystem component
 // which runs inside the Physics context to access Rapier world
-import { useEngineStore } from '../state/engineStore';
+import { useEngineStore } from '@core/state/engineStore';
 import { Logger } from '@core/lib/logger';
 
 const logger = Logger.create('EngineLoop');
@@ -140,8 +140,13 @@ export const EngineLoop = ({
 
   useEffect(() => {
     if (scene && camera) {
+      // Initialize systems that depend on the R3F scene/camera
       initBVHSystem(scene, camera);
       initInstanceSystem(scene);
+
+      // Ensure the AnimationSystem has a reference to the live scene even
+      // when the engine loop is paused (editor mode, timeline scrubbing).
+      AnimationSystem.init(scene);
     }
 
     // Cleanup on unmount

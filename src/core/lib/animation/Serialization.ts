@@ -1,4 +1,7 @@
-import { AnimationComponentSchema, type IAnimationComponent } from '@core/components/animation/AnimationComponent';
+import {
+  AnimationComponentSchema,
+  type IAnimationComponent,
+} from '@core/components/animation/AnimationComponent';
 
 /**
  * Animation component version history
@@ -60,10 +63,6 @@ export function compressAnimation(data: IAnimationComponent): Partial<IAnimation
 
   // Only include non-default values
   if (data.activeClipId !== undefined) compressed.activeClipId = data.activeClipId;
-  if (data.blendIn !== 0.2) compressed.blendIn = data.blendIn;
-  if (data.blendOut !== 0.2) compressed.blendOut = data.blendOut;
-  if (data.layer !== 0) compressed.layer = data.layer;
-  if (data.weight !== 1) compressed.weight = data.weight;
   if (data.playing !== false) compressed.playing = data.playing;
   if (data.time !== 0) compressed.time = data.time;
   if (data.clips.length > 0) compressed.clips = data.clips;
@@ -75,15 +74,9 @@ export function compressAnimation(data: IAnimationComponent): Partial<IAnimation
 /**
  * Decompress animation data by filling in default values
  */
-export function decompressAnimation(
-  data: Partial<IAnimationComponent>
-): IAnimationComponent {
+export function decompressAnimation(data: Partial<IAnimationComponent>): IAnimationComponent {
   return {
     activeClipId: data.activeClipId,
-    blendIn: data.blendIn ?? 0.2,
-    blendOut: data.blendOut ?? 0.2,
-    layer: data.layer ?? 0,
-    weight: data.weight ?? 1,
     playing: data.playing ?? false,
     time: data.time ?? 0,
     clips: data.clips ?? [],

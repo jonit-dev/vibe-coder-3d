@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useTimelineStore } from '@editor/store/timelineStore';
 import { animationApi } from '@core/systems/AnimationSystem';
+import { Logger } from '@core/lib/logger';
+
+const logger = Logger.create('useTimelinePlayback');
 
 export function useTimelinePlayback() {
   const { playing, loop, currentTime, setCurrentTime, pause, activeClip, activeEntityId } =
@@ -14,6 +17,21 @@ export function useTimelinePlayback() {
   useEffect(() => {
     currentTimeRef.current = currentTime;
   }, [currentTime]);
+
+  // Sync play/pause state with AnimationSystem
+  useEffect(() => {
+    if (!activeClip || activeEntityId == null) return;
+
+    if (playing) {
+      // Start playback in AnimationSystem
+      animationApi.play(activeEntityId, activeClip.id, { loop });
+      logger.debug('Started playback', { entityId: activeEntityId, clipId: activeClip.id, loop });
+    } else {
+      // Pause playback in AnimationSystem
+      animationApi.pause(activeEntityId);
+      logger.debug('Paused playback', { entityId: activeEntityId });
+    }
+  }, [playing, activeClip, activeEntityId, loop]);
 
   // Drive the playhead when the timeline is in "playing" mode.
   useEffect(() => {
