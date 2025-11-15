@@ -151,8 +151,12 @@ export class AssetLibraryCatalog {
 
     try {
       // Use the resolver's parsing logic
-      const assets = (this.resolver as any).parseAssetFile(content, assetType);
-      return assets.map((a: any) => ({ id: a.id, name: a.name || a.id }));
+      const assets = (
+        this.resolver as {
+          parseAssetFile: (content: string, type: string) => Array<{ id: string; name?: string }>;
+        }
+      ).parseAssetFile(content, assetType);
+      return assets.map((a) => ({ id: a.id, name: a.name || a.id }));
     } catch {
       // If parsing fails, return empty array
       return [];

@@ -17,7 +17,7 @@ export interface IComponentDescriptor<TData = unknown> {
   id: string;
   name: string;
   category: ComponentCategory;
-  schema: z.ZodType<TData, any, any>;
+  schema: z.ZodType<TData, z.ZodTypeDef, z.ZodTypeAny>;
   bitECSSchema: Record<string, unknown>;
   serialize: (eid: EntityId) => TData;
   deserialize: (eid: EntityId, data: TData) => void;
@@ -137,15 +137,20 @@ export class ComponentFactory {
 }
 
 // Global component registry
+// Type for BitECS world instance (basic structure)
+interface IBitECSWorld {
+  [key: string]: unknown;
+}
+
 export class ComponentRegistry {
   private static instance: ComponentRegistry;
-  private components = new Map<string, IComponentDescriptor<any>>();
+  private components = new Map<string, IComponentDescriptor<unknown>>();
   private bitECSComponents = new Map<string, Component>();
   private logger = Logger.create('ComponentRegistry');
   // Cache for entity queries to avoid repeated scans
   private entityQueryCache = new Map<string, { entities: EntityId[]; timestamp: number }>();
   private readonly CACHE_TTL = 100; // Cache for 100ms
-  private _world: any; // BitECS world instance
+  private _world: IBitECSWorld | null = null; // BitECS world instance
 
   private get world() {
     return this._world || ECSWorld.getInstance().getWorld();
@@ -206,14 +211,19 @@ export class ComponentRegistry {
   /**
    * Get all components in a category
    */
-  getByCategory(category: ComponentCategory): IComponentDescriptor<any>[] {
+  getByCategory(category: ComponentCategory): IComponentDescriptor<unknown>[] {
     return Array.from(this.components.values()).filter((comp) => comp.category === category);
   }
 
   /**
    * Add component to entity
    */
-  addComponent<TData>(entityId: EntityId, componentId: string, data: TData, world?: any): boolean {
+  addComponent<TData>(
+    entityId: EntityId,
+    componentId: string,
+    data: TData,
+    world?: IBitECSWorld,
+  ): boolean {
     const descriptor = this.get<TData>(componentId);
     if (!descriptor) {
       console.error(`Component ${componentId} not found`);
@@ -440,8 +450,8 @@ export class ComponentRegistry {
         this.logger.debug('[MeshRenderer] updateComponent END', {
           entityId,
           durationMs: dt.toFixed(2),
-          meshId: (updatedData as any)?.meshId,
-          materialId: (updatedData as any)?.materialId,
+          meshId: (updatedData as { meshId?: string; materialId?: string })?.meshId,
+          materialId: (updatedData as { meshId?: string; materialId?: string })?.materialId,
         });
       }
 

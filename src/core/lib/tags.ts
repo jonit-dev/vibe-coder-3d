@@ -6,14 +6,14 @@
  */
 
 // Main registry that stores all tagged objects grouped by tag name
-const tagRegistry = new Map<string, Set<React.RefObject<any>>>();
+const tagRegistry = new Map<string, Set<React.RefObject<unknown>>>();
 
 /**
  * Register a tag entry
  * @param tagName The tag name to register under
  * @param ref Reference to the object being tagged
  */
-export const registerTag = (tagName: string, ref: React.RefObject<any>): void => {
+export const registerTag = (tagName: string, ref: React.RefObject<unknown>): void => {
   if (!tagRegistry.has(tagName)) {
     tagRegistry.set(tagName, new Set());
   }
@@ -27,7 +27,7 @@ export const registerTag = (tagName: string, ref: React.RefObject<any>): void =>
  * @param tagName The tag name to unregister from
  * @param ref Reference to the object being untagged
  */
-export const unregisterTag = (tagName: string, ref: React.RefObject<any>): void => {
+export const unregisterTag = (tagName: string, ref: React.RefObject<unknown>): void => {
   const tagSet = tagRegistry.get(tagName);
   if (tagSet) {
     tagSet.delete(ref);

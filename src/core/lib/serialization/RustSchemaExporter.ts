@@ -2,7 +2,16 @@ import { Logger } from '@core/lib/logger';
 import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import type { ZodSchema, ZodTypeDef, ZodNumberDef, ZodArrayDef, ZodObjectDef, ZodStringDef, ZodBooleanDef, ZodOptionalDef } from 'zod';
+import type {
+  ZodSchema,
+  ZodTypeDef,
+  ZodNumberDef,
+  ZodArrayDef,
+  ZodObjectDef,
+  ZodStringDef,
+  ZodBooleanDef,
+  ZodOptionalDef,
+} from 'zod';
 
 const logger = Logger.create('RustSchemaExporter');
 
@@ -18,7 +27,7 @@ export class RustSchemaExporter {
 
     const registry = ComponentRegistry.getInstance();
     const componentIds = registry.listComponents();
-    const components = componentIds.map(id => registry.get(id)).filter(c => c !== undefined);
+    const components = componentIds.map((id) => registry.get(id)).filter((c) => c !== undefined);
 
     for (const component of components) {
       const schema = component.schema;
@@ -45,7 +54,10 @@ export class RustSchemaExporter {
    * Convert Zod schema to JSON Schema format
    * This is a simplified version - for production, consider using zod-to-json-schema
    */
-  private zodToJsonSchema(zodSchema: ZodSchema<unknown>, componentId: string): Record<string, unknown> {
+  private zodToJsonSchema(
+    zodSchema: ZodSchema<unknown>,
+    componentId: string,
+  ): Record<string, unknown> {
     const shape = zodSchema._def?.shape?.();
     if (!shape) {
       return {
@@ -56,11 +68,11 @@ export class RustSchemaExporter {
       };
     }
 
-    const properties: Record<string, any> = {};
+    const properties: Record<string, unknown> = {};
     const required: string[] = [];
 
     for (const [key, value] of Object.entries(shape)) {
-      const fieldSchema = value as any;
+      const fieldSchema = value as ZodTypeDef;
       const fieldDef = this.parseZodField(fieldSchema);
       properties[key] = fieldDef;
 

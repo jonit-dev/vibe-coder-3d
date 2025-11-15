@@ -31,7 +31,7 @@ interface IScoringState {
   comboTimeWindow: number; // in milliseconds
 
   // Actions
-  addPoints: (points: number, eventType: string, metadata?: Record<string, any>) => number;
+  addPoints: (points: number, eventType: string, metadata?: Record<string, unknown>) => number;
   addMultiplier: (id: string, factor: number, duration: number) => void;
   removeMultiplier: (id: string) => void;
   resetCombo: () => void;

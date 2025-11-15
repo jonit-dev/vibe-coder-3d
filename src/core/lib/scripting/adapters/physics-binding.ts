@@ -114,11 +114,22 @@ export function syncVelocitiesFromRapier(): void {
 
       // Store velocities in component data for script access
       // Using updateComponent to bypass mutation buffer since this is a read-only sync
-      const currentData = componentRegistry.getComponentData(entityId, 'RigidBody') as any;
+      const currentData = componentRegistry.getComponentData(entityId, 'RigidBody') as Record<
+        string,
+        unknown
+      >;
       if (currentData) {
         // Directly update internal state (this is a special case for physics sync)
-        (currentData as any).__linearVelocity = [linvel.x, linvel.y, linvel.z];
-        (currentData as any).__angularVelocity = [angvel.x, angvel.y, angvel.z];
+        (currentData as { __linearVelocity?: [number, number, number] }).__linearVelocity = [
+          linvel.x,
+          linvel.y,
+          linvel.z,
+        ];
+        (currentData as { __angularVelocity?: [number, number, number] }).__angularVelocity = [
+          angvel.x,
+          angvel.y,
+          angvel.z,
+        ];
       }
     } catch (error) {
       logger.warn(`Failed to sync velocities for entity ${entityId}:`, error);

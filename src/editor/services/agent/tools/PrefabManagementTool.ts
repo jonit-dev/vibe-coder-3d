@@ -7,6 +7,31 @@ import { Logger } from '@core/lib/logger';
 
 const logger = Logger.create('PrefabManagementTool');
 
+// Prefab management tool parameter types
+interface IPrefabManagementParams {
+  action:
+    | 'create_from_primitives'
+    | 'create_from_selection'
+    | 'instantiate'
+    | 'list_prefabs'
+    | 'create_variant'
+    | 'unpack_instance';
+  name?: string;
+  primitives?: Array<{
+    type: string;
+    position?: [number, number, number];
+    rotation?: [number, number, number];
+    scale?: [number, number, number];
+    material?: string;
+  }>;
+  prefab_id?: string;
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+  variant_name?: string;
+  entity_id?: number;
+}
+
 export const prefabManagementTool = {
   name: 'prefab_management',
   description: `Manage prefabs (reusable entity templates) in the scene.
@@ -104,7 +129,7 @@ Actions:
 /**
  * Execute prefab management tool
  */
-export async function executePrefabManagement(params: any): Promise<string> {
+export async function executePrefabManagement(params: IPrefabManagementParams): Promise<string> {
   logger.info('Executing prefab management', { params });
 
   const { action, name, prefab_id, position, entity_id, primitives } = params;

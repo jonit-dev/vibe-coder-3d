@@ -16,6 +16,15 @@ export interface IAddEntityParams {
   name?: string;
 }
 
+// Scene manipulation tool parameter types
+interface ISceneManipulationParams {
+  action: 'add_entity' | 'list_entities' | 'get_entity';
+  entity_type?: string;
+  position?: { x: number; y: number; z: number };
+  name?: string;
+  entity_id?: number;
+}
+
 // Dynamically get available primitive shapes
 const primitiveShapes = getShapeNames('primitive');
 
@@ -57,7 +66,7 @@ export const sceneManipulationTool = {
 /**
  * Execute the scene manipulation tool
  */
-export async function executeSceneManipulation(params: any): Promise<string> {
+export async function executeSceneManipulation(params: ISceneManipulationParams): Promise<string> {
   logger.info('Executing scene manipulation', { params });
 
   const { action, entity_type, position, name } = params;
