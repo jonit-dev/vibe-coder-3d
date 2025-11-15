@@ -1,8 +1,9 @@
 import { threeJSEntityRegistry } from '@/core/lib/scripting/ThreeJSEntityRegistry';
 import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';
+import * as THREE from 'three';
 
-export const useEntityRegistration = (meshRef: React.RefObject<any>, entityId: number) => {
+export const useEntityRegistration = (meshRef: React.RefObject<THREE.Object3D>, entityId: number) => {
   const { scene } = useThree();
 
   // Register/unregister entity with ThreeJSEntityRegistry for script access

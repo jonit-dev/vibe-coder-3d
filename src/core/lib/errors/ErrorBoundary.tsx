@@ -27,7 +27,10 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     this.state = { hasError: false, errorInfo: null };
   }
 
-  static getDerivedStateFromError(_: Error): Partial<IErrorBoundaryState> {
+  static getDerivedStateFromError(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _: Error,
+  ): Partial<IErrorBoundaryState> {
     return { hasError: true };
   }
 

@@ -42,14 +42,14 @@ interface IEntity {
 }
 
 /** Script parameters - available as global 'parameters' */
-declare const parameters: Record<string, any>;
+declare const parameters: Record<string, unknown>;
 
 /** Global entity reference */
 declare const entity: IEntity;
 
 /** Console API for logging */
 declare const console: {
-  log(...args: any[]): void;
-  warn(...args: any[]): void;
-  error(...args: any[]): void;
+  log(...args: unknown[]): void;
+  warn(...args: unknown[]): void;
+  error(...args: unknown[]): void;
 };

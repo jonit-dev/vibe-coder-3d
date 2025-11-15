@@ -111,9 +111,10 @@ export async function readScriptFromFilesystem(
     const code = await nodeFs.readFile(absolutePath, 'utf-8');
     const stats = await nodeFs.stat(absolutePath);
     const hash = await computeHash(code);
-    const lastModified =
-      typeof (stats as any).mtimeMs === 'number' && !Number.isNaN((stats as any).mtimeMs)
-        ? (stats as any).mtimeMs
+    const mtimeMs = (stats as { mtimeMs?: number }).mtimeMs;
+    const lastModified: number =
+      typeof mtimeMs === 'number' && !Number.isNaN(mtimeMs)
+        ? mtimeMs
         : (stats.mtime?.getTime?.() ?? Date.now());
 
     return {

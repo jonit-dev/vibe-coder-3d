@@ -32,6 +32,7 @@ export const MaterialsPanel: React.FC<IMaterialsPanelProps> = ({ isExpanded, onT
     handleCreate(material);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleMaterialSave = (_material: IMaterialDefinition) => {
     // Material is saved in the inspector
   };

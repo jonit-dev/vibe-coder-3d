@@ -132,6 +132,7 @@ export class ConsistencyChecker {
     worldEntities: IEntityForConsistency[],
     queries: EntityQueries,
     errors: string[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _warnings: string[],
   ): number {
     let relationshipCount = 0;
@@ -174,11 +175,13 @@ export class ConsistencyChecker {
   }
 
   private static checkComponentConsistency(
+     
     _worldEntities: IEntityForConsistency[],
     componentTypes: string[],
     registry: typeof componentRegistry,
     queries: EntityQueries,
     errors: string[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _warnings: string[],
   ): number {
     let totalComponents = 0;

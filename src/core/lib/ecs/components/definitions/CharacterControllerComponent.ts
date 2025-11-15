@@ -13,31 +13,31 @@ import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
 
 // Input mapping schema for auto mode
 const InputMappingSchema = z.object({
-  forward: z.string().default('w'),
-  backward: z.string().default('s'),
-  left: z.string().default('a'),
-  right: z.string().default('d'),
-  jump: z.string().default('space'),
+  forward: z.string(),
+  backward: z.string(),
+  left: z.string(),
+  right: z.string(),
+  jump: z.string(),
 });
 
 // Character Controller Schema (Contract v2.0 + Interaction Tuning)
 const CharacterControllerSchema = z.object({
-  enabled: z.boolean().default(true),
-  slopeLimit: z.number().min(0).max(90).default(45.0),
-  stepOffset: z.number().min(0).default(0.3),
-  skinWidth: z.number().min(0).default(0.08),
-  gravityScale: z.number().default(1.0),
-  maxSpeed: z.number().min(0).default(6.0),
-  jumpStrength: z.number().min(0).default(6.5),
-  controlMode: z.enum(['auto', 'manual']).default('auto'),
+  enabled: z.boolean(),
+  slopeLimit: z.number().min(0).max(90),
+  stepOffset: z.number().min(0),
+  skinWidth: z.number().min(0),
+  gravityScale: z.number(),
+  maxSpeed: z.number().min(0),
+  jumpStrength: z.number().min(0),
+  controlMode: z.enum(['auto', 'manual']),
   inputMapping: InputMappingSchema.optional(),
   // Interaction tuning parameters
-  snapMaxSpeed: z.number().min(0).default(5.0), // Max vertical speed to allow ground snapping
-  maxDepenetrationPerFrame: z.number().min(0).default(0.5), // Max depenetration per frame (meters)
-  pushStrength: z.number().min(0).default(1.0), // Force multiplier when pushing objects
-  maxPushMass: z.number().min(0).default(0), // Max mass of pushable objects (0 = unlimited)
+  snapMaxSpeed: z.number().min(0), // Max vertical speed to allow ground snapping
+  maxDepenetrationPerFrame: z.number().min(0), // Max depenetration per frame (meters)
+  pushStrength: z.number().min(0), // Force multiplier when pushing objects
+  maxPushMass: z.number().min(0), // Max mass of pushable objects (0 = unlimited)
   // Runtime-only field (not serialized to scene)
-  isGrounded: z.boolean().default(false),
+  isGrounded: z.boolean(),
 });
 
 // Character Controller Component Definition

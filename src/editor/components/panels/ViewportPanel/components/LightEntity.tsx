@@ -1,13 +1,14 @@
 import type { ThreeEvent } from '@react-three/fiber';
 import React from 'react';
+import * as THREE from 'three';
 
 import { LightGeometry } from './LightGeometry';
 import { isLightData, parseColorToRGB } from './utils';
 
 interface ILightEntityProps {
-  meshInstanceRef: React.Ref<any>;
+  meshInstanceRef: React.Ref<THREE.Object3D>;
   entityId: number;
-  entityComponents: any[];
+  entityComponents: Array<{ type: string; data: unknown }>;
   isPlaying: boolean;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
 }
@@ -20,7 +21,7 @@ export const LightEntity: React.FC<ILightEntityProps> = React.memo(
     const typedLightData = isLightData(lightData) ? lightData : {};
 
     return (
-      <group ref={meshInstanceRef as any} userData={{ entityId }} onClick={onMeshClick}>
+      <group ref={meshInstanceRef as React.Ref<THREE.Group>} userData={{ entityId }} onClick={onMeshClick}>
         <LightGeometry
           lightType={typedLightData.lightType || 'point'}
           showDirection={true}

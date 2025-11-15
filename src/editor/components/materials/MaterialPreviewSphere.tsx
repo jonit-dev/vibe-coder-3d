@@ -2,6 +2,7 @@ import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import React, { Suspense, useMemo, useRef, useState, useEffect } from 'react';
 import { Color, MeshBasicMaterial, MeshStandardMaterial, Texture, TextureLoader } from 'three';
+import * as THREE from 'three';
 
 import type { IMaterialDefinition } from '@/core/materials/Material.types';
 
@@ -17,7 +18,7 @@ interface IPreviewSphereProps {
 }
 
 const PreviewSphere: React.FC<IPreviewSphereProps> = ({ material }) => {
-  const meshRef = useRef<any>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const textureLoader = useMemo(() => new TextureLoader(), []);
   const [textures, setTextures] = useState<Record<string, Texture | null>>({});
 

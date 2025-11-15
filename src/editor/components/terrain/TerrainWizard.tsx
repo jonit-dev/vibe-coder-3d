@@ -22,7 +22,7 @@ interface IWizardStep {
   title: string;
   description: string;
   icon: React.ReactNode;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<{ config: TerrainConfig; updateConfig: (config: TerrainConfig) => void }>;
 }
 
 // Step 1: Size & Resolution Configuration

@@ -194,6 +194,7 @@ export function replaceMaterialWithReference(
   meshRendererData: Record<string, unknown>,
   materialId: string,
 ): Record<string, unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { material, ...rest } = meshRendererData;
 
   return {

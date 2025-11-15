@@ -1,5 +1,6 @@
 import { useThree } from '@react-three/fiber';
 import React, { useEffect } from 'react';
+import * as THREE from 'three';
 
 import { setEditorCamera } from '@/core/systems/cameraSystem';
 
@@ -12,7 +13,7 @@ export const CameraSystemConnector: React.FC = React.memo(() => {
 
   // Connect the editor camera to the camera system
   useEffect(() => {
-    setEditorCamera(camera as any);
+    setEditorCamera(camera as THREE.PerspectiveCamera | THREE.OrthographicCamera);
 
     return () => {
       setEditorCamera(null);

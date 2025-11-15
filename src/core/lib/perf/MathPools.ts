@@ -43,7 +43,10 @@ export const arrayPool = new ObjectPool<number[]>(() => [], {
 
 // Float32Array pool for vertex data and other numeric arrays
 export const float32ArrayPool = new ObjectPool<Float32Array>(() => new Float32Array(0), {
-  reset: (_arr: Float32Array) => {
+  reset: (
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _arr: Float32Array,
+  ) => {
     // For Float32Array, we create a new one since we can't easily resize
     // This is still better than creating new ones every time
   },

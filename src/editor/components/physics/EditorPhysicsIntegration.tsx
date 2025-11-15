@@ -39,8 +39,8 @@ export const EditorPhysicsIntegration = () => {
       });
     } else {
       // Clean up physics bodies when stopping play mode
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       physicsBodyRefs.current.forEach((_bodyRef, _entityId) => {
-
         // Clean up physics body
       });
       physicsBodyRefs.current.clear();

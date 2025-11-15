@@ -1,5 +1,11 @@
 import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';
+import * as THREE from 'three';
+
+// Extend the Window interface for debugging
+interface IDebugWindow extends Window {
+  __r3fScene?: THREE.Scene;
+}
 
 /**
  * Component that exposes the Three.js scene to window for debugging
@@ -10,10 +16,11 @@ export const SceneStatsExporter: React.FC = () => {
 
   useEffect(() => {
     // Expose scene to window for triangle counting
-    (window as any).__r3fScene = scene;
+    const debugWindow = window as IDebugWindow;
+    debugWindow.__r3fScene = scene;
 
     return () => {
-      delete (window as any).__r3fScene;
+      delete debugWindow.__r3fScene;
     };
   }, [scene]);
 

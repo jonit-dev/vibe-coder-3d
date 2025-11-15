@@ -5,7 +5,7 @@ import { useTerrainPhysics } from './useTerrainPhysics';
 interface IUseColliderConfigurationProps {
   entityId: number;
   isPlaying: boolean;
-  colliderConfig: any;
+  colliderConfig: Record<string, unknown> | null;
   meshType: string | null;
   shouldHavePhysics: boolean;
   hasCustomColliders: boolean;

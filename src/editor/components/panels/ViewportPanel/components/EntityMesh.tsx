@@ -6,9 +6,11 @@ import { invalidate, ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import React, { Suspense, useCallback, useEffect } from 'react';
 import type { Group, Mesh } from 'three';
 import { Box3, OrthographicCamera, Vector3 } from 'three';
+import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import type { IComponent } from '@/core/lib/ecs/IComponent';
+import type { IMaterialDefinition } from '@/core/materials/Material.types';
 import type { IRenderingContributions } from '@/core/types/entities';
 import { compareMaterials, deepEqual, shallowEqual } from '@/core/utils/comparison';
 import { useLOD } from '@core/hooks/useLOD';
@@ -169,7 +171,7 @@ const CustomModelMesh: React.FC<{
       let triangles = 0;
       scene.traverse((obj) => {
         if ('geometry' in obj && obj.geometry) {
-          const geom = obj.geometry as any;
+          const geom = obj.geometry as THREE.BufferGeometry;
           if (geom.index) {
             triangles += geom.index.count / 3;
           } else if (geom.attributes?.position) {
@@ -533,7 +535,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           onMeshDoubleClick={onMeshDoubleClick}
           textures={textures}
           isTextureMode={isTextureMode}
-          material={material as any}
+          material={material as IMaterialDefinition | null}
         />
       </Suspense>
     );

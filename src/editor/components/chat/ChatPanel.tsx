@@ -47,6 +47,7 @@ export const ChatPanel: React.FC<IChatPanelProps> = ({ isOpen, onClose }) => {
 
     try {
       await sendMessage(feedbackPrompt);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       // Error handled by agent service
     }

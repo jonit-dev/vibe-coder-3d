@@ -197,6 +197,7 @@ export async function getAPIDetails(apiNames: string[]): Promise<string> {
     if (response.ok) {
       fullApiDefs = await response.text();
     }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // Fallback if file can't be loaded
   }

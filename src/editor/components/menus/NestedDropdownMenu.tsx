@@ -164,8 +164,24 @@ export const NestedDropdownMenu: React.FC<INestedDropdownMenuProps> = ({
       // Close if already open
       setActiveSubmenu(null);
     } else {
-      // Open submenu
-      handleSubmenuHover(category, event as any);
+      // Open submenu - manually calculate position since event target differs
+      const rect = event.currentTarget.getBoundingClientRect();
+      const submenuWidth = 224; // 14rem
+      let left = rect.right + window.scrollX + 4;
+      let top = rect.top + window.scrollY;
+
+      // Check if submenu would go off right edge
+      if (left + submenuWidth > window.innerWidth) {
+        left = rect.left + window.scrollX - submenuWidth - 4;
+      }
+
+      // Check if submenu would go off bottom edge
+      const submenuHeight = category.items.length * 40 + 16; // estimate
+      if (top + submenuHeight > window.innerHeight + window.scrollY) {
+        top = window.innerHeight + window.scrollY - submenuHeight;
+      }
+
+      setActiveSubmenu({ category, position: { left, top } });
     }
   };
 

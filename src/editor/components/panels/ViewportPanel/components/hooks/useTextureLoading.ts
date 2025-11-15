@@ -1,7 +1,7 @@
 import { useTexture } from '@react-three/drei';
 import React, { useMemo } from 'react';
 
-export const useTextureLoading = (material: any) => {
+export const useTextureLoading = (material: Record<string, unknown>) => {
   const isTextureMode = material.materialType === 'texture';
 
   // Prepare texture URLs for batch loading with useTexture
@@ -11,12 +11,12 @@ export const useTextureLoading = (material: any) => {
 
     // Load textures if URLs exist, even if materialType is 'solid'
     // This allows textures to be applied without requiring materialType change
-    if (material.albedoTexture) urls.albedoTexture = material.albedoTexture;
-    if (material.normalTexture) urls.normalTexture = material.normalTexture;
-    if (material.metallicTexture) urls.metallicTexture = material.metallicTexture;
-    if (material.roughnessTexture) urls.roughnessTexture = material.roughnessTexture;
-    if (material.emissiveTexture) urls.emissiveTexture = material.emissiveTexture;
-    if (material.occlusionTexture) urls.occlusionTexture = material.occlusionTexture;
+    if (material.albedoTexture && typeof material.albedoTexture === 'string') urls.albedoTexture = material.albedoTexture;
+    if (material.normalTexture && typeof material.normalTexture === 'string') urls.normalTexture = material.normalTexture;
+    if (material.metallicTexture && typeof material.metallicTexture === 'string') urls.metallicTexture = material.metallicTexture;
+    if (material.roughnessTexture && typeof material.roughnessTexture === 'string') urls.roughnessTexture = material.roughnessTexture;
+    if (material.emissiveTexture && typeof material.emissiveTexture === 'string') urls.emissiveTexture = material.emissiveTexture;
+    if (material.occlusionTexture && typeof material.occlusionTexture === 'string') urls.occlusionTexture = material.occlusionTexture;
 
     return urls;
   }, [
@@ -42,10 +42,10 @@ export const useTextureLoading = (material: any) => {
 
     Object.values(textures).forEach((texture) => {
       if (texture && typeof texture === 'object' && 'offset' in texture) {
-        const offsetX = material.textureOffsetX ?? 0;
-        const offsetY = material.textureOffsetY ?? 0;
-        const repeatX = material.textureRepeatX ?? 1;
-        const repeatY = material.textureRepeatY ?? 1;
+        const offsetX = typeof material.textureOffsetX === 'number' ? material.textureOffsetX : 0;
+        const offsetY = typeof material.textureOffsetY === 'number' ? material.textureOffsetY : 0;
+        const repeatX = typeof material.textureRepeatX === 'number' ? material.textureRepeatX : 1;
+        const repeatY = typeof material.textureRepeatY === 'number' ? material.textureRepeatY : 1;
 
         // Configure texture wrapping for repeat
         texture.wrapS = texture.wrapT = 1000; // THREE.RepeatWrapping

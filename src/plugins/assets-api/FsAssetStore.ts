@@ -329,7 +329,7 @@ export default ${defineFn}(${payloadString});
    * Extract default values from a Zod schema
    * Uses Zod's parse with a minimal valid object to get all defaults
    */
-  private extractSchemaDefaults(schema: any, type: AssetType): Record<string, unknown> {
+  private extractSchemaDefaults(schema: z.ZodSchema, type: AssetType): Record<string, unknown> {
     try {
       // Create minimal valid objects for each type
       const minimalObjects = {
@@ -345,10 +345,12 @@ export default ${defineFn}(${payloadString});
 
       // For prefabs, we need to include nested defaults for the root entity
       if (type === 'prefab') {
-        const { id, name, ...defaults } = parsed;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, name, ...defaults } = parsed;
         // Extract defaults for the nested root entity structure
         if (defaults.root && typeof defaults.root === 'object') {
           const rootDefaults = defaults.root as Record<string, unknown>;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { name: rootName, components, ...nestedDefaults } = rootDefaults;
           // Only keep actual defaults (like children: [])
           return {
@@ -360,6 +362,7 @@ export default ${defineFn}(${payloadString});
       }
 
       // For other types, remove the minimal required fields
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id, name, root, controlSchemes, actionMaps, duration, tracks, ...defaults } = parsed;
       return defaults;
     } catch {

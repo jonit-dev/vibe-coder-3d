@@ -455,7 +455,7 @@ const ActionProperties: React.FC<IActionPropertiesProps> = ({
   onDuplicateBinding,
   onDeleteBinding,
 }) => {
-  const getBindingLabel = (binding: any): string => {
+  const getBindingLabel = (binding: { compositeType?: string; type: string; path: string }): string => {
     if ('compositeType' in binding) {
       return `${binding.compositeType} Composite`;
     }

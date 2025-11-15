@@ -2,7 +2,6 @@
  * Scalable Component Registry System
  * Provides a unified way to register and manage ECS components with minimal boilerplate
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { addComponent, Component, defineComponent, hasComponent, removeComponent } from 'bitecs';
 import { z } from 'zod';
@@ -54,7 +53,7 @@ export class ComponentFactory {
     id: string;
     name: string;
     category: ComponentCategory;
-    schema: z.ZodType<TData, any, any>;
+    schema: z.ZodType<TData>;
     fields: Record<string, unknown>; // BitECS field definitions
     serialize: (eid: EntityId, bitECSComponent: unknown) => TData;
     deserialize: (eid: EntityId, data: TData, bitECSComponent: unknown) => void;
@@ -98,7 +97,7 @@ export class ComponentFactory {
     id: string;
     name: string;
     category: ComponentCategory;
-    schema: z.ZodType<TData, any, any>;
+    schema: z.ZodType<TData>;
     fieldMappings: Record<keyof TData, unknown>; // Maps data fields to BitECS types
     onAdd?: (eid: EntityId, data: TData) => void;
     onRemove?: (eid: EntityId) => void;
@@ -144,7 +143,7 @@ interface IBitECSWorld {
 
 export class ComponentRegistry {
   private static instance: ComponentRegistry;
-  private components = new Map<string, IComponentDescriptor<any>>();
+  private components = new Map<string, IComponentDescriptor<unknown>>();
   private bitECSComponents = new Map<string, Component>();
   private logger = Logger.create('ComponentRegistry');
   // Cache for entity queries to avoid repeated scans
@@ -190,7 +189,7 @@ export class ComponentRegistry {
       return;
     }
 
-    this.components.set(descriptor.id, descriptor as IComponentDescriptor<any>);
+    this.components.set(descriptor.id, descriptor as IComponentDescriptor<unknown>);
 
     // Store BitECS component reference
     const bitECSComponent = (
@@ -298,7 +297,7 @@ export class ComponentRegistry {
       emit('component:added', {
         entityId,
         componentId,
-        data: data as Record<string, any>,
+        data: data as Record<string, unknown>,
       });
 
       // Invalidate cache for this component type

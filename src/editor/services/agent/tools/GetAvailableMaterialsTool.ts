@@ -30,7 +30,7 @@ Use this to discover what materials exist before creating entities or prefabs.`,
 /**
  * Execute the get available materials tool
  */
-export async function executeGetAvailableMaterials(params: any): Promise<string> {
+export async function executeGetAvailableMaterials(params: { include_properties?: boolean }): Promise<string> {
   logger.info('Getting available materials', { params });
 
   const { include_properties = false } = params;

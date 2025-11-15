@@ -19,17 +19,17 @@ interface ITerrainBitECSComponent {
 }
 
 export const TerrainSchema = z.object({
-  size: z.tuple([z.number().positive(), z.number().positive()]).default([20, 20]),
-  segments: z.tuple([z.number().min(2), z.number().min(2)]).default([129, 129]),
-  heightScale: z.number().min(0).default(2),
-  noiseEnabled: z.boolean().default(true),
-  noiseSeed: z.number().int().nonnegative().default(1337),
+  size: z.tuple([z.number().positive(), z.number().positive()]),
+  segments: z.tuple([z.number().min(2), z.number().min(2)]),
+  heightScale: z.number().min(0),
+  noiseEnabled: z.boolean(),
+  noiseSeed: z.number().int().nonnegative(),
   // Frequency represents the number of noise cells across the terrain domain.
   // Values < 1 produce little to no variation. Use >= 2 for visible detail.
-  noiseFrequency: z.number().positive().default(4.0),
-  noiseOctaves: z.number().int().min(1).max(8).default(4),
-  noisePersistence: z.number().min(0).max(1).default(0.5),
-  noiseLacunarity: z.number().min(1).default(2.0),
+  noiseFrequency: z.number().positive(),
+  noiseOctaves: z.number().int().min(1).max(8),
+  noisePersistence: z.number().min(0).max(1),
+  noiseLacunarity: z.number().min(1),
 });
 
 export type TerrainData = z.infer<typeof TerrainSchema>;

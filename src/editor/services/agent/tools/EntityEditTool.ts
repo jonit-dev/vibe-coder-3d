@@ -81,11 +81,11 @@ export const entityEditTool = {
 /**
  * Execute entity edit tool
  */
-export async function executeEntityEdit(params: any): Promise<string> {
+export async function executeEntityEdit(params: Record<string, unknown>): Promise<string> {
   logger.info('Executing entity edit', { params });
 
   const {
-    entity_id,
+    entity_id: entityIdRaw,
     action,
     position,
     rotation,
@@ -96,28 +96,34 @@ export async function executeEntityEdit(params: any): Promise<string> {
     property_value,
   } = params;
 
+  // Validate entity_id
+  if (typeof entityIdRaw !== 'number') {
+    return 'Error: entity_id must be a number';
+  }
+  const entity_id = entityIdRaw;
+
   switch (action) {
     case 'set_position':
-      if (!position) {
-        return 'Error: position is required for set_position';
+      if (!position || typeof position !== 'object' || !('x' in position) || !('y' in position) || !('z' in position)) {
+        return 'Error: position is required for set_position and must have x, y, z properties';
       }
-      return setPosition(entity_id, position);
+      return setPosition(entity_id, position as { x: number; y: number; z: number });
 
     case 'set_rotation':
-      if (!rotation) {
-        return 'Error: rotation is required for set_rotation';
+      if (!rotation || typeof rotation !== 'object' || !('x' in rotation) || !('y' in rotation) || !('z' in rotation)) {
+        return 'Error: rotation is required for set_rotation and must have x, y, z properties';
       }
-      return setRotation(entity_id, rotation);
+      return setRotation(entity_id, rotation as { x: number; y: number; z: number });
 
     case 'set_scale':
-      if (!scale) {
-        return 'Error: scale is required for set_scale';
+      if (!scale || typeof scale !== 'object' || !('x' in scale) || !('y' in scale) || !('z' in scale)) {
+        return 'Error: scale is required for set_scale and must have x, y, z properties';
       }
-      return setScale(entity_id, scale);
+      return setScale(entity_id, scale as { x: number; y: number; z: number });
 
     case 'rename':
-      if (!name) {
-        return 'Error: name is required for rename';
+      if (!name || typeof name !== 'string') {
+        return 'Error: name is required for rename and must be a string';
       }
       return renameEntity(entity_id, name);
 
@@ -125,20 +131,20 @@ export async function executeEntityEdit(params: any): Promise<string> {
       return deleteEntity(entity_id);
 
     case 'add_component':
-      if (!component_type) {
-        return 'Error: component_type is required for add_component';
+      if (!component_type || typeof component_type !== 'string') {
+        return 'Error: component_type is required for add_component and must be a string';
       }
       return addComponent(entity_id, component_type);
 
     case 'remove_component':
-      if (!component_type) {
-        return 'Error: component_type is required for remove_component';
+      if (!component_type || typeof component_type !== 'string') {
+        return 'Error: component_type is required for remove_component and must be a string';
       }
       return removeComponent(entity_id, component_type);
 
     case 'set_component_property':
-      if (!component_type || !property_name || property_value === undefined) {
-        return 'Error: component_type, property_name, and property_value are required';
+      if (!component_type || typeof component_type !== 'string' || !property_name || typeof property_name !== 'string' || property_value === undefined) {
+        return 'Error: component_type (string), property_name (string), and property_value are required';
       }
       return setComponentProperty(entity_id, component_type, property_name, property_value);
 
@@ -214,7 +220,7 @@ function setComponentProperty(
   entityId: number,
   componentType: string,
   propertyName: string,
-  propertyValue: any,
+  propertyValue: unknown,
 ): string {
   // Parse JSON strings to objects if needed
   let parsedValue = propertyValue;

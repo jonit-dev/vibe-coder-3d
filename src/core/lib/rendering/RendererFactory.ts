@@ -40,6 +40,7 @@ export class RendererFactory {
    * @param options - Renderer configuration options
    */
   static async create(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _type: RendererType = 'webgl',
     options: IRendererOptions = {},
   ): Promise<IRendererResult> {

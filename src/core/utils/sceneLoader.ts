@@ -3,6 +3,7 @@
  * Provides enhanced scene loading with validation and type safety
  */
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { KnownComponentTypes as _KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import type { SceneData } from '@/core/types/scene';
 import { IValidationResult, SceneValidator } from '@/core/utils/sceneValidation';
@@ -111,7 +112,7 @@ export class SceneLoader {
             });
 
             // Extract persisted PersistentId if present
-            const persistentId = (entity.components as any)?.PersistentId?.id as
+            const persistentId = (entity.components as Record<string, { id?: string }>)?.PersistentId?.id as
               | string
               | undefined;
 

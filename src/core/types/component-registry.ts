@@ -86,7 +86,7 @@ export const ComponentChangeEventSchema = z.object({
   entityId: z.number().int().nonnegative(),
   componentId: z.string().min(1),
   action: z.literal('add').or(z.literal('remove')).or(z.literal('update')),
-  data: z.any().optional(),
+  data: z.unknown().optional(),
   timestamp: z.number().int().nonnegative(),
 });
 
@@ -138,6 +138,6 @@ export interface IComponentGroup {
   category: ComponentCategory;
   icon: string;
   components: string[]; // Component IDs to add together
-  defaultValues?: Record<string, any>; // Default values for each component
+  defaultValues?: Record<string, unknown>; // Default values for each component
   order: number; // Display order in UI
 }

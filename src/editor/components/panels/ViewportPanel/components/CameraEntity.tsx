@@ -1,13 +1,14 @@
 import type { ThreeEvent } from '@react-three/fiber';
 import React from 'react';
+import * as THREE from 'three';
 
 import { CameraGeometry } from './CameraGeometry';
 import { isCameraData } from './utils';
 
 interface ICameraEntityProps {
-  meshInstanceRef: React.Ref<any>;
+  meshInstanceRef: React.RefObject<THREE.Object3D>;
   entityId: number;
-  entityComponents: any[];
+  entityComponents: Array<{ type: string; data: unknown }>;
   isPlaying: boolean;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
 }
@@ -20,7 +21,7 @@ export const CameraEntity: React.FC<ICameraEntityProps> = React.memo(
     const typedCameraData = isCameraData(cameraData) ? cameraData : {};
 
     return (
-      <group ref={meshInstanceRef as any} userData={{ entityId }} onClick={onMeshClick}>
+      <group ref={meshInstanceRef} userData={{ entityId }} onClick={onMeshClick}>
         <CameraGeometry
           showFrustum={true}
           isPlaying={isPlaying}

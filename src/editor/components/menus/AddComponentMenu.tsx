@@ -238,12 +238,12 @@ export const AddComponentMenu: React.FC<IAddComponentMenuProps> = ({
           .toString(16)
           .padStart(2, '0')}`;
         return { color };
-      } else if (typeof (materialData as any).color === 'string') {
-        return { color: (materialData as any).color as string };
+      } else if (typeof (materialData as { color?: string }).color === 'string') {
+        return { color: (materialData as { color: string }).color };
       }
     }
     // No overrides by default to prioritize default material
-    return {} as any;
+    return {} as Record<string, unknown>;
   };
 
   // Get components for this entity using new ECS system with reactive updates

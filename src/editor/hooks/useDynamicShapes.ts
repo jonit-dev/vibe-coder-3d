@@ -4,6 +4,7 @@
  */
 
 import { useMemo } from 'react';
+import { z } from 'zod';
 import { shapeRegistry } from '@/core/lib/rendering/shapes/shapeRegistry';
 import type { ICustomShapeDescriptor } from '@/core/lib/rendering/shapes/IShapeDescriptor';
 
@@ -19,7 +20,7 @@ export interface IShapeMenuItem {
  * Get all registered custom shapes
  * Note: Returns fresh list each render to pick up newly registered shapes
  */
-export function useCustomShapes(): ICustomShapeDescriptor<any>[] {
+export function useCustomShapes(): ICustomShapeDescriptor<z.ZodTypeAny>[] {
   // Don't use useMemo here - we want to always get the latest shapes from registry
   // This is cheap since shapeRegistry.list() just returns an array reference
   return shapeRegistry.list();
@@ -28,7 +29,7 @@ export function useCustomShapes(): ICustomShapeDescriptor<any>[] {
 /**
  * Get shapes filtered by category
  */
-export function useCustomShapesByCategory(category: string): ICustomShapeDescriptor<any>[] {
+export function useCustomShapesByCategory(category: string): ICustomShapeDescriptor<z.ZodTypeAny>[] {
   // Memoize by category since filtering is slightly more expensive
   return useMemo(() => {
     return shapeRegistry.listByCategory(category);
@@ -38,7 +39,7 @@ export function useCustomShapesByCategory(category: string): ICustomShapeDescrip
 /**
  * Search shapes by query
  */
-export function useCustomShapesSearch(query: string): ICustomShapeDescriptor<any>[] {
+export function useCustomShapesSearch(query: string): ICustomShapeDescriptor<z.ZodTypeAny>[] {
   return useMemo(() => {
     if (!query) return shapeRegistry.list();
     return shapeRegistry.search(query);

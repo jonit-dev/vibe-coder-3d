@@ -69,9 +69,9 @@ declare global {
    */
   interface IMeshRendererAccessor {
     /** Get current component data */
-    get(): any | null;
+    get(): unknown | null;
     /** Set component data via partial patch */
-    set(patch: Partial<any>): void;
+    set(patch: Partial<unknown>): void;
     /** Enable/disable the mesh renderer */
     enable(value: boolean): void;
     /** Material manipulation helpers */
@@ -83,9 +83,9 @@ declare global {
    */
   interface ICameraAccessor {
     /** Get current component data */
-    get(): any | null;
+    get(): unknown | null;
     /** Set component data via partial patch */
-    set(patch: Partial<any>): void;
+    set(patch: Partial<unknown>): void;
     /** Set field of view */
     setFov(fov: number): void;
     /** Set near/far clipping planes */
@@ -101,9 +101,9 @@ declare global {
    */
   interface ILightAccessor {
     /** Get current component data */
-    get(): any | null;
+    get(): unknown | null;
     /** Set component data via partial patch */
-    set(patch: Partial<any>): void;
+    set(patch: Partial<unknown>): void;
     /** Enable/disable light */
     enable(value: boolean): void;
     /** Set light type */
@@ -135,9 +135,9 @@ declare global {
    */
   interface IRigidBodyAccessor {
     /** Get current component data */
-    get(): any | null;
+    get(): unknown | null;
     /** Set component data via partial patch */
-    set(patch: Partial<any>): void;
+    set(patch: Partial<unknown>): void;
     /** Enable/disable physics simulation */
     enable(value: boolean): void;
     /** Set body type */
@@ -167,9 +167,9 @@ declare global {
    */
   interface IMeshColliderAccessor {
     /** Get current component data */
-    get(): any | null;
+    get(): unknown | null;
     /** Set component data via partial patch */
-    set(patch: Partial<any>): void;
+    set(patch: Partial<unknown>): void;
     /** Enable/disable collider */
     enable(value: boolean): void;
     /** Set as trigger (no physics collision, only events) */

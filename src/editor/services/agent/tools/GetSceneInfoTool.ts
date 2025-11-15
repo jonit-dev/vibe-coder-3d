@@ -7,6 +7,16 @@ import { Logger } from '@core/lib/logger';
 
 const logger = Logger.create('GetSceneInfoTool');
 
+interface IGetSceneInfoParams {
+  include_entities?: boolean;
+}
+
+interface ISceneEntity {
+  name: string;
+  type: string;
+  position: { x: number; y: number; z: number };
+}
+
 export const getSceneInfoTool = {
   name: 'get_scene_info',
   description:
@@ -26,7 +36,7 @@ export const getSceneInfoTool = {
 /**
  * Execute the get scene info tool
  */
-export async function executeGetSceneInfo(params: any): Promise<string> {
+export async function executeGetSceneInfo(params: IGetSceneInfoParams): Promise<string> {
   logger.info('Getting scene info', { params });
 
   const { include_entities = false } = params;
@@ -56,7 +66,7 @@ export async function executeGetSceneInfo(params: any): Promise<string> {
 
       if (include_entities && sceneInfo.entities) {
         info += `Entities:\n`;
-        sceneInfo.entities.forEach((entity: any) => {
+        sceneInfo.entities.forEach((entity: ISceneEntity) => {
           info += `- ${entity.name} (${entity.type}) at (${entity.position.x.toFixed(2)}, ${entity.position.y.toFixed(2)}, ${entity.position.z.toFixed(2)})\n`;
         });
       }

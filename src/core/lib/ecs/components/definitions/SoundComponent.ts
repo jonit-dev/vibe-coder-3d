@@ -37,37 +37,37 @@ interface ISoundBitECSComponent {
 // Sound Schema
 const SoundSchema = z.object({
   audioPath: z.string().describe('Path to the audio file'),
-  enabled: z.boolean().default(true).describe('Enable/disable sound playback'),
-  autoplay: z.boolean().default(false).describe('Start playing automatically'),
-  loop: z.boolean().default(false).describe('Loop the audio'),
-  volume: z.number().min(0).max(1).default(1).describe('Volume level (0-1)'),
-  pitch: z.number().min(0.1).max(4).default(1).describe('Pitch multiplier (0.1-4)'),
-  playbackRate: z.number().min(0.1).max(4).default(1).describe('Playback rate multiplier'),
+  enabled: z.boolean().describe('Enable/disable sound playback'),
+  autoplay: z.boolean().describe('Start playing automatically'),
+  loop: z.boolean().describe('Loop the audio'),
+  volume: z.number().min(0).max(1).describe('Volume level (0-1)'),
+  pitch: z.number().min(0.1).max(4).describe('Pitch multiplier (0.1-4)'),
+  playbackRate: z.number().min(0.1).max(4).describe('Playback rate multiplier'),
 
   // 3D Spatial Audio Properties
-  is3D: z.boolean().default(true).describe('Enable 3D spatial audio'),
-  minDistance: z.number().min(0).default(1).describe('Reference distance for volume falloff'),
-  maxDistance: z.number().min(0).default(10000).describe('Maximum distance where audio is audible'),
+  is3D: z.boolean().describe('Enable 3D spatial audio'),
+  minDistance: z.number().min(0).describe('Reference distance for volume falloff'),
+  maxDistance: z.number().min(0).describe('Maximum distance where audio is audible'),
   rolloffFactor: z
     .number()
     .min(0)
     .max(1)
-    .default(1)
+    
     .describe('How quickly volume decreases with distance'),
-  coneInnerAngle: z.number().min(0).max(360).default(360).describe('Inner cone angle in degrees'),
-  coneOuterAngle: z.number().min(0).max(360).default(360).describe('Outer cone angle in degrees'),
-  coneOuterGain: z.number().min(0).max(1).default(0).describe('Volume at outer cone'),
+  coneInnerAngle: z.number().min(0).max(360).describe('Inner cone angle in degrees'),
+  coneOuterAngle: z.number().min(0).max(360).describe('Outer cone angle in degrees'),
+  coneOuterGain: z.number().min(0).max(1).describe('Volume at outer cone'),
 
   // Playback State (read-only, managed by system)
-  isPlaying: z.boolean().default(false).describe('Current playback state'),
-  currentTime: z.number().default(0).describe('Current playback position in seconds'),
-  duration: z.number().default(0).describe('Total duration of the audio in seconds'),
+  isPlaying: z.boolean().describe('Current playback state'),
+  currentTime: z.number().describe('Current playback position in seconds'),
+  duration: z.number().describe('Total duration of the audio in seconds'),
 
   // Audio Format Info (auto-detected)
   format: z.string().optional().describe('Audio format (mp3, wav, ogg, etc.)'),
 
   // Effects
-  muted: z.boolean().default(false).describe('Mute this specific sound'),
+  muted: z.boolean().describe('Mute this specific sound'),
 });
 
 export type SoundData = z.infer<typeof SoundSchema>;

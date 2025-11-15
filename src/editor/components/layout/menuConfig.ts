@@ -2,6 +2,7 @@ import { IMenuItem } from './MenuBar';
 import { ShapeType } from '@editor/types/shapes';
 import { buildGameObjectCategories } from '@editor/config/gameObjectMenuData';
 import type { ICustomShapeDescriptor } from '@/core/lib/rendering/shapes/IShapeDescriptor';
+import { z } from 'zod';
 
 export interface IMenuConfig {
   onSave: () => void;
@@ -21,7 +22,7 @@ export interface IMenuConfig {
   onBrowsePrefabs?: () => void;
   currentSceneName?: string | null;
   isPlaying?: boolean;
-  customShapes?: Array<ICustomShapeDescriptor<any>>;
+  customShapes?: Array<ICustomShapeDescriptor<z.ZodTypeAny>>;
 }
 
 export const createMenuItems = (config: IMenuConfig): IMenuItem[] => {

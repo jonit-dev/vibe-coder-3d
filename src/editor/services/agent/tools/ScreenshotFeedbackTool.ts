@@ -321,7 +321,7 @@ function getSceneInfo(): {
   try {
     // Access the editor store to get current scene state
     // Using the globally exposed store to avoid circular dependencies
-    const editorStore = (window as any).__editorStore;
+    const editorStore = (window as { __editorStore?: Record<string, unknown> }).__editorStore;
 
     if (!editorStore) {
       logger.debug('Editor store not available on window.__editorStore');

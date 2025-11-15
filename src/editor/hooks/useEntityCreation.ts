@@ -74,7 +74,15 @@ export const useEntityCreation = () => {
       }>,
     ) => {
       // Add MeshRenderer component with proper material
-      const meshRendererData: any = {
+      const meshRendererData: {
+        meshId: string;
+        materialId: string;
+        enabled: boolean;
+        castShadows: boolean;
+        receiveShadows: boolean;
+        modelPath?: string;
+        material?: Record<string, unknown>;
+      } = {
         meshId,
         materialId: 'default',
         enabled: true,
@@ -251,7 +259,7 @@ export const useEntityCreation = () => {
           restitution: 0.0,
           density: 1,
         },
-      } as any);
+      });
 
       // Add MeshCollider component with heightfield type for terrain
       addComponent(entity.id, KnownComponentTypes.MESH_COLLIDER, {
@@ -473,7 +481,7 @@ export const useEntityCreation = () => {
           restitution: 0.0,
           density: 1,
         },
-      } as any);
+      });
 
       // Add capsule mesh collider for character controller
       addComponent(entity.id, KnownComponentTypes.MESH_COLLIDER, {

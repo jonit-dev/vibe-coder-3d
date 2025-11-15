@@ -11,8 +11,8 @@ interface IModelLoadingMeshProps {
     receiveShadow?: boolean;
     visible?: boolean;
   };
-  onMeshClick?: (e: any) => void;
-  onMeshDoubleClick?: (e: any) => void;
+  onMeshClick?: (e: React.MouseEvent) => void;
+  onMeshDoubleClick?: (e: React.MouseEvent) => void;
 }
 
 export const ModelLoadingMesh: React.FC<IModelLoadingMeshProps> = React.memo(

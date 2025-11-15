@@ -105,7 +105,7 @@ export function useTerrainPhysics({
   );
 
   const enhanceColliderWithTerrain = React.useCallback(
-    (colliderConfig: any, terrainData: TerrainData) => {
+    (colliderConfig: Record<string, unknown>, terrainData: TerrainData) => {
       try {
         logger.debug('Processing heightfield collider for terrain');
 

@@ -12,6 +12,15 @@ import React, { useEffect, useRef } from 'react';
 import type { IPhysicsContributions } from '../hooks/useEntityMesh';
 import { EntityColliders } from './EntityColliders';
 
+interface IColliderSize {
+  width?: number;
+  height?: number;
+  depth?: number;
+  radius?: number;
+  capsuleRadius?: number;
+  capsuleHeight?: number;
+}
+
 interface IEntityPhysicsBodyProps {
   entityId: number;
   terrainColliderKey: string;
@@ -19,7 +28,19 @@ interface IEntityPhysicsBodyProps {
   position: [number, number, number];
   rotationRadians: [number, number, number];
   scale: [number, number, number];
-  enhancedColliderConfig: any;
+  enhancedColliderConfig: {
+    type: string;
+    center: [number, number, number];
+    isTrigger: boolean;
+    size: IColliderSize;
+    terrain?: {
+      widthSegments: number;
+      depthSegments: number;
+      heights: number[];
+      positions?: Float32Array;
+      scale: { x: number; y: number; z: number };
+    };
+  } | null;
   hasCustomColliders: boolean;
   hasEffectiveCustomColliders: boolean;
   colliderType: string;
@@ -134,17 +155,39 @@ export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
     const { rigidBodyProps } = physicsContributions;
 
     try {
+      // Map our type names to Rapier's type names
+      const mapTypeToRapier = (type?: string): 'fixed' | 'dynamic' | 'kinematicPosition' | 'kinematicVelocity' | undefined => {
+        if (!type) return undefined;
+        const lowerType = type.toLowerCase();
+        if (lowerType === 'static') return 'fixed';
+        if (lowerType === 'dynamic') return 'dynamic';
+        if (lowerType === 'kinematic') return 'kinematicPosition';
+        return 'dynamic'; // default fallback
+      };
+
+      // Extract known rigidBodyProps and preserve any additional Rapier props (callbacks, axis locks, etc.)
+      const {
+        type,
+        mass,
+        friction,
+        restitution,
+        density,
+        gravityScale,
+        canSleep,
+        ...additionalRapierProps
+      } = rigidBodyProps;
+
       return (
         <RigidBody
           ref={rigidBodyRef}
           key={terrainColliderKey}
-          type={rigidBodyProps.type as any}
-          mass={rigidBodyProps.mass}
-          friction={rigidBodyProps.friction}
-          restitution={rigidBodyProps.restitution}
-          density={rigidBodyProps.density}
-          gravityScale={rigidBodyProps.gravityScale}
-          canSleep={rigidBodyProps.canSleep}
+          type={mapTypeToRapier(type)}
+          mass={mass}
+          friction={friction}
+          restitution={restitution}
+          density={density}
+          gravityScale={gravityScale}
+          canSleep={canSleep}
           position={position}
           rotation={rotationRadians}
           scale={scale}
@@ -154,8 +197,9 @@ export const EntityPhysicsBody: React.FC<IEntityPhysicsBodyProps> = React.memo(
               ? false
               : hasCustomColliders || hasEffectiveCustomColliders
                 ? false
-                : (colliderType as any)
+                : (colliderType as 'cuboid' | 'ball' | 'trimesh' | 'capsule' | 'heightfield' | false | undefined)
           }
+          {...additionalRapierProps}
         >
           {/* Custom Colliders - now properly handling heightfield */}
           <EntityColliders colliderConfig={enhancedColliderConfig} />

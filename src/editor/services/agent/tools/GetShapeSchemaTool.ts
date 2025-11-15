@@ -26,7 +26,7 @@ export const getShapeSchemaTool = {
 /**
  * Execute the get shape schema tool
  */
-export async function executeGetShapeSchema(params: any): Promise<string> {
+export async function executeGetShapeSchema(params: { shape_name: string }): Promise<string> {
   logger.info('Getting shape schema', { params });
 
   const { shape_name } = params;

@@ -13,7 +13,7 @@ import { useCameraFocus } from './hooks/useCameraFocus';
 export interface ITimelinePanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (clip: any) => void;
+  onSave?: (clip: Record<string, unknown>) => void;
 }
 
 const MIN_HEIGHT = 200;

@@ -92,6 +92,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
   const createStreamingCallbacks = useCallback(
     (operation: string, toastId?: string): IStreamingCallbacks => ({
       onProgress: handleProgress,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       onChunkProcessed: (_chunkIndex, _entities) => {
         // Chunk processed successfully
       },
@@ -100,6 +101,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         if (toastId) removeToast(toastId);
         projectToasts.showOperationError(operation, error.message);
       },
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       onComplete: (_summary) => {
         if (toastId) removeToast(toastId);
       },
@@ -339,7 +341,8 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
         try {
           const scriptFlushPromises: Promise<void>[] = [];
           for (const ent of transformedEntities) {
-            const script = (ent.components as Record<string, any>)?.Script as
+            const components = ent.components as Record<string, unknown> | undefined;
+            const script = components?.Script as
               | {
                   code?: string;
                   scriptRef?: { source?: string; scriptId?: string; codeHash?: string };
@@ -465,6 +468,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
           }
 
           // Stream read the file
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const sceneData = await readSceneStream(file, (_progress) => {
             // File read progress update
           });
@@ -600,6 +604,7 @@ export function useStreamingSceneActions(options: IStreamingSceneActionsOptions 
     async (filename = 'scene.json'): Promise<void> => {
       try {
         const scene = await exportSceneData();
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         await downloadSceneStream(scene, filename, (_progress) => {
           // Download progress update
         });

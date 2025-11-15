@@ -128,7 +128,7 @@ export const Keyframe: React.FC<IKeyframeProps> = ({ trackId, trackType, keyfram
     }
   };
 
-  const formatValue = (value: any): string => {
+  const formatValue = (value: unknown): string => {
     if (Array.isArray(value)) {
       return `[${value.join(', ')}]`;
     }

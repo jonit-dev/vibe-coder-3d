@@ -445,7 +445,7 @@ export const GizmoControls: React.FC<IGizmoControlsProps> = React.memo(
     // Attach controls directly to the target object
     return (
       <TransformControls
-        ref={transformRef as any}
+        ref={transformRef as React.RefObject<React.ElementRef<typeof TransformControls>>}
         mode={mode}
         size={0.75}
         translationSnap={0.1}

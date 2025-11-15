@@ -16,7 +16,7 @@ export const PhysicsBindingManager: React.FC = () => {
   useCollisionEvents({
     onCollisionEnter: (entityA: number, entityB: number) => {
       // Check if entityB has MeshCollider with isTrigger = false
-      const colliderData = componentRegistry.getComponentData<any>(entityB, 'MeshCollider');
+      const colliderData = componentRegistry.getComponentData<{ isTrigger?: boolean }>(entityB, 'MeshCollider');
       if (colliderData?.isTrigger) {
         // This is actually a trigger event, not a collision
         return;
@@ -29,7 +29,7 @@ export const PhysicsBindingManager: React.FC = () => {
 
     onCollisionExit: (entityA: number, entityB: number) => {
       // Check if entityB has MeshCollider with isTrigger = false
-      const colliderData = componentRegistry.getComponentData<any>(entityB, 'MeshCollider');
+      const colliderData = componentRegistry.getComponentData<{ isTrigger?: boolean }>(entityB, 'MeshCollider');
       if (colliderData?.isTrigger) {
         // This is actually a trigger event, not a collision
         return;

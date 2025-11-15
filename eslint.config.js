@@ -83,6 +83,7 @@ export default [
                 '**/lib/extension/**/*',
                 '**/lib/input/inputTypes.ts',
                 '**/lib/serialization/assets/**/*',
+                '**/animation/assets/**/*',
                 '**/types/components.ts',
                 '**/materials/Material.types.ts',
                 '**/prefabs/Prefab.types.ts',

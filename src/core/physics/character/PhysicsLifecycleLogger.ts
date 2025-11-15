@@ -41,7 +41,7 @@ const MAX_HISTORY_SIZE = 1000;
  */
 function handleComponentAdded(event: { entityId: number; componentId: string; data: unknown }): void {
   // Only track physics-related components
-  if (!TRACKED_COMPONENTS.includes(event.componentId as any)) {
+  if (!TRACKED_COMPONENTS.includes(event.componentId as typeof TRACKED_COMPONENTS[number])) {
     return;
   }
 
@@ -71,7 +71,7 @@ function handleComponentAdded(event: { entityId: number; componentId: string; da
  */
 function handleComponentRemoved(event: { entityId: number; componentId: string }): void {
   // Only track physics-related components
-  if (!TRACKED_COMPONENTS.includes(event.componentId as any)) {
+  if (!TRACKED_COMPONENTS.includes(event.componentId as typeof TRACKED_COMPONENTS[number])) {
     return;
   }
 

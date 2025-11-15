@@ -76,7 +76,7 @@ class TerrainProfiler {
 
   private getMemoryUsage(): number {
     // Modern browsers support performance.memory
-    const memory = (performance as any).memory;
+    const memory = (performance as { memory?: { usedJSHeapSize: number } }).memory;
     return memory ? memory.usedJSHeapSize / 1024 / 1024 : 0; // MB
   }
 

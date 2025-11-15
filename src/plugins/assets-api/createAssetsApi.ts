@@ -166,6 +166,7 @@ async function handleSave(
   let payload = body.payload ?? body.data;
 
   if (payload === undefined && body.path) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { path: _p, ...rest } = body;
     if (Object.keys(rest).length > 0) {
       payload = rest;

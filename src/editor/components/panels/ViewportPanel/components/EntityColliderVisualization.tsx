@@ -7,7 +7,7 @@ interface IEntityColliderVisualizationProps {
   position: [number, number, number];
   rotationRadians: [number, number, number];
   scale: [number, number, number];
-  enhancedColliderConfig: any;
+  enhancedColliderConfig: Record<string, unknown> | null;
   meshCollider?: { data: IMeshColliderData } | null;
 }
 
@@ -20,30 +20,30 @@ export const EntityColliderVisualization: React.FC<IEntityColliderVisualizationP
     const colliderData = enhancedColliderConfig
       ? {
           enabled: true,
-          colliderType: enhancedColliderConfig.type,
+          colliderType: enhancedColliderConfig.colliderType,
           isTrigger: enhancedColliderConfig.isTrigger,
           center: enhancedColliderConfig.center,
           size: enhancedColliderConfig.size,
           physicsMaterial: { friction: 0.7, restitution: 0.3, density: 1 },
-        }
+        } as IMeshColliderData
       : meshCollider?.data || null;
 
     const terrainHeights =
-      enhancedColliderConfig?.type === 'heightfield' && enhancedColliderConfig.terrain
-        ? enhancedColliderConfig.terrain.heights
+      enhancedColliderConfig?.colliderType === 'heightfield' && enhancedColliderConfig.terrain
+        ? (enhancedColliderConfig.terrain as { heights?: number[] }).heights
         : undefined;
 
     const terrainSegments =
-      enhancedColliderConfig?.type === 'heightfield' && enhancedColliderConfig.terrain
+      enhancedColliderConfig?.colliderType === 'heightfield' && enhancedColliderConfig.terrain
         ? [
-            enhancedColliderConfig.terrain.widthSegments + 1,
-            enhancedColliderConfig.terrain.depthSegments + 1,
+            ((enhancedColliderConfig.terrain as { widthSegments?: number }).widthSegments ?? 0) + 1,
+            ((enhancedColliderConfig.terrain as { depthSegments?: number }).depthSegments ?? 0) + 1,
           ] as [number, number]
         : undefined;
 
     const terrainPositions =
-      enhancedColliderConfig?.type === 'heightfield' && enhancedColliderConfig.terrain
-        ? enhancedColliderConfig.terrain.positions
+      enhancedColliderConfig?.colliderType === 'heightfield' && enhancedColliderConfig.terrain
+        ? (enhancedColliderConfig.terrain as { positions?: Float32Array }).positions
         : undefined;
 
     return (

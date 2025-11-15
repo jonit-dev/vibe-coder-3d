@@ -1,6 +1,7 @@
 import React from 'react';
 import { FiActivity, FiHardDrive, FiWifi, FiZap, FiCode } from 'react-icons/fi';
 import { TbBoxMultiple, TbMountain } from 'react-icons/tb';
+import * as THREE from 'three';
 
 import { useFPS } from '@/editor/hooks/useFPS';
 import { StatusIndicator } from '../shared/StatusIndicator';
@@ -87,7 +88,7 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
   React.useEffect(() => {
     const countTriangles = () => {
       try {
-        const scene = (window as any).__r3fScene;
+        const scene = (window as { __r3fScene?: THREE.Scene }).__r3fScene;
         if (!scene) return { total: 0, selected: 0 };
 
         let totalCount = 0;
@@ -97,9 +98,9 @@ export const StatusBar: React.FC<IStatusBarProps> = ({
         const currentSelectedIds = useEditorStore.getState().selectedIds;
         const selectedIdsSet = new Set(currentSelectedIds);
 
-        scene.traverse((obj: any) => {
-          if (obj.geometry) {
-            const geometry = obj.geometry;
+        scene.traverse((obj: THREE.Object3D) => {
+          if ('geometry' in obj && obj.geometry) {
+            const geometry = obj.geometry as THREE.BufferGeometry;
             let triangles = 0;
 
             if (geometry.index) {

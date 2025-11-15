@@ -99,6 +99,7 @@ export function discoverShapes(): number {
         });
       } catch (error) {
         logger.error('Failed to register shape from module', { path, error });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         errorCount++;
       }
     }

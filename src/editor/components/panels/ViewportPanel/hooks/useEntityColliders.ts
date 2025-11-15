@@ -64,7 +64,7 @@ export const useEntityColliders = ({ meshCollider, meshType }: IUseEntityCollide
       center: meshColliderData.center ?? [0, 0, 0],
       isTrigger: meshColliderData.isTrigger,
       size: meshColliderData.size,
-    } as any;
+    } as { type: string; args?: Record<string, unknown> };
 
     // For heightfield, we need to pass the terrain data
     if (meshColliderData.colliderType === 'heightfield') {

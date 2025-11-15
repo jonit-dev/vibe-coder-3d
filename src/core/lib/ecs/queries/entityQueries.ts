@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from 'zod';
 import { create } from 'zustand';
 import { EntityIndex } from '../indexers/EntityIndex';
@@ -9,9 +8,10 @@ import type { IVector3, IBounds } from '../indexers/SpatialIndex';
 import { IndexEventAdapter } from '../adapters/IndexEventAdapter';
 import { Vector3Pool } from '../../pooling/PooledVector3';
 import type { IObjectPoolStats } from '../../pooling/ObjectPool';
+import type { IWorld } from '../World';
 
 // Lazy import to avoid circular dependency
-let ConsistencyChecker: any = null;
+let ConsistencyChecker: typeof import('../utils/consistencyChecker').ConsistencyChecker | null = null;
 const getConsistencyChecker = async () => {
   if (!ConsistencyChecker) {
     const module = await import('../utils/consistencyChecker');
@@ -377,11 +377,11 @@ export class EntityQueries {
   private isInstanceMode = false;
 
   constructor(
-    world?: any,
+    world?: IWorld,
     entityManager?: import('../EntityManager').EntityManager,
     componentRegistry?: import('../ComponentRegistry').ComponentRegistry,
   ) {
-    // BitECS world - using any for compatibility
+    // BitECS world - properly typed as IWorld
     if (world && entityManager && componentRegistry) {
       // Instance mode with injected dependencies - create isolated indices
       this.isInstanceMode = true;
