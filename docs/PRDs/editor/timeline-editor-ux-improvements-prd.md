@@ -775,18 +775,182 @@ Combined with the features in the "80% Coverage PRD" (state machines, blending, 
 - **Screen Resolution**: Minimum 1280x720, optimized for 1920x1080
 - **Browser**: Chrome/Edge 100+, Firefox 100+ (ES2020 support)
 
-## Priority Ranking
+## Priority Ranking & Recommendations
 
-If time is limited, implement in this order:
+### If Time is Limited - Implement in This Order:
 
-**High Priority** (Must-have for professional use):
+**🔴 Critical Priority** (Must-have for professional use - **3.25 days**):
 
-1. Phase 1: Curve Visualization (makes keyframe editing visual)
-2. Phase 5: Performance Optimization (prevents frustration)
-3. Phase 2: Track Management (essential for organization)
+1. **Phase 1: Curve Visualization** (1.5 days)
 
-**Medium Priority** (Nice-to-have, improves workflow): 4. Phase 3: Advanced Selection (power-user features) 5. Phase 6: Visual Polish (quality of life)
+   - **Why First**: Makes keyframe editing visual and intuitive
+   - **Impact**: Transforms timeline from "functional" to "usable"
+   - **User Pain**: Currently blind editing - users can't see interpolation
+   - **ROI**: Highest - this is the #1 complaint in any timeline without curves
 
-**Low Priority** (Can defer): 6. Phase 4: Navigation & Markers (useful but not critical)
+2. **Phase 5: Performance Optimization** (0.75 day)
 
-This prioritization ensures the most impactful improvements land first, with the option to ship incrementally.
+   - **Why Second**: Prevents frustration during use
+   - **Impact**: Makes timeline responsive with realistic workloads
+   - **User Pain**: Lag/stutter destroys flow state during animation
+   - **ROI**: Very High - enables professional usage patterns
+
+3. **Phase 2: Track Management** (1 day)
+   - **Why Third**: Essential for organization with 10+ tracks
+   - **Impact**: Keeps complex animations manageable
+   - **User Pain**: Cluttered UI, can't find tracks, accidental edits
+   - **ROI**: High - unlocks complex multi-track animations
+
+**🟡 Medium Priority** (Nice-to-have, improves workflow - **2 days**):
+
+4. **Phase 3: Advanced Selection** (1 day)
+
+   - **Why Fourth**: Power-user features for efficiency
+   - **Impact**: 10x faster bulk editing operations
+   - **User Pain**: Tedious one-by-one keyframe manipulation
+   - **ROI**: Medium - used frequently by experienced users
+
+5. **Phase 6: Visual Polish** (1 day)
+   - **Why Fifth**: Quality of life and professional feel
+   - **Impact**: Makes tool feel polished and trustworthy
+   - **User Pain**: Minor annoyances, lack of feedback
+   - **ROI**: Medium - improves confidence and user satisfaction
+
+**🟢 Low Priority** (Can defer - **0.75 day**):
+
+6. **Phase 4: Navigation & Markers** (0.75 day)
+   - **Why Last**: Useful but not critical for core workflows
+   - **Impact**: Helps with long timelines and organization
+   - **User Pain**: Workarounds exist (manual navigation)
+   - **ROI**: Low-Medium - mainly benefits long-form content
+
+---
+
+### Recommended Implementation Strategies
+
+#### **Strategy A: MVP Polish** (3.25 days → Professional Quality)
+
+**Goal**: Ship a timeline that feels professional immediately
+
+```
+Week 1:
+- Days 1-2: Phase 1 - Curve Visualization (1.5 days)
+- Day 2: Phase 5 - Performance Optimization (0.75 day)
+- Day 3: Phase 2 - Track Management (1 day)
+```
+
+**Outcome**: Timeline editor matches Unity/Unreal quality for basic workflows. Users can:
+
+- ✅ Visually edit curves with bezier handles
+- ✅ Work with 50+ tracks without lag
+- ✅ Organize tracks into groups with mute/solo
+
+**Ship at this point** if time is tight. This covers 80% of user needs.
+
+---
+
+#### **Strategy B: Full Enhancement** (6 days → Best-in-Class)
+
+**Goal**: Complete all improvements for feature parity with industry tools
+
+```
+Week 1:
+- Days 1-2: Phase 1 - Curve Visualization
+- Day 2: Phase 5 - Performance Optimization
+- Day 3: Phase 2 - Track Management
+- Day 4: Phase 3 - Advanced Selection
+- Day 5: Phase 6 - Visual Polish
+
+Week 2:
+- Day 1: Phase 4 - Navigation & Markers
+```
+
+**Outcome**: Timeline editor surpasses Unity Animator in some areas. Users get:
+
+- ✅ Everything from Strategy A
+- ✅ Multi-track selection and transform tools
+- ✅ Minimap navigation and timeline markers
+- ✅ Polished animations and hover previews
+
+**Ship at this point** for a best-in-class animation tool.
+
+---
+
+#### **Strategy C: Incremental Shipping** (Ship Every 1-2 Days)
+
+**Goal**: Continuous delivery with immediate user feedback
+
+```
+Sprint 1 (1.5 days): Phase 1 - Curve Visualization
+  → SHIP: "Now with visual curve editing!"
+
+Sprint 2 (0.75 day): Phase 5 - Performance
+  → SHIP: "50% faster with large animations!"
+
+Sprint 3 (1 day): Phase 2 - Track Management
+  → SHIP: "Organize tracks with groups!"
+
+Sprint 4+ (optional): Remaining phases based on user feedback
+```
+
+**Outcome**: Fastest time-to-value. Users benefit immediately from each sprint.
+
+---
+
+### Decision Matrix
+
+| Strategy                | Time Investment | User Impact            | Risk   | When to Choose                                 |
+| ----------------------- | --------------- | ---------------------- | ------ | ---------------------------------------------- |
+| **A: MVP Polish**       | 3.25 days       | High (80% needs)       | Low    | Tight deadline, need professional quality fast |
+| **B: Full Enhancement** | 6 days          | Very High (100% needs) | Medium | Have time, want best-in-class                  |
+| **C: Incremental**      | Flexible        | Immediate, growing     | Low    | Want user feedback, iterative approach         |
+
+---
+
+### RECOMMENDED: Strategy A + Incremental
+
+**Best of both worlds approach:**
+
+1. **Ship MVP Polish first** (3.25 days)
+
+   - Gets you to professional quality quickly
+   - Addresses critical UX gaps immediately
+   - Users can work productively
+
+2. **Then add enhancements based on feedback**
+   - Monitor which features users request
+   - Prioritize Phase 3 or 6 based on usage patterns
+   - Phase 4 only if users need long-form content support
+
+**This approach minimizes risk while maximizing user value.**
+
+---
+
+### Per-Phase Cost/Benefit Analysis
+
+| Phase          | Time  | User Benefit        | Technical Risk         | Must-Have?      |
+| -------------- | ----- | ------------------- | ---------------------- | --------------- |
+| 1: Curves      | 1.5d  | ⭐⭐⭐⭐⭐ Critical | 🟡 Medium (SVG perf)   | ✅ YES          |
+| 5: Performance | 0.75d | ⭐⭐⭐⭐⭐ Critical | 🟢 Low                 | ✅ YES          |
+| 2: Tracks      | 1d    | ⭐⭐⭐⭐ High       | 🟢 Low                 | ✅ YES          |
+| 3: Selection   | 1d    | ⭐⭐⭐ Medium       | 🟡 Medium (edge cases) | ⚠️ Nice to have |
+| 6: Polish      | 1d    | ⭐⭐⭐ Medium       | 🟢 Low                 | ⚠️ Nice to have |
+| 4: Navigation  | 0.75d | ⭐⭐ Low            | 🟢 Low                 | ❌ Optional     |
+
+---
+
+### Final Recommendation
+
+**Start with Strategy A (MVP Polish)**:
+
+- Implement Phases 1, 5, 2 in order
+- Takes 3.25 days
+- Results in professional-quality timeline
+
+**Then assess**:
+
+- If users request bulk operations → Phase 3
+- If users want better aesthetics → Phase 6
+- If users work with long timelines → Phase 4
+
+This prioritization ensures the most impactful improvements land first, with the option to ship incrementally and iterate based on real usage patterns.
