@@ -2,7 +2,6 @@ import React from 'react';
 import { useSceneFade } from '../hooks/useSceneFade';
 import { useTimelineStore } from '@editor/store/timelineStore';
 import { useEditorStore } from '@editor/store/editorStore';
-import { AnimationFocusHighlight } from './AnimationFocusHighlight';
 
 export interface IAnimationFocusEffectProps {
   isTimelineOpen: boolean;
@@ -15,7 +14,6 @@ export interface IAnimationFocusEffectProps {
  *
  * Effects:
  * - Fades out non-focused entities to help user concentrate on the animated entity
- * - Shows a pulsing highlight ring around the focused entity
  *
  * This component follows SRP by only managing the visual effects in the 3D scene.
  * It reads state from the timeline store directly to avoid prop drilling.
@@ -62,6 +60,5 @@ export const AnimationFocusEffect: React.FC<IAnimationFocusEffectProps> = ({
   // Apply scene fade effect
   useSceneFade({ focusedEntityId: activeEntityId, isFocusMode, fadeOpacity });
 
-  // Render highlight ring around focused entity
-  return <AnimationFocusHighlight entityId={activeEntityId} isFocusMode={isFocusMode} />;
+  return null;
 };

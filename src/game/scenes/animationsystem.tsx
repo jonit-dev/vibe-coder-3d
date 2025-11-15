@@ -179,41 +179,14 @@ export default defineScene({
         Animation: {
           playing: false,
           time: 0,
-          clips: [
+          clipBindings: [
             {
-              id: 'clip_1763151163889',
-              name: 'Float',
-              duration: 2,
-              tracks: [
-                {
-                  id: 'track_1763159205482',
-                  type: 'transform.position',
-                  targetPath: 'root',
-                  keyframes: [
-                    {
-                      time: 0,
-                      value: [0, 0.6, 0],
-                      easing: 'linear',
-                    },
-                    {
-                      time: 1,
-                      value: [0, 1.1, 0],
-                      easing: 'linear',
-                    },
-                    {
-                      time: 2,
-                      value: [0, 0.6, 0],
-                      easing: 'linear',
-                    },
-                  ],
-                },
-              ],
-              timeScale: 1,
-              loop: true,
+              bindingId: 'binding_float',
+              clipId: 'float',
+              assetRef: '@/animations/float',
             },
           ],
-          version: 1,
-          activeClipId: 'clip_1763151163889',
+          activeBindingId: 'float',
         },
       },
     },

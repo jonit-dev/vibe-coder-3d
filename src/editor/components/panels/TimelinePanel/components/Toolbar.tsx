@@ -10,8 +10,11 @@ import {
   FiRotateCw,
   FiRepeat,
   FiFastForward,
+  FiCheckSquare,
 } from 'react-icons/fi';
 import { useTimelineStore } from '@editor/store/timelineStore';
+import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import type { IAnimationComponent } from '@core/components/animation/AnimationComponent';
 
 const PLAYBACK_SPEEDS = [0.25, 0.5, 1, 2, 4];
 const FRAME_RATES = [24, 30, 60];
@@ -33,10 +36,36 @@ export const Toolbar: React.FC = () => {
     canUndo,
     canRedo,
     activeClip,
+    activeEntityId,
   } = useTimelineStore();
 
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [frameRate, setFrameRate] = useState(30);
+  const [, forceUpdate] = useState({});
+
+  // Get animation component to check if this clip is active
+  const animationComponent = activeEntityId
+    ? componentRegistry.getComponentData<IAnimationComponent>(activeEntityId, 'Animation')
+    : null;
+
+  const isActiveClip = activeClip && animationComponent?.activeBindingId === activeClip.id;
+
+  const toggleActiveClip = () => {
+    if (!activeEntityId || !activeClip) return;
+
+    const component = componentRegistry.getComponentData<IAnimationComponent>(activeEntityId, 'Animation');
+    if (!component) return;
+
+    // Toggle: if already active, deactivate; if not active, activate
+    componentRegistry.updateComponent(activeEntityId, 'Animation', {
+      ...component,
+      activeBindingId: isActiveClip ? undefined : activeClip.id,
+      playing: false,
+    });
+
+    // Force re-render to update UI
+    forceUpdate({});
+  };
 
   const cyclePlaybackSpeed = () => {
     const currentIndex = PLAYBACK_SPEEDS.indexOf(playbackSpeed);
@@ -136,7 +165,7 @@ export const Toolbar: React.FC = () => {
         </button>
       </div>
 
-      {/* Snap Controls */}
+      {/* Snap Controls & Active Toggle */}
       <div className="flex items-center gap-1 px-2 border-r border-cyan-900/20">
         <button
           onClick={toggleSnap}
@@ -148,6 +177,18 @@ export const Toolbar: React.FC = () => {
           title="Toggle Snap to Grid"
         >
           <FiGrid className="w-4 h-4" />
+        </button>
+        <button
+          onClick={toggleActiveClip}
+          disabled={!activeClip}
+          className={`p-2 rounded transition-colors ${
+            isActiveClip
+              ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+              : 'hover:bg-[#2D2F34] hover:text-primary'
+          } disabled:opacity-30 disabled:cursor-not-allowed`}
+          title={isActiveClip ? 'Active - Click to deactivate' : 'Inactive - Click to activate on entity'}
+        >
+          <FiCheckSquare className="w-4 h-4" />
         </button>
       </div>
 

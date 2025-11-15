@@ -16,14 +16,33 @@ export const ClipSchema = z.object({
 export type IClip = z.infer<typeof ClipSchema>;
 
 /**
+ * Clip binding schema
+ * Associates an animation asset reference with entity-specific overrides
+ */
+export const ClipBindingSchema = z.object({
+  bindingId: z.string(),
+  clipId: z.string(),
+  assetRef: z.string(), // '@/animations/walk' or './animations/MyScene'
+  overrides: z
+    .object({
+      loop: z.boolean().optional(),
+      speed: z.number().positive().optional(),
+      startOffset: z.number().nonnegative().optional(),
+    })
+    .optional(),
+});
+
+export type IClipBinding = z.infer<typeof ClipBindingSchema>;
+
+/**
  * Animation component schema
+ * Uses external asset references via clip bindings
  */
 export const AnimationComponentSchema = z.object({
-  activeClipId: z.string().optional(),
+  activeBindingId: z.string().optional(),
   playing: z.boolean().default(false),
   time: z.number().nonnegative().default(0),
-  clips: z.array(ClipSchema).default([]),
-  version: z.literal(1).default(1),
+  clipBindings: z.array(ClipBindingSchema).default([]),
 });
 
 export type IAnimationComponent = z.infer<typeof AnimationComponentSchema>;
@@ -32,11 +51,10 @@ export type IAnimationComponent = z.infer<typeof AnimationComponentSchema>;
  * Default animation component data
  */
 export const DEFAULT_ANIMATION_COMPONENT: IAnimationComponent = {
-  activeClipId: undefined,
+  activeBindingId: undefined,
   playing: false,
   time: 0,
-  clips: [],
-  version: 1,
+  clipBindings: [],
 };
 
 /**
@@ -59,6 +77,6 @@ export interface IAnimationApi {
   stop(entityId: number, opts?: { fade?: number }): void;
   setTime(entityId: number, time: number): void;
   getState(entityId: number): IAnimationPlaybackState | null;
-  getClip(entityId: number, clipId: string): IClip | null;
-  getAllClips(entityId: number): IClip[];
+  getClip(entityId: number, clipId: string): unknown;
+  getAllClips(entityId: number): unknown[];
 }

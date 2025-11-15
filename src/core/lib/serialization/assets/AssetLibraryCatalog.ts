@@ -28,7 +28,7 @@ export class AssetLibraryCatalog {
    * Scan the library and build the catalog
    */
   async build(): Promise<void> {
-    const assetTypes: AssetType[] = ['material', 'prefab', 'input', 'script'];
+    const assetTypes: AssetType[] = ['material', 'prefab', 'input', 'script', 'animation'];
 
     for (const assetType of assetTypes) {
       const typeDir = path.join(this.libraryRoot, `${assetType}s`);
@@ -72,6 +72,7 @@ export class AssetLibraryCatalog {
       prefab: this.assetsByType.get('prefab')?.size ?? 0,
       input: this.assetsByType.get('input')?.size ?? 0,
       script: this.assetsByType.get('script')?.size ?? 0,
+      animation: this.assetsByType.get('animation')?.size ?? 0,
     };
   }
 

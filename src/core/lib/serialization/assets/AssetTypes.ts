@@ -6,7 +6,7 @@
 /**
  * All supported asset types in the system
  */
-export type AssetType = 'material' | 'prefab' | 'input' | 'script';
+export type AssetType = 'material' | 'prefab' | 'input' | 'script' | 'animation';
 
 /**
  * Generic asset metadata interface
@@ -26,6 +26,7 @@ export const ASSET_EXTENSIONS: Record<AssetType, string> = {
   prefab: '.prefab.tsx',
   input: '.input.tsx',
   script: '.script.tsx',
+  animation: '.animation.tsx',
 };
 
 /**
@@ -36,6 +37,7 @@ export const ASSET_DEFINE_FUNCTIONS: Record<AssetType, { single: string; plural:
   prefab: { single: 'definePrefab', plural: 'definePrefabs' },
   input: { single: 'defineInputAsset', plural: 'defineInputAssets' },
   script: { single: 'defineScript', plural: 'defineScripts' },
+  animation: { single: 'defineAnimationClip', plural: 'defineAnimationClips' },
 };
 
 /**

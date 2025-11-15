@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
-import type { IClip, IAnimationComponent } from '@core/components/animation/AnimationComponent';
+import type { IClip } from '@core/components/animation/AnimationComponent';
 import type { IKeyframe, KeyframeValue } from '@core/components/animation/tracks/TrackTypes';
 import {
   TrackType,
@@ -9,6 +9,8 @@ import {
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
 import type { ITransformData } from '@core/lib/ecs/components/TransformComponent';
+import { AnimationRegistry } from '@core/animation/AnimationRegistry';
+import type { IAnimationAsset } from '@core/animation/assets/defineAnimations';
 
 export interface ITimelineSelection {
   clipId: string | null;
@@ -146,25 +148,21 @@ function cloneClip(clip: IClip): IClip {
 function syncClipToAnimationComponent(entityId: number | null, clip: IClip | null): void {
   if (entityId == null || !clip) return;
 
-  const component =
-    componentRegistry.getComponentData<IAnimationComponent>(
-      entityId,
-      KnownComponentTypes.ANIMATION,
-    ) || null;
-  if (!component) return;
+  // Update clip in AnimationRegistry
+  const registry = AnimationRegistry.getInstance();
+  // Convert IClip to IAnimationAsset (add required tags property with default)
+  const asset: IAnimationAsset = {
+    ...clip,
+    tags: [],
+  };
+  registry.upsert(asset);
 
-  const clipIndex = component.clips.findIndex((c) => c.id === clip.id);
-  if (clipIndex === -1) return;
-
-  const updatedClips = component.clips.map((existing) =>
-    existing.id === clip.id ? JSON.parse(JSON.stringify(clip)) : existing,
-  );
-
-  componentRegistry.updateComponent(entityId, KnownComponentTypes.ANIMATION, {
-    ...component,
-    activeClipId: component.activeClipId ?? clip.id,
-    clips: updatedClips,
-  });
+  // Get current animation component to trigger update
+  const animationComponent = componentRegistry.getComponentData(entityId, KnownComponentTypes.ANIMATION);
+  if (animationComponent) {
+    // Update the component to trigger change detection
+    componentRegistry.updateComponent(entityId, KnownComponentTypes.ANIMATION, animationComponent);
+  }
 }
 
 export const useTimelineStore = create<ITimelineState>((set, get) => ({

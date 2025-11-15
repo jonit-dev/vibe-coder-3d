@@ -3,12 +3,13 @@ import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import type {
   IAnimationComponent,
   IAnimationApi,
-  IClip,
   IAnimationPlaybackState,
+  IClip,
 } from '@core/components/animation/AnimationComponent';
 import { TimelineEvaluator, type ITimelineEvaluation } from '@core/lib/animation/TimelineEvaluator';
 import { emit } from '@core/lib/events';
 import { Logger } from '@core/lib/logger';
+import { AnimationRegistry } from '@core/animation/AnimationRegistry';
 
 const logger = Logger.create('AnimationSystem');
 
@@ -46,7 +47,7 @@ class AnimationSystemImpl implements IAnimationApi {
   /**
    * Update all animations (called each frame)
    */
-  update(scene: THREE.Scene, deltaTime: number): void {
+  update(scene: THREE.Scene, deltaTime: number, isPlaying: boolean = false): void {
     if (!this.scene) {
       this.scene = scene;
     }
@@ -54,14 +55,14 @@ class AnimationSystemImpl implements IAnimationApi {
     const entities = componentRegistry.getEntitiesWithComponent('Animation');
 
     for (const entityId of entities) {
-      this.updateEntity(entityId, deltaTime);
+      this.updateEntity(entityId, deltaTime, isPlaying);
     }
   }
 
   /**
    * Update a single entity's animation
    */
-  private updateEntity(entityId: number, deltaTime: number): void {
+  private updateEntity(entityId: number, deltaTime: number, isPlaying: boolean): void {
     const component = componentRegistry.getComponentData<IAnimationComponent>(
       entityId,
       'Animation',
@@ -69,9 +70,31 @@ class AnimationSystemImpl implements IAnimationApi {
     if (!component) return;
 
     const state = this.getOrCreateState(entityId, component);
+
+    // Validate that activeBindingId exists in clipBindings
+    const hasValidBinding = component.clipBindings.some(b => b.clipId === state.activeClipId);
+    if (state.activeClipId && !hasValidBinding) {
+      // Clear invalid active binding
+      state.activeClipId = null;
+      state.playing = false;
+      componentRegistry.updateComponent(entityId, 'Animation', {
+        ...component,
+        activeBindingId: undefined,
+        playing: false,
+      });
+      return;
+    }
+
+    // Auto-play animation when editor enters play mode
+    if (isPlaying && !state.playing && state.activeClipId) {
+      state.playing = true;
+      state.time = 0;
+    }
+
     if (!state.playing || !state.activeClipId) return;
 
-    const clip = component.clips.find((c) => c.id === state.activeClipId);
+    const registry = AnimationRegistry.getInstance();
+    const clip = registry.get(state.activeClipId);
     if (!clip) return;
 
     // Update time
@@ -114,7 +137,7 @@ class AnimationSystemImpl implements IAnimationApi {
         ...component,
         time: state.time,
         playing: state.playing,
-        activeClipId: state.activeClipId,
+        activeBindingId: state.activeClipId || undefined,
       });
       return;
     }
@@ -138,7 +161,7 @@ class AnimationSystemImpl implements IAnimationApi {
       ...component,
       time: state.time,
       playing: state.playing,
-      activeClipId: state.activeClipId,
+      activeBindingId: state.activeClipId || undefined,
     });
   }
 
@@ -223,10 +246,11 @@ class AnimationSystemImpl implements IAnimationApi {
     component: IAnimationComponent,
   ): IEntityAnimationState {
     let state = this.states.get(entityId);
+
     if (!state) {
       state = {
         entityId,
-        activeClipId: component.activeClipId || null,
+        activeClipId: component.activeBindingId || null,
         playing: component.playing,
         time: component.time,
         timeScale: 1,
@@ -239,7 +263,7 @@ class AnimationSystemImpl implements IAnimationApi {
       this.states.set(entityId, state);
     } else {
       // Sync state with component if needed
-      state.activeClipId = component.activeClipId || state.activeClipId;
+      state.activeClipId = component.activeBindingId || state.activeClipId;
       state.playing = component.playing;
       state.time = component.time;
     }
@@ -276,7 +300,7 @@ class AnimationSystemImpl implements IAnimationApi {
     // Update component to reflect new state
     componentRegistry.updateComponent(entityId, 'Animation', {
       ...component,
-      activeClipId: clipId,
+      activeBindingId: clipId,
       playing: true,
       time: 0,
     });
@@ -297,7 +321,6 @@ class AnimationSystemImpl implements IAnimationApi {
     const state = this.getOrCreateState(entityId, component);
     state.playing = false;
 
-    // Update component to reflect pause state
     componentRegistry.updateComponent(entityId, 'Animation', {
       ...component,
       playing: false,
@@ -327,12 +350,11 @@ class AnimationSystemImpl implements IAnimationApi {
       state.time = 0;
       state.activeClipId = null;
 
-      // Update component to reflect stop state
       componentRegistry.updateComponent(entityId, 'Animation', {
         ...component,
         playing: false,
         time: 0,
-        activeClipId: null,
+        activeBindingId: undefined,
       });
     }
 
@@ -358,9 +380,10 @@ class AnimationSystemImpl implements IAnimationApi {
     state.time = Math.max(0, time);
 
     // Ensure there is an active clip to evaluate. Prefer existing state,
-    // then component's active clip, then fall back to the first clip.
+    // then component's active binding, then fall back to the first binding.
     if (!state.activeClipId) {
-      const fallbackClipId = component.activeClipId ?? component.clips[0]?.id ?? null;
+      const fallbackClipId =
+        component.activeBindingId ?? component.clipBindings[0]?.clipId ?? null;
       state.activeClipId = fallbackClipId;
     }
 
@@ -368,7 +391,8 @@ class AnimationSystemImpl implements IAnimationApi {
       return;
     }
 
-    const clip = component.clips.find((c) => c.id === state.activeClipId);
+    const registry = AnimationRegistry.getInstance();
+    const clip = registry.get(state.activeClipId);
     if (!clip) {
       return;
     }
@@ -385,7 +409,7 @@ class AnimationSystemImpl implements IAnimationApi {
     componentRegistry.updateComponent(entityId, 'Animation', {
       ...component,
       time: state.time,
-      activeClipId: state.activeClipId,
+      activeBindingId: state.activeClipId || undefined,
       playing: state.playing,
     });
   }
@@ -403,9 +427,8 @@ class AnimationSystemImpl implements IAnimationApi {
     const state = this.states.get(entityId);
     if (!state) return null;
 
-    const clip = state.activeClipId
-      ? component.clips.find((c) => c.id === state.activeClipId)
-      : undefined;
+    const registry = AnimationRegistry.getInstance();
+    const clip = state.activeClipId ? registry.get(state.activeClipId) : null;
     const loop = state.loop ?? clip?.loop ?? true;
 
     return {
@@ -420,14 +443,9 @@ class AnimationSystemImpl implements IAnimationApi {
   /**
    * Get animation clip
    */
-  getClip(entityId: number, clipId: string): IClip | null {
-    const component = componentRegistry.getComponentData<IAnimationComponent>(
-      entityId,
-      'Animation',
-    );
-    if (!component) return null;
-
-    return component.clips.find((clip) => clip.id === clipId) || null;
+  getClip(_entityId: number, clipId: string): IClip | null {
+    const registry = AnimationRegistry.getInstance();
+    return registry.get(clipId) || null;
   }
 
   /**
@@ -440,7 +458,16 @@ class AnimationSystemImpl implements IAnimationApi {
     );
     if (!component) return [];
 
-    return [...component.clips];
+    // Get all clips from bindings via AnimationRegistry
+    const registry = AnimationRegistry.getInstance();
+    const clips: IClip[] = [];
+    for (const binding of component.clipBindings) {
+      const asset = registry.get(binding.clipId);
+      if (asset) {
+        clips.push(asset);
+      }
+    }
+    return clips;
   }
 
   /**
@@ -463,8 +490,8 @@ class AnimationSystemImpl implements IAnimationApi {
 export const AnimationSystem = new AnimationSystemImpl();
 
 // Export the update function for use in engine loop
-export function animationSystem(scene: THREE.Scene, deltaTime: number): void {
-  AnimationSystem.update(scene, deltaTime);
+export function animationSystem(scene: THREE.Scene, deltaTime: number, isPlaying: boolean = false): void {
+  AnimationSystem.update(scene, deltaTime, isPlaying);
 }
 
 // Export API for external use

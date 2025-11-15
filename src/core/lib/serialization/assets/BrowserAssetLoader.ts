@@ -1,6 +1,7 @@
 import type { IMaterialDefinition } from '@core/materials/Material.types';
 import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
+import type { IAnimationAsset } from '@core/animation/assets/defineAnimations';
 import { AssetType } from './AssetTypes';
 
 /**
@@ -96,6 +97,19 @@ export class BrowserAssetLoader {
           }
           break;
         }
+
+        case 'animation': {
+          const animationModules = import.meta.glob(
+            '/src/game/assets/animations/**/*.animation.tsx',
+            { eager: false }
+          );
+
+          for (const path in animationModules) {
+            const module = await animationModules[path]() as { default: unknown };
+            modules.push(module);
+          }
+          break;
+        }
       }
     } catch (error) {
       console.warn(`Failed to load ${assetType} modules:`, error);
@@ -123,5 +137,12 @@ export class BrowserAssetLoader {
    */
   async loadInputAssets(): Promise<IInputActionsAsset[]> {
     return this.loadLibraryAssets<IInputActionsAsset>('input');
+  }
+
+  /**
+   * Load animation assets from library
+   */
+  async loadAnimations(): Promise<IAnimationAsset[]> {
+    return this.loadLibraryAssets<IAnimationAsset>('animation');
   }
 }

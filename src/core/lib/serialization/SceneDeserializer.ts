@@ -2,6 +2,7 @@ import { Logger } from '@core/lib/logger';
 import { z } from 'zod';
 import { MaterialSerializer } from './MaterialSerializer';
 import { PrefabSerializer } from './PrefabSerializer';
+import { AnimationSerializer } from './AnimationSerializer';
 import { EntitySerializer } from './EntitySerializer';
 import type { IEntityManagerAdapter, IComponentManagerAdapter, ISerializedEntity } from './EntitySerializer';
 import type { ISceneData } from './SceneSerializer';
@@ -9,6 +10,7 @@ import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
 import { MaterialDefinitionSchema } from '@core/materials/Material.types';
 import { PrefabDefinitionSchema } from '@core/prefabs/Prefab.types';
 import { InputActionsAssetSchema } from '@core/lib/input/inputTypes';
+import { AnimationAssetSchema } from '@core/animation/assets/defineAnimations';
 import { applyResolvedScriptData } from './utils/ScriptSerializationUtils';
 
 const AssetReferenceValueSchema = z.union([z.string(), z.array(z.string())]);
@@ -27,6 +29,7 @@ const SceneDataSchema = z.object({
   materials: z.array(MaterialDefinitionSchema),
   prefabs: z.array(PrefabDefinitionSchema),
   inputAssets: z.array(InputActionsAssetSchema).optional(),
+  animations: z.array(AnimationAssetSchema).optional(),
   lockedEntityIds: z.array(z.number()).optional().default([]),
   assetReferences: z
     .object({
@@ -34,6 +37,7 @@ const SceneDataSchema = z.object({
       prefabs: AssetReferenceValueSchema.optional(),
       inputs: AssetReferenceValueSchema.optional(),
       scripts: AssetReferenceValueSchema.optional(),
+      animations: AssetReferenceValueSchema.optional(),
     })
     .optional(),
 });
@@ -54,6 +58,7 @@ export class SceneDeserializer {
   private entitySerializer = new EntitySerializer();
   private materialSerializer = new MaterialSerializer();
   private prefabSerializer = new PrefabSerializer();
+  private animationSerializer = new AnimationSerializer();
 
   /**
    * Deserialize complete scene from data structure
@@ -86,6 +91,11 @@ export class SceneDeserializer {
     logger.debug('Deserializing prefabs');
     await this.prefabSerializer.deserialize(validated.prefabs);
 
+    logger.debug('Deserializing animations');
+    if (validated.animations) {
+      this.animationSerializer.deserialize(validated.animations);
+    }
+
     logger.debug('Deserializing entities');
     const entitiesWithScripts = await this.hydrateScriptComponents(validated.entities);
 
@@ -101,6 +111,7 @@ export class SceneDeserializer {
       materials: validated.materials.length,
       prefabs: validated.prefabs.length,
       inputAssets: validated.inputAssets?.length || 0,
+      animations: validated.animations?.length || 0,
       lockedEntityIds: validated.lockedEntityIds?.length || 0,
     });
 

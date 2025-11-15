@@ -2,6 +2,7 @@ import { Logger } from '@core/lib/logger';
 import { z } from 'zod';
 import { MaterialSerializer } from './MaterialSerializer';
 import { PrefabSerializer } from './PrefabSerializer';
+import { AnimationSerializer } from './AnimationSerializer';
 import { EntitySerializer } from './EntitySerializer';
 import type {
   IEntityManagerAdapter,
@@ -11,9 +12,11 @@ import type {
 import type { IMaterialDefinition } from '@core/materials/Material.types';
 import type { IPrefabDefinition } from '@core/prefabs/Prefab.types';
 import type { IInputActionsAsset } from '@core/lib/input/inputTypes';
+import type { IAnimationAsset } from '@core/animation/assets/defineAnimations';
 import { MaterialDefinitionSchema } from '@core/materials/Material.types';
 import { PrefabDefinitionSchema } from '@core/prefabs/Prefab.types';
 import { InputActionsAssetSchema } from '@core/lib/input/inputTypes';
+import { AnimationAssetSchema } from '@core/animation/assets/defineAnimations';
 import { collectExternalScriptReferencesFromEntities } from './utils/ScriptSerializationUtils';
 
 const logger = Logger.create('SceneSerializer');
@@ -38,12 +41,14 @@ export interface ISceneData {
   materials: IMaterialDefinition[];
   prefabs: IPrefabDefinition[];
   inputAssets?: IInputActionsAsset[];
+  animations?: IAnimationAsset[];
   lockedEntityIds?: number[];
   assetReferences?: {
     materials?: string | string[];
     prefabs?: string | string[];
     inputs?: string | string[];
     scripts?: string | string[];
+    animations?: string | string[];
   };
 }
 
@@ -61,6 +66,7 @@ const SceneDataSchema = z.object({
   materials: z.array(MaterialDefinitionSchema),
   prefabs: z.array(PrefabDefinitionSchema),
   inputAssets: z.array(InputActionsAssetSchema).optional(),
+  animations: z.array(AnimationAssetSchema).optional(),
   lockedEntityIds: z.array(z.number()).optional().default([]),
   assetReferences: z
     .object({
@@ -68,6 +74,7 @@ const SceneDataSchema = z.object({
       prefabs: AssetReferenceValueSchema.optional(),
       inputs: AssetReferenceValueSchema.optional(),
       scripts: AssetReferenceValueSchema.optional(),
+      animations: AssetReferenceValueSchema.optional(),
     })
     .optional(),
 });
@@ -93,6 +100,7 @@ export class SceneSerializer {
   private entitySerializer = new EntitySerializer();
   private materialSerializer = new MaterialSerializer();
   private prefabSerializer = new PrefabSerializer();
+  private animationSerializer = new AnimationSerializer();
 
   /**
    * Serialize complete scene to data structure
@@ -151,6 +159,7 @@ export class SceneSerializer {
     ];
 
     const prefabs = await this.prefabSerializer.serialize();
+    const animations = this.animationSerializer.serialize();
 
     const scriptReferences = collectExternalScriptReferencesFromEntities(entities);
 
@@ -166,6 +175,7 @@ export class SceneSerializer {
       materials: allMaterials,
       prefabs,
       inputAssets,
+      animations: animations.length > 0 ? animations : undefined,
       lockedEntityIds,
     };
 

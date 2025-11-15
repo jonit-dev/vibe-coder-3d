@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { AnimationSystem, animationApi, animationSystem } from '../AnimationSystem';
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { emit } from '@core/lib/events';
+import { AnimationRegistry } from '@core/animation/AnimationRegistry';
 import type { IAnimationComponent, IClip } from '@core/components/animation/AnimationComponent';
 
 // Mock dependencies
@@ -19,6 +20,39 @@ vi.mock('@core/lib/logger', () => ({
       debug: vi.fn(),
       error: vi.fn(),
     }),
+  },
+}));
+
+vi.mock('@core/animation/AnimationRegistry', () => ({
+  AnimationRegistry: {
+    getInstance: () => ({
+      get: (clipId: string) => {
+        if (clipId === 'test-clip' || clipId === 'clip-2') {
+          return {
+            id: clipId,
+            duration: 2,
+            loop: true,
+            timeScale: 1,
+            tracks: [],
+          };
+        }
+        return null;
+      },
+    }),
+  },
+}));
+
+vi.mock('@core/lib/animation/TimelineEvaluator', () => ({
+  TimelineEvaluator: class {
+    evaluate() {
+      return {
+        transforms: new Map(),
+        morphs: new Map(),
+        materials: new Map(),
+        events: [],
+      };
+    }
+    clearCache() {}
   },
 }));
 
@@ -58,15 +92,16 @@ describe('AnimationSystem', () => {
 
     // Setup test component
     testComponent = {
-      activeClipId: 'test-clip',
-      blendIn: 0.2,
-      blendOut: 0.2,
-      layer: 0,
-      weight: 1,
+      activeBindingId: 'test-clip',
       playing: true,
       time: 0,
-      clips: [testClip],
-      version: 1,
+      clipBindings: [
+        {
+          bindingId: 'test-clip',
+          clipId: 'test-clip',
+          assetRef: './test-clip',
+        },
+      ],
     };
 
     // Setup component registry mocks
@@ -120,9 +155,16 @@ describe('AnimationSystem', () => {
     it('should handle multiple entities', () => {
       const entity2 = 456;
       const entity2Component: IAnimationComponent = {
-        ...testComponent,
-        activeClipId: 'clip-2',
+        activeBindingId: 'clip-2',
         playing: false, // Set to false to skip animation logic
+        time: 0,
+        clipBindings: [
+          {
+            bindingId: 'clip-2',
+            clipId: 'clip-2',
+            assetRef: './clip-2',
+          },
+        ],
       };
 
       mockComponentRegistry.getEntitiesWithComponent.mockReturnValue([testEntity, entity2]);
@@ -201,11 +243,23 @@ describe('AnimationSystem', () => {
     });
 
     it('should stop non-looping animation at end', () => {
-      const nonLoopingClip: IClip = {
-        ...testClip,
-        loop: false,
+      // Mock the AnimationRegistry to return non-looping clip
+      const originalGet = (AnimationRegistry as any).getInstance().get;
+      const mockRegistry = {
+        get: (clipId: string) => {
+          if (clipId === 'test-clip') {
+            return {
+              id: 'test-clip',
+              duration: 2,
+              loop: false, // Non-looping clip
+              timeScale: 1,
+              tracks: [],
+            };
+          }
+          return null;
+        },
       };
-      testComponent.clips = [nonLoopingClip];
+      (AnimationRegistry as any).getInstance = () => mockRegistry;
 
       // Set initial time close to duration
       const componentWithTime: IAnimationComponent = {
@@ -227,9 +281,12 @@ describe('AnimationSystem', () => {
         }),
       );
 
+      // Restore original registry
+      (AnimationRegistry as any).getInstance = () => ({ get: originalGet });
+
       expect(mockEmit).toHaveBeenCalledWith('animation:ended', {
         entityId: testEntity,
-        clipId: nonLoopingClip.id,
+        clipId: 'test-clip',
       });
     });
   });
@@ -336,7 +393,7 @@ describe('AnimationSystem', () => {
           expect.objectContaining({
             playing: false,
             time: 0,
-            activeClipId: null,
+            activeBindingId: undefined,
           }),
         );
       });

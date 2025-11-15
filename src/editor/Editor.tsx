@@ -12,6 +12,7 @@ import { EnhancedAddObjectMenu } from './components/menus/EnhancedAddObjectMenu'
 import { HierarchyPanelContent } from './components/panels/HierarchyPanel/HierarchyPanelContent';
 import { LazyInspectorPanelContent } from './components/panels/InspectorPanel/InspectorPanelContent/LazyInspectorPanelContent';
 import { MaterialsPanel } from './components/panels/MaterialsPanel/MaterialsPanel';
+import { TimelinePanel } from './components/panels/TimelinePanel/TimelinePanel';
 import { ViewportPanel } from './components/panels/ViewportPanel/ViewportPanel';
 import { EditorPhysicsIntegration } from './components/physics/EditorPhysicsIntegration';
 import { AssetLoaderModal } from './components/shared/AssetLoaderModal';
@@ -25,6 +26,7 @@ import { PrefabBrowserModal } from './components/prefabs/PrefabBrowserModal';
 import { LODPanel } from './components/panels/LODPanel';
 import { TerrainProfilerOverlay } from './components/debug/TerrainProfilerOverlay';
 import { usePrefabsStore } from './store/prefabsStore';
+import { useTimelineStore } from './store/timelineStore';
 import { useAutoSelection } from './hooks/useAutoSelection';
 import { useEditorHandlers } from './hooks/useEditorHandlers';
 import { GizmoMode, useEditorKeyboard } from './hooks/useEditorKeyboard';
@@ -61,6 +63,8 @@ const Editor: React.FC = () => {
   const { isPlaying, setIsPlaying } = usePhysicsState();
   const { statusMessage, setStatusMessage, performanceMetrics } = useAppState();
   const { isMaterialsExpanded, setIsMaterialsExpanded, isLODExpanded } = useUIState();
+  const isTimelineOpen = useTimelineStore((state) => state.isOpen);
+  const setTimelineOpen = useTimelineStore((state) => state.setIsOpen);
 
   // Gizmo mode state for viewport
   const [gizmoMode, setGizmoMode] = useState<GizmoMode>('translate');
@@ -349,6 +353,8 @@ const Editor: React.FC = () => {
 
       {/* Terrain Profiler Overlay - Dev tool (Ctrl+Shift+T) */}
       {process.env.NODE_ENV === 'development' && <TerrainProfilerOverlay />}
+
+      <TimelinePanel isOpen={isTimelineOpen} onClose={() => setTimelineOpen(false)} />
     </div>
   );
 };

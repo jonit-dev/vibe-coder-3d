@@ -14,6 +14,7 @@ import type {
   ISceneBuilder,
 } from '@/core/types/scene';
 import { validateSceneEntity, validateScene } from '@/core/types/scene';
+import { AnimationComponentSchema } from '@/core/components/animation/AnimationComponent';
 
 // Component data validation schemas
 const TransformSchema = z.object({
@@ -158,6 +159,7 @@ const ComponentValidationMap = {
   [KnownComponentTypes.RIGID_BODY]: RigidBodySchema,
   [KnownComponentTypes.MESH_COLLIDER]: MeshColliderSchema,
   [KnownComponentTypes.PERSISTENT_ID]: PersistentIdSchema,
+  [KnownComponentTypes.ANIMATION]: AnimationComponentSchema,
 } as const;
 
 /**

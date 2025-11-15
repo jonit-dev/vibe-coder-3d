@@ -6,6 +6,7 @@ import { MaterialDefinitionSchema } from '../../../materials/Material.types';
 import { PrefabDefinitionSchema } from '../../../prefabs/Prefab.types';
 import { InputActionsAssetSchema } from '../../input/inputTypes';
 import { ScriptDefinitionSchema } from './defineScripts';
+import { AnimationAssetSchema } from '../../../animation/assets/defineAnimations';
 import { toCamelCase } from '../../utils/idGenerator';
 
 // Re-export AssetType for backward compatibility
@@ -166,6 +167,8 @@ export class AssetReferenceResolver {
         return InputActionsAssetSchema.parse(asset);
       case 'script':
         return ScriptDefinitionSchema.parse(asset);
+      case 'animation':
+        return AnimationAssetSchema.parse(asset);
       default:
         return asset;
     }

@@ -269,7 +269,7 @@ function runECSSystems(deltaTime: number, isPlaying: boolean = false, scene?: TH
 
   // Run animation system - updates animation playback and applies keyframes
   if (scene) {
-    animationSystem(scene, deltaTime);
+    animationSystem(scene, deltaTime, isPlaying);
   }
 
   // Run script system - executes user scripts with entity context

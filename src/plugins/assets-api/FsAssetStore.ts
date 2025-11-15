@@ -13,6 +13,7 @@ import {
   type AssetType,
 } from '../../core/lib/serialization/assets/AssetTypes';
 import { ScriptDefinitionSchema } from '../../core/lib/serialization/assets/defineScripts';
+import { AnimationAssetSchema } from '../../core/animation/assets/defineAnimations';
 import { omitDefaults } from '../../core/lib/serialization/utils/DefaultOmitter';
 import { toCamelCase } from '../../core/lib/utils/idGenerator';
 import { MaterialDefinitionSchema } from '../../core/materials/Material.types';
@@ -267,6 +268,7 @@ export class FsAssetStore implements IAssetStore {
       prefab: '@core/lib/serialization/assets/definePrefabs',
       input: '@core/lib/serialization/assets/defineInputAssets',
       script: '@core/lib/serialization/assets/defineScripts',
+      animation: '@core/animation/assets/defineAnimations',
     };
 
     const importPath = importMap[type];
@@ -290,6 +292,7 @@ export class FsAssetStore implements IAssetStore {
       prefab: PrefabDefinitionSchema,
       input: InputActionsAssetSchema,
       script: ScriptDefinitionSchema,
+      animation: AnimationAssetSchema,
     };
 
     const schema = schemaMap[type];
@@ -334,6 +337,7 @@ export default ${defineFn}(${payloadString});
         prefab: { id: '_', name: '_', root: { name: '_', components: {} } },
         input: { name: '_', controlSchemes: [], actionMaps: [] },
         script: { id: '_', name: '_' },
+        animation: { id: '_', name: '_', duration: 1, tracks: [] },
       };
 
       const minimal = minimalObjects[type];
@@ -356,7 +360,7 @@ export default ${defineFn}(${payloadString});
       }
 
       // For other types, remove the minimal required fields
-      const { id, name, root, controlSchemes, actionMaps, ...defaults } = parsed;
+      const { id, name, root, controlSchemes, actionMaps, duration, tracks, ...defaults } = parsed;
       return defaults;
     } catch {
       return {};

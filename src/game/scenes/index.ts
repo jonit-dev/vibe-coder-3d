@@ -7,6 +7,7 @@ import TestPhysicsScene from './testphysics';
 import ExampleMultiFileScene from './examplemultifile';
 import FmlScene from './fml';
 import ForestScene from './forest';
+import AnimationSystemScene from './animationsystem';
 
 export function registerAllScenes(): void {
   // Register testphysics scene
@@ -82,6 +83,25 @@ export function registerAllScenes(): void {
     {
       name: ForestScene.metadata.name,
       description: ForestScene.metadata.description || 'Peaceful forest scene',
+    },
+  );
+
+  // Register animationsystem scene
+  sceneRegistry.defineScene(
+    'animationsystem',
+    async () => {
+      const sceneLoader = new SceneLoader();
+      const entityManager = EntityManager.getInstance();
+      const componentManager = componentRegistry;
+
+      await sceneLoader.load(AnimationSystemScene.data, entityManager, componentManager, {
+        refreshMaterials: () => {},
+        refreshPrefabs: () => {},
+      });
+    },
+    {
+      name: AnimationSystemScene.metadata.name,
+      description: AnimationSystemScene.metadata.description || 'Animation system test scene',
     },
   );
 }

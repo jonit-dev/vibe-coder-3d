@@ -13,6 +13,7 @@ import type {
   MeshColliderData,
   PersistentIdData,
   TransformData,
+  AnimationData,
 } from '@/core/lib/ecs/components/definitions';
 
 // Base entity interface
@@ -32,6 +33,7 @@ export type ComponentDataMap = {
   [KnownComponentTypes.CAMERA]: CameraData;
   [KnownComponentTypes.LIGHT]: LightData;
   [KnownComponentTypes.PERSISTENT_ID]: PersistentIdData;
+  [KnownComponentTypes.ANIMATION]: AnimationData;
 };
 
 // Zod schemas for validation and type inference

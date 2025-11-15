@@ -302,6 +302,26 @@ export interface ITerrainComponent {
 }
 
 /**
+ * Animation Component - Animation playback
+ * Uses external asset references via clip bindings
+ */
+export interface IAnimationComponent {
+  playing: boolean;
+  time: number;
+  clipBindings: Array<{
+    bindingId: string;
+    clipId: string;
+    assetRef: string;
+    overrides?: {
+      loop?: boolean;
+      speed?: number;
+      startOffset?: number;
+    };
+  }>;
+  activeBindingId?: string;
+}
+
+/**
  * Component map - Maps component names to their types
  * This provides autocomplete and type checking for component data
  *
@@ -320,6 +340,7 @@ export interface IComponentMap {
   GeometryAsset: IGeometryAssetComponent;
   CharacterController: ICharacterControllerComponent;
   Terrain: ITerrainComponent;
+  Animation: IAnimationComponent;
 }
 
 /**
