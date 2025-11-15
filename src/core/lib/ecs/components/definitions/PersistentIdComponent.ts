@@ -19,6 +19,8 @@ export const PersistentIdSchema = z.object({
   id: z.string().min(1, 'Persistent ID cannot be empty'),
 });
 
+export type PersistentIdData = z.infer<typeof PersistentIdSchema>;
+
 // Helper to generate a simple hash from string to u32
 function hashStringToU32(str: string): number {
   let hash = 0;
@@ -35,11 +37,11 @@ const idStringMap = new Map<number, string>();
 const hashToIdMap = new Map<string, number>();
 
 // Create component definition lazily to avoid circular dependency issues
-let _persistentIdComponent: ReturnType<typeof ComponentFactory.create> | null = null;
+let _persistentIdComponent: ReturnType<typeof ComponentFactory.create<PersistentIdData>> | null = null;
 
 function createPersistentIdComponent() {
   if (!_persistentIdComponent) {
-    _persistentIdComponent = ComponentFactory.create({
+    _persistentIdComponent = ComponentFactory.create<PersistentIdData>({
       id: 'PersistentId',
       name: 'Persistent Id',
       category: ComponentCategory.Core,
@@ -97,5 +99,3 @@ export function clearPersistentIdMaps(): void {
   idStringMap.clear();
   hashToIdMap.clear();
 }
-
-export type PersistentIdData = z.infer<typeof PersistentIdSchema>;

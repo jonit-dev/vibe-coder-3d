@@ -45,7 +45,10 @@ import {
 // ============================================================================
 
 export function registerCoreComponents(registry = componentRegistry): void {
-  registry.register(persistentIdComponent.get());
+  const persistentComponent = persistentIdComponent.get();
+  if (persistentComponent) {
+    registry.register(persistentComponent);
+  }
   registry.register(transformComponent);
   registry.register(meshRendererComponent);
   registry.register(geometryAssetComponent);

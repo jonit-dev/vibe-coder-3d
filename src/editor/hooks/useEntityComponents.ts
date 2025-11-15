@@ -5,6 +5,9 @@ import { useEvent } from '@/core/hooks/useEvent';
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { IComponent, KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ComponentType, EntityId } from '@/core/lib/ecs/types';
+import { CameraData } from '@/core/lib/ecs/components/definitions/CameraComponent';
+import { LightData } from '@/core/lib/ecs/components/definitions/LightComponent';
+import { ICharacterControllerData } from '@/core/lib/ecs/components/accessors/types';
 
 /**
  * Hook for managing components on an entity - enables customization of entity behavior
@@ -203,12 +206,12 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     return getComponent(KnownComponentTypes.MESH_COLLIDER);
   }, [getComponent]);
 
-  const getCamera = useCallback(() => {
-    return getComponent(KnownComponentTypes.CAMERA);
+  const getCamera = useCallback((): IComponent<CameraData> | null => {
+    return getComponent<CameraData>(KnownComponentTypes.CAMERA);
   }, [getComponent]);
 
-  const getLight = useCallback(() => {
-    return getComponent(KnownComponentTypes.LIGHT);
+  const getLight = useCallback((): IComponent<LightData> | null => {
+    return getComponent<LightData>(KnownComponentTypes.LIGHT);
   }, [getComponent]);
 
   const getScript = useCallback(() => {
@@ -219,8 +222,8 @@ export const useEntityComponents = (entityId: EntityId | null) => {
     return getComponent(KnownComponentTypes.SOUND);
   }, [getComponent]);
 
-  const getCharacterController = useCallback(() => {
-    return getComponent(KnownComponentTypes.CHARACTER_CONTROLLER);
+  const getCharacterController = useCallback((): IComponent<ICharacterControllerData> | null => {
+    return getComponent<ICharacterControllerData>(KnownComponentTypes.CHARACTER_CONTROLLER);
   }, [getComponent]);
 
   const getTerrain = useCallback(() => {

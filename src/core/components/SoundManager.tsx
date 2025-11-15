@@ -247,7 +247,7 @@ export const SoundManager: React.FC = React.memo(() => {
   );
 
   const handleSoundAutoplay = useCallback(
-    (event: { entityId: EntityId; soundData: SoundData }) => {
+    (event: { entityId: number; soundData: SoundData }) => {
       updateSoundInstance(event.entityId, event.soundData);
     },
     [updateSoundInstance],

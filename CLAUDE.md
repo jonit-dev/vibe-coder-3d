@@ -16,7 +16,8 @@
 
 **Critical**
 
-- React: focus on hook usage + prevent re-rendering
+- ALWAYS use proper TypeScript types - no `any` types
+- React: focus on hook usage (encapsulate logic) + prevent re-rendering
 - Dont immediately jump into problems. Gather context first by reading related files until you understand the problem.
 - Always consider performance implications of your changes.
 - Don't request approval—just do it.
@@ -35,7 +36,6 @@
 - NO console.log/warn/error in production code - use @core/lib/logger instead
 - NO singleton pattern - use dependency injection or React context
 - Components MUST be <200 lines - split if larger
-- ALWAYS use proper TypeScript types - no `any` types
 - Error handling MUST be consistent with try-catch patterns
 - React components MUST use React.memo for expensive renders
 - useEffect dependencies MUST be minimal and specific

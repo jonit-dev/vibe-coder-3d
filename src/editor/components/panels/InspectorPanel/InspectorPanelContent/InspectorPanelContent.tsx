@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { IComponent } from '@/core/lib/ecs/IComponent';
 import { AnimationAdapter } from '@/editor/components/inspector/adapters/AnimationAdapter';
 import { ScriptAdapter } from '@/editor/components/inspector/adapters/ScriptAdapter';
 import { SoundAdapter } from '@/editor/components/inspector/adapters/SoundAdapter';
@@ -49,67 +50,64 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
         hasCamera={hasCamera}
         hasLight={hasLight}
         hasCharacterController={hasCharacterController}
-        getTransform={getTransform}
-        getMeshRenderer={getMeshRenderer}
-        getRigidBody={getRigidBody}
-        getMeshCollider={getMeshCollider}
-        getCamera={getCamera}
-        getLight={getLight}
-        getCharacterController={getCharacterController}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getTransform={getTransform as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getMeshRenderer={getMeshRenderer as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getRigidBody={getRigidBody as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getMeshCollider={getMeshCollider as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getCamera={getCamera as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getLight={getLight as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getCharacterController={getCharacterController as any}
         addComponent={addComponent}
-        updateComponent={updateComponent as (type: string, data: unknown) => boolean}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        updateComponent={updateComponent as any}
         removeComponent={removeComponent}
       />
 
-      {/* Script (rendered outside ComponentList to minimize type churn) */}
-      {(() => {
-        const scriptComp = components.find((c) => c.type === 'Script');
-        return scriptComp ? (
-          <ScriptAdapter
-            scriptComponent={scriptComp}
-            updateComponent={updateComponent}
-            removeComponent={removeComponent}
-          />
-        ) : null;
-      })()}
+      {/* Other adapters - cast through unknown since we filter by type */}
+      {components.filter(c => c.type === 'Script').map(scriptComp => (
+        <ScriptAdapter
+          key={scriptComp.entityId}
+          scriptComponent={scriptComp as unknown as IComponent<never>}
+          updateComponent={(type, data) => updateComponent(type, data as never)}
+          removeComponent={removeComponent}
+        />
+      ))}
 
-      {/* Sound (rendered outside ComponentList to minimize type churn) */}
-      {(() => {
-        const soundComp = components.find((c) => c.type === 'Sound');
-        return soundComp ? (
-          <SoundAdapter
-            soundComponent={soundComp}
-            updateComponent={updateComponent}
-            removeComponent={removeComponent}
-            isPlaying={isPlaying}
-          />
-        ) : null;
-      })()}
+      {components.filter(c => c.type === 'Sound').map(soundComp => (
+        <SoundAdapter
+          key={soundComp.entityId}
+          soundComponent={soundComp as unknown as IComponent<never>}
+          updateComponent={(type, data) => updateComponent(type, data as never)}
+          removeComponent={removeComponent}
+          isPlaying={isPlaying}
+        />
+      ))}
 
-      {/* Terrain (rendered outside ComponentList to minimize type churn) */}
-      {(() => {
-        const terrainComp = components.find((c) => c.type === 'Terrain') as any;
-        return terrainComp ? (
-          <TerrainAdapter
-            terrainComponent={terrainComp as any}
-            updateComponent={updateComponent as any}
-            removeComponent={removeComponent}
-          />
-        ) : null;
-      })()}
+      {components.filter(c => c.type === 'Terrain').map(terrainComp => (
+        <TerrainAdapter
+          key={terrainComp.entityId}
+          terrainComponent={terrainComp as unknown as IComponent<never>}
+          updateComponent={(type, data) => updateComponent(type, data as never)}
+          removeComponent={removeComponent}
+        />
+      ))}
 
-      {/* Animation (rendered outside ComponentList to minimize type churn) */}
-      {(() => {
-        const animationComp = components.find((c) => c.type === 'Animation') as any;
-        return animationComp ? (
-          <AnimationAdapter
-            animationComponent={animationComp as any}
-            updateComponent={updateComponent as any}
-            removeComponent={removeComponent}
-            entityId={selectedEntity}
-          />
-        ) : null;
-      })()}
+      {components.filter(c => c.type === 'Animation').map(animationComp => (
+        <AnimationAdapter
+          key={animationComp.entityId}
+          animationComponent={animationComp as unknown as IComponent<never>}
+          updateComponent={(type, data) => updateComponent(type, data as never)}
+          removeComponent={removeComponent}
+          entityId={selectedEntity}
+        />
+      ))}
 
       {/* Debug Info */}
       <DebugSection selectedEntity={selectedEntity} components={components} />

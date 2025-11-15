@@ -1,5 +1,6 @@
 import mitt, { Emitter } from 'mitt';
 import { BatchedEventEmitter } from './perf/BatchedEventEmitter';
+import { SoundData } from './ecs/components/definitions/SoundComponent';
 
 // Example event types (expand as needed)
 export type CoreEvents = {
@@ -14,7 +15,7 @@ export type CoreEvents = {
   'ui:buttonClicked': { buttonId: string };
 
   // Sound events
-  'sound:autoplay': { entityId: number; soundData: { url: string; volume?: number; loop?: boolean } };
+  'sound:autoplay': { entityId: number; soundData: SoundData };
 
   // Entity events
   'entity:created': { entityId: number; componentId?: string };

@@ -3,7 +3,7 @@
  * Provides scripts with access to the event bus for inter-entity communication
  */
 
-import { emitter } from '@/core/lib/events';
+import { eventBus } from '@/core/lib/events';
 import type { IEventAPI } from '../ScriptAPI';
 
 /**
@@ -13,22 +13,20 @@ export const createEventAPI = (_entityId: number): IEventAPI => {
   const subscriptions = new Set<() => void>();
 
   return {
-    on: (type, handler) => {
-      emitter.on(type, handler);
-      const off = () => {
-        emitter.off(type, handler);
-        subscriptions.delete(off);
-      };
+    on: <T extends string>(type: T, handler: (payload: unknown) => void) => {
+      // Use type assertion to work around CoreEvents typing constraints
+      // This allows scripts to emit custom events while maintaining type safety
+      const off = eventBus.on(type as any, handler as any);
       subscriptions.add(off);
       return off;
     },
 
-    off: (type, handler) => {
-      emitter.off(type, handler);
+    off: <T extends string>(type: T, handler: (payload: unknown) => void) => {
+      eventBus.off(type as any, handler as any);
     },
 
-    emit: (type, payload) => {
-      emitter.emit(type, payload);
+    emit: <T extends string>(type: T, payload: unknown) => {
+      eventBus.emit(type as any, payload as any);
     },
   };
 };

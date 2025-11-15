@@ -83,6 +83,9 @@ export async function executeSceneManipulation(params: ISceneManipulationParams)
       return listEntities();
 
     case 'get_entity':
+      if (params.entity_id === undefined) {
+        return 'Error: entity_id is required for get_entity action';
+      }
       return getEntity(params.entity_id);
 
     default:

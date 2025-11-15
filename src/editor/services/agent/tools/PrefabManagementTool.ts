@@ -139,7 +139,7 @@ export async function executePrefabManagement(params: IPrefabManagementParams): 
       if (!name || !primitives || !Array.isArray(primitives)) {
         return 'Error: name and primitives array are required for create_from_primitives';
       }
-      return createPrefabFromPrimitives(name, primitives);
+      return createPrefabFromPrimitives(name, primitives as IPrimitiveSpec[]);
 
     case 'create_from_selection':
       if (!name) {
@@ -175,14 +175,11 @@ export async function executePrefabManagement(params: IPrefabManagementParams): 
 
 interface IPrimitiveSpec {
   type: string;
-  position?: { x: number; y: number; z: number };
-  rotation?: { x: number; y: number; z: number };
-  scale?: { x: number; y: number; z: number };
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
   name?: string;
-  material?: {
-    color?: string;
-    materialId?: string;
-  };
+  material?: string;
 }
 
 function createPrefabFromPrimitives(name: string, primitives: IPrimitiveSpec[]): string {
@@ -213,18 +210,18 @@ function createPrefabFromSelection(name: string): string {
 
 function instantiatePrefab(
   prefabId: string,
-  position?: { x: number; y: number; z: number },
+  position?: [number, number, number],
 ): string {
   const event = new CustomEvent('agent:instantiate-prefab', {
     detail: {
       prefabId,
-      position: position ? [position.x, position.y, position.z] : [0, 0, 0],
+      position: position || [0, 0, 0],
     },
   });
   window.dispatchEvent(event);
 
   const posStr = position
-    ? `at (${position.x}, ${position.y}, ${position.z})`
+    ? `at (${position[0]}, ${position[1]}, ${position[2]})`
     : 'at origin (0, 0, 0)';
   logger.info('Prefab instantiation requested', { prefabId, position });
   return `Instantiated prefab "${prefabId}" ${posStr}`;

@@ -7,7 +7,6 @@ import { Types } from 'bitecs';
 import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
-import { EntityId } from '../../types';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
 
 // BitECS component interface for Sound component
@@ -111,7 +110,9 @@ export const soundComponent = ComponentFactory.create({
     needsUpdate: Types.ui8,
     needsReload: Types.ui8,
   },
-  serialize: (eid: EntityId, component: ISoundBitECSComponent) => ({
+  serialize: (eid: number, bitECSComponent: unknown) => {
+    const component = bitECSComponent as ISoundBitECSComponent;
+    return ({
     audioPath: getStringFromHash(component.audioPathHash[eid]),
     enabled: Boolean(component.enabled[eid]),
     autoplay: Boolean(component.autoplay[eid]),
@@ -136,8 +137,10 @@ export const soundComponent = ComponentFactory.create({
     duration: component.duration[eid],
 
     format: getStringFromHash(component.formatHash[eid]) || undefined,
-  }),
-  deserialize: (eid: EntityId, data: SoundData, component: ISoundBitECSComponent) => {
+    });
+  },
+  deserialize: (eid: number, data: SoundData, bitECSComponent: unknown) => {
+    const component = bitECSComponent as ISoundBitECSComponent;
     // Core properties
     component.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
     component.autoplay[eid] = (data.autoplay ?? false) ? 1 : 0;

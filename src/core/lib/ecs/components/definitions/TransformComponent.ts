@@ -7,7 +7,6 @@ import { Types } from 'bitecs';
 import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
-import { EntityId } from '../../types';
 
 // BitECS component interface for Transform component
 interface ITransformBitECSComponent {
@@ -50,7 +49,9 @@ export const transformComponent = ComponentFactory.create({
     scaleZ: Types.f32,
     needsUpdate: Types.ui8,
   },
-  serialize: (eid: EntityId, component: ITransformBitECSComponent) => ({
+  serialize: (eid: number, bitECSComponent: unknown) => {
+    const component = bitECSComponent as ITransformBitECSComponent;
+    return ({
     position: [component.positionX[eid], component.positionY[eid], component.positionZ[eid]] as [
       number,
       number,
@@ -66,8 +67,10 @@ export const transformComponent = ComponentFactory.create({
       number,
       number,
     ],
-  }),
-  deserialize: (eid: EntityId, data: TransformData, component: ITransformBitECSComponent) => {
+    });
+  },
+  deserialize: (eid: number, data: TransformData, bitECSComponent: unknown) => {
+    const component = bitECSComponent as ITransformBitECSComponent;
     component.positionX[eid] = data.position[0];
     component.positionY[eid] = data.position[1];
     component.positionZ[eid] = data.position[2];

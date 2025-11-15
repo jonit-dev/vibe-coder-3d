@@ -6,7 +6,6 @@ import { HierarchyIndex } from '../indexers/HierarchyIndex';
 import { on } from '../../events';
 import { hasComponent } from 'bitecs';
 import { EntityMeta } from '../BitECSComponents';
-import type { IWorld } from '../World';
 
 /**
  * IndexEventAdapter - Wires EntityManager and ComponentRegistry events to maintain indices
@@ -135,7 +134,7 @@ export class IndexEventAdapter {
 
     // Direct BitECS scan - this is acceptable during initialization/rebuild
     for (let eid = 0; eid < 10000; eid++) {
-      if (hasComponent(world, EntityMeta, eid)) {
+      if (hasComponent(world as any, EntityMeta, eid)) {
         const entity = (this.entityManager as unknown as { buildEntityFromEid: (eid: number) => { id: number; name: string; parentId?: number } | null }).buildEntityFromEid(eid);
         if (entity) {
           allEntities.push(entity);

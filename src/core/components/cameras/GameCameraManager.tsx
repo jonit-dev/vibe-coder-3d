@@ -104,7 +104,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     if (!isPlaying) {
       // Restore original editor camera when exiting play mode
       if (originalCameraRef.current && hasSetOriginalCamera.current) {
-        set({ camera: originalCameraRef.current as THREE.Camera });
+        set({ camera: originalCameraRef.current as THREE.PerspectiveCamera | THREE.OrthographicCamera });
       }
       return;
     }

@@ -211,7 +211,7 @@ class AnimationSystemImpl implements IAnimationApi {
       const target = targetPath === 'root' ? object : object.getObjectByName(targetPath);
       if (!target || !(target instanceof THREE.Mesh)) continue;
 
-      const material = target.material as THREE.Material & Record<string, any>;
+      const material = target.material as THREE.Material & Record<string, unknown>;
       for (const [name, value] of Object.entries(props)) {
         if (name in material) {
           material[name] = value;

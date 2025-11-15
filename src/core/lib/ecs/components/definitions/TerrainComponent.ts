@@ -2,7 +2,6 @@ import { Types } from 'bitecs';
 import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
-import { EntityId } from '../../types';
 
 // BitECS component interface for Terrain component
 interface ITerrainBitECSComponent {
@@ -55,7 +54,9 @@ export const terrainComponent = ComponentFactory.create<TerrainData>({
     noisePersistence: Types.f32,
     noiseLacunarity: Types.f32,
   },
-  serialize: (eid: EntityId, component: ITerrainBitECSComponent): TerrainData => ({
+  serialize: (eid: number, bitECSComponent: unknown): TerrainData => {
+    const component = bitECSComponent as ITerrainBitECSComponent;
+    return ({
     size: [component.sizeX[eid], component.sizeZ[eid]],
     segments: [component.segmentsX[eid], component.segmentsZ[eid]],
     heightScale: component.heightScale[eid],
@@ -65,8 +66,10 @@ export const terrainComponent = ComponentFactory.create<TerrainData>({
     noiseOctaves: component.noiseOctaves[eid],
     noisePersistence: component.noisePersistence[eid],
     noiseLacunarity: component.noiseLacunarity[eid],
-  }),
-  deserialize: (eid: EntityId, data: TerrainData, component: ITerrainBitECSComponent) => {
+    });
+  },
+  deserialize: (eid: number, data: TerrainData, bitECSComponent: unknown) => {
+    const component = bitECSComponent as ITerrainBitECSComponent;
     const defaults = TerrainSchema.parse(data);
     component.sizeX[eid] = defaults.size[0];
     component.sizeZ[eid] = defaults.size[1];

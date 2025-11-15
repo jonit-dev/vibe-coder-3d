@@ -150,9 +150,9 @@ export class AssetLibraryCatalog {
     const content = await fs.readFile(filePath, 'utf-8');
 
     try {
-      // Use the resolver's parsing logic
+      // Use the resolver's parsing logic via cast to unknown for private method access
       const assets = (
-        this.resolver as {
+        this.resolver as unknown as {
           parseAssetFile: (content: string, type: string) => Array<{ id: string; name?: string }>;
         }
       ).parseAssetFile(content, assetType);

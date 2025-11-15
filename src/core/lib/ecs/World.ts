@@ -37,3 +37,4 @@ export class ECSWorld {
 }
 
 export { ECSWorld as World };
+export type { IWorld };

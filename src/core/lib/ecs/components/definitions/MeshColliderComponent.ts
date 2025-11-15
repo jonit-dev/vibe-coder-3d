@@ -7,7 +7,6 @@ import { Types } from 'bitecs';
 import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
-import { EntityId } from '../../types';
 
 // BitECS component interface for MeshCollider component
 interface IMeshColliderBitECSComponent {
@@ -77,7 +76,8 @@ export const meshColliderComponent = ComponentFactory.create({
     restitution: Types.f32,
     density: Types.f32,
   },
-  serialize: (eid: EntityId, component: IMeshColliderBitECSComponent) => {
+  serialize: (eid: number, bitECSComponent: unknown) => {
+    const component = bitECSComponent as IMeshColliderBitECSComponent;
     // Map shapeType number to ColliderType string
     const shapeTypeMap: { [key: number]: ColliderType } = {
       0: 'box',
@@ -112,7 +112,8 @@ export const meshColliderComponent = ComponentFactory.create({
       },
     };
   },
-  deserialize: (eid: EntityId, data: MeshColliderData, component: IMeshColliderBitECSComponent) => {
+  deserialize: (eid: number, data: MeshColliderData, bitECSComponent: unknown) => {
+    const component = bitECSComponent as IMeshColliderBitECSComponent;
     // Map ColliderType string to shapeType number
     const colliderTypeMap: { [key in ColliderType]: number } = {
       box: 0,

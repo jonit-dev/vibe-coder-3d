@@ -78,14 +78,14 @@ export function cameraSystem(): number {
 
     // For editor mode: if this camera entity is selected, update the editor camera
     if (selectedCameraEntityId === eid && editorCamera) {
-      updateCameraFromData(editorCamera, cameraData);
+      updateCameraFromData(editorCamera, cameraData as CameraData);
       updatedCount++;
     }
 
     // For game mode: check for actual camera objects (during play mode)
     const object = entityToObject.get(eid);
     if (object && (object instanceof PerspectiveCamera || object instanceof OrthographicCamera)) {
-      updateCameraFromData(object as PerspectiveCamera | OrthographicCamera, cameraData);
+      updateCameraFromData(object as PerspectiveCamera | OrthographicCamera, cameraData as CameraData);
       updatedCount++;
     }
 

@@ -144,7 +144,7 @@ interface IBitECSWorld {
 
 export class ComponentRegistry {
   private static instance: ComponentRegistry;
-  private components = new Map<string, IComponentDescriptor<unknown>>();
+  private components = new Map<string, IComponentDescriptor<any>>();
   private bitECSComponents = new Map<string, Component>();
   private logger = Logger.create('ComponentRegistry');
   // Cache for entity queries to avoid repeated scans
@@ -165,7 +165,7 @@ export class ComponentRegistry {
    * If no world provided, falls back to singleton ECSWorld
    */
   constructor(worldInstance?: ECSWorld) {
-    this._world = worldInstance?.getWorld();
+    this._world = worldInstance?.getWorld() ?? null;
   }
 
   static getInstance(): ComponentRegistry {
@@ -190,7 +190,7 @@ export class ComponentRegistry {
       return;
     }
 
-    this.components.set(descriptor.id, descriptor);
+    this.components.set(descriptor.id, descriptor as IComponentDescriptor<any>);
 
     // Store BitECS component reference
     const bitECSComponent = (
@@ -298,7 +298,7 @@ export class ComponentRegistry {
       emit('component:added', {
         entityId,
         componentId,
-        data,
+        data: data as Record<string, any>,
       });
 
       // Invalidate cache for this component type

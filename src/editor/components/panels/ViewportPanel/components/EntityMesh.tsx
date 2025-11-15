@@ -8,6 +8,7 @@ import type { Group, Mesh } from 'three';
 import { Box3, OrthographicCamera, Vector3 } from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import type { IComponent } from '@/core/lib/ecs/IComponent';
 import type { IRenderingContributions } from '@/core/types/entities';
 import { compareMaterials, deepEqual, shallowEqual } from '@/core/utils/comparison';
 import { useLOD } from '@core/hooks/useLOD';
@@ -467,7 +468,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
         <CameraEntity
           meshInstanceRef={meshInstanceRef}
           entityId={entityId}
-          entityComponents={entityComponents}
+          entityComponents={entityComponents as IComponent[]}
           isPlaying={isPlaying}
           onMeshClick={onMeshClick}
         />
@@ -480,7 +481,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
         <LightEntity
           meshInstanceRef={meshInstanceRef}
           entityId={entityId}
-          entityComponents={entityComponents}
+          entityComponents={entityComponents as IComponent[]}
           isPlaying={isPlaying}
           onMeshClick={onMeshClick}
         />
@@ -524,7 +525,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
         <MaterialRenderer
           meshInstanceRef={meshInstanceRef}
           meshType={meshType}
-          entityComponents={entityComponents}
+          entityComponents={entityComponents as IComponent[]}
           renderingContributions={renderingContributions}
           entityColor={entityColor}
           entityId={entityId}
@@ -532,7 +533,7 @@ export const EntityMesh: React.FC<IEntityMeshProps> = React.memo(
           onMeshDoubleClick={onMeshDoubleClick}
           textures={textures}
           isTextureMode={isTextureMode}
-          material={material}
+          material={material as any}
         />
       </Suspense>
     );

@@ -1,7 +1,6 @@
 import { TransformControls } from '@react-three/drei';
 import React, { useCallback, useRef, useState } from 'react';
 import { Object3D } from 'three';
-import type { TransformControls as TransformControlsType } from 'three/examples/jsm/controls/TransformControls.js';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
@@ -20,7 +19,7 @@ export interface IGroupGizmoControlsProps {
 export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo(
   ({ selectedIds, mode, onTransformChange, setIsTransforming }) => {
     const logger = Logger.create('GroupGizmoControls');
-    const transformRef = useRef<TransformControlsType | null>(null);
+    const transformRef = useRef<React.ElementRef<typeof TransformControls> | null>(null);
     const componentManager = useComponentManager();
     const isDragging = useRef(false);
     const lastUpdateTime = useRef(0);
@@ -79,9 +78,6 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
         }
       }
     }, [selectedIds, calculateGroupCenter]);
-
-    // Use stable group center for rendering
-    const groupCenter = stableGroupCenter.current;
 
     // Store initial values when dragging starts
     const handleMouseDown = useCallback(() => {
@@ -223,7 +219,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
       if (onTransformChange) {
         onTransformChange([deltaX, deltaY, deltaZ]);
       }
-    }, [selectedIds, mode, componentManager, onTransformChange, groupCenter, throttleDelay]);
+    }, [selectedIds, mode, componentManager, onTransformChange, throttleDelay]);
 
     const handleMouseUp = useCallback(() => {
       isDragging.current = false;

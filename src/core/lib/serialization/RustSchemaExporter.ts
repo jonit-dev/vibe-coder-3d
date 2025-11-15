@@ -2,16 +2,7 @@ import { Logger } from '@core/lib/logger';
 import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import type {
-  ZodSchema,
-  ZodTypeDef,
-  ZodNumberDef,
-  ZodArrayDef,
-  ZodObjectDef,
-  ZodStringDef,
-  ZodBooleanDef,
-  ZodOptionalDef,
-} from 'zod';
+import type { ZodSchema } from 'zod';
 
 const logger = Logger.create('RustSchemaExporter');
 
@@ -58,7 +49,8 @@ export class RustSchemaExporter {
     zodSchema: ZodSchema<unknown>,
     componentId: string,
   ): Record<string, unknown> {
-    const shape = zodSchema._def?.shape?.();
+    const def = zodSchema._def as { shape?: () => Record<string, unknown> };
+    const shape = typeof def.shape === 'function' ? def.shape() : undefined;
     if (!shape) {
       return {
         $schema: 'http://json-schema.org/draft-07/schema#',
@@ -71,8 +63,8 @@ export class RustSchemaExporter {
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
 
-    for (const [key, value] of Object.entries(shape)) {
-      const fieldSchema = value as ZodTypeDef;
+    for (const [key, value] of Object.entries(shape ?? {})) {
+      const fieldSchema = value as { _def?: { typeName?: string; [key: string]: unknown } };
       const fieldDef = this.parseZodField(fieldSchema);
       properties[key] = fieldDef;
 
@@ -94,7 +86,7 @@ export class RustSchemaExporter {
   /**
    * Parse a Zod field definition to JSON Schema
    */
-  private parseZodField(field: ZodTypeDef): Record<string, unknown> {
+  private parseZodField(field: { _def?: { typeName?: string; [key: string]: unknown } }): Record<string, unknown> {
     const typeName = field._def?.typeName;
 
     switch (typeName) {
@@ -104,8 +96,9 @@ export class RustSchemaExporter {
       case 'ZodNumber': {
         const numberSchema: Record<string, unknown> = { type: 'number' };
         // Check for min/max constraints
-        if (field._def?.checks) {
-          for (const check of field._def.checks) {
+        const checks = field._def?.checks as Array<{ kind: string; value: unknown }> | undefined;
+        if (checks && Array.isArray(checks)) {
+          for (const check of checks) {
             if (check.kind === 'min') numberSchema.minimum = check.value;
             if (check.kind === 'max') numberSchema.maximum = check.value;
           }
@@ -116,25 +109,30 @@ export class RustSchemaExporter {
       case 'ZodBoolean':
         return { type: 'boolean' };
 
-      case 'ZodArray':
+      case 'ZodArray': {
+        const arrayType = field._def && 'type' in field._def ? field._def.type : null;
         return {
           type: 'array',
-          items: this.parseZodField(field._def.type),
+          items: arrayType ? this.parseZodField(arrayType as { _def?: { typeName?: string; [key: string]: unknown } }) : { type: 'any' },
         };
+      }
 
-      case 'ZodTuple':
+      case 'ZodTuple': {
+        const items = field._def && 'items' in field._def && Array.isArray(field._def.items) ? field._def.items : [];
         return {
           type: 'array',
-          items: field._def.items.map((item: ZodTypeDef) => this.parseZodField(item)),
-          minItems: field._def.items.length,
-          maxItems: field._def.items.length,
+          items: items.map((item: unknown) => this.parseZodField(item as { _def?: { typeName?: string; [key: string]: unknown } })),
+          minItems: items.length,
+          maxItems: items.length,
         };
+      }
 
       case 'ZodObject': {
-        const shape = field._def.shape();
+        const shapeFn = field._def && typeof field._def.shape === 'function' ? field._def.shape as () => Record<string, unknown> : undefined;
+        const shape = shapeFn ? shapeFn() : {};
         const properties: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(shape)) {
-          properties[key] = this.parseZodField(value);
+          properties[key] = this.parseZodField(value as { _def?: { typeName?: string; [key: string]: unknown } });
         }
         return {
           type: 'object',
@@ -145,15 +143,19 @@ export class RustSchemaExporter {
       case 'ZodEnum':
         return {
           type: 'string',
-          enum: field._def.values,
+          enum: field._def?.values || [],
         };
 
       case 'ZodOptional':
-        return this.parseZodField(field._def.innerType);
+        return field._def ? this.parseZodField(field._def.innerType as { _def?: { typeName?: string; [key: string]: unknown } }) : { type: 'any' };
 
       case 'ZodDefault': {
-        const defaultSchema = this.parseZodField(field._def.innerType);
-        defaultSchema.default = field._def.defaultValue();
+        const innerType = field._def?.innerType as { _def?: { typeName?: string; [key: string]: unknown } } | undefined;
+        const defaultSchema = innerType ? this.parseZodField(innerType) : { type: 'any' };
+        const defaultValueFn = field._def?.defaultValue as (() => unknown) | undefined;
+        if (defaultValueFn) {
+          defaultSchema.default = defaultValueFn();
+        }
         return defaultSchema;
       }
 

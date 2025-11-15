@@ -106,7 +106,7 @@ export class AssetReferenceResolver {
       }
 
       // Find the specific asset by ID (for multi-asset files)
-      const asset = assets.find((a: { id: string }) => a.id === assetId);
+      const asset = assets.find((a: unknown) => (a as { id: string }).id === assetId);
 
       if (!asset) {
         throw new Error(`Asset '${assetId}' not found in ${filePath}`);

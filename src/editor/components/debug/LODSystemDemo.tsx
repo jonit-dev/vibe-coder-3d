@@ -32,7 +32,7 @@ export const LODSystemDemo: React.FC = () => {
 
         let count = 0;
         scene.traverse((obj: THREE.Object3D) => {
-          if (obj.geometry) {
+          if (obj instanceof THREE.Mesh && obj.geometry) {
             const geometry = obj.geometry;
             if (geometry.index) {
               count += geometry.index.count / 3;
@@ -63,22 +63,18 @@ export const LODSystemDemo: React.FC = () => {
       if (!scene) return;
 
       scene.traverse((obj: THREE.Object3D) => {
-        if (obj.material) {
-          if (Array.isArray(obj.material)) {
-            obj.material.forEach((mat: THREE.Material) => {
-              // Only update if wireframe state differs
-              if (mat.wireframe !== showWireframe) {
-                mat.wireframe = showWireframe;
-                mat.needsUpdate = true;
+        if (obj instanceof THREE.Mesh && obj.material) {
+          const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+          materials.forEach((mat) => {
+            // Type guard for materials with wireframe property
+            if (mat && 'wireframe' in mat) {
+              const wireframeMat = mat as THREE.MeshBasicMaterial | THREE.MeshStandardMaterial | THREE.MeshLambertMaterial;
+              if (wireframeMat.wireframe !== showWireframe) {
+                wireframeMat.wireframe = showWireframe;
+                wireframeMat.needsUpdate = true;
               }
-            });
-          } else {
-            // Only update if wireframe state differs
-            if (obj.material.wireframe !== showWireframe) {
-              obj.material.wireframe = showWireframe;
-              obj.material.needsUpdate = true;
             }
-          }
+          });
         }
       });
     };

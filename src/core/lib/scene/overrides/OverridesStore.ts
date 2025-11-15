@@ -27,7 +27,11 @@ export class BrowserOverridesStore implements IOverridesStore {
     try {
       // Try File System Access API first
       if ('showSaveFilePicker' in window) {
-        const fileHandle = await (window as unknown as { showSaveFilePicker: (options: unknown) => Promise<unknown> }).showSaveFilePicker({
+        const fileHandle = (await (
+          window as unknown as {
+            showSaveFilePicker: (options: unknown) => Promise<FileSystemFileHandle>;
+          }
+        ).showSaveFilePicker({
           suggestedName: fileName,
           types: [
             {
@@ -35,7 +39,7 @@ export class BrowserOverridesStore implements IOverridesStore {
               accept: { 'application/json': ['.json'] },
             },
           ],
-        });
+        })) as FileSystemFileHandle;
 
         const writable = await fileHandle.createWritable();
         await writable.write(JSON.stringify(overrides, null, 2));
@@ -61,7 +65,11 @@ export class BrowserOverridesStore implements IOverridesStore {
     try {
       // Try File System Access API first
       if ('showOpenFilePicker' in window) {
-        const [fileHandle] = await (window as unknown as { showOpenFilePicker: (options: unknown) => Promise<unknown[]> }).showOpenFilePicker({
+        const [fileHandle] = (await (
+          window as unknown as {
+            showOpenFilePicker: (options: unknown) => Promise<FileSystemFileHandle[]>;
+          }
+        ).showOpenFilePicker({
           types: [
             {
               description: 'Scene Overrides',
@@ -69,7 +77,7 @@ export class BrowserOverridesStore implements IOverridesStore {
             },
           ],
           multiple: false,
-        });
+        })) as FileSystemFileHandle[];
 
         const file = await fileHandle.getFile();
         const text = await file.text();

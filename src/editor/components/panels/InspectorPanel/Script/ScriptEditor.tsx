@@ -1,6 +1,5 @@
 import Editor from '@monaco-editor/react';
 import type * as Monaco from 'monaco-editor';
-import type * as THREE from 'three';
 import React, { useCallback, useEffect, useRef } from 'react';
 
 // Import the type definitions content

@@ -5,6 +5,7 @@ import { EntityQueries } from '../queries/entityQueries';
 // Basic entity interface for consistency checking
 interface IEntityForConsistency {
   id: number;
+  parentId?: number | null;
   children?: number[];
 }
 
@@ -166,7 +167,7 @@ export class ConsistencyChecker {
         }
       });
 
-      relationshipCount += entity.children.length;
+      relationshipCount += entity.children?.length ?? 0;
     });
 
     return relationshipCount;

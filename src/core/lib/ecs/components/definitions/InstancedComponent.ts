@@ -7,18 +7,9 @@ import { Types } from 'bitecs';
 import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
+
 import { EntityId } from '../../types';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
-
-// Global instance data storage interface
-interface IGlobalInstanceData {
-  [eid: number]: InstanceData[];
-}
-
-// Extend globalThis to include instance data
-declare global {
-  const __instanceData__: IGlobalInstanceData | undefined;
-}
 
 // Single instance data schema
 const InstanceDataSchema = z.object({
@@ -28,6 +19,20 @@ const InstanceDataSchema = z.object({
   color: z.tuple([z.number(), z.number(), z.number()]).optional(),
   userData: z.record(z.unknown()).optional(),
 });
+
+// Export type before using it
+export type InstanceData = z.infer<typeof InstanceDataSchema>;
+
+// Global instance data storage interface
+interface IGlobalInstanceData {
+  [eid: number]: InstanceData[];
+}
+
+// Extend globalThis to include instance data
+declare global {
+  // eslint-disable-next-line no-var
+  var __instanceData__: IGlobalInstanceData | undefined;
+}
 
 // Instanced Component Schema
 const InstancedComponentSchema = z.object({
@@ -105,4 +110,3 @@ export const instancedComponent = ComponentFactory.create({
 });
 
 export type InstancedComponentData = z.infer<typeof InstancedComponentSchema>;
-export type InstanceData = z.infer<typeof InstanceDataSchema>;

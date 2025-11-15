@@ -23,7 +23,7 @@ export interface IBatchedEventEmitterOptions {
 export class BatchedEventEmitter<TEvents extends Record<string, unknown>>
   implements IBatchedEventEmitter<TEvents>
 {
-  private handlers = new Map<keyof TEvents, Set<(event: unknown) => void>>();
+  private handlers = new Map<keyof TEvents, Set<(event: TEvents[keyof TEvents]) => void>>();
   private pendingEvents = new Map<keyof TEvents, Set<TEvents[keyof TEvents]>>();
   private animationFrameId: number | null = null;
   private options: Required<IBatchedEventEmitterOptions>;
@@ -87,7 +87,7 @@ export class BatchedEventEmitter<TEvents extends Record<string, unknown>>
       this.handlers.set(type, new Set());
     }
 
-    this.handlers.get(type)!.add(handler);
+    this.handlers.get(type)!.add(handler as (event: TEvents[keyof TEvents]) => void);
 
     // Return unsubscribe function
     return () => {
@@ -98,7 +98,7 @@ export class BatchedEventEmitter<TEvents extends Record<string, unknown>>
   off<K extends keyof TEvents>(type: K, handler: (event: TEvents[K]) => void): void {
     const handlers = this.handlers.get(type);
     if (handlers) {
-      handlers.delete(handler);
+      handlers.delete(handler as (event: TEvents[keyof TEvents]) => void);
 
       // Clean up empty handler sets
       if (handlers.size === 0) {

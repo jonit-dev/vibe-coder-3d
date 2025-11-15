@@ -4,15 +4,10 @@ import { useRapier } from '@react-three/rapier';
 import { useCallback, useMemo } from 'react';
 import { Vector3 } from 'three';
 import type {
-  Collider,
   ColliderDesc,
   RigidBody,
-  RigidBodyDesc,
-  RigidBodyType,
-  Ray as RapierRay,
-  ColliderShape,
   CoefficientCombineRule,
-  RayIntersectionHit,
+  RayIntersection,
 } from '@dimforge/rapier3d-compat';
 
 import { useGameLoop } from './gameLoop';
@@ -88,7 +83,7 @@ export function usePhysics() {
           { x: direction[0], y: direction[1], z: direction[2] },
         );
 
-        const hits: RayIntersectionHit[] = [];
+        const hits: RayIntersection[] = [];
         world.intersectionsWithRay(ray, maxToi, true, (hit) => {
           hits.push(hit);
           return true; // Continue to find all hits

@@ -38,6 +38,8 @@ describe('MaterialRegistry', () => {
       occlusionStrength: 1,
       textureOffsetX: 0,
       textureOffsetY: 0,
+      textureRepeatX: 1,
+      textureRepeatY: 1,
     };
   });
 
@@ -166,6 +168,8 @@ describe('MaterialRegistry', () => {
           occlusionStrength: 1,
           textureOffsetX: 0,
           textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
         },
       ];
 

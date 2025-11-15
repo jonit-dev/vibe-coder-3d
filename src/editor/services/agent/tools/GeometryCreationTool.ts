@@ -285,6 +285,7 @@ function buildGeometryMeta(params: IGeometryCreationParams): IGeometryMeta {
       array: params.indices,
       type: 'uint32',
     },
+    bounds: computeBounds(params.positions),
   };
 
   // Add normals (or mark for auto-computation)
@@ -319,9 +320,6 @@ function buildGeometryMeta(params: IGeometryCreationParams): IGeometryMeta {
       type: 'float32',
     };
   }
-
-  // Compute bounds
-  meta.bounds = computeBounds(params.positions);
 
   return meta;
 }

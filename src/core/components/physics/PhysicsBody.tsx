@@ -1,5 +1,5 @@
 // PhysicsBody.tsx - Enhanced physics body component with better API
-import { RapierRigidBody, RigidBody } from '@react-three/rapier';
+import { RapierRigidBody, RigidBody, RigidBodyAutoCollider } from '@react-three/rapier';
 import { forwardRef, ReactNode, useEffect, useImperativeHandle, useRef } from 'react';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
@@ -48,8 +48,17 @@ export interface IPhysicsBodyProps {
   initialVelocity?: [number, number, number];
   initialAngularVelocity?: [number, number, number];
 
-  // Pass through any other RigidBody props
-  [key: string]: unknown;
+  // Additional RigidBody props that aren't explicitly defined
+  colliders?: RigidBodyAutoCollider | false;
+  collisionGroups?: number;
+  solverGroups?: number;
+  linearDamping?: number;
+  angularDamping?: number;
+  enabled?: boolean;
+  lockedRotations?: boolean | boolean[];
+  lockedTranslations?: boolean | boolean[];
+  restitution?: number;
+  friction?: number;
 }
 
 // PhysicsBody handle for imperative control
@@ -275,7 +284,16 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
         mass={mass}
         canSleep={canSleep}
         gravityScale={gravityScale}
-        {...rigidBodyProps}
+        colliders={rigidBodyProps.colliders}
+        collisionGroups={rigidBodyProps.collisionGroups}
+        solverGroups={rigidBodyProps.solverGroups}
+        linearDamping={rigidBodyProps.linearDamping}
+        angularDamping={rigidBodyProps.angularDamping}
+        // enabled={rigidBodyProps.enabled} // Not supported by RigidBodyProps
+        lockRotations={Array.isArray(rigidBodyProps.lockedRotations) ? false : rigidBodyProps.lockedRotations}
+        lockTranslations={Array.isArray(rigidBodyProps.lockedTranslations) ? false : rigidBodyProps.lockedTranslations}
+        restitution={rigidBodyProps.restitution}
+        friction={rigidBodyProps.friction}
       >
         {children}
       </RigidBody>

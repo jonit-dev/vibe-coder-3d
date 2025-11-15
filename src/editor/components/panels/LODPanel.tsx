@@ -67,8 +67,8 @@ export const LODPanel: React.FC<ILODPanelProps> = ({ isExpanded }) => {
         // Count triangles
         let count = 0;
         scene.traverse((obj: THREE.Object3D) => {
-          if (obj.geometry) {
-            const geometry = obj.geometry;
+          if ((obj as THREE.Mesh).geometry) {
+            const geometry = (obj as THREE.Mesh).geometry;
             if (geometry.index) {
               count += geometry.index.count / 3;
             } else if (geometry.attributes?.position) {
@@ -133,18 +133,19 @@ export const LODPanel: React.FC<ILODPanelProps> = ({ isExpanded }) => {
     logger.info(`Wireframe ${showWireframe ? 'enabled' : 'disabled'}`);
 
     scene.traverse((obj: THREE.Object3D) => {
-      if (obj.material) {
-        if (Array.isArray(obj.material)) {
-          obj.material.forEach((mat: THREE.Material) => {
+      if ((obj as THREE.Mesh).material) {
+        const mesh = obj as THREE.Mesh;
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((mat: THREE.Material) => {
             // Only update if different to prevent flashing
-            if (mat.wireframe !== showWireframe) {
-              mat.wireframe = showWireframe;
+            if ((mat as THREE.MeshBasicMaterial).wireframe !== showWireframe) {
+              (mat as THREE.MeshBasicMaterial).wireframe = showWireframe;
             }
           });
         } else {
           // Only update if different to prevent flashing
-          if (obj.material.wireframe !== showWireframe) {
-            obj.material.wireframe = showWireframe;
+          if ((mesh.material as THREE.MeshBasicMaterial).wireframe !== showWireframe) {
+            (mesh.material as THREE.MeshBasicMaterial).wireframe = showWireframe;
           }
         }
       }
