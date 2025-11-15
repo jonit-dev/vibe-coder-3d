@@ -36,7 +36,7 @@ interface IComponentListProps {
   getCamera: () => IComponent<CameraData> | null;
   getLight: () => IComponent<LightData> | null;
   getCharacterController: () => IComponent<ICharacterControllerData> | null;
-  // getTerrain?: () => IComponent<any> | null;
+  // getTerrain?: () => IComponent<unknown> | null;
   addComponent: (type: string, data: unknown) => IComponent<unknown> | null;
   updateComponent: (type: string, data: unknown) => boolean;
   removeComponent: (type: string) => boolean;
@@ -120,7 +120,9 @@ export const ComponentList: React.FC<IComponentListProps> = ({
       {hasRigidBody && (
         <RigidBodyAdapter
           rigidBodyComponent={getRigidBody()}
-          addComponent={addComponent as (type: string, data: any) => IComponent<any> | null}
+          addComponent={(type: string, data: RigidBodyData | MeshColliderData) =>
+            addComponent(type, data) as IComponent<RigidBodyData | MeshColliderData> | null
+          }
           updateComponent={updateComponent}
           removeComponent={removeComponent}
           isPlaying={isPlaying}
@@ -155,7 +157,7 @@ export const ComponentList: React.FC<IComponentListProps> = ({
           component={getCharacterController()}
           updateComponent={updateComponent}
           removeComponent={removeComponent}
-          addComponent={addComponent as (type: string, data: any) => IComponent<any> | null}
+          addComponent={addComponent}
           hasComponent={hasComponent}
           isPlaying={isPlaying}
           isGrounded={false} // TODO: Connect to runtime state

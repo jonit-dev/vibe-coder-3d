@@ -1,20 +1,28 @@
 import type { ThreeEvent } from '@react-three/fiber';
 import React, { useMemo } from 'react';
+import type { Object3D, Texture } from 'three';
+
+import type { IComponent } from '@/core/lib/ecs/IComponent';
+import type { IMaterialDefinition } from '@/core/materials/Material.types';
 
 import { GeometryRenderer } from './GeometryRenderer';
 
 interface IMaterialRendererProps {
-  meshInstanceRef: React.Ref<any>;
+  meshInstanceRef: React.Ref<Object3D>;
   meshType: string;
-  entityComponents: any[];
-  renderingContributions: any;
+  entityComponents: IComponent[];
+  renderingContributions: {
+    castShadow?: boolean;
+    receiveShadow?: boolean;
+    visible?: boolean;
+  };
   entityColor: string;
   entityId: number;
   onMeshClick: (e: ThreeEvent<MouseEvent>) => void;
   onMeshDoubleClick?: (e: ThreeEvent<MouseEvent>) => void;
-  textures: Record<string, any>;
+  textures: Record<string, Texture | null | undefined>;
   isTextureMode: boolean;
-  material: any;
+  material: IMaterialDefinition | null;
 }
 
 export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
@@ -34,6 +42,10 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
     // Use the provided material directly
     const materialDef = material;
 
+    if (!materialDef) {
+      return null;
+    }
+
     const isStandardShader = materialDef.shader === 'standard';
 
     // Check if this geometry uses vertex colors (GeometryAsset)
@@ -45,7 +57,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
       // Standard PBR material - use single key to prevent recreation when switching between textured/solid
       return (
         <mesh
-          ref={meshInstanceRef as any}
+          ref={meshInstanceRef}
           castShadow={renderingContributions.castShadow}
           receiveShadow={renderingContributions.receiveShadow}
           userData={{ entityId }}
@@ -65,9 +77,9 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
             map={textures.albedoTexture}
             metalness={materialDef.metalness ?? 0}
             roughness={materialDef.roughness ?? 0.7}
-            metalnessMap={textures.metallicTexture as any}
-            roughnessMap={textures.roughnessTexture as any}
-            normalMap={textures.normalTexture as any}
+            metalnessMap={textures.metallicTexture || undefined}
+            roughnessMap={textures.roughnessTexture || undefined}
+            normalMap={textures.normalTexture || undefined}
             normalScale={
               textures.normalTexture
                 ? [materialDef.normalScale ?? 1, materialDef.normalScale ?? 1]
@@ -75,8 +87,8 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
             }
             emissive={materialDef.emissive ?? '#000000'}
             emissiveIntensity={materialDef.emissiveIntensity ?? 0}
-            emissiveMap={textures.emissiveTexture as any}
-            aoMap={textures.occlusionTexture as any}
+            emissiveMap={textures.emissiveTexture || undefined}
+            aoMap={textures.occlusionTexture || undefined}
             aoMapIntensity={materialDef.occlusionStrength ?? 1}
             vertexColors={hasVertexColors}
           />
@@ -86,7 +98,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
       // Unlit shader - use basic material
       return (
         <mesh
-          ref={meshInstanceRef as any}
+          ref={meshInstanceRef}
           castShadow={false}
           receiveShadow={false}
           userData={{ entityId }}
@@ -103,7 +115,7 @@ export const MaterialRenderer: React.FC<IMaterialRendererProps> = React.memo(
           <meshBasicMaterial
             key={`${entityId}-unlit-${hasVertexColors}`}
             color={materialDef.color ?? entityColor}
-            map={materialDef.albedoTexture ? (textures.albedoTexture as any) : undefined}
+            map={materialDef.albedoTexture ? textures.albedoTexture : undefined}
             vertexColors={hasVertexColors}
           />
         </mesh>

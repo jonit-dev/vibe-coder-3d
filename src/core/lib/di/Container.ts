@@ -3,10 +3,10 @@
  * Provides a structured way to manage dependencies and avoid singleton pattern
  */
 
-export type Constructor<T = object> = new (...args: any[]) => T;
-export type Factory<T = any> = (...args: any[]) => T;
+export type Constructor<T = object> = new (...args: unknown[]) => T;
+export type Factory<T = unknown> = (...args: unknown[]) => T;
 
-interface IServiceDefinition<T = any> {
+interface IServiceDefinition<T = unknown> {
   factory: Factory<T>;
   singleton: boolean;
   instance?: T;
@@ -16,7 +16,7 @@ interface IServiceDefinition<T = any> {
  * Simple dependency injection container to replace singleton pattern
  */
 export class Container {
-  private services = new Map<string | Constructor<any>, IServiceDefinition>();
+  private services = new Map<string | Constructor<unknown>, IServiceDefinition>();
 
   /**
    * Register a service with the container
@@ -63,7 +63,7 @@ export class Container {
   /**
    * Check if a service is registered
    */
-  has(token: string | Constructor<any>): boolean {
+  has(token: string | Constructor<unknown>): boolean {
     return this.services.has(token);
   }
 
@@ -94,11 +94,11 @@ export class Container {
     if (service) {
       if (service.singleton) {
         if (!service.instance) {
-          service.instance = service.factory();
+          service.instance = service.factory() as T;
         }
-        return service.instance;
+        return service.instance as T;
       }
-      return service.factory();
+      return service.factory() as T;
     }
 
     // If not found in this container, try parent

@@ -185,7 +185,9 @@ export const CameraFollowManager: React.FC<ICameraFollowManagerProps> = ({ isPla
 
         if (success) {
           // Mark camera for rendering update so camera system syncs it
-          const cameraComponent = componentRegistry.getBitECSComponent('Camera') as any;
+          const cameraComponent = componentRegistry.getBitECSComponent('Camera') as {
+            needsUpdate?: { [eid: number]: number };
+          };
           if (cameraComponent?.needsUpdate && state.followingCamera !== null) {
             cameraComponent.needsUpdate[state.followingCamera] = 1;
           }

@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
 import type { BufferGeometry } from 'three';
 
+import type { IComponent } from '@/core/lib/ecs/IComponent';
 import type { CustomShapeData, GeometryAssetData } from '@/core/lib/ecs/components/definitions';
+import { TerrainData } from '@/core/lib/ecs/components/definitions/TerrainComponent';
 import { parseMetaToBufferGeometry } from '@/core/lib/geometry/metadata/parseMetaToBufferGeometry';
 import { Logger } from '@/core/lib/logger';
 import { shapeRegistry } from '@/core/lib/rendering/shapes/shapeRegistry';
@@ -13,7 +15,7 @@ const logger = Logger.create('GeometryRenderer');
 
 interface IGeometryRendererProps {
   meshType: string;
-  entityComponents: any[];
+  entityComponents: IComponent[];
 }
 
 function applyGeometryAssetOptions(
@@ -73,8 +75,10 @@ function applyGeometryAssetOptions(
 export const GeometryRenderer: React.FC<IGeometryRendererProps> = React.memo(
   ({ meshType, entityComponents }) => {
     const terrainData = useMemo(() => {
-      const terrain = entityComponents.find((component) => component.type === 'Terrain');
-      return (terrain?.data as any) || null;
+      const terrain = entityComponents.find((component) => component.type === 'Terrain') as
+        | IComponent<TerrainData>
+        | undefined;
+      return terrain?.data || null;
     }, [entityComponents]);
 
     const customShapeData = useMemo(() => {

@@ -296,16 +296,22 @@ function attachSpecializedAccessors(
       },
       getLinearVelocity(): [number, number, number] {
         // This will be populated by physics binding reading from Rapier world
-        const data = base.get() as any;
-        return data?.__linearVelocity || [0, 0, 0];
+        const data = base.get();
+        return (
+          (data as IRigidBodyData & { __linearVelocity?: [number, number, number] })
+            ?.__linearVelocity || [0, 0, 0]
+        );
       },
       setAngularVelocity(vel: [number, number, number]): void {
         buffer.queue(entityId, 'RigidBody', '__setAngularVelocity', vel);
       },
       getAngularVelocity(): [number, number, number] {
         // This will be populated by physics binding reading from Rapier world
-        const data = base.get() as any;
-        return data?.__angularVelocity || [0, 0, 0];
+        const data = base.get();
+        return (
+          (data as IRigidBodyData & { __angularVelocity?: [number, number, number] })
+            ?.__angularVelocity || [0, 0, 0]
+        );
       },
     };
 

@@ -1,7 +1,7 @@
 // Transform System
 // Synchronizes Transform components with Three.js objects and handles hierarchical transforms
 import { defineQuery } from 'bitecs';
-import { Vector3, Quaternion, Matrix4 } from 'three';
+import { Vector3, Quaternion, Matrix4, Object3D } from 'three';
 
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { ECSWorld } from '@core/lib/ecs/World';
@@ -39,7 +39,7 @@ function getTransformQuery() {
 }
 
 // Entity to Three.js object mapping (simplified for now)
-const entityToObject = new Map<number, any>();
+const entityToObject = new Map<number, Object3D>();
 
 // Get entity manager
 const entityManager = EntityManager.getInstance();
@@ -247,7 +247,7 @@ export function transformSystem(): number {
 /**
  * Register a Three.js object with an entity for transform synchronization
  */
-export function registerEntityObject(eid: number, object: any): void {
+export function registerEntityObject(eid: number, object: Object3D): void {
   entityToObject.set(eid, object);
 }
 
@@ -262,7 +262,7 @@ export function unregisterEntityObject(eid: number): void {
 /**
  * Get the Three.js object associated with an entity
  */
-export function getEntityObject(eid: number): any {
+export function getEntityObject(eid: number): Object3D | undefined {
   return entityToObject.get(eid);
 }
 

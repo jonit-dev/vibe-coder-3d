@@ -1,10 +1,11 @@
 // Camera System
 // Synchronizes Camera components with Three.js cameras
 import { defineQuery } from 'bitecs';
-import { OrthographicCamera, PerspectiveCamera } from 'three';
+import { OrthographicCamera, PerspectiveCamera, Object3D } from 'three';
 
 import { componentRegistry } from '../lib/ecs/ComponentRegistry';
 import { ECSWorld } from '../lib/ecs/World';
+import { CameraData } from '../lib/ecs/components/definitions/CameraComponent';
 
 // Get world instance
 const world = ECSWorld.getInstance().getWorld();
@@ -30,7 +31,7 @@ let editorCamera: PerspectiveCamera | OrthographicCamera | null = null;
 let selectedCameraEntityId: number | null = null;
 
 // Entity to Three.js object mapping (simplified for now)
-const entityToObject = new Map<number, any>();
+const entityToObject = new Map<number, Object3D>();
 
 /**
  * Set the editor camera reference for real-time updates
@@ -102,7 +103,7 @@ export function cameraSystem(): number {
  */
 function updateCameraFromData(
   camera: PerspectiveCamera | OrthographicCamera,
-  cameraData: any,
+  cameraData: CameraData,
 ): void {
   // Update orthographic camera
   if (camera instanceof OrthographicCamera) {
@@ -158,7 +159,7 @@ export function markAllCamerasForUpdate(): number {
 /**
  * Register an entity-to-object mapping for game mode camera switching
  */
-export function registerEntityObject(entityId: number, object: any): void {
+export function registerEntityObject(entityId: number, object: Object3D): void {
   entityToObject.set(entityId, object);
 }
 

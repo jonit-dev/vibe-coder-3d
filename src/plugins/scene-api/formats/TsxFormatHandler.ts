@@ -183,13 +183,17 @@ export class TsxFormatHandler implements ISceneFormatHandler {
 
     // Save full scene dump to Rust folder (no compression)
     // IMPORTANT: Must happen AFTER materials are extracted from entities
-    await this.rustExporter.export(cleanName, {
-      entities: entitiesForRust,
-      materials: allMaterials,
-      prefabs: sceneData.prefabs || [],
-      inputAssets: sceneData.inputAssets || [],
-      lockedEntityIds: sceneData.lockedEntityIds || [],
-    }, metadata);
+    await this.rustExporter.export(
+      cleanName,
+      {
+        entities: entitiesForRust,
+        materials: allMaterials,
+        prefabs: sceneData.prefabs || [],
+        inputAssets: sceneData.inputAssets || [],
+        lockedEntityIds: sceneData.lockedEntityIds || [],
+      },
+      metadata,
+    );
 
     // Save assets to global library and collect path references
     const { FsAssetStore } = await import('../../assets-api/FsAssetStore');
@@ -562,7 +566,11 @@ export default defineScene({
         // New format: assetReferences with IDs
         // Convert IDs to materialRef paths for MultiFileSceneLoader
         const entities = (sceneObj.entities || []).map((entity: ISerializedEntity) => {
-          const meshRenderer = entity.components?.MeshRenderer as any;
+          const meshRenderer = entity.components?.MeshRenderer as {
+            materialId?: string;
+            materialRef?: string;
+            [key: string]: unknown;
+          };
           if (meshRenderer && meshRenderer.materialId) {
             const materialId = meshRenderer.materialId;
             return {

@@ -49,7 +49,7 @@ function runOptimizeForModel(modelDir: string): Promise<void> {
  * Parse multipart/form-data (simple version for single file)
  */
 async function parseMultipart(
-  req: any,
+  req: import('http').IncomingMessage,
 ): Promise<{ file?: Buffer; modelName?: string; filename?: string }> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];

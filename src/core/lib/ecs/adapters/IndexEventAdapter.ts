@@ -6,6 +6,7 @@ import { HierarchyIndex } from '../indexers/HierarchyIndex';
 import { on } from '../../events';
 import { hasComponent } from 'bitecs';
 import { EntityMeta } from '../BitECSComponents';
+import type { IWorld } from '../World';
 
 /**
  * IndexEventAdapter - Wires EntityManager and ComponentRegistry events to maintain indices

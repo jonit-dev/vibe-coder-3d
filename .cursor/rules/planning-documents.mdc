@@ -53,9 +53,9 @@ You are an expert software architect. Given a description of a new feature or co
 
    - For each new file or interface, include a minimal code snippet skeleton (fenced with the appropriate language tag) showing key exports, types, or method signatures.
 
-     5.1 **UI Integration**
+     5.1 **UI/API Integration**
 
-   - If the feature is related to UI, include a detailed explanation of how to integrate the new component/API with the UI system (existing or new.).
+   - Please include a detailed description of how the new UI/API will integrate with existing systems, including any necessary modifications to current interfaces or data flows.
 
 6. **Usage Examples**
 

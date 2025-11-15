@@ -24,11 +24,18 @@ export async function triggerLuaTranspile(trigger: string): Promise<void> {
         if (stdout.trim()) {
           console.log(`[${trigger}] Lua transpile output:`, stdout.trim());
         }
-      } catch (error: any) {
-        const message = error?.message ?? 'Unknown error';
+      } catch (error: unknown) {
+        const message =
+          error && typeof error === 'object' && 'message' in error
+            ? (error as { message?: string }).message
+            : 'Unknown error';
         console.error(`[${trigger}] Lua transpile failed:`, message);
-        if (error?.stdout) console.error('stdout:', error.stdout);
-        if (error?.stderr) console.error('stderr:', error.stderr);
+        if (error && typeof error === 'object' && 'stdout' in error) {
+          console.error('stdout:', (error as { stdout?: string }).stdout);
+        }
+        if (error && typeof error === 'object' && 'stderr' in error) {
+          console.error('stderr:', (error as { stderr?: string }).stderr);
+        }
       } finally {
         activeTranspile = null;
       }

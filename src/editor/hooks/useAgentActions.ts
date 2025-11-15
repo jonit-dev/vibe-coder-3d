@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { Logger } from '@core/lib/logger';
 import { useComponentRegistry } from '@core/hooks/useComponentRegistry';
 import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
+import { MeshRendererData } from '@core/lib/ecs/components/definitions/MeshRendererComponent';
 import { useEntityCreation } from './useEntityCreation';
 import { PrefabManager } from '@core/prefabs/PrefabManager';
 import { usePrefabsStore } from '@editor/store/prefabsStore';
@@ -206,7 +207,7 @@ export const useAgentActions = () => {
           // Apply material if provided
           if (spec.material) {
             // MeshRenderer expects a nested 'material' object for overrides
-            const meshUpdate: any = {};
+            const meshUpdate: Partial<MeshRendererData> = {};
 
             if (spec.material.materialId) {
               // If materialId is provided, set it at the top level
@@ -217,6 +218,18 @@ export const useAgentActions = () => {
               // Color goes inside the nested material object
               meshUpdate.material = {
                 color: spec.material.color,
+                shader: 'standard' as const,
+                materialType: 'solid' as const,
+                metalness: 0,
+                roughness: 0.7,
+                emissive: '#000000',
+                emissiveIntensity: 0,
+                normalScale: 1,
+                occlusionStrength: 1,
+                textureOffsetX: 0,
+                textureOffsetY: 0,
+                textureRepeatX: 1,
+                textureRepeatY: 1,
               };
             }
 

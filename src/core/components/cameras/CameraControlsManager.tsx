@@ -125,7 +125,7 @@ export const CameraControlsManager: React.FC<ICameraControlsManagerProps> = ({
   }
 
   const { cameraData } = mainCameraData;
-  const controlMode = (cameraData as any).controlMode ?? 'free';
+  const controlMode = cameraData?.controlMode ?? 'free';
 
   // Only render OrbitControls if in free mode AND not transforming
   if (controlMode === 'free') {
@@ -150,7 +150,7 @@ export const CameraControlsManager: React.FC<ICameraControlsManagerProps> = ({
 
     return (
       <OrbitControls
-        ref={orbitControlsRef as any}
+        ref={orbitControlsRef}
         enabled={!isTransforming} // Disable when transforming entities
         target={targetPosition}
         enablePan={true}

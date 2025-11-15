@@ -120,9 +120,9 @@ export const PhysicsBody = forwardRef<IPhysicsBodyHandle, IPhysicsBodyProps>(
 
         // Set initial transform values using the new ComponentRegistry system
         const transformData: ITransformData = {
-          position: [...position] as [number, number, number],
-          rotation: [...rotation] as [number, number, number],
-          scale: [...scale] as [number, number, number],
+          position: position as [number, number, number],
+          rotation: rotation as [number, number, number],
+          scale: scale as [number, number, number],
         };
 
         // Add or update Transform component

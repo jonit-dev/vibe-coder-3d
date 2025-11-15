@@ -39,10 +39,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     return entities
       .map((entityId) => {
         const cameraComponent = getComponentData(entityId, KnownComponentTypes.CAMERA);
-        const transformComponent = getComponentData(
-          entityId,
-          KnownComponentTypes.TRANSFORM,
-        );
+        const transformComponent = getComponentData(entityId, KnownComponentTypes.TRANSFORM);
 
         const cameraData = cameraComponent as CameraData;
         const transformData = transformComponent as ITransformData;
@@ -107,8 +104,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     if (!isPlaying) {
       // Restore original editor camera when exiting play mode
       if (originalCameraRef.current && hasSetOriginalCamera.current) {
-        set({ camera: originalCameraRef.current as any });
-
+        set({ camera: originalCameraRef.current as THREE.Camera });
       }
       return;
     }
@@ -182,7 +178,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     registerEntityObject(mainCamera.entityId, gameCamera);
 
     // Replace the main Three.js camera with our game camera
-    set({ camera: gameCamera as any });
+    set({ camera: gameCamera });
 
     // Switched to game camera successfully
 
@@ -216,7 +212,7 @@ export const GameCameraManager: React.FC<IGameCameraManagerProps> = ({ isPlaying
     const camera = currentGameCamera.current;
 
     // Check if camera controls are in free mode
-    const controlMode = (cameraData as any)?.controlMode ?? 'free';
+    const controlMode = cameraData?.controlMode ?? 'free';
     const isFreeMode = controlMode === 'free';
     const hasFollowTarget = cameraData?.enableSmoothing && cameraData?.followTarget;
 

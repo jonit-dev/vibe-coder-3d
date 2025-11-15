@@ -54,8 +54,8 @@ export function useGameEngineControls(): IGameEngineControls {
 
     // Reset the ECS world (if available and has reset method)
     const world = worldStore.getState().world;
-    if (world && typeof (world as any).reset === 'function') {
-      (world as { reset: () => void }).reset();
+    if (world && 'reset' in world && typeof world.reset === 'function') {
+      world.reset();
     }
 
     // Restart the engine

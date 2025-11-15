@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { addComponent, addEntity, hasComponent, removeEntity } from 'bitecs';
 
 import { EntityMeta } from './BitECSComponents';
@@ -12,7 +12,7 @@ import { getEntityName, getEntityParent, setEntityMeta } from './DataConversion'
 import { IEntity } from './IEntity';
 import { EntityQueries } from './queries/entityQueries';
 import { EntityId } from './types';
-import { ECSWorld } from './World';
+import { ECSWorld, IWorld } from './World';
 
 type EntityEvent = {
   type: 'entity-created' | 'entity-deleted' | 'entity-updated' | 'entities-cleared';
@@ -28,11 +28,11 @@ export class EntityManager {
   private entityCache: Map<EntityId, IEntity> = new Map();
   private existingPersistentIds: Set<string> = new Set();
   private queries: EntityQueries | null = null;
-  private world: any; // BitECS world - using any for compatibility with bitecs
+  private world: IWorld; // BitECS world - properly typed as IWorld
   private componentRegistry: ComponentRegistry;
   private isInstanceMode = false;
 
-  constructor(world?: any, componentManager?: ComponentRegistry) {
+  constructor(world?: IWorld, componentManager?: ComponentRegistry) {
     if (world) {
       // Instance mode with injected world and optional component manager
       this.isInstanceMode = true;
@@ -62,7 +62,7 @@ export class EntityManager {
     return EntityManager.instance;
   }
 
-  public reset(newWorld?: any): void {
+  public reset(newWorld?: IWorld): void {
     this.entityCache.clear();
     this.existingPersistentIds.clear();
     // Note: We do NOT clear eventListeners here because external components

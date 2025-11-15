@@ -67,6 +67,46 @@ interface IScriptInfo {
   size: number;
 }
 
+interface IScriptApiResponse<T = unknown> {
+  success: boolean;
+  error?: string;
+  serverHash?: string;
+  diff?: string;
+  id?: string;
+  path?: string;
+  code?: string;
+  hash?: string;
+  modified?: string;
+  oldId?: string;
+  data?: T;
+}
+
+interface IScriptListResponse {
+  success: boolean;
+  scripts: IScriptInfo[];
+  error?: string;
+}
+
+interface IScriptValidationIssue {
+  level: 'error' | 'warn';
+  message: string;
+  line?: number;
+}
+
+interface IScriptValidationResponse {
+  success: boolean;
+  issues: IScriptValidationIssue[];
+  error?: string;
+}
+
+interface IScriptDiffResponse {
+  success: boolean;
+  same: boolean;
+  serverHash?: string;
+  diff?: string;
+  error?: string;
+}
+
 // ============================================================================
 // Utilities
 // ============================================================================
@@ -124,7 +164,7 @@ function isPathSafe(filePath: string): boolean {
 /**
  * Handle /api/script/save
  */
-async function handleSave(body: unknown): Promise<any> {
+async function handleSave(body: unknown): Promise<IScriptApiResponse> {
   const data = SaveScriptRequestSchema.parse(body);
   const scriptPath = getScriptPath(data.id);
 
@@ -154,10 +194,14 @@ async function handleSave(body: unknown): Promise<any> {
         diff,
       };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     // File doesn't exist yet, which is fine
-    if (error.code !== 'ENOENT') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+      // Expected error, continue
+    } else if (error instanceof Error) {
       throw error;
+    } else {
+      throw new Error('Unknown error occurred');
     }
   }
 
@@ -181,7 +225,7 @@ async function handleSave(body: unknown): Promise<any> {
 /**
  * Handle /api/script/load
  */
-async function handleLoad(id: string): Promise<any> {
+async function handleLoad(id: string): Promise<IScriptApiResponse> {
   const primaryPath = getScriptPath(id);
 
   // Ensure directory exists to avoid unexpected FS errors
@@ -203,7 +247,7 @@ async function handleLoad(id: string): Promise<any> {
     ];
     let scriptPath = candidates[0];
     let code: string | null = null;
-    let stats: any = null;
+    let stats: import('fs').Stats | null = null;
 
     for (const candidate of candidates) {
       try {
@@ -211,8 +255,10 @@ async function handleLoad(id: string): Promise<any> {
         stats = await fs.stat(candidate);
         scriptPath = candidate;
         break;
-      } catch (err: any) {
-        if (err?.code !== 'ENOENT') throw err;
+      } catch (err: unknown) {
+        if (err && typeof err === 'object' && 'code' in err && err.code !== 'ENOENT') {
+          throw err;
+        }
       }
     }
 
@@ -232,10 +278,10 @@ async function handleLoad(id: string): Promise<any> {
       path: scriptPath,
       code,
       hash,
-      modified: stats.mtime.toISOString(),
+      modified: stats?.mtime.toISOString(),
     };
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
       return {
         success: false,
         error: 'not_found',
@@ -249,7 +295,7 @@ async function handleLoad(id: string): Promise<any> {
 /**
  * Handle /api/script/list
  */
-async function handleList(): Promise<any> {
+async function handleList(): Promise<IScriptListResponse> {
   await ensureScriptsDir();
 
   try {
@@ -283,8 +329,8 @@ async function handleList(): Promise<any> {
       success: true,
       scripts,
     };
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
       return {
         success: true,
         scripts: [],
@@ -297,7 +343,7 @@ async function handleList(): Promise<any> {
 /**
  * Handle /api/script/rename
  */
-async function handleRename(body: unknown): Promise<any> {
+async function handleRename(body: unknown): Promise<IScriptApiResponse> {
   const data = RenameScriptRequestSchema.parse(body);
   const oldPath = getScriptPath(data.id);
   const newPath = getScriptPath(data.newId);
@@ -340,8 +386,8 @@ async function handleRename(body: unknown): Promise<any> {
       hash,
       modified: stats.mtime.toISOString(),
     };
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
       return {
         success: false,
         error: 'not_found',
@@ -354,7 +400,7 @@ async function handleRename(body: unknown): Promise<any> {
 /**
  * Handle /api/script/delete
  */
-async function handleDelete(body: unknown): Promise<any> {
+async function handleDelete(body: unknown): Promise<IScriptApiResponse> {
   const data = DeleteScriptRequestSchema.parse(body);
   const scriptPath = getScriptPath(data.id);
 
@@ -371,8 +417,8 @@ async function handleDelete(body: unknown): Promise<any> {
     return {
       success: true,
     };
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
       return {
         success: false,
         error: 'not_found',
@@ -385,10 +431,10 @@ async function handleDelete(body: unknown): Promise<any> {
 /**
  * Handle /api/script/validate
  */
-async function handleValidate(body: unknown): Promise<any> {
+async function handleValidate(body: unknown): Promise<IScriptValidationResponse> {
   const data = ValidateScriptRequestSchema.parse(body);
 
-  const issues: Array<{ level: 'error' | 'warn'; message: string; line?: number }> = [];
+  const issues: IScriptValidationIssue[] = [];
 
   // Basic validation
   if (data.code.length > MAX_FILE_SIZE) {
@@ -441,7 +487,7 @@ async function handleValidate(body: unknown): Promise<any> {
 /**
  * Handle /api/script/diff
  */
-async function handleDiff(id: string, clientHash: string): Promise<any> {
+async function handleDiff(id: string, clientHash: string): Promise<IScriptDiffResponse> {
   const scriptPath = getScriptPath(id);
 
   // Security check
@@ -449,6 +495,7 @@ async function handleDiff(id: string, clientHash: string): Promise<any> {
     return {
       success: false,
       error: 'Invalid script path',
+      same: false,
     };
   }
 
@@ -463,11 +510,12 @@ async function handleDiff(id: string, clientHash: string): Promise<any> {
       serverHash,
       diff: same ? undefined : `Hashes differ: client=${clientHash} server=${serverHash}`,
     };
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
       return {
         success: false,
         error: 'not_found',
+        same: false,
       };
     }
     throw error;
@@ -518,10 +566,14 @@ export function vitePluginScriptAPI(): Plugin {
         }
 
         try {
-          let result: any;
+          let result:
+            | IScriptApiResponse
+            | IScriptListResponse
+            | IScriptValidationResponse
+            | IScriptDiffResponse;
 
           // Parse request body for POST requests
-          const getBody = (): Promise<any> => {
+          const getBody = (): Promise<unknown> => {
             return new Promise((resolve, reject) => {
               let body = '';
               req.on('data', (chunk) => {
@@ -604,7 +656,7 @@ export function vitePluginScriptAPI(): Plugin {
             res.statusCode = 200;
           }
           res.end(JSON.stringify(result));
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('[vite-plugin-script-api] Error:', error);
 
           // Handle validation errors
@@ -627,7 +679,7 @@ export function vitePluginScriptAPI(): Plugin {
           res.end(
             JSON.stringify({
               success: false,
-              error: error.message || 'Internal server error',
+              error: error instanceof Error ? error.message : 'Internal server error',
             }),
           );
         }

@@ -48,8 +48,8 @@ describe('materialsStore - Scene-based Persistence', () => {
     vi.clearAllMocks();
 
     // Setup default mock behavior
-    (mockRegistry.list as any).mockReturnValue([]);
-    (mockRegistry.get as any).mockReturnValue(undefined);
+    vi.mocked(mockRegistry.list).mockReturnValue([]);
+    vi.mocked(mockRegistry.get).mockReturnValue(undefined);
 
     // Reset store state to defaults
     const store = useMaterialsStore.getState();

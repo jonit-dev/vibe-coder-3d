@@ -56,7 +56,7 @@ export const MeshRendererAdapter: React.FC<IMeshRendererAdapterProps> = React.me
     return (
       <MeshRendererSection
         meshRenderer={meshRendererData}
-        setMeshRenderer={handleUpdate as (data: any) => void}
+        setMeshRenderer={handleUpdate}
         isPlaying={isPlaying}
       />
     );
