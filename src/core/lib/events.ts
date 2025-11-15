@@ -3,7 +3,7 @@ import { BatchedEventEmitter } from './perf/BatchedEventEmitter';
 
 // Example event types (expand as needed)
 export type CoreEvents = {
-  'physics:collision': { entityA: number; entityB: number; point?: number[]; position?: any };
+  'physics:collision': { entityA: number; entityB: number; point?: number[]; position?: [number, number, number] };
   'asset:loaded': { url?: string; assetId?: string; asset: unknown };
   'scene:loaded': { sceneName: string };
   'input:actionPressed': { action: string };
@@ -14,16 +14,16 @@ export type CoreEvents = {
   'ui:buttonClicked': { buttonId: string };
 
   // Sound events
-  'sound:autoplay': { entityId: number; soundData: any };
+  'sound:autoplay': { entityId: number; soundData: { url: string; volume?: number; loop?: boolean } };
 
   // Entity events
   'entity:created': { entityId: number; componentId?: string };
   'entity:destroyed': { entityId: number };
 
   // Component system events
-  'component:added': { entityId: number; componentId: string; data: any };
+  'component:added': { entityId: number; componentId: string; data: Record<string, unknown> };
   'component:removed': { entityId: number; componentId: string };
-  'component:updated': { entityId: number; componentId: string; data: any };
+  'component:updated': { entityId: number; componentId: string; data: Record<string, unknown> };
 
   // Animation events
   'animation:play': { entityId: number; clipId: string; fade?: number; loop?: boolean };

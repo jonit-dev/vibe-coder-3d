@@ -130,13 +130,13 @@ export class IndexEventAdapter {
     this.components.clear();
 
     // Rebuild entity and hierarchy indices using direct scan (no EntityManager to avoid circular dependency)
-    const world = (this.entityManager as any).world;
+    const world = (this.entityManager as unknown as { world: unknown }).world;
     const allEntities: Array<{ id: number; name: string; parentId?: number }> = [];
 
     // Direct BitECS scan - this is acceptable during initialization/rebuild
     for (let eid = 0; eid < 10000; eid++) {
       if (hasComponent(world, EntityMeta, eid)) {
-        const entity = (this.entityManager as any).buildEntityFromEid(eid);
+        const entity = (this.entityManager as unknown as { buildEntityFromEid: (eid: number) => { id: number; name: string; parentId?: number } | null }).buildEntityFromEid(eid);
         if (entity) {
           allEntities.push(entity);
         }

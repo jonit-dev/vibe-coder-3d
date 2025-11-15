@@ -9,6 +9,22 @@ import { getAvailableAPIs, getAPIDetails } from './scriptApiParser';
 
 const logger = Logger.create('ScriptManagementTool');
 
+// Script parameter types
+export interface IScriptParameters extends Record<string, unknown> {
+  [key: string]: string | number | boolean | unknown;
+}
+
+// Script management tool parameter types
+interface IScriptManagementParams {
+  action: 'create_custom' | 'attach_to_entity' | 'detach_from_entity' | 'set_parameters' | 'list_scripts' | 'get_script_code' | 'list_available_apis' | 'get_api_details' | 'get_api_reference';
+  api_names?: string[];
+  entity_id?: number;
+  script_name?: string;
+  script_id?: string;
+  code?: string;
+  parameters?: IScriptParameters;
+}
+
 export const scriptManagementTool = {
   name: 'script_management',
   description: `Create and manage TypeScript scripts for entity behavior.
@@ -115,7 +131,7 @@ For detailed API reference:
 /**
  * Execute script management tool
  */
-export async function executeScriptManagement(params: any): Promise<string> {
+export async function executeScriptManagement(params: IScriptManagementParams): Promise<string> {
   logger.info('Executing script management', { params });
 
   const { action, entity_id, script_name, script_id, code, parameters, api_names } = params;
@@ -178,7 +194,7 @@ async function createCustomScript(
   entityId: number,
   scriptName: string,
   code: string,
-  parameters?: Record<string, any>,
+  parameters?: IScriptParameters,
 ): Promise<string> {
   try {
     const scriptId = `entity-${entityId}.${scriptName.toLowerCase().replace(/\s+/g, '-')}`;
@@ -230,7 +246,7 @@ async function createCustomScript(
 function attachToEntity(
   entityId: number,
   scriptId: string,
-  parameters?: Record<string, any>,
+  parameters?: IScriptParameters,
 ): string {
   try {
     // Check if Script component already exists
@@ -285,7 +301,7 @@ function detachFromEntity(entityId: number): string {
 /**
  * Set script parameters
  */
-function setParameters(entityId: number, parameters: Record<string, any>): string {
+function setParameters(entityId: number, parameters: IScriptParameters): string {
   try {
     if (!componentRegistry.hasComponent(entityId, 'Script')) {
       return `Entity ${entityId} does not have a Script component. Use attach_to_entity or create_from_template first.`;

@@ -97,7 +97,7 @@ export function validateComponentData(componentType: string, data: unknown): boo
 /**
  * Create a schema for a specific scene with component validation
  */
-export function createSceneSchemaForComponents(componentTypes: string[]): z.ZodObject<any> {
+export function createSceneSchemaForComponents(componentTypes: string[]): z.ZodObject<z.ZodRawShape> {
   const componentSchemas: Record<string, z.ZodType<unknown>> = {};
 
   componentTypes.forEach((componentType) => {

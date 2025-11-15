@@ -4,6 +4,7 @@ import { useEditorStore } from '@/editor/store/editorStore';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { Logger } from '@core/lib/logger';
+import * as THREE from 'three';
 
 const logger = Logger.create('LODPanel');
 
@@ -59,13 +60,13 @@ export const LODPanel: React.FC<ILODPanelProps> = ({ isExpanded }) => {
   useEffect(() => {
     const updateStats = () => {
       try {
-        const scene = (window as any).__r3fScene;
-        const camera = (window as any).__r3fCamera;
+        const scene = (window as unknown as { __r3fScene?: THREE.Scene }).__r3fScene;
+        const camera = (window as unknown as { __r3fCamera?: THREE.Camera }).__r3fCamera;
         if (!scene) return;
 
         // Count triangles
         let count = 0;
-        scene.traverse((obj: any) => {
+        scene.traverse((obj: THREE.Object3D) => {
           if (obj.geometry) {
             const geometry = obj.geometry;
             if (geometry.index) {
@@ -122,7 +123,7 @@ export const LODPanel: React.FC<ILODPanelProps> = ({ isExpanded }) => {
   const wireframeAppliedRef = React.useRef<boolean>(false);
 
   useEffect(() => {
-    const scene = (window as any).__r3fScene;
+    const scene = (window as unknown as { __r3fScene?: THREE.Scene }).__r3fScene;
     if (!scene) return;
 
     // Prevent redundant updates
@@ -131,10 +132,10 @@ export const LODPanel: React.FC<ILODPanelProps> = ({ isExpanded }) => {
 
     logger.info(`Wireframe ${showWireframe ? 'enabled' : 'disabled'}`);
 
-    scene.traverse((obj: any) => {
+    scene.traverse((obj: THREE.Object3D) => {
       if (obj.material) {
         if (Array.isArray(obj.material)) {
-          obj.material.forEach((mat: any) => {
+          obj.material.forEach((mat: THREE.Material) => {
             // Only update if different to prevent flashing
             if (mat.wireframe !== showWireframe) {
               mat.wireframe = showWireframe;

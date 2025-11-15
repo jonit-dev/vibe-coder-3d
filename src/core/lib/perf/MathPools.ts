@@ -111,6 +111,6 @@ export function releaseMatrix4(m: Matrix4): void {
 }
 
 // Utility function to release multiple objects at once
-export function releaseMultiple<T extends any[]>(pool: ObjectPool<T>, ...items: T[]): void {
+export function releaseMultiple<T extends unknown[]>(pool: ObjectPool<T>, ...items: T[]): void {
   items.forEach((item) => pool.release(item));
 }

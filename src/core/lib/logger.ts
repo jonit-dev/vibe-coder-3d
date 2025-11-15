@@ -101,35 +101,35 @@ export class Logger {
   /**
    * Debug level logging
    */
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, ...args: unknown[]): void {
     this.log(LogLevel.DEBUG, message, ...args);
   }
 
   /**
    * Info level logging
    */
-  info(message: string, ...args: any[]): void {
+  info(message: string, ...args: unknown[]): void {
     this.log(LogLevel.INFO, message, ...args);
   }
 
   /**
    * Warning level logging
    */
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, ...args: unknown[]): void {
     this.log(LogLevel.WARN, message, ...args);
   }
 
   /**
    * Error level logging
    */
-  error(message: string, ...args: any[]): void {
+  error(message: string, ...args: unknown[]): void {
     this.log(LogLevel.ERROR, message, ...args);
   }
 
   /**
    * Core logging method
    */
-  private log(level: LogLevel, message: string, ...args: any[]): void {
+  private log(level: LogLevel, message: string, ...args: unknown[]): void {
     // Check if log level is enabled
     if (level < globalConfig.level) {
       return;
@@ -236,7 +236,7 @@ export class Logger {
    */
   startTracker(operationName: string): () => void {
     const startTime = performance.now();
-    const appStartTime = (window as any).__appStartTime;
+    const appStartTime = (window as unknown as { __appStartTime?: number }).__appStartTime;
 
     this.info(`${operationName} started`, {
       timestamp: startTime,
@@ -258,7 +258,7 @@ export class Logger {
    */
   createStepTracker(processName: string) {
     const startTime = performance.now();
-    const appStartTime = (window as any).__appStartTime;
+    const appStartTime = (window as unknown as { __appStartTime?: number }).__appStartTime;
     let lastStepTime = startTime;
     let stepCount = 0;
 
@@ -298,9 +298,9 @@ export class Logger {
   /**
    * Track performance milestones (cumulative timing from app start)
    */
-  milestone(milestoneName: string, additionalData?: Record<string, any>) {
+  milestone(milestoneName: string, additionalData?: Record<string, unknown>) {
     const now = performance.now();
-    const appStartTime = (window as any).__appStartTime;
+    const appStartTime = (window as unknown as { __appStartTime?: number }).__appStartTime;
 
     this.info(`🏁 MILESTONE: ${milestoneName}`, {
       timeFromAppStart: appStartTime ? `${(now - appStartTime).toFixed(2)}ms` : 'unknown',

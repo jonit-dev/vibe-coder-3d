@@ -3,7 +3,7 @@
  * Batches events and flushes them on the next animation frame to reduce redundant computations
  */
 
-export interface IBatchedEventEmitter<TEvents extends Record<string, any>> {
+export interface IBatchedEventEmitter<TEvents extends Record<string, unknown>> {
   emit<K extends keyof TEvents>(type: K, data: TEvents[K]): void;
   on<K extends keyof TEvents>(type: K, handler: (event: TEvents[K]) => void): () => void;
   off<K extends keyof TEvents>(type: K, handler: (event: TEvents[K]) => void): void;
@@ -20,10 +20,10 @@ export interface IBatchedEventEmitterOptions {
   useAnimationFrame?: boolean;
 }
 
-export class BatchedEventEmitter<TEvents extends Record<string, any>>
+export class BatchedEventEmitter<TEvents extends Record<string, unknown>>
   implements IBatchedEventEmitter<TEvents>
 {
-  private handlers = new Map<keyof TEvents, Set<(event: any) => void>>();
+  private handlers = new Map<keyof TEvents, Set<(event: unknown) => void>>();
   private pendingEvents = new Map<keyof TEvents, Set<TEvents[keyof TEvents]>>();
   private animationFrameId: number | null = null;
   private options: Required<IBatchedEventEmitterOptions>;

@@ -8,6 +8,11 @@ import { getAllShapes, getPrimitiveShapes, getCustomGeometryShapes } from '../ut
 
 const logger = Logger.create('GetAvailableShapesTool');
 
+// Get available shapes tool parameter types
+interface IGetAvailableShapesParams {
+  filter?: 'all' | 'primitive' | 'geometry';
+}
+
 export const getAvailableShapesTool = {
   name: 'get_available_shapes',
   description:
@@ -29,7 +34,7 @@ export const getAvailableShapesTool = {
 /**
  * Execute the get available shapes tool
  */
-export async function executeGetAvailableShapes(params: any): Promise<string> {
+export async function executeGetAvailableShapes(params: IGetAvailableShapesParams): Promise<string> {
   logger.info('Getting available shapes', { params });
 
   const filter = params.filter || 'all';

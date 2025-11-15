@@ -83,7 +83,7 @@ export class KeyboardInput {
    */
   private isEventFromEditableTarget(event: KeyboardEvent): boolean {
     const target = event.target as EventTarget | null;
-    if (!target || typeof (target as any).closest !== 'function') {
+    if (!target || typeof (target as { closest?: (selector: string) => Element | null }).closest !== 'function') {
       // Best effort check for standard inputs/textareas
       const el = target as HTMLElement | null;
       return (

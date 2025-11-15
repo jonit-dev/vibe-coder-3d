@@ -3,6 +3,17 @@ import { useFrame } from '@react-three/fiber';
 import { useRapier } from '@react-three/rapier';
 import { useCallback, useMemo } from 'react';
 import { Vector3 } from 'three';
+import type {
+  Collider,
+  ColliderDesc,
+  RigidBody,
+  RigidBodyDesc,
+  RigidBodyType,
+  Ray as RapierRay,
+  ColliderShape,
+  CoefficientCombineRule,
+  RayIntersectionHit,
+} from '@dimforge/rapier3d-compat';
 
 import { useGameLoop } from './gameLoop';
 
@@ -31,8 +42,8 @@ export interface IPhysicsMaterial {
   friction?: number;
   restitution?: number;
   density?: number;
-  frictionCombineRule?: 'average' | 'min' | 'multiply' | 'max';
-  restitutionCombineRule?: 'average' | 'min' | 'multiply' | 'max';
+  frictionCombineRule?: CoefficientCombineRule;
+  restitutionCombineRule?: CoefficientCombineRule;
 }
 
 /**
@@ -77,7 +88,7 @@ export function usePhysics() {
           { x: direction[0], y: direction[1], z: direction[2] },
         );
 
-        const hits: any[] = [];
+        const hits: RayIntersectionHit[] = [];
         world.intersectionsWithRay(ray, maxToi, true, (hit) => {
           hits.push(hit);
           return true; // Continue to find all hits
@@ -92,7 +103,7 @@ export function usePhysics() {
       },
 
       // Create a physics shape descriptor
-      createShape: (shape: PhysicsShape): any => {
+      createShape: (shape: PhysicsShape): ColliderDesc => {
         switch (shape.type) {
           case 'box':
             return rapier.ColliderDesc.cuboid(shape.width / 2, shape.height / 2, shape.depth / 2);
@@ -108,12 +119,12 @@ export function usePhysics() {
           case 'cone':
             return rapier.ColliderDesc.cone(shape.height / 2, shape.radius);
           default:
-            throw new Error(`Unsupported shape type: ${(shape as any).type}`);
+            throw new Error(`Unsupported shape type: ${(shape as { type: string }).type}`);
         }
       },
 
       // Apply material properties to a collider descriptor
-      applyMaterial: (colliderDesc: any, material?: IPhysicsMaterial) => {
+      applyMaterial: (colliderDesc: ColliderDesc, material?: IPhysicsMaterial) => {
         if (!material) return colliderDesc;
 
         if (material.friction !== undefined) colliderDesc.setFriction(material.friction);
@@ -142,7 +153,7 @@ export function usePhysics() {
     () => ({
       // Apply force to a rigid body
       applyForce: (
-        body: any,
+        body: RigidBody,
         force: Vector3 | [number, number, number],
         point?: Vector3 | [number, number, number],
       ) => {
@@ -162,7 +173,7 @@ export function usePhysics() {
 
       // Apply impulse to a rigid body
       applyImpulse: (
-        body: any,
+        body: RigidBody,
         impulse: Vector3 | [number, number, number],
         point?: Vector3 | [number, number, number],
       ) => {
@@ -181,7 +192,7 @@ export function usePhysics() {
       },
 
       // Apply torque to a rigid body
-      applyTorque: (body: any, torque: Vector3 | [number, number, number]) => {
+      applyTorque: (body: RigidBody, torque: Vector3 | [number, number, number]) => {
         const torqueVec = Array.isArray(torque)
           ? { x: torque[0], y: torque[1], z: torque[2] }
           : { x: torque.x, y: torque.y, z: torque.z };
@@ -189,7 +200,7 @@ export function usePhysics() {
       },
 
       // Apply angular impulse to a rigid body
-      applyAngularImpulse: (body: any, impulse: Vector3 | [number, number, number]) => {
+      applyAngularImpulse: (body: RigidBody, impulse: Vector3 | [number, number, number]) => {
         const impulseVec = Array.isArray(impulse)
           ? { x: impulse[0], y: impulse[1], z: impulse[2] }
           : { x: impulse.x, y: impulse.y, z: impulse.z };
@@ -197,7 +208,7 @@ export function usePhysics() {
       },
 
       // Set velocity of a rigid body
-      setVelocity: (body: any, velocity: Vector3 | [number, number, number]) => {
+      setVelocity: (body: RigidBody, velocity: Vector3 | [number, number, number]) => {
         const velocityVec = Array.isArray(velocity)
           ? { x: velocity[0], y: velocity[1], z: velocity[2] }
           : { x: velocity.x, y: velocity.y, z: velocity.z };
@@ -205,7 +216,7 @@ export function usePhysics() {
       },
 
       // Set angular velocity of a rigid body
-      setAngularVelocity: (body: any, velocity: Vector3 | [number, number, number]) => {
+      setAngularVelocity: (body: RigidBody, velocity: Vector3 | [number, number, number]) => {
         const velocityVec = Array.isArray(velocity)
           ? { x: velocity[0], y: velocity[1], z: velocity[2] }
           : { x: velocity.x, y: velocity.y, z: velocity.z };
@@ -213,13 +224,13 @@ export function usePhysics() {
       },
 
       // Get velocity of a rigid body
-      getVelocity: (body: any): Vector3 => {
+      getVelocity: (body: RigidBody): Vector3 => {
         const vel = body.linvel();
         return new Vector3(vel.x, vel.y, vel.z);
       },
 
       // Get angular velocity of a rigid body
-      getAngularVelocity: (body: any): Vector3 => {
+      getAngularVelocity: (body: RigidBody): Vector3 => {
         const vel = body.angvel();
         return new Vector3(vel.x, vel.y, vel.z);
       },

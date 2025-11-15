@@ -28,27 +28,27 @@ export interface IShapeRegistry {
    * @param id - The unique shape ID
    * @returns The shape descriptor or undefined if not found
    */
-  resolve(id: string): ICustomShapeDescriptor<any> | undefined;
+  resolve(id: string): ICustomShapeDescriptor<unknown> | undefined;
 
   /**
    * List all registered shapes
    * @returns Array of all registered shape descriptors
    */
-  list(): ICustomShapeDescriptor<any>[];
+  list(): ICustomShapeDescriptor<unknown>[];
 
   /**
    * List shapes filtered by category
    * @param category - The category to filter by
    * @returns Array of shape descriptors in the specified category
    */
-  listByCategory(category: string): ICustomShapeDescriptor<any>[];
+  listByCategory(category: string): ICustomShapeDescriptor<unknown>[];
 
   /**
    * Search shapes by name or tags
    * @param query - Search query string
    * @returns Array of matching shape descriptors
    */
-  search(query: string): ICustomShapeDescriptor<any>[];
+  search(query: string): ICustomShapeDescriptor<unknown>[];
 
   /**
    * Check if a shape is registered
@@ -75,7 +75,7 @@ export interface IShapeRegistry {
  * In-memory storage with HMR-safe re-registration
  */
 class ShapeRegistry implements IShapeRegistry {
-  private shapes: Map<string, ICustomShapeDescriptor<any>> = new Map();
+  private shapes: Map<string, ICustomShapeDescriptor<unknown>> = new Map();
 
   register<T extends z.ZodTypeAny>(descriptor: ICustomShapeDescriptor<T>): void {
     const { id } = descriptor.meta;
@@ -99,19 +99,19 @@ class ShapeRegistry implements IShapeRegistry {
     this.shapes.set(id, descriptor);
   }
 
-  resolve(id: string): ICustomShapeDescriptor<any> | undefined {
+  resolve(id: string): ICustomShapeDescriptor<unknown> | undefined {
     return this.shapes.get(id);
   }
 
-  list(): ICustomShapeDescriptor<any>[] {
+  list(): ICustomShapeDescriptor<unknown>[] {
     return Array.from(this.shapes.values());
   }
 
-  listByCategory(category: string): ICustomShapeDescriptor<any>[] {
+  listByCategory(category: string): ICustomShapeDescriptor<unknown>[] {
     return this.list().filter((shape) => shape.meta.category === category);
   }
 
-  search(query: string): ICustomShapeDescriptor<any>[] {
+  search(query: string): ICustomShapeDescriptor<unknown>[] {
     const lowerQuery = query.toLowerCase();
     return this.list().filter((shape) => {
       const nameMatch = shape.meta.name.toLowerCase().includes(lowerQuery);

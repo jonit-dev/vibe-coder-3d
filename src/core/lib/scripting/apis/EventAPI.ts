@@ -14,9 +14,9 @@ export const createEventAPI = (_entityId: number): IEventAPI => {
 
   return {
     on: (type, handler) => {
-      emitter.on(type as any, handler as any);
+      emitter.on(type, handler);
       const off = () => {
-        emitter.off(type as any, handler as any);
+        emitter.off(type, handler);
         subscriptions.delete(off);
       };
       subscriptions.add(off);
@@ -24,11 +24,11 @@ export const createEventAPI = (_entityId: number): IEventAPI => {
     },
 
     off: (type, handler) => {
-      emitter.off(type as any, handler as any);
+      emitter.off(type, handler);
     },
 
     emit: (type, payload) => {
-      emitter.emit(type as any, payload as any);
+      emitter.emit(type, payload);
     },
   };
 };

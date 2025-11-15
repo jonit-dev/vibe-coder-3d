@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLODStore, type LODQuality } from '@core/state/lodStore';
 import { Logger } from '@core/lib/logger';
+import * as THREE from 'three';
 
 const logger = Logger.create('LODSystemDemo');
 
@@ -26,11 +27,11 @@ export const LODSystemDemo: React.FC = () => {
     const countTriangles = () => {
       try {
         // This needs to be wrapped in a Canvas context
-        const scene = (window as any).__r3fScene;
+        const scene = (window as unknown as { __r3fScene?: THREE.Scene }).__r3fScene;
         if (!scene) return 0;
 
         let count = 0;
-        scene.traverse((obj: any) => {
+        scene.traverse((obj: THREE.Object3D) => {
           if (obj.geometry) {
             const geometry = obj.geometry;
             if (geometry.index) {
@@ -58,13 +59,13 @@ export const LODSystemDemo: React.FC = () => {
   // This effect runs continuously to catch new meshes from LOD switching
   React.useEffect(() => {
     const applyWireframe = () => {
-      const scene = (window as any).__r3fScene;
+      const scene = (window as unknown as { __r3fScene?: THREE.Scene }).__r3fScene;
       if (!scene) return;
 
-      scene.traverse((obj: any) => {
+      scene.traverse((obj: THREE.Object3D) => {
         if (obj.material) {
           if (Array.isArray(obj.material)) {
-            obj.material.forEach((mat: any) => {
+            obj.material.forEach((mat: THREE.Material) => {
               // Only update if wireframe state differs
               if (mat.wireframe !== showWireframe) {
                 mat.wireframe = showWireframe;

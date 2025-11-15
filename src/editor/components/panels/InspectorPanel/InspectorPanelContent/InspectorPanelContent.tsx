@@ -49,13 +49,13 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
         hasCamera={hasCamera}
         hasLight={hasLight}
         hasCharacterController={hasCharacterController}
-        getTransform={getTransform as any}
-        getMeshRenderer={getMeshRenderer as any}
-        getRigidBody={getRigidBody as any}
-        getMeshCollider={getMeshCollider as any}
-        getCamera={getCamera as any}
-        getLight={getLight as any}
-        getCharacterController={getCharacterController as any}
+        getTransform={getTransform}
+        getMeshRenderer={getMeshRenderer}
+        getRigidBody={getRigidBody}
+        getMeshCollider={getMeshCollider}
+        getCamera={getCamera}
+        getLight={getLight}
+        getCharacterController={getCharacterController}
         addComponent={addComponent}
         updateComponent={updateComponent as (type: string, data: unknown) => boolean}
         removeComponent={removeComponent}
@@ -63,11 +63,11 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
 
       {/* Script (rendered outside ComponentList to minimize type churn) */}
       {(() => {
-        const scriptComp = components.find((c) => c.type === 'Script') as any;
+        const scriptComp = components.find((c) => c.type === 'Script');
         return scriptComp ? (
           <ScriptAdapter
-            scriptComponent={scriptComp as any}
-            updateComponent={updateComponent as any}
+            scriptComponent={scriptComp}
+            updateComponent={updateComponent}
             removeComponent={removeComponent}
           />
         ) : null;
@@ -75,11 +75,11 @@ export const InspectorPanelContent: React.FC = React.memo(() => {
 
       {/* Sound (rendered outside ComponentList to minimize type churn) */}
       {(() => {
-        const soundComp = components.find((c) => c.type === 'Sound') as any;
+        const soundComp = components.find((c) => c.type === 'Sound');
         return soundComp ? (
           <SoundAdapter
-            soundComponent={soundComp as any}
-            updateComponent={updateComponent as any}
+            soundComponent={soundComp}
+            updateComponent={updateComponent}
             removeComponent={removeComponent}
             isPlaying={isPlaying}
           />

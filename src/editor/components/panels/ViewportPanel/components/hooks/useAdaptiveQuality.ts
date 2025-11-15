@@ -35,7 +35,7 @@ export const useAdaptiveQuality = (options: IAdaptiveQualityOptions = {}) => {
       // Cleanup: on unmount (e.g. leaving play mode / viewport), guarantee shadows keep updating.
       const r = gl as WebGLRenderer;
       r.shadowMap.autoUpdate = true;
-      (r.shadowMap as any).needsUpdate = true;
+      (r.shadowMap as { needsUpdate?: boolean }).needsUpdate = true;
       if (restoreTimerRef.current !== null) {
         clearTimeout(restoreTimerRef.current);
       }
@@ -57,7 +57,7 @@ export const useAdaptiveQuality = (options: IAdaptiveQualityOptions = {}) => {
     const renderer = gl as WebGLRenderer;
 
     // If the context is lost or renderer is not fully ready, bail out safely.
-    if (!renderer || !(renderer as any).shadowMap) {
+    if (!renderer || !renderer.shadowMap) {
       return;
     }
 
@@ -74,7 +74,7 @@ export const useAdaptiveQuality = (options: IAdaptiveQualityOptions = {}) => {
     // restore it and force an update. This self-heals any stale state from play-mode or remounts.
     if (!isMoving && !renderer.shadowMap.autoUpdate) {
       renderer.shadowMap.autoUpdate = true;
-      (renderer.shadowMap as any).needsUpdate = true;
+      (renderer.shadowMap as { needsUpdate?: boolean }).needsUpdate = true;
       lastShadowAutoUpdateRef.current = null;
     }
 
@@ -114,7 +114,7 @@ export const useAdaptiveQuality = (options: IAdaptiveQualityOptions = {}) => {
           // so here we only enforce safety: never leave shadows disabled.
           if (!renderer.shadowMap.autoUpdate) {
             renderer.shadowMap.autoUpdate = true;
-            (renderer.shadowMap as any).needsUpdate = true;
+            (renderer.shadowMap as { needsUpdate?: boolean }).needsUpdate = true;
           }
 
           // Ensure we only restore once and clear timer

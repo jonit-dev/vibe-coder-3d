@@ -36,7 +36,7 @@ export interface IPhysicsBodyProps {
 
   // Debug and metadata
   debug?: boolean;
-  userData?: any; // Custom data to attach to the physics body
+  userData?: Record<string, unknown>; // Custom data to attach to the physics body
   tags?: string[]; // Tags for filtering and identification
 
   // Physics configuration
@@ -49,7 +49,7 @@ export interface IPhysicsBodyProps {
   initialAngularVelocity?: [number, number, number];
 
   // Pass through any other RigidBody props
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // PhysicsBody handle for imperative control

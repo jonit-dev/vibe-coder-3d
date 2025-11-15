@@ -5,7 +5,7 @@ export interface IScoreEvent {
   type: string;
   points: number;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface IScoreMultiplier {

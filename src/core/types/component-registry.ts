@@ -13,11 +13,11 @@ export enum ComponentCategory {
 }
 
 // Component descriptor interface for registering components
-export interface IComponentDescriptor<T = any> {
+export interface IComponentDescriptor<T = unknown> {
   id: string;
   name: string;
   category: ComponentCategory;
-  component: any; // bitecs component
+  component: Record<string, unknown>; // bitecs component
   dependencies?: string[];
   conflicts?: string[];
   schema: z.ZodSchema<T>;
@@ -45,11 +45,11 @@ export interface IValidationResult {
 }
 
 // Component addition/removal events
-export interface IComponentChangeEvent {
+export interface IComponentChangeEvent<TData = unknown> {
   entityId: number;
   componentId: string;
   action: 'add' | 'remove' | 'update';
-  data?: any;
+  data?: TData;
   timestamp: number;
 }
 
@@ -105,11 +105,11 @@ export const validateComponentChangeEvent = (event: unknown): IComponentChangeEv
   ComponentChangeEventSchema.parse(event);
 
 // Additional types specific to dynamic components
-export interface IComponentOperationResult {
+export interface IComponentOperationResult<TData = unknown> {
   success: boolean;
   errors: string[];
   warnings?: string[];
-  data?: any;
+  data?: TData;
 }
 
 export interface IComponentBatch {
@@ -117,10 +117,10 @@ export interface IComponentBatch {
   operations: IComponentOperation[];
 }
 
-export interface IComponentOperation {
+export interface IComponentOperation<TData = unknown> {
   type: 'add' | 'remove' | 'update';
   componentId: string;
-  data?: any;
+  data?: TData;
 }
 
 export interface IComponentGroupResult {

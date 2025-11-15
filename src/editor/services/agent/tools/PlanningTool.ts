@@ -92,10 +92,20 @@ interface IPlan {
 // Store the current plan in memory (could be moved to a store later)
 let currentPlan: IPlan | null = null;
 
+// Planning tool parameter types
+interface IPlanningParams {
+  action: 'create_plan' | 'update_step' | 'get_plan';
+  goal?: string;
+  steps?: Omit<IPlanStep, 'status'>[];
+  step_id?: number;
+  status?: 'pending' | 'in_progress' | 'completed' | 'failed';
+  notes?: string;
+}
+
 /**
  * Execute planning tool
  */
-export async function executePlanning(params: any): Promise<string> {
+export async function executePlanning(params: IPlanningParams): Promise<string> {
   logger.info('Executing planning tool', { params });
 
   const { action, goal, steps, step_id, status, notes } = params;
@@ -161,7 +171,7 @@ ${formattedSteps}
 Now execute each step in order, calling update_step after each completion.`;
 }
 
-function updateStep(stepId: number, status: string, notes?: string): string {
+function updateStep(stepId: number, status: IPlanStep['status'], notes?: string): string {
   if (!currentPlan) {
     return 'Error: No active plan. Create a plan first using create_plan.';
   }

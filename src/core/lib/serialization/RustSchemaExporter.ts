@@ -2,6 +2,7 @@ import { Logger } from '@core/lib/logger';
 import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import type { ZodSchema, ZodTypeDef, ZodNumberDef, ZodArrayDef, ZodObjectDef, ZodStringDef, ZodBooleanDef, ZodOptionalDef } from 'zod';
 
 const logger = Logger.create('RustSchemaExporter');
 
@@ -44,7 +45,7 @@ export class RustSchemaExporter {
    * Convert Zod schema to JSON Schema format
    * This is a simplified version - for production, consider using zod-to-json-schema
    */
-  private zodToJsonSchema(zodSchema: any, componentId: string): any {
+  private zodToJsonSchema(zodSchema: ZodSchema<unknown>, componentId: string): Record<string, unknown> {
     const shape = zodSchema._def?.shape?.();
     if (!shape) {
       return {
@@ -81,7 +82,7 @@ export class RustSchemaExporter {
   /**
    * Parse a Zod field definition to JSON Schema
    */
-  private parseZodField(field: any): any {
+  private parseZodField(field: ZodTypeDef): Record<string, unknown> {
     const typeName = field._def?.typeName;
 
     switch (typeName) {
@@ -89,7 +90,7 @@ export class RustSchemaExporter {
         return { type: 'string' };
 
       case 'ZodNumber': {
-        const numberSchema: any = { type: 'number' };
+        const numberSchema: Record<string, unknown> = { type: 'number' };
         // Check for min/max constraints
         if (field._def?.checks) {
           for (const check of field._def.checks) {
@@ -112,14 +113,14 @@ export class RustSchemaExporter {
       case 'ZodTuple':
         return {
           type: 'array',
-          items: field._def.items.map((item: any) => this.parseZodField(item)),
+          items: field._def.items.map((item: ZodTypeDef) => this.parseZodField(item)),
           minItems: field._def.items.length,
           maxItems: field._def.items.length,
         };
 
       case 'ZodObject': {
         const shape = field._def.shape();
-        const properties: Record<string, any> = {};
+        const properties: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(shape)) {
           properties[key] = this.parseZodField(value);
         }

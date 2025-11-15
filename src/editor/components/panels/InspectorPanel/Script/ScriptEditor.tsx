@@ -1,5 +1,6 @@
 import Editor from '@monaco-editor/react';
 import type * as Monaco from 'monaco-editor';
+import type * as THREE from 'three';
 import React, { useCallback, useEffect, useRef } from 'react';
 
 // Import the type definitions content
@@ -94,9 +95,9 @@ declare global {
    */
   interface IThreeJSMaterialAPI {
     /** Get raw Three.js material */
-    get(): any; // THREE.Material | THREE.Material[] | null
+    get(): THREE.Material | THREE.Material[] | null;
     /** Set material */
-    set(material: any): void; // THREE.Material
+    set(material: THREE.Material): void;
     /** Set material property */
     setProperty(property: string, value: unknown): void;
     /** Set material color (hex string like "#ff0000" or number) */
@@ -114,7 +115,7 @@ declare global {
    */
   interface IThreeJSGeometryAPI {
     /** Get raw Three.js geometry */
-    get(): any; // THREE.BufferGeometry | null
+    get(): THREE.BufferGeometry | null;
     /** Set geometry property */
     setProperty(property: string, value: unknown): void;
     /** Scale geometry */
@@ -144,26 +145,26 @@ declare global {
    */
   interface IThreeJSAPI {
     /** Three.js Object3D */
-    readonly object3D: any; // THREE.Object3D | null
+    readonly object3D: THREE.Object3D | null;
     /** Three.js Mesh */
-    readonly mesh: any | null; // THREE.Mesh | null
+    readonly mesh: THREE.Mesh | null;
     /** Three.js Group */
-    readonly group: any | null; // THREE.Group | null
+    readonly group: THREE.Group | null;
     /** Material operations */
     material: IThreeJSMaterialAPI;
     /** Geometry operations */
     geometry: IThreeJSGeometryAPI;
     /** Three.js scene reference */
-    readonly scene: any; // THREE.Scene | null
+    readonly scene: THREE.Scene | null;
     /** Parent object */
-    readonly parent: any; // THREE.Object3D | null
+    readonly parent: THREE.Object3D | null;
     /** Child objects */
-    readonly children: any[]; // THREE.Object3D[]
+    readonly children: THREE.Object3D[];
     /** Animation helpers */
     animate: IThreeJSAnimateAPI;
 
     /** Raycast from origin in direction */
-    raycast(origin: [number, number, number], direction: [number, number, number]): any[]; // THREE.Intersection[]
+    raycast(origin: [number, number, number], direction: [number, number, number]): THREE.Intersection[];
     /** Look at target position */
     lookAt(target: [number, number, number]): void;
     /** Get world position */
@@ -623,10 +624,10 @@ export const ScriptEditor: React.FC<IScriptEditorProps> = ({
   height = '300px',
   externalCode,
 }) => {
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
 
-  const handleEditorDidMount = (editor: any, monaco: typeof Monaco) => {
+  const handleEditorDidMount = (editor: Monaco.editor.IStandaloneCodeEditor, monaco: typeof Monaco) => {
     editorRef.current = editor;
 
     // Configure TypeScript compiler options

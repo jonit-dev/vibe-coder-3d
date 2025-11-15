@@ -212,8 +212,59 @@ function validateGeometryData(params: IGeometryCreationParams): {
   return { valid: true };
 }
 
-function buildGeometryMeta(params: IGeometryCreationParams): any {
-  const meta: any = {
+interface IGeometryMeta {
+  meta: {
+    version: string;
+    generator: string;
+    name: string;
+    tags: string[];
+    computeNormals?: boolean;
+  };
+  attributes: {
+    position: {
+      itemSize: number;
+      normalized: boolean;
+      array: number[];
+      type: string;
+    };
+    normal?: {
+      itemSize: number;
+      normalized: boolean;
+      array: number[];
+      type: string;
+    };
+    uv?: {
+      itemSize: number;
+      normalized: boolean;
+      array: number[];
+      type: string;
+    };
+    color?: {
+      itemSize: number;
+      normalized: boolean;
+      array: number[];
+      type: string;
+    };
+  };
+  index: {
+    itemSize: number;
+    normalized: boolean;
+    array: number[];
+    type: string;
+  };
+  bounds: IBounds;
+}
+
+interface IBounds {
+  aabb: [[number, number, number], [number, number, number]];
+  sphere: {
+    center: [number, number, number];
+    radius: number;
+  };
+}
+
+function buildGeometryMeta(params: IGeometryCreationParams): IGeometryMeta {
+  const meta: IGeometryMeta = {
     meta: {
       version: '1.0.0',
       generator: 'vibe-ai-agent',
@@ -275,7 +326,7 @@ function buildGeometryMeta(params: IGeometryCreationParams): any {
   return meta;
 }
 
-function computeBounds(positions: number[]): any {
+function computeBounds(positions: number[]): IBounds {
   let minX = Infinity,
     minY = Infinity,
     minZ = Infinity;

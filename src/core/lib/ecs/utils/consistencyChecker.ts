@@ -2,6 +2,12 @@ import { componentRegistry } from '../ComponentRegistry';
 import { EntityManager } from '../EntityManager';
 import { EntityQueries } from '../queries/entityQueries';
 
+// Basic entity interface for consistency checking
+interface IEntityForConsistency {
+  id: number;
+  children?: number[];
+}
+
 export interface IConsistencyReport {
   isConsistent: boolean;
   errors: string[];
@@ -94,7 +100,7 @@ export class ConsistencyChecker {
   }
 
   private static checkEntityConsistency(
-    worldEntities: any[],
+    worldEntities: IEntityForConsistency[],
     indexedEntities: number[],
     errors: string[],
     warnings: string[],
@@ -122,7 +128,7 @@ export class ConsistencyChecker {
   }
 
   private static checkHierarchyConsistency(
-    worldEntities: any[],
+    worldEntities: IEntityForConsistency[],
     queries: EntityQueries,
     errors: string[],
     _warnings: string[],
@@ -148,7 +154,7 @@ export class ConsistencyChecker {
         );
       }
 
-      worldChildren.forEach((childId: any) => {
+      worldChildren.forEach((childId: number) => {
         if (!indexedChildren.has(childId)) {
           errors.push(`Entity ${entity.id} missing child ${childId} in HierarchyIndex`);
         }
@@ -167,7 +173,7 @@ export class ConsistencyChecker {
   }
 
   private static checkComponentConsistency(
-    _worldEntities: any[],
+    _worldEntities: IEntityForConsistency[],
     componentTypes: string[],
     registry: typeof componentRegistry,
     queries: EntityQueries,

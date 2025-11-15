@@ -7,6 +7,13 @@ import { Logger } from '@core/lib/logger';
 
 const logger = Logger.create('SceneQueryTool');
 
+// Scene query tool parameter types
+interface ISceneQueryParams {
+  query_type: 'list_entities' | 'get_entity_details' | 'list_components' | 'get_component_schema' | 'get_scene_summary';
+  entity_id?: number;
+  component_type?: string;
+}
+
 export const sceneQueryTool = {
   name: 'scene_query',
   description: 'Query information about the scene, entities, components, and schemas',
@@ -40,7 +47,7 @@ export const sceneQueryTool = {
 /**
  * Execute scene query tool
  */
-export async function executeSceneQuery(params: any): Promise<string> {
+export async function executeSceneQuery(params: ISceneQueryParams): Promise<string> {
   logger.info('Executing scene query', { params });
 
   const { query_type, entity_id, component_type } = params;

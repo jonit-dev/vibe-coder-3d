@@ -143,9 +143,9 @@ export class ObjectPool<T> {
       obj !== null &&
       typeof obj === 'object' &&
       'reset' in obj &&
-      typeof (obj as any).reset === 'function'
+      typeof (obj as { reset?: () => void }).reset === 'function'
     ) {
-      (obj as any).reset();
+      (obj as { reset: () => void }).reset();
     }
 
     this.pool.push(obj);

@@ -1075,21 +1075,26 @@ sequenceDiagram
 
 ### **HIGH PRIORITY - Editor & Tooling (50+ any types)**
 
-#### **6.1 Editor Agent Tools (15+ files, ~25 any types)**
+#### **6.1 Editor Agent Tools (15+ files, ~25 any types)** - **IN PROGRESS**
 
 **Files**: `src/editor/services/agent/tools/*.ts`
 
-- `GeometryCreationTool.ts` - Shape creation API typing
-- `ScriptManagementTool.ts` - Script file operations typing
-- `PlanningTool.ts` - Planning response types
-- `SceneQueryTool.ts` - Scene query API types
+**✅ Completed (2025-01-15)**:
+- `GeometryCreationTool.ts` - **FIXED** - Created IGeometryMeta interface, IBounds interface
+- `ScriptManagementTool.ts` - **FIXED** - Created IScriptParameters interface, IScriptManagementParams interface
+- `PlanningTool.ts` - **FIXED** - Created IPlanningParams interface, proper status typing
+- `SceneQueryTool.ts` - **FIXED** - Created ISceneQueryParams interface
+- `GetAvailableShapesTool.ts` - **FIXED** - Created IGetAvailableShapesParams interface
+- `tools/index.ts` - **FIXED** - Created IAgentTool, IToolExecutor, ToolParameters interfaces
+
+**🔄 Remaining**:
 - `PrefabricManagementTool.ts` - Prefab operation types
 - `SceneManipulationTool.ts` - Scene manipulation types
 - Other agent tools with dynamic API responses
 
 **Impact**: Developer experience, AI agent functionality
-**Effort**: 1-2 days
-**Approach**: Create shared agent tool interfaces, type dynamic API responses
+**Effort**: **PARTIALLY COMPLETE** - 70% done, ~0.5 day remaining
+**Approach**: Created shared agent tool interfaces, typed dynamic API responses
 
 #### **6.2 Editor Inspector Components (10+ files, ~15 any types)**
 
