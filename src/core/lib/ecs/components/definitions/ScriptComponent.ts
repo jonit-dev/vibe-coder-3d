@@ -11,6 +11,29 @@ import { ComponentCategory, ComponentFactory, componentRegistry } from '../../Co
 import { EntityId } from '../../types';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
 
+// BitECS component interface for Script component
+export interface IScriptBitECSComponent {
+  enabled: Record<number, number>;
+  executeInUpdate: Record<number, number>;
+  executeOnStart: Record<number, number>;
+  executeOnEnable: Record<number, number>;
+  maxExecutionTime: Record<number, number>;
+  hasErrors: Record<number, number>;
+  lastExecutionTime: Record<number, number>;
+  executionCount: Record<number, number>;
+  codeHash: Record<number, number>;
+  scriptNameHash: Record<number, number>;
+  descriptionHash: Record<number, number>;
+  lastErrorMessageHash: Record<number, number>;
+  parametersHash: Record<number, number>;
+  compiledCodeHash: Record<number, number>;
+  scriptRefHash: Record<number, number>;
+  scriptPathHash: Record<number, number>;
+  lastModified: Record<number, number>;
+  needsCompilation: Record<number, number>;
+  needsExecution: Record<number, number>;
+}
+
 // Script reference for external scripts
 export const ScriptRefSchema = z.object({
   scriptId: z.string().describe('Unique script identifier (e.g., "game.player-controller")'),
@@ -60,7 +83,10 @@ const ScriptSchema = z.object({
   executionCount: z.number().default(0).describe('Number of times script has executed'),
 
   // Parameters that can be configured in editor
-  parameters: z.record(z.any()).default({}).describe('Script parameters configurable from editor'),
+  parameters: z
+    .record(z.unknown())
+    .default({})
+    .describe('Script parameters configurable from editor'),
 
   // Hot reload support
   lastModified: z.number().default(0).describe('Timestamp of last modification'),
@@ -107,61 +133,63 @@ export const scriptComponent = ComponentFactory.create({
     needsCompilation: Types.ui8,
     needsExecution: Types.ui8,
   },
-  serialize: (eid: EntityId, component: any) => ({
-    code: getStringFromHash(component.codeHash[eid]),
-    enabled: Boolean(component.enabled[eid]),
+  serialize: (eid: EntityId, component: unknown) => {
+    const scriptComponent = component as IScriptBitECSComponent;
+    return {
+      code: getStringFromHash(scriptComponent.codeHash[eid]),
+      enabled: Boolean(scriptComponent.enabled[eid]),
+      scriptName: getStringFromHash(scriptComponent.scriptNameHash[eid]) || 'Script',
+      description: getStringFromHash(scriptComponent.descriptionHash[eid]) || '',
+      scriptRef: (() => {
+        try {
+          const refStr = getStringFromHash(scriptComponent.scriptRefHash[eid]);
+          return refStr ? JSON.parse(refStr) : undefined;
+        } catch {
+          return undefined;
+        }
+      })(),
 
-    scriptName: getStringFromHash(component.scriptNameHash[eid]) || 'Script',
-    description: getStringFromHash(component.descriptionHash[eid]) || '',
+      scriptPath: getStringFromHash(scriptComponent.scriptPathHash[eid]) || undefined,
 
-    scriptRef: (() => {
-      try {
-        const refStr = getStringFromHash(component.scriptRefHash[eid]);
-        return refStr ? JSON.parse(refStr) : undefined;
-      } catch {
-        return undefined;
-      }
-    })(),
+      executeInUpdate: Boolean(scriptComponent.executeInUpdate[eid]),
+      executeOnStart: Boolean(scriptComponent.executeOnStart[eid]),
+      executeOnEnable: Boolean(scriptComponent.executeOnEnable[eid]),
 
-    scriptPath: getStringFromHash(component.scriptPathHash[eid]) || undefined,
+      maxExecutionTime: scriptComponent.maxExecutionTime[eid],
+      hasErrors: Boolean(scriptComponent.hasErrors[eid]),
+      lastErrorMessage: getStringFromHash(scriptComponent.lastErrorMessageHash[eid]) || '',
+      lastExecutionTime: scriptComponent.lastExecutionTime[eid],
+      executionCount: scriptComponent.executionCount[eid],
 
-    executeInUpdate: Boolean(component.executeInUpdate[eid]),
-    executeOnStart: Boolean(component.executeOnStart[eid]),
-    executeOnEnable: Boolean(component.executeOnEnable[eid]),
+      parameters: (() => {
+        try {
+          const params = getStringFromHash(scriptComponent.parametersHash[eid]);
+          return params ? JSON.parse(params) : {};
+        } catch {
+          return {};
+        }
+      })(),
 
-    maxExecutionTime: component.maxExecutionTime[eid],
-    hasErrors: Boolean(component.hasErrors[eid]),
-    lastErrorMessage: getStringFromHash(component.lastErrorMessageHash[eid]) || '',
-    lastExecutionTime: component.lastExecutionTime[eid],
-    executionCount: component.executionCount[eid],
-
-    parameters: (() => {
-      try {
-        const params = getStringFromHash(component.parametersHash[eid]);
-        return params ? JSON.parse(params) : {};
-      } catch {
-        return {};
-      }
-    })(),
-
-    lastModified: component.lastModified[eid],
-    compiledCode: getStringFromHash(component.compiledCodeHash[eid]) || '',
-  }),
-  deserialize: (eid: EntityId, data, component: any) => {
+      lastModified: scriptComponent.lastModified[eid],
+      compiledCode: getStringFromHash(scriptComponent.compiledCodeHash[eid]) || '',
+    };
+  },
+  deserialize: (eid: EntityId, data: ScriptData, component: unknown) => {
+    const scriptComponent = component as IScriptBitECSComponent;
     // Core properties
-    component.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
+    scriptComponent.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
 
     // Execution control
-    component.executeInUpdate[eid] = (data.executeInUpdate ?? true) ? 1 : 0;
+    scriptComponent.executeInUpdate[eid] = (data.executeInUpdate ?? true) ? 1 : 0;
     // Default to true so scripts run onStart when play begins
-    component.executeOnStart[eid] = (data.executeOnStart ?? true) ? 1 : 0;
-    component.executeOnEnable[eid] = (data.executeOnEnable ?? false) ? 1 : 0;
+    scriptComponent.executeOnStart[eid] = (data.executeOnStart ?? true) ? 1 : 0;
+    scriptComponent.executeOnEnable[eid] = (data.executeOnEnable ?? false) ? 1 : 0;
 
     // Performance
-    component.maxExecutionTime[eid] = data.maxExecutionTime ?? 16;
-    component.hasErrors[eid] = (data.hasErrors ?? false) ? 1 : 0;
-    component.lastExecutionTime[eid] = data.lastExecutionTime ?? 0;
-    component.executionCount[eid] = data.executionCount ?? 0;
+    scriptComponent.maxExecutionTime[eid] = data.maxExecutionTime ?? 16;
+    scriptComponent.hasErrors[eid] = (data.hasErrors ?? false) ? 1 : 0;
+    scriptComponent.lastExecutionTime[eid] = data.lastExecutionTime ?? 0;
+    scriptComponent.executionCount[eid] = data.executionCount ?? 0;
 
     // If no code is provided, initialize with default Hello World template
     const defaultCode = `/// <reference path="./script-api.d.ts" />
@@ -180,33 +208,33 @@ function onUpdate(deltaTime: number): void {
 
     // String properties - use provided code or default template
     const codeToStore = data.code || defaultCode;
-    component.codeHash[eid] = storeString(codeToStore);
-    component.scriptNameHash[eid] = storeString(data.scriptName || 'Script');
-    component.descriptionHash[eid] = storeString(data.description || '');
-    component.lastErrorMessageHash[eid] = storeString(data.lastErrorMessage || '');
-    component.compiledCodeHash[eid] = storeString(data.compiledCode || '');
+    scriptComponent.codeHash[eid] = storeString(codeToStore);
+    scriptComponent.scriptNameHash[eid] = storeString(data.scriptName || 'Script');
+    scriptComponent.descriptionHash[eid] = storeString(data.description || '');
+    scriptComponent.lastErrorMessageHash[eid] = storeString(data.lastErrorMessage || '');
+    scriptComponent.compiledCodeHash[eid] = storeString(data.compiledCode || '');
 
     // Script reference
     try {
-      component.scriptRefHash[eid] = data.scriptRef
+      scriptComponent.scriptRefHash[eid] = data.scriptRef
         ? storeString(JSON.stringify(data.scriptRef))
         : 0;
     } catch {
-      component.scriptRefHash[eid] = 0;
+      scriptComponent.scriptRefHash[eid] = 0;
     }
 
     // Script path (compiled .lua file for Rust runtime)
-    component.scriptPathHash[eid] = storeString(data.scriptPath || '');
+    scriptComponent.scriptPathHash[eid] = storeString(data.scriptPath || '');
 
     // Parameters
     try {
-      component.parametersHash[eid] = storeString(JSON.stringify(data.parameters || {}));
+      scriptComponent.parametersHash[eid] = storeString(JSON.stringify(data.parameters || {}));
     } catch {
-      component.parametersHash[eid] = storeString('{}');
+      scriptComponent.parametersHash[eid] = storeString('{}');
     }
 
     // Timestamps
-    component.lastModified[eid] = data.lastModified ?? Date.now();
+    scriptComponent.lastModified[eid] = data.lastModified ?? Date.now();
 
     // Check if script needs compilation (flags indicate the script should be active)
     if (
@@ -214,17 +242,17 @@ function onUpdate(deltaTime: number): void {
       (data.executeInUpdate ?? true) ||
       (data.executeOnEnable ?? false)
     ) {
-      component.needsCompilation[eid] = 1;
+      scriptComponent.needsCompilation[eid] = 1;
     }
 
     // Mark for compilation if code was provided OR if script has execution flags enabled
     // Always mark new scripts with default code for compilation
-    component.needsCompilation[eid] = 1;
+    scriptComponent.needsCompilation[eid] = 1;
 
     // Mark for execution if enabled and configured to execute on start
-    component.needsExecution[eid] = data.enabled && data.executeOnStart ? 1 : 0;
+    scriptComponent.needsExecution[eid] = data.enabled && data.executeOnStart ? 1 : 0;
   },
-  onAdd: (eid: EntityId, data) => {
+  onAdd: (eid: EntityId, data: ScriptData) => {
     logger.info(
       `Script component "${data.scriptName}" added to entity ${eid} with default Hello World code`,
     );
@@ -237,7 +265,7 @@ function onUpdate(deltaTime: number): void {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const isBrowser = typeof window !== 'undefined' && typeof fetch !== 'undefined';
-      const isDev = Boolean((import.meta as any)?.env?.DEV);
+      const isDev = Boolean(import.meta.env?.DEV);
 
       if (!isBrowser || !isDev) {
         return;
@@ -303,9 +331,9 @@ function onUpdate(deltaTime: number): void {
 
           try {
             componentRegistry.updateComponent(eid, 'Script', {
-              scriptRef: ref as unknown as IScriptRef,
+              scriptRef: ref,
               lastModified: Date.now(),
-            } as unknown as ScriptData);
+            });
           } catch (err) {
             logger.warn('Failed to persist external scriptRef to ECS:', err);
           }

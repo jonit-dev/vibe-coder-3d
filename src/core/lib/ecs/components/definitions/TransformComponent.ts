@@ -9,12 +9,28 @@ import { z } from 'zod';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 
+// BitECS component interface for Transform component
+interface ITransformBitECSComponent {
+  positionX: { [eid: number]: number };
+  positionY: { [eid: number]: number };
+  positionZ: { [eid: number]: number };
+  rotationX: { [eid: number]: number };
+  rotationY: { [eid: number]: number };
+  rotationZ: { [eid: number]: number };
+  scaleX: { [eid: number]: number };
+  scaleY: { [eid: number]: number };
+  scaleZ: { [eid: number]: number };
+  needsUpdate: { [eid: number]: number };
+}
+
 // Transform Schema
 const TransformSchema = z.object({
   position: z.tuple([z.number(), z.number(), z.number()]),
   rotation: z.tuple([z.number(), z.number(), z.number()]),
   scale: z.tuple([z.number(), z.number(), z.number()]),
 });
+
+export type TransformData = z.infer<typeof TransformSchema>;
 
 // Transform Component Definition
 export const transformComponent = ComponentFactory.create({
@@ -34,7 +50,7 @@ export const transformComponent = ComponentFactory.create({
     scaleZ: Types.f32,
     needsUpdate: Types.ui8,
   },
-  serialize: (eid: EntityId, component: any) => ({
+  serialize: (eid: EntityId, component: ITransformBitECSComponent) => ({
     position: [component.positionX[eid], component.positionY[eid], component.positionZ[eid]] as [
       number,
       number,
@@ -51,7 +67,7 @@ export const transformComponent = ComponentFactory.create({
       number,
     ],
   }),
-  deserialize: (eid: EntityId, data, component: any) => {
+  deserialize: (eid: EntityId, data: TransformData, component: ITransformBitECSComponent) => {
     component.positionX[eid] = data.position[0];
     component.positionY[eid] = data.position[1];
     component.positionZ[eid] = data.position[2];
@@ -67,5 +83,3 @@ export const transformComponent = ComponentFactory.create({
     version: '1.0.0',
   },
 });
-
-export type TransformData = z.infer<typeof TransformSchema>;

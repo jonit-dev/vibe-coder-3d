@@ -7,6 +7,14 @@ import {
   type IAnimationComponent,
 } from '@core/components/animation/AnimationComponent';
 
+// BitECS component interface for Animation component
+export interface IAnimationBitECSComponent {
+  playing: Record<number, number>;
+  time: Record<number, number>;
+  activeBindingIdHash: Record<number, number>;
+  clipBindingsHash: Record<number, number>;
+}
+
 /**
  * Animation Component Definition
  *
@@ -28,33 +36,38 @@ export const animationComponent = ComponentFactory.create({
     // String hash for serialized clipBindings JSON
     clipBindingsHash: Types.ui32,
   },
-  serialize: (eid: EntityId, component: any) => ({
-    activeBindingId: getStringFromHash(component.activeBindingIdHash[eid]) || undefined,
-    playing: Boolean(component.playing[eid]),
-    time: component.time[eid],
-    clipBindings: (() => {
-      const bindingsJson = getStringFromHash(component.clipBindingsHash[eid]);
-      if (bindingsJson) {
-        try {
-          return JSON.parse(bindingsJson);
-        } catch {
-          return [];
+  serialize: (eid: EntityId, component: unknown) => {
+    const animationComponent = component as IAnimationBitECSComponent;
+    return {
+      activeBindingId: getStringFromHash(animationComponent.activeBindingIdHash[eid]) || undefined,
+      playing: Boolean(animationComponent.playing[eid]),
+      time: animationComponent.time[eid],
+      clipBindings: (() => {
+        const bindingsJson = getStringFromHash(animationComponent.clipBindingsHash[eid]);
+        if (bindingsJson) {
+          try {
+            return JSON.parse(bindingsJson);
+          } catch {
+            return [];
+          }
         }
-      }
-      return [];
-    })(),
-  }),
-  deserialize: (eid: EntityId, data: any, component: any) => {
-    component.playing[eid] = (data.playing ?? false) ? 1 : 0;
-    component.time[eid] = data.time ?? 0;
+        return [];
+      })(),
+    };
+  },
+  deserialize: (eid: EntityId, data: IAnimationComponent, component: unknown) => {
+    const animationComponent = component as IAnimationBitECSComponent;
+
+    animationComponent.playing[eid] = (data.playing ?? false) ? 1 : 0;
+    animationComponent.time[eid] = data.time ?? 0;
 
     // Store activeBindingId as string hash
-    component.activeBindingIdHash[eid] = data.activeBindingId
+    animationComponent.activeBindingIdHash[eid] = data.activeBindingId
       ? storeString(data.activeBindingId)
       : 0;
 
     // Store clipBindings as JSON string hash
-    component.clipBindingsHash[eid] =
+    animationComponent.clipBindingsHash[eid] =
       data.clipBindings && data.clipBindings.length > 0
         ? storeString(JSON.stringify(data.clipBindings))
         : 0;

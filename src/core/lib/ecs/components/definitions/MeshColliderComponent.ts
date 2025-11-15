@@ -9,6 +9,25 @@ import { z } from 'zod';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 
+// BitECS component interface for MeshCollider component
+interface IMeshColliderBitECSComponent {
+  enabled: { [eid: number]: number };
+  isTrigger: { [eid: number]: number };
+  shapeType: { [eid: number]: number };
+  sizeX: { [eid: number]: number };
+  sizeY: { [eid: number]: number };
+  sizeZ: { [eid: number]: number };
+  radius: { [eid: number]: number };
+  capsuleRadius: { [eid: number]: number };
+  capsuleHeight: { [eid: number]: number };
+  offsetX: { [eid: number]: number };
+  offsetY: { [eid: number]: number };
+  offsetZ: { [eid: number]: number };
+  friction: { [eid: number]: number };
+  restitution: { [eid: number]: number };
+  density: { [eid: number]: number };
+}
+
 // Define collider types
 export type ColliderType = 'box' | 'sphere' | 'capsule' | 'mesh' | 'convex' | 'heightfield';
 
@@ -33,6 +52,8 @@ const MeshColliderSchema = z.object({
   }),
 });
 
+export type MeshColliderData = z.infer<typeof MeshColliderSchema>;
+
 // MeshCollider Component Definition
 export const meshColliderComponent = ComponentFactory.create({
   id: 'MeshCollider',
@@ -56,7 +77,7 @@ export const meshColliderComponent = ComponentFactory.create({
     restitution: Types.f32,
     density: Types.f32,
   },
-  serialize: (eid: EntityId, component: any) => {
+  serialize: (eid: EntityId, component: IMeshColliderBitECSComponent) => {
     // Map shapeType number to ColliderType string
     const shapeTypeMap: { [key: number]: ColliderType } = {
       0: 'box',
@@ -91,7 +112,7 @@ export const meshColliderComponent = ComponentFactory.create({
       },
     };
   },
-  deserialize: (eid: EntityId, data, component: any) => {
+  deserialize: (eid: EntityId, data: MeshColliderData, component: IMeshColliderBitECSComponent) => {
     // Map ColliderType string to shapeType number
     const colliderTypeMap: { [key in ColliderType]: number } = {
       box: 0,
@@ -127,5 +148,3 @@ export const meshColliderComponent = ComponentFactory.create({
     version: '1.0.0',
   },
 });
-
-export type MeshColliderData = z.infer<typeof MeshColliderSchema>;

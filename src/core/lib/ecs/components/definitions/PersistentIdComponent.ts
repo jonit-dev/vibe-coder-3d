@@ -2,13 +2,17 @@
  * Persistent ID Component Definition
  * Provides stable entity identity across save/load cycles
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Types } from 'bitecs';
 import { z } from 'zod';
 
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
+
+// BitECS component interface for PersistentId component
+export interface IPersistentIdBitECSComponent {
+  idHash: Record<number, number>;
+}
 
 // Persistent ID Schema - accepts any non-empty string for human-readable IDs
 export const PersistentIdSchema = z.object({
@@ -31,34 +35,36 @@ const idStringMap = new Map<number, string>();
 const hashToIdMap = new Map<string, number>();
 
 // Create component definition lazily to avoid circular dependency issues
-let _persistentIdComponent: any = null;
+let _persistentIdComponent: ReturnType<typeof ComponentFactory.create> | null = null;
 
 function createPersistentIdComponent() {
   if (!_persistentIdComponent) {
     _persistentIdComponent = ComponentFactory.create({
-  id: 'PersistentId',
-  name: 'Persistent Id',
-  category: ComponentCategory.Core,
-  schema: PersistentIdSchema,
-  fields: {
-    idHash: Types.ui32, // Store hash of the ID string for performance
-  },
-  serialize: (eid: EntityId, component: any) => {
-    const hash = component.idHash[eid];
-    const id = idStringMap.get(hash) || `entity-${eid}`;
-    return { id };
-  },
-  deserialize: (eid: EntityId, data, component: any) => {
-    const hash = hashStringToU32(data.id);
-    component.idHash[eid] = hash;
-    idStringMap.set(hash, data.id);
-    hashToIdMap.set(data.id, hash);
-  },
-  metadata: {
-    description: 'Stable entity identity for round-trip serialization',
-    version: '1.0.0',
-  },
-});
+      id: 'PersistentId',
+      name: 'Persistent Id',
+      category: ComponentCategory.Core,
+      schema: PersistentIdSchema,
+      fields: {
+        idHash: Types.ui32, // Store hash of the ID string for performance
+      },
+      serialize: (eid: EntityId, component: unknown) => {
+        const persistentIdComponent = component as IPersistentIdBitECSComponent;
+        const hash = persistentIdComponent.idHash[eid];
+        const id = idStringMap.get(hash) || `entity-${eid}`;
+        return { id };
+      },
+      deserialize: (eid: EntityId, data: PersistentIdData, component: unknown) => {
+        const persistentIdComponent = component as IPersistentIdBitECSComponent;
+        const hash = hashStringToU32(data.id);
+        persistentIdComponent.idHash[eid] = hash;
+        idStringMap.set(hash, data.id);
+        hashToIdMap.set(data.id, hash);
+      },
+      metadata: {
+        description: 'Stable entity identity for round-trip serialization',
+        version: '1.0.0',
+      },
+    });
   }
   return _persistentIdComponent;
 }
@@ -67,7 +73,7 @@ function createPersistentIdComponent() {
 export const persistentIdComponent = {
   get() {
     return createPersistentIdComponent();
-  }
+  },
 };
 
 // Helper functions for working with persistent IDs

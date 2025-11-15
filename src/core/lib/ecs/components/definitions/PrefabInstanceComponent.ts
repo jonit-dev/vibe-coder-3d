@@ -1,6 +1,17 @@
 import { Types } from 'bitecs';
 import { z } from 'zod';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
+import { EntityId } from '../../types';
+
+// BitECS component interface for PrefabInstance component
+export interface IPrefabInstanceBitECSComponent {
+  prefabIdHash: Record<number, number>;
+  version: Record<number, number>;
+  instanceUuidHash: Record<number, number>;
+  _prefabIdMap?: Map<number, string>;
+  _instanceUuidMap?: Map<number, string>;
+  _overridePatchMap?: Map<number, unknown>;
+}
 
 export const PrefabInstanceSchema = z.object({
   prefabId: z.string(),
@@ -21,26 +32,31 @@ export const PrefabInstanceComponent = ComponentFactory.create({
     version: Types.ui32,
     instanceUuidHash: Types.ui32, // Hash of instanceUuid string
   },
-  serialize: (eid, component: any) => ({
-    prefabId: component._prefabIdMap?.get(eid) || '',
-    version: component.version[eid] || 1,
-    instanceUuid: component._instanceUuidMap?.get(eid) || '',
-    overridePatch: component._overridePatchMap?.get(eid),
-  }),
-  deserialize: (eid, data, component: any) => {
+  serialize: (eid: EntityId, component: unknown) => {
+    const prefabComponent = component as IPrefabInstanceBitECSComponent;
+    return {
+      prefabId: prefabComponent._prefabIdMap?.get(eid) || '',
+      version: prefabComponent.version[eid] || 1,
+      instanceUuid: prefabComponent._instanceUuidMap?.get(eid) || '',
+      overridePatch: prefabComponent._overridePatchMap?.get(eid),
+    };
+  },
+  deserialize: (eid: EntityId, data: IPrefabInstance, component: unknown) => {
+    const prefabComponent = component as IPrefabInstanceBitECSComponent;
+
     // Initialize maps if they don't exist
-    if (!component._prefabIdMap) component._prefabIdMap = new Map();
-    if (!component._instanceUuidMap) component._instanceUuidMap = new Map();
-    if (!component._overridePatchMap) component._overridePatchMap = new Map();
+    if (!prefabComponent._prefabIdMap) prefabComponent._prefabIdMap = new Map();
+    if (!prefabComponent._instanceUuidMap) prefabComponent._instanceUuidMap = new Map();
+    if (!prefabComponent._overridePatchMap) prefabComponent._overridePatchMap = new Map();
 
     // Store string data in maps, hashes in arrays
-    component._prefabIdMap.set(eid, data.prefabId);
-    component._instanceUuidMap.set(eid, data.instanceUuid);
-    component._overridePatchMap.set(eid, data.overridePatch);
+    prefabComponent._prefabIdMap.set(eid, data.prefabId);
+    prefabComponent._instanceUuidMap.set(eid, data.instanceUuid);
+    prefabComponent._overridePatchMap.set(eid, data.overridePatch);
 
-    component.prefabIdHash[eid] = hashString(data.prefabId);
-    component.version[eid] = data.version;
-    component.instanceUuidHash[eid] = hashString(data.instanceUuid);
+    prefabComponent.prefabIdHash[eid] = hashString(data.prefabId);
+    prefabComponent.version[eid] = data.version;
+    prefabComponent.instanceUuidHash[eid] = hashString(data.instanceUuid);
   },
   metadata: {
     description: 'Marks an entity as an instance of a prefab',

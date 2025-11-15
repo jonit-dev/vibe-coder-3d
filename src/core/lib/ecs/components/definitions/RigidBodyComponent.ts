@@ -25,6 +25,20 @@ const RigidBodySchema = z.object({
   }),
 });
 
+// BitECS component interface for RigidBody component
+export interface IRigidBodyBitECSComponent {
+  enabled: { [eid: number]: number };
+  mass: { [eid: number]: number };
+  gravityScale: { [eid: number]: number };
+  canSleep: { [eid: number]: number };
+  linearDamping: { [eid: number]: number };
+  angularDamping: { [eid: number]: number };
+  bodyTypeHash: { [eid: number]: number };
+  restitution: { [eid: number]: number };
+  friction: { [eid: number]: number };
+  density: { [eid: number]: number };
+}
+
 // RigidBody Component Definition
 export const rigidBodyComponent = ComponentFactory.create({
   id: 'RigidBody',
@@ -41,33 +55,35 @@ export const rigidBodyComponent = ComponentFactory.create({
     restitution: Types.f32,
     density: Types.f32,
   },
-  serialize: (eid: EntityId, component: any) => {
-    const bodyType = getStringFromHash(component.bodyTypeHash[eid]) || 'dynamic';
+  serialize: (eid: EntityId, component: unknown) => {
+    const rigidBodyComponent = component as IRigidBodyBitECSComponent;
+    const bodyType = getStringFromHash(rigidBodyComponent.bodyTypeHash[eid]) || 'dynamic';
     return {
-      enabled: Boolean(component.enabled[eid]),
+      enabled: Boolean(rigidBodyComponent.enabled[eid]),
       bodyType: bodyType as 'dynamic' | 'kinematic' | 'fixed',
       type: bodyType,
-      mass: component.mass[eid],
-      gravityScale: component.gravityScale[eid],
-      canSleep: Boolean(component.canSleep[eid]),
+      mass: rigidBodyComponent.mass[eid],
+      gravityScale: rigidBodyComponent.gravityScale[eid],
+      canSleep: Boolean(rigidBodyComponent.canSleep[eid]),
       material: {
-        friction: component.friction[eid],
-        restitution: component.restitution[eid],
-        density: component.density[eid],
+        friction: rigidBodyComponent.friction[eid],
+        restitution: rigidBodyComponent.restitution[eid],
+        density: rigidBodyComponent.density[eid],
       },
     };
   },
-  deserialize: (eid: EntityId, data, component: any) => {
-    component.enabled[eid] = data.enabled ? 1 : 0;
-    component.bodyTypeHash[eid] = storeString(data.bodyType || data.type || 'dynamic');
-    component.mass[eid] = data.mass ?? 1;
-    component.gravityScale[eid] = data.gravityScale ?? 1;
-    component.canSleep[eid] = data.canSleep ? 1 : 0;
+  deserialize: (eid: EntityId, data: RigidBodyData, component: unknown) => {
+    const rigidBodyComponent = component as IRigidBodyBitECSComponent;
+    rigidBodyComponent.enabled[eid] = data.enabled ? 1 : 0;
+    rigidBodyComponent.bodyTypeHash[eid] = storeString(data.bodyType || data.type || 'dynamic');
+    rigidBodyComponent.mass[eid] = data.mass ?? 1;
+    rigidBodyComponent.gravityScale[eid] = data.gravityScale ?? 1;
+    rigidBodyComponent.canSleep[eid] = data.canSleep ? 1 : 0;
 
     if (data.material) {
-      component.friction[eid] = data.material.friction ?? 0.7;
-      component.restitution[eid] = data.material.restitution ?? 0.3;
-      component.density[eid] = data.material.density ?? 1;
+      rigidBodyComponent.friction[eid] = data.material.friction ?? 0.7;
+      rigidBodyComponent.restitution[eid] = data.material.restitution ?? 0.3;
+      rigidBodyComponent.density[eid] = data.material.density ?? 1;
     }
   },
   dependencies: ['Transform'],

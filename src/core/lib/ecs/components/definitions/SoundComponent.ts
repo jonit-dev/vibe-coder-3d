@@ -10,6 +10,31 @@ import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
 
+// BitECS component interface for Sound component
+interface ISoundBitECSComponent {
+  enabled: { [eid: number]: number };
+  autoplay: { [eid: number]: number };
+  loop: { [eid: number]: number };
+  volume: { [eid: number]: number };
+  pitch: { [eid: number]: number };
+  playbackRate: { [eid: number]: number };
+  muted: { [eid: number]: number };
+  is3D: { [eid: number]: number };
+  minDistance: { [eid: number]: number };
+  maxDistance: { [eid: number]: number };
+  rolloffFactor: { [eid: number]: number };
+  coneInnerAngle: { [eid: number]: number };
+  coneOuterAngle: { [eid: number]: number };
+  coneOuterGain: { [eid: number]: number };
+  isPlaying: { [eid: number]: number };
+  currentTime: { [eid: number]: number };
+  duration: { [eid: number]: number };
+  audioPathHash: { [eid: number]: number };
+  formatHash: { [eid: number]: number };
+  needsUpdate: { [eid: number]: number };
+  needsReload: { [eid: number]: number };
+}
+
 // Sound Schema
 const SoundSchema = z.object({
   audioPath: z.string().describe('Path to the audio file'),
@@ -45,6 +70,8 @@ const SoundSchema = z.object({
   // Effects
   muted: z.boolean().default(false).describe('Mute this specific sound'),
 });
+
+export type SoundData = z.infer<typeof SoundSchema>;
 
 // Sound Component Definition
 export const soundComponent = ComponentFactory.create({
@@ -84,7 +111,7 @@ export const soundComponent = ComponentFactory.create({
     needsUpdate: Types.ui8,
     needsReload: Types.ui8,
   },
-  serialize: (eid: EntityId, component: any) => ({
+  serialize: (eid: EntityId, component: ISoundBitECSComponent) => ({
     audioPath: getStringFromHash(component.audioPathHash[eid]),
     enabled: Boolean(component.enabled[eid]),
     autoplay: Boolean(component.autoplay[eid]),
@@ -110,7 +137,7 @@ export const soundComponent = ComponentFactory.create({
 
     format: getStringFromHash(component.formatHash[eid]) || undefined,
   }),
-  deserialize: (eid: EntityId, data, component: any) => {
+  deserialize: (eid: EntityId, data: SoundData, component: ISoundBitECSComponent) => {
     // Core properties
     component.enabled[eid] = (data.enabled ?? true) ? 1 : 0;
     component.autoplay[eid] = (data.autoplay ?? false) ? 1 : 0;
@@ -155,5 +182,3 @@ export const soundComponent = ComponentFactory.create({
     tags: ['audio', '3d', 'spatial', 'howler'],
   },
 });
-
-export type SoundData = z.infer<typeof SoundSchema>;

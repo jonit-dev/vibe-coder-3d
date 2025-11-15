@@ -9,6 +9,28 @@ import { z } from 'zod';
 import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 
+// BitECS component interface for Light component
+export interface ILightBitECSComponent {
+  lightType: Record<number, number>;
+  colorR: Record<number, number>;
+  colorG: Record<number, number>;
+  colorB: Record<number, number>;
+  intensity: Record<number, number>;
+  enabled: Record<number, number>;
+  castShadow: Record<number, number>;
+  directionX: Record<number, number>;
+  directionY: Record<number, number>;
+  directionZ: Record<number, number>;
+  range: Record<number, number>;
+  decay: Record<number, number>;
+  angle: Record<number, number>;
+  penumbra: Record<number, number>;
+  shadowMapSize: Record<number, number>;
+  shadowBias: Record<number, number>;
+  shadowRadius: Record<number, number>;
+  needsUpdate: Record<number, number>;
+}
+
 // Zod schema for Light component validation
 export const LightSchema = z.object({
   lightType: z.enum(['directional', 'point', 'spot', 'ambient']),
@@ -69,69 +91,72 @@ export const lightComponent = ComponentFactory.create({
     shadowRadius: Types.f32,
     needsUpdate: Types.ui8,
   },
-  serialize: (eid: EntityId, component: any) => {
+  serialize: (eid: EntityId, component: unknown) => {
     const lightTypeMap = ['directional', 'point', 'spot', 'ambient'];
+    const lightComponent = component as ILightBitECSComponent;
 
     return {
-      lightType: lightTypeMap[component.lightType[eid]] as
+      lightType: lightTypeMap[lightComponent.lightType[eid]] as
         | 'directional'
         | 'point'
         | 'spot'
         | 'ambient',
       color: {
-        r: component.colorR[eid] ?? 1.0,
-        g: component.colorG[eid] ?? 1.0,
-        b: component.colorB[eid] ?? 1.0,
+        r: lightComponent.colorR[eid] ?? 1.0,
+        g: lightComponent.colorG[eid] ?? 1.0,
+        b: lightComponent.colorB[eid] ?? 1.0,
       },
-      intensity: component.intensity[eid] ?? 1.0,
-      enabled: Boolean(component.enabled[eid] ?? 1),
-      castShadow: Boolean(component.castShadow[eid] ?? 1),
+      intensity: lightComponent.intensity[eid] ?? 1.0,
+      enabled: Boolean(lightComponent.enabled[eid] ?? 1),
+      castShadow: Boolean(lightComponent.castShadow[eid] ?? 1),
       // Directional Light Properties
-      directionX: component.directionX[eid] ?? 0.0,
-      directionY: component.directionY[eid] ?? -1.0,
-      directionZ: component.directionZ[eid] ?? 0.0,
+      directionX: lightComponent.directionX[eid] ?? 0.0,
+      directionY: lightComponent.directionY[eid] ?? -1.0,
+      directionZ: lightComponent.directionZ[eid] ?? 0.0,
       // Point Light Properties
-      range: component.range[eid] ?? 10.0,
-      decay: component.decay[eid] ?? 1.0,
+      range: lightComponent.range[eid] ?? 10.0,
+      decay: lightComponent.decay[eid] ?? 1.0,
       // Spot Light Properties
-      angle: component.angle[eid] ?? Math.PI / 6,
-      penumbra: component.penumbra[eid] ?? 0.1,
+      angle: lightComponent.angle[eid] ?? Math.PI / 6,
+      penumbra: lightComponent.penumbra[eid] ?? 0.1,
       // Shadow Properties (simplified)
-      shadowMapSize: component.shadowMapSize[eid] ?? 4096,
-      shadowBias: component.shadowBias[eid] ?? -0.0005,
-      shadowRadius: component.shadowRadius[eid] ?? 0.2,
+      shadowMapSize: lightComponent.shadowMapSize[eid] ?? 4096,
+      shadowBias: lightComponent.shadowBias[eid] ?? -0.0005,
+      shadowRadius: lightComponent.shadowRadius[eid] ?? 0.2,
     };
   },
-  deserialize: (eid: EntityId, data, component: any) => {
+  deserialize: (eid: EntityId, data: LightData, component: unknown) => {
     const lightTypeMap = { directional: 0, point: 1, spot: 2, ambient: 3 };
-    component.lightType[eid] = lightTypeMap[data.lightType as keyof typeof lightTypeMap] ?? 0;
+    const lightComponent = component as ILightBitECSComponent;
 
-    component.colorR[eid] = data.color?.r ?? 1.0;
-    component.colorG[eid] = data.color?.g ?? 1.0;
-    component.colorB[eid] = data.color?.b ?? 1.0;
-    component.intensity[eid] = data.intensity ?? 1.0;
-    component.enabled[eid] = data.enabled !== false ? 1 : 0;
-    component.castShadow[eid] = data.castShadow !== false ? 1 : 0;
+    lightComponent.lightType[eid] = lightTypeMap[data.lightType as keyof typeof lightTypeMap] ?? 0;
+
+    lightComponent.colorR[eid] = data.color?.r ?? 1.0;
+    lightComponent.colorG[eid] = data.color?.g ?? 1.0;
+    lightComponent.colorB[eid] = data.color?.b ?? 1.0;
+    lightComponent.intensity[eid] = data.intensity ?? 1.0;
+    lightComponent.enabled[eid] = data.enabled !== false ? 1 : 0;
+    lightComponent.castShadow[eid] = data.castShadow !== false ? 1 : 0;
 
     // Directional Light Properties
-    component.directionX[eid] = data.directionX ?? 0.0;
-    component.directionY[eid] = data.directionY ?? -1.0;
-    component.directionZ[eid] = data.directionZ ?? 0.0;
+    lightComponent.directionX[eid] = data.directionX ?? 0.0;
+    lightComponent.directionY[eid] = data.directionY ?? -1.0;
+    lightComponent.directionZ[eid] = data.directionZ ?? 0.0;
 
     // Point Light Properties
-    component.range[eid] = data.range ?? 10.0;
-    component.decay[eid] = data.decay ?? 1.0;
+    lightComponent.range[eid] = data.range ?? 10.0;
+    lightComponent.decay[eid] = data.decay ?? 1.0;
 
     // Spot Light Properties
-    component.angle[eid] = data.angle ?? Math.PI / 6;
-    component.penumbra[eid] = data.penumbra ?? 0.1;
+    lightComponent.angle[eid] = data.angle ?? Math.PI / 6;
+    lightComponent.penumbra[eid] = data.penumbra ?? 0.1;
 
     // Shadow Properties (simplified)
-    component.shadowMapSize[eid] = data.shadowMapSize ?? 4096;
-    component.shadowBias[eid] = data.shadowBias ?? -0.0005;
-    component.shadowRadius[eid] = data.shadowRadius ?? 0.2;
+    lightComponent.shadowMapSize[eid] = data.shadowMapSize ?? 4096;
+    lightComponent.shadowBias[eid] = data.shadowBias ?? -0.0005;
+    lightComponent.shadowRadius[eid] = data.shadowRadius ?? 0.2;
 
-    component.needsUpdate[eid] = 1; // Mark for update
+    lightComponent.needsUpdate[eid] = 1; // Mark for update
   },
   dependencies: ['Transform'],
   conflicts: ['MeshRenderer'], // Light conflicts with MeshRenderer

@@ -111,6 +111,61 @@ const CameraSchema = z.object({
   skyboxBlur: z.number().min(0).max(1).optional(), // Blur amount (0-1)
 });
 
+export type CameraData = z.infer<typeof CameraSchema>;
+
+// BitECS component type for Camera
+interface ICameraBitECSComponent {
+  fov: { [eid: number]: number };
+  near: { [eid: number]: number };
+  far: { [eid: number]: number };
+  projectionType: { [eid: number]: number }; // 0=perspective, 1=orthographic
+  orthographicSize: { [eid: number]: number };
+  depth: { [eid: number]: number };
+  isMain: { [eid: number]: number };
+  clearFlags: { [eid: number]: number };
+  skyboxTexture: { [eid: number]: number };
+  backgroundR: { [eid: number]: number };
+  backgroundG: { [eid: number]: number };
+  backgroundB: { [eid: number]: number };
+  backgroundA: { [eid: number]: number };
+  // Camera Control Mode
+  controlMode: { [eid: number]: number }; // 0=locked, 1=free
+  // Viewport Rectangle
+  viewportX: { [eid: number]: number };
+  viewportY: { [eid: number]: number };
+  viewportWidth: { [eid: number]: number };
+  viewportHeight: { [eid: number]: number };
+  // HDR and Tone Mapping
+  hdr: { [eid: number]: number };
+  toneMapping: { [eid: number]: number }; // 0=none, 1=linear, 2=reinhard, 3=cineon, 4=aces
+  toneMappingExposure: { [eid: number]: number };
+  // Post-processing
+  enablePostProcessing: { [eid: number]: number };
+  postProcessingPreset: { [eid: number]: number }; // 0=none, 1=cinematic, 2=realistic, 3=stylized
+  // Camera Animation & Follow
+  enableSmoothing: { [eid: number]: number };
+  followTarget: { [eid: number]: number };
+  followOffsetX: { [eid: number]: number };
+  followOffsetY: { [eid: number]: number };
+  followOffsetZ: { [eid: number]: number };
+  smoothingSpeed: { [eid: number]: number };
+  rotationSmoothing: { [eid: number]: number };
+  needsUpdate: { [eid: number]: number };
+  // Skybox Transform Properties
+  skyboxScaleX: { [eid: number]: number };
+  skyboxScaleY: { [eid: number]: number };
+  skyboxScaleZ: { [eid: number]: number };
+  skyboxRotationX: { [eid: number]: number };
+  skyboxRotationY: { [eid: number]: number };
+  skyboxRotationZ: { [eid: number]: number };
+  skyboxRepeatU: { [eid: number]: number };
+  skyboxRepeatV: { [eid: number]: number };
+  skyboxOffsetU: { [eid: number]: number };
+  skyboxOffsetV: { [eid: number]: number };
+  skyboxIntensity: { [eid: number]: number };
+  skyboxBlur: { [eid: number]: number };
+}
+
 // Camera Component Definition
 export const cameraComponent = ComponentFactory.create({
   id: 'Camera',
@@ -169,143 +224,150 @@ export const cameraComponent = ComponentFactory.create({
     skyboxIntensity: Types.f32,
     skyboxBlur: Types.f32,
   },
-  serialize: (eid: EntityId, component: any) => {
+  serialize: (eid: EntityId, component: unknown) => {
+    const cameraComponent = component as ICameraBitECSComponent;
     const serialized = {
-      fov: component.fov[eid],
-      near: component.near[eid],
-      far: component.far[eid],
-      projectionType: (component.projectionType[eid] === 1 ? 'orthographic' : 'perspective') as
-        | 'perspective'
-        | 'orthographic',
-      orthographicSize: component.orthographicSize[eid],
-      depth: component.depth[eid],
-      isMain: Boolean(component.isMain[eid]),
-      clearFlags: (['skybox', 'solidColor', 'depthOnly', 'dontClear'][component.clearFlags[eid]] ||
-        'skybox') as 'skybox' | 'solidColor' | 'depthOnly' | 'dontClear',
-      skyboxTexture: getSkyboxPath(component.skyboxTexture[eid] ?? 0),
+      fov: cameraComponent.fov[eid],
+      near: cameraComponent.near[eid],
+      far: cameraComponent.far[eid],
+      projectionType: (cameraComponent.projectionType[eid] === 1
+        ? 'orthographic'
+        : 'perspective') as 'perspective' | 'orthographic',
+      orthographicSize: cameraComponent.orthographicSize[eid],
+      depth: cameraComponent.depth[eid],
+      isMain: Boolean(cameraComponent.isMain[eid]),
+      clearFlags: (['skybox', 'solidColor', 'depthOnly', 'dontClear'][
+        cameraComponent.clearFlags[eid]
+      ] || 'skybox') as 'skybox' | 'solidColor' | 'depthOnly' | 'dontClear',
+      skyboxTexture: getSkyboxPath(cameraComponent.skyboxTexture[eid] ?? 0),
       backgroundColor: {
-        r: component.backgroundR[eid],
-        g: component.backgroundG[eid],
-        b: component.backgroundB[eid],
-        a: component.backgroundA[eid],
+        r: cameraComponent.backgroundR[eid],
+        g: cameraComponent.backgroundG[eid],
+        b: cameraComponent.backgroundB[eid],
+        a: cameraComponent.backgroundA[eid],
       },
       // Camera Control Mode
-      controlMode: (['locked', 'free'][component.controlMode[eid]] || 'free') as 'locked' | 'free',
+      controlMode: (['locked', 'free'][cameraComponent.controlMode[eid]] || 'free') as
+        | 'locked'
+        | 'free',
       // Viewport Rectangle
       viewportRect: {
-        x: component.viewportX[eid] ?? 0.0,
-        y: component.viewportY[eid] ?? 0.0,
-        width: component.viewportWidth[eid] ?? 1.0,
-        height: component.viewportHeight[eid] ?? 1.0,
+        x: cameraComponent.viewportX[eid] ?? 0.0,
+        y: cameraComponent.viewportY[eid] ?? 0.0,
+        width: cameraComponent.viewportWidth[eid] ?? 1.0,
+        height: cameraComponent.viewportHeight[eid] ?? 1.0,
       },
       // HDR and Tone Mapping
-      hdr: Boolean(component.hdr[eid] ?? 0),
-      toneMapping: (['none', 'linear', 'reinhard', 'cineon', 'aces'][component.toneMapping[eid]] ||
-        'none') as 'none' | 'linear' | 'reinhard' | 'cineon' | 'aces',
-      toneMappingExposure: component.toneMappingExposure[eid] ?? 1.0,
+      hdr: Boolean(cameraComponent.hdr[eid] ?? 0),
+      toneMapping: (['none', 'linear', 'reinhard', 'cineon', 'aces'][
+        cameraComponent.toneMapping[eid]
+      ] || 'none') as 'none' | 'linear' | 'reinhard' | 'cineon' | 'aces',
+      toneMappingExposure: cameraComponent.toneMappingExposure[eid] ?? 1.0,
       // Post-processing
-      enablePostProcessing: Boolean(component.enablePostProcessing[eid] ?? 0),
+      enablePostProcessing: Boolean(cameraComponent.enablePostProcessing[eid] ?? 0),
       postProcessingPreset: (['none', 'cinematic', 'realistic', 'stylized'][
-        component.postProcessingPreset[eid]
+        cameraComponent.postProcessingPreset[eid]
       ] || 'none') as 'none' | 'cinematic' | 'realistic' | 'stylized',
       // Camera Animation & Follow
-      enableSmoothing: Boolean(component.enableSmoothing[eid] ?? 0),
-      followTarget: component.followTarget[eid] ?? 0,
+      enableSmoothing: Boolean(cameraComponent.enableSmoothing[eid] ?? 0),
+      followTarget: cameraComponent.followTarget[eid] ?? 0,
       followOffset: {
-        x: component.followOffsetX[eid] ?? 0.0,
-        y: component.followOffsetY[eid] ?? 5.0,
-        z: component.followOffsetZ[eid] ?? -10.0,
+        x: cameraComponent.followOffsetX[eid] ?? 0.0,
+        y: cameraComponent.followOffsetY[eid] ?? 5.0,
+        z: cameraComponent.followOffsetZ[eid] ?? -10.0,
       },
-      smoothingSpeed: component.smoothingSpeed[eid] ?? 2.0,
-      rotationSmoothing: component.rotationSmoothing[eid] ?? 1.5,
+      smoothingSpeed: cameraComponent.smoothingSpeed[eid] ?? 2.0,
+      rotationSmoothing: cameraComponent.rotationSmoothing[eid] ?? 1.5,
       // Skybox Transform Properties
       skyboxScale: {
-        x: component.skyboxScaleX[eid] ?? 1.0,
-        y: component.skyboxScaleY[eid] ?? 1.0,
-        z: component.skyboxScaleZ[eid] ?? 1.0,
+        x: cameraComponent.skyboxScaleX[eid] ?? 1.0,
+        y: cameraComponent.skyboxScaleY[eid] ?? 1.0,
+        z: cameraComponent.skyboxScaleZ[eid] ?? 1.0,
       },
       skyboxRotation: {
-        x: component.skyboxRotationX[eid] ?? 0.0,
-        y: component.skyboxRotationY[eid] ?? 0.0,
-        z: component.skyboxRotationZ[eid] ?? 0.0,
+        x: cameraComponent.skyboxRotationX[eid] ?? 0.0,
+        y: cameraComponent.skyboxRotationY[eid] ?? 0.0,
+        z: cameraComponent.skyboxRotationZ[eid] ?? 0.0,
       },
       skyboxRepeat: {
-        u: component.skyboxRepeatU[eid] ?? 1.0,
-        v: component.skyboxRepeatV[eid] ?? 1.0,
+        u: cameraComponent.skyboxRepeatU[eid] ?? 1.0,
+        v: cameraComponent.skyboxRepeatV[eid] ?? 1.0,
       },
       skyboxOffset: {
-        u: component.skyboxOffsetU[eid] ?? 0.0,
-        v: component.skyboxOffsetV[eid] ?? 0.0,
+        u: cameraComponent.skyboxOffsetU[eid] ?? 0.0,
+        v: cameraComponent.skyboxOffsetV[eid] ?? 0.0,
       },
-      skyboxIntensity: component.skyboxIntensity[eid] ?? 1.0,
-      skyboxBlur: component.skyboxBlur[eid] ?? 0.0,
+      skyboxIntensity: cameraComponent.skyboxIntensity[eid] ?? 1.0,
+      skyboxBlur: cameraComponent.skyboxBlur[eid] ?? 0.0,
     };
     return serialized;
   },
-  deserialize: (eid: EntityId, data, component: any) => {
-    component.fov[eid] = data.fov;
-    component.near[eid] = data.near;
-    component.far[eid] = data.far;
-    component.projectionType[eid] = data.projectionType === 'orthographic' ? 1 : 0;
-    component.orthographicSize[eid] = data.orthographicSize || 10;
-    component.depth[eid] = data.depth || 0;
-    component.isMain[eid] = data.isMain ? 1 : 0;
+  deserialize: (eid: EntityId, data: CameraData, component: unknown) => {
+    const cameraComponent = component as ICameraBitECSComponent;
+    cameraComponent.fov[eid] = data.fov;
+    cameraComponent.near[eid] = data.near;
+    cameraComponent.far[eid] = data.far;
+    cameraComponent.projectionType[eid] = data.projectionType === 'orthographic' ? 1 : 0;
+    cameraComponent.orthographicSize[eid] = data.orthographicSize || 10;
+    cameraComponent.depth[eid] = data.depth || 0;
+    cameraComponent.isMain[eid] = data.isMain ? 1 : 0;
     const clearFlagsMap = { skybox: 0, solidColor: 1, depthOnly: 2, dontClear: 3 };
-    component.clearFlags[eid] = clearFlagsMap[data.clearFlags as keyof typeof clearFlagsMap] ?? 0;
-    component.skyboxTexture[eid] = getSkyboxIndex(data.skyboxTexture || '');
-    component.backgroundR[eid] = data.backgroundColor?.r ?? 0.0;
-    component.backgroundG[eid] = data.backgroundColor?.g ?? 0.0;
-    component.backgroundB[eid] = data.backgroundColor?.b ?? 0.0;
-    component.backgroundA[eid] = data.backgroundColor?.a ?? 1.0;
+    cameraComponent.clearFlags[eid] =
+      clearFlagsMap[data.clearFlags as keyof typeof clearFlagsMap] ?? 0;
+    cameraComponent.skyboxTexture[eid] = getSkyboxIndex(data.skyboxTexture || '');
+    cameraComponent.backgroundR[eid] = data.backgroundColor?.r ?? 0.0;
+    cameraComponent.backgroundG[eid] = data.backgroundColor?.g ?? 0.0;
+    cameraComponent.backgroundB[eid] = data.backgroundColor?.b ?? 0.0;
+    cameraComponent.backgroundA[eid] = data.backgroundColor?.a ?? 1.0;
 
     // Camera Control Mode
     const controlModeMap = { locked: 0, free: 1 };
-    component.controlMode[eid] =
+    cameraComponent.controlMode[eid] =
       controlModeMap[data.controlMode as keyof typeof controlModeMap] ?? 1; // Default to free (1)
 
     // Viewport Rectangle
-    component.viewportX[eid] = data.viewportRect?.x ?? 0.0;
-    component.viewportY[eid] = data.viewportRect?.y ?? 0.0;
-    component.viewportWidth[eid] = data.viewportRect?.width ?? 1.0;
-    component.viewportHeight[eid] = data.viewportRect?.height ?? 1.0;
+    cameraComponent.viewportX[eid] = data.viewportRect?.x ?? 0.0;
+    cameraComponent.viewportY[eid] = data.viewportRect?.y ?? 0.0;
+    cameraComponent.viewportWidth[eid] = data.viewportRect?.width ?? 1.0;
+    cameraComponent.viewportHeight[eid] = data.viewportRect?.height ?? 1.0;
 
     // HDR and Tone Mapping
-    component.hdr[eid] = data.hdr ? 1 : 0;
+    cameraComponent.hdr[eid] = data.hdr ? 1 : 0;
     const toneMappingMap = { none: 0, linear: 1, reinhard: 2, cineon: 3, aces: 4 };
-    component.toneMapping[eid] =
+    cameraComponent.toneMapping[eid] =
       toneMappingMap[data.toneMapping as keyof typeof toneMappingMap] ?? 0;
-    component.toneMappingExposure[eid] = data.toneMappingExposure ?? 1.0;
+    cameraComponent.toneMappingExposure[eid] = data.toneMappingExposure ?? 1.0;
 
     // Post-processing
-    component.enablePostProcessing[eid] = data.enablePostProcessing ? 1 : 0;
+    cameraComponent.enablePostProcessing[eid] = data.enablePostProcessing ? 1 : 0;
     const postProcessingMap = { none: 0, cinematic: 1, realistic: 2, stylized: 3 };
-    component.postProcessingPreset[eid] =
+    cameraComponent.postProcessingPreset[eid] =
       postProcessingMap[data.postProcessingPreset as keyof typeof postProcessingMap] ?? 0;
 
     // Camera Animation & Follow
-    component.enableSmoothing[eid] = data.enableSmoothing ? 1 : 0;
-    component.followTarget[eid] = data.followTarget ?? 0;
-    component.followOffsetX[eid] = data.followOffset?.x ?? 0.0;
-    component.followOffsetY[eid] = data.followOffset?.y ?? 5.0;
-    component.followOffsetZ[eid] = data.followOffset?.z ?? -10.0;
-    component.smoothingSpeed[eid] = data.smoothingSpeed ?? 2.0;
-    component.rotationSmoothing[eid] = data.rotationSmoothing ?? 1.5;
+    cameraComponent.enableSmoothing[eid] = data.enableSmoothing ? 1 : 0;
+    cameraComponent.followTarget[eid] = data.followTarget ?? 0;
+    cameraComponent.followOffsetX[eid] = data.followOffset?.x ?? 0.0;
+    cameraComponent.followOffsetY[eid] = data.followOffset?.y ?? 5.0;
+    cameraComponent.followOffsetZ[eid] = data.followOffset?.z ?? -10.0;
+    cameraComponent.smoothingSpeed[eid] = data.smoothingSpeed ?? 2.0;
+    cameraComponent.rotationSmoothing[eid] = data.rotationSmoothing ?? 1.5;
 
     // Skybox Transform Properties
-    component.skyboxScaleX[eid] = data.skyboxScale?.x ?? 1.0;
-    component.skyboxScaleY[eid] = data.skyboxScale?.y ?? 1.0;
-    component.skyboxScaleZ[eid] = data.skyboxScale?.z ?? 1.0;
-    component.skyboxRotationX[eid] = data.skyboxRotation?.x ?? 0.0;
-    component.skyboxRotationY[eid] = data.skyboxRotation?.y ?? 0.0;
-    component.skyboxRotationZ[eid] = data.skyboxRotation?.z ?? 0.0;
-    component.skyboxRepeatU[eid] = data.skyboxRepeat?.u ?? 1.0;
-    component.skyboxRepeatV[eid] = data.skyboxRepeat?.v ?? 1.0;
-    component.skyboxOffsetU[eid] = data.skyboxOffset?.u ?? 0.0;
-    component.skyboxOffsetV[eid] = data.skyboxOffset?.v ?? 0.0;
-    component.skyboxIntensity[eid] = data.skyboxIntensity ?? 1.0;
-    component.skyboxBlur[eid] = data.skyboxBlur ?? 0.0;
+    cameraComponent.skyboxScaleX[eid] = data.skyboxScale?.x ?? 1.0;
+    cameraComponent.skyboxScaleY[eid] = data.skyboxScale?.y ?? 1.0;
+    cameraComponent.skyboxScaleZ[eid] = data.skyboxScale?.z ?? 1.0;
+    cameraComponent.skyboxRotationX[eid] = data.skyboxRotation?.x ?? 0.0;
+    cameraComponent.skyboxRotationY[eid] = data.skyboxRotation?.y ?? 0.0;
+    cameraComponent.skyboxRotationZ[eid] = data.skyboxRotation?.z ?? 0.0;
+    cameraComponent.skyboxRepeatU[eid] = data.skyboxRepeat?.u ?? 1.0;
+    cameraComponent.skyboxRepeatV[eid] = data.skyboxRepeat?.v ?? 1.0;
+    cameraComponent.skyboxOffsetU[eid] = data.skyboxOffset?.u ?? 0.0;
+    cameraComponent.skyboxOffsetV[eid] = data.skyboxOffset?.v ?? 0.0;
+    cameraComponent.skyboxIntensity[eid] = data.skyboxIntensity ?? 1.0;
+    cameraComponent.skyboxBlur[eid] = data.skyboxBlur ?? 0.0;
 
-    component.needsUpdate[eid] = 1; // Mark for update
+    cameraComponent.needsUpdate[eid] = 1; // Mark for update
   },
   dependencies: ['Transform'],
   conflicts: ['MeshRenderer'], // Camera conflicts with MeshRenderer
@@ -314,5 +376,3 @@ export const cameraComponent = ComponentFactory.create({
     version: '1.0.0',
   },
 });
-
-export type CameraData = z.infer<typeof CameraSchema>;

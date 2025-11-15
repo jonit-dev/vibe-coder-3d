@@ -10,6 +10,16 @@ import { ComponentCategory, ComponentFactory } from '../../ComponentRegistry';
 import { EntityId } from '../../types';
 import { getStringFromHash, storeString } from '../../utils/stringHashUtils';
 
+// Global instance data storage interface
+interface IGlobalInstanceData {
+  [eid: number]: InstanceData[];
+}
+
+// Extend globalThis to include instance data
+declare global {
+  const __instanceData__: IGlobalInstanceData | undefined;
+}
+
 // Single instance data schema
 const InstanceDataSchema = z.object({
   position: z.tuple([z.number(), z.number(), z.number()]),
@@ -53,7 +63,7 @@ export const instancedComponent = ComponentFactory.create({
     const comp = component as Record<string, Float32Array | Uint8Array | Uint32Array>;
 
     // Get instance data from external storage (managed by InstanceSystem)
-    const instances = (globalThis as any).__instanceData__?.[eid] || [];
+    const instances = globalThis.__instanceData__?.[eid] || [];
 
     return {
       enabled: Boolean(comp.enabled[eid]),
@@ -81,10 +91,10 @@ export const instancedComponent = ComponentFactory.create({
     comp.needsUpdate[eid] = 1;
 
     // Store instance data externally (arrays of varying length can't fit in BitECS)
-    if (!(globalThis as any).__instanceData__) {
-      (globalThis as any).__instanceData__ = {};
+    if (!globalThis.__instanceData__) {
+      globalThis.__instanceData__ = {};
     }
-    (globalThis as any).__instanceData__[eid] = instanceData.instances || [];
+    globalThis.__instanceData__[eid] = instanceData.instances || [];
   },
   dependencies: ['Transform'],
   conflicts: ['MeshRenderer', 'Camera', 'Light'],
