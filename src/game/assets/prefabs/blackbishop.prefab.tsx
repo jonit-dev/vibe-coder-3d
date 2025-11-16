@@ -1,188 +1,231 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "black_bishop",
-  "name": "black_bishop",
-  "root": {
-    "name": "black_bishop",
-    "components": {
-      "PersistentId": {
-        "id": "a26c4729-38f8-449f-94cc-49c82677d633"
-      }
+  id: 'black_bishop',
+  name: 'black_bishop',
+  root: {
+    name: 'black_bishop',
+    components: {
+      PersistentId: {
+        id: '9f631ef2-6bb6-49fc-8444-44329c61236a',
+      },
     },
-    "children": [
+    children: [
       {
-        "name": "bishop_base",
-        "components": {
-          "PersistentId": {
-            "id": "1b260a59-3061-43c2-9f82-efc877b2f63c"
+        name: 'bishop_base',
+        components: {
+          PersistentId: {
+            id: '7cbef4d9-e800-4b48-8420-353031889319',
           },
-          "Transform": {
-            "position": [
-              0,
-              0,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.9,
-              0.4,
-              0.9
-            ]
+          Transform: {
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [0.7, 0.3, 0.7],
           },
-          "MeshRenderer": {
-            "meshId": "cylinder",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#2c2c2c",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cylinder',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
       },
       {
-        "name": "bishop_body",
-        "components": {
-          "PersistentId": {
-            "id": "f2cfbbe1-1115-4f2c-a32a-b26f6bf029ed"
+        name: 'bishop_body',
+        components: {
+          PersistentId: {
+            id: '330e42b7-5331-4ae3-a7ef-2e01094661fe',
           },
-          "Transform": {
-            "position": [
-              0,
-              0.7,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.7,
-              0.8,
-              0.7
-            ]
+          Transform: {
+            position: [0, 0.6, 0],
+            rotation: [0, 0, 0],
+            scale: [0.5, 0.8, 0.5],
           },
-          "MeshRenderer": {
-            "meshId": "cone",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#2c2c2c",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cone',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
       },
       {
-        "name": "bishop_top",
-        "components": {
-          "PersistentId": {
-            "id": "2b92eab2-afda-4427-bc7b-f70a2657c992"
+        name: 'bishop_head',
+        components: {
+          PersistentId: {
+            id: 'e341cf30-704c-4220-a357-efc54dcbdd6f',
           },
-          "Transform": {
-            "position": [
-              0,
-              1.3,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.3,
-              0.3,
-              0.3
-            ]
+          Transform: {
+            position: [0, 1.2, 0],
+            rotation: [0, 0, 0],
+            scale: [0.3, 0.3, 0.3],
           },
-          "MeshRenderer": {
-            "meshId": "sphere",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#2c2c2c",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'sphere',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
-      }
-    ]
+      },
+      {
+        name: 'bishop_hat',
+        components: {
+          PersistentId: {
+            id: 'f5861c25-df2f-4ba8-8453-8c4f782d9cee',
+          },
+          Transform: {
+            position: [0, 1.5, 0],
+            rotation: [0, 0, 0],
+            scale: [0.2, 0.3, 0.2],
+          },
+          MeshRenderer: {
+            meshId: 'cone',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
+        },
+      },
+      {
+        name: 'bishop_hat_ball',
+        components: {
+          PersistentId: {
+            id: '20667e7c-e494-4d43-8271-440862185b6c',
+          },
+          Transform: {
+            position: [0, 1.7, 0],
+            rotation: [0, 0, 0],
+            scale: [0.1, 0.1, 0.1],
+          },
+          MeshRenderer: {
+            meshId: 'sphere',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
+        },
+      },
+    ],
   },
-  "metadata": {
-    "createdAt": "2025-11-16T09:15:38.856Z",
-    "createdFrom": 103
+  metadata: {
+    createdAt: '2025-11-16T09:42:48.100Z',
+    createdFrom: 142,
   },
-  "dependencies": [
-    "default"
-  ]
+  dependencies: ['default'],
 });

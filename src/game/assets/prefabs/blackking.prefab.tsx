@@ -1,298 +1,231 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "black_king",
-  "name": "black_king",
-  "root": {
-    "name": "black_king",
-    "components": {
-      "PersistentId": {
-        "id": "498d190c-6ff3-4a5f-8e15-100bd5c5673b"
-      }
+  id: 'black_king',
+  name: 'black_king',
+  root: {
+    name: 'black_king',
+    components: {
+      PersistentId: {
+        id: '51d4f2d1-d237-4215-a40b-2ef211a5df31',
+      },
     },
-    "children": [
+    children: [
       {
-        "name": "king_base",
-        "components": {
-          "PersistentId": {
-            "id": "3fe983c7-2674-4b70-85a0-cc8fc6ec6986"
+        name: 'king_base',
+        components: {
+          PersistentId: {
+            id: '4ec34920-c96a-4238-a61f-321176d4a086',
           },
-          "Transform": {
-            "position": [
-              0,
-              0,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              1.1,
-              0.4,
-              1.1
-            ]
+          Transform: {
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [0.8, 0.3, 0.8],
           },
-          "MeshRenderer": {
-            "meshId": "cylinder",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#2c2c2c",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cylinder',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
       },
       {
-        "name": "king_body",
-        "components": {
-          "PersistentId": {
-            "id": "3986c386-3c30-4431-b151-8ed71a67812a"
+        name: 'king_body',
+        components: {
+          PersistentId: {
+            id: '2d6c1a20-66cf-47bf-a5c5-f946181bf3fb',
           },
-          "Transform": {
-            "position": [
-              0,
-              0.7,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.9,
-              0.9,
-              0.9
-            ]
+          Transform: {
+            position: [0, 0.6, 0],
+            rotation: [0, 0, 0],
+            scale: [0.6, 0.8, 0.6],
           },
-          "MeshRenderer": {
-            "meshId": "cylinder",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#2c2c2c",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cylinder',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
       },
       {
-        "name": "king_head",
-        "components": {
-          "PersistentId": {
-            "id": "c0286db0-b7bd-4f1e-ae62-c7d4f1e275be"
+        name: 'king_head',
+        components: {
+          PersistentId: {
+            id: 'a3afb888-e3a5-43e5-977c-9a8aabd19512',
           },
-          "Transform": {
-            "position": [
-              0,
-              1.4,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.6,
-              0.6,
-              0.6
-            ]
+          Transform: {
+            position: [0, 1.2, 0],
+            rotation: [0, 0, 0],
+            scale: [0.4, 0.4, 0.4],
           },
-          "MeshRenderer": {
-            "meshId": "sphere",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#2c2c2c",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'sphere',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
       },
       {
-        "name": "king_cross_vertical",
-        "components": {
-          "PersistentId": {
-            "id": "15d16c31-9a0b-4d4e-acbf-882098fbb54b"
+        name: 'king_cross_vertical',
+        components: {
+          PersistentId: {
+            id: '91c2a410-c14a-43aa-b03e-b4a8faddb306',
           },
-          "Transform": {
-            "position": [
-              0,
-              1.8,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.1,
-              0.4,
-              0.1
-            ]
+          Transform: {
+            position: [0, 1.6, 0],
+            rotation: [0, 0, 0],
+            scale: [0.08, 0.4, 0.08],
           },
-          "MeshRenderer": {
-            "meshId": "cube",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#2c2c2c",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cylinder',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
       },
       {
-        "name": "king_cross_horizontal",
-        "components": {
-          "PersistentId": {
-            "id": "cd11348f-fbfe-4027-9cc2-714d8435b0a5"
+        name: 'king_cross_horizontal',
+        components: {
+          PersistentId: {
+            id: 'cb675fc3-1564-49fb-9543-f6c85f9aa196',
           },
-          "Transform": {
-            "position": [
-              0,
-              1.9,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.3,
-              0.1,
-              0.1
-            ]
+          Transform: {
+            position: [0, 1.7, 0],
+            rotation: [0, 0, 0],
+            scale: [0.25, 0.08, 0.08],
           },
-          "MeshRenderer": {
-            "meshId": "cube",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#2c2c2c",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cylinder',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#2c2c2c',
+              metalness: 0.2,
+              roughness: 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
-      }
-    ]
+      },
+    ],
   },
-  "metadata": {
-    "createdAt": "2025-11-16T09:15:58.141Z",
-    "createdFrom": 115
+  metadata: {
+    createdAt: '2025-11-16T09:43:23.302Z',
+    createdFrom: 178,
   },
-  "dependencies": [
-    "default"
-  ]
+  dependencies: ['default'],
 });

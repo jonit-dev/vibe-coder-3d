@@ -19,7 +19,10 @@ describe('Prefab Position Override', () => {
     existingRegistry.clear();
     existingManager.clear();
 
-    // Initialize ECS
+    // Reset component registry BEFORE re-initializing ECS
+    componentRegistry.reset();
+
+    // Initialize ECS - this must be done before any component operations
     const world = ECSWorld.getInstance();
     world.reset();
     initializeECS();
@@ -161,7 +164,24 @@ describe('Prefab Position Override', () => {
 
     // Verify each instance has the correct position
     instances.forEach(({ id, expectedPosition }, index) => {
+      console.log(
+        `Testing instance ${index}: entityId=${id}, expectedPosition=${expectedPosition}`,
+      );
+
+      // Check if entity exists
+      const entity = entityManager.getEntity(id);
+      console.log(`Entity exists: ${!!entity}`, entity);
+
+      // Check all components on this entity
+      const entityComponents = componentRegistry.getEntityComponents(id);
+      console.log(`Entity components: ${entityComponents}`);
+
+      // Check if Transform component is registered
+      const hasTransform = componentRegistry.hasComponent(id, 'Transform');
+      console.log(`Has Transform: ${hasTransform}`);
+
       const transform = componentRegistry.getComponentData(id, 'Transform');
+      console.log(`Transform data:`, transform);
       expect(transform).toBeDefined();
 
       const actualPosition = (transform as { position: number[] }).position;

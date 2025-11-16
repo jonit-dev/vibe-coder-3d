@@ -1,133 +1,231 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "white_knight",
-  "name": "white_knight",
-  "root": {
-    "name": "white_knight",
-    "components": {
-      "PersistentId": {
-        "id": "48e57d4e-e524-43c2-829c-2b54ace33cc7"
-      }
+  id: 'white_knight',
+  name: 'white_knight',
+  root: {
+    name: 'white_knight',
+    components: {
+      PersistentId: {
+        id: '497a055d-4c4e-4b85-808d-6f980c4b36c8',
+      },
     },
-    "children": [
+    children: [
       {
-        "name": "knight_base",
-        "components": {
-          "PersistentId": {
-            "id": "36788942-02af-4c88-afa2-9d3238e76108"
+        name: 'knight_base',
+        components: {
+          PersistentId: {
+            id: '761623c6-45dd-4fef-83ef-b5649b1ee0fa',
           },
-          "Transform": {
-            "position": [
-              0,
-              0,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.9,
-              0.4,
-              0.9
-            ]
+          Transform: {
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [0.7, 0.3, 0.7],
           },
-          "MeshRenderer": {
-            "meshId": "cylinder",
-            "materialId": "mat_08941399",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cylinder',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#f0f0f0',
+              metalness: 0.1,
+              roughness: 0.8,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
       },
       {
-        "name": "knight_head",
-        "components": {
-          "PersistentId": {
-            "id": "5742a026-583e-4274-854e-c17790a3b196"
+        name: 'knight_body',
+        components: {
+          PersistentId: {
+            id: 'f5aae9ad-2fd7-4be4-bb4a-d107838f7d74',
           },
-          "Transform": {
-            "position": [
-              0,
-              0.8,
-              0.3
-            ],
-            "rotation": [
-              30,
-              0,
-              0
-            ],
-            "scale": [
-              0.7,
-              0.7,
-              0.9
-            ]
+          Transform: {
+            position: [0, 0.7, 0],
+            rotation: [0, 0, 0],
+            scale: [0.5, 0.7, 0.4],
           },
-          "MeshRenderer": {
-            "meshId": "cube",
-            "materialId": "mat_08941399",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cube',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#f0f0f0',
+              metalness: 0.1,
+              roughness: 0.8,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
-      }
-    ]
+      },
+      {
+        name: 'knight_head_main',
+        components: {
+          PersistentId: {
+            id: '28e7d3db-8235-4c33-8f54-1c48a3cd327a',
+          },
+          Transform: {
+            position: [0, 1.2, 0.1],
+            rotation: [0, 0, 0],
+            scale: [0.4, 0.4, 0.3],
+          },
+          MeshRenderer: {
+            meshId: 'cube',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#f0f0f0',
+              metalness: 0.1,
+              roughness: 0.8,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
+        },
+      },
+      {
+        name: 'knight_ear',
+        components: {
+          PersistentId: {
+            id: 'e3d7f61b-4b89-4f00-85eb-daaf03a029e4',
+          },
+          Transform: {
+            position: [-0.1, 1.5, 0.1],
+            rotation: [0, 0, 0],
+            scale: [0.08, 0.3, 0.08],
+          },
+          MeshRenderer: {
+            meshId: 'cone',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#f0f0f0',
+              metalness: 0.1,
+              roughness: 0.8,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
+        },
+      },
+      {
+        name: 'knight_snout',
+        components: {
+          PersistentId: {
+            id: 'e520432a-21e8-4325-8b01-5fad28a99d2e',
+          },
+          Transform: {
+            position: [0.2, 1.3, 0.1],
+            rotation: [0, 0, 0],
+            scale: [0.2, 0.15, 0.15],
+          },
+          MeshRenderer: {
+            meshId: 'cube',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#f0f0f0',
+              metalness: 0.1,
+              roughness: 0.8,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
+        },
+      },
+    ],
   },
-  "metadata": {
-    "createdAt": "2025-11-16T09:15:05.952Z",
-    "createdFrom": 82
+  metadata: {
+    createdAt: '2025-11-16T09:42:53.264Z',
+    createdFrom: 148,
   },
-  "dependencies": [
-    "mat_08941399"
-  ]
+  dependencies: ['default'],
 });

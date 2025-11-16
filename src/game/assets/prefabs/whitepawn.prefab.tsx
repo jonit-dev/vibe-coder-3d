@@ -1,133 +1,147 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "white_pawn",
-  "name": "white_pawn",
-  "root": {
-    "name": "white_pawn",
-    "components": {
-      "PersistentId": {
-        "id": "e231548b-5392-4924-875d-b38b09a064ff"
-      }
+  id: 'white_pawn',
+  name: 'white_pawn',
+  root: {
+    name: 'white_pawn',
+    components: {
+      PersistentId: {
+        id: 'aac091f9-ad3f-4a6c-a31a-dff1765dbd40',
+      },
     },
-    "children": [
+    children: [
       {
-        "name": "pawn_base",
-        "components": {
-          "PersistentId": {
-            "id": "becc6f15-2e18-4270-8465-09328b99af40"
+        name: 'pawn_base',
+        components: {
+          PersistentId: {
+            id: '7a135b3d-c3f5-4b8d-9636-acd04bb231e3',
           },
-          "Transform": {
-            "position": [
-              0,
-              0,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.8,
-              0.3,
-              0.8
-            ]
+          Transform: {
+            position: [0, 0, 0],
+            rotation: [0, 0, 0],
+            scale: [0.6, 0.3, 0.6],
           },
-          "MeshRenderer": {
-            "meshId": "cylinder",
-            "materialId": "mat_08941399",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cylinder',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#f0f0f0',
+              metalness: 0.1,
+              roughness: 0.8,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
       },
       {
-        "name": "pawn_head",
-        "components": {
-          "PersistentId": {
-            "id": "45c92e23-12d7-43a0-933f-724059e14818"
+        name: 'pawn_body',
+        components: {
+          PersistentId: {
+            id: '4c6cfde9-34e7-42f1-9d04-8f2670c628a4',
           },
-          "Transform": {
-            "position": [
-              0,
-              0.5,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.6,
-              0.6,
-              0.6
-            ]
+          Transform: {
+            position: [0, 0.4, 0],
+            rotation: [0, 0, 0],
+            scale: [0.4, 0.6, 0.4],
           },
-          "MeshRenderer": {
-            "meshId": "sphere",
-            "materialId": "mat_08941399",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
+          MeshRenderer: {
+            meshId: 'cylinder',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#f0f0f0',
+              metalness: 0.1,
+              roughness: 0.8,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
         },
-        "children": []
-      }
-    ]
+      },
+      {
+        name: 'pawn_head',
+        components: {
+          PersistentId: {
+            id: '5119bbec-9e08-4ab7-b5a2-ba7eb18ea7f6',
+          },
+          Transform: {
+            position: [0, 0.9, 0],
+            rotation: [0, 0, 0],
+            scale: [0.3, 0.3, 0.3],
+          },
+          MeshRenderer: {
+            meshId: 'sphere',
+            materialId: 'default',
+            enabled: true,
+            castShadows: true,
+            receiveShadows: true,
+            modelPath: '',
+            material: {
+              shader: 'standard',
+              materialType: 'solid',
+              color: '#f0f0f0',
+              metalness: 0.1,
+              roughness: 0.8,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+              albedoTexture: '',
+              normalTexture: '',
+              metallicTexture: '',
+              roughnessTexture: '',
+              emissiveTexture: '',
+              occlusionTexture: '',
+            },
+          },
+        },
+      },
+    ],
   },
-  "metadata": {
-    "createdAt": "2025-11-16T09:14:48.452Z",
-    "createdFrom": 71
+  metadata: {
+    createdAt: '2025-11-16T09:41:50.855Z',
+    createdFrom: 112,
   },
-  "dependencies": [
-    "default"
-  ]
+  dependencies: ['default'],
 });

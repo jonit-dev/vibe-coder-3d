@@ -178,6 +178,8 @@ export class ComponentRegistry {
     this.components.clear();
     this.bitECSComponents.clear();
     this.entityQueryCache.clear();
+    // Reset world reference to force refresh from ECSWorld
+    this._world = null;
   }
 
   /**

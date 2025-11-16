@@ -7,7 +7,7 @@ export default definePrefab({
     "name": "white_rook",
     "components": {
       "PersistentId": {
-        "id": "07c428d2-ff92-4859-a7bc-b75299c23fb3"
+        "id": "a223cf1a-ba8d-44f2-a0ec-04ed4c3754eb"
       }
     },
     "children": [
@@ -15,67 +15,12 @@ export default definePrefab({
         "name": "rook_base",
         "components": {
           "PersistentId": {
-            "id": "f2022cd3-33c0-4919-82a4-8f481b4a8d6c"
+            "id": "0cd6d956-a0e9-4df6-aa7a-12e9c8ca9112"
           },
           "Transform": {
             "position": [
               0,
               0,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              1,
-              0.4,
-              1
-            ]
-          },
-          "MeshRenderer": {
-            "meshId": "cylinder",
-            "materialId": "mat_08941399",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
-        },
-        "children": []
-      },
-      {
-        "name": "rook_body",
-        "components": {
-          "PersistentId": {
-            "id": "f669169e-b204-4fbb-afd0-09fce5cf103b"
-          },
-          "Transform": {
-            "position": [
-              0,
-              0.6,
               0
             ],
             "rotation": [
@@ -85,13 +30,13 @@ export default definePrefab({
             ],
             "scale": [
               0.8,
-              0.6,
+              0.3,
               0.8
             ]
           },
           "MeshRenderer": {
             "meshId": "cylinder",
-            "materialId": "mat_08941399",
+            "materialId": "default",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -99,9 +44,9 @@ export default definePrefab({
             "material": {
               "shader": "standard",
               "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
+              "color": "#f0f0f0",
+              "metalness": 0.1,
+              "roughness": 0.8,
               "emissive": "#000000",
               "emissiveIntensity": 0,
               "normalScale": 1,
@@ -118,19 +63,18 @@ export default definePrefab({
               "occlusionTexture": ""
             }
           }
-        },
-        "children": []
+        }
       },
       {
-        "name": "rook_top",
+        "name": "rook_body",
         "components": {
           "PersistentId": {
-            "id": "31f3b242-ef5a-4a4a-9314-842e548c680b"
+            "id": "021f68d3-82eb-4428-92e3-bc930673478c"
           },
           "Transform": {
             "position": [
               0,
-              1.1,
+              0.7,
               0
             ],
             "rotation": [
@@ -139,14 +83,14 @@ export default definePrefab({
               0
             ],
             "scale": [
-              1.2,
-              0.3,
-              1.2
+              0.5,
+              0.8,
+              0.5
             ]
           },
           "MeshRenderer": {
             "meshId": "cube",
-            "materialId": "mat_08941399",
+            "materialId": "default",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -154,9 +98,9 @@ export default definePrefab({
             "material": {
               "shader": "standard",
               "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
+              "color": "#f0f0f0",
+              "metalness": 0.1,
+              "roughness": 0.8,
               "emissive": "#000000",
               "emissiveIntensity": 0,
               "normalScale": 1,
@@ -173,14 +117,283 @@ export default definePrefab({
               "occlusionTexture": ""
             }
           }
-        },
-        "children": []
+        }
+      },
+      {
+        "name": "rook_top",
+        "components": {
+          "PersistentId": {
+            "id": "075fa9fb-d938-4211-ae07-c48a53709e21"
+          },
+          "Transform": {
+            "position": [
+              0,
+              1.2,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              0.6,
+              0.2,
+              0.6
+            ]
+          },
+          "MeshRenderer": {
+            "meshId": "cube",
+            "materialId": "default",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": true,
+            "modelPath": "",
+            "material": {
+              "shader": "standard",
+              "materialType": "solid",
+              "color": "#f0f0f0",
+              "metalness": 0.1,
+              "roughness": 0.8,
+              "emissive": "#000000",
+              "emissiveIntensity": 0,
+              "normalScale": 1,
+              "occlusionStrength": 1,
+              "textureOffsetX": 0,
+              "textureOffsetY": 0,
+              "textureRepeatX": 1,
+              "textureRepeatY": 1,
+              "albedoTexture": "",
+              "normalTexture": "",
+              "metallicTexture": "",
+              "roughnessTexture": "",
+              "emissiveTexture": "",
+              "occlusionTexture": ""
+            }
+          }
+        }
+      },
+      {
+        "name": "rook_battlement1",
+        "components": {
+          "PersistentId": {
+            "id": "0c273b51-9d70-4a3a-8bae-f61d50a0b0bc"
+          },
+          "Transform": {
+            "position": [
+              -0.2,
+              1.4,
+              -0.2
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              0.1,
+              0.2,
+              0.1
+            ]
+          },
+          "MeshRenderer": {
+            "meshId": "cube",
+            "materialId": "default",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": true,
+            "modelPath": "",
+            "material": {
+              "shader": "standard",
+              "materialType": "solid",
+              "color": "#f0f0f0",
+              "metalness": 0.1,
+              "roughness": 0.8,
+              "emissive": "#000000",
+              "emissiveIntensity": 0,
+              "normalScale": 1,
+              "occlusionStrength": 1,
+              "textureOffsetX": 0,
+              "textureOffsetY": 0,
+              "textureRepeatX": 1,
+              "textureRepeatY": 1,
+              "albedoTexture": "",
+              "normalTexture": "",
+              "metallicTexture": "",
+              "roughnessTexture": "",
+              "emissiveTexture": "",
+              "occlusionTexture": ""
+            }
+          }
+        }
+      },
+      {
+        "name": "rook_battlement2",
+        "components": {
+          "PersistentId": {
+            "id": "f485132a-942d-4557-8f33-b989b6d7ff54"
+          },
+          "Transform": {
+            "position": [
+              0.2,
+              1.4,
+              -0.2
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              0.1,
+              0.2,
+              0.1
+            ]
+          },
+          "MeshRenderer": {
+            "meshId": "cube",
+            "materialId": "default",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": true,
+            "modelPath": "",
+            "material": {
+              "shader": "standard",
+              "materialType": "solid",
+              "color": "#f0f0f0",
+              "metalness": 0.1,
+              "roughness": 0.8,
+              "emissive": "#000000",
+              "emissiveIntensity": 0,
+              "normalScale": 1,
+              "occlusionStrength": 1,
+              "textureOffsetX": 0,
+              "textureOffsetY": 0,
+              "textureRepeatX": 1,
+              "textureRepeatY": 1,
+              "albedoTexture": "",
+              "normalTexture": "",
+              "metallicTexture": "",
+              "roughnessTexture": "",
+              "emissiveTexture": "",
+              "occlusionTexture": ""
+            }
+          }
+        }
+      },
+      {
+        "name": "rook_battlement3",
+        "components": {
+          "PersistentId": {
+            "id": "7df70569-59f3-4a64-9c2d-7aab8c032adf"
+          },
+          "Transform": {
+            "position": [
+              -0.2,
+              1.4,
+              0.2
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              0.1,
+              0.2,
+              0.1
+            ]
+          },
+          "MeshRenderer": {
+            "meshId": "cube",
+            "materialId": "default",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": true,
+            "modelPath": "",
+            "material": {
+              "shader": "standard",
+              "materialType": "solid",
+              "color": "#f0f0f0",
+              "metalness": 0.1,
+              "roughness": 0.8,
+              "emissive": "#000000",
+              "emissiveIntensity": 0,
+              "normalScale": 1,
+              "occlusionStrength": 1,
+              "textureOffsetX": 0,
+              "textureOffsetY": 0,
+              "textureRepeatX": 1,
+              "textureRepeatY": 1,
+              "albedoTexture": "",
+              "normalTexture": "",
+              "metallicTexture": "",
+              "roughnessTexture": "",
+              "emissiveTexture": "",
+              "occlusionTexture": ""
+            }
+          }
+        }
+      },
+      {
+        "name": "rook_battlement4",
+        "components": {
+          "PersistentId": {
+            "id": "a8d012b8-3781-4b32-9a01-bb84dbcf86ed"
+          },
+          "Transform": {
+            "position": [
+              0.2,
+              1.4,
+              0.2
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              0.1,
+              0.2,
+              0.1
+            ]
+          },
+          "MeshRenderer": {
+            "meshId": "cube",
+            "materialId": "default",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": true,
+            "modelPath": "",
+            "material": {
+              "shader": "standard",
+              "materialType": "solid",
+              "color": "#f0f0f0",
+              "metalness": 0.1,
+              "roughness": 0.8,
+              "emissive": "#000000",
+              "emissiveIntensity": 0,
+              "normalScale": 1,
+              "occlusionStrength": 1,
+              "textureOffsetX": 0,
+              "textureOffsetY": 0,
+              "textureRepeatX": 1,
+              "textureRepeatY": 1,
+              "albedoTexture": "",
+              "normalTexture": "",
+              "metallicTexture": "",
+              "roughnessTexture": "",
+              "emissiveTexture": "",
+              "occlusionTexture": ""
+            }
+          }
+        }
       }
     ]
   },
   "metadata": {
-    "createdAt": "2025-11-16T09:14:54.967Z",
-    "createdFrom": 74
+    "createdAt": "2025-11-16T09:42:03.639Z",
+    "createdFrom": 120
   },
   "dependencies": [
     "default"
