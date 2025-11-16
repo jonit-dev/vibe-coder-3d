@@ -8,6 +8,7 @@ import { Logger } from '@core/lib/logger';
 import { AVAILABLE_TOOLS, executeTool } from './tools';
 import type { IAgentMessage, ICodebaseContext } from './types';
 import { formatShapesForPrompt } from './utils/shapeDiscovery';
+import { buildSystemPrompt, buildScreenshotAnalysisInstructions } from './prompts';
 
 const logger = Logger.create('AgentService');
 
@@ -64,33 +65,40 @@ export class AgentService {
     }
 
     const apiKey = import.meta.env.VITE_CLAUDE_CODE_SDK_API_KEY;
+    const configuredBaseURL = import.meta.env.VITE_CLAUDE_CODE_SDK_BASE_URL;
 
     if (!apiKey) {
       throw new Error('VITE_CLAUDE_CODE_SDK_API_KEY is required');
     }
 
+    if (!configuredBaseURL) {
+      throw new Error('VITE_CLAUDE_CODE_SDK_BASE_URL is required');
+    }
+
     // Use Vite plugin API proxy to avoid CORS
-    const baseURL = '/api/ai';
+    const proxyEndpoint = '/api/ai';
 
     // Create custom fetch that routes through our Vite plugin
     const customFetch: typeof fetch = (input, init) => {
       const url =
         typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString();
       // Replace the absolute API URL with our plugin endpoint
-      const proxiedUrl = url.replace('https://api.z.ai/api/anthropic', baseURL);
+      const proxiedUrl = url.replace(configuredBaseURL, proxyEndpoint);
 
       return fetch(proxiedUrl, init);
     };
 
     this.client = new Anthropic({
       apiKey,
-      baseURL: 'https://api.z.ai/api/anthropic', // SDK needs valid URL format
+      baseURL: configuredBaseURL, // SDK needs valid URL format
       dangerouslyAllowBrowser: true,
       fetch: customFetch, // Route through our Vite plugin
     });
 
     this.initialized = true;
-    logger.info('AgentService initialized with Anthropic SDK (using Vite proxy)');
+    logger.info('AgentService initialized with Anthropic SDK (using Vite proxy)', {
+      baseURL: configuredBaseURL,
+    });
   }
 
   isInitialized(): boolean {
@@ -251,7 +259,24 @@ export class AgentService {
                 rawInput: toolUse.input.substring(0, 200),
               });
 
-              const params = JSON.parse(toolUse.input);
+              // Parse and validate JSON
+              let params;
+              try {
+                params = JSON.parse(toolUse.input);
+              } catch (parseError) {
+                const errorMsg =
+                  parseError instanceof Error ? parseError.message : 'Invalid JSON';
+                logger.error('Model generated invalid JSON for tool call', {
+                  tool: toolUse.name,
+                  parseError: errorMsg,
+                  rawInput: toolUse.input,
+                  hint: 'This is a model generation error - the AI generated malformed JSON',
+                });
+                throw new Error(
+                  `Invalid JSON in tool parameters: ${errorMsg}. Raw input: ${toolUse.input}`,
+                );
+              }
+
               logger.info('Executing tool', { tool: toolUse.name, params });
 
               const result = await executeTool(toolUse.name, params);
@@ -273,6 +298,10 @@ export class AgentService {
 
               // If this was a screenshot tool, include the image
               if (toolUse.name === 'screenshot_feedback' && this.pendingScreenshot) {
+                const analysisInstructions = buildScreenshotAnalysisInstructions(result, {
+                  entityCount: this.pendingScreenshot.sceneInfo.entity_count,
+                });
+
                 toolResultContent = [
                   {
                     type: 'image',
@@ -284,50 +313,7 @@ export class AgentService {
                   },
                   {
                     type: 'text',
-                    text: `${result}
-
-CRITICAL VERIFICATION REQUIRED - Your analysis will be logged and validated:
-
-You MUST perform an UNBIASED, CRITICAL analysis of this screenshot. Do NOT assume your changes worked correctly.
-
-VERIFICATION CHECKLIST (Answer each explicitly):
-
-1. ENTITY COUNT: The scene info reports ${this.pendingScreenshot.sceneInfo.entity_count} entities. Count the ACTUAL visible objects in the screenshot. Do the numbers match?
-
-2. POSITIONS: For each entity you intended to create/modify:
-   - Where did you expect it to be? (specific X, Y, Z coordinates)
-   - Where is it ACTUALLY located in the screenshot?
-   - Are there any entities missing or in wrong positions?
-
-3. VISUAL APPEARANCE:
-   - Do all entities have the correct shapes (Cube, Sphere, Cylinder, etc.)?
-   - Are materials/colors correct?
-   - Are sizes/scales as expected?
-
-4. SCENE CORRECTNESS:
-   - Is anything visible that SHOULDN'T be there?
-   - Is anything MISSING that SHOULD be there?
-   - Are entities overlapping incorrectly?
-
-5. CRITICAL ASSESSMENT:
-   - If this was a request for "5 trees", do you see EXACTLY 5 trees?
-   - If you placed something at X=10, is it ACTUALLY at X=10 or somewhere else?
-   - Be honest: Does this screenshot show EXACTLY what the user requested?
-
-6. IMPROVEMENT SUGGESTIONS:
-   - Are positions optimal or could they be better arranged?
-   - Is the composition aesthetically pleasing?
-   - Are there spacing/alignment issues that should be fixed?
-   - Would different positions/rotations improve the scene?
-
-FORMAT YOUR RESPONSE:
-✓ What's CORRECT (be specific with counts and positions)
-✗ What's WRONG or MISSING (be specific with what's expected vs actual)
-⚠ What needs FIXING (concrete action items with exact coordinates)
-💡 SUGGESTIONS (optional improvements for better composition)
-
-Remember: Tool execution success ≠ Visual correctness. The screenshot is GROUND TRUTH.
-If anything is wrong or missing, you MUST fix it immediately before responding to the user.`,
+                    text: analysisInstructions,
                   },
                 ];
 
@@ -352,10 +338,14 @@ If anything is wrong or missing, you MUST fix it immediately before responding t
               // Intentionally do not stream tool result text into the main response.
               // Tool activity will be surfaced via onToolUse and dedicated UI.
             } catch (error) {
+              const isJsonError = error instanceof Error && error.message.includes('Invalid JSON');
+              const errorType = isJsonError ? 'JSON Parse Error' : 'Tool Execution Error';
+
               logger.error('Tool execution failed', {
                 tool: toolUse.name,
+                errorType,
                 error,
-                rawInput: toolUse.input.substring(0, 200),
+                rawInput: toolUse.input.substring(0, 500),
               });
 
               // Try to parse input or use raw string
@@ -363,8 +353,11 @@ If anything is wrong or missing, you MUST fix it immediately before responding t
               try {
                 inputForMessage = JSON.parse(toolUse.input);
               } catch {
-                // If parsing fails, create a minimal valid object
-                inputForMessage = { error: 'Invalid JSON input' };
+                // If parsing fails, create a minimal valid object with error details
+                inputForMessage = {
+                  _error: 'Invalid JSON input',
+                  _rawInput: toolUse.input.substring(0, 100),
+                };
               }
 
               assistantToolBlocks.push({
@@ -375,14 +368,18 @@ If anything is wrong or missing, you MUST fix it immediately before responding t
               });
 
               const errorMsg = error instanceof Error ? error.message : 'Tool execution failed';
+              const userFriendlyError = isJsonError
+                ? `${errorMsg}\n\nYou generated malformed JSON. Please ensure all property names are properly quoted and the JSON is valid. Example: {"query_type": "list_entities", "filter": {"nameContains": "pawn"}}`
+                : `${errorMsg}. Please check your input format and try again.`;
+
               toolResults.push({
                 type: 'tool_result',
                 tool_use_id: toolUse.id,
-                content: `Error: ${errorMsg}. Please check your input format and try again.`,
+                content: userFriendlyError,
                 is_error: true,
               });
 
-              const errorMessage = `\n\n✗ ${toolUse.name}: ${errorMsg}`;
+              const errorMessage = `\n\n✗ ${toolUse.name} [${errorType}]: ${errorMsg}`;
               fullResponse += errorMessage;
               options?.onStream?.(errorMessage);
             }
@@ -468,7 +465,23 @@ If anything is wrong or missing, you MUST fix it immediately before responding t
   }
 
   private buildSystemPrompt(context: ICodebaseContext): string {
-    // Dynamically discover available shapes
+    const shapesInfo = formatShapesForPrompt();
+
+    return buildSystemPrompt({
+      projectRoot: context.projectRoot,
+      currentScene: context.currentScene,
+      selectedEntities: context.selectedEntities,
+      shapesInfo,
+    });
+  }
+
+  /**
+   * Old implementation kept for reference during migration
+   * @deprecated Use buildSystemPrompt instead
+   */
+  // @ts-ignore - Deprecated method kept for reference
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private buildSystemPromptOld(context: ICodebaseContext): string {
     const shapesInfo = formatShapesForPrompt();
 
     return `You are an AI assistant for Vibe Coder 3D, an AI-first game engine built with React Three Fiber and Rust.
@@ -525,17 +538,47 @@ CHOOSING THE RIGHT TOOL:
 
 1. **Single primitive** → use scene_manipulation (add_entity)
 
-2. **Composition (2+ primitives)** → use prefab_management (create_from_primitives)
+2. **Multiple different primitives** → use scene_manipulation (batch_add_entities)
+   - Add multiple cubes, spheres, etc. in ONE CALL
+   - Each can have different type, position, rotation, scale, material
+   - More efficient than multiple add_entity calls
+
+3. **Composition (2+ primitives)** → use prefab_management (create_from_primitives)
    - Combines available primitives into reusable templates
    - Creates prefab WITHOUT cluttering the scene first
 
-3. **Multiple instances** → use prefab_management (instantiate)
-   - After creating prefab, instantiate it at different positions
+4. **Multiple instances of same prefab** → use prefab_management (batch_instantiate)
+   - After creating prefab, instantiate it at different positions IN ONE CALL
+   - More efficient than multiple instantiate calls
 
 **CRITICAL: For collections (forests, buildings, props), ALWAYS:**
 1. Create prefab ONCE using create_from_primitives
-2. Instantiate multiple times using instantiate action
+2. Instantiate multiple times using batch_instantiate action (NOT individual instantiate calls)
 3. ❌ NEVER add primitives individually to the scene first
+
+**BATCH OPERATIONS - USE THESE FOR EFFICIENCY:**
+
+When working with MULTIPLE entities, ALWAYS use batch operations:
+
+✅ **batch_add_entities** (scene_manipulation):
+- Creating 2+ different primitives at once
+- Example: Grid of colored cubes at various positions
+
+✅ **batch_instantiate** (prefab_management):
+- Creating 2+ instances of same prefab
+- Example: Forest with 20 trees at specific positions
+
+✅ **set_transforms** (entity_batch_edit):
+- Updating positions/rotations/scales of 2+ entities
+- Example: Reposition 10 entities to new locations
+
+✅ **set_material** (entity_batch_edit):
+- Applying materials/colors to 2+ entities
+- Example: Make 5 cubes red
+
+✅ **batch_delete** (entity_edit):
+- Deleting 2+ entities at once
+- Example: Remove all temporary objects
 
 SETTING MATERIALS AND COLORS:
 

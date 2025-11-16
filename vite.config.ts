@@ -37,15 +37,6 @@ export default defineConfig({
     include: ['three', '@react-three/fiber', '@react-three/drei'],
   },
   server: {
-    proxy: {
-      // Proxy Z.AI API requests to avoid CORS issues in development
-      '/api/z-ai': {
-        target: 'https://api.z.ai',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/z-ai/, '/api/anthropic'),
-        secure: true,
-      },
-    },
     watch: {
       // Ignore scenes, scripts, and assets since they have their own hot-reload mechanisms
       ignored: [

@@ -339,7 +339,7 @@ export const useAgentActions = () => {
           ids: entityManager.getAllEntities().map((e) => e.id),
         });
 
-        logger.info('Prefab created from primitives - ready for instantiation', {
+        logger.info('Prefab created from primitives', {
           prefabId,
           name,
           primitiveCount: primitives.length,
@@ -379,17 +379,40 @@ export const useAgentActions = () => {
         }
 
         const prefabId = name.toLowerCase().replace(/\s+/g, '-');
+
+        // Get the entity's transform before creating the prefab
+        const sourceTransform = componentRegistry.getComponentData(entityId, 'Transform') as
+          | { position?: [number, number, number] }
+          | undefined;
+        const sourcePosition = sourceTransform?.position || [0, 0, 0];
+
         prefabManager.createFromEntity(entityId, name, prefabId);
         _refreshPrefabs();
 
-        // Clean up temporary container if created
+        // Clean up: delete the source entities/container
         if (selectedIds.length > 1) {
+          // Multiple selected entities - delete container and children
           const containerEntity = entityManager.getEntity(entityId);
           const children = [...(containerEntity?.children || [])];
           for (const childId of children) {
-            entityManager.setParent(childId, undefined);
+            entityManager.deleteEntity(childId);
           }
           entityManager.deleteEntity(entityId);
+        } else {
+          // Single entity - delete it
+          entityManager.deleteEntity(entityId);
+        }
+
+        // Instantiate the prefab at the original position
+        const instanceId = prefabManager.instantiate(prefabId, { position: sourcePosition });
+
+        if (instanceId === -1) {
+          logger.error('Failed to instantiate newly created prefab', { prefabId });
+        } else {
+          logger.info('Prefab created from selection and instantiated', {
+            prefabId,
+            instanceId,
+          });
         }
 
         logger.info('Prefab created from selection', { prefabId, name });

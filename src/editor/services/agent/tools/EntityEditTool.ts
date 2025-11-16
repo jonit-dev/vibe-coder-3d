@@ -42,6 +42,7 @@ BEFORE adding components, check what the entity already has to avoid duplicates.
           'set_scale',
           'rename',
           'delete',
+          'batch_delete',
           'add_component',
           'remove_component',
           'set_component_property',
@@ -103,8 +104,13 @@ BEFORE adding components, check what the entity already has to avoid duplicates.
         type: 'boolean',
         description: 'Enabled state (for set_enabled)',
       },
+      entity_ids: {
+        type: 'array',
+        items: { type: 'number' },
+        description: 'Array of entity IDs (for batch_delete)',
+      },
     },
-    required: ['entity_id', 'action'],
+    required: ['action'],
   },
 };
 
@@ -126,13 +132,17 @@ export async function executeEntityEdit(params: Record<string, unknown>): Promis
     property_value,
     parent_id,
     enabled,
+    entity_ids,
   } = params;
 
-  // Validate entity_id
-  if (typeof entityIdRaw !== 'number') {
+  // For batch operations, entity_id is optional
+  const isBatchOperation = action === 'batch_delete';
+
+  // Validate entity_id for non-batch operations
+  if (!isBatchOperation && typeof entityIdRaw !== 'number') {
     return 'Error: entity_id must be a number';
   }
-  const entity_id = entityIdRaw;
+  const entity_id = entityIdRaw as number;
 
   switch (action) {
     case 'set_position':
@@ -179,6 +189,12 @@ export async function executeEntityEdit(params: Record<string, unknown>): Promis
 
     case 'delete':
       return deleteEntity(entity_id);
+
+    case 'batch_delete':
+      if (!entity_ids || !Array.isArray(entity_ids) || entity_ids.length === 0) {
+        return 'Error: entity_ids array is required for batch_delete and must not be empty';
+      }
+      return batchDeleteEntities(entity_ids as number[]);
 
     case 'add_component':
       if (!component_type || typeof component_type !== 'string') {
@@ -355,4 +371,14 @@ function setEnabled(entityId: number, enabled: boolean): string {
   window.dispatchEvent(event);
 
   return `Set entity ${entityId} enabled state to ${enabled}`;
+}
+
+function batchDeleteEntities(entityIds: number[]): string {
+  const event = new CustomEvent('agent:batch-delete-entities', {
+    detail: { entityIds },
+  });
+  window.dispatchEvent(event);
+
+  logger.info('Batch entity deletion requested', { count: entityIds.length, entityIds });
+  return `Batch deleted ${entityIds.length} entities: ${entityIds.join(', ')}`;
 }

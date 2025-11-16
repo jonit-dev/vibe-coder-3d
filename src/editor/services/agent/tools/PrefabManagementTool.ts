@@ -13,6 +13,7 @@ interface IPrefabManagementParams {
     | 'create_from_primitives'
     | 'create_from_selection'
     | 'instantiate'
+    | 'batch_instantiate'
     | 'list_prefabs'
     | 'create_variant'
     | 'unpack_instance';
@@ -30,6 +31,11 @@ interface IPrefabManagementParams {
   scale?: [number, number, number];
   variant_name?: string;
   entity_id?: number;
+  instances?: Array<{
+    position?: [number, number, number] | { x: number; y: number; z: number };
+    rotation?: [number, number, number] | { x: number; y: number; z: number };
+    scale?: [number, number, number] | { x: number; y: number; z: number };
+  }>;
 }
 
 export const prefabManagementTool = {
@@ -45,6 +51,7 @@ Actions:
 - create_from_primitives: Create a prefab from a specification of primitive shapes (PREFERRED for forests, buildings, props)
 - create_from_selection: Create a prefab from currently selected entities
 - instantiate: Place an instance of a prefab in the scene
+- batch_instantiate: Place multiple instances of a prefab at specified positions (EFFICIENT for forests, grids, arrays)
 - list_prefabs: List all available prefabs
 - create_variant: Create a variant of an existing prefab
 - unpack_instance: Convert prefab instance to regular entity`,
@@ -57,6 +64,7 @@ Actions:
           'create_from_primitives',
           'create_from_selection',
           'instantiate',
+          'batch_instantiate',
           'list_prefabs',
           'create_variant',
           'unpack_instance',
@@ -121,6 +129,43 @@ Actions:
         type: 'number',
         description: 'Entity ID (for unpack_instance)',
       },
+      instances: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            position: {
+              type: 'object',
+              properties: {
+                x: { type: 'number' },
+                y: { type: 'number' },
+                z: { type: 'number' },
+              },
+              description: 'Position for this instance',
+            },
+            rotation: {
+              type: 'object',
+              properties: {
+                x: { type: 'number' },
+                y: { type: 'number' },
+                z: { type: 'number' },
+              },
+              description: 'Rotation for this instance (optional)',
+            },
+            scale: {
+              type: 'object',
+              properties: {
+                x: { type: 'number' },
+                y: { type: 'number' },
+                z: { type: 'number' },
+              },
+              description: 'Scale for this instance (optional)',
+            },
+          },
+        },
+        description:
+          'Array of instance transforms (for batch_instantiate). Each can have position, rotation, scale.',
+      },
     },
     required: ['action'],
   },
@@ -132,7 +177,7 @@ Actions:
 export async function executePrefabManagement(params: IPrefabManagementParams): Promise<string> {
   logger.info('Executing prefab management', { params });
 
-  const { action, name, prefab_id, position, entity_id, primitives } = params;
+  const { action, name, prefab_id, position, entity_id, primitives, instances } = params;
 
   switch (action) {
     case 'create_from_primitives':
@@ -158,6 +203,16 @@ export async function executePrefabManagement(params: IPrefabManagementParams): 
           : position
         : undefined;
       return instantiatePrefab(prefab_id, positionTuple as [number, number, number] | undefined);
+    }
+
+    case 'batch_instantiate': {
+      if (!prefab_id) {
+        return 'Error: prefab_id is required for batch_instantiate';
+      }
+      if (!instances || !Array.isArray(instances) || instances.length === 0) {
+        return 'Error: instances array is required for batch_instantiate and must not be empty';
+      }
+      return batchInstantiatePrefab(prefab_id, instances);
     }
 
     case 'list_prefabs':
@@ -202,7 +257,7 @@ function createPrefabFromPrimitives(name: string, primitives: IPrimitiveSpec[]):
     primitiveTypes: primitives.map((p) => p.type),
   });
 
-  return `Created prefab "${name}" (id: "${prefabId}") from ${primitives.length} primitives. Use the instantiate action with prefab_id="${prefabId}" to place it anywhere in the scene.`;
+  return `Created prefab "${name}" (id: "${prefabId}") from ${primitives.length} primitives. Use the instantiate action with prefab_id="${prefabId}" to place instances in the scene.`;
 }
 
 function createPrefabFromSelection(name: string): string {
@@ -212,7 +267,7 @@ function createPrefabFromSelection(name: string): string {
   window.dispatchEvent(event);
 
   logger.info('Prefab creation requested from selection', { name });
-  return `Created prefab "${name}" from selected entities. You can now instantiate it using prefab_id="${name.toLowerCase().replace(/\s+/g, '-')}"`;
+  return `Created prefab "${name}" from selected entities and replaced them with an instance at their original position. You can create more instances using the instantiate action with prefab_id="${name.toLowerCase().replace(/\s+/g, '-')}"`;
 }
 
 function instantiatePrefab(prefabId: string, position?: [number, number, number]): string {
@@ -229,6 +284,52 @@ function instantiatePrefab(prefabId: string, position?: [number, number, number]
     : 'at origin (0, 0, 0)';
   logger.info('Prefab instantiation requested', { prefabId, position });
   return `Instantiated prefab "${prefabId}" ${posStr}`;
+}
+
+interface IInstanceTransform {
+  position?: [number, number, number] | { x: number; y: number; z: number };
+  rotation?: [number, number, number] | { x: number; y: number; z: number };
+  scale?: [number, number, number] | { x: number; y: number; z: number };
+}
+
+function batchInstantiatePrefab(prefabId: string, instances: IInstanceTransform[]): string {
+  // Normalize instances to tuple format
+  const normalizedInstances = instances.map((inst) => {
+    const position = inst.position
+      ? typeof inst.position === 'object' && 'x' in inst.position
+        ? [inst.position.x, inst.position.y, inst.position.z]
+        : inst.position
+      : [0, 0, 0];
+
+    const rotation = inst.rotation
+      ? typeof inst.rotation === 'object' && 'x' in inst.rotation
+        ? [inst.rotation.x, inst.rotation.y, inst.rotation.z]
+        : inst.rotation
+      : undefined;
+
+    const scale = inst.scale
+      ? typeof inst.scale === 'object' && 'x' in inst.scale
+        ? [inst.scale.x, inst.scale.y, inst.scale.z]
+        : inst.scale
+      : undefined;
+
+    return { position, rotation, scale };
+  });
+
+  const event = new CustomEvent('agent:batch-instantiate-prefab', {
+    detail: {
+      prefabId,
+      instances: normalizedInstances,
+    },
+  });
+  window.dispatchEvent(event);
+
+  logger.info('Batch prefab instantiation requested', {
+    prefabId,
+    instanceCount: instances.length,
+  });
+
+  return `Batch instantiated ${instances.length} instances of prefab "${prefabId}"`;
 }
 
 function listPrefabs(): string {

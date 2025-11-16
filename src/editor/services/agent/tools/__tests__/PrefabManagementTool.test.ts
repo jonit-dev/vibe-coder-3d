@@ -243,6 +243,6 @@ describe('PrefabManagementTool - duplication prevention', () => {
     // The result should explain how to instantiate manually to prevent duplicates
     expect(result).toContain('Use the instantiate action');
     expect(result).toContain('prefab_id="test-prefab"');
-    expect(result).toContain('place it anywhere in the scene');
+    expect(result).toContain('place instances in the scene');
   });
 });

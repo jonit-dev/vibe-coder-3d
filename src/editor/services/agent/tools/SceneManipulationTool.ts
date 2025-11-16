@@ -26,7 +26,7 @@ export interface IAddEntityParams {
 
 // Scene manipulation tool parameter types
 interface ISceneManipulationParams {
-  action: 'add_entity' | 'list_entities' | 'get_entity';
+  action: 'add_entity' | 'batch_add_entities' | 'list_entities' | 'get_entity';
   entity_type?: string;
   position?: { x: number; y: number; z: number };
   rotation?: { x: number; y: number; z: number };
@@ -39,6 +39,19 @@ interface ISceneManipulationParams {
     metalness?: number;
     roughness?: number;
   };
+  entities?: Array<{
+    type: string;
+    position?: { x: number; y: number; z: number };
+    rotation?: { x: number; y: number; z: number };
+    scale?: { x: number; y: number; z: number };
+    name?: string;
+    material?: {
+      materialId?: string;
+      color?: string;
+      metalness?: number;
+      roughness?: number;
+    };
+  }>;
 }
 
 // Dynamically get available primitive shapes
@@ -53,7 +66,7 @@ export const sceneManipulationTool = {
     properties: {
       action: {
         type: 'string',
-        enum: ['add_entity', 'list_entities', 'get_entity'],
+        enum: ['add_entity', 'batch_add_entities', 'list_entities', 'get_entity'],
         description: 'The action to perform',
       },
       entity_type: {
@@ -118,6 +131,62 @@ export const sceneManipulationTool = {
         description:
           'Material properties for the entity. Thoughtful material choices enhance visual quality.',
       },
+      entities: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            type: {
+              type: 'string',
+              enum: [...primitiveShapes, 'Entity'],
+              description: `Entity type. Available: ${primitiveShapes.join(', ')}, Entity`,
+            },
+            position: {
+              type: 'object',
+              properties: {
+                x: { type: 'number' },
+                y: { type: 'number' },
+                z: { type: 'number' },
+              },
+              description: 'Position in 3D space',
+            },
+            rotation: {
+              type: 'object',
+              properties: {
+                x: { type: 'number', description: 'Rotation around X axis in degrees' },
+                y: { type: 'number', description: 'Rotation around Y axis in degrees' },
+                z: { type: 'number', description: 'Rotation around Z axis in degrees' },
+              },
+              description: 'Rotation in degrees',
+            },
+            scale: {
+              type: 'object',
+              properties: {
+                x: { type: 'number' },
+                y: { type: 'number' },
+                z: { type: 'number' },
+              },
+              description: 'Scale (defaults to [1, 1, 1])',
+            },
+            name: {
+              type: 'string',
+              description: 'Name for the entity',
+            },
+            material: {
+              type: 'object',
+              properties: {
+                materialId: { type: 'string' },
+                color: { type: 'string', description: 'Hex color (e.g., "#ff0000")' },
+                metalness: { type: 'number' },
+                roughness: { type: 'number' },
+              },
+              description: 'Material properties',
+            },
+          },
+          required: ['type'],
+        },
+        description: 'Array of entities to add (for batch_add_entities action)',
+      },
     },
     required: ['action'],
   },
@@ -129,7 +198,7 @@ export const sceneManipulationTool = {
 export async function executeSceneManipulation(params: ISceneManipulationParams): Promise<string> {
   logger.info('Executing scene manipulation', { params });
 
-  const { action, entity_type, position, rotation, scale, name, material } = params;
+  const { action, entity_type, position, rotation, scale, name, material, entities } = params;
 
   switch (action) {
     case 'add_entity':
@@ -141,6 +210,12 @@ export async function executeSceneManipulation(params: ISceneManipulationParams)
         name,
         material,
       });
+
+    case 'batch_add_entities':
+      if (!entities || !Array.isArray(entities) || entities.length === 0) {
+        return 'Error: entities array is required for batch_add_entities and must not be empty';
+      }
+      return batchAddEntities(entities);
 
     case 'list_entities':
       return listEntities();
@@ -224,4 +299,39 @@ function listEntities(): string {
 
 function getEntity(entityId: number): string {
   return `Entity ${entityId} details requested.`;
+}
+
+async function batchAddEntities(entities: IAddEntityParams[]): Promise<string> {
+  const results: string[] = [];
+  const entityIds: number[] = [];
+
+  for (const entity of entities) {
+    try {
+      const result = await addEntity({
+        type: entity.type,
+        position: entity.position || { x: 0, y: 0, z: 0 },
+        rotation: entity.rotation,
+        scale: entity.scale,
+        name: entity.name,
+        material: entity.material,
+      });
+
+      // Extract entity ID from result string
+      const match = result.match(/Entity ID: (\d+)/);
+      if (match) {
+        const entityId = parseInt(match[1], 10);
+        entityIds.push(entityId);
+      }
+
+      results.push(result);
+    } catch (error) {
+      logger.error('Failed to add entity in batch', { entity, error });
+      results.push(`Failed to add ${entity.type}: ${error}`);
+    }
+  }
+
+  const successCount = entityIds.length;
+  const summary = `Batch added ${successCount}/${entities.length} entities. Entity IDs: ${entityIds.join(', ')}`;
+
+  return summary;
 }

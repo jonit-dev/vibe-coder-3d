@@ -1,32 +1,46 @@
 /**
- * Vite plugin to proxy AI API requests to Z.AI
+ * Vite plugin to proxy AI API requests to Anthropic (or compatible providers)
  * Avoids CORS issues by proxying through Vite dev server
  */
 
 import type { Plugin } from 'vite';
-
-const Z_AI_BASE_URL = 'https://api.z.ai/api/anthropic';
+import { loadEnv } from 'vite';
 
 export function aiApiPlugin(): Plugin {
+  let baseURL: string;
+
   return {
     name: 'ai-api',
     configureServer(server) {
+      // Load environment variables in Node.js context
+      const env = loadEnv(server.config.mode, process.cwd(), '');
+      baseURL = env.VITE_CLAUDE_CODE_SDK_BASE_URL;
+
+      if (!baseURL) {
+        throw new Error('VITE_CLAUDE_CODE_SDK_BASE_URL environment variable is required');
+      }
       server.middlewares.use('/api/ai', async (req, res) => {
         try {
           // Build target URL
           const targetPath = req.url?.replace('/api/ai', '') || '';
-          const targetURL = `${Z_AI_BASE_URL}${targetPath}`;
+          const targetURL = `${baseURL}${targetPath}`;
 
           // Forward all important headers
           const headers: HeadersInit = {
             'Content-Type': 'application/json',
           };
 
-          // Anthropic SDK uses 'x-api-key' header, but Z.AI expects 'Authorization: Bearer <token>'
+          // Handle authentication headers
           const apiKey = req.headers['x-api-key'];
           if (apiKey) {
             const token = Array.isArray(apiKey) ? apiKey[0] : apiKey;
-            headers.Authorization = `Bearer ${token}`;
+            // Anthropic API uses x-api-key header directly
+            if (baseURL.includes('anthropic.com')) {
+              headers['x-api-key'] = token;
+            } else {
+              // Z.AI and compatible providers use Bearer token
+              headers.Authorization = `Bearer ${token}`;
+            }
           } else {
             // Fallback: check for direct authorization header
             const authHeader = req.headers.authorization || req.headers.Authorization;
