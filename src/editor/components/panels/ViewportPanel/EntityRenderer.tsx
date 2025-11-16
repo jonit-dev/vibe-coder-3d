@@ -75,6 +75,7 @@ export const EntityRenderer: React.FC<IEntityRendererProps> = React.memo(
       transform,
       isTransforming: isTransformingLocal,
       isPhysicsDriven: shouldHavePhysics,
+      entityId,
     });
 
     const { colliderType, colliderConfig, hasCustomColliders } = useEntityColliders({

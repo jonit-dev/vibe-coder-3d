@@ -3,18 +3,22 @@
  * Listens for agent tool calls and executes corresponding editor actions
  */
 
-import { useEffect } from 'react';
-import { Logger } from '@core/lib/logger';
 import { useComponentRegistry } from '@core/hooks/useComponentRegistry';
-import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
-import { MeshRendererData } from '@core/lib/ecs/components/definitions/MeshRendererComponent';
-import { useEntityCreation } from './useEntityCreation';
-import { PrefabManager } from '@core/prefabs/PrefabManager';
-import { usePrefabsStore } from '@editor/store/prefabsStore';
-import { useEditorStore } from '@editor/store/editorStore';
-import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { EntityManager } from '@core/lib/ecs/EntityManager';
+import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
+import { Logger } from '@core/lib/logger';
 import { getComponentDefaults } from '@core/lib/serialization/defaults/ComponentDefaults';
+import { PrefabManager } from '@core/prefabs/PrefabManager';
+import { AgentEntityService } from '@editor/services/agent/AgentEntityService';
+import { AgentEventResponse } from '@editor/services/agent/AgentEventResponse';
+import { AgentMaterialService } from '@editor/services/agent/AgentMaterialService';
+import { AgentPrefabService } from '@editor/services/agent/AgentPrefabService';
+import { AgentTransformService } from '@editor/services/agent/AgentTransformService';
+import { useEditorStore } from '@editor/store/editorStore';
+import { usePrefabsStore } from '@editor/store/prefabsStore';
+import { useEffect, useMemo } from 'react';
+import { useEntityCreation } from './useEntityCreation';
 
 const logger = Logger.create('useAgentActions');
 
@@ -30,131 +34,82 @@ export const useAgentActions = () => {
   } = useEntityCreation();
   const { updateComponent } = useComponentRegistry();
   const prefabManager = PrefabManager.getInstance();
+  const entityManager = EntityManager.getInstance();
   const { _refreshPrefabs } = usePrefabsStore();
+
+  // Initialize services with dependencies
+  const services = useMemo(
+    () => ({
+      entity: new AgentEntityService({
+        createCube,
+        createSphere,
+        createCylinder,
+        createCone,
+        createPlane,
+        createDirectionalLight,
+      }),
+      material: new AgentMaterialService(),
+      transform: new AgentTransformService(componentRegistry, entityManager, updateComponent),
+      prefab: new AgentPrefabService(
+        prefabManager,
+        entityManager,
+        componentRegistry,
+        _refreshPrefabs,
+      ),
+    }),
+    [
+      createCube,
+      createSphere,
+      createCylinder,
+      createCone,
+      createPlane,
+      createDirectionalLight,
+      updateComponent,
+      _refreshPrefabs,
+    ],
+  );
 
   useEffect(() => {
     const handleAddEntity = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { type, position, rotation, scale, name, material, _requestId } = customEvent.detail;
 
-      logger.info('Agent requested entity add', {
-        type,
-        position,
-        rotation,
-        scale,
-        name,
-        material,
-      });
+      logger.info('Agent requested entity add', { type, name });
 
       try {
-        let entity;
-        switch (type) {
-          case 'Cube':
-            entity = createCube(name);
-            break;
-          case 'Sphere':
-            entity = createSphere(name);
-            break;
-          case 'Cylinder':
-            entity = createCylinder(name);
-            break;
-          case 'Cone':
-            entity = createCone(name);
-            break;
-          case 'Plane':
-            entity = createPlane(name);
-            break;
-          case 'Light':
-            entity = createDirectionalLight(name);
-            break;
-          default:
-            logger.warn('Unknown entity type requested by agent', { type });
-            // Dispatch error response
-            window.dispatchEvent(
-              new CustomEvent('agent:add-entity-response', {
-                detail: { _requestId, success: false, error: `Unknown entity type: ${type}` },
-              }),
-            );
-            return;
+        const entity = services.entity.createPrimitive(type, name);
+
+        if (!entity) {
+          AgentEventResponse.dispatchError(
+            'agent:add-entity-response',
+            _requestId,
+            `Unknown entity type: ${type}`,
+          );
+          return;
         }
 
-        // Set transform if provided
-        if (entity && (position || rotation || scale)) {
-          updateComponent(entity.id, KnownComponentTypes.TRANSFORM, {
-            position: position ? [position.x, position.y, position.z] : [0, 0, 0],
-            rotation: rotation ? [rotation.x, rotation.y, rotation.z] : [0, 0, 0],
-            scale: scale ? [scale.x, scale.y, scale.z] : [1, 1, 1],
-          });
+        // Apply transform if provided
+        if (position || rotation || scale) {
+          services.transform.applyTransform(entity.id, position, rotation, scale);
         }
 
         // Apply material if provided
-        if (entity && material) {
-          const meshUpdate: Partial<MeshRendererData> = {};
-
-          if (material.materialId) {
-            meshUpdate.materialId = material.materialId;
-          }
-
-          if (
-            material.color ||
-            material.metalness !== undefined ||
-            material.roughness !== undefined
-          ) {
-            meshUpdate.material = {
-              shader: 'standard' as const,
-              materialType: 'solid' as const,
-              color: material.color || '#ffffff',
-              metalness: material.metalness ?? 0,
-              roughness: material.roughness ?? 0.7,
-              emissive: '#000000',
-              emissiveIntensity: 0,
-              normalScale: 1,
-              occlusionStrength: 1,
-              textureOffsetX: 0,
-              textureOffsetY: 0,
-              textureRepeatX: 1,
-              textureRepeatY: 1,
-            };
-          }
-
+        if (material) {
+          const meshUpdate = services.material.buildMeshUpdate(material);
           if (Object.keys(meshUpdate).length > 0) {
             updateComponent(entity.id, KnownComponentTypes.MESH_RENDERER, meshUpdate);
-            logger.info('Applied material to entity', {
-              entityId: entity.id,
-              material: meshUpdate,
-            });
+            logger.info('Material applied to entity', { entityId: entity.id });
           }
         }
 
-        logger.info('Entity created by agent', {
-          type,
-          entityId: entity?.id,
-          position,
-          rotation,
-          scale,
-          material,
+        logger.info('Entity created by agent', { type, entityId: entity.id });
+        AgentEventResponse.dispatchSuccess('agent:add-entity-response', {
+          _requestId,
+          entityId: entity.id,
         });
-
-        // Dispatch success response with entity ID
-        if (entity) {
-          window.dispatchEvent(
-            new CustomEvent('agent:add-entity-response', {
-              detail: { _requestId, success: true, entityId: entity.id },
-            }),
-          );
-        }
       } catch (error) {
         logger.error('Failed to create entity from agent request', { error, type });
-        // Dispatch error response
-        window.dispatchEvent(
-          new CustomEvent('agent:add-entity-response', {
-            detail: {
-              _requestId,
-              success: false,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            },
-          }),
-        );
+        AgentEventResponse.dispatchError('agent:add-entity-response', _requestId, error);
       }
     };
 
@@ -203,141 +158,52 @@ export const useAgentActions = () => {
       logger.info('Agent requested prefab creation from primitives', { name, primitives });
 
       try {
-        const entityManager = EntityManager.getInstance();
-
-        // Create container entity for all primitives
         const container = entityManager.createEntity(name);
         const containerId = container.id;
 
         // Create each primitive and parent to container
         for (const spec of primitives) {
-          let childEntity;
           const childName = spec.name || spec.type;
-
-          // Create primitive based on type
-          switch (spec.type) {
-            case 'Cube':
-              childEntity = createCube(childName);
-              break;
-            case 'Sphere':
-              childEntity = createSphere(childName);
-              break;
-            case 'Cylinder':
-              childEntity = createCylinder(childName);
-              break;
-            case 'Cone':
-              childEntity = createCone(childName);
-              break;
-            case 'Plane':
-              childEntity = createPlane(childName);
-              break;
-            case 'Light':
-              childEntity = createDirectionalLight(childName);
-              break;
-            default:
-              logger.warn('Unknown primitive type in prefab spec', { type: spec.type });
-              continue;
-          }
+          const childEntity = services.entity.createPrimitive(spec.type, childName);
 
           if (!childEntity) continue;
 
-          // Parent to container FIRST (so transforms become relative to container)
+          // Parent to container first (transforms become relative)
           entityManager.setParent(childEntity.id, containerId);
 
-          // Then set transform (now relative to container at 0,0,0)
-          // This ensures the prefab has correct relative transforms
+          // Set transform (relative to container)
           if (spec.position || spec.rotation || spec.scale) {
-            updateComponent(childEntity.id, KnownComponentTypes.TRANSFORM, {
-              position: spec.position
-                ? [spec.position.x, spec.position.y, spec.position.z]
-                : [0, 0, 0],
-              rotation: spec.rotation
-                ? [spec.rotation.x, spec.rotation.y, spec.rotation.z]
-                : [0, 0, 0],
-              scale: spec.scale ? [spec.scale.x, spec.scale.y, spec.scale.z] : [1, 1, 1],
-            });
+            services.transform.applyTransform(
+              childEntity.id,
+              spec.position,
+              spec.rotation,
+              spec.scale,
+            );
           }
 
           // Apply material if provided
           if (spec.material) {
-            // MeshRenderer expects a nested 'material' object for overrides
-            const meshUpdate: Partial<MeshRendererData> = {};
-
-            if (spec.material.materialId) {
-              // If materialId is provided, set it at the top level
-              meshUpdate.materialId = spec.material.materialId;
-            }
-
-            if (spec.material.color) {
-              // Color goes inside the nested material object
-              meshUpdate.material = {
-                color: spec.material.color,
-                shader: 'standard' as const,
-                materialType: 'solid' as const,
-                metalness: 0,
-                roughness: 0.7,
-                emissive: '#000000',
-                emissiveIntensity: 0,
-                normalScale: 1,
-                occlusionStrength: 1,
-                textureOffsetX: 0,
-                textureOffsetY: 0,
-                textureRepeatX: 1,
-                textureRepeatY: 1,
-              };
-            }
-
+            const meshUpdate = services.material.buildMeshUpdate(spec.material);
             if (Object.keys(meshUpdate).length > 0) {
               updateComponent(childEntity.id, KnownComponentTypes.MESH_RENDERER, meshUpdate);
-              logger.info('Applied material to primitive', {
-                entityId: childEntity.id,
-                material: meshUpdate,
-              });
+              logger.info('Material applied to primitive', { entityId: childEntity.id });
             }
           }
         }
-
-        // Get all entities before creating prefab
-        const entitiesBeforePrefab = entityManager.getAllEntities();
-        logger.info('🔵 Entities before creating prefab', {
-          count: entitiesBeforePrefab.length,
-          ids: entitiesBeforePrefab.map((e) => e.id),
-        });
 
         // Create prefab from container
         const prefabId = name.toLowerCase().replace(/\s+/g, '-');
         prefabManager.createFromEntity(containerId, name, prefabId);
         _refreshPrefabs();
 
-        logger.info('🔵 Entities after creating prefab', {
-          count: entityManager.getAllEntities().length,
-          ids: entityManager.getAllEntities().map((e) => e.id),
-        });
-
-        // Clean up: delete container AND all children (the original primitives)
+        // Clean up: delete container and children
         const containerEntity = entityManager.getEntity(containerId);
         const children = [...(containerEntity?.children || [])];
 
-        logger.info('🔵 About to delete container and children', {
-          containerId,
-          children,
-          childrenCount: children.length,
-        });
-
-        // Delete all child entities first
         for (const childId of children) {
-          logger.info('🔵 Deleting child entity', { childId });
           entityManager.deleteEntity(childId);
         }
-
-        // Then delete the container
-        logger.info('🔵 Deleting container entity', { containerId });
         entityManager.deleteEntity(containerId);
-
-        logger.info('🔵 Entities after deletion', {
-          count: entityManager.getAllEntities().length,
-          ids: entityManager.getAllEntities().map((e) => e.id),
-        });
 
         logger.info('Prefab created from primitives', {
           prefabId,
@@ -355,70 +221,8 @@ export const useAgentActions = () => {
 
       logger.info('Agent requested prefab creation from selection', { name });
 
-      try {
-        const { selectedIds } = useEditorStore.getState();
-
-        if (selectedIds.length === 0) {
-          logger.warn('No entities selected for prefab creation', { name });
-          return;
-        }
-
-        const entityManager = EntityManager.getInstance();
-        let entityId: number;
-
-        if (selectedIds.length === 1) {
-          entityId = selectedIds[0];
-        } else {
-          // Create temporary container for multiple entities
-          const container = entityManager.createEntity(name);
-          entityId = container.id;
-
-          for (const id of selectedIds) {
-            entityManager.setParent(id, entityId);
-          }
-        }
-
-        const prefabId = name.toLowerCase().replace(/\s+/g, '-');
-
-        // Get the entity's transform before creating the prefab
-        const sourceTransform = componentRegistry.getComponentData(entityId, 'Transform') as
-          | { position?: [number, number, number] }
-          | undefined;
-        const sourcePosition = sourceTransform?.position || [0, 0, 0];
-
-        prefabManager.createFromEntity(entityId, name, prefabId);
-        _refreshPrefabs();
-
-        // Clean up: delete the source entities/container
-        if (selectedIds.length > 1) {
-          // Multiple selected entities - delete container and children
-          const containerEntity = entityManager.getEntity(entityId);
-          const children = [...(containerEntity?.children || [])];
-          for (const childId of children) {
-            entityManager.deleteEntity(childId);
-          }
-          entityManager.deleteEntity(entityId);
-        } else {
-          // Single entity - delete it
-          entityManager.deleteEntity(entityId);
-        }
-
-        // Instantiate the prefab at the original position
-        const instanceId = prefabManager.instantiate(prefabId, { position: sourcePosition });
-
-        if (instanceId === -1) {
-          logger.error('Failed to instantiate newly created prefab', { prefabId });
-        } else {
-          logger.info('Prefab created from selection and instantiated', {
-            prefabId,
-            instanceId,
-          });
-        }
-
-        logger.info('Prefab created from selection', { prefabId, name });
-      } catch (error) {
-        logger.error('Failed to create prefab', { error, name });
-      }
+      const { selectedIds } = useEditorStore.getState();
+      services.prefab.createFromSelection({ name, selectedIds });
     };
 
     const handleInstantiatePrefab = (event: Event) => {
@@ -426,51 +230,14 @@ export const useAgentActions = () => {
       const { prefabId, position } = customEvent.detail;
 
       logger.info('Agent requested prefab instantiation', { prefabId, position });
-
-      try {
-        const options: Record<string, unknown> = {};
-        if (position) {
-          options.position = position;
-        }
-
-        const entityId = prefabManager.instantiate(prefabId, options);
-
-        if (entityId === -1) {
-          logger.error('Failed to instantiate prefab', { prefabId });
-          return;
-        }
-
-        logger.info('Prefab instantiated', { prefabId, entityId, position });
-      } catch (error) {
-        logger.error('Failed to instantiate prefab', { error, prefabId });
-      }
+      services.prefab.instantiate(prefabId, position);
     };
 
     const handleListPrefabs = () => {
       logger.info('Agent requested prefab list');
 
-      try {
-        const prefabs = prefabManager.getAll();
-        const prefabList = prefabs.map((p) => ({
-          id: p.id,
-          name: p.name,
-          tags: p.tags || [],
-        }));
-
-        logger.info('Prefab list retrieved', {
-          count: prefabs.length,
-          prefabs: prefabList,
-        });
-
-        // Dispatch result back via custom event for AI to receive
-        window.dispatchEvent(
-          new CustomEvent('agent:prefab-list-result', {
-            detail: { prefabs: prefabList },
-          }),
-        );
-      } catch (error) {
-        logger.error('Failed to list prefabs', { error });
-      }
+      const prefabList = services.prefab.list();
+      AgentEventResponse.dispatchResult('agent:prefab-list-result', { prefabs: prefabList });
     };
 
     const handleCreateVariant = (event: Event) => {
@@ -479,30 +246,8 @@ export const useAgentActions = () => {
 
       logger.info('Agent requested prefab variant creation', { baseId, name });
 
-      try {
-        const { registry } = usePrefabsStore.getState();
-        const basePrefab = registry.get(baseId);
-
-        if (!basePrefab) {
-          logger.error('Base prefab not found', { baseId });
-          return;
-        }
-
-        const variantId = `${name.toLowerCase().replace(/\s+/g, '-')}-variant`;
-
-        registry.upsertVariant({
-          id: variantId,
-          baseId,
-          name,
-          version: 1,
-          patch: {},
-        });
-
-        _refreshPrefabs();
-        logger.info('Variant created', { variantId, baseId, name });
-      } catch (error) {
-        logger.error('Failed to create prefab variant', { error, baseId, name });
-      }
+      const { registry } = usePrefabsStore.getState();
+      services.prefab.createVariant(baseId, name, registry);
     };
 
     const handleUnpackPrefab = (event: Event) => {
@@ -510,17 +255,7 @@ export const useAgentActions = () => {
       const { entityId } = customEvent.detail;
 
       logger.info('Agent requested prefab unpack', { entityId });
-
-      try {
-        if (componentRegistry.hasComponent(entityId, 'PrefabInstance')) {
-          componentRegistry.removeComponent(entityId, 'PrefabInstance');
-          logger.info('Prefab instance unpacked', { entityId });
-        } else {
-          logger.warn('Entity is not a prefab instance', { entityId });
-        }
-      } catch (error) {
-        logger.error('Failed to unpack prefab', { error, entityId });
-      }
+      services.prefab.unpack(entityId);
     };
 
     const handleSetPosition = (event: Event) => {
@@ -530,10 +265,7 @@ export const useAgentActions = () => {
       logger.info('Agent requested position change', { entityId, position });
 
       try {
-        updateComponent(entityId, KnownComponentTypes.TRANSFORM, {
-          position: [position.x, position.y, position.z],
-        });
-        logger.info('Entity position updated', { entityId, position });
+        services.transform.setPosition(entityId, position);
       } catch (error) {
         logger.error('Failed to set position', { error, entityId });
       }
@@ -546,10 +278,7 @@ export const useAgentActions = () => {
       logger.info('Agent requested rotation change', { entityId, rotation });
 
       try {
-        updateComponent(entityId, KnownComponentTypes.TRANSFORM, {
-          rotation: [rotation.x, rotation.y, rotation.z],
-        });
-        logger.info('Entity rotation updated', { entityId, rotation });
+        services.transform.setRotation(entityId, rotation);
       } catch (error) {
         logger.error('Failed to set rotation', { error, entityId });
       }
@@ -562,10 +291,7 @@ export const useAgentActions = () => {
       logger.info('Agent requested scale change', { entityId, scale });
 
       try {
-        updateComponent(entityId, KnownComponentTypes.TRANSFORM, {
-          scale: [scale.x, scale.y, scale.z],
-        });
-        logger.info('Entity scale updated', { entityId, scale });
+        services.transform.setScale(entityId, scale);
       } catch (error) {
         logger.error('Failed to set scale', { error, entityId });
       }

@@ -2,24 +2,54 @@ import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
+import { EntityManager } from '@/core/lib/ecs/EntityManager';
+import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
+import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 
 interface IUseEntityTransformProps {
   transform: { data: ITransformData } | null | undefined;
   isTransforming: boolean;
   isPhysicsDriven?: boolean;
+  entityId: number;
 }
 
 export const useEntityTransform = ({
   transform,
   isTransforming,
   isPhysicsDriven = false,
+  entityId,
 }: IUseEntityTransformProps) => {
   const meshRef = useRef<THREE.Group | THREE.Mesh | THREE.Object3D | null>(null);
   const lastSyncedTransform = useRef<string>('');
 
   // Extract transform data with defaults
+  // For prefab roots without Transform, use first child's transform
   const transformData = useMemo(() => {
     if (!transform?.data) {
+      // Check if this is a prefab root (has PrefabInstance but no Transform)
+      const isPrefabRoot =
+        componentRegistry.hasComponent(entityId, 'PrefabInstance') &&
+        !componentRegistry.hasComponent(entityId, KnownComponentTypes.TRANSFORM);
+
+      if (isPrefabRoot) {
+        // Use first child's transform for gizmo positioning
+        const entity = EntityManager.getInstance().getEntity(entityId);
+        if (entity?.children && entity.children.length > 0) {
+          const firstChildId = entity.children[0];
+          const firstChildTransform = componentRegistry.getComponentData(
+            firstChildId,
+            KnownComponentTypes.TRANSFORM,
+          ) as ITransformData | undefined;
+
+          if (firstChildTransform) {
+            return {
+              position: firstChildTransform.position || ([0, 0, 0] as [number, number, number]),
+              rotation: firstChildTransform.rotation || ([0, 0, 0] as [number, number, number]),
+              scale: firstChildTransform.scale || ([1, 1, 1] as [number, number, number]),
+            };
+          }
+        }
+      }
       return null; // Don't provide any transform data until it's properly loaded
     }
     return {
@@ -27,7 +57,7 @@ export const useEntityTransform = ({
       rotation: transform.data.rotation || ([0, 0, 0] as [number, number, number]),
       scale: transform.data.scale || ([1, 1, 1] as [number, number, number]),
     };
-  }, [transform?.data]);
+  }, [transform?.data, entityId]);
 
   // Convert rotation to radians for physics
   const rotationRadians = useMemo((): [number, number, number] | null => {
