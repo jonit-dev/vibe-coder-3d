@@ -14,6 +14,7 @@ import { usePrefabsStore } from '@editor/store/prefabsStore';
 import { useEditorStore } from '@editor/store/editorStore';
 import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { getComponentDefaults } from '@core/lib/serialization/defaults/ComponentDefaults';
 
 const logger = Logger.create('useAgentActions');
 
@@ -34,9 +35,16 @@ export const useAgentActions = () => {
   useEffect(() => {
     const handleAddEntity = (event: Event) => {
       const customEvent = event as CustomEvent;
-      const { type, position, name, _requestId } = customEvent.detail;
+      const { type, position, rotation, scale, name, material, _requestId } = customEvent.detail;
 
-      logger.info('Agent requested entity add', { type, position, name });
+      logger.info('Agent requested entity add', {
+        type,
+        position,
+        rotation,
+        scale,
+        name,
+        material,
+      });
 
       try {
         let entity;
@@ -70,16 +78,62 @@ export const useAgentActions = () => {
             return;
         }
 
-        // Set position if provided
-        if (entity && position) {
+        // Set transform if provided
+        if (entity && (position || rotation || scale)) {
           updateComponent(entity.id, KnownComponentTypes.TRANSFORM, {
-            position: [position.x, position.y, position.z],
-            rotation: [0, 0, 0],
-            scale: [1, 1, 1],
+            position: position ? [position.x, position.y, position.z] : [0, 0, 0],
+            rotation: rotation ? [rotation.x, rotation.y, rotation.z] : [0, 0, 0],
+            scale: scale ? [scale.x, scale.y, scale.z] : [1, 1, 1],
           });
         }
 
-        logger.info('Entity created by agent', { type, entityId: entity?.id, position });
+        // Apply material if provided
+        if (entity && material) {
+          const meshUpdate: Partial<MeshRendererData> = {};
+
+          if (material.materialId) {
+            meshUpdate.materialId = material.materialId;
+          }
+
+          if (
+            material.color ||
+            material.metalness !== undefined ||
+            material.roughness !== undefined
+          ) {
+            meshUpdate.material = {
+              shader: 'standard' as const,
+              materialType: 'solid' as const,
+              color: material.color || '#ffffff',
+              metalness: material.metalness ?? 0,
+              roughness: material.roughness ?? 0.7,
+              emissive: '#000000',
+              emissiveIntensity: 0,
+              normalScale: 1,
+              occlusionStrength: 1,
+              textureOffsetX: 0,
+              textureOffsetY: 0,
+              textureRepeatX: 1,
+              textureRepeatY: 1,
+            };
+          }
+
+          if (Object.keys(meshUpdate).length > 0) {
+            updateComponent(entity.id, KnownComponentTypes.MESH_RENDERER, meshUpdate);
+            logger.info('Applied material to entity', {
+              entityId: entity.id,
+              material: meshUpdate,
+            });
+          }
+        }
+
+        logger.info('Entity created by agent', {
+          type,
+          entityId: entity?.id,
+          position,
+          rotation,
+          scale,
+          material,
+        });
 
         // Dispatch success response with entity ID
         if (entity) {
@@ -243,20 +297,49 @@ export const useAgentActions = () => {
           }
         }
 
+        // Get all entities before creating prefab
+        const entitiesBeforePrefab = entityManager.getAllEntities();
+        logger.info('🔵 Entities before creating prefab', {
+          count: entitiesBeforePrefab.length,
+          ids: entitiesBeforePrefab.map((e) => e.id),
+        });
+
         // Create prefab from container
         const prefabId = name.toLowerCase().replace(/\s+/g, '-');
         prefabManager.createFromEntity(containerId, name, prefabId);
         _refreshPrefabs();
 
-        // Clean up: unparent children and delete container
+        logger.info('🔵 Entities after creating prefab', {
+          count: entityManager.getAllEntities().length,
+          ids: entityManager.getAllEntities().map((e) => e.id),
+        });
+
+        // Clean up: delete container AND all children (the original primitives)
         const containerEntity = entityManager.getEntity(containerId);
         const children = [...(containerEntity?.children || [])];
+
+        logger.info('🔵 About to delete container and children', {
+          containerId,
+          children,
+          childrenCount: children.length,
+        });
+
+        // Delete all child entities first
         for (const childId of children) {
-          entityManager.setParent(childId, undefined);
+          logger.info('🔵 Deleting child entity', { childId });
+          entityManager.deleteEntity(childId);
         }
+
+        // Then delete the container
+        logger.info('🔵 Deleting container entity', { containerId });
         entityManager.deleteEntity(containerId);
 
-        logger.info('Prefab created from primitives', {
+        logger.info('🔵 Entities after deletion', {
+          count: entityManager.getAllEntities().length,
+          ids: entityManager.getAllEntities().map((e) => e.id),
+        });
+
+        logger.info('Prefab created from primitives - ready for instantiation', {
           prefabId,
           name,
           primitiveCount: primitives.length,
@@ -507,7 +590,11 @@ export const useAgentActions = () => {
       logger.info('Agent requested add component', { entityId, componentType });
 
       try {
-        componentRegistry.addComponent(entityId, componentType, {});
+        // Get default values for the component type
+        const defaults = getComponentDefaults(componentType);
+        const componentData = defaults ? { ...defaults } : {};
+
+        componentRegistry.addComponent(entityId, componentType, componentData);
         logger.info('Component added', { entityId, componentType });
       } catch (error) {
         logger.error('Failed to add component', { error, entityId, componentType });
@@ -559,6 +646,88 @@ export const useAgentActions = () => {
       }
     };
 
+    const handleGetComponent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { entityId, componentType } = customEvent.detail;
+
+      logger.info('Agent requested get component', { entityId, componentType });
+
+      try {
+        const data = componentRegistry.getComponentData(entityId, componentType);
+        logger.info('Component data retrieved', { entityId, componentType, data });
+      } catch (error) {
+        logger.error('Failed to get component', { error, entityId, componentType });
+      }
+    };
+
+    const handleDuplicateEntity = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { entityId } = customEvent.detail;
+
+      logger.info('Agent requested entity duplication', { entityId });
+
+      try {
+        const entityManager = EntityManager.getInstance();
+        const entity = entityManager.getEntity(entityId);
+        if (!entity) {
+          logger.warn('Entity not found for duplication', { entityId });
+          return;
+        }
+
+        // Create new entity with same name + " (Copy)"
+        const newEntity = entityManager.createEntity(`${entity.name} (Copy)`);
+
+        // Copy all components from original entity
+        const components = componentRegistry.getEntityComponents(entityId);
+        for (const [componentType, componentData] of Object.entries(components)) {
+          componentRegistry.addComponent(newEntity.id, componentType, componentData);
+        }
+
+        // Copy parent relationship
+        if (entity.parentId !== undefined) {
+          entityManager.setParent(newEntity.id, entity.parentId);
+        }
+
+        logger.info('Entity duplicated', { originalId: entityId, newId: newEntity.id });
+      } catch (error) {
+        logger.error('Failed to duplicate entity', { error, entityId });
+      }
+    };
+
+    const handleSetParent = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { entityId, parentId } = customEvent.detail;
+
+      logger.info('Agent requested set parent', { entityId, parentId });
+
+      try {
+        const entityManager = EntityManager.getInstance();
+        entityManager.setParent(entityId, parentId);
+        logger.info('Entity parent updated', { entityId, parentId });
+      } catch (error) {
+        logger.error('Failed to set parent', { error, entityId, parentId });
+      }
+    };
+
+    const handleSetEnabled = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { entityId, enabled } = customEvent.detail;
+
+      logger.info('Agent requested set enabled', { entityId, enabled });
+
+      try {
+        // Check if entity has an Enabled component, if not add it
+        if (!componentRegistry.hasComponent(entityId, 'Enabled')) {
+          componentRegistry.addComponent(entityId, 'Enabled', { enabled });
+        } else {
+          updateComponent(entityId, 'Enabled', { enabled });
+        }
+        logger.info('Entity enabled state updated', { entityId, enabled });
+      } catch (error) {
+        logger.error('Failed to set enabled state', { error, entityId, enabled });
+      }
+    };
+
     window.addEventListener('agent:add-entity', handleAddEntity);
     window.addEventListener('agent:save-geometry', handleSaveGeometry);
     window.addEventListener('agent:create-geometry-entity', handleCreateGeometryEntity);
@@ -579,6 +748,10 @@ export const useAgentActions = () => {
     window.addEventListener('agent:add-component', handleAddComponent);
     window.addEventListener('agent:remove-component', handleRemoveComponent);
     window.addEventListener('agent:set-component-property', handleSetComponentProperty);
+    window.addEventListener('agent:get-component', handleGetComponent);
+    window.addEventListener('agent:duplicate-entity', handleDuplicateEntity);
+    window.addEventListener('agent:set-parent', handleSetParent);
+    window.addEventListener('agent:set-enabled', handleSetEnabled);
 
     return () => {
       window.removeEventListener('agent:add-entity', handleAddEntity);
@@ -601,6 +774,10 @@ export const useAgentActions = () => {
       window.removeEventListener('agent:add-component', handleAddComponent);
       window.removeEventListener('agent:remove-component', handleRemoveComponent);
       window.removeEventListener('agent:set-component-property', handleSetComponentProperty);
+      window.removeEventListener('agent:get-component', handleGetComponent);
+      window.removeEventListener('agent:duplicate-entity', handleDuplicateEntity);
+      window.removeEventListener('agent:set-parent', handleSetParent);
+      window.removeEventListener('agent:set-enabled', handleSetEnabled);
     };
   }, [
     createCube,

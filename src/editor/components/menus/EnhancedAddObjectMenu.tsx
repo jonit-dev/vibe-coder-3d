@@ -104,6 +104,12 @@ export const EnhancedAddObjectMenu: React.FC<IEnhancedAddObjectMenuProps> = ({
       return;
     }
 
+    // Handle empty entity
+    if (item.type === 'Entity') {
+      onAdd('Entity');
+      return;
+    }
+
     // Handle gameplay objects
     if (item.type === 'CharacterController') {
       onAdd(item.type as string);

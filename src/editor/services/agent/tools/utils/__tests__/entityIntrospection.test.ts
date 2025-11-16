@@ -53,7 +53,7 @@ vi.mock('@core/lib/ecs/queries/entityQueries', () => {
 
 vi.mock('@core/lib/ecs/ComponentRegistry', () => {
   const mockRegistry = {
-    getComponentTypes: vi.fn((id: number) => {
+    getEntityComponents: vi.fn((id: number) => {
       if (id === 1) return ['Transform'];
       if (id === 2) return ['Transform', 'MeshRenderer'];
       if (id === 3) return ['Transform'];
@@ -74,7 +74,7 @@ vi.mock('@core/lib/ecs/ComponentRegistry', () => {
       }
       return null;
     }),
-    getAllComponentTypes: vi.fn(() => ['Transform', 'MeshRenderer']),
+    listComponents: vi.fn(() => ['Transform', 'MeshRenderer']),
   };
 
   return {

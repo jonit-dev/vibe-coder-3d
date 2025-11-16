@@ -428,19 +428,20 @@ If anything is wrong or missing, you MUST fix it immediately before responding t
             lastAssistantText = finalAssistantText;
           }
 
-          // If we captured screenshot analysis, dispatch it for validation
+          // If we captured screenshot analysis, sanitize and dispatch it for validation
           if (screenshotAnalysis.trim()) {
+            const sanitizedAnalysis = this.sanitizeScreenshotAnalysis(screenshotAnalysis.trim());
             window.dispatchEvent(
               new CustomEvent('agent:screenshot-analysis', {
                 detail: {
-                  analysis: screenshotAnalysis.trim(),
+                  analysis: sanitizedAnalysis,
                   timestamp: new Date().toISOString(),
                 },
               }),
             );
             logger.info('Screenshot analysis captured', {
-              analysisLength: screenshotAnalysis.length,
-              preview: screenshotAnalysis.substring(0, 200),
+              analysisLength: sanitizedAnalysis.length,
+              preview: sanitizedAnalysis.substring(0, 200),
             });
           }
         }
@@ -616,7 +617,44 @@ After ANY scene modification (adding entities, creating prefabs, moving objects,
 - ✅ ALWAYS take screenshots BEFORE responding to user
 - ✅ If screenshot shows problems, FIX THEM before responding
 
-Tool success messages don't guarantee visual correctness. Screenshot is your ground truth.`;
+      Tool success messages don't guarantee visual correctness. Screenshot is your ground truth.`;
+  }
+
+  /**
+   * Post-process screenshot analysis text before it is shown in the UI.
+   * The goal is NOT to censor the model, but to clearly flag obviously
+   * overconfident language so users know to double-check the scene.
+   */
+  private sanitizeScreenshotAnalysis(rawAnalysis: string): string {
+    const trimmed = rawAnalysis.trim();
+
+    if (!trimmed) {
+      return trimmed;
+    }
+
+    const suspiciousPatterns: RegExp[] = [
+      /successfully (created|built)/i,
+      /has been (created|built) successfully/i,
+      /screenshot confirms/i,
+      /now work with this .* model/i,
+      /confirms that .* (has been|is) correctly (created|positioned)/i,
+    ];
+
+    const hasSuspiciousLanguage = suspiciousPatterns.some((pattern) => pattern.test(trimmed));
+
+    if (!hasSuspiciousLanguage) {
+      return trimmed;
+    }
+
+    // Avoid stacking warnings if one already exists
+    if (trimmed.startsWith('⚠️')) {
+      return trimmed;
+    }
+
+    const cautionPrefix =
+      '⚠️ Automated visual analysis may be inaccurate. Always verify the screenshot yourself in the viewport.\n\n';
+
+    return `${cautionPrefix}${trimmed}`;
   }
 
   async testConnection(): Promise<boolean> {

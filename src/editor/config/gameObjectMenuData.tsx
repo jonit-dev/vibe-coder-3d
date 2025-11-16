@@ -35,6 +35,17 @@ export interface IGameObjectCategory {
 
 export const GAME_OBJECT_CATEGORIES: IGameObjectCategory[] = [
   {
+    label: 'Core',
+    icon: <TbBox size={18} />,
+    items: [
+      {
+        type: 'Entity',
+        label: 'Empty Entity',
+        icon: <TbBox size={18} />,
+      },
+    ],
+  },
+  {
     label: 'Basic Shapes',
     icon: <TbBox size={18} />,
     items: [

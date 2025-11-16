@@ -25,7 +25,7 @@ interface IPrefabManagementParams {
     material?: string;
   }>;
   prefab_id?: string;
-  position?: [number, number, number];
+  position?: [number, number, number] | { x: number; y: number; z: number };
   rotation?: [number, number, number];
   scale?: [number, number, number];
   variant_name?: string;
@@ -147,11 +147,18 @@ export async function executePrefabManagement(params: IPrefabManagementParams): 
       }
       return createPrefabFromSelection(name);
 
-    case 'instantiate':
+    case 'instantiate': {
       if (!prefab_id) {
         return 'Error: prefab_id is required for instantiate';
       }
-      return instantiatePrefab(prefab_id, position);
+      // Convert object position to tuple if provided
+      const positionTuple = position
+        ? typeof position === 'object' && 'x' in position
+          ? [position.x, position.y, position.z]
+          : position
+        : undefined;
+      return instantiatePrefab(prefab_id, positionTuple as [number, number, number] | undefined);
+    }
 
     case 'list_prefabs':
       return listPrefabs();
@@ -195,7 +202,7 @@ function createPrefabFromPrimitives(name: string, primitives: IPrimitiveSpec[]):
     primitiveTypes: primitives.map((p) => p.type),
   });
 
-  return `Created prefab "${name}" (id: "${prefabId}") from ${primitives.length} primitives. You can now instantiate it multiple times using the instantiate action with prefab_id="${prefabId}".`;
+  return `Created prefab "${name}" (id: "${prefabId}") from ${primitives.length} primitives. Use the instantiate action with prefab_id="${prefabId}" to place it anywhere in the scene.`;
 }
 
 function createPrefabFromSelection(name: string): string {
@@ -208,10 +215,7 @@ function createPrefabFromSelection(name: string): string {
   return `Created prefab "${name}" from selected entities. You can now instantiate it using prefab_id="${name.toLowerCase().replace(/\s+/g, '-')}"`;
 }
 
-function instantiatePrefab(
-  prefabId: string,
-  position?: [number, number, number],
-): string {
+function instantiatePrefab(prefabId: string, position?: [number, number, number]): string {
   const event = new CustomEvent('agent:instantiate-prefab', {
     detail: {
       prefabId,

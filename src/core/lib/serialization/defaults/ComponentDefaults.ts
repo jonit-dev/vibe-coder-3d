@@ -142,6 +142,20 @@ export const MESH_COLLIDER_DEFAULTS = {
   enabled: true,
   isTrigger: false,
   colliderType: 'box',
+  center: [0, 0, 0],
+  size: {
+    width: 1,
+    height: 1,
+    depth: 1,
+    radius: 0.5,
+    capsuleRadius: 0.5,
+    capsuleHeight: 2,
+  },
+  physicsMaterial: {
+    friction: 0.7,
+    restitution: 0.3,
+    density: 1,
+  },
 } as const;
 
 /**

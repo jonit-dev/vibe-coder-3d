@@ -91,11 +91,17 @@ export function getEntitySummaries(
       const summary: IEntitySummary = {
         id,
         name: getEntityName(id) || `Entity_${id}`,
-        components: componentRegistry.getComponentTypes(id),
+        components: componentRegistry.getEntityComponents(id),
       };
 
       // Add transform if available
-      const transformData = componentRegistry.getComponentData(id, 'Transform');
+      const transformData = componentRegistry.getComponentData(id, 'Transform') as
+        | {
+            position?: [number, number, number];
+            rotation?: [number, number, number];
+            scale?: [number, number, number];
+          }
+        | undefined;
       if (transformData) {
         summary.transform = {
           position: transformData.position || [0, 0, 0],
@@ -105,7 +111,9 @@ export function getEntitySummaries(
       }
 
       // Add material if available
-      const meshRenderer = componentRegistry.getComponentData(id, 'MeshRenderer');
+      const meshRenderer = componentRegistry.getComponentData(id, 'MeshRenderer') as
+        | { geometry?: string; material?: { id?: string; color?: string } }
+        | undefined;
       if (meshRenderer) {
         summary.material = {
           meshId: meshRenderer.geometry,
@@ -151,11 +159,17 @@ export function getEntityDetail(entityId: number): IEntityDetail | null {
     const summary: IEntitySummary = {
       id: entityId,
       name: getEntityName(entityId) || `Entity_${entityId}`,
-      components: componentRegistry.getComponentTypes(entityId),
+      components: componentRegistry.getEntityComponents(entityId),
     };
 
     // Add transform if available
-    const transformData = componentRegistry.getComponentData(entityId, 'Transform');
+    const transformData = componentRegistry.getComponentData(entityId, 'Transform') as
+      | {
+          position?: [number, number, number];
+          rotation?: [number, number, number];
+          scale?: [number, number, number];
+        }
+      | undefined;
     if (transformData) {
       summary.transform = {
         position: transformData.position || [0, 0, 0],
@@ -165,7 +179,9 @@ export function getEntityDetail(entityId: number): IEntityDetail | null {
     }
 
     // Add material if available
-    const meshRenderer = componentRegistry.getComponentData(entityId, 'MeshRenderer');
+    const meshRenderer = componentRegistry.getComponentData(entityId, 'MeshRenderer') as
+      | { geometry?: string; material?: { id?: string; color?: string } }
+      | undefined;
     if (meshRenderer) {
       summary.material = {
         meshId: meshRenderer.geometry,
@@ -182,7 +198,7 @@ export function getEntityDetail(entityId: number): IEntityDetail | null {
 
     // Get all component data
     const allComponents: Record<string, unknown> = {};
-    const componentTypes = componentRegistry.getComponentTypes(entityId);
+    const componentTypes = componentRegistry.getEntityComponents(entityId);
     for (const componentType of componentTypes) {
       const data = componentRegistry.getComponentData(entityId, componentType);
       if (data) {
@@ -223,7 +239,7 @@ export function getSceneStats(): ISceneStats {
     const rootEntities = queries.getRootEntities();
 
     // Count components
-    const componentTypes = componentRegistry.getAllComponentTypes();
+    const componentTypes = componentRegistry.listComponents();
     const componentCounts: Record<string, number> = {};
     for (const componentType of componentTypes) {
       componentCounts[componentType] = queries.getComponentCount(componentType);
@@ -241,7 +257,9 @@ export function getSceneStats(): ISceneStats {
       let maxZ = -Infinity;
 
       for (const entityId of transformEntities) {
-        const transformData = componentRegistry.getComponentData(entityId, 'Transform');
+        const transformData = componentRegistry.getComponentData(entityId, 'Transform') as
+          | { position?: [number, number, number] }
+          | undefined;
         if (transformData?.position) {
           const [x, y, z] = transformData.position;
           minX = Math.min(minX, x);

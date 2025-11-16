@@ -22,6 +22,8 @@ interface IMaterialUpdate {
   material?: {
     color?: string;
     materialId?: string;
+    metalness?: number;
+    roughness?: number;
   };
 }
 
@@ -33,14 +35,21 @@ interface IEntityBatchEditParams {
   material?: {
     color?: string;
     materialId?: string;
+    metalness?: number;
+    roughness?: number;
   };
   materials?: IMaterialUpdate[];
 }
 
 export const entityBatchEditTool = {
   name: 'entity_batch_edit',
-  description:
-    'Apply transforms/materials to multiple entities in one call. Efficient for bulk scene edits.',
+  description: `Apply transforms/materials to multiple entities in one call. Efficient for bulk scene edits.
+
+IMPORTANT: When applying materials, consider:
+- Use appropriate colors for object types (e.g., wood = brown, metal = gray, grass = green)
+- Vary materials slightly to avoid monotony (different shades, metalness values)
+- Check get_available_materials for existing material options
+- Use metalness and roughness to create visual interest`,
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -102,10 +111,19 @@ export const entityBatchEditTool = {
       material: {
         type: 'object',
         properties: {
-          color: { type: 'string', description: 'Material color (hex)' },
+          color: { type: 'string', description: 'Material color (hex, e.g., "#8B4513" for brown)' },
           materialId: { type: 'string', description: 'Material ID reference' },
+          metalness: {
+            type: 'number',
+            description: 'Metalness value (0.0-1.0). Higher = more metallic',
+          },
+          roughness: {
+            type: 'number',
+            description: 'Roughness value (0.0-1.0). Higher = rougher/less shiny',
+          },
         },
-        description: 'Material to apply to all entities (for set_material)',
+        description:
+          'Material to apply to all entities (for set_material). Use thoughtful color choices and PBR properties.',
       },
       materials: {
         type: 'array',
@@ -116,8 +134,10 @@ export const entityBatchEditTool = {
             material: {
               type: 'object',
               properties: {
-                color: { type: 'string' },
-                materialId: { type: 'string' },
+                color: { type: 'string', description: 'Material color (hex)' },
+                materialId: { type: 'string', description: 'Material ID reference' },
+                metalness: { type: 'number', description: 'Metalness (0.0-1.0)' },
+                roughness: { type: 'number', description: 'Roughness (0.0-1.0)' },
               },
             },
           },
@@ -246,7 +266,9 @@ async function offsetPosition(
     }
 
     // Get current position
-    const transformData = componentRegistry.getComponentData(entity_id, 'Transform');
+    const transformData = componentRegistry.getComponentData(entity_id, 'Transform') as
+      | { position?: [number, number, number] }
+      | undefined;
     if (!transformData?.position) {
       results.push(`Entity ${entity_id}: no position data (skipped)`);
       skipCount++;
@@ -281,7 +303,7 @@ async function offsetPosition(
  */
 async function setMaterialUniform(
   entityIds: number[],
-  material: { color?: string; materialId?: string },
+  material: { color?: string; materialId?: string; metalness?: number; roughness?: number },
 ): Promise<string> {
   const componentRegistry = ComponentRegistry.getInstance();
   const queries = EntityQueries.getInstance();
@@ -307,11 +329,33 @@ async function setMaterialUniform(
 
     try {
       const updates: Record<string, unknown> = {};
-      if (material.color || material.materialId) {
-        updates.material = { ...material };
+
+      if (material.materialId) {
+        updates.materialId = material.materialId;
       }
-      await componentRegistry.updateComponent(entity_id, 'MeshRenderer', updates);
-      successCount++;
+
+      if (material.color || material.metalness !== undefined || material.roughness !== undefined) {
+        updates.material = {
+          shader: 'standard' as const,
+          materialType: 'solid' as const,
+          color: material.color || '#ffffff',
+          metalness: material.metalness ?? 0,
+          roughness: material.roughness ?? 0.7,
+          emissive: '#000000',
+          emissiveIntensity: 0,
+          normalScale: 1,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
+        };
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await componentRegistry.updateComponent(entity_id, 'MeshRenderer', updates);
+        successCount++;
+      }
     } catch (error) {
       results.push(`Entity ${entity_id}: update failed - ${error}`);
       skipCount++;
@@ -355,11 +399,36 @@ async function setMaterialsIndividual(materials: IMaterialUpdate[]): Promise<str
 
     try {
       const updates: Record<string, unknown> = {};
-      if (material) {
-        updates.material = { ...material };
+
+      if (material?.materialId) {
+        updates.materialId = material.materialId;
       }
-      await componentRegistry.updateComponent(entity_id, 'MeshRenderer', updates);
-      successCount++;
+
+      if (
+        material &&
+        (material.color || material.metalness !== undefined || material.roughness !== undefined)
+      ) {
+        updates.material = {
+          shader: 'standard' as const,
+          materialType: 'solid' as const,
+          color: material.color || '#ffffff',
+          metalness: material.metalness ?? 0,
+          roughness: material.roughness ?? 0.7,
+          emissive: '#000000',
+          emissiveIntensity: 0,
+          normalScale: 1,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
+        };
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await componentRegistry.updateComponent(entity_id, 'MeshRenderer', updates);
+        successCount++;
+      }
     } catch (error) {
       results.push(`Entity ${entity_id}: update failed - ${error}`);
       skipCount++;

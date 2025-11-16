@@ -16,6 +16,12 @@ export interface IAddEntityParams {
   rotation?: { x: number; y: number; z: number };
   scale?: { x: number; y: number; z: number };
   name?: string;
+  material?: {
+    materialId?: string;
+    color?: string;
+    metalness?: number;
+    roughness?: number;
+  };
 }
 
 // Scene manipulation tool parameter types
@@ -23,8 +29,16 @@ interface ISceneManipulationParams {
   action: 'add_entity' | 'list_entities' | 'get_entity';
   entity_type?: string;
   position?: { x: number; y: number; z: number };
+  rotation?: { x: number; y: number; z: number };
+  scale?: { x: number; y: number; z: number };
   name?: string;
   entity_id?: number;
+  material?: {
+    materialId?: string;
+    color?: string;
+    metalness?: number;
+    roughness?: number;
+  };
 }
 
 // Dynamically get available primitive shapes
@@ -33,7 +47,7 @@ const primitiveShapes = getShapeNames('primitive');
 export const sceneManipulationTool = {
   name: 'scene_manipulation',
   description:
-    'Manipulate the 3D scene by adding, modifying, or querying entities. Use ONLY for primitive shapes (cube, sphere, cylinder, plane, light).',
+    'Manipulate the 3D scene by adding, modifying, or querying entities. Use for primitive shapes (cube, sphere, cylinder, plane, light) or empty entities. When creating entities, consider thoughtful material choices, appropriate scales, and proper rotations to create visually appealing scenes.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -44,8 +58,8 @@ export const sceneManipulationTool = {
       },
       entity_type: {
         type: 'string',
-        enum: primitiveShapes,
-        description: `Type of primitive entity to add (for add_entity action). Available: ${primitiveShapes.join(', ')}`,
+        enum: [...primitiveShapes, 'Entity'],
+        description: `Type of entity to add (for add_entity action). Use 'Entity' for empty entities. Available: ${primitiveShapes.join(', ')}, Entity`,
       },
       position: {
         type: 'object',
@@ -56,9 +70,53 @@ export const sceneManipulationTool = {
         },
         description: 'Position in 3D space (for add_entity action)',
       },
+      rotation: {
+        type: 'object',
+        properties: {
+          x: { type: 'number', description: 'Rotation around X axis in degrees' },
+          y: { type: 'number', description: 'Rotation around Y axis in degrees' },
+          z: { type: 'number', description: 'Rotation around Z axis in degrees' },
+        },
+        description: 'Rotation in degrees (for add_entity action)',
+      },
+      scale: {
+        type: 'object',
+        properties: {
+          x: { type: 'number', description: 'Scale on X axis' },
+          y: { type: 'number', description: 'Scale on Y axis' },
+          z: { type: 'number', description: 'Scale on Z axis' },
+        },
+        description: 'Scale (for add_entity action). Defaults to [1, 1, 1]',
+      },
       name: {
         type: 'string',
         description: 'Name for the entity',
+      },
+      material: {
+        type: 'object',
+        properties: {
+          materialId: {
+            type: 'string',
+            description:
+              'ID of an existing material to use. Check get_available_materials tool first.',
+          },
+          color: {
+            type: 'string',
+            description:
+              'Hex color string (e.g., "#ff0000" for red). Use this to customize appearance.',
+          },
+          metalness: {
+            type: 'number',
+            description: 'Metalness value (0.0 to 1.0). Higher values make surface more metallic.',
+          },
+          roughness: {
+            type: 'number',
+            description:
+              'Roughness value (0.0 to 1.0). Higher values make surface rougher/less shiny.',
+          },
+        },
+        description:
+          'Material properties for the entity. Thoughtful material choices enhance visual quality.',
       },
     },
     required: ['action'],
@@ -71,14 +129,17 @@ export const sceneManipulationTool = {
 export async function executeSceneManipulation(params: ISceneManipulationParams): Promise<string> {
   logger.info('Executing scene manipulation', { params });
 
-  const { action, entity_type, position, name } = params;
+  const { action, entity_type, position, rotation, scale, name, material } = params;
 
   switch (action) {
     case 'add_entity':
       return addEntity({
         type: entity_type || 'Cube',
         position: position || { x: 0, y: 0, z: 0 },
+        rotation,
+        scale,
         name,
+        material,
       });
 
     case 'list_entities':
@@ -106,9 +167,27 @@ function addEntity(params: IAddEntityParams): Promise<string> {
 
       if (success) {
         logger.info('Entity created successfully', { entityId, params });
-        resolve(
-          `Added ${params.type} to the scene at position (${params.position?.x}, ${params.position?.y}, ${params.position?.z}). Entity ID: ${entityId}`,
-        );
+
+        const details = [];
+        if (params.position) {
+          details.push(
+            `position (${params.position.x}, ${params.position.y}, ${params.position.z})`,
+          );
+        }
+        if (params.rotation) {
+          details.push(
+            `rotation (${params.rotation.x}°, ${params.rotation.y}°, ${params.rotation.z}°)`,
+          );
+        }
+        if (params.scale) {
+          details.push(`scale (${params.scale.x}, ${params.scale.y}, ${params.scale.z})`);
+        }
+        if (params.material?.color) {
+          details.push(`color ${params.material.color}`);
+        }
+
+        const detailsStr = details.length > 0 ? ` with ${details.join(', ')}` : '';
+        resolve(`Added ${params.type} to the scene${detailsStr}. Entity ID: ${entityId}`);
       } else {
         logger.error('Entity creation failed', { error, params });
         resolve(`Failed to add ${params.type}: ${error}`);

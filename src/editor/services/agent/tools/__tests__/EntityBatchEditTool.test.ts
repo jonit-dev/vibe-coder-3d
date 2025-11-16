@@ -245,9 +245,21 @@ describe('EntityBatchEditTool', () => {
       expect(mockUpdateComponent).toHaveBeenCalledTimes(2);
       expect(mockUpdateComponent).toHaveBeenCalledWith(1, 'MeshRenderer', {
         material: {
+          shader: 'standard',
+          materialType: 'solid',
           color: '#ff0000',
-          materialId: 'mat1',
+          metalness: 0,
+          roughness: 0.7,
+          emissive: '#000000',
+          emissiveIntensity: 0,
+          normalScale: 1,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
         },
+        materialId: 'mat1',
       });
       expect(result).toContain('2 succeeded');
     });
@@ -269,10 +281,38 @@ describe('EntityBatchEditTool', () => {
 
       expect(mockUpdateComponent).toHaveBeenCalledTimes(2);
       expect(mockUpdateComponent).toHaveBeenCalledWith(1, 'MeshRenderer', {
-        material: { color: '#ff0000' },
+        material: {
+          shader: 'standard',
+          materialType: 'solid',
+          color: '#ff0000',
+          metalness: 0,
+          roughness: 0.7,
+          emissive: '#000000',
+          emissiveIntensity: 0,
+          normalScale: 1,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
+        },
       });
       expect(mockUpdateComponent).toHaveBeenCalledWith(2, 'MeshRenderer', {
-        material: { color: '#00ff00' },
+        material: {
+          shader: 'standard',
+          materialType: 'solid',
+          color: '#00ff00',
+          metalness: 0,
+          roughness: 0.7,
+          emissive: '#000000',
+          emissiveIntensity: 0,
+          normalScale: 1,
+          occlusionStrength: 1,
+          textureOffsetX: 0,
+          textureOffsetY: 0,
+          textureRepeatX: 1,
+          textureRepeatY: 1,
+        },
       });
       expect(result).toContain('2 succeeded');
     });

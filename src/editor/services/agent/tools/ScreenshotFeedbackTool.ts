@@ -136,41 +136,67 @@ export async function executeScreenshotFeedback(params: {
         // Build analysis prompt based on verification mode
         const verificationMode = params.verification_mode || 'detailed';
 
-        const quickPrompt = `Quick verification of 3D scene:
+        const quickPrompt = `Quick, conservative verification of a 3D scene from a single screenshot.
 
 Scene Context:
-- Expected entities: ${sceneInfo.entity_count}
-- Reason: ${params.reason}
+- Reported entity count (from engine state): ${sceneInfo.entity_count}
+- Reason for capture: ${params.reason}
 
-Verify:
-1. Are the expected objects visible?
-2. Are they in the correct positions?
-3. Any obvious issues?
+STRICT RULES (you MUST follow these):
+- Only describe what is clearly visible in the image itself.
+- Refer to things by their primitive shapes (cube/box, sphere, cylinder, plane, grid, etc.) and colors.
+- Do NOT assume high-level real‑world objects (like "airplane", "tree", "house", "character") unless the geometry is obviously detailed enough to be unambiguous.
+- Never say that *you* "created" something – you are only an observer of the screenshot.
+- If something is unclear or ambiguous, explicitly say that it cannot be confidently identified.
 
-Be concise.`;
+TASK:
+1. Briefly list the visible primitives and their approximate positions (e.g. "tall gray box in center", "blue sphere to the left").
+2. State whether the screenshot appears to match the intent in the reason text, and call out any mismatches or missing items.
+3. Mention any obvious visual issues.
 
-        const detailedPrompt = `Analyze this 3D scene screenshot and verify:
+Keep the answer short and cautious.`;
+
+        const detailedPrompt = `Carefully analyze this 3D scene screenshot and provide a conservative, shape‑level verification.
 
 Scene Context:
-- Entities: ${sceneInfo.entity_count}
-- Selected: ${sceneInfo.selected_entities.join(', ') || 'none'}
-- Scene: ${sceneInfo.scene_name || 'unnamed'}
+- Reported entities (from engine state): ${sceneInfo.entity_count}
+- Selected IDs: ${sceneInfo.selected_entities.join(', ') || 'none'}
+- Scene name: ${sceneInfo.scene_name || 'unnamed'}
 
 Reason for screenshot: ${params.reason}
 
-Please provide:
-1. What entities/objects are visible in the scene
-2. Their positions, orientations, and appearances
-3. Any issues or inconsistencies you notice
-4. Whether the scene matches the expected state based on the reason
+STRICT RULES (you MUST follow these):
+- The screenshot is the only ground truth – do NOT assume the scene matches the request or previous text.
+- Describe what you see using primitive geometry (cubes/boxes, spheres, cylinders, planes, grids, simple extrusions) plus colors and relative positions.
+- Do NOT upgrade simple primitives into complex named objects (e.g. do NOT call a few boxes an "airplane" or "character"); at most you may say they *roughly resemble* something, with clear caveats.
+- Never say "I have created X", "X was successfully created", or "the screenshot confirms" – instead, say "the screenshot appears to show ..." and explicitly discuss uncertainties.
+- If you cannot clearly see something that is expected, say that it is *not visible* or *cannot be confirmed*.
 
-Be specific about counts, positions, and visual details.`;
+Please provide:
+1. A precise description of the visible primitives, their shapes, colors, and approximate arrangement.
+2. A comparison between what is visible and what seems to be expected from the reason text (what matches, what is missing, what looks different).
+3. Any issues, inconsistencies, or ambiguities you notice.
+4. Concrete follow‑up actions the editor/agent should take if the scene does NOT clearly match the intent.
+
+Be specific about counts, positions, and visual details, but stay honest and conservative about what can actually be seen.`;
 
         const defaultPrompt = verificationMode === 'quick' ? quickPrompt : detailedPrompt;
 
         const prompt = params.analysis_prompt || defaultPrompt;
 
-        const systemPrompt = `You are an expert 3D scene analyst for a game engine. Your job is to carefully examine screenshots and provide detailed, accurate observations about the scene contents, entity positions, materials, and any potential issues.`;
+        const systemPrompt = `You are an extremely cautious 3D scene analyst for a game engine.
+
+Your ONLY job is to describe what is visible in screenshots as accurately and conservatively as possible.
+
+CRITICAL BEHAVIOR RULES:
+- Treat the screenshot as the single source of truth – never assume tools or earlier steps worked.
+- Do not invent objects, details, or success states that you cannot literally see.
+- Prefer low‑level geometric descriptions (boxes/cubes, spheres, cylinders, planes, grids) over high‑level labels like "airplane", "tree", or "character".
+- If you choose to mention a high‑level concept at all, you must clearly frame it as an approximation, e.g. "blocks arranged in a rough T‑shape that could represent an airplane", and then still describe the raw shapes.
+- Never claim you "created" anything or that "the screenshot confirms" success; you only report observations and mismatches.
+- When in doubt, explicitly say that something cannot be confirmed from the image.
+
+Follow these rules even if previous text strongly suggests what *should* be in the scene.`;
 
         // Get thinking effort from environment
         const thinkingEffort = import.meta.env.VITE_OPENROUTER_THINKING_EFFORT as

@@ -134,22 +134,30 @@ export const useChatAgent = (): IUseChatAgentReturn => {
             useChatStore.getState().updateStream(currentStream + chunk);
           },
           onToolUse: (toolName: string, args: unknown, result?: unknown) => {
-            // Surface tool actions as separate messages in the chat history
-            const content =
-              toolName === 'screenshot_feedback'
-                ? '' // screenshot already rendered via dedicated event/card
-                : `✓ ${toolName}: ${typeof result === 'string' ? result : JSON.stringify(result)}`;
+            // Hide tool results that are already formatted for AI consumption
+            // These tools return data that the AI will summarize in its response
+            const hiddenTools = [
+              'screenshot_feedback', // screenshot already rendered via dedicated event/card
+              'scene_query', // returns formatted data that AI will summarize
+              'entity_query', // returns entity data that AI will summarize
+            ];
 
-            if (content) {
-              const toolMessage: IAgentMessage = {
-                id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                type: 'tool',
-                content,
-                timestamp: new Date(),
-                metadata: { args, toolName, result },
-              };
-              useChatStore.getState().addMessage(sessionId!, toolMessage);
+            if (hiddenTools.includes(toolName)) {
+              // Don't show these tool results as separate messages
+              return;
             }
+
+            // Surface other tool actions as separate messages (e.g., entity_edit, prefab_management)
+            const content = `✓ ${toolName}: ${typeof result === 'string' ? result : JSON.stringify(result)}`;
+
+            const toolMessage: IAgentMessage = {
+              id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              type: 'tool',
+              content,
+              timestamp: new Date(),
+              metadata: { args, toolName, result },
+            };
+            useChatStore.getState().addMessage(sessionId!, toolMessage);
           },
           onComplete: (response: string) => {
             // Add AI response to store
