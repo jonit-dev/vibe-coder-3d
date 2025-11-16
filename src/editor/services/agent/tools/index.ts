@@ -22,6 +22,7 @@ export interface IToolExecutor {
 import { sceneManipulationTool, executeSceneManipulation } from './SceneManipulationTool';
 import { sceneQueryTool, executeSceneQuery } from './SceneQueryTool';
 import { entityEditTool, executeEntityEdit } from './EntityEditTool';
+import { entityBatchEditTool, executeEntityBatchEdit } from './EntityBatchEditTool';
 // import { geometryCreationTool, executeGeometryCreation } from './GeometryCreationTool';
 import { prefabManagementTool, executePrefabManagement } from './PrefabManagementTool';
 import { screenshotFeedbackTool, executeScreenshotFeedback } from './ScreenshotFeedbackTool';
@@ -36,13 +37,26 @@ import { planningTool, executePlanning } from './PlanningTool';
 import { scriptManagementTool, executeScriptManagement } from './ScriptManagementTool';
 
 // Type for all available tools (union of tool types)
-export type AvailableTool = typeof planningTool | typeof sceneManipulationTool | typeof sceneQueryTool | typeof entityEditTool | typeof prefabManagementTool | typeof screenshotFeedbackTool | typeof getAvailableShapesTool | typeof getShapeSchemaTool | typeof getSceneInfoTool | typeof getAvailableMaterialsTool | typeof scriptManagementTool;
+export type AvailableTool =
+  | typeof planningTool
+  | typeof sceneManipulationTool
+  | typeof sceneQueryTool
+  | typeof entityEditTool
+  | typeof entityBatchEditTool
+  | typeof prefabManagementTool
+  | typeof screenshotFeedbackTool
+  | typeof getAvailableShapesTool
+  | typeof getShapeSchemaTool
+  | typeof getSceneInfoTool
+  | typeof getAvailableMaterialsTool
+  | typeof scriptManagementTool;
 
 export const AVAILABLE_TOOLS = [
   planningTool,
   sceneManipulationTool,
   sceneQueryTool,
   entityEditTool,
+  entityBatchEditTool,
   // geometryCreationTool,
   prefabManagementTool,
   screenshotFeedbackTool,
@@ -59,6 +73,7 @@ export type ToolParameters =
   | Parameters<typeof executeSceneManipulation>[0]
   | Parameters<typeof executeSceneQuery>[0]
   | Parameters<typeof executeEntityEdit>[0]
+  | Parameters<typeof executeEntityBatchEdit>[0]
   | Parameters<typeof executePrefabManagement>[0]
   | Parameters<typeof executeScreenshotFeedback>[0]
   | Parameters<typeof executeGetAvailableShapes>[0]
@@ -77,6 +92,8 @@ export async function executeTool(toolName: string, params: ToolParameters): Pro
       return executeSceneQuery(params as Parameters<typeof executeSceneQuery>[0]);
     case 'entity_edit':
       return executeEntityEdit(params as Parameters<typeof executeEntityEdit>[0]);
+    case 'entity_batch_edit':
+      return executeEntityBatchEdit(params as Parameters<typeof executeEntityBatchEdit>[0]);
     // case 'geometry_creation':
     //   return executeGeometryCreation(params);
     case 'prefab_management':
@@ -90,7 +107,9 @@ export async function executeTool(toolName: string, params: ToolParameters): Pro
     case 'get_scene_info':
       return executeGetSceneInfo(params as Parameters<typeof executeGetSceneInfo>[0]);
     case 'get_available_materials':
-      return executeGetAvailableMaterials(params as Parameters<typeof executeGetAvailableMaterials>[0]);
+      return executeGetAvailableMaterials(
+        params as Parameters<typeof executeGetAvailableMaterials>[0],
+      );
     case 'script_management':
       return executeScriptManagement(params as Parameters<typeof executeScriptManagement>[0]);
     default:

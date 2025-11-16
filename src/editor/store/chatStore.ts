@@ -16,6 +16,7 @@ interface IChatStore {
   isAgentTyping: boolean;
   currentStream: string;
   error: string | null;
+  isAgentInitialized: boolean;
 
   // Actions
   createSession: () => string;
@@ -26,6 +27,7 @@ interface IChatStore {
   clearStream: () => void;
   setAgentTyping: (typing: boolean) => void;
   setError: (error: string | null) => void;
+  setAgentInitialized: (initialized: boolean) => void;
   getActiveSession: () => IAgentSession | null;
 }
 
@@ -36,10 +38,11 @@ export const useChatStore = create<IChatStore>((set, get) => ({
   isAgentTyping: false,
   currentStream: '',
   error: null,
+  isAgentInitialized: false,
 
   // Create a new session
   createSession: () => {
-    const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const newSession: IAgentSession = {
       id: sessionId,
       messages: [],
@@ -122,6 +125,11 @@ export const useChatStore = create<IChatStore>((set, get) => ({
     set({ error });
   },
 
+  // Set agent initialization state
+  setAgentInitialized: (initialized: boolean) => {
+    set({ isAgentInitialized: initialized });
+  },
+
   // Get active session
   getActiveSession: () => {
     const { sessions, activeSessionId } = get();
@@ -136,3 +144,4 @@ export const useIsAgentTyping = () => useChatStore((state) => state.isAgentTypin
 export const useCurrentStream = () => useChatStore((state) => state.currentStream);
 export const useChatError = () => useChatStore((state) => state.error);
 export const useActiveSession = () => useChatStore((state) => state.getActiveSession());
+export const useChatInitialized = () => useChatStore((state) => state.isAgentInitialized);

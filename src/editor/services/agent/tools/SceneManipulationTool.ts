@@ -1,10 +1,12 @@
 /**
  * Scene Manipulation Tool
  * Allows the AI to add, modify, and query entities in the scene
+ * Enhanced with structured list_entities per PRD: docs/PRDs/editor/ai-first-chat-flexibility-prd.md
  */
 
 import { Logger } from '@core/lib/logger';
 import { getShapeNames } from '../utils/shapeDiscovery';
+import { getEntitySummaries, formatEntityList } from './utils/entityIntrospection';
 
 const logger = Logger.create('SceneManipulationTool');
 
@@ -134,12 +136,11 @@ function addEntity(params: IAddEntityParams): Promise<string> {
 }
 
 function listEntities(): string {
-  // Dispatch event to get entity list
-  const event = new CustomEvent('agent:list-entities');
-  window.dispatchEvent(event);
+  // Use introspection helper to get structured entity data
+  const summaries = getEntitySummaries(25);
+  const truncated = summaries.length === 25;
 
-  // For now, return placeholder
-  return 'Entity list requested. Check the hierarchy panel.';
+  return formatEntityList(summaries, truncated);
 }
 
 function getEntity(entityId: number): string {
