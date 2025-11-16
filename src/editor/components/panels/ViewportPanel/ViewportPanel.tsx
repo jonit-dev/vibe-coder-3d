@@ -35,6 +35,7 @@ import { GizmoModeSelector } from './components/GizmoModeSelector';
 import { ModelDropZone } from './components/ModelDropZone';
 import { PhysicsBindingManager } from './components/PhysicsBindingManager';
 import { ViewportHeader } from './components/ViewportHeader';
+import { ViewportInvalidateExporter } from './components/ViewportInvalidateExporter';
 import { EntityRenderer } from './EntityRenderer';
 import { GroupGizmoControls } from './GroupGizmoControls';
 import { LightRenderer } from './LightRenderer';
@@ -212,6 +213,8 @@ export const ViewportPanel: React.FC<IViewportPanelProps> = React.memo(
             <SelectionFramer />
             {/* Scene stats exporter: exposes scene to window for LOD demo */}
             <SceneStatsExporter />
+            {/* Viewport invalidate exporter: exposes invalidate function for agent tools */}
+            <ViewportInvalidateExporter />
             {/* Animation focus effect: fades out non-focused entities when timeline is open */}
             <AnimationFocusEffect isTimelineOpen={isTimelineOpen} />
             {/* Adaptive quality: DPR + shadow updates throttling while moving */}
