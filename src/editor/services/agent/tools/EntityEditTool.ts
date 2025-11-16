@@ -3,9 +3,160 @@
  * Allows the AI to modify entity properties, components, and transforms
  */
 
+import { componentRegistry } from '@core/lib/ecs/ComponentRegistry';
+import { EntityManager } from '@core/lib/ecs/EntityManager';
+import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
+import { getComponentDefaults } from '@core/lib/serialization/defaults/ComponentDefaults';
 import { Logger } from '@core/lib/logger';
 
 const logger = Logger.create('EntityEditTool');
+const entityManager = EntityManager.getInstance();
+
+type Vec3 = { x: number; y: number; z: number };
+type TransformProperty = 'position' | 'rotation' | 'scale';
+
+function isPrefabRoot(entityId: number): boolean {
+  return (
+    componentRegistry.hasComponent(entityId, 'PrefabInstance') &&
+    !componentRegistry.hasComponent(entityId, KnownComponentTypes.TRANSFORM)
+  );
+}
+
+function updateEntityTransform(
+  entityId: number,
+  property: TransformProperty,
+  value: Vec3,
+): boolean {
+  return componentRegistry.updateComponent(entityId, KnownComponentTypes.TRANSFORM, {
+    [property]: [value.x, value.y, value.z],
+  });
+}
+
+function propagatePositionToPrefabChildren(targetPos: Vec3, children: number[]): void {
+  const firstChildData = componentRegistry.getComponentData(
+    children[0],
+    KnownComponentTypes.TRANSFORM,
+  ) as { position?: [number, number, number] } | undefined;
+  const currentPos = firstChildData?.position || [0, 0, 0];
+  const delta: [number, number, number] = [
+    targetPos.x - currentPos[0],
+    targetPos.y - currentPos[1],
+    targetPos.z - currentPos[2],
+  ];
+
+  for (const childId of children) {
+    if (componentRegistry.hasComponent(childId, KnownComponentTypes.TRANSFORM)) {
+      const childData = componentRegistry.getComponentData(
+        childId,
+        KnownComponentTypes.TRANSFORM,
+      ) as { position?: [number, number, number] } | undefined;
+      const childPos = childData?.position || [0, 0, 0];
+      componentRegistry.updateComponent(childId, KnownComponentTypes.TRANSFORM, {
+        position: [childPos[0] + delta[0], childPos[1] + delta[1], childPos[2] + delta[2]],
+      });
+    }
+  }
+}
+
+function propagateRotationToPrefabChildren(targetRot: Vec3, children: number[]): void {
+  const firstChildData = componentRegistry.getComponentData(
+    children[0],
+    KnownComponentTypes.TRANSFORM,
+  ) as { rotation?: [number, number, number] } | undefined;
+  const currentRot = firstChildData?.rotation || [0, 0, 0];
+  const delta: [number, number, number] = [
+    targetRot.x - currentRot[0],
+    targetRot.y - currentRot[1],
+    targetRot.z - currentRot[2],
+  ];
+
+  for (const childId of children) {
+    if (componentRegistry.hasComponent(childId, KnownComponentTypes.TRANSFORM)) {
+      const childData = componentRegistry.getComponentData(
+        childId,
+        KnownComponentTypes.TRANSFORM,
+      ) as { rotation?: [number, number, number] } | undefined;
+      const childRot = childData?.rotation || [0, 0, 0];
+      componentRegistry.updateComponent(childId, KnownComponentTypes.TRANSFORM, {
+        rotation: [childRot[0] + delta[0], childRot[1] + delta[1], childRot[2] + delta[2]],
+      });
+    }
+  }
+}
+
+function propagateScaleToPrefabChildren(targetScale: Vec3, children: number[]): void {
+  const firstChildData = componentRegistry.getComponentData(
+    children[0],
+    KnownComponentTypes.TRANSFORM,
+  ) as { scale?: [number, number, number] } | undefined;
+  const currentScale = firstChildData?.scale || [1, 1, 1];
+  const multiplier: [number, number, number] = [
+    currentScale[0] !== 0 ? targetScale.x / currentScale[0] : 1,
+    currentScale[1] !== 0 ? targetScale.y / currentScale[1] : 1,
+    currentScale[2] !== 0 ? targetScale.z / currentScale[2] : 1,
+  ];
+
+  for (const childId of children) {
+    if (componentRegistry.hasComponent(childId, KnownComponentTypes.TRANSFORM)) {
+      const childData = componentRegistry.getComponentData(
+        childId,
+        KnownComponentTypes.TRANSFORM,
+      ) as { scale?: [number, number, number] } | undefined;
+      const childScale = childData?.scale || [1, 1, 1];
+      componentRegistry.updateComponent(childId, KnownComponentTypes.TRANSFORM, {
+        scale: [
+          childScale[0] * multiplier[0],
+          childScale[1] * multiplier[1],
+          childScale[2] * multiplier[2],
+        ],
+      });
+    }
+  }
+}
+
+function updateTransform(
+  entityId: number,
+  property: TransformProperty,
+  value: Vec3,
+): { success: boolean; message: string } {
+  if (isPrefabRoot(entityId)) {
+    const entity = entityManager.getEntity(entityId);
+    if (!entity?.children || entity.children.length === 0) {
+      return {
+        success: false,
+        message: `Error: Prefab root entity ${entityId} has no children to update`,
+      };
+    }
+
+    if (property === 'position') {
+      propagatePositionToPrefabChildren(value, entity.children);
+    } else if (property === 'rotation') {
+      propagateRotationToPrefabChildren(value, entity.children);
+    } else {
+      propagateScaleToPrefabChildren(value, entity.children);
+    }
+
+    const unit = property === 'rotation' ? '°' : '';
+    return {
+      success: true,
+      message: `Set ${property} of prefab ${entityId} to (${value.x}${unit}, ${value.y}${unit}, ${value.z}${unit}) by propagating to ${entity.children.length} children`,
+    };
+  }
+
+  const success = updateEntityTransform(entityId, property, value);
+  if (!success) {
+    return {
+      success: false,
+      message: `Error: Failed to update ${property} for entity ${entityId}. Entity may not exist or lack Transform component.`,
+    };
+  }
+
+  const unit = property === 'rotation' ? '°' : '';
+  return {
+    success: true,
+    message: `Set ${property} of entity ${entityId} to (${value.x}${unit}, ${value.y}${unit}, ${value.z}${unit})`,
+  };
+}
 
 export const entityEditTool = {
   name: 'entity_edit',
@@ -247,66 +398,102 @@ export async function executeEntityEdit(params: Record<string, unknown>): Promis
 }
 
 function setPosition(entityId: number, position: { x: number; y: number; z: number }): string {
-  const event = new CustomEvent('agent:set-position', {
-    detail: { entityId, position },
-  });
-  window.dispatchEvent(event);
-
-  return `Set position of entity ${entityId} to (${position.x}, ${position.y}, ${position.z})`;
+  try {
+    const result = updateTransform(entityId, 'position', position);
+    if (result.success) {
+      logger.info('Position updated', { entityId, position });
+    }
+    return result.message;
+  } catch (error) {
+    logger.error('Failed to set position', { error, entityId });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function setRotation(entityId: number, rotation: { x: number; y: number; z: number }): string {
-  const event = new CustomEvent('agent:set-rotation', {
-    detail: { entityId, rotation },
-  });
-  window.dispatchEvent(event);
-
-  return `Set rotation of entity ${entityId} to (${rotation.x}°, ${rotation.y}°, ${rotation.z}°)`;
+  try {
+    const result = updateTransform(entityId, 'rotation', rotation);
+    if (result.success) {
+      logger.info('Rotation updated', { entityId, rotation });
+    }
+    return result.message;
+  } catch (error) {
+    logger.error('Failed to set rotation', { error, entityId });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function setScale(entityId: number, scale: { x: number; y: number; z: number }): string {
-  const event = new CustomEvent('agent:set-scale', {
-    detail: { entityId, scale },
-  });
-  window.dispatchEvent(event);
-
-  return `Set scale of entity ${entityId} to (${scale.x}, ${scale.y}, ${scale.z})`;
+  try {
+    const result = updateTransform(entityId, 'scale', scale);
+    if (result.success) {
+      logger.info('Scale updated', { entityId, scale });
+    }
+    return result.message;
+  } catch (error) {
+    logger.error('Failed to set scale', { error, entityId });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function renameEntity(entityId: number, name: string): string {
-  const event = new CustomEvent('agent:rename-entity', {
-    detail: { entityId, name },
-  });
-  window.dispatchEvent(event);
+  try {
+    const entity = entityManager.getEntity(entityId);
+    if (!entity) {
+      return `Error: Entity ${entityId} not found`;
+    }
 
-  return `Renamed entity ${entityId} to "${name}"`;
+    entity.name = name;
+    logger.info('Entity renamed', { entityId, name });
+    return `Renamed entity ${entityId} to "${name}"`;
+  } catch (error) {
+    logger.error('Failed to rename entity', { error, entityId });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function deleteEntity(entityId: number): string {
-  const event = new CustomEvent('agent:delete-entity', {
-    detail: { entityId },
-  });
-  window.dispatchEvent(event);
-
-  return `Deleted entity ${entityId}`;
+  try {
+    entityManager.deleteEntity(entityId);
+    logger.info('Entity deleted', { entityId });
+    return `Deleted entity ${entityId}`;
+  } catch (error) {
+    logger.error('Failed to delete entity', { error, entityId });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function addComponent(entityId: number, componentType: string): string {
-  const event = new CustomEvent('agent:add-component', {
-    detail: { entityId, componentType },
-  });
-  window.dispatchEvent(event);
+  try {
+    const defaults = getComponentDefaults(componentType);
+    const componentData = defaults ? { ...defaults } : {};
 
-  return `Added ${componentType} component to entity ${entityId}`;
+    const success = componentRegistry.addComponent(entityId, componentType, componentData);
+    if (!success) {
+      return `Error: Failed to add ${componentType} component to entity ${entityId}. Check if component already exists or has conflicts.`;
+    }
+
+    logger.info('Component added', { entityId, componentType });
+    return `Added ${componentType} component to entity ${entityId}`;
+  } catch (error) {
+    logger.error('Failed to add component', { error, entityId, componentType });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function removeComponent(entityId: number, componentType: string): string {
-  const event = new CustomEvent('agent:remove-component', {
-    detail: { entityId, componentType },
-  });
-  window.dispatchEvent(event);
+  try {
+    const success = componentRegistry.removeComponent(entityId, componentType);
+    if (!success) {
+      return `Error: Failed to remove ${componentType} component from entity ${entityId}. Component may not exist.`;
+    }
 
-  return `Removed ${componentType} component from entity ${entityId}`;
+    logger.info('Component removed', { entityId, componentType });
+    return `Removed ${componentType} component from entity ${entityId}`;
+  } catch (error) {
+    logger.error('Failed to remove component', { error, entityId, componentType });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function setComponentProperty(
@@ -315,70 +502,146 @@ function setComponentProperty(
   propertyName: string,
   propertyValue: unknown,
 ): string {
-  // Parse JSON strings to objects if needed
-  let parsedValue = propertyValue;
-  if (typeof propertyValue === 'string') {
-    try {
-      parsedValue = JSON.parse(propertyValue);
-    } catch {
-      // If parsing fails, use the string as-is
-      parsedValue = propertyValue;
+  try {
+    // Parse JSON strings to objects if needed
+    let parsedValue = propertyValue;
+    if (typeof propertyValue === 'string') {
+      try {
+        parsedValue = JSON.parse(propertyValue);
+      } catch {
+        // If parsing fails, use the string as-is
+        parsedValue = propertyValue;
+      }
     }
+
+    const success = componentRegistry.updateComponent(entityId, componentType, {
+      [propertyName]: parsedValue,
+    });
+
+    if (!success) {
+      return `Error: Failed to set ${componentType}.${propertyName} on entity ${entityId}. Entity may not have this component.`;
+    }
+
+    logger.info('Component property updated', {
+      entityId,
+      componentType,
+      propertyName,
+      propertyValue: parsedValue,
+    });
+    return `Set ${componentType}.${propertyName} = ${JSON.stringify(parsedValue)} on entity ${entityId}`;
+  } catch (error) {
+    logger.error('Failed to set component property', {
+      error,
+      entityId,
+      componentType,
+      propertyName,
+    });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
-
-  const event = new CustomEvent('agent:set-component-property', {
-    detail: { entityId, componentType, propertyName, propertyValue: parsedValue },
-  });
-  window.dispatchEvent(event);
-
-  return `Set ${componentType}.${propertyName} = ${JSON.stringify(parsedValue)} on entity ${entityId}`;
 }
 
 function getComponent(entityId: number, componentType: string): string {
-  const event = new CustomEvent('agent:get-component', {
-    detail: { entityId, componentType },
-  });
-  window.dispatchEvent(event);
-
-  return `Requested ${componentType} component data for entity ${entityId}`;
+  try {
+    const data = componentRegistry.getComponentData(entityId, componentType);
+    logger.info('Component data retrieved', { entityId, componentType, data });
+    return `${componentType} component data for entity ${entityId}: ${JSON.stringify(data, null, 2)}`;
+  } catch (error) {
+    logger.error('Failed to get component', { error, entityId, componentType });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function duplicateEntity(entityId: number): string {
-  const event = new CustomEvent('agent:duplicate-entity', {
-    detail: { entityId },
-  });
-  window.dispatchEvent(event);
+  try {
+    const entity = entityManager.getEntity(entityId);
+    if (!entity) {
+      return `Error: Entity ${entityId} not found`;
+    }
 
-  return `Duplicated entity ${entityId}`;
+    // Create new entity with same name + " (Copy)"
+    const newEntity = entityManager.createEntity(`${entity.name} (Copy)`);
+
+    // Copy all components from original entity
+    const components = componentRegistry.getEntityComponents(entityId);
+    for (const componentType of components) {
+      const componentData = componentRegistry.getComponentData(entityId, componentType);
+      componentRegistry.addComponent(newEntity.id, componentType, componentData);
+    }
+
+    // Copy parent relationship
+    if (entity.parentId !== undefined) {
+      entityManager.setParent(newEntity.id, entity.parentId);
+    }
+
+    logger.info('Entity duplicated', { originalId: entityId, newId: newEntity.id });
+    return `Duplicated entity ${entityId} to new entity ${newEntity.id}`;
+  } catch (error) {
+    logger.error('Failed to duplicate entity', { error, entityId });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function setParent(entityId: number, parentId: number | null | undefined): string {
-  const event = new CustomEvent('agent:set-parent', {
-    detail: { entityId, parentId },
-  });
-  window.dispatchEvent(event);
+  try {
+    entityManager.setParent(entityId, parentId ?? undefined);
+    logger.info('Entity parent updated', { entityId, parentId });
 
-  if (parentId === null || parentId === undefined) {
-    return `Unparented entity ${entityId}`;
+    if (parentId === null || parentId === undefined) {
+      return `Unparented entity ${entityId}`;
+    }
+    return `Set parent of entity ${entityId} to ${parentId}`;
+  } catch (error) {
+    logger.error('Failed to set parent', { error, entityId, parentId });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
-  return `Set parent of entity ${entityId} to ${parentId}`;
 }
 
 function setEnabled(entityId: number, enabled: boolean): string {
-  const event = new CustomEvent('agent:set-enabled', {
-    detail: { entityId, enabled },
-  });
-  window.dispatchEvent(event);
+  try {
+    // Check if entity has an Enabled component, if not add it
+    if (!componentRegistry.hasComponent(entityId, 'Enabled')) {
+      componentRegistry.addComponent(entityId, 'Enabled', { enabled });
+    } else {
+      componentRegistry.updateComponent(entityId, 'Enabled', { enabled });
+    }
 
-  return `Set entity ${entityId} enabled state to ${enabled}`;
+    logger.info('Entity enabled state updated', { entityId, enabled });
+    return `Set entity ${entityId} enabled state to ${enabled}`;
+  } catch (error) {
+    logger.error('Failed to set enabled state', { error, entityId, enabled });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }
 
 function batchDeleteEntities(entityIds: number[]): string {
-  const event = new CustomEvent('agent:batch-delete-entities', {
-    detail: { entityIds },
-  });
-  window.dispatchEvent(event);
+  try {
+    const errors: string[] = [];
+    let successCount = 0;
 
-  logger.info('Batch entity deletion requested', { count: entityIds.length, entityIds });
-  return `Batch deleted ${entityIds.length} entities: ${entityIds.join(', ')}`;
+    for (const entityId of entityIds) {
+      try {
+        entityManager.deleteEntity(entityId);
+        successCount++;
+      } catch (error) {
+        errors.push(
+          `Failed to delete entity ${entityId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
+    }
+
+    logger.info('Batch entity deletion completed', {
+      requested: entityIds.length,
+      succeeded: successCount,
+      failed: errors.length,
+    });
+
+    if (errors.length > 0) {
+      return `Batch deleted ${successCount}/${entityIds.length} entities. Errors: ${errors.join('; ')}`;
+    }
+
+    return `Batch deleted ${successCount} entities: ${entityIds.join(', ')}`;
+  } catch (error) {
+    logger.error('Failed to batch delete entities', { error, entityIds });
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
 }

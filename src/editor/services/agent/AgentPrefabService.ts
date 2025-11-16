@@ -37,7 +37,9 @@ export class AgentPrefabService {
     }
   }
 
-  createFromSelection(options: IPrefabCreationOptions): { prefabId: string; instanceId: number } | null {
+  createFromSelection(
+    options: IPrefabCreationOptions,
+  ): { prefabId: string; instanceId: number } | null {
     const { name, selectedIds } = options;
 
     if (selectedIds.length === 0) {
@@ -87,7 +89,7 @@ export class AgentPrefabService {
     }
   }
 
-  instantiate(prefabId: string, position?: { x: number; y: number; z: number }): number {
+  instantiate(prefabId: string, position?: [number, number, number]): number {
     try {
       const options: Record<string, unknown> = {};
       if (position) {

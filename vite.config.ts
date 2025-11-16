@@ -8,6 +8,7 @@ import { vitePluginScriptAPI } from './src/plugins/vite-plugin-script-api';
 import { vitePluginModelIngest } from './src/plugins/vite-plugin-model-ingest';
 import { createAssetsApi } from './src/plugins/assets-api/createAssetsApi';
 import { aiApiPlugin } from './src/plugins/vite-plugin-ai-api';
+import { saveLogPlugin } from './src/plugins/saveLogPlugin';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -23,6 +24,7 @@ export default defineConfig({
       scenesRoot: 'src/game/scenes',
     }),
     aiApiPlugin(),
+    saveLogPlugin(),
   ],
   resolve: {
     alias: {

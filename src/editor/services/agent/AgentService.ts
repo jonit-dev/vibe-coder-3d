@@ -9,6 +9,7 @@ import { AVAILABLE_TOOLS, executeTool } from './tools';
 import type { IAgentMessage, ICodebaseContext } from './types';
 import { formatShapesForPrompt } from './utils/shapeDiscovery';
 import { buildSystemPrompt, buildScreenshotAnalysisInstructions } from './prompts';
+import { SessionLogger } from './SessionLogger';
 
 const logger = Logger.create('AgentService');
 
@@ -36,6 +37,7 @@ export class AgentService {
   private initialized = false;
   private pendingScreenshot: IScreenshotData | null = null;
   private currentAbortController: AbortController | null = null;
+  private sessionLoggers: Map<string, SessionLogger> = new Map();
 
   private constructor() {
     // Private constructor for singleton
@@ -98,6 +100,7 @@ export class AgentService {
     this.initialized = true;
     logger.info('AgentService initialized with Anthropic SDK (using Vite proxy)', {
       baseURL: configuredBaseURL,
+      model: import.meta.env.VITE_CLAUDE_CODE_SDK_MODEL || 'glm-4.6',
     });
   }
 
@@ -123,6 +126,22 @@ export class AgentService {
       throw new Error('AgentService not initialized');
     }
 
+    // Get or create session logger
+    let sessionLogger = this.sessionLoggers.get(sessionId);
+    if (!sessionLogger) {
+      sessionLogger = new SessionLogger(sessionId);
+      this.sessionLoggers.set(sessionId, sessionLogger);
+    }
+
+    sessionLogger.log('MESSAGE_REQUEST', {
+      messageCount: messages.length,
+      lastMessage: messages[messages.length - 1]?.content?.substring(0, 200),
+      context: {
+        scene: context.currentScene,
+        selectedEntities: context.selectedEntities,
+      },
+    });
+
     logger.info('Sending message', { sessionId, messageCount: messages.length });
 
     // Create new abort controller for this request
@@ -132,6 +151,10 @@ export class AgentService {
     try {
       // Build system prompt
       const systemPrompt = this.buildSystemPrompt(context);
+      sessionLogger.log('SYSTEM_PROMPT_BUILT', {
+        promptLength: systemPrompt.length,
+        preview: systemPrompt.substring(0, 200),
+      });
 
       // Convert messages to Anthropic format
       const anthropicMessages = messages.map((msg) => ({
@@ -143,6 +166,13 @@ export class AgentService {
       const model = import.meta.env.VITE_CLAUDE_CODE_SDK_MODEL || 'glm-4.6';
       const maxTokens = parseInt(import.meta.env.VITE_AGENT_MAX_CONTEXT_TOKENS || '4096', 10);
 
+      sessionLogger.log('API_REQUEST_CONFIG', {
+        model,
+        maxTokens,
+        messageCount: anthropicMessages.length,
+        toolCount: AVAILABLE_TOOLS.length,
+      });
+
       let fullResponse = '';
       let continueWithTools = true;
       const conversationMessages: Anthropic.MessageParam[] = [...anthropicMessages];
@@ -151,17 +181,27 @@ export class AgentService {
       let lastAssistantText = '';
 
       // Multi-turn conversation loop for tool use
+      let turnCount = 0;
       while (continueWithTools) {
+        turnCount++;
+        sessionLogger.log('CONVERSATION_TURN_START', { turnCount });
+
         const toolUses = new Map<number, { id: string; name: string; input: string }>();
         const contentBlocks: Anthropic.ContentBlock[] = [];
         let currentTextBlock = '';
 
         // Check if aborted before making request
         if (signal.aborted) {
+          sessionLogger.log('REQUEST_ABORTED', { turnCount });
           throw new Error('Request cancelled');
         }
 
         // Stream the response
+        sessionLogger.log('API_STREAM_START', {
+          turnCount,
+          conversationLength: conversationMessages.length,
+        });
+
         const stream = await this.client.messages.create({
           model,
           max_tokens: maxTokens,
@@ -240,6 +280,12 @@ export class AgentService {
 
         // If tools were used, execute them and continue conversation
         if (toolUses.size > 0) {
+          sessionLogger.log('TOOLS_REQUESTED', {
+            turnCount,
+            toolCount: toolUses.size,
+            tools: Array.from(toolUses.values()).map((t) => t.name),
+          });
+
           // Capture this turn's assistant text only (exclude tool results)
           const thisTurnAssistantText = contentBlocks
             .filter((b) => b.type === 'text')
@@ -252,6 +298,11 @@ export class AgentService {
           const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
           for (const [, toolUse] of toolUses.entries()) {
+            sessionLogger.log('TOOL_EXECUTION_START', {
+              turnCount,
+              toolName: toolUse.name,
+              toolId: toolUse.id,
+            });
             try {
               // Log raw input for debugging
               logger.debug('Parsing tool input', {
@@ -264,8 +315,7 @@ export class AgentService {
               try {
                 params = JSON.parse(toolUse.input);
               } catch (parseError) {
-                const errorMsg =
-                  parseError instanceof Error ? parseError.message : 'Invalid JSON';
+                const errorMsg = parseError instanceof Error ? parseError.message : 'Invalid JSON';
                 logger.error('Model generated invalid JSON for tool call', {
                   tool: toolUse.name,
                   parseError: errorMsg,
@@ -278,9 +328,19 @@ export class AgentService {
               }
 
               logger.info('Executing tool', { tool: toolUse.name, params });
+              sessionLogger.log('TOOL_PARAMS_PARSED', {
+                turnCount,
+                toolName: toolUse.name,
+                params,
+              });
 
               const result = await executeTool(toolUse.name, params);
               logger.info('Tool executed', { tool: toolUse.name, result });
+              sessionLogger.log('TOOL_EXECUTION_SUCCESS', {
+                turnCount,
+                toolName: toolUse.name,
+                result,
+              });
               options?.onToolUse?.(toolUse.name, params, result);
 
               // Add tool use to assistant message
@@ -321,6 +381,12 @@ export class AgentService {
                   reason: this.pendingScreenshot.reason,
                   imageSize: this.pendingScreenshot.imageData.length,
                 });
+                sessionLogger.log('SCREENSHOT_ATTACHED', {
+                  turnCount,
+                  reason: this.pendingScreenshot.reason,
+                  entityCount: this.pendingScreenshot.sceneInfo.entity_count,
+                  imageSize: this.pendingScreenshot.imageData.length,
+                });
 
                 // Clear pending screenshot after use
                 this.pendingScreenshot = null;
@@ -346,6 +412,13 @@ export class AgentService {
                 errorType,
                 error,
                 rawInput: toolUse.input.substring(0, 500),
+              });
+              sessionLogger.log('TOOL_EXECUTION_ERROR', {
+                turnCount,
+                toolName: toolUse.name,
+                errorType,
+                error: error instanceof Error ? error.message : String(error),
+                rawInput: toolUse.input.substring(0, 200),
               });
 
               // Try to parse input or use raw string
@@ -414,6 +487,10 @@ export class AgentService {
           continue;
         } else {
           // No more tools, conversation complete
+          sessionLogger.log('CONVERSATION_COMPLETE', {
+            turnCount,
+            totalTurns: turnCount,
+          });
           continueWithTools = false;
 
           // Capture final turn text (the actual assistant reply to user)
@@ -445,14 +522,25 @@ export class AgentService {
       }
 
       const responseToUser = (lastAssistantText || fullResponse).trim();
+      sessionLogger.log('MESSAGE_COMPLETE', {
+        responseLength: responseToUser.length,
+        totalResponseLength: fullResponse.length,
+      });
       options?.onComplete?.(responseToUser);
       logger.info('Message completed', { responseLength: fullResponse.length });
     } catch (error) {
       // Check if error is from cancellation
       if (error instanceof Error && error.message === 'Request cancelled') {
+        sessionLogger.log('MESSAGE_CANCELLED', {
+          error: error.message,
+        });
         logger.info('Request was cancelled by user');
         options?.onError?.(new Error('Request cancelled'));
       } else {
+        sessionLogger.log('MESSAGE_ERROR', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         logger.error('Failed to send message', { error });
         const err = error instanceof Error ? error : new Error('Unknown error');
         options?.onError?.(err);
@@ -479,8 +567,8 @@ export class AgentService {
    * Old implementation kept for reference during migration
    * @deprecated Use buildSystemPrompt instead
    */
-  // @ts-ignore - Deprecated method kept for reference
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error - Deprecated method kept for reference
+   
   private buildSystemPromptOld(context: ICodebaseContext): string {
     const shapesInfo = formatShapesForPrompt();
 
@@ -719,8 +807,32 @@ After ANY scene modification (adding entities, creating prefabs, moving objects,
     }
   }
 
+  async saveSessionLog(sessionId: string): Promise<void> {
+    const sessionLogger = this.sessionLoggers.get(sessionId);
+    if (sessionLogger) {
+      await sessionLogger.saveToFile();
+    } else {
+      logger.warn('No session logger found', { sessionId });
+    }
+  }
+
+  getSessionLog(sessionId: string): string | null {
+    const sessionLogger = this.sessionLoggers.get(sessionId);
+    return sessionLogger ? sessionLogger.getLogContent() : null;
+  }
+
+  clearSessionLog(sessionId: string): void {
+    this.sessionLoggers.delete(sessionId);
+    logger.info('Session logger cleared', { sessionId });
+  }
+
+  getAllSessionIds(): string[] {
+    return Array.from(this.sessionLoggers.keys());
+  }
+
   cleanup(): void {
     this.initialized = false;
+    this.sessionLoggers.clear();
     logger.info('AgentService cleaned up');
   }
 }

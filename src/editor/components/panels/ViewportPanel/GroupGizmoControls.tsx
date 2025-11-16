@@ -1,11 +1,13 @@
 import { TransformControls } from '@react-three/drei';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Object3D } from 'three';
 
 import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
 import { useComponentManager } from '@/editor/hooks/useComponentManager';
 import { Logger } from '@/core/lib/logger';
+import { TransformAccessor } from '@/editor/services/TransformAccessor';
+import { on } from '@/core/lib/events';
 
 type GizmoMode = 'translate' | 'rotate' | 'scale';
 
@@ -44,15 +46,12 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
       let validCount = 0;
 
       selectedIds.forEach((entityId) => {
-        const transform = componentManager.getComponent<ITransformData>(
-          entityId,
-          KnownComponentTypes.TRANSFORM,
-        );
+        const transform = TransformAccessor.getEffectiveTransform(entityId);
 
-        if (transform?.data?.position) {
-          totalX += transform.data.position[0];
-          totalY += transform.data.position[1];
-          totalZ += transform.data.position[2];
+        if (transform?.position) {
+          totalX += transform.position[0];
+          totalY += transform.position[1];
+          totalZ += transform.position[2];
           validCount++;
         }
       });
@@ -60,7 +59,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
       if (validCount === 0) return [0, 0, 0];
 
       return [totalX / validCount, totalY / validCount, totalZ / validCount];
-    }, [selectedIds, componentManager]);
+    }, [selectedIds]);
 
     // Update stable group center when selection changes or component updates (but not during drag)
     React.useEffect(() => {
@@ -79,6 +78,37 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
       }
     }, [selectedIds, calculateGroupCenter]);
 
+    // Auto-sync gizmo position when transforms change
+    useEffect(() => {
+      const unsubscribe = on('component:updated', (event) => {
+        if (isDragging.current || event.componentId !== KnownComponentTypes.TRANSFORM) {
+          return;
+        }
+
+        // Check if the updated entity affects our selection
+        const affectsSelection = selectedIds.some((selectedId) => {
+          if (selectedId === event.entityId) return true;
+
+          // Check if updated entity is a child of a selected prefab root
+          const targets = TransformAccessor.getTargetEntities(selectedId);
+          return targets.includes(event.entityId);
+        });
+
+        if (affectsSelection) {
+          const newCenter = calculateGroupCenter();
+          stableGroupCenter.current = newCenter;
+
+          if (groupCenterRef.current) {
+            groupCenterRef.current.position.set(newCenter[0], newCenter[1], newCenter[2]);
+            groupCenterRef.current.rotation.set(0, 0, 0);
+            groupCenterRef.current.scale.set(1, 1, 1);
+          }
+        }
+      });
+
+      return () => unsubscribe();
+    }, [selectedIds, calculateGroupCenter]);
+
     // Store initial values when dragging starts
     const handleMouseDown = useCallback(() => {
       isDragging.current = true;
@@ -91,21 +121,18 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
 
       // Store initial transform data for all entities
       selectedIds.forEach((entityId) => {
-        const transform = componentManager.getComponent<ITransformData>(
-          entityId,
-          KnownComponentTypes.TRANSFORM,
-        );
+        const transform = TransformAccessor.getEffectiveTransform(entityId);
 
-        if (transform?.data) {
-          initialValues.current[entityId] = { ...transform.data };
-          logger.debug(`Stored initial transform for entity ${entityId}:`, transform.data);
+        if (transform) {
+          initialValues.current[entityId] = { ...transform };
+          logger.debug(`Stored initial transform for entity ${entityId}:`, transform);
         }
       });
 
       if (setIsTransforming) {
         setIsTransforming(true);
       }
-    }, [selectedIds, componentManager, calculateGroupCenter, setIsTransforming]);
+    }, [selectedIds, calculateGroupCenter, setIsTransforming]);
 
     // Throttled update function for smooth performance
     const handleTransformUpdate = useCallback(() => {
@@ -137,10 +164,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
         // Move each entity by the same delta from their original positions
         selectedIds.forEach((entityId) => {
           const initialTransform = initialValues.current[entityId];
-          if (!initialTransform) {
-            logger.warn(`No initial transform for entity ${entityId}`);
-            return;
-          }
+          if (!initialTransform) return;
 
           // Calculate new position based on initial position + delta
           const newPosX = initialTransform.position[0] + deltaX;
@@ -162,11 +186,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
             position: [newPosX, newPosY, newPosZ],
           };
 
-          componentManager.updateComponent(
-            entityId,
-            KnownComponentTypes.TRANSFORM,
-            updatedTransform,
-          );
+          TransformAccessor.updateEffectiveTransform(entityId, updatedTransform);
         });
       } else if (mode === 'rotate') {
         // Apply rotation to each entity (for now, just apply to each individually)
@@ -187,11 +207,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
             ],
           };
 
-          componentManager.updateComponent(
-            entityId,
-            KnownComponentTypes.TRANSFORM,
-            updatedTransform,
-          );
+          TransformAccessor.updateEffectiveTransform(entityId, updatedTransform);
         });
       } else if (mode === 'scale') {
         // Apply scale to each entity
@@ -208,11 +224,7 @@ export const GroupGizmoControls: React.FC<IGroupGizmoControlsProps> = React.memo
             ],
           };
 
-          componentManager.updateComponent(
-            entityId,
-            KnownComponentTypes.TRANSFORM,
-            updatedTransform,
-          );
+          TransformAccessor.updateEffectiveTransform(entityId, updatedTransform);
         });
       }
 

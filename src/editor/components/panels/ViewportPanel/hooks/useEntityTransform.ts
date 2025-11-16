@@ -2,9 +2,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { ITransformData } from '@/core/lib/ecs/components/TransformComponent';
-import { EntityManager } from '@/core/lib/ecs/EntityManager';
-import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
-import { KnownComponentTypes } from '@/core/lib/ecs/IComponent';
+import { TransformAccessor } from '@/editor/services/TransformAccessor';
 
 interface IUseEntityTransformProps {
   transform: { data: ITransformData } | null | undefined;
@@ -23,40 +21,27 @@ export const useEntityTransform = ({
   const lastSyncedTransform = useRef<string>('');
 
   // Extract transform data with defaults
-  // For prefab roots without Transform, use first child's transform
+  // Uses TransformAccessor to handle prefab roots automatically
   const transformData = useMemo(() => {
-    if (!transform?.data) {
-      // Check if this is a prefab root (has PrefabInstance but no Transform)
-      const isPrefabRoot =
-        componentRegistry.hasComponent(entityId, 'PrefabInstance') &&
-        !componentRegistry.hasComponent(entityId, KnownComponentTypes.TRANSFORM);
-
-      if (isPrefabRoot) {
-        // Use first child's transform for gizmo positioning
-        const entity = EntityManager.getInstance().getEntity(entityId);
-        if (entity?.children && entity.children.length > 0) {
-          const firstChildId = entity.children[0];
-          const firstChildTransform = componentRegistry.getComponentData(
-            firstChildId,
-            KnownComponentTypes.TRANSFORM,
-          ) as ITransformData | undefined;
-
-          if (firstChildTransform) {
-            return {
-              position: firstChildTransform.position || ([0, 0, 0] as [number, number, number]),
-              rotation: firstChildTransform.rotation || ([0, 0, 0] as [number, number, number]),
-              scale: firstChildTransform.scale || ([1, 1, 1] as [number, number, number]),
-            };
-          }
-        }
-      }
-      return null; // Don't provide any transform data until it's properly loaded
+    if (transform?.data) {
+      return {
+        position: transform.data.position || ([0, 0, 0] as [number, number, number]),
+        rotation: transform.data.rotation || ([0, 0, 0] as [number, number, number]),
+        scale: transform.data.scale || ([1, 1, 1] as [number, number, number]),
+      };
     }
-    return {
-      position: transform.data.position || ([0, 0, 0] as [number, number, number]),
-      rotation: transform.data.rotation || ([0, 0, 0] as [number, number, number]),
-      scale: transform.data.scale || ([1, 1, 1] as [number, number, number]),
-    };
+
+    // Try to get effective transform (handles prefab roots)
+    const effectiveTransform = TransformAccessor.getEffectiveTransform(entityId);
+    if (effectiveTransform) {
+      return {
+        position: effectiveTransform.position || ([0, 0, 0] as [number, number, number]),
+        rotation: effectiveTransform.rotation || ([0, 0, 0] as [number, number, number]),
+        scale: effectiveTransform.scale || ([1, 1, 1] as [number, number, number]),
+      };
+    }
+
+    return null; // Don't provide any transform data until it's properly loaded
   }, [transform?.data, entityId]);
 
   // Convert rotation to radians for physics
