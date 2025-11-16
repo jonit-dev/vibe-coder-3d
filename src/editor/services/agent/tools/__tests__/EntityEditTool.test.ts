@@ -4,7 +4,85 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { executeEntityEdit, entityEditTool } from '../EntityEditTool';
+import { executeEntityEdit, entityEditTool, resetEntityManager } from '../EntityEditTool';
+import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
+import { EntityManager } from '@/core/lib/ecs/EntityManager';
+
+// Mock dependencies
+vi.mock('@/core/lib/ecs/EntityManager', () => ({
+  EntityManager: {
+    getInstance: vi.fn(),
+  },
+}));
+
+vi.mock('@/core/lib/ecs/ComponentRegistry');
+
+// Global test setup
+let mockEntityManagerInstance: ReturnType<typeof vi.fn>;
+let mockComponentRegistry: typeof componentRegistry;
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+
+  // Reset cached entity manager
+  resetEntityManager();
+
+  // Setup mock EntityManager instance
+  mockEntityManagerInstance = {
+    getEntity: vi.fn(),
+    createEntity: vi.fn(),
+    deleteEntity: vi.fn(),
+    setParent: vi.fn(),
+  };
+
+  // Mock EntityManager.getInstance to return our mock instance
+  vi.mocked(EntityManager.getInstance).mockReturnValue(mockEntityManagerInstance as any);
+
+  // Setup mock ComponentRegistry with proper return values for Transform component
+  mockComponentRegistry = {
+    hasComponent: vi.fn().mockReturnValue(true),
+    getComponentData: vi.fn().mockReturnValue({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+    }),
+    getEntityComponents: vi.fn().mockReturnValue(['Transform']),
+    addComponent: vi.fn().mockReturnValue(true),
+    removeComponent: vi.fn().mockReturnValue(true),
+    updateComponent: vi.fn().mockReturnValue(true),
+  } as any;
+
+  // Mock the componentRegistry import directly
+  const { componentRegistry: mockedComponentRegistry } = await import(
+    '@/core/lib/ecs/ComponentRegistry'
+  );
+  Object.assign(mockedComponentRegistry, mockComponentRegistry);
+
+  // Mock getEntity to return a valid entity for IDs 1, 2, 3, 5, 10, 11
+  vi.mocked(mockEntityManagerInstance.getEntity).mockImplementation((id) => {
+    if (id === 1 || id === 2 || id === 3 || id === 5 || id === 10 || id === 11) {
+      return {
+        id,
+        name: `Entity${id}`,
+        children: [],
+        parentId: undefined,
+      };
+    }
+    return null;
+  });
+
+  // Mock createEntity to return a new entity
+  vi.mocked(mockEntityManagerInstance.createEntity).mockReturnValue({
+    id: 999,
+    name: 'Entity1 (Copy)',
+    children: [],
+    parentId: undefined,
+  });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('EntityEditTool - Schema', () => {
   it('should include all actions in enum', () => {
@@ -41,10 +119,6 @@ describe('EntityEditTool - Transform Actions', () => {
 
   beforeEach(() => {
     dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('should dispatch set_position event with correct data', async () => {
@@ -118,10 +192,6 @@ describe('EntityEditTool - Entity Actions', () => {
     dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('should dispatch rename event with correct data', async () => {
     const params = {
       entity_id: 1,
@@ -168,12 +238,9 @@ describe('EntityEditTool - Entity Actions', () => {
 
     const result = await executeEntityEdit(params);
 
-    expect(dispatchEventSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'agent:duplicate-entity',
-        detail: { entityId: 5 },
-      }),
-    );
+    expect(dispatchEventSpy).toHaveBeenCalledWith(expect.any(CustomEvent));
+    expect(dispatchEventSpy.mock.calls[0][0].type).toBe('agent:duplicate-entity');
+    expect(dispatchEventSpy.mock.calls[0][0].detail).toEqual({ entityId: 5 });
     expect(result).toContain('Duplicated entity 5');
   });
 });
@@ -183,10 +250,6 @@ describe('EntityEditTool - Component Actions', () => {
 
   beforeEach(() => {
     dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('should dispatch add_component event with correct data', async () => {
@@ -291,10 +354,11 @@ describe('EntityEditTool - Component Actions', () => {
         detail: {
           entityId: 1,
           componentType: 'Transform',
+          data: expect.any(Object),
         },
       }),
     );
-    expect(result).toContain('Requested Transform component data for entity 1');
+    expect(result).toContain('Transform component data for entity 1');
   });
 });
 
@@ -303,10 +367,6 @@ describe('EntityEditTool - Hierarchy Actions', () => {
 
   beforeEach(() => {
     dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('should dispatch set_parent event with parent ID', async () => {
@@ -378,10 +438,6 @@ describe('EntityEditTool - State Actions', () => {
 
   beforeEach(() => {
     dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('should dispatch set_enabled event with true', async () => {

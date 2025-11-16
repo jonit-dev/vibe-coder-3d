@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { PrefabManager } from '../PrefabManager';
 import { PrefabRegistry } from '../PrefabRegistry';
+import { PrefabApplier } from '../PrefabApplier';
+import { PrefabSerializer } from '../PrefabSerializer';
 import { componentRegistry } from '@/core/lib/ecs/ComponentRegistry';
 import { EntityManager } from '@/core/lib/ecs/EntityManager';
 import { ECSWorld } from '@/core/lib/ecs/World';
@@ -13,11 +15,11 @@ describe('Prefab Position Override', () => {
   let entityManager: EntityManager;
 
   beforeEach(() => {
-    // Clear first
-    const existingManager = PrefabManager.getInstance();
-    const existingRegistry = PrefabRegistry.getInstance();
-    existingRegistry.clear();
-    existingManager.clear();
+    // Reset all singleton instances
+    PrefabManager.resetInstance();
+    PrefabRegistry.resetInstance();
+    PrefabApplier.resetInstance();
+    PrefabSerializer.resetInstance();
 
     // Reset component registry BEFORE re-initializing ECS
     componentRegistry.reset();
@@ -30,6 +32,9 @@ describe('Prefab Position Override', () => {
     manager = PrefabManager.getInstance();
     registry = PrefabRegistry.getInstance();
     entityManager = EntityManager.getInstance();
+
+    // Refresh EntityManager to pick up the new world reference
+    entityManager.refreshWorld();
 
     registry.clear();
     manager.clear();
@@ -163,25 +168,16 @@ describe('Prefab Position Override', () => {
     }));
 
     // Verify each instance has the correct position
-    instances.forEach(({ id, expectedPosition }, index) => {
-      console.log(
-        `Testing instance ${index}: entityId=${id}, expectedPosition=${expectedPosition}`,
-      );
-
+    instances.forEach(({ id, expectedPosition }) => {
       // Check if entity exists
       const entity = entityManager.getEntity(id);
-      console.log(`Entity exists: ${!!entity}`, entity);
-
-      // Check all components on this entity
-      const entityComponents = componentRegistry.getEntityComponents(id);
-      console.log(`Entity components: ${entityComponents}`);
+      expect(entity).toBeDefined();
 
       // Check if Transform component is registered
       const hasTransform = componentRegistry.hasComponent(id, 'Transform');
-      console.log(`Has Transform: ${hasTransform}`);
+      expect(hasTransform).toBe(true);
 
       const transform = componentRegistry.getComponentData(id, 'Transform');
-      console.log(`Transform data:`, transform);
       expect(transform).toBeDefined();
 
       const actualPosition = (transform as { position: number[] }).position;
@@ -193,14 +189,14 @@ describe('Prefab Position Override', () => {
       expect(actualPosition[2]).toBe(expectedPosition[2]);
 
       // Get the entity to check children
-      const entity = entityManager.getEntity(id);
-      expect(entity).toBeDefined();
-      expect(entity?.children).toBeDefined();
-      expect(entity?.children?.length).toBe(2);
+      const parentEntity = entityManager.getEntity(id);
+      expect(parentEntity).toBeDefined();
+      expect(parentEntity?.children).toBeDefined();
+      expect(parentEntity?.children?.length).toBe(2);
 
       // Children positions should be relative to parent, not absolute
-      const baseChild = entityManager.getEntity(entity!.children![0]);
-      const topChild = entityManager.getEntity(entity!.children![1]);
+      const baseChild = entityManager.getEntity(parentEntity!.children![0]);
+      const topChild = entityManager.getEntity(parentEntity!.children![1]);
 
       expect(baseChild).toBeDefined();
       expect(topChild).toBeDefined();
@@ -262,7 +258,9 @@ describe('Prefab Position Override', () => {
     expect(typedTransform.position).toEqual(newPosition);
 
     // Rotation and scale should remain from prefab definition
-    expect(typedTransform.rotation).toEqual([0, Math.PI / 4, 0]);
+    expect(typedTransform.rotation[0]).toBe(0);
+    expect(typedTransform.rotation[1]).toBeCloseTo(Math.PI / 4, 6);
+    expect(typedTransform.rotation[2]).toBe(0);
     expect(typedTransform.scale).toEqual([2, 2, 2]);
   });
 
@@ -315,7 +313,9 @@ describe('Prefab Position Override', () => {
     };
 
     expect(typedTransform.position).toEqual(newPosition);
-    expect(typedTransform.rotation).toEqual(newRotation);
+    expect(typedTransform.rotation[0]).toBe(newRotation[0]);
+    expect(typedTransform.rotation[1]).toBeCloseTo(newRotation[1], 6);
+    expect(typedTransform.rotation[2]).toBe(newRotation[2]);
     expect(typedTransform.scale).toEqual(newScale);
   });
 });

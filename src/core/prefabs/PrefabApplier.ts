@@ -19,6 +19,13 @@ export class PrefabApplier {
   }
 
   /**
+   * Reset the singleton instance (for testing)
+   */
+  static resetInstance(): void {
+    PrefabApplier.instance = null as any;
+  }
+
+  /**
    * Instantiate a prefab into the ECS world
    */
   instantiate(prefab: IPrefabDefinition, options: IInstantiateOptions = {}): number {

@@ -17,6 +17,13 @@ export class PrefabSerializer {
   }
 
   /**
+   * Reset the singleton instance (for testing)
+   */
+  static resetInstance(): void {
+    PrefabSerializer.instance = null as any;
+  }
+
+  /**
    * Serialize an entity and its children into a prefab entity structure
    */
   serialize(entityId: number): IPrefabEntity {

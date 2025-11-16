@@ -30,6 +30,13 @@ export class PrefabManager {
     return PrefabManager.instance;
   }
 
+  /**
+   * Reset the singleton instance (for testing)
+   */
+  static resetInstance(): void {
+    PrefabManager.instance = null as any;
+  }
+
   // ========== Prefab Registration ==========
 
   /**

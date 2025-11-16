@@ -10,7 +10,21 @@ import { getComponentDefaults } from '@core/lib/serialization/defaults/Component
 import { Logger } from '@core/lib/logger';
 
 const logger = Logger.create('EntityEditTool');
-const entityManager = EntityManager.getInstance();
+let entityManager: ReturnType<typeof EntityManager.getInstance>;
+
+function getEntityManager() {
+  if (!entityManager) {
+    entityManager = EntityManager.getInstance();
+  }
+  return entityManager;
+}
+
+/**
+ * Reset the cached entity manager (for testing)
+ */
+export function resetEntityManager(): void {
+  entityManager = null as any;
+}
 
 type Vec3 = { x: number; y: number; z: number };
 type TransformProperty = 'position' | 'rotation' | 'scale';
@@ -120,7 +134,7 @@ function updateTransform(
   value: Vec3,
 ): { success: boolean; message: string } {
   if (isPrefabRoot(entityId)) {
-    const entity = entityManager.getEntity(entityId);
+    const entity = getEntityManager().getEntity(entityId);
     if (!entity?.children || entity.children.length === 0) {
       return {
         success: false,
@@ -462,7 +476,7 @@ function renameEntity(entityId: number, name: string): string {
       }),
     );
 
-    const entity = entityManager.getEntity(entityId);
+    const entity = getEntityManager().getEntity(entityId);
     if (!entity) {
       return `Error: Entity ${entityId} not found`;
     }
@@ -484,7 +498,7 @@ function deleteEntity(entityId: number): string {
       }),
     );
 
-    entityManager.deleteEntity(entityId);
+    getEntityManager().deleteEntity(entityId);
     logger.info('Entity deleted', { entityId });
     return `Deleted entity ${entityId}`;
   } catch (error) {
@@ -503,6 +517,12 @@ function addComponent(entityId: number, componentType: string): string {
       return `Error: Failed to add ${componentType} component to entity ${entityId}. Check if component already exists or has conflicts.`;
     }
 
+    window.dispatchEvent(
+      new CustomEvent('agent:add-component', {
+        detail: { entityId, componentType },
+      }),
+    );
+
     logger.info('Component added', { entityId, componentType });
     return `Added ${componentType} component to entity ${entityId}`;
   } catch (error) {
@@ -517,6 +537,12 @@ function removeComponent(entityId: number, componentType: string): string {
     if (!success) {
       return `Error: Failed to remove ${componentType} component from entity ${entityId}. Component may not exist.`;
     }
+
+    window.dispatchEvent(
+      new CustomEvent('agent:remove-component', {
+        detail: { entityId, componentType },
+      }),
+    );
 
     logger.info('Component removed', { entityId, componentType });
     return `Removed ${componentType} component from entity ${entityId}`;
@@ -552,6 +578,13 @@ function setComponentProperty(
       return `Error: Failed to set ${componentType}.${propertyName} on entity ${entityId}. Entity may not have this component.`;
     }
 
+    // Dispatch event
+    window.dispatchEvent(
+      new CustomEvent('agent:set-component-property', {
+        detail: { entityId, componentType, propertyName, propertyValue: parsedValue },
+      }),
+    );
+
     logger.info('Component property updated', {
       entityId,
       componentType,
@@ -573,6 +606,13 @@ function setComponentProperty(
 function getComponent(entityId: number, componentType: string): string {
   try {
     const data = componentRegistry.getComponentData(entityId, componentType);
+
+    window.dispatchEvent(
+      new CustomEvent('agent:get-component', {
+        detail: { entityId, componentType, data },
+      }),
+    );
+
     logger.info('Component data retrieved', { entityId, componentType, data });
     return `${componentType} component data for entity ${entityId}: ${JSON.stringify(data, null, 2)}`;
   } catch (error) {
@@ -583,13 +623,13 @@ function getComponent(entityId: number, componentType: string): string {
 
 function duplicateEntity(entityId: number): string {
   try {
-    const entity = entityManager.getEntity(entityId);
+    const entity = getEntityManager().getEntity(entityId);
     if (!entity) {
       return `Error: Entity ${entityId} not found`;
     }
 
     // Create new entity with same name + " (Copy)"
-    const newEntity = entityManager.createEntity(`${entity.name} (Copy)`);
+    const newEntity = getEntityManager().createEntity(`${entity.name} (Copy)`);
 
     // Copy all components from original entity
     const components = componentRegistry.getEntityComponents(entityId);
@@ -600,8 +640,15 @@ function duplicateEntity(entityId: number): string {
 
     // Copy parent relationship
     if (entity.parentId !== undefined) {
-      entityManager.setParent(newEntity.id, entity.parentId);
+      getEntityManager().setParent(newEntity.id, entity.parentId);
     }
+
+    // Dispatch event after creating the new entity
+    window.dispatchEvent(
+      new CustomEvent('agent:duplicate-entity', {
+        detail: { entityId },
+      }),
+    );
 
     logger.info('Entity duplicated', { originalId: entityId, newId: newEntity.id });
     return `Duplicated entity ${entityId} to new entity ${newEntity.id}`;
@@ -613,7 +660,15 @@ function duplicateEntity(entityId: number): string {
 
 function setParent(entityId: number, parentId: number | null | undefined): string {
   try {
-    entityManager.setParent(entityId, parentId ?? undefined);
+    getEntityManager().setParent(entityId, parentId ?? undefined);
+
+    // Dispatch event
+    window.dispatchEvent(
+      new CustomEvent('agent:set-parent', {
+        detail: { entityId, parentId },
+      }),
+    );
+
     logger.info('Entity parent updated', { entityId, parentId });
 
     if (parentId === null || parentId === undefined) {
@@ -635,6 +690,13 @@ function setEnabled(entityId: number, enabled: boolean): string {
       componentRegistry.updateComponent(entityId, 'Enabled', { enabled });
     }
 
+    // Dispatch event
+    window.dispatchEvent(
+      new CustomEvent('agent:set-enabled', {
+        detail: { entityId, enabled },
+      }),
+    );
+
     logger.info('Entity enabled state updated', { entityId, enabled });
     return `Set entity ${entityId} enabled state to ${enabled}`;
   } catch (error) {
@@ -650,7 +712,7 @@ function batchDeleteEntities(entityIds: number[]): string {
 
     for (const entityId of entityIds) {
       try {
-        entityManager.deleteEntity(entityId);
+        getEntityManager().deleteEntity(entityId);
         successCount++;
       } catch (error) {
         errors.push(

@@ -20,6 +20,13 @@ export class PrefabRegistry {
   }
 
   /**
+   * Reset the singleton instance (for testing)
+   */
+  static resetInstance(): void {
+    this.instance = null as any;
+  }
+
+  /**
    * List all prefabs
    * NOTE: Preserves insertion order as JavaScript Maps maintain insertion order (ES2015+ spec)
    * This ensures prefabs are returned in the same order they were registered
