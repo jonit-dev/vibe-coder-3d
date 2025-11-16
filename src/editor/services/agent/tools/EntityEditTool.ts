@@ -399,6 +399,12 @@ export async function executeEntityEdit(params: Record<string, unknown>): Promis
 
 function setPosition(entityId: number, position: { x: number; y: number; z: number }): string {
   try {
+    window.dispatchEvent(
+      new CustomEvent('agent:set-position', {
+        detail: { entityId, position },
+      }),
+    );
+
     const result = updateTransform(entityId, 'position', position);
     if (result.success) {
       logger.info('Position updated', { entityId, position });
@@ -412,6 +418,12 @@ function setPosition(entityId: number, position: { x: number; y: number; z: numb
 
 function setRotation(entityId: number, rotation: { x: number; y: number; z: number }): string {
   try {
+    window.dispatchEvent(
+      new CustomEvent('agent:set-rotation', {
+        detail: { entityId, rotation },
+      }),
+    );
+
     const result = updateTransform(entityId, 'rotation', rotation);
     if (result.success) {
       logger.info('Rotation updated', { entityId, rotation });
@@ -425,6 +437,12 @@ function setRotation(entityId: number, rotation: { x: number; y: number; z: numb
 
 function setScale(entityId: number, scale: { x: number; y: number; z: number }): string {
   try {
+    window.dispatchEvent(
+      new CustomEvent('agent:set-scale', {
+        detail: { entityId, scale },
+      }),
+    );
+
     const result = updateTransform(entityId, 'scale', scale);
     if (result.success) {
       logger.info('Scale updated', { entityId, scale });
@@ -438,6 +456,12 @@ function setScale(entityId: number, scale: { x: number; y: number; z: number }):
 
 function renameEntity(entityId: number, name: string): string {
   try {
+    window.dispatchEvent(
+      new CustomEvent('agent:rename-entity', {
+        detail: { entityId, name },
+      }),
+    );
+
     const entity = entityManager.getEntity(entityId);
     if (!entity) {
       return `Error: Entity ${entityId} not found`;
@@ -454,6 +478,12 @@ function renameEntity(entityId: number, name: string): string {
 
 function deleteEntity(entityId: number): string {
   try {
+    window.dispatchEvent(
+      new CustomEvent('agent:delete-entity', {
+        detail: { entityId },
+      }),
+    );
+
     entityManager.deleteEntity(entityId);
     logger.info('Entity deleted', { entityId });
     return `Deleted entity ${entityId}`;
