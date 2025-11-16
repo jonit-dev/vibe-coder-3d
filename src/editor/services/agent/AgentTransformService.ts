@@ -1,6 +1,4 @@
 import { Logger } from '@core/lib/logger';
-import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
-import { EntityManager } from '@core/lib/ecs/EntityManager';
 import { TransformAccessor } from '@/editor/services/TransformAccessor';
 
 const logger = Logger.create('AgentTransformService');
@@ -22,11 +20,7 @@ export interface IUpdateComponentCallback {
 }
 
 export class AgentTransformService {
-  constructor(
-    private readonly componentRegistry: ComponentRegistry,
-    private readonly entityManager: EntityManager,
-    private readonly updateComponent: IUpdateComponentCallback,
-  ) {}
+  constructor() {}
 
   setPosition(entityId: number, position: IVector3): void {
     TransformAccessor.updateEffectiveTransform(

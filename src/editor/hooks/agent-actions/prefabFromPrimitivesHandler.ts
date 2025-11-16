@@ -12,7 +12,7 @@ import type { IEntity } from '@core/lib/ecs/IEntity';
 
 const logger = Logger.create('AgentActions:PrefabFromPrimitives');
 
-interface PrimitiveSpec {
+interface IPrimitiveSpec {
   type: string;
   name?: string;
   position?: { x: number; y: number; z: number };
@@ -24,7 +24,7 @@ interface PrimitiveSpec {
   };
 }
 
-interface EntityCreators {
+interface IEntityCreators {
   createCube: (name?: string) => IEntity;
   createSphere: (name?: string) => IEntity;
   createCylinder: (name?: string) => IEntity;
@@ -40,11 +40,11 @@ type UpdateComponentFn = <TData>(
 ) => boolean;
 
 export const createPrefabFromPrimitivesHandler = (
-  entityCreators: EntityCreators,
+  entityCreators: IEntityCreators,
   updateComponent: UpdateComponentFn,
   refreshPrefabs: () => void,
 ) => {
-  const createPrimitiveEntity = (spec: PrimitiveSpec): IEntity | null => {
+  const createPrimitiveEntity = (spec: IPrimitiveSpec): IEntity | null => {
     const childName = spec.name || spec.type;
     let childEntity: IEntity | undefined;
 
@@ -75,7 +75,7 @@ export const createPrefabFromPrimitivesHandler = (
     return childEntity || null;
   };
 
-  const applyTransform = (entityId: number, spec: PrimitiveSpec) => {
+  const applyTransform = (entityId: number, spec: IPrimitiveSpec) => {
     if (spec.position || spec.rotation || spec.scale) {
       updateComponent(entityId, KnownComponentTypes.TRANSFORM, {
         position: spec.position ? [spec.position.x, spec.position.y, spec.position.z] : [0, 0, 0],
@@ -85,7 +85,7 @@ export const createPrefabFromPrimitivesHandler = (
     }
   };
 
-  const applyMaterial = (entityId: number, spec: PrimitiveSpec) => {
+  const applyMaterial = (entityId: number, spec: IPrimitiveSpec) => {
     if (!spec.material) return;
 
     const meshUpdate: Partial<MeshRendererData> = {};

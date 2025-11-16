@@ -92,31 +92,135 @@ export class PrefabApplier {
    * Apply transform overrides to instantiated entity
    */
   private applyTransformOverrides(entityId: number, options: IInstantiateOptions): void {
-    const transform = componentRegistry.getComponentData(entityId, 'Transform');
-    if (!transform) {
-      logger.warn('Entity has no Transform component', { entityId });
-      return;
-    }
+    const hasTransform = componentRegistry.hasComponent(entityId, 'Transform');
+    const isPrefabRoot =
+      componentRegistry.hasComponent(entityId, 'PrefabInstance') && !hasTransform;
 
-    const updates: Record<string, unknown> = {};
+    if (isPrefabRoot) {
+      // Prefab root without Transform - propagate to children
+      const entityManager = EntityManager.getInstance();
+      const entity = entityManager.getEntity(entityId);
+      const children = entity?.children || [];
 
-    if (options.position) {
-      updates.position = options.position;
-    }
+      if (children.length === 0) {
+        logger.warn('Prefab root has no children to apply transform to', { entityId });
+        return;
+      }
 
-    if (options.rotation) {
-      updates.rotation = options.rotation;
-    }
+      // Apply position by propagating to all children
+      if (options.position) {
+        const firstChildData = componentRegistry.getComponentData(children[0], 'Transform') as
+          | { position?: [number, number, number] }
+          | undefined;
+        const currentPos = firstChildData?.position || [0, 0, 0];
+        const delta: [number, number, number] = [
+          options.position[0] - currentPos[0],
+          options.position[1] - currentPos[1],
+          options.position[2] - currentPos[2],
+        ];
 
-    if (options.scale) {
-      updates.scale = options.scale;
-    }
+        for (const childId of children) {
+          if (componentRegistry.hasComponent(childId, 'Transform')) {
+            const childData = componentRegistry.getComponentData(childId, 'Transform') as
+              | { position?: [number, number, number] }
+              | undefined;
+            const childPos = childData?.position || [0, 0, 0];
+            componentRegistry.updateComponent(childId, 'Transform', {
+              position: [childPos[0] + delta[0], childPos[1] + delta[1], childPos[2] + delta[2]],
+            });
+          }
+        }
+      }
 
-    if (Object.keys(updates).length > 0) {
-      componentRegistry.updateComponent(entityId, 'Transform', {
-        ...transform,
-        ...updates,
+      // Apply rotation by propagating to all children
+      if (options.rotation) {
+        const firstChildData = componentRegistry.getComponentData(children[0], 'Transform') as
+          | { rotation?: [number, number, number] }
+          | undefined;
+        const currentRot = firstChildData?.rotation || [0, 0, 0];
+        const delta: [number, number, number] = [
+          options.rotation[0] - currentRot[0],
+          options.rotation[1] - currentRot[1],
+          options.rotation[2] - currentRot[2],
+        ];
+
+        for (const childId of children) {
+          if (componentRegistry.hasComponent(childId, 'Transform')) {
+            const childData = componentRegistry.getComponentData(childId, 'Transform') as
+              | { rotation?: [number, number, number] }
+              | undefined;
+            const childRot = childData?.rotation || [0, 0, 0];
+            componentRegistry.updateComponent(childId, 'Transform', {
+              rotation: [childRot[0] + delta[0], childRot[1] + delta[1], childRot[2] + delta[2]],
+            });
+          }
+        }
+      }
+
+      // Apply scale by propagating to all children
+      if (options.scale) {
+        const firstChildData = componentRegistry.getComponentData(children[0], 'Transform') as
+          | { scale?: [number, number, number] }
+          | undefined;
+        const currentScale = firstChildData?.scale || [1, 1, 1];
+        const multiplier: [number, number, number] = [
+          currentScale[0] !== 0 ? options.scale[0] / currentScale[0] : 1,
+          currentScale[1] !== 0 ? options.scale[1] / currentScale[1] : 1,
+          currentScale[2] !== 0 ? options.scale[2] / currentScale[2] : 1,
+        ];
+
+        for (const childId of children) {
+          if (componentRegistry.hasComponent(childId, 'Transform')) {
+            const childData = componentRegistry.getComponentData(childId, 'Transform') as
+              | { scale?: [number, number, number] }
+              | undefined;
+            const childScale = childData?.scale || [1, 1, 1];
+            componentRegistry.updateComponent(childId, 'Transform', {
+              scale: [
+                childScale[0] * multiplier[0],
+                childScale[1] * multiplier[1],
+                childScale[2] * multiplier[2],
+              ],
+            });
+          }
+        }
+      }
+
+      logger.info('Applied transform overrides to prefab children', {
+        entityId,
+        childCount: children.length,
+        position: options.position,
+        rotation: options.rotation,
+        scale: options.scale,
       });
+    } else if (hasTransform) {
+      // Regular entity with Transform component
+      const updates: Record<string, unknown> = {};
+
+      if (options.position) {
+        updates.position = options.position;
+      }
+
+      if (options.rotation) {
+        updates.rotation = options.rotation;
+      }
+
+      if (options.scale) {
+        updates.scale = options.scale;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        componentRegistry.updateComponent(entityId, 'Transform', updates);
+      }
+
+      logger.info('Applied transform overrides to entity', {
+        entityId,
+        position: options.position,
+        rotation: options.rotation,
+        scale: options.scale,
+      });
+    } else {
+      logger.warn('Entity has no Transform component and is not a prefab root', { entityId });
     }
   }
 

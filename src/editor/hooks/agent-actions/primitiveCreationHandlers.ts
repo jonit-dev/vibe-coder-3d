@@ -9,7 +9,7 @@ import type { IEntity } from '@core/lib/ecs/IEntity';
 
 const logger = Logger.create('AgentActions:Primitives');
 
-interface EntityCreators {
+interface IEntityCreators {
   createCube: (name?: string) => IEntity;
   createSphere: (name?: string) => IEntity;
   createCylinder: (name?: string) => IEntity;
@@ -26,7 +26,7 @@ type UpdateComponentFn = <TData>(
 ) => boolean;
 
 export const createPrimitiveCreationHandlers = (
-  entityCreators: EntityCreators,
+  entityCreators: IEntityCreators,
   updateComponent: UpdateComponentFn,
 ) => {
   const handleAddEntity = (event: Event) => {

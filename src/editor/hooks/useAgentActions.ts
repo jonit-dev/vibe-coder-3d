@@ -49,7 +49,7 @@ export const useAgentActions = () => {
         createDirectionalLight,
       }),
       material: new AgentMaterialService(),
-      transform: new AgentTransformService(componentRegistry, entityManager, updateComponent),
+      transform: new AgentTransformService(),
       prefab: new AgentPrefabService(
         prefabManager,
         entityManager,
