@@ -16,6 +16,7 @@ const logger = Logger.create('AgentService');
 interface ISendMessageOptions {
   onStream?: (chunk: string) => void;
   onComplete?: (response: string) => void;
+  onToolStart?: (tool: string, args: unknown) => void;
   onToolUse?: (tool: string, args: unknown, result?: unknown) => void;
   onError?: (error: Error) => void;
 }
@@ -334,6 +335,9 @@ export class AgentService {
                 params,
               });
 
+              // Notify that tool is starting
+              options?.onToolStart?.(toolUse.name, params);
+
               const result = await executeTool(toolUse.name, params);
               logger.info('Tool executed', { tool: toolUse.name, result });
               sessionLogger.log('TOOL_EXECUTION_SUCCESS', {
@@ -568,7 +572,7 @@ export class AgentService {
    * @deprecated Use buildSystemPrompt instead
    */
   // @ts-expect-error - Deprecated method kept for reference
-   
+
   private buildSystemPromptOld(context: ICodebaseContext): string {
     const shapesInfo = formatShapesForPrompt();
 

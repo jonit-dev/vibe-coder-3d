@@ -158,6 +158,17 @@ export const useAgentActions = () => {
       logger.info('Agent requested prefab creation from primitives', { name, primitives });
 
       try {
+        // Check if prefab already exists
+        const existingPrefabs = prefabManager.getAll();
+        const existingPrefab = existingPrefabs.find(
+          (p) => p.id === name.toLowerCase().replace(/\s+/g, '-'),
+        );
+
+        if (existingPrefab) {
+          logger.info('Prefab already exists, skipping creation', { name });
+          return;
+        }
+
         const container = entityManager.createEntity(name);
         const containerId = container.id;
 
@@ -196,7 +207,16 @@ export const useAgentActions = () => {
         prefabManager.createFromEntity(containerId, name, prefabId);
         _refreshPrefabs();
 
-        // Clean up: delete container and children
+        // Auto-instantiate one instance at origin for immediate visual feedback
+        const instanceId = prefabManager.instantiate(prefabId, { position: [0, 0, 0] });
+
+        if (instanceId === -1) {
+          logger.error('Failed to auto-instantiate newly created prefab', { prefabId });
+        } else {
+          logger.info('Auto-instantiated first instance of new prefab', { prefabId, instanceId });
+        }
+
+        // Clean up the creation container (but keep the instance)
         const containerEntity = entityManager.getEntity(containerId);
         const children = [...(containerEntity?.children || [])];
 
@@ -205,10 +225,11 @@ export const useAgentActions = () => {
         }
         entityManager.deleteEntity(containerId);
 
-        logger.info('Prefab created from primitives', {
+        logger.info('Prefab created and auto-instantiated from primitives', {
           prefabId,
           name,
           primitiveCount: primitives.length,
+          instanceId: instanceId !== -1 ? instanceId : 'failed',
         });
       } catch (error) {
         logger.error('Failed to create prefab from primitives', { error, name });
@@ -222,7 +243,7 @@ export const useAgentActions = () => {
       logger.info('Agent requested prefab creation and instantiation from primitives', {
         name,
         primitives,
-        instanceCount: instance_positions?.length || 1
+        instanceCount: instance_positions?.length || 1,
       });
 
       try {
@@ -304,6 +325,24 @@ export const useAgentActions = () => {
 
       logger.info('Agent requested prefab instantiation', { prefabId, position });
       services.prefab.instantiate(prefabId, position);
+    };
+
+    const handleBatchInstantiatePrefab = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { prefabId, instances } = customEvent.detail;
+
+      logger.info('Agent requested batch prefab instantiation', { prefabId, instances });
+      const instanceIds = services.prefab.batchInstantiate(prefabId, instances);
+
+      // Log results for better debugging
+      if (instanceIds.length !== instances.length) {
+        logger.warn('Batch instantiation had failures', {
+          prefabId,
+          requested: instances.length,
+          successful: instanceIds.length,
+          failed: instances.length - instanceIds.length,
+        });
+      }
     };
 
     const handleListPrefabs = () => {
@@ -557,9 +596,13 @@ export const useAgentActions = () => {
       'agent:create-prefab-from-primitives',
       handleCreatePrefabFromPrimitives,
     );
-    window.addEventListener('agent:create-and-instantiate-prefab', handleCreateAndInstantiatePrefab);
+    window.addEventListener(
+      'agent:create-and-instantiate-prefab',
+      handleCreateAndInstantiatePrefab,
+    );
     window.addEventListener('agent:create-prefab', handleCreatePrefab);
     window.addEventListener('agent:instantiate-prefab', handleInstantiatePrefab);
+    window.addEventListener('agent:batch-instantiate-prefab', handleBatchInstantiatePrefab);
     window.addEventListener('agent:list-prefabs', handleListPrefabs);
     window.addEventListener('agent:create-variant', handleCreateVariant);
     window.addEventListener('agent:unpack-prefab', handleUnpackPrefab);
@@ -584,9 +627,13 @@ export const useAgentActions = () => {
         'agent:create-prefab-from-primitives',
         handleCreatePrefabFromPrimitives,
       );
-      window.removeEventListener('agent:create-and-instantiate-prefab', handleCreateAndInstantiatePrefab);
+      window.removeEventListener(
+        'agent:create-and-instantiate-prefab',
+        handleCreateAndInstantiatePrefab,
+      );
       window.removeEventListener('agent:create-prefab', handleCreatePrefab);
       window.removeEventListener('agent:instantiate-prefab', handleInstantiatePrefab);
+      window.removeEventListener('agent:batch-instantiate-prefab', handleBatchInstantiatePrefab);
       window.removeEventListener('agent:list-prefabs', handleListPrefabs);
       window.removeEventListener('agent:create-variant', handleCreateVariant);
       window.removeEventListener('agent:unpack-prefab', handleUnpackPrefab);

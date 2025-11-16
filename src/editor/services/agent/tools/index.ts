@@ -35,6 +35,7 @@ import {
 } from './GetAvailableMaterialsTool';
 import { planningTool, executePlanning } from './PlanningTool';
 import { scriptManagementTool, executeScriptManagement } from './ScriptManagementTool';
+import { refreshViewport } from './utils/viewportRefresh';
 
 // Type for all available tools (union of tool types)
 export type AvailableTool =
@@ -83,36 +84,66 @@ export type ToolParameters =
   | Parameters<typeof executeScriptManagement>[0];
 
 export async function executeTool(toolName: string, params: ToolParameters): Promise<string> {
+  let result: string;
+
   switch (toolName) {
     case 'planning':
-      return executePlanning(params as Parameters<typeof executePlanning>[0]);
+      result = await executePlanning(params as Parameters<typeof executePlanning>[0]);
+      break;
     case 'scene_manipulation':
-      return executeSceneManipulation(params as Parameters<typeof executeSceneManipulation>[0]);
+      result = await executeSceneManipulation(
+        params as Parameters<typeof executeSceneManipulation>[0],
+      );
+      break;
     case 'scene_query':
-      return executeSceneQuery(params as Parameters<typeof executeSceneQuery>[0]);
+      result = await executeSceneQuery(params as Parameters<typeof executeSceneQuery>[0]);
+      break;
     case 'entity_edit':
-      return executeEntityEdit(params as Parameters<typeof executeEntityEdit>[0]);
+      result = await executeEntityEdit(params as Parameters<typeof executeEntityEdit>[0]);
+      break;
     case 'entity_batch_edit':
-      return executeEntityBatchEdit(params as Parameters<typeof executeEntityBatchEdit>[0]);
+      result = await executeEntityBatchEdit(params as Parameters<typeof executeEntityBatchEdit>[0]);
+      break;
     // case 'geometry_creation':
-    //   return executeGeometryCreation(params);
+    //   result = await executeGeometryCreation(params);
+    //   break;
     case 'prefab_management':
-      return executePrefabManagement(params as Parameters<typeof executePrefabManagement>[0]);
+      result = await executePrefabManagement(
+        params as Parameters<typeof executePrefabManagement>[0],
+      );
+      break;
     case 'screenshot_feedback':
-      return executeScreenshotFeedback(params as Parameters<typeof executeScreenshotFeedback>[0]);
+      result = await executeScreenshotFeedback(
+        params as Parameters<typeof executeScreenshotFeedback>[0],
+      );
+      break;
     case 'get_available_shapes':
-      return executeGetAvailableShapes(params as Parameters<typeof executeGetAvailableShapes>[0]);
+      result = await executeGetAvailableShapes(
+        params as Parameters<typeof executeGetAvailableShapes>[0],
+      );
+      break;
     case 'get_shape_schema':
-      return executeGetShapeSchema(params as Parameters<typeof executeGetShapeSchema>[0]);
+      result = await executeGetShapeSchema(params as Parameters<typeof executeGetShapeSchema>[0]);
+      break;
     case 'get_scene_info':
-      return executeGetSceneInfo(params as Parameters<typeof executeGetSceneInfo>[0]);
+      result = await executeGetSceneInfo(params as Parameters<typeof executeGetSceneInfo>[0]);
+      break;
     case 'get_available_materials':
-      return executeGetAvailableMaterials(
+      result = await executeGetAvailableMaterials(
         params as Parameters<typeof executeGetAvailableMaterials>[0],
       );
+      break;
     case 'script_management':
-      return executeScriptManagement(params as Parameters<typeof executeScriptManagement>[0]);
+      result = await executeScriptManagement(
+        params as Parameters<typeof executeScriptManagement>[0],
+      );
+      break;
     default:
-      return `Unknown tool: ${toolName}`;
+      result = `Unknown tool: ${toolName}`;
   }
+
+  // Force viewport refresh after every tool execution to avoid stale state
+  refreshViewport();
+
+  return result;
 }

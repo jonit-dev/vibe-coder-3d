@@ -111,6 +111,53 @@ export class AgentPrefabService {
     }
   }
 
+  batchInstantiate(
+    prefabId: string,
+    instances: Array<{
+      position?: [number, number, number];
+      rotation?: [number, number, number];
+      scale?: [number, number, number];
+    }>,
+  ): number[] {
+    try {
+      const instanceIds: number[] = [];
+
+      for (const instance of instances) {
+        const options: Record<string, unknown> = {};
+
+        if (instance.position) {
+          options.position = instance.position;
+        }
+        if (instance.rotation) {
+          options.rotation = instance.rotation;
+        }
+        if (instance.scale) {
+          options.scale = instance.scale;
+        }
+
+        const entityId = this.prefabManager.instantiate(prefabId, options);
+
+        if (entityId !== -1) {
+          instanceIds.push(entityId);
+        } else {
+          logger.warn('Failed to instantiate one instance in batch', { prefabId, instance });
+        }
+      }
+
+      logger.info('Batch prefab instantiation completed', {
+        prefabId,
+        requestedCount: instances.length,
+        successfulCount: instanceIds.length,
+        instanceIds,
+      });
+
+      return instanceIds;
+    } catch (error) {
+      logger.error('Failed to batch instantiate prefab', { error, prefabId });
+      return [];
+    }
+  }
+
   unpack(entityId: number): boolean {
     try {
       if (this.componentRegistry.hasComponent(entityId, 'PrefabInstance')) {

@@ -7,8 +7,11 @@
 import { Logger } from '@core/lib/logger';
 import { ComponentRegistry } from '@core/lib/ecs/ComponentRegistry';
 import { EntityQueries } from '@core/lib/ecs/queries/entityQueries';
+import { EntityManager } from '@core/lib/ecs/EntityManager';
+import { KnownComponentTypes } from '@core/lib/ecs/IComponent';
 
 const logger = Logger.create('EntityBatchEditTool');
+const entityManager = EntityManager.getInstance();
 
 interface ITransformUpdate {
   entity_id: number;
@@ -39,6 +42,109 @@ interface IEntityBatchEditParams {
     roughness?: number;
   };
   materials?: IMaterialUpdate[];
+}
+
+// Helper functions for prefab handling (same as EntityEditTool)
+function isPrefabRoot(entityId: number): boolean {
+  const componentRegistry = ComponentRegistry.getInstance();
+  return (
+    componentRegistry.hasComponent(entityId, 'PrefabInstance') &&
+    !componentRegistry.hasComponent(entityId, KnownComponentTypes.TRANSFORM)
+  );
+}
+
+function propagatePositionToPrefabChildren(
+  targetPos: { x: number; y: number; z: number },
+  children: number[],
+): void {
+  const componentRegistry = ComponentRegistry.getInstance();
+  const firstChildData = componentRegistry.getComponentData(
+    children[0],
+    KnownComponentTypes.TRANSFORM,
+  ) as { position?: [number, number, number] } | undefined;
+  const currentPos = firstChildData?.position || [0, 0, 0];
+  const delta: [number, number, number] = [
+    targetPos.x - currentPos[0],
+    targetPos.y - currentPos[1],
+    targetPos.z - currentPos[2],
+  ];
+
+  for (const childId of children) {
+    if (componentRegistry.hasComponent(childId, KnownComponentTypes.TRANSFORM)) {
+      const childData = componentRegistry.getComponentData(
+        childId,
+        KnownComponentTypes.TRANSFORM,
+      ) as { position?: [number, number, number] } | undefined;
+      const childPos = childData?.position || [0, 0, 0];
+      componentRegistry.updateComponent(childId, KnownComponentTypes.TRANSFORM, {
+        position: [childPos[0] + delta[0], childPos[1] + delta[1], childPos[2] + delta[2]],
+      });
+    }
+  }
+}
+
+function propagateRotationToPrefabChildren(
+  targetRot: { x: number; y: number; z: number },
+  children: number[],
+): void {
+  const componentRegistry = ComponentRegistry.getInstance();
+  const firstChildData = componentRegistry.getComponentData(
+    children[0],
+    KnownComponentTypes.TRANSFORM,
+  ) as { rotation?: [number, number, number] } | undefined;
+  const currentRot = firstChildData?.rotation || [0, 0, 0];
+  const delta: [number, number, number] = [
+    targetRot.x - currentRot[0],
+    targetRot.y - currentRot[1],
+    targetRot.z - currentRot[2],
+  ];
+
+  for (const childId of children) {
+    if (componentRegistry.hasComponent(childId, KnownComponentTypes.TRANSFORM)) {
+      const childData = componentRegistry.getComponentData(
+        childId,
+        KnownComponentTypes.TRANSFORM,
+      ) as { rotation?: [number, number, number] } | undefined;
+      const childRot = childData?.rotation || [0, 0, 0];
+      componentRegistry.updateComponent(childId, KnownComponentTypes.TRANSFORM, {
+        rotation: [childRot[0] + delta[0], childRot[1] + delta[1], childRot[2] + delta[2]],
+      });
+    }
+  }
+}
+
+function propagateScaleToPrefabChildren(
+  targetScale: { x: number; y: number; z: number },
+  children: number[],
+): void {
+  const componentRegistry = ComponentRegistry.getInstance();
+  const firstChildData = componentRegistry.getComponentData(
+    children[0],
+    KnownComponentTypes.TRANSFORM,
+  ) as { scale?: [number, number, number] } | undefined;
+  const currentScale = firstChildData?.scale || [1, 1, 1];
+  const multiplier: [number, number, number] = [
+    currentScale[0] !== 0 ? targetScale.x / currentScale[0] : 1,
+    currentScale[1] !== 0 ? targetScale.y / currentScale[1] : 1,
+    currentScale[2] !== 0 ? targetScale.z / currentScale[2] : 1,
+  ];
+
+  for (const childId of children) {
+    if (componentRegistry.hasComponent(childId, KnownComponentTypes.TRANSFORM)) {
+      const childData = componentRegistry.getComponentData(
+        childId,
+        KnownComponentTypes.TRANSFORM,
+      ) as { scale?: [number, number, number] } | undefined;
+      const childScale = childData?.scale || [1, 1, 1];
+      componentRegistry.updateComponent(childId, KnownComponentTypes.TRANSFORM, {
+        scale: [
+          childScale[0] * multiplier[0],
+          childScale[1] * multiplier[1],
+          childScale[2] * multiplier[2],
+        ],
+      });
+    }
+  }
 }
 
 export const entityBatchEditTool = {
@@ -200,6 +306,33 @@ async function setTransforms(entities: ITransformUpdate[]): Promise<string> {
       continue;
     }
 
+    // Handle prefab roots (entities with PrefabInstance but no Transform)
+    if (isPrefabRoot(entity_id)) {
+      const entityData = entityManager.getEntity(entity_id);
+      if (!entityData?.children || entityData.children.length === 0) {
+        results.push(`Entity ${entity_id}: prefab root with no children (skipped)`);
+        skipCount++;
+        continue;
+      }
+
+      try {
+        if (position) {
+          propagatePositionToPrefabChildren(position, entityData.children);
+        }
+        if (rotation) {
+          propagateRotationToPrefabChildren(rotation, entityData.children);
+        }
+        if (scale) {
+          propagateScaleToPrefabChildren(scale, entityData.children);
+        }
+        successCount++;
+      } catch (error) {
+        results.push(`Entity ${entity_id}: prefab propagation failed - ${error}`);
+        skipCount++;
+      }
+      continue;
+    }
+
     // Check if entity has Transform component
     if (!queries.hasComponent(entity_id, 'Transform')) {
       results.push(`Entity ${entity_id}: no Transform component (skipped)`);
@@ -255,6 +388,36 @@ async function offsetPosition(
     if (!allEntities.includes(entity_id)) {
       results.push(`Entity ${entity_id}: not found (skipped)`);
       skipCount++;
+      continue;
+    }
+
+    // Handle prefab roots (entities with PrefabInstance but no Transform)
+    if (isPrefabRoot(entity_id)) {
+      const entityData = entityManager.getEntity(entity_id);
+      if (!entityData?.children || entityData.children.length === 0) {
+        results.push(`Entity ${entity_id}: prefab root with no children (skipped)`);
+        skipCount++;
+        continue;
+      }
+
+      try {
+        // For offset, we need to get the current position from first child and add offset
+        const firstChildData = componentRegistry.getComponentData(
+          entityData.children[0],
+          KnownComponentTypes.TRANSFORM,
+        ) as { position?: [number, number, number] } | undefined;
+        const currentPos = firstChildData?.position || [0, 0, 0];
+        const targetPos = {
+          x: currentPos[0] + offset.x,
+          y: currentPos[1] + offset.y,
+          z: currentPos[2] + offset.z,
+        };
+        propagatePositionToPrefabChildren(targetPos, entityData.children);
+        successCount++;
+      } catch (error) {
+        results.push(`Entity ${entity_id}: prefab offset failed - ${error}`);
+        skipCount++;
+      }
       continue;
     }
 

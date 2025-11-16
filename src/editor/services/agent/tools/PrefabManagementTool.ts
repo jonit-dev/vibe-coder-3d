@@ -51,14 +51,19 @@ Prefabs are reusable templates that can be instantiated multiple times. They're 
 - Templates for consistent object creation
 
 Actions:
-- create_from_primitives: Create a prefab from a specification of primitive shapes (PREFERRED for forests, buildings, props)
-- create_from_selection: Create a prefab from currently selected entities
-- create_and_instantiate: Create prefab AND immediately place instances (EFFICIENT - combines creation + placement)
-- instantiate: Place an instance of a prefab in the scene
-- batch_instantiate: Place multiple instances of a prefab at specified positions (EFFICIENT for forests, grids, arrays)
+- create_from_primitives: Create a reusable prefab template from primitives (USE ONLY when you want to create a template for later use - DOES NOT place anything in scene)
+- create_from_selection: Create a reusable prefab template from selected entities (USE ONLY when you want to create a template for later use)
+- create_and_instantiate: Create prefab AND immediately place instances (USE WHEN you want pieces visible in the scene immediately - MOST COMMON for chess pieces, characters, etc.)
+- instantiate: Place an instance of an existing prefab in the scene (requires prefab_id)
+- batch_instantiate: Place multiple instances of an existing prefab at specified positions (requires prefab_id and positions array)
 - list_prefabs: List all available prefabs
 - create_variant: Create a variant of an existing prefab
-- unpack_instance: Convert prefab instance to regular entity`,
+- unpack_instance: Convert prefab instance to regular entity
+
+IMPORTANT:
+- If you want pieces visible in the scene NOW, use create_and_instantiate or batch_instantiate
+- If you want to create reusable templates ONLY (no visible pieces), use create_from_primitives
+- Do NOT mix create_from_primitives with separate instantiation unless necessary`,
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -195,7 +200,16 @@ Actions:
 export async function executePrefabManagement(params: IPrefabManagementParams): Promise<string> {
   logger.info('Executing prefab management', { params });
 
-  const { action, name, prefab_id, position, entity_id, primitives, instances, instance_positions } = params;
+  const {
+    action,
+    name,
+    prefab_id,
+    position,
+    entity_id,
+    primitives,
+    instances,
+    instance_positions,
+  } = params;
 
   switch (action) {
     case 'create_from_primitives':
@@ -284,7 +298,11 @@ function createPrefabFromPrimitives(name: string, primitives: IPrimitiveSpec[]):
   return `Created prefab "${name}" (id: "${prefabId}") from ${primitives.length} primitives. Use the instantiate action with prefab_id="${prefabId}" to place instances in the scene.`;
 }
 
-function createAndInstantiatePrefab(name: string, primitives: IPrimitiveSpec[], instance_positions?: Array<[number, number, number] | { x: number; y: number; z: number }>): string {
+function createAndInstantiatePrefab(
+  name: string,
+  primitives: IPrimitiveSpec[],
+  instance_positions?: Array<[number, number, number] | { x: number; y: number; z: number }>,
+): string {
   const event = new CustomEvent('agent:create-and-instantiate-prefab', {
     detail: { name, primitives, instance_positions },
   });
@@ -336,6 +354,11 @@ interface IInstanceTransform {
 }
 
 function batchInstantiatePrefab(prefabId: string, instances: IInstanceTransform[]): string {
+  // Validate input
+  if (!instances || instances.length === 0) {
+    return 'Error: No instances provided for batch instantiation';
+  }
+
   // Normalize instances to tuple format
   const normalizedInstances = instances.map((inst) => {
     const position = inst.position
@@ -370,9 +393,10 @@ function batchInstantiatePrefab(prefabId: string, instances: IInstanceTransform[
   logger.info('Batch prefab instantiation requested', {
     prefabId,
     instanceCount: instances.length,
+    positions: normalizedInstances.map((inst) => inst.position),
   });
 
-  return `Batch instantiated ${instances.length} instances of prefab "${prefabId}"`;
+  return `Batch instantiation of ${instances.length} instances of prefab "${prefabId}" initiated. Check that all pieces are visible and properly positioned.`;
 }
 
 function listPrefabs(): string {

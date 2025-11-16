@@ -8,7 +8,7 @@ export interface IAgentMessage {
   type: 'user' | 'ai' | 'system' | 'tool';
   content: string;
   timestamp: Date;
-  toolCalls?: IToolCall[];
+  toolCalls?: IAgentToolCall[];
   metadata?: Record<string, unknown>;
 }
 
@@ -28,7 +28,7 @@ export interface ICodebaseContext {
   claudeMemory: string[];
 }
 
-export interface IToolCall {
+export interface IAgentToolCall {
   name: string;
   arguments: Record<string, unknown>;
   result?: unknown;

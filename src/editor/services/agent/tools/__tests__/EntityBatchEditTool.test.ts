@@ -5,18 +5,28 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { executeEntityBatchEdit, entityBatchEditTool } from '../EntityBatchEditTool';
 
-// Mock dependencies
-const mockUpdateComponent = vi.fn();
-const mockGetComponentData = vi.fn();
-const mockHasComponent = vi.fn();
-const mockListAllEntities = vi.fn(() => [1, 2, 3, 4, 5]);
+const { mockUpdateComponent, mockGetComponentData, mockHasComponent, mockListAllEntities } =
+  vi.hoisted(() => {
+    return {
+      mockUpdateComponent: vi.fn(),
+      mockGetComponentData: vi.fn(),
+      mockHasComponent: vi.fn(),
+      mockListAllEntities: vi.fn(() => [1, 2, 3, 4, 5]),
+    };
+  });
 
 vi.mock('@core/lib/ecs/ComponentRegistry', () => ({
   ComponentRegistry: {
     getInstance: () => ({
       updateComponent: mockUpdateComponent,
       getComponentData: mockGetComponentData,
+      hasComponent: mockHasComponent,
     }),
+  },
+  componentRegistry: {
+    updateComponent: mockUpdateComponent,
+    getComponentData: mockGetComponentData,
+    hasComponent: mockHasComponent,
   },
 }));
 
@@ -28,6 +38,9 @@ vi.mock('@core/lib/ecs/queries/entityQueries', () => ({
     }),
   },
 }));
+
+vi.mock('@core/lib/ecs/EntityManager');
+vi.mock('@core/lib/ecs/IComponent');
 
 describe('EntityBatchEditTool', () => {
   beforeEach(() => {
