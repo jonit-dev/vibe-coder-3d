@@ -215,6 +215,79 @@ export const useAgentActions = () => {
       }
     };
 
+    const handleCreateAndInstantiatePrefab = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { name, primitives, instance_positions } = customEvent.detail;
+
+      logger.info('Agent requested prefab creation and instantiation from primitives', {
+        name,
+        primitives,
+        instanceCount: instance_positions?.length || 1
+      });
+
+      try {
+        const container = entityManager.createEntity(name);
+        const containerId = container.id;
+
+        // Create each primitive and parent to container
+        for (const spec of primitives) {
+          const childName = spec.name || spec.type;
+          const childEntity = services.entity.createPrimitive(spec.type, childName);
+
+          if (!childEntity) continue;
+
+          // Parent to container first (transforms become relative)
+          entityManager.setParent(childEntity.id, containerId);
+
+          // Set transform (relative to container)
+          if (spec.position || spec.rotation || spec.scale) {
+            services.transform.applyTransform(
+              childEntity.id,
+              spec.position,
+              spec.rotation,
+              spec.scale,
+            );
+          }
+
+          // Apply material if provided
+          if (spec.material) {
+            const meshUpdate = services.material.buildMeshUpdate(spec.material);
+            if (Object.keys(meshUpdate).length > 0) {
+              updateComponent(childEntity.id, KnownComponentTypes.MESH_RENDERER, meshUpdate);
+              logger.info('Material applied to primitive', { entityId: childEntity.id });
+            }
+          }
+        }
+
+        // Create prefab from container
+        const prefabId = name.toLowerCase().replace(/\s+/g, '-');
+        prefabManager.createFromEntity(containerId, name, prefabId);
+        _refreshPrefabs();
+
+        // Keep the original container as the first instance (at origin/creation position)
+        // Don't delete it - this is the key optimization!
+
+        // Create additional instances at specified positions
+        if (instance_positions && instance_positions.length > 0) {
+          for (const position of instance_positions) {
+            const posTuple = Array.isArray(position)
+              ? position
+              : [position.x, position.y, position.z];
+            services.prefab.instantiate(prefabId, posTuple as [number, number, number]);
+          }
+        }
+
+        logger.info('Prefab created and instantiated from primitives', {
+          prefabId,
+          name,
+          primitiveCount: primitives.length,
+          instanceCount: (instance_positions?.length || 0) + 1, // +1 for the original container
+        });
+      } catch (error) {
+        logger.error('Failed to create and instantiate prefab from primitives', { error, name });
+      }
+    };
+
     const handleCreatePrefab = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { name } = customEvent.detail;
@@ -484,6 +557,7 @@ export const useAgentActions = () => {
       'agent:create-prefab-from-primitives',
       handleCreatePrefabFromPrimitives,
     );
+    window.addEventListener('agent:create-and-instantiate-prefab', handleCreateAndInstantiatePrefab);
     window.addEventListener('agent:create-prefab', handleCreatePrefab);
     window.addEventListener('agent:instantiate-prefab', handleInstantiatePrefab);
     window.addEventListener('agent:list-prefabs', handleListPrefabs);
@@ -510,6 +584,7 @@ export const useAgentActions = () => {
         'agent:create-prefab-from-primitives',
         handleCreatePrefabFromPrimitives,
       );
+      window.removeEventListener('agent:create-and-instantiate-prefab', handleCreateAndInstantiatePrefab);
       window.removeEventListener('agent:create-prefab', handleCreatePrefab);
       window.removeEventListener('agent:instantiate-prefab', handleInstantiatePrefab);
       window.removeEventListener('agent:list-prefabs', handleListPrefabs);

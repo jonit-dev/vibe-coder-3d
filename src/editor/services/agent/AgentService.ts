@@ -588,39 +588,32 @@ Current Context:
 
 ${shapesInfo}
 
-MANDATORY PLANNING WORKFLOW - YOU MUST FOLLOW THIS:
+REQUIRED PLANNING WORKFLOW:
 
-**STEP 0: ALWAYS CREATE A PLAN FIRST**
-Before executing ANY scene modifications, you MUST:
-1. Use the 'planning' tool with action='create_plan'
-2. Define the goal and list ALL steps you will take
-3. Specify which tool each step will use
-4. Get plan confirmation before proceeding
+**Before executing ANY scene modifications, you MUST create a plan:**
+1. Use planning tool with action='create_plan'
+2. Define a concise goal and 3-8 high-level steps (major milestones, not micro-steps)
+3. Each step should represent a logical phase, not individual tool calls
+4. Then execute the plan's steps using the appropriate tools
 
-**STEP 1-N: EXECUTE PLAN SEQUENTIALLY**
-For each step in your plan:
-1. Execute the step using the appropriate tool
-2. Use planning tool with action='update_step' to mark it completed
-3. Move to next step
+**IMPORTANT: Keep plans high-level and efficient**
+- ✅ Good step: "Create tree prefab and instantiate 5 trees using batch_instantiate"
+- ❌ Bad steps: "Instantiate tree 1", "Instantiate tree 2", "Instantiate tree 3"...
 
 **EXAMPLE - User asks "create a forest with 5 trees":**
 
-Step 0 - Create plan:
+First create plan:
 {
   "action": "create_plan",
   "goal": "Create a forest with 5 trees",
   "steps": [
-    {"id": 1, "description": "Create tree prefab from cylinder trunk + sphere foliage", "tool": "prefab_management", "params_summary": "create_from_primitives with 2 primitives"},
-    {"id": 2, "description": "Instantiate tree at position (0, 0, 0)", "tool": "prefab_management", "params_summary": "instantiate at pos 0,0,0"},
-    {"id": 3, "description": "Instantiate tree at position (5, 0, 0)", "tool": "prefab_management", "params_summary": "instantiate at pos 5,0,0"},
-    {"id": 4, "description": "Instantiate tree at position (-5, 0, 0)", "tool": "prefab_management", "params_summary": "instantiate at pos -5,0,0"},
-    {"id": 5, "description": "Instantiate tree at position (0, 0, 5)", "tool": "prefab_management", "params_summary": "instantiate at pos 0,0,5"},
-    {"id": 6, "description": "Instantiate tree at position (0, 0, -5)", "tool": "prefab_management", "params_summary": "instantiate at pos 0,0,-5"},
-    {"id": 7, "description": "Take screenshot to verify all 5 trees are visible", "tool": "screenshot_feedback", "params_summary": "reason: verify forest creation"}
+    {"id": 1, "description": "Create tree prefab from cylinder trunk + sphere foliage", "tool": "prefab_management"},
+    {"id": 2, "description": "Instantiate 5 trees at different positions using batch_instantiate", "tool": "prefab_management"},
+    {"id": 3, "description": "Verify all trees are visible with screenshot", "tool": "screenshot_feedback"}
   ]
 }
 
-Then execute steps 1-7 in order, calling update_step after each.
+Then execute steps 1-3. You do NOT need to call update_step after each one - just proceed with execution.
 
 CHOOSING THE RIGHT TOOL:
 

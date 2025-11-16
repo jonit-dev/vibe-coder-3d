@@ -1,26 +1,81 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "chess-pawn",
-  "name": "Chess Pawn",
+  "id": "white_rook",
+  "name": "white_rook",
   "root": {
-    "name": "Chess Pawn",
+    "name": "white_rook",
     "components": {
       "PersistentId": {
-        "id": "a19c12c7-37f7-4153-8f32-77f4dd82495b"
+        "id": "07c428d2-ff92-4859-a7bc-b75299c23fb3"
       }
     },
     "children": [
       {
-        "name": "Pawn Base",
+        "name": "rook_base",
         "components": {
           "PersistentId": {
-            "id": "8cdadf48-9c7c-4304-9a04-381e1b492e4a"
+            "id": "f2022cd3-33c0-4919-82a4-8f481b4a8d6c"
           },
           "Transform": {
             "position": [
               0,
-              0.3,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              1,
+              0.4,
+              1
+            ]
+          },
+          "MeshRenderer": {
+            "meshId": "cylinder",
+            "materialId": "mat_08941399",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": true,
+            "modelPath": "",
+            "material": {
+              "shader": "standard",
+              "materialType": "solid",
+              "color": "#f5f5dc",
+              "metalness": 0,
+              "roughness": 0.7,
+              "emissive": "#000000",
+              "emissiveIntensity": 0,
+              "normalScale": 1,
+              "occlusionStrength": 1,
+              "textureOffsetX": 0,
+              "textureOffsetY": 0,
+              "textureRepeatX": 1,
+              "textureRepeatY": 1,
+              "albedoTexture": "",
+              "normalTexture": "",
+              "metallicTexture": "",
+              "roughnessTexture": "",
+              "emissiveTexture": "",
+              "occlusionTexture": ""
+            }
+          }
+        },
+        "children": []
+      },
+      {
+        "name": "rook_body",
+        "components": {
+          "PersistentId": {
+            "id": "f669169e-b204-4fbb-afd0-09fce5cf103b"
+          },
+          "Transform": {
+            "position": [
+              0,
+              0.6,
               0
             ],
             "rotation": [
@@ -36,7 +91,7 @@ export default definePrefab({
           },
           "MeshRenderer": {
             "meshId": "cylinder",
-            "materialId": "default",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -67,15 +122,15 @@ export default definePrefab({
         "children": []
       },
       {
-        "name": "Pawn Body",
+        "name": "rook_top",
         "components": {
           "PersistentId": {
-            "id": "cef3094d-5975-4a8c-a37e-cb373f78fec5"
+            "id": "31f3b242-ef5a-4a4a-9314-842e548c680b"
           },
           "Transform": {
             "position": [
               0,
-              1,
+              1.1,
               0
             ],
             "rotation": [
@@ -84,69 +139,14 @@ export default definePrefab({
               0
             ],
             "scale": [
-              0.6,
-              0.8,
-              0.6
+              1.2,
+              0.3,
+              1.2
             ]
           },
           "MeshRenderer": {
-            "meshId": "cone",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
-        },
-        "children": []
-      },
-      {
-        "name": "Pawn Head",
-        "components": {
-          "PersistentId": {
-            "id": "d86db538-6a97-4b36-8da9-d04a9ca175ca"
-          },
-          "Transform": {
-            "position": [
-              0,
-              1.7,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.4,
-              0.4,
-              0.4
-            ]
-          },
-          "MeshRenderer": {
-            "meshId": "sphere",
-            "materialId": "default",
+            "meshId": "cube",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -179,8 +179,8 @@ export default definePrefab({
     ]
   },
   "metadata": {
-    "createdAt": "2025-11-16T07:34:07.580Z",
-    "createdFrom": 68
+    "createdAt": "2025-11-16T09:14:54.967Z",
+    "createdFrom": 74
   },
   "dependencies": [
     "default"

@@ -1,26 +1,26 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "chess-pawn",
-  "name": "Chess Pawn",
+  "id": "black_knight",
+  "name": "black_knight",
   "root": {
-    "name": "Chess Pawn",
+    "name": "black_knight",
     "components": {
       "PersistentId": {
-        "id": "a19c12c7-37f7-4153-8f32-77f4dd82495b"
+        "id": "01a292c6-d565-42a8-b498-854842b04ebe"
       }
     },
     "children": [
       {
-        "name": "Pawn Base",
+        "name": "knight_base",
         "components": {
           "PersistentId": {
-            "id": "8cdadf48-9c7c-4304-9a04-381e1b492e4a"
+            "id": "44a90c0d-4917-499f-a0ec-06d9d8975ea7"
           },
           "Transform": {
             "position": [
               0,
-              0.3,
+              0,
               0
             ],
             "rotation": [
@@ -29,9 +29,9 @@ export default definePrefab({
               0
             ],
             "scale": [
-              0.8,
-              0.6,
-              0.8
+              0.9,
+              0.4,
+              0.9
             ]
           },
           "MeshRenderer": {
@@ -44,7 +44,7 @@ export default definePrefab({
             "material": {
               "shader": "standard",
               "materialType": "solid",
-              "color": "#f5f5dc",
+              "color": "#2c2c2c",
               "metalness": 0,
               "roughness": 0.7,
               "emissive": "#000000",
@@ -67,85 +67,30 @@ export default definePrefab({
         "children": []
       },
       {
-        "name": "Pawn Body",
+        "name": "knight_head",
         "components": {
           "PersistentId": {
-            "id": "cef3094d-5975-4a8c-a37e-cb373f78fec5"
+            "id": "4c296bb5-224e-49bd-83b9-f9a650352a7f"
           },
           "Transform": {
             "position": [
               0,
-              1,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.6,
               0.8,
-              0.6
-            ]
-          },
-          "MeshRenderer": {
-            "meshId": "cone",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
-        },
-        "children": []
-      },
-      {
-        "name": "Pawn Head",
-        "components": {
-          "PersistentId": {
-            "id": "d86db538-6a97-4b36-8da9-d04a9ca175ca"
-          },
-          "Transform": {
-            "position": [
-              0,
-              1.7,
-              0
+              0.3
             ],
             "rotation": [
-              0,
+              30,
               0,
               0
             ],
             "scale": [
-              0.4,
-              0.4,
-              0.4
+              0.7,
+              0.7,
+              0.9
             ]
           },
           "MeshRenderer": {
-            "meshId": "sphere",
+            "meshId": "cube",
             "materialId": "default",
             "enabled": true,
             "castShadows": true,
@@ -154,7 +99,7 @@ export default definePrefab({
             "material": {
               "shader": "standard",
               "materialType": "solid",
-              "color": "#f5f5dc",
+              "color": "#2c2c2c",
               "metalness": 0,
               "roughness": 0.7,
               "emissive": "#000000",
@@ -179,8 +124,8 @@ export default definePrefab({
     ]
   },
   "metadata": {
-    "createdAt": "2025-11-16T07:34:07.580Z",
-    "createdFrom": 68
+    "createdAt": "2025-11-16T09:15:44.714Z",
+    "createdFrom": 107
   },
   "dependencies": [
     "default"

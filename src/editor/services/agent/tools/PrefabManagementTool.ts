@@ -12,6 +12,7 @@ interface IPrefabManagementParams {
   action:
     | 'create_from_primitives'
     | 'create_from_selection'
+    | 'create_and_instantiate'
     | 'instantiate'
     | 'batch_instantiate'
     | 'list_prefabs'
@@ -36,6 +37,8 @@ interface IPrefabManagementParams {
     rotation?: [number, number, number] | { x: number; y: number; z: number };
     scale?: [number, number, number] | { x: number; y: number; z: number };
   }>;
+  // For create_and_instantiate action
+  instance_positions?: Array<[number, number, number] | { x: number; y: number; z: number }>;
 }
 
 export const prefabManagementTool = {
@@ -50,6 +53,7 @@ Prefabs are reusable templates that can be instantiated multiple times. They're 
 Actions:
 - create_from_primitives: Create a prefab from a specification of primitive shapes (PREFERRED for forests, buildings, props)
 - create_from_selection: Create a prefab from currently selected entities
+- create_and_instantiate: Create prefab AND immediately place instances (EFFICIENT - combines creation + placement)
 - instantiate: Place an instance of a prefab in the scene
 - batch_instantiate: Place multiple instances of a prefab at specified positions (EFFICIENT for forests, grids, arrays)
 - list_prefabs: List all available prefabs
@@ -63,6 +67,7 @@ Actions:
         enum: [
           'create_from_primitives',
           'create_from_selection',
+          'create_and_instantiate',
           'instantiate',
           'batch_instantiate',
           'list_prefabs',
@@ -74,7 +79,7 @@ Actions:
       name: {
         type: 'string',
         description:
-          'Prefab name (for create_from_primitives, create_from_selection, create_variant)',
+          'Prefab name (for create_from_primitives, create_from_selection, create_and_instantiate, create_variant)',
       },
       primitives: {
         type: 'array',
@@ -110,7 +115,20 @@ Actions:
           required: ['type'],
         },
         description:
-          'Array of primitive specifications to compose the prefab (for create_from_primitives)',
+          'Array of primitive specifications to compose the prefab (for create_from_primitives, create_and_instantiate)',
+      },
+      instance_positions: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            x: { type: 'number' },
+            y: { type: 'number' },
+            z: { type: 'number' },
+          },
+        },
+        description:
+          'Array of positions where instances should be placed (for create_and_instantiate). If empty, places one instance at the prefab creation position.',
       },
       prefab_id: {
         type: 'string',
@@ -177,7 +195,7 @@ Actions:
 export async function executePrefabManagement(params: IPrefabManagementParams): Promise<string> {
   logger.info('Executing prefab management', { params });
 
-  const { action, name, prefab_id, position, entity_id, primitives, instances } = params;
+  const { action, name, prefab_id, position, entity_id, primitives, instances, instance_positions } = params;
 
   switch (action) {
     case 'create_from_primitives':
@@ -185,6 +203,12 @@ export async function executePrefabManagement(params: IPrefabManagementParams): 
         return 'Error: name and primitives array are required for create_from_primitives';
       }
       return createPrefabFromPrimitives(name, primitives as IPrimitiveSpec[]);
+
+    case 'create_and_instantiate':
+      if (!name || !primitives || !Array.isArray(primitives)) {
+        return 'Error: name and primitives array are required for create_and_instantiate';
+      }
+      return createAndInstantiatePrefab(name, primitives as IPrimitiveSpec[], instance_positions);
 
     case 'create_from_selection':
       if (!name) {
@@ -258,6 +282,25 @@ function createPrefabFromPrimitives(name: string, primitives: IPrimitiveSpec[]):
   });
 
   return `Created prefab "${name}" (id: "${prefabId}") from ${primitives.length} primitives. Use the instantiate action with prefab_id="${prefabId}" to place instances in the scene.`;
+}
+
+function createAndInstantiatePrefab(name: string, primitives: IPrimitiveSpec[], instance_positions?: Array<[number, number, number] | { x: number; y: number; z: number }>): string {
+  const event = new CustomEvent('agent:create-and-instantiate-prefab', {
+    detail: { name, primitives, instance_positions },
+  });
+  window.dispatchEvent(event);
+
+  const prefabId = name.toLowerCase().replace(/\s+/g, '-');
+  const instanceCount = instance_positions ? instance_positions.length : 1;
+
+  logger.info('Prefab creation and instantiation requested from primitives', {
+    name,
+    primitiveCount: primitives.length,
+    instanceCount,
+    instancePositions: instance_positions,
+  });
+
+  return `Created prefab "${name}" (id: "${prefabId}") from ${primitives.length} primitives and placed ${instanceCount} instance${instanceCount > 1 ? 's' : ''} in the scene.`;
 }
 
 function createPrefabFromSelection(name: string): string {

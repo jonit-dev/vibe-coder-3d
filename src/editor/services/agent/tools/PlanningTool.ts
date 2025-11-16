@@ -14,16 +14,18 @@ const logger = Logger.create('PlanningTool');
 
 export const planningTool = {
   name: 'planning',
-  description: `Create and manage an execution plan before taking actions.
+  description: `Planning tool for tracking execution progress. Required for scene modifications.
 
-MANDATORY: You MUST use this tool FIRST before executing ANY scene modifications.
+WORKFLOW:
+1. First, use create_plan to outline your approach with high-level steps (3-8 steps max)
+2. Execute the plan's steps using the appropriate tools
+3. The system will automatically track your progress as you use other tools
+4. You can manually update_step at major checkpoints if needed
+5. Use get_plan to check progress if you need to recall the current state
 
-PLANNING WORKFLOW:
-- Start with create_plan to outline 3–10 concise, ordered steps.
-- Each step MUST include the tool to call and a short description of the intended outcome.
-- Use params_summary to capture key parameters (entity ids, positions, materials, etc.).
-- After executing a step's tool, immediately call update_step with the final status and any notes.
-- Call get_plan whenever you need to recall the current goal, progress, or remaining steps.
+IMPORTANT: Keep plans concise with high-level milestones, not micro-steps.
+- ✅ Good: "Create tree prefab and instantiate 5 trees using batch_instantiate"
+- ❌ Bad: "Instantiate tree 1", "Instantiate tree 2", "Instantiate tree 3", etc.
 
 IMPORTANT GUIDELINES FOR ENTITY CREATION:
 - Always consider material choices (color, metalness, roughness) for visual appeal
@@ -257,7 +259,7 @@ Goal: ${goal}
 Steps (${steps.length}):
 ${formattedSteps}
 
-Now execute each step in order, calling update_step after each completion.${warningsText}`;
+Now proceed to execute each step using the appropriate tools.${warningsText}`;
 }
 
 function updateStep(stepId: number, status: IPlanStep['status'], notes?: string): string {
@@ -333,7 +335,7 @@ function updateStep(stepId: number, status: IPlanStep['status'], notes?: string)
 
     currentPlan = null;
     completionMessage =
-      '\n\n✓ Plan completed! All steps finished and the plan was cleared. Create a new plan before executing additional changes.';
+      '\n\n✓ Plan completed! All steps finished and the plan was cleared.';
   }
 
   return `✓ Step ${stepId} marked as ${status}${notes ? ` - ${notes}` : ''}

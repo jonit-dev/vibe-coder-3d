@@ -1,26 +1,26 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "chess-pawn",
-  "name": "Chess Pawn",
+  "id": "white_bishop",
+  "name": "white_bishop",
   "root": {
-    "name": "Chess Pawn",
+    "name": "white_bishop",
     "components": {
       "PersistentId": {
-        "id": "a19c12c7-37f7-4153-8f32-77f4dd82495b"
+        "id": "829834ee-27af-43b5-aa6e-c8f33d6419b6"
       }
     },
     "children": [
       {
-        "name": "Pawn Base",
+        "name": "bishop_base",
         "components": {
           "PersistentId": {
-            "id": "8cdadf48-9c7c-4304-9a04-381e1b492e4a"
+            "id": "c8cf5631-2ae0-4bfe-a651-68713615dd98"
           },
           "Transform": {
             "position": [
               0,
-              0.3,
+              0,
               0
             ],
             "rotation": [
@@ -29,14 +29,14 @@ export default definePrefab({
               0
             ],
             "scale": [
-              0.8,
-              0.6,
-              0.8
+              0.9,
+              0.4,
+              0.9
             ]
           },
           "MeshRenderer": {
             "meshId": "cylinder",
-            "materialId": "default",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -67,15 +67,15 @@ export default definePrefab({
         "children": []
       },
       {
-        "name": "Pawn Body",
+        "name": "bishop_body",
         "components": {
           "PersistentId": {
-            "id": "cef3094d-5975-4a8c-a37e-cb373f78fec5"
+            "id": "1d43fbf1-7317-408f-8849-60eef75cf505"
           },
           "Transform": {
             "position": [
               0,
-              1,
+              0.7,
               0
             ],
             "rotation": [
@@ -84,14 +84,14 @@ export default definePrefab({
               0
             ],
             "scale": [
-              0.6,
+              0.7,
               0.8,
-              0.6
+              0.7
             ]
           },
           "MeshRenderer": {
             "meshId": "cone",
-            "materialId": "default",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -122,15 +122,15 @@ export default definePrefab({
         "children": []
       },
       {
-        "name": "Pawn Head",
+        "name": "bishop_top",
         "components": {
           "PersistentId": {
-            "id": "d86db538-6a97-4b36-8da9-d04a9ca175ca"
+            "id": "5bca3b0f-e5b2-40b0-b9d0-2f438277e10a"
           },
           "Transform": {
             "position": [
               0,
-              1.7,
+              1.3,
               0
             ],
             "rotation": [
@@ -139,14 +139,14 @@ export default definePrefab({
               0
             ],
             "scale": [
-              0.4,
-              0.4,
-              0.4
+              0.3,
+              0.3,
+              0.3
             ]
           },
           "MeshRenderer": {
             "meshId": "sphere",
-            "materialId": "default",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -179,10 +179,10 @@ export default definePrefab({
     ]
   },
   "metadata": {
-    "createdAt": "2025-11-16T07:34:07.580Z",
-    "createdFrom": 68
+    "createdAt": "2025-11-16T09:15:00.009Z",
+    "createdFrom": 78
   },
   "dependencies": [
-    "default"
+    "mat_08941399"
   ]
 });

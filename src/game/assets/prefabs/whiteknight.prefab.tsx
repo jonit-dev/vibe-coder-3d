@@ -1,26 +1,26 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "chess-pawn",
-  "name": "Chess Pawn",
+  "id": "white_knight",
+  "name": "white_knight",
   "root": {
-    "name": "Chess Pawn",
+    "name": "white_knight",
     "components": {
       "PersistentId": {
-        "id": "a19c12c7-37f7-4153-8f32-77f4dd82495b"
+        "id": "48e57d4e-e524-43c2-829c-2b54ace33cc7"
       }
     },
     "children": [
       {
-        "name": "Pawn Base",
+        "name": "knight_base",
         "components": {
           "PersistentId": {
-            "id": "8cdadf48-9c7c-4304-9a04-381e1b492e4a"
+            "id": "36788942-02af-4c88-afa2-9d3238e76108"
           },
           "Transform": {
             "position": [
               0,
-              0.3,
+              0,
               0
             ],
             "rotation": [
@@ -29,14 +29,14 @@ export default definePrefab({
               0
             ],
             "scale": [
-              0.8,
-              0.6,
-              0.8
+              0.9,
+              0.4,
+              0.9
             ]
           },
           "MeshRenderer": {
             "meshId": "cylinder",
-            "materialId": "default",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -67,86 +67,31 @@ export default definePrefab({
         "children": []
       },
       {
-        "name": "Pawn Body",
+        "name": "knight_head",
         "components": {
           "PersistentId": {
-            "id": "cef3094d-5975-4a8c-a37e-cb373f78fec5"
+            "id": "5742a026-583e-4274-854e-c17790a3b196"
           },
           "Transform": {
             "position": [
               0,
-              1,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.6,
               0.8,
-              0.6
-            ]
-          },
-          "MeshRenderer": {
-            "meshId": "cone",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
-        },
-        "children": []
-      },
-      {
-        "name": "Pawn Head",
-        "components": {
-          "PersistentId": {
-            "id": "d86db538-6a97-4b36-8da9-d04a9ca175ca"
-          },
-          "Transform": {
-            "position": [
-              0,
-              1.7,
-              0
+              0.3
             ],
             "rotation": [
-              0,
+              30,
               0,
               0
             ],
             "scale": [
-              0.4,
-              0.4,
-              0.4
+              0.7,
+              0.7,
+              0.9
             ]
           },
           "MeshRenderer": {
-            "meshId": "sphere",
-            "materialId": "default",
+            "meshId": "cube",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -179,10 +124,10 @@ export default definePrefab({
     ]
   },
   "metadata": {
-    "createdAt": "2025-11-16T07:34:07.580Z",
-    "createdFrom": 68
+    "createdAt": "2025-11-16T09:15:05.952Z",
+    "createdFrom": 82
   },
   "dependencies": [
-    "default"
+    "mat_08941399"
   ]
 });

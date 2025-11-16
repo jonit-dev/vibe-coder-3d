@@ -1,26 +1,26 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "chess-pawn",
-  "name": "Chess Pawn",
+  "id": "white_queen",
+  "name": "white_queen",
   "root": {
-    "name": "Chess Pawn",
+    "name": "white_queen",
     "components": {
       "PersistentId": {
-        "id": "a19c12c7-37f7-4153-8f32-77f4dd82495b"
+        "id": "7de0ef25-c615-43d3-aae2-2f87f6d8368c"
       }
     },
     "children": [
       {
-        "name": "Pawn Base",
+        "name": "queen_base",
         "components": {
           "PersistentId": {
-            "id": "8cdadf48-9c7c-4304-9a04-381e1b492e4a"
+            "id": "a124cf6c-2121-43cb-8eb6-3a4f8b0dc01b"
           },
           "Transform": {
             "position": [
               0,
-              0.3,
+              0,
               0
             ],
             "rotation": [
@@ -29,14 +29,14 @@ export default definePrefab({
               0
             ],
             "scale": [
-              0.8,
-              0.6,
-              0.8
+              1.1,
+              0.4,
+              1.1
             ]
           },
           "MeshRenderer": {
             "meshId": "cylinder",
-            "materialId": "default",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -67,15 +67,70 @@ export default definePrefab({
         "children": []
       },
       {
-        "name": "Pawn Body",
+        "name": "queen_body",
         "components": {
           "PersistentId": {
-            "id": "cef3094d-5975-4a8c-a37e-cb373f78fec5"
+            "id": "597b1657-0c71-4352-b2f1-560eee842a5d"
           },
           "Transform": {
             "position": [
               0,
-              1,
+              0.7,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              0.9,
+              0.8,
+              0.9
+            ]
+          },
+          "MeshRenderer": {
+            "meshId": "cylinder",
+            "materialId": "mat_08941399",
+            "enabled": true,
+            "castShadows": true,
+            "receiveShadows": true,
+            "modelPath": "",
+            "material": {
+              "shader": "standard",
+              "materialType": "solid",
+              "color": "#f5f5dc",
+              "metalness": 0,
+              "roughness": 0.7,
+              "emissive": "#000000",
+              "emissiveIntensity": 0,
+              "normalScale": 1,
+              "occlusionStrength": 1,
+              "textureOffsetX": 0,
+              "textureOffsetY": 0,
+              "textureRepeatX": 1,
+              "textureRepeatY": 1,
+              "albedoTexture": "",
+              "normalTexture": "",
+              "metallicTexture": "",
+              "roughnessTexture": "",
+              "emissiveTexture": "",
+              "occlusionTexture": ""
+            }
+          }
+        },
+        "children": []
+      },
+      {
+        "name": "queen_head",
+        "components": {
+          "PersistentId": {
+            "id": "b0807b3f-6319-4780-8df9-fc558ae44a92"
+          },
+          "Transform": {
+            "position": [
+              0,
+              1.3,
               0
             ],
             "rotation": [
@@ -85,13 +140,13 @@ export default definePrefab({
             ],
             "scale": [
               0.6,
-              0.8,
+              0.6,
               0.6
             ]
           },
           "MeshRenderer": {
-            "meshId": "cone",
-            "materialId": "default",
+            "meshId": "sphere",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -122,15 +177,15 @@ export default definePrefab({
         "children": []
       },
       {
-        "name": "Pawn Head",
+        "name": "queen_crown",
         "components": {
           "PersistentId": {
-            "id": "d86db538-6a97-4b36-8da9-d04a9ca175ca"
+            "id": "dc881880-104d-42b2-91f8-1c08ce2914bc"
           },
           "Transform": {
             "position": [
               0,
-              1.7,
+              1.6,
               0
             ],
             "rotation": [
@@ -145,8 +200,8 @@ export default definePrefab({
             ]
           },
           "MeshRenderer": {
-            "meshId": "sphere",
-            "materialId": "default",
+            "meshId": "cone",
+            "materialId": "mat_08941399",
             "enabled": true,
             "castShadows": true,
             "receiveShadows": true,
@@ -179,10 +234,10 @@ export default definePrefab({
     ]
   },
   "metadata": {
-    "createdAt": "2025-11-16T07:34:07.580Z",
-    "createdFrom": 68
+    "createdAt": "2025-11-16T09:15:12.910Z",
+    "createdFrom": 85
   },
   "dependencies": [
-    "default"
+    "mat_08941399"
   ]
 });

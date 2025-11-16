@@ -1,26 +1,26 @@
 import { definePrefab } from '@core/lib/serialization/assets/definePrefabs';
 
 export default definePrefab({
-  "id": "chess-pawn",
-  "name": "Chess Pawn",
+  "id": "black_pawn",
+  "name": "black_pawn",
   "root": {
-    "name": "Chess Pawn",
+    "name": "black_pawn",
     "components": {
       "PersistentId": {
-        "id": "a19c12c7-37f7-4153-8f32-77f4dd82495b"
+        "id": "f19197fb-3154-46ec-b98a-1b2b7a7e1a77"
       }
     },
     "children": [
       {
-        "name": "Pawn Base",
+        "name": "pawn_base",
         "components": {
           "PersistentId": {
-            "id": "8cdadf48-9c7c-4304-9a04-381e1b492e4a"
+            "id": "147427f1-d44b-4b09-ad05-2d9718f14cfd"
           },
           "Transform": {
             "position": [
               0,
-              0.3,
+              0,
               0
             ],
             "rotation": [
@@ -30,7 +30,7 @@ export default definePrefab({
             ],
             "scale": [
               0.8,
-              0.6,
+              0.3,
               0.8
             ]
           },
@@ -44,7 +44,7 @@ export default definePrefab({
             "material": {
               "shader": "standard",
               "materialType": "solid",
-              "color": "#f5f5dc",
+              "color": "#2c2c2c",
               "metalness": 0,
               "roughness": 0.7,
               "emissive": "#000000",
@@ -67,15 +67,15 @@ export default definePrefab({
         "children": []
       },
       {
-        "name": "Pawn Body",
+        "name": "pawn_head",
         "components": {
           "PersistentId": {
-            "id": "cef3094d-5975-4a8c-a37e-cb373f78fec5"
+            "id": "40359a81-bb5a-41eb-a7ad-824a98da205d"
           },
           "Transform": {
             "position": [
               0,
-              1,
+              0.5,
               0
             ],
             "rotation": [
@@ -85,63 +85,8 @@ export default definePrefab({
             ],
             "scale": [
               0.6,
-              0.8,
+              0.6,
               0.6
-            ]
-          },
-          "MeshRenderer": {
-            "meshId": "cone",
-            "materialId": "default",
-            "enabled": true,
-            "castShadows": true,
-            "receiveShadows": true,
-            "modelPath": "",
-            "material": {
-              "shader": "standard",
-              "materialType": "solid",
-              "color": "#f5f5dc",
-              "metalness": 0,
-              "roughness": 0.7,
-              "emissive": "#000000",
-              "emissiveIntensity": 0,
-              "normalScale": 1,
-              "occlusionStrength": 1,
-              "textureOffsetX": 0,
-              "textureOffsetY": 0,
-              "textureRepeatX": 1,
-              "textureRepeatY": 1,
-              "albedoTexture": "",
-              "normalTexture": "",
-              "metallicTexture": "",
-              "roughnessTexture": "",
-              "emissiveTexture": "",
-              "occlusionTexture": ""
-            }
-          }
-        },
-        "children": []
-      },
-      {
-        "name": "Pawn Head",
-        "components": {
-          "PersistentId": {
-            "id": "d86db538-6a97-4b36-8da9-d04a9ca175ca"
-          },
-          "Transform": {
-            "position": [
-              0,
-              1.7,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0
-            ],
-            "scale": [
-              0.4,
-              0.4,
-              0.4
             ]
           },
           "MeshRenderer": {
@@ -154,7 +99,7 @@ export default definePrefab({
             "material": {
               "shader": "standard",
               "materialType": "solid",
-              "color": "#f5f5dc",
+              "color": "#2c2c2c",
               "metalness": 0,
               "roughness": 0.7,
               "emissive": "#000000",
@@ -179,8 +124,8 @@ export default definePrefab({
     ]
   },
   "metadata": {
-    "createdAt": "2025-11-16T07:34:07.580Z",
-    "createdFrom": 68
+    "createdAt": "2025-11-16T09:15:26.452Z",
+    "createdFrom": 96
   },
   "dependencies": [
     "default"
